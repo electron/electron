@@ -36,26 +36,7 @@ the following Python modules:
 If you're developing Electron and don't plan to redistribute your
 custom Electron build, you may skip this section.
 
-For certain features (e.g. pinch-zoom) to work properly, you must target the
-macOS 10.10 SDK.
-
-Official Electron builds are built with [Xcode 8.2.1](http://adcdownload.apple.com/Developer_Tools/Xcode_8.2.1/Xcode_8.2.1.xip), which does not contain
-the 10.10 SDK by default. To obtain it, first download and mount the
-[Xcode 6.4](http://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_6.4/Xcode_6.4.dmg)
-DMG.
-
-Then, assuming that the Xcode 6.4 DMG has been mounted at `/Volumes/Xcode` and
-that your Xcode 8.2.1 install is at `/Applications/Xcode.app`, run:
-
-```sh
-cp -r /Volumes/Xcode/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/
-```
-
-You will also need to enable Xcode to build against the 10.10 SDK:
-
-- Open `/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist`
-- Set the `MinimumSDKVersion` to `10.10`
-- Save the file
+Official Electron builds are built with [Xcode 8.3.3](http://adcdownload.apple.com/Developer_Tools/Xcode_8.3.3/Xcode_8.3.3.xip), and the MacOS 10.12 SDK.  Building with a newer SDK works too, but the releases currently use the 10.12 SDK.
 
 ## Getting the Code
 
