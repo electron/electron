@@ -60,6 +60,26 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
     NSColor* systemRedColor API_AVAILABLE(macosx(10.10));
 @property(class, strong, readonly)
     NSColor* systemYellowColor API_AVAILABLE(macosx(10.10));
+
+// misc dynamic colors declarations
+@property(class, strong, readonly)
+    NSColor* linkColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* placeholderTextColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* findHighlightColor API_AVAILABLE(macosx(10.13));
+@property(class, strong, readonly)
+    NSColor* separatorColor API_AVAILABLE(macosx(10.14));
+@property(class, strong, readonly)
+    NSColor* selectedContentBackgroundColor API_AVAILABLE(macosx(10.14));
+@property(class, strong, readonly)
+    NSColor* unemphasizedSelectedContentBackgroundColor API_AVAILABLE(
+        macosx(10.14));
+@property(class, strong, readonly)
+    NSColor* unemphasizedSelectedTextBackgroundColor API_AVAILABLE(macosx(10.14)
+    );
+@property(class, strong, readonly)
+    NSColor* unemphasizedSelectedTextColor API_AVAILABLE(macosx(10.14));
 @end
 
 extern "C" {

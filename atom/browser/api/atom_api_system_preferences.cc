@@ -56,11 +56,12 @@ void SystemPreferences::BuildPrototype(
   prototype->SetClassName(mate::StringToV8(isolate, "SystemPreferences"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
 #if defined(OS_WIN) || defined(OS_MACOSX)
+      .SetMethod("getColor", &SystemPreferences::GetColor)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
 #endif
+
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
-      .SetMethod("getColor", &SystemPreferences::GetColor)
 #elif defined(OS_MACOSX)
       .SetMethod("postNotification", &SystemPreferences::PostNotification)
       .SetMethod("subscribeNotification",

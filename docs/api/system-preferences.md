@@ -242,54 +242,90 @@ const alpha = color.substr(6, 2) // "dd"
 
 This API is only available on macOS 10.14 Mojave or newer.
 
-### `systemPreferences.getColor(color)` _Windows_
+### `systemPreferences.getColor(color)` _Windows_ _macOS_
 
 * `color` String - One of the following values:
-  * `3d-dark-shadow` - Dark shadow for three-dimensional display elements.
-  * `3d-face` - Face color for three-dimensional display elements and for dialog
-    box backgrounds.
-  * `3d-highlight` - Highlight color for three-dimensional display elements.
-  * `3d-light` - Light color for three-dimensional display elements.
-  * `3d-shadow` - Shadow color for three-dimensional display elements.
-  * `active-border` - Active window border.
-  * `active-caption` - Active window title bar. Specifies the left side color in
-    the color gradient of an active window's title bar if the gradient effect is
-    enabled.
-  * `active-caption-gradient` - Right side color in the color gradient of an
-    active window's title bar.
-  * `app-workspace` - Background color of multiple document interface (MDI)
-    applications.
-  * `button-text` - Text on push buttons.
-  * `caption-text` - Text in caption, size box, and scroll bar arrow box.
-  * `desktop` - Desktop background color.
-  * `disabled-text` - Grayed (disabled) text.
-  * `highlight` - Item(s) selected in a control.
-  * `highlight-text` - Text of item(s) selected in a control.
-  * `hotlight` - Color for a hyperlink or hot-tracked item.
-  * `inactive-border` - Inactive window border.
-  * `inactive-caption` - Inactive window caption. Specifies the left side color
-    in the color gradient of an inactive window's title bar if the gradient
-    effect is enabled.
-  * `inactive-caption-gradient` - Right side color in the color gradient of an
-    inactive window's title bar.
-  * `inactive-caption-text` - Color of text in an inactive caption.
-  * `info-background` - Background color for tooltip controls.
-  * `info-text` - Text color for tooltip controls.
-  * `menu` - Menu background.
-  * `menu-highlight` - The color used to highlight menu items when the menu
-    appears as a flat menu.
-  * `menubar` - The background color for the menu bar when menus appear as flat
-    menus.
-  * `menu-text` - Text in menus.
-  * `scrollbar` - Scroll bar gray area.
-  * `window` - Window background.
-  * `window-frame` - Window frame.
-  * `window-text` - Text in windows.
+  * On **Windows**:
+    * `3d-dark-shadow` - Dark shadow for three-dimensional display elements.
+    * `3d-face` - Face color for three-dimensional display elements and for dialog
+      box backgrounds.
+    * `3d-highlight` - Highlight color for three-dimensional display elements.
+    * `3d-light` - Light color for three-dimensional display elements.
+    * `3d-shadow` - Shadow color for three-dimensional display elements.
+    * `active-border` - Active window border.
+    * `active-caption` - Active window title bar. Specifies the left side color in
+      the color gradient of an active window's title bar if the gradient effect is
+      enabled.
+    * `active-caption-gradient` - Right side color in the color gradient of an
+      active window's title bar.
+    * `app-workspace` - Background color of multiple document interface (MDI)
+      applications.
+    * `button-text` - Text on push buttons.
+    * `caption-text` - Text in caption, size box, and scroll bar arrow box.
+    * `desktop` - Desktop background color.
+    * `disabled-text` - Grayed (disabled) text.
+    * `highlight` - Item(s) selected in a control.
+    * `highlight-text` - Text of item(s) selected in a control.
+    * `hotlight` - Color for a hyperlink or hot-tracked item.
+    * `inactive-border` - Inactive window border.
+    * `inactive-caption` - Inactive window caption. Specifies the left side color
+      in the color gradient of an inactive window's title bar if the gradient
+      effect is enabled.
+    * `inactive-caption-gradient` - Right side color in the color gradient of an
+      inactive window's title bar.
+    * `inactive-caption-text` - Color of text in an inactive caption.
+    * `info-background` - Background color for tooltip controls.
+    * `info-text` - Text color for tooltip controls.
+    * `menu` - Menu background.
+    * `menu-highlight` - The color used to highlight menu items when the menu
+      appears as a flat menu.
+    * `menubar` - The background color for the menu bar when menus appear as flat
+      menus.
+    * `menu-text` - Text in menus.
+    * `scrollbar` - Scroll bar gray area.
+    * `window` - Window background.
+    * `window-frame` - Window frame.
+    * `window-text` - Text in windows.
+  * On **macOS**
+    * `alternate-selected-control-text` - The text on a selected surface in a list or table.
+    * `control-background` - The background of a large interface element, such as a browser or table.
+    * `control` - The surface of a control.
+    * `control-text` -The text of a control that isn’t disabled.
+    * `disabled-control-text` - The text of a control that’s disabled.
+    * `find-highlight` - The color of a find indicator.
+    * `grid` - The gridlines of an interface element such as a table.
+    * `header-text` - The text of a header cell in a table.
+    * `highlight` - The virtual light source onscreen.
+    * `keyboard-focus-indicator` - The ring that appears around the currently focused control when using the keyboard for interface navigation.
+    * `label` - The text of a label containing primary content.
+    * `link` - A link to other content.
+    * `placeholder-text` -  A placeholder string in a control or text view.
+    * `quaternary-label` - The text of a label of lesser importance than a tertiary label such as watermark text.
+    * `scrubber-textured-background` - The background of a scrubber in the Touch Bar.
+    * `secondary-label` - The text of a label of lesser importance than a normal label such as a label used to represent a subheading or additional information.
+    * `selected-content-background` - The background for selected content in a key window or view.
+    * `selected-control` - The surface of a selected control.
+    * `selected-control-text` - The text of a selected control.
+    * `selected-menu-item` - The text of a selected menu.
+    * `selected-text-background` - The background of selected text.
+    * `selected-text` - Selected text.
+    * `separator` - A separator between different sections of content.
+    * `shadow` - The virtual shadow cast by a raised object onscreen.
+    * `tertiary-label` - The text of a label of lesser importance than a secondary label such as a label used to represent disabled text.
+    * `text-background` - Text background.
+    * `text` -  The text in a document.
+    * `under-page-background` -  The background behind a document's content.
+    * `unemphasized-selected-content-background` - The selected content in a non-key window or view.
+    * `unemphasized-selected-text-background` - A background for selected text in a non-key window or view.
+    * `unemphasized-selected-text` - Selected text in a non-key window or view.
+    * `window-background` - The background of a window.
+    * `window-frame-text` - The text in the window's titlebar area.	
 
 Returns `String` - The system color setting in RGB hexadecimal form (`#ABCDEF`).
-See the [Windows docs][windows-colors] for more details.
+See the [Windows docs][windows-colors] and the [MacOS docs][macos-colors] for more details.
 
 [windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx
+[macos-colors]:https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#dynamic-system-colors
 
 ### `systemPreferences.getSystemColor(color)` _macOS_
 
