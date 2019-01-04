@@ -1091,4 +1091,31 @@ describe('app module', () => {
       return expect(app.whenReady()).to.be.eventually.fulfilled
     })
   })
+
+  describe('commandLine.hasSwitch', () => {
+    it('returns true when present', () => {
+      app.commandLine.appendSwitch('foobar1')
+      expect(app.commandLine.hasSwitch('foobar1')).to.be.true()
+    })
+
+    it('returns false when not present', () => {
+      expect(app.commandLine.hasSwitch('foobar2')).to.be.false()
+    })
+  })
+
+  describe('commandLine.getSwitchValue', () => {
+    it('returns the value when present', () => {
+      app.commandLine.appendSwitch('foobar', 'test')
+      expect(app.commandLine.getSwitchValue('foobar')).to.equal('test')
+    })
+
+    it('returns an empty string when present without value', () => {
+      app.commandLine.appendSwitch('foobar1')
+      expect(app.commandLine.getSwitchValue('foobar1')).to.equal('')
+    })
+
+    it('returns an empty string when not present', () => {
+      expect(app.commandLine.getSwitchValue('foobar2')).to.equal('')
+    })
+  })
 })

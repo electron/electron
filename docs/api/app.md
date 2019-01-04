@@ -1159,6 +1159,20 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
+### `app.commandLine.hasSwitch(switch)`
+
+* `switch` String - A command-line switch
+
+Returns `Boolean` - Whether the command-line switch is present.
+
+### `app.commandLine.getSwitchValue(switch)`
+
+* `switch` String - A command-line switch
+
+Returns `String` - The command-line switch value.
+
+**Note:** When the switch is not present, it returns empty string.
+
 ### `app.enableSandbox()` _Experimental_ _macOS_ _Windows_
 
 Enables full sandbox mode on the app.
