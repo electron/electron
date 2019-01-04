@@ -1022,7 +1022,14 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
-void App::SetAccessibilitySupportEnabled(bool enabled) {
+void App::SetAccessibilitySupportEnabled(bool enabled, mate::Arguments* args) {
+  if (!Browser::Get()->is_ready()) {
+    args->ThrowError(
+        "app.setAccessibilitySupportEnabled() can only be called "
+        "after app is ready");
+    return;
+  }
+
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   if (enabled) {
     ax_state->OnScreenReaderDetected();
