@@ -50,14 +50,14 @@ async function deleteDraft (releaseId, targetRepo) {
       id: parseInt(releaseId, 10)
     })
     console.log(result)
-    if (!result.draft) {
+    if (!result.data.draft) {
       console.log(`${fail} published releases cannot be deleted.`)
       return false
     } else {
       await github.repos.deleteRelease({
         owner: 'electron',
         repo: targetRepo,
-        release_id: result.id
+        release_id: result.data.id
       })
     }
     console.log(`${pass} successfully deleted draft with id ${releaseId} from ${targetRepo}`)
