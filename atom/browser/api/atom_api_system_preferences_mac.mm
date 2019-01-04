@@ -437,6 +437,7 @@ std::string SystemPreferences::GetSystemColor(const std::string& color,
   }
 }
 
+// static
 bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
   NSDictionary* options = @{(id)kAXTrustedCheckOptionPrompt : @(prompt)};
   return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);

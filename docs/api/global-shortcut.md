@@ -54,6 +54,14 @@ When the accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
 
+The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
+the app has been authorized as a [trusted accessibility client](https://developer.apple.com/library/archive/documentation/Accessibility/Conceptual/AccessibilityMacOSX/OSXAXTestingApps.html):
+
+* "Media Play/Pause"
+* "Media Next Track"
+* "Media Previous Track"
+* "Media Stop"
+
 ### `globalShortcut.registerAll(accelerators, callback)`
 
 * `accelerators` String[] - an array of [Accelerator](accelerator.md)s.
@@ -64,6 +72,14 @@ Registers a global shortcut of all `accelerator` items in `accelerators`. The `c
 When a given accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
+
+The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
+the app has been authorized as a [trusted accessibility client](https://developer.apple.com/library/archive/documentation/Accessibility/Conceptual/AccessibilityMacOSX/OSXAXTestingApps.html):
+
+* "Media Play/Pause"
+* "Media Next Track"
+* "Media Previous Track"
+* "Media Stop"
 
 ### `globalShortcut.isRegistered(accelerator)`
 

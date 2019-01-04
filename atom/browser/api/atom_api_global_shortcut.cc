@@ -7,14 +7,43 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_system_preferences.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "base/stl_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
 
+#if defined(OS_MACOSX)
+#include "base/mac/mac_util.h"
+#endif
+
 using extensions::GlobalShortcutListener;
+
+namespace {
+
+#if defined(OS_MACOSX)
+bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
+  if (base::mac::IsAtLeastOS10_14()) {
+    constexpr ui::KeyboardCode mediaKeys[] = {
+        ui::VKEY_MEDIA_PLAY_PAUSE, ui::VKEY_MEDIA_NEXT_TRACK,
+        ui::VKEY_MEDIA_PREV_TRACK, ui::VKEY_MEDIA_STOP};
+
+    if (std::find(std::begin(mediaKeys), std::end(mediaKeys),
+                  accelerator.key_code()) != std::end(mediaKeys)) {
+      bool trusted =
+          atom::api::SystemPreferences::IsTrustedAccessibilityClient(false);
+      if (!trusted)
+        return true;
+    }
+  }
+  return false;
+}
+#endif
+
+}  // namespace
 
 namespace atom {
 
@@ -32,7 +61,7 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   if (accelerator_callback_map_.find(accelerator) ==
       accelerator_callback_map_.end()) {
     // This should never occur, because if it does, GlobalGlobalShortcutListener
-    // notifes us with wrong accelerator.
+    // notifies us with wrong accelerator.
     NOTREACHED();
     return;
   }
@@ -43,14 +72,19 @@ bool GlobalShortcut::RegisterAll(
     const std::vector<ui::Accelerator>& accelerators,
     const base::Closure& callback) {
   std::vector<ui::Accelerator> registered;
+
   for (auto& accelerator : accelerators) {
+#if defined(OS_MACOSX)
+    if (RegisteringMediaKeyForUntrustedClient(accelerator))
+      return false;
+
     GlobalShortcutListener* listener = GlobalShortcutListener::GetInstance();
     if (!listener->RegisterAccelerator(accelerator, this)) {
       // unregister all shortcuts if any failed
       UnregisterSome(registered);
       return false;
     }
-
+#endif
     registered.push_back(accelerator);
     accelerator_callback_map_[accelerator] = callback;
   }
@@ -59,6 +93,11 @@ bool GlobalShortcut::RegisterAll(
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::Closure& callback) {
+#if defined(OS_MACOSX)
+  if (RegisteringMediaKeyForUntrustedClient(accelerator))
+    return false;
+#endif
+
   if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(accelerator,
                                                                   this)) {
     return false;
