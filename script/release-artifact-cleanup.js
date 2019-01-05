@@ -12,13 +12,12 @@ const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
 const { getCurrentBranch } = require('./lib/utils.js')
 
-const GitHub = require('github')
+const octokit = require('@octokit/rest')()
 const path = require('path')
 
-const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..')
 
-github.authenticate({
+octokit.authenticate({
   type: 'token',
   token: process.env.ELECTRON_GITHUB_TOKEN
 })
@@ -44,17 +43,17 @@ async function revertBumpCommit (tag) {
 
 async function deleteDraft (releaseId, targetRepo) {
   try {
-    const result = await github.repos.getRelease({
+    const result = await octokit.repos.getRelease({
       owner: 'electron',
       repo: targetRepo,
-      id: parseInt(releaseId, 10)
+      release_id: parseInt(releaseId, 10)
     })
     console.log(result)
     if (!result.data.draft) {
       console.log(`${fail} published releases cannot be deleted.`)
       return false
     } else {
-      await github.repos.deleteRelease({
+      await octokit.repos.deleteRelease({
         owner: 'electron',
         repo: targetRepo,
         release_id: result.data.id
@@ -70,7 +69,7 @@ async function deleteDraft (releaseId, targetRepo) {
 
 async function deleteTag (tag, targetRepo) {
   try {
-    await github.gitdata.deleteReference({
+    await octokit.git.deleteRef({
       owner: 'electron',
       repo: targetRepo,
       ref: tag

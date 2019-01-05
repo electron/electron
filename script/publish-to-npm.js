@@ -2,22 +2,19 @@ const temp = require('temp')
 const fs = require('fs')
 const path = require('path')
 const childProcess = require('child_process')
-const GitHubApi = require('github')
 const { getCurrentBranch } = require('./lib/utils.js')
 const request = require('request')
 const semver = require('semver')
 const rootPackageJson = require('../package.json')
+const octokit = require('@octokit/rest')({
+  headers: { 'User-Agent': 'electron-npm-publisher' },
+  followRedirects: false
+})
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP')
   process.exit(1)
 }
-
-const github = new GitHubApi({
-  // debug: true,
-  headers: { 'User-Agent': 'electron-npm-publisher' },
-  followRedirects: false
-})
 
 let tempDir
 temp.track() // track and cleanup files at exit
@@ -72,7 +69,7 @@ new Promise((resolve, reject) => {
       JSON.stringify(packageJson, null, 2)
     )
 
-    return github.repos.getReleases({
+    return octokit.repos.listReleases({
       owner: 'electron',
       repo: rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
     })
