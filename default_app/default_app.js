@@ -1,12 +1,16 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
+const { setDefaultApplicationMenu } = require('./menu')
+
 let mainWindow = null
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   app.quit()
 })
+
+setDefaultApplicationMenu()
 
 exports.load = async (appUrl) => {
   await app.whenReady()

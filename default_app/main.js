@@ -13,6 +13,7 @@ const argv = process.argv.slice(1)
 const option = {
   file: null,
   noHelp: Boolean(process.env.ELECTRON_NO_HELP),
+  vanilla: false,
   version: null,
   webdriver: null,
   modules: []
@@ -44,6 +45,9 @@ for (const arg of argv) {
   } else if (arg === '--no-help') {
     option.noHelp = true
     continue
+  } else if (arg === '--vanilla') {
+    option.vanilla = true
+    continue
   } else if (arg[0] === '-') {
     continue
   } else {
@@ -57,17 +61,19 @@ if (nextArgIsRequire) {
   process.exit(1)
 }
 
-// Quit when all windows are closed and no other one is listening to this.
-app.on('window-all-closed', () => {
-  if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
-    app.quit()
-  }
-})
+if (!option.vanilla) {
+  // Quit when all windows are closed and no other one is listening to this.
+  app.on('window-all-closed', () => {
+    if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
+      app.quit()
+    }
+  })
 
-// Create default menu.
-app.once('ready', () => {
-  setDefaultApplicationMenu()
-})
+  // Create default menu.
+  app.once('ready', () => {
+    setDefaultApplicationMenu()
+  })
+}
 
 // Set up preload modules
 if (option.modules.length > 0) {
@@ -188,7 +194,9 @@ Options:
   -i, --interactive     Open a REPL to the main process.
   -r, --require         Module to preload (option can be repeated).
   -v, --version         Print the version.
-  -a, --abi             Print the Node ABI version.`
+  -a, --abi             Print the Node ABI version.
+  --no-help             Don't print this usage documentation.
+  --vanilla             Don't change behavior (default menu, etc.) when running a packaged app.`
 
     console.log(welcomeMessage)
   }
