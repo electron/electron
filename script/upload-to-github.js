@@ -18,9 +18,9 @@ const fileName = process.argv[3]
 const releaseId = process.argv[4]
 const releaseVersion = process.argv[5]
 
-const getHeaders = (filepath, filename) => {
-  const extension = filename.split('.').pop()
-  const size = fs.statSync(filepath).size
+const getHeaders = (filePath, fileName) => {
+  const extension = fileName.split('.').pop()
+  const size = fs.statSync(filePath).size
   const options = {
     'json': 'text/json',
     'zip': 'application/zip',
