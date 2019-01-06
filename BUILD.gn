@@ -325,8 +325,6 @@ static_library("electron_lib") {
       "*_views.cc",
       "*_views.h",
       "*\bviews/*",
-      "*/autofill_popup.cc",
-      "*/autofill_popup.h",
     ]
   }
 
@@ -350,6 +348,10 @@ static_library("electron_lib") {
     deps += [
       "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
+    ]
+    sources += [
+      "atom/browser/ui/views/autofill_popup_view.cc",
+      "atom/browser/ui/views/autofill_popup_view.h",
     ]
     include_dirs += [
       # NOTE(nornagon): other chromium files use the full path to include

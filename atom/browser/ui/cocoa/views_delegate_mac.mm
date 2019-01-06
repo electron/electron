@@ -16,7 +16,18 @@ ViewsDelegateMac::~ViewsDelegateMac() {}
 void ViewsDelegateMac::OnBeforeWidgetInit(
     views::Widget::InitParams* params,
     views::internal::NativeWidgetDelegate* delegate) {
-  DCHECK(params->native_widget);
+  // If we already have a native_widget, we don't have to try to come
+  // up with one.
+  if (params->native_widget)
+    return;
+
+  if (!native_widget_factory().is_null()) {
+    params->native_widget = native_widget_factory().Run(*params, delegate);
+    if (params->native_widget)
+      return;
+  }
+
+  params->native_widget = nullptr;
 }
 
 ui::ContextFactory* ViewsDelegateMac::GetContextFactory() {
