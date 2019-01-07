@@ -30,7 +30,6 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
-#include "base/strings/string_util.h"
 #include "base/sys_info.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
@@ -48,7 +47,6 @@
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
-#include "services/network/public/cpp/network_switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
@@ -1389,25 +1387,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  if (base::EndsWith(switch_string, "-path",
-                     base::CompareCase::INSENSITIVE_ASCII) ||
-      switch_string == network::switches::kLogNetLog) {
-    base::FilePath path;
-    args->GetNext(&path);
-    command_line->AppendSwitchPath(switch_string, path);
-    return;
-  }
-
-  std::string value;
-  if (args->GetNext(&value))
-    command_line->AppendSwitchASCII(switch_string, value);
-  else
-    command_line->AppendSwitch(switch_string);
-}
-
 #if defined(OS_MACOSX)
 int DockBounce(const std::string& type) {
   int request_id = -1;
@@ -1428,14 +1407,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
   mate::Dictionary dict(isolate, exports);
   dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());
   dict.Set("app", atom::api::App::Create(isolate));
-  dict.SetMethod("appendSwitch", &AppendSwitch);
-  dict.SetMethod("appendArgument", base::Bind(&base::CommandLine::AppendArg,
-                                              base::Unretained(command_line)));
 #if defined(OS_MACOSX)
   auto browser = base::Unretained(Browser::Get());
   dict.SetMethod("dockBounce", &DockBounce);
