@@ -1,12 +1,9 @@
 if (!process.env.CI) require('dotenv-safe').load()
 
-const octokit = require('@octokit/rest')()
 const fs = require('fs')
 
-octokit.authenticate({
-  type: 'token',
-  token: process.env.ELECTRON_GITHUB_TOKEN
-})
+const octokit = require('@octokit/rest')()
+octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId')
@@ -65,7 +62,7 @@ function uploadToGitHub () {
           octokit.repos.deleteReleaseAsset({
             owner: 'electron',
             repo: targetRepo,
-            id: existingAssets[0].id
+            asset_id: existingAssets[0].id
           }).catch((deleteErr) => {
             console.log(`Failed to delete existing asset ${fileName}.  Error was:`, deleteErr)
           }).then(uploadToGitHub)

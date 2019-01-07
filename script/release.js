@@ -33,11 +33,16 @@ const targetRepo = pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
 let failureCount = 0
 
 async function getDraftRelease (version, skipValidation) {
-  const releaseInfo = await octokit.repos.listReleases({ owner: 'electron', repo: targetRepo })
+  const releaseInfo = await octokit.repos.listReleases({
+    owner: 'electron',
+    repo: targetRepo
+  })
+
   const versionToCheck = version || pkgVersion
-  const drafts = releaseInfo.data
-    .filter(release => release.tag_name === versionToCheck &&
-      release.draft === true)
+  const drafts = releaseInfo.data.filter(release => {
+    return release.tag_name === versionToCheck && release.draft === true
+  })
+
   const draft = drafts[0]
   if (!skipValidation) {
     failureCount = 0

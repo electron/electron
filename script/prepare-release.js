@@ -27,10 +27,7 @@ if (!bumpType && !args.notesOnly) {
 }
 
 const gitDir = path.resolve(__dirname, '..')
-octokit.authenticate({
-  type: 'token',
-  token: process.env.ELECTRON_GITHUB_TOKEN
-})
+octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 async function getNewVersion (dryRun) {
   if (!dryRun) {
