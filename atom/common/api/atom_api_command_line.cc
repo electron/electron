@@ -36,9 +36,9 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
     return;
   }
 
-  std::string value;
+  base::CommandLine::StringType value;
   if (args->GetNext(&value))
-    command_line->AppendSwitchASCII(switch_string, value);
+    command_line->AppendSwitchNative(switch_string, value);
   else
     command_line->AppendSwitch(switch_string);
 }

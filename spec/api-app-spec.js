@@ -1118,8 +1118,8 @@ describe('app module', () => {
 
   describe('commandLine.getSwitchValue', () => {
     it('returns the value when present', () => {
-      app.commandLine.appendSwitch('foobar', 'test')
-      expect(app.commandLine.getSwitchValue('foobar')).to.equal('test')
+      app.commandLine.appendSwitch('foobar', 'æøåü')
+      expect(app.commandLine.getSwitchValue('foobar')).to.equal('æøåü')
     })
 
     it('returns an empty string when present without value', () => {
