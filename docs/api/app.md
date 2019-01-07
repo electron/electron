@@ -1105,7 +1105,7 @@ This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
-### `app.showAboutPanel` _macOS_ _Linux_
+### `app.showAboutPanel()` _macOS_ _Linux_
 
 Show the app's about panel options. These options can be overridden with `app.setAboutPanelOptions(options)`.
 

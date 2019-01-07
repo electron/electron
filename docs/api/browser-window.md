@@ -1225,7 +1225,7 @@ that stores data of the snapshot. Omitting `rect` will capture the whole visible
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 
-* Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
+Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 

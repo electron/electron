@@ -430,15 +430,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-A [Cookies](cookies.md) object for this session.
+A [`Cookies`](cookies.md) object for this session.
 
 #### `ses.webRequest`
 
-A [WebRequest](web-request.md) object for this session.
+A [`WebRequest`](web-request.md) object for this session.
 
 #### `ses.protocol`
 
-A [Protocol](protocol.md) object for this session.
+A [`Protocol`](protocol.md) object for this session.
 
 ```javascript
 const { app, session } = require('electron')
@@ -457,7 +457,7 @@ app.on('ready', function () {
 
 #### `ses.netLog`
 
-A [NetLog](net-log.md) object for this session.
+A [`NetLog`](net-log.md) object for this session.
 
 ```javascript
 const { app, session } = require('electron')
