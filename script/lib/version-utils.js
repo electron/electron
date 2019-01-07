@@ -8,7 +8,7 @@ const { promisify } = require('util')
 const readFile = promisify(fs.readFile)
 const gitDir = path.resolve(__dirname, '..', '..')
 
-const preTypes = {
+const preType = {
   NONE: 'none',
   PARTIAL: 'partial',
   FULL: 'full'
@@ -29,11 +29,11 @@ const isStable = v => {
   return !!(parsed && parsed.prerelease.length === 0)
 }
 
-const makeVersion = (components, delim, preType = preTypes.NONE) => {
+const makeVersion = (components, delim, pre = preType.NONE) => {
   let version = [components.major, components.minor, components.patch].join(delim)
-  if (preType === preTypes.PARTIAL) {
+  if (pre === preType.PARTIAL) {
     version += `${delim}${components.pre[1]}`
-  } else if (preType === preTypes.FULL) {
+  } else if (pre === preType.FULL) {
     version += `-${components.pre[0]}${delim}${components.pre[1]}`
   }
   return version

@@ -12,7 +12,7 @@ const minimist = require('minimist')
 const writeFile = promisify(fs.writeFile)
 const readFile = promisify(fs.readFile)
 
-const preTypes = {
+const preType = {
   NONE: 'none',
   PARTIAL: 'partial',
   FULL: 'full'
@@ -170,8 +170,8 @@ async function updateWinRC (components) {
   const arr = data.split('\n')
   arr.forEach((line, idx) => {
     if (line.includes('FILEVERSION')) {
-      arr[idx] = ` FILEVERSION ${utils.makeVersion(components, ',', preTypes.PARTIAL)}`
-      arr[idx + 1] = ` PRODUCTVERSION ${utils.makeVersion(components, ',', preTypes.PARTIAL)}`
+      arr[idx] = ` FILEVERSION ${utils.makeVersion(components, ',', preType.PARTIAL)}`
+      arr[idx + 1] = ` PRODUCTVERSION ${utils.makeVersion(components, ',', preType.PARTIAL)}`
     } else if (line.includes('FileVersion')) {
       arr[idx] = `            VALUE "FileVersion", "${utils.makeVersion(components, '.')}"`
       arr[idx + 5] = `            VALUE "ProductVersion", "${utils.makeVersion(components, '.')}"`
