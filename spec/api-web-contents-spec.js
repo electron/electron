@@ -32,7 +32,9 @@ describe('webContents module', () => {
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
+        backgroundThrottling: false,
+        nodeIntegration: true,
+        webviewTag: true
       }
     })
   })

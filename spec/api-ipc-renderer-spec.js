@@ -199,7 +199,12 @@ describe('ipc renderer module', () => {
 
   describe('remote listeners', () => {
     it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       w.webContents.once('did-finish-load', () => {
         w.webContents.once('did-finish-load', () => {
@@ -227,7 +232,12 @@ describe('ipc renderer module', () => {
 
   describe('ipcRenderer.on', () => {
     it('is not used for internals', async () => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       await w.loadURL('about:blank')
 
       const script = `require('electron').ipcRenderer.eventNames()`

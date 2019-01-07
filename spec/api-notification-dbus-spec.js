@@ -11,7 +11,7 @@ const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
 const { remote } = require('electron')
-const { app } = remote.require('electron')
+const { app } = remote
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||

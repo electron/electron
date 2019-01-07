@@ -146,7 +146,12 @@ describe('webFrame module', function () {
   })
 
   it('calls a spellcheck provider', async () => {
-    w = new BrowserWindow({ show: false })
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: true
+      }
+    })
     await w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'))
     w.focus()
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true)

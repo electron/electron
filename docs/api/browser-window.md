@@ -250,8 +250,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `new-window-for-tab` event.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
-    * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
-      is `true`.
+    * `nodeIntegration` Boolean (optional) - Whether node integration is enabled.
+      Default is `false`.
     * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
@@ -353,7 +353,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       integration disabled. **Note:** This option is currently
       experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
-      Defaults to the value of the `nodeIntegration` option. **Note:** The
+      Defaults to `false`. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
       enabled when it is executed so you should ensure remote/untrusted content
       is not able to create a `<webview>` tag with a possibly malicious `preload`
@@ -1603,7 +1603,7 @@ removed in future Electron releases.
 
 * `browserView` [BrowserView](browser-view.md). Attach browserView to win.
 If there is some other browserViews was attached they will be removed from
-this window.  
+this window.
 
 #### `win.getBrowserView()` _Experimental_
 

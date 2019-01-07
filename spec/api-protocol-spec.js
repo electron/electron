@@ -1045,7 +1045,12 @@ describe('protocol module', () => {
     let success = null
 
     beforeEach(() => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       success = false
     })
 

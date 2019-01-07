@@ -34,7 +34,8 @@ describe('BrowserWindow module', () => {
     width: 400,
     height: 400,
     webPreferences: {
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      nodeIntegration: true
     }
   }
 
@@ -1283,7 +1284,10 @@ describe('BrowserWindow module', () => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
-          webPreferences: { preload }
+          webPreferences: {
+            nodeIntegration: true,
+            preload
+          }
         })
         const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
@@ -1296,7 +1300,8 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload
+            nodeIntegration: true,
+            preload
           }
         })
         const p = emittedOnce(ipcMain, 'answer')
@@ -1308,7 +1313,10 @@ describe('BrowserWindow module', () => {
         const preload = path.join(fixtures, 'module', 'access-blink-apis.js')
         const w = await openTheWindow({
           show: false,
-          webPreferences: { preload }
+          webPreferences: {
+            nodeIntegration: true,
+            preload
+          }
         })
         const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
@@ -1350,6 +1358,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
           }
         })
@@ -1368,7 +1377,8 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload,
+            nodeIntegration: true,
+            preload,
             additionalArguments: ['--my-magic-arg']
           }
         })
@@ -1385,7 +1395,8 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload,
+            nodeIntegration: true,
+            preload,
             additionalArguments: ['--my-magic-arg=foo']
           }
         })
@@ -1394,7 +1405,7 @@ describe('BrowserWindow module', () => {
     })
 
     describe('"node-integration" option', () => {
-      it('disables node integration when specified to false', (done) => {
+      it('disables node integration by default', (done) => {
         const preload = path.join(fixtures, 'module', 'send-later.js')
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
           assert.strictEqual(typeofProcess, 'undefined')
@@ -1405,8 +1416,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload,
-            nodeIntegration: false
+            preload
           }
         })
         w.loadFile(path.join(fixtures, 'api', 'blank.html'))
@@ -1422,7 +1432,6 @@ describe('BrowserWindow module', () => {
             const w = await openTheWindow({
               show: false,
               webPreferences: {
-                nodeIntegration: false,
                 preload,
                 sandbox
               }
@@ -1437,7 +1446,6 @@ describe('BrowserWindow module', () => {
             const w = await openTheWindow({
               show: false,
               webPreferences: {
-                nodeIntegration: false,
                 preload,
                 sandbox,
                 enableRemoteModule: false
@@ -1476,8 +1484,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             sandbox: true,
-            preload: preload
+            preload
           }
         })
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
@@ -1493,6 +1502,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             sandbox: true,
             preload: preloadSpecialChars
           }
@@ -1505,8 +1515,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             sandbox: true,
-            preload: preload
+            preload
           }
         })
         const htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
@@ -1527,8 +1538,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             sandbox: true,
-            preload: preload
+            preload
           }
         })
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
@@ -1653,7 +1665,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             sandbox: true,
-            preload: preload
+            preload
           }
         })
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
@@ -1738,7 +1750,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload,
+            preload,
             sandbox: true
           }
         })
@@ -1761,7 +1773,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload,
+            preload,
             sandbox: true
           }
         })
@@ -1794,7 +1806,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload,
+            preload,
             sandbox: true
           }
         })
@@ -1843,7 +1855,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             sandbox: true,
-            preload: preload
+            preload
           }
         })
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
@@ -1855,7 +1867,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             sandbox: true,
-            preload: preload,
+            preload,
             webviewTag: true
           }
         })
@@ -1875,6 +1887,7 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             nativeWindowOpen: true
           }
         })
@@ -1962,7 +1975,6 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: true,
           webPreferences: {
-            nodeIntegration: false,
             nativeWindowOpen: true
           }
         })
@@ -2093,7 +2105,14 @@ describe('BrowserWindow module', () => {
     afterEach(() => { ipcMain.removeAllListeners('pong') })
 
     it('visibilityState is initially visible despite window being hidden', (done) => {
-      w = new BrowserWindow({ show: false, width: 100, height: 100 })
+      w = new BrowserWindow({
+        show: false,
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       let readyToShow = false
       w.once('ready-to-show', () => {
@@ -2111,7 +2130,13 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
     it('visibilityState changes when window is hidden', (done) => {
-      w = new BrowserWindow({ width: 100, height: 100 })
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       onNextVisibilityChange((visibilityState, hidden) => {
         assert.strictEqual(visibilityState, 'visible')
@@ -2129,7 +2154,13 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
     it('visibilityState changes when window is shown', (done) => {
-      w = new BrowserWindow({ width: 100, height: 100 })
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       onNextVisibilityChange((visibilityState, hidden) => {
         onVisibilityChange((visibilityState, hidden) => {
@@ -2155,7 +2186,13 @@ describe('BrowserWindow module', () => {
         return done()
       }
 
-      w = new BrowserWindow({ width: 100, height: 100 })
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       onNextVisibilityChange((visibilityState, hidden) => {
         onVisibilityChange((visibilityState, hidden) => {
@@ -2181,7 +2218,13 @@ describe('BrowserWindow module', () => {
         return done()
       }
 
-      w = new BrowserWindow({ width: 100, height: 100 })
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       onNextVisibilityChange((visibilityState, hidden) => {
         assert.strictEqual(visibilityState, 'visible')
@@ -2204,7 +2247,8 @@ describe('BrowserWindow module', () => {
         width: 100,
         height: 100,
         webPreferences: {
-          backgroundThrottling: false
+          backgroundThrottling: false,
+          nodeIntegration: true
         }
       })
 
@@ -3189,6 +3233,7 @@ describe('BrowserWindow module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'temp'
         }
       })
