@@ -379,51 +379,103 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
-    it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', (done) => {
-      app.once('desktop-capturer-get-sources', (event, webContents) => {
-        expect(webContents).to.equal(w.webContents)
-        done()
-      })
+    it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
         }
       })
-      w.loadURL('about:blank')
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'desktop-capturer-get-sources')
       w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
+
+      const [, webContents] = await promise
+      expect(webContents).to.equal(w.webContents)
     })
 
-    it('should emit remote-require event when remote.require() is invoked', (done) => {
-      app.once('remote-require', (event, webContents, moduleName) => {
-        expect(webContents).to.equal(w.webContents)
-        expect(moduleName).to.equal('test')
-        done()
-      })
+    it('should emit remote-require event when remote.require() is invoked', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
         }
       })
-      w.loadURL('about:blank')
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-require')
       w.webContents.executeJavaScript(`require('electron').remote.require('test')`)
+
+      const [, webContents, moduleName] = await promise
+      expect(webContents).to.equal(w.webContents)
+      expect(moduleName).to.equal('test')
     })
 
-    it('should emit remote-get-global event when remote.getGlobal() is invoked', (done) => {
-      app.once('remote-get-global', (event, webContents, globalName) => {
-        expect(webContents).to.equal(w.webContents)
-        expect(globalName).to.equal('test')
-        done()
-      })
+    it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
         }
       })
-      w.loadURL('about:blank')
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-global')
       w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`)
+
+      const [, webContents, globalName] = await promise
+      expect(webContents).to.equal(w.webContents)
+      expect(globalName).to.equal('test')
+    })
+
+    it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-builtin')
+      w.webContents.executeJavaScript(`require('electron').remote.app`)
+
+      const [, webContents, moduleName] = await promise
+      expect(webContents).to.equal(w.webContents)
+      expect(moduleName).to.equal('app')
+    })
+
+    it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-current-window')
+      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWindow()`)
+
+      const [, webContents] = await promise
+      expect(webContents).to.equal(w.webContents)
+    })
+
+    it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-current-web-contents')
+      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWebContents()`)
+
+      const [, webContents] = await promise
+      expect(webContents).to.equal(w.webContents)
     })
   })
 
