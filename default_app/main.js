@@ -7,8 +7,6 @@ const Module = require('module')
 const path = require('path')
 const url = require('url')
 
-const { setDefaultApplicationMenu } = require('./menu')
-
 // Parse command line options.
 const argv = process.argv.slice(1)
 
@@ -58,18 +56,6 @@ if (nextArgIsRequire) {
   console.error('Invalid Usage: --require [file]\n\n"file" is required')
   process.exit(1)
 }
-
-// Quit when all windows are closed and no other one is listening to this.
-app.on('window-all-closed', () => {
-  if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
-    app.quit()
-  }
-})
-
-// Create default menu.
-app.once('ready', () => {
-  setDefaultApplicationMenu()
-})
 
 // Set up preload modules
 if (option.modules.length > 0) {
@@ -141,6 +127,9 @@ function startRepl () {
     console.error('Electron REPL not currently supported on Windows')
     process.exit(1)
   }
+
+  // prevent quitting
+  app.on('window-all-closed', () => {})
 
   const repl = require('repl')
   repl.start('> ').on('exit', () => {

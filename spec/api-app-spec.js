@@ -1179,12 +1179,12 @@ describe('app module', () => {
 
   describe('commandLine.hasSwitch (existing argv)', () => {
     it('returns true when present', async () => {
-      const { hasSwitch } = await runCommandLineTestApp('--foobar')
+      const { hasSwitch } = await runTestApp('command-line', '--foobar')
       expect(hasSwitch).to.be.true()
     })
 
     it('returns false when not present', async () => {
-      const { hasSwitch } = await runCommandLineTestApp()
+      const { hasSwitch } = await runTestApp('command-line')
       expect(hasSwitch).to.be.false()
     })
   })
@@ -1207,31 +1207,62 @@ describe('app module', () => {
 
   describe('commandLine.getSwitchValue (existing argv)', () => {
     it('returns the value when present', async () => {
-      const { getSwitchValue } = await runCommandLineTestApp('--foobar=test')
+      const { getSwitchValue } = await runTestApp('command-line', '--foobar=test')
       expect(getSwitchValue).to.equal('test')
     })
 
     it('returns an empty string when present without value', async () => {
-      const { getSwitchValue } = await runCommandLineTestApp('--foobar')
+      const { getSwitchValue } = await runTestApp('command-line', '--foobar')
       expect(getSwitchValue).to.equal('')
     })
 
     it('returns an empty string when not present', async () => {
-      const { getSwitchValue } = await runCommandLineTestApp()
+      const { getSwitchValue } = await runTestApp('command-line')
       expect(getSwitchValue).to.equal('')
     })
   })
-
-  async function runCommandLineTestApp (...args) {
-    const appPath = path.join(__dirname, 'fixtures', 'api', 'command-line')
-    const electronPath = remote.getGlobal('process').execPath
-    const appProcess = cp.spawn(electronPath, [appPath, ...args])
-
-    let output = ''
-    appProcess.stdout.on('data', (data) => { output += data })
-
-    await emittedOnce(appProcess.stdout, 'end')
-
-    return JSON.parse(output)
-  }
 })
+
+describe('default behavior', () => {
+  describe('application menu', () => {
+    it('creates the default menu if the app does not set it', async () => {
+      const result = await runTestApp('default-menu')
+      expect(result).to.equal(false)
+    })
+
+    it('does not create the default menu if the app sets a custom menu', async () => {
+      const result = await runTestApp('default-menu', '--custom-menu')
+      expect(result).to.equal(true)
+    })
+
+    it('does not create the default menu if the app sets a null menu', async () => {
+      const result = await runTestApp('default-menu', '--null-menu')
+      expect(result).to.equal(true)
+    })
+  })
+
+  describe('window-all-closed', () => {
+    it('quits when the app does not handle the event', async () => {
+      const result = await runTestApp('window-all-closed')
+      expect(result).to.equal(false)
+    })
+
+    it('does not quit when the app handles the event', async () => {
+      const result = await runTestApp('window-all-closed', '--handle-event')
+      expect(result).to.equal(true)
+    })
+  })
+})
+
+async function runTestApp (name, ...args) {
+  const appPath = path.join(__dirname, 'fixtures', 'api', name)
+  const electronPath = remote.getGlobal('process').execPath
+  const appProcess = cp.spawn(electronPath, [appPath, ...args])
+
+  let output = ''
+  appProcess.stdout.on('data', (data) => { output += data })
+
+  await emittedOnce(appProcess.stdout, 'end')
+
+  return JSON.parse(output)
+}
