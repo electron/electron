@@ -163,7 +163,9 @@ function checkVersion () {
 
 function runScript (scriptName, scriptArgs, cwd) {
   const scriptCommand = `${scriptName} ${scriptArgs.join(' ')}`
-  const scriptOptions = { encoding: 'UTF-8' }
+  const scriptOptions = {
+    encoding: 'UTF-8'
+  }
   if (cwd) scriptOptions.cwd = cwd
   try {
     return execSync(scriptCommand, scriptOptions)
