@@ -52,7 +52,7 @@ async function nextNightly (v) {
   let next = semver.valid(semver.coerce(v))
   const pre = `nightly.${getCurrentDate()}`
 
-  const branch = await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)
+  const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)).stdout.trim()
   if (branch === 'master') {
     next = semver.inc(await getLastMajorForMaster(), 'major')
   } else if (isStable(v)) {
