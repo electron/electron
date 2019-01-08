@@ -120,7 +120,7 @@ new Promise((resolve, reject) => {
         npmTag = `nightly-${currentBranch}`
       }
 
-      const currentJson = JSON.stringify(fs.readFileSync(path.join(tempDir, 'package.json'), 'utf8'))
+      const currentJson = JSON.parse(fs.readFileSync(path.join(tempDir, 'package.json'), 'utf8'))
       currentJson.name = 'electron-nightly'
       rootPackageJson.name = 'electron-nightly'
 

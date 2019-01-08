@@ -41,7 +41,7 @@
   "scripts": {
     "asar": "asar",
     "browserify": "browserify",
-    "bump-version": "./script/bump-version.py",
+    "bump-version": "./script/bump-version.js",
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
