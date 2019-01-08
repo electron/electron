@@ -306,6 +306,64 @@ describe('MenuItems', () => {
     })
   })
 
+  describe('MenuItem appMenu', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('includes a default submenu layout when submenu is empty', () => {
+      const item = new MenuItem({ role: 'appMenu' })
+
+      expect(item.label).to.equal(app.getName())
+      expect(item.submenu.items[0].role).to.equal('about')
+      expect(item.submenu.items[1].type).to.equal('separator')
+      expect(item.submenu.items[2].role).to.equal('services')
+      expect(item.submenu.items[3].type).to.equal('separator')
+      expect(item.submenu.items[4].role).to.equal('hide')
+      expect(item.submenu.items[5].role).to.equal('hideothers')
+      expect(item.submenu.items[6].role).to.equal('unhide')
+      expect(item.submenu.items[7].type).to.equal('separator')
+      expect(item.submenu.items[8].role).to.equal('quit')
+    })
+
+    it('overrides default layout when submenu is specified', () => {
+      const item = new MenuItem({
+        role: 'appMenu',
+        submenu: [{
+          role: 'close'
+        }]
+      })
+      expect(item.label).to.equal(app.getName())
+      expect(item.submenu.items[0].role).to.equal('close')
+    })
+  })
+
+  describe('MenuItem fileMenu', () => {
+    it('includes a default submenu layout when submenu is empty', () => {
+      const item = new MenuItem({ role: 'fileMenu' })
+
+      expect(item.label).to.equal('File')
+      if (process.platform === 'darwin') {
+        expect(item.submenu.items[0].role).to.equal('close')
+      } else {
+        expect(item.submenu.items[0].role).to.equal('quit')
+      }
+    })
+
+    it('overrides default layout when submenu is specified', () => {
+      const item = new MenuItem({
+        role: 'fileMenu',
+        submenu: [{
+          role: 'about'
+        }]
+      })
+      expect(item.label).to.equal('File')
+      expect(item.submenu.items[0].role).to.equal('about')
+    })
+  })
+
   describe('MenuItem editMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'editMenu' })
@@ -322,9 +380,11 @@ describe('MenuItems', () => {
         expect(item.submenu.items[6].role).to.equal('pasteandmatchstyle')
         expect(item.submenu.items[7].role).to.equal('delete')
         expect(item.submenu.items[8].role).to.equal('selectall')
-      }
-
-      if (process.platform === 'win32') {
+        expect(item.submenu.items[9].type).to.equal('separator')
+        expect(item.submenu.items[10].label).to.equal('Speech')
+        expect(item.submenu.items[10].submenu.items[0].role).to.equal('startspeaking')
+        expect(item.submenu.items[10].submenu.items[1].role).to.equal('stopspeaking')
+      } else {
         expect(item.submenu.items[6].role).to.equal('delete')
         expect(item.submenu.items[7].type).to.equal('separator')
         expect(item.submenu.items[8].role).to.equal('selectall')
@@ -343,6 +403,34 @@ describe('MenuItems', () => {
     })
   })
 
+  describe('MenuItem viewMenu', () => {
+    it('includes a default submenu layout when submenu is empty', () => {
+      const item = new MenuItem({ role: 'viewMenu' })
+
+      expect(item.label).to.equal('View')
+      expect(item.submenu.items[0].role).to.equal('reload')
+      expect(item.submenu.items[1].role).to.equal('forcereload')
+      expect(item.submenu.items[2].role).to.equal('toggledevtools')
+      expect(item.submenu.items[3].type).to.equal('separator')
+      expect(item.submenu.items[4].role).to.equal('resetzoom')
+      expect(item.submenu.items[5].role).to.equal('zoomin')
+      expect(item.submenu.items[6].role).to.equal('zoomout')
+      expect(item.submenu.items[7].type).to.equal('separator')
+      expect(item.submenu.items[8].role).to.equal('togglefullscreen')
+    })
+
+    it('overrides default layout when submenu is specified', () => {
+      const item = new MenuItem({
+        role: 'viewMenu',
+        submenu: [{
+          role: 'close'
+        }]
+      })
+      expect(item.label).to.equal('View')
+      expect(item.submenu.items[0].role).to.equal('close')
+    })
+  })
+
   describe('MenuItem windowMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'windowMenu' })
@@ -354,9 +442,10 @@ describe('MenuItems', () => {
       if (process.platform === 'darwin') {
         expect(item.submenu.items[2].type).to.equal('separator')
         expect(item.submenu.items[3].role).to.equal('front')
-
         expect(item.submenu.items[4].type).to.equal('separator')
         expect(item.submenu.items[5].role).to.equal('window')
+      } else {
+        expect(item.submenu.items[2].role).to.equal('close')
       }
     })
 

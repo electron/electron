@@ -82,11 +82,14 @@ The `role` property can have following values:
 * `resetZoom` - Reset the focused page's zoom level to the original size.
 * `zoomIn` - Zoom in the focused page by 10%.
 * `zoomOut` - Zoom out the focused page by 10%.
+* `fileMenu` - Whole default "File" menu (Close / Quit)
 * `editMenu` - Whole default "Edit" menu (Undo, Copy, etc.).
+* `viewMenu` - Whole default "View" menu (Reload, Toggle Developer Tools, etc.)
 * `windowMenu` - Whole default "Window" menu (Minimize, Close, etc.).
 
 The following additional roles are available on _macOS_:
 
+* `appMenu` - Whole default "App" menu (About, Services, etc.)
 * `about` - Map to the `orderFrontStandardAboutPanel` action.
 * `hide` - Map to the `hide` action.
 * `hideOthers` - Map to the `hideOtherApplications` action.
