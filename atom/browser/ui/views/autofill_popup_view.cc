@@ -56,10 +56,7 @@ AutofillPopupView::~AutofillPopupView() {
 }
 
 void AutofillPopupView::Show() {
-  if (!popup_)
-    return;
-
-  if (!parent_widget_->IsVisible() || parent_widget_->IsClosed())
+  if (!popup_ || !parent_widget_->IsVisible() || parent_widget_->IsClosed())
     return;
 
   const bool initialize_widget = !GetWidget();
