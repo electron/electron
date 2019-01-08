@@ -59,16 +59,12 @@ void AutofillPopupView::Show() {
   if (!popup_)
     return;
 
+  if (!parent_widget_->IsVisible() || parent_widget_->IsClosed())
+    return;
+
   const bool initialize_widget = !GetWidget();
   if (initialize_widget) {
     parent_widget_->AddObserver(this);
-    views::FocusManager* focus_manager = parent_widget_->GetFocusManager();
-    focus_manager->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority, this);
-    focus_manager->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority, this);
 
     // The widget is destroyed by the corresponding NativeWidget, so we use
     // a weak pointer to hold the reference and don't have to worry about
@@ -487,7 +483,6 @@ void AutofillPopupView::ClearSelection() {
 }
 
 void AutofillPopupView::RemoveObserver() {
-  parent_widget_->GetFocusManager()->UnregisterAccelerators(this);
   parent_widget_->RemoveObserver(this);
   views::WidgetFocusManager::GetInstance()->RemoveFocusChangeListener(this);
 }

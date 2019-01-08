@@ -629,7 +629,6 @@ void CommonWebContentsDelegate::ShowAutofillPopup(
   if (!owner_window())
     return;
 
-  // auto* window = static_cast<NativeWindow*>(owner_window());
   autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
                               owner_window()->content_view(), bounds);
   autofill_popup_->SetItems(values, labels);
