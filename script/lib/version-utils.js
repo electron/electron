@@ -77,5 +77,6 @@ module.exports = {
   nextBeta,
   makeVersion,
   getElectronVersion,
-  nextNightly
+  nextNightly,
+  preType
 }
