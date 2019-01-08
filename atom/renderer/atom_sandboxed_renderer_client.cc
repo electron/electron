@@ -110,8 +110,10 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
 
     auto* isolate = blink::MainThreadIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto context = frame->MainWorldScriptContext();
+
+    auto context = renderer_client_->GetContext(frame, isolate);
     v8::Context::Scope context_scope(context);
+
     v8::Local<v8::Value> argv[] = {mate::ConvertToV8(isolate, channel),
                                    mate::ConvertToV8(isolate, args),
                                    mate::ConvertToV8(isolate, sender_id)};
