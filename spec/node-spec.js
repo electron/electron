@@ -158,10 +158,15 @@ describe('node feature', () => {
         const listeners = process.listeners('uncaughtException')
         process.removeAllListeners('uncaughtException')
         process.on('uncaughtException', (thrown) => {
-          expect(thrown).to.equal(error)
-          process.removeAllListeners('uncaughtException')
-          listeners.forEach((listener) => process.on('uncaughtException', listener))
-          done()
+          try {
+            expect(thrown).to.equal(error)
+            done()
+          } catch (e) {
+            done(e)
+          } finally {
+            process.removeAllListeners('uncaughtException')
+            listeners.forEach((listener) => process.on('uncaughtException', listener))
+          }
         })
         fs.readFile(__filename, () => {
           throw error
