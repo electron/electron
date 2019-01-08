@@ -36,7 +36,7 @@ Electron is used together with the installation and update framework Squirrel,
 [shortcuts will automatically be set correctly][squirrel-events]. Furthermore,
 Electron will detect that Squirrel was used and will automatically call
 `app.setAppUserModelId()` with the correct value. During development, you may have
-to call [`app.setAppUserModelId()`][[set-app-user-model-id]] yourself.
+to call [`app.setAppUserModelId()`][set-app-user-model-id] yourself.
 
 Furthermore, in Windows 8, the maximum length for the notification body is 250
 characters, with the Windows team recommending that notifications should be kept
