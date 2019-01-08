@@ -2,7 +2,7 @@
 
 import argparse
 import errno
-import sys
+import json
 import os
 
 from lib.config import PLATFORM, get_target_arch
@@ -11,46 +11,55 @@ from lib.util import add_exec_bit, download, extract_zip, rm_rf, \
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
+
 def parse_args():
   parser = argparse.ArgumentParser(
       description='Download binaries for Electron build')
 
-  parser.add_argument('-u', '--root-url', required=True,
-                      help="Root URL for all downloads.")
-  parser.add_argument('-v', '--version', required=True,
-                      help="Version string, e.g. 'v1.0.0'.")
+  parser.add_argument('--base-url', required=False,
+                      help="Base URL for all downloads")
 
   return parser.parse_args()
 
+
+def parse_config():
+  config_path = os.path.join(SOURCE_ROOT, 'script', 'external-binaries.json')
+  with open(config_path, 'r') as config_file:
+    config = json.load(config_file)
+    return config
+
+
 def main():
   args = parse_args()
-  url_prefix = "{root_url}/{version}".format(**vars(args))
+  config = parse_config()
 
-  os.chdir(SOURCE_ROOT)
-  version_file = os.path.join(SOURCE_ROOT, 'external_binaries', '.version')
+  base_url = args.base_url if args.base_url is not None else config['baseUrl']
+  version = config['version']
+  output_dir = os.path.join(SOURCE_ROOT, 'external_binaries')
+  version_file = os.path.join(output_dir, '.version')
 
-  if (is_updated(version_file, args.version)):
+  if (is_updated(version_file, version)):
     return
 
-  rm_rf('external_binaries')
-  safe_mkdir('external_binaries')
+  rm_rf(output_dir)
+  safe_mkdir(output_dir)
 
-  if sys.platform == 'darwin':
-    download_and_unzip(url_prefix, 'Mantle')
-    download_and_unzip(url_prefix, 'ReactiveCocoa')
-    download_and_unzip(url_prefix, 'Squirrel')
-  elif sys.platform in ['cygwin', 'win32']:
-    download_and_unzip(url_prefix, 'directxsdk-' + get_target_arch())
+  for binary in config['binaries']:
+    if not binary_should_be_downloaded(binary):
+      continue
 
-  # get sccache & set exec bit. https://bugs.python.org/issue15795
-  download_and_unzip(url_prefix, 'sccache-{0}-x64'.format(PLATFORM))
-  appname = 'sccache'
-  if sys.platform == 'win32':
-    appname += '.exe'
-  add_exec_bit(os.path.join('external_binaries', appname))
+    temp_path = download_binary(base_url, version, binary['url'])
+
+    # We assume that all binaries are in zip archives.
+    extract_zip(temp_path, output_dir)
+
+    # Hack alert. Set exec bit for sccache binaries.
+    # https://bugs.python.org/issue15795
+    if 'sccache' in binary['url']:
+      add_exec_bit_to_sccache_binary(output_dir)
 
   with open(version_file, 'w') as f:
-    f.write(args.version)
+    f.write(version)
 
 
 def is_updated(version_file, version):
@@ -64,21 +73,37 @@ def is_updated(version_file, version):
   return existing_version == version
 
 
-def download_and_unzip(url_prefix, framework):
-  zip_path = download_framework(url_prefix, framework)
-  if zip_path:
-    extract_zip(zip_path, 'external_binaries')
+def binary_should_be_downloaded(binary):
+  if 'platform' in binary and binary['platform'] != PLATFORM:
+    return False
+
+  if 'targetArch' in binary and binary['targetArch'] != get_target_arch():
+    return False
+
+  return True
 
 
-def download_framework(url_prefix, framework):
-  filename = framework + '.zip'
-  url = url_prefix + '/' + filename
+def download_binary(base_url, version, binary_url):
+  full_url = '{0}/{1}/{2}'.format(base_url, version, binary_url)
+  temp_path = download_to_temp_dir(full_url, filename=binary_url)
+  return temp_path
+
+
+def download_to_temp_dir(url, filename):
   download_dir = tempdir(prefix='electron-')
-  path = os.path.join(download_dir, filename)
+  file_path = os.path.join(download_dir, filename)
+  download(text='Download ' + filename, url=url, path=file_path)
+  return file_path
 
-  download('Download ' + framework, url, path)
-  return path
+
+def add_exec_bit_to_sccache_binary(binary_dir):
+  binary_name = 'sccache'
+  if PLATFORM == 'win32':
+    binary_name += '.exe'
+
+  binary_path = os.path.join(binary_dir, binary_name)
+  add_exec_bit(binary_path)
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+  main()
