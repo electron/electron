@@ -5,7 +5,7 @@ const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
 })
 const ciReleaseBuild = require('./ci-release-build')
-const GitHub = require('github')
+const octokit = require('@octokit/rest')()
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
 
@@ -20,18 +20,14 @@ require('colors')
 const pass = '\u2713'.green
 const fail = '\u2717'.red
 
-// TODO (future) automatically determine version based on conventional commits
-// via conventional-recommended-bump
-
 if (!bumpType && !args.notesOnly) {
   console.log(`Usage: prepare-release [stable | beta | nightly]` +
      ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
   process.exit(1)
 }
 
-const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..')
-github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
+octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 async function getNewVersion (dryRun) {
   if (!dryRun) {
@@ -70,15 +66,15 @@ async function createRelease (branchToTarget, isBeta) {
   const releaseNotes = await getReleaseNotes(branchToTarget)
   const newVersion = await getNewVersion()
   await tagRelease(newVersion)
-  const githubOpts = {
+
+  console.log(`Checking for existing draft release.`)
+  const releases = await octokit.repos.listReleases({
     owner: 'electron',
     repo: targetRepo
-  }
-  console.log(`Checking for existing draft release.`)
-  const releases = await github.repos.getReleases(githubOpts)
-    .catch(err => {
-      console.log(`${fail} Could not get releases. Error was: `, err)
-    })
+  }).catch(err => {
+    console.log(`${fail} Could not get releases. Error was: `, err)
+  })
+
   const drafts = releases.data.filter(release => release.draft &&
     release.tag_name === newVersion)
   if (drafts.length > 0) {
@@ -87,32 +83,40 @@ async function createRelease (branchToTarget, isBeta) {
     process.exit(1)
   }
   console.log(`${pass} A draft release does not exist; creating one.`)
-  githubOpts.draft = true
-  githubOpts.name = `electron ${newVersion}`
+
+  let releaseBody
+  let releaseIsPrelease = false
   if (isBeta) {
     if (newVersion.indexOf('nightly') > 0) {
-      githubOpts.body = `Note: This is a nightly release.  Please file new issues ` +
+      releaseBody = `Note: This is a nightly release.  Please file new issues ` +
         `for any bugs you find in it.\n \n This release is published to npm ` +
         `under the nightly tag and can be installed via npm install electron@nightly, ` +
         `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes.text}`
     } else {
-      githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
+      releaseBody = `Note: This is a beta release.  Please file new issues ` +
         `for any bugs you find in it.\n \n This release is published to npm ` +
         `under the beta tag and can be installed via npm install electron@beta, ` +
         `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes.text}`
     }
-    githubOpts.name = `${githubOpts.name}`
-    githubOpts.prerelease = true
+    releaseIsPrelease = true
   } else {
-    githubOpts.body = releaseNotes
+    releaseBody = releaseNotes
   }
-  githubOpts.tag_name = newVersion
-  githubOpts.target_commitish = newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
-  const release = await github.repos.createRelease(githubOpts)
-    .catch(err => {
-      console.log(`${fail} Error creating new release: `, err)
-      process.exit(1)
-    })
+
+  const release = await octokit.repos.createRelease({
+    owner: 'electron',
+    repo: targetRepo,
+    tag_name: newVersion,
+    draft: true,
+    name: `electron ${newVersion}`,
+    body: releaseBody,
+    prerelease: releaseIsPrelease,
+    target_commitish: newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
+  }).catch(err => {
+    console.log(`${fail} Error creating new release: `, err)
+    process.exit(1)
+  })
+
   console.log(`Release has been created with id: ${release.data.id}.`)
   console.log(`${pass} Draft release for ${newVersion} successful.`)
 }
@@ -123,8 +127,7 @@ async function pushRelease (branch) {
     console.log(`${pass} Successfully pushed the release.  Wait for ` +
       `release builds to finish before running "npm run release".`)
   } else {
-    console.log(`${fail} Error pushing the release: ` +
-        `${pushDetails.stderr}`)
+    console.log(`${fail} Error pushing the release: ${pushDetails.stderr}`)
     process.exit(1)
   }
 }
