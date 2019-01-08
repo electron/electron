@@ -56,7 +56,7 @@ async function getNewVersion (dryRun) {
 
 async function getReleaseNotes (currentBranch) {
   if (bumpType === 'nightly') {
-    return 'Nightlies do not get release notes, please compare tags for info'
+    return { text: 'Nightlies do not get release notes, please compare tags for info.' }
   }
   console.log(`Generating release notes for ${currentBranch}.`)
   const releaseNotes = await releaseNotesGenerator(currentBranch)
