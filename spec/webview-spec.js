@@ -1197,6 +1197,24 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('<webview>.getWebContents filtering', () => {
+    it('can return custom value', async () => {
+      const src = 'about:blank'
+      await loadWebView(webview, { src })
+
+      ipcRenderer.send('handle-next-remote-get-guest-web-contents', 'Hello World!')
+      expect(webview.getWebContents()).to.be.equal('Hello World!')
+    })
+
+    it('throws when no returnValue set', async () => {
+      const src = 'about:blank'
+      await loadWebView(webview, { src })
+
+      ipcRenderer.send('handle-next-remote-get-guest-web-contents')
+      expect(() => webview.getWebContents()).to.throw('Blocked remote.getGuestForWebContents()')
+    })
+  })
+
   // FIXME(deepak1556): Ch69 follow up.
   xdescribe('document.visibilityState/hidden', () => {
     afterEach(() => {

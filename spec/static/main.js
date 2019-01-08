@@ -242,23 +242,37 @@ app.on('ready', function () {
   })
 })
 
-ipcMain.on('handle-next-remote-require', function (event, modulesMap = {}) {
-  event.sender.once('remote-require', (event, moduleName) => {
-    event.preventDefault()
-    if (modulesMap.hasOwnProperty(moduleName)) {
-      event.returnValue = modulesMap[moduleName]
-    }
+for (const eventName of [
+  'remote-require',
+  'remote-get-global',
+  'remote-get-builtin'
+]) {
+  ipcMain.on(`handle-next-${eventName}`, function (event, valuesMap = {}) {
+    event.sender.once(eventName, (event, name) => {
+      if (valuesMap.hasOwnProperty(name)) {
+        event.returnValue = valuesMap[name]
+      } else {
+        event.preventDefault()
+      }
+    })
   })
-})
+}
 
-ipcMain.on('handle-next-remote-get-global', function (event, globalsMap = {}) {
-  event.sender.once('remote-get-global', (event, globalName) => {
-    event.preventDefault()
-    if (globalsMap.hasOwnProperty(globalName)) {
-      event.returnValue = globalsMap[globalName]
-    }
+for (const eventName of [
+  'remote-get-current-window',
+  'remote-get-current-web-contents',
+  'remote-get-guest-web-contents'
+]) {
+  ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {
+    event.sender.once(eventName, (event) => {
+      if (returnValue) {
+        event.returnValue = returnValue
+      } else {
+        event.preventDefault()
+      }
+    })
   })
-})
+}
 
 ipcMain.on('set-client-certificate-option', function (event, skip) {
   app.once('select-client-certificate', function (event, webContents, url, list, callback) {
