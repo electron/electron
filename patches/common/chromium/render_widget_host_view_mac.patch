@@ -5,10 +5,10 @@ Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_cocoa.mm b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-index ee6cde8137b105e0951098b1aba0196398e935d3..5b0a6dd36810fae8ca2e055bafe736cb964b9cef 100644
+index 040b482030aa4dcc91fb4ed0b97ef51acb78cfa5..36f35ae5eba37a24951540057069e32ac88d2980 100644
 --- a/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-@@ -106,6 +106,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -142,6 +142,11 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -20,7 +20,7 @@ index ee6cde8137b105e0951098b1aba0196398e935d3..5b0a6dd36810fae8ca2e055bafe736cb
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -284,6 +289,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -401,6 +406,9 @@ void ExtractUnderlines(NSAttributedString* string,
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -30,7 +30,7 @@ index ee6cde8137b105e0951098b1aba0196398e935d3..5b0a6dd36810fae8ca2e055bafe736cb
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -647,6 +655,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -763,6 +771,10 @@ void ExtractUnderlines(NSAttributedString* string,
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -41,7 +41,7 @@ index ee6cde8137b105e0951098b1aba0196398e935d3..5b0a6dd36810fae8ca2e055bafe736cb
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
      clientHelper_->ForwardKeyboardEvent(event, latency_info);
-@@ -1419,9 +1431,11 @@ - (id)accessibilityFocusedUIElement {
+@@ -1503,9 +1515,11 @@ void ExtractUnderlines(NSAttributedString* string,
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -53,7 +53,7 @@ index ee6cde8137b105e0951098b1aba0196398e935d3..5b0a6dd36810fae8ca2e055bafe736cb
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1430,7 +1444,10 @@ - (NSArray*)validAttributesForMarkedText {
+@@ -1514,7 +1528,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,
@@ -66,10 +66,10 @@ index ee6cde8137b105e0951098b1aba0196398e935d3..5b0a6dd36810fae8ca2e055bafe736cb
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 94d6e79377d354bc8c3041d4e9ffa21a29caea0c..38574877ab366c45a86e635adb4f39bcb7e05acb 100644
+index 86e898d4591d3fd8af325f7f204d0f19b019238e..9103cb06553d86fb8fe4c22c05ad88925e09891d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -55,6 +55,7 @@
+@@ -61,6 +61,7 @@
  #include "ui/events/keycodes/dom/dom_keyboard_layout_map.h"
  #include "ui/gfx/geometry/dip_util.h"
  #include "ui/gfx/mac/coordinate_conversion.h"

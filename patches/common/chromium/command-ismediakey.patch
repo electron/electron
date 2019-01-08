@@ -18,7 +18,7 @@ diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/
 index f612ba2fb7952654663cbce596c43b0b65d5ea29..77c2c68e6f9bfec3fc887e2119243cee1321cd17 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
 +++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-@@ -20,6 +20,26 @@
+@@ -20,6 +20,26 @@ using extensions::GlobalShortcutListenerMac;
  
  namespace extensions {
  
@@ -92,7 +92,7 @@ diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerat
 index cd595b0c017d6e36a5d94f7c99fe0a098a52b067..941c1a76a1c3ebe542aebcc9dc301d19bab47057 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -30,6 +30,12 @@
+@@ -30,6 +30,12 @@ ui::KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return ui::VKEY_MEDIA_NEXT_TRACK;
@@ -105,7 +105,7 @@ index cd595b0c017d6e36a5d94f7c99fe0a098a52b067..941c1a76a1c3ebe542aebcc9dc301d19
    }
    return ui::VKEY_UNKNOWN;
  }
-@@ -180,7 +186,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -180,7 +186,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

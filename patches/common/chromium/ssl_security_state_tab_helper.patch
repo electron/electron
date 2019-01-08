@@ -6,10 +6,10 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5a5d531f4 100644
+index 1da4480f5a154920e38754d02e197835f82a94c3..f3b2885793a8f3ba46da9914b97f70fff77fb858 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
-@@ -13,17 +13,23 @@
+@@ -13,16 +13,20 @@
  #include "base/strings/string_util.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
@@ -22,18 +22,15 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
  #include "chrome/common/chrome_switches.h"
  #include "chrome/common/pref_names.h"
  #include "chrome/common/secure_origin_whitelist.h"
+ #include "components/omnibox/browser/omnibox_field_trial.h"
  #include "components/prefs/pref_service.h"
 +#if 0
  #include "components/safe_browsing/features.h"
 +#endif
  #include "components/security_state/content/content_utils.h"
-+#if 0
- #include "components/toolbar/toolbar_field_trial.h"
-+#endif
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/navigation_entry.h"
- #include "content/public/browser/navigation_handle.h"
-@@ -43,7 +49,7 @@
+@@ -43,7 +47,7 @@
  #include "chrome/browser/chromeos/policy/policy_cert_service_factory.h"
  #endif  // defined(OS_CHROMEOS)
  
@@ -42,7 +39,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
  #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
  #endif
  
-@@ -79,7 +85,9 @@ bool IsOriginSecureWithWhitelist(
+@@ -79,7 +83,9 @@ bool IsOriginSecureWithWhitelist(
  
  }  // namespace
  
@@ -52,7 +49,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -87,8 +95,11 @@ SecurityStateTabHelper::SecurityStateTabHelper(
+@@ -87,8 +93,11 @@ SecurityStateTabHelper::SecurityStateTabHelper(
        logged_http_warning_on_current_navigation_(false),
        is_incognito_(false) {
    content::BrowserContext* context = web_contents->GetBrowserContext();
@@ -66,7 +63,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
      is_incognito_ = true;
    }
  }
-@@ -173,6 +184,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
+@@ -173,6 +182,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
      UMA_HISTOGRAM_BOOLEAN("interstitial.ssl.visited_site_after_warning", true);
    }
  
@@ -74,7 +71,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
    // Security indicator UI study (https://crbug.com/803501): Show a message in
    // the console to reduce developer confusion about the experimental UI
    // treatments for HTTPS pages with EV certificates.
-@@ -200,6 +212,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
+@@ -200,6 +210,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
            "Validation is still valid.");
      }
    }
@@ -82,7 +79,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
  }
  
  void SecurityStateTabHelper::DidChangeVisibleSecurityState() {
-@@ -273,6 +286,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -273,6 +284,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -90,7 +87,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -341,6 +355,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -341,6 +353,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }
@@ -98,7 +95,7 @@ index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5
    return security_state::MALICIOUS_CONTENT_STATUS_NONE;
  }
  
-@@ -361,15 +376,19 @@ std::vector<std::string> SecurityStateTabHelper::GetSecureOriginsAndPatterns()
+@@ -361,15 +374,19 @@ std::vector<std::string> SecurityStateTabHelper::GetSecureOriginsAndPatterns()
      const {
    const base::CommandLine& command_line =
        *base::CommandLine::ForCurrentProcess();

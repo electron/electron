@@ -15,7 +15,7 @@ code was around 2012-2013, and this is purely UI, I don't think they have
 automated tests for it).
 
 diff --git a/chrome/browser/ui/browser_dialogs.h b/chrome/browser/ui/browser_dialogs.h
-index f68bd5a7bf50eea701410779ed982db045f652a7..1c31eca5aaed470960e64f760c4328c0c155310f 100644
+index 415ca1dcaf946fc576ddad660ea507981fd81458..2a5352b358a8f337e61af1143fe0a84628985eab 100644
 --- a/chrome/browser/ui/browser_dialogs.h
 +++ b/chrome/browser/ui/browser_dialogs.h
 @@ -4,7 +4,7 @@
@@ -57,7 +57,7 @@ index f68bd5a7bf50eea701410779ed982db045f652a7..1c31eca5aaed470960e64f760c4328c0
  #if defined(OS_MACOSX)
  
  // Bridging methods that show/hide the toolkit-views based Task Manager on Mac.
-@@ -311,13 +313,13 @@ void ShowChromeCleanerRebootPrompt(
+@@ -313,13 +315,13 @@ void ShowChromeCleanerRebootPrompt(
      safe_browsing::ChromeCleanerRebootDialogController* dialog_controller);
  
  #endif  // OS_WIN

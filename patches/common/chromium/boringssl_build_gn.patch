@@ -7,10 +7,10 @@ Build BoringSSL with some extra functions that nodejs needs. Only affects
 the GN build; with the GYP build, nodejs is still built with OpenSSL.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index f57824f04d044b7180c0fc41df616a22174fe367..37735a7c2cad0a75aa609bac4e855cc564a7b2eb 100644
+index 6e4fc85f124ed6dd4a7ac1812686fa59c4e50cdf..2fbd44c0ac71bbd84706ef50dd0d98b2466d4295 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
-@@ -46,6 +46,13 @@ config("no_asm_config") {
+@@ -45,6 +45,13 @@ config("no_asm_config") {
  
  all_sources = crypto_sources + ssl_sources
  all_headers = crypto_headers + ssl_headers
@@ -22,5 +22,5 @@ index f57824f04d044b7180c0fc41df616a22174fe367..37735a7c2cad0a75aa609bac4e855cc5
 +  ]
 +}
  
- # Windows' assembly is built with Yasm. The other platforms use the platform
- # assembler.
+ # Windows' assembly is built with NASM. The other platforms use the platform
+ # assembler. Exclude Windows ARM64 because NASM targets x86 and x64 only.

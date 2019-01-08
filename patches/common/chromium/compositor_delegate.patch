@@ -5,10 +5,10 @@ Subject: compositor_delegate.patch
 
 
 diff --git a/content/browser/compositor/gpu_process_transport_factory.cc b/content/browser/compositor/gpu_process_transport_factory.cc
-index e8741caf69a8d3770905dcf1d466e7f01ddf69ba..b62009feb2e97362d90c6c917305f91cae27d790 100644
+index 97d3236bed1726170966683f5b7dec7540b0603e..bc20368abe66b954dc292e8e2521de42349d6a57 100644
 --- a/content/browser/compositor/gpu_process_transport_factory.cc
 +++ b/content/browser/compositor/gpu_process_transport_factory.cc
-@@ -492,10 +492,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
+@@ -482,10 +482,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
          // surfaces as they are not following the correct mode.
          DisableGpuCompositing(compositor.get());
        }
@@ -32,7 +32,7 @@ index e8741caf69a8d3770905dcf1d466e7f01ddf69ba..b62009feb2e97362d90c6c917305f91c
      } else {
        DCHECK(context_provider);
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index b3905bdfa6500f02328552b7c2402797a71758be..490722c20c25f752e37ac3b481f8d2aa616408a4 100644
+index 6f46fd5b4b57139da6855af99c2788a926c5ef25..4237c75c37ca4476e9fad25765629f7a14df042b 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -26,6 +26,7 @@
@@ -43,7 +43,7 @@ index b3905bdfa6500f02328552b7c2402797a71758be..490722c20c25f752e37ac3b481f8d2aa
  #include "third_party/skia/include/core/SkColor.h"
  #include "third_party/skia/include/core/SkMatrix44.h"
  #include "ui/compositor/compositor_animation_observer.h"
-@@ -198,6 +199,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -194,6 +195,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual bool SyncTokensRequiredForDisplayCompositor() = 0;
  };
  
@@ -59,7 +59,7 @@ index b3905bdfa6500f02328552b7c2402797a71758be..490722c20c25f752e37ac3b481f8d2aa
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -237,6 +247,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -235,6 +245,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  

@@ -12,10 +12,10 @@ Without this patch, calling `registerStandardSchemes` during initialization
 when in debug mode will cause a DCHECK to fire.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 6ed770290b1f18791c1a38a0e8e4dc0f670c29cf..37668b3e74c4031417c5ff91376a20aa56e15c07 100644
+index 88565a9019f378021c2b6251a4fada275d6062b1..8bedc05fe860f40e5f531f83fc5cc5c7812b9532 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -739,7 +739,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -747,7 +747,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
  #endif
  
      RegisterPathProvider();
@@ -25,11 +25,11 @@ index 6ed770290b1f18791c1a38a0e8e4dc0f670c29cf..37668b3e74c4031417c5ff91376a20aa
  #if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
      int icudata_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index cf3c71fe0edc7fd9b788e5ca06cedcd5f9dfa369..877642228966170f3c6bbf4faf80af66bbac387e 100644
+index 456df421598153bde006ad0ecb0f1031360bb543..af06d78b91fa30e5daf993ad2c65c2c5e35a17a5 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
-@@ -59,6 +59,10 @@ bool ContentMainDelegate::ShouldEnableProfilerRecording() {
-   return false;
+@@ -55,6 +55,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
+   return 0;
  }
  
 +bool ContentMainDelegate::ShouldLockSchemeRegistry() {
@@ -40,12 +40,12 @@ index cf3c71fe0edc7fd9b788e5ca06cedcd5f9dfa369..877642228966170f3c6bbf4faf80af66
    return service_manager::ProcessType::kDefault;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index d55f5050c8c3cb15c549dd3ae90d00f1455d34c8..f00266ce4f93bea585f191512226cc40e1f46545 100644
+index f836a17fa0568aa33e204725f96233aac236aac5..af1d5ef18fb414a681bee48d36c3f94ed789c077 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -93,6 +93,9 @@ class CONTENT_EXPORT ContentMainDelegate {
-   // Returns whether or not profiler recording should be enabled.
-   virtual bool ShouldEnableProfilerRecording();
+@@ -88,6 +88,9 @@ class CONTENT_EXPORT ContentMainDelegate {
+   virtual void ZygoteForked() {}
+ #endif  // defined(OS_LINUX)
  
 +  // Allows the embedder to prevent locking the scheme registry.
 +  virtual bool ShouldLockSchemeRegistry();

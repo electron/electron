@@ -5,7 +5,7 @@ Subject: accelerator.patch
 
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104acea770d 100644
+index bf214d0b04ea5cf6711cd50618ad843bd054e538..7f245b1e8b9b3c5dc6666be4d74b69c86e80a351 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -16,7 +16,7 @@ index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104
  #include "base/strings/utf_string_conversions.h"
  #include "build/build_config.h"
  #include "ui/base/l10n/l10n_util.h"
-@@ -21,9 +22,7 @@
+@@ -22,9 +23,7 @@
  #include <windows.h>
  #endif
  
@@ -26,7 +26,7 @@ index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104
  
  namespace ui {
  
-@@ -147,7 +146,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -148,7 +147,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
  
@@ -42,7 +42,7 @@ index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -156,18 +163,14 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -157,18 +164,14 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -52,7 +52,7 @@ index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104
 -    else
 -      key = LOWORD(::MapVirtualKeyW(key_code_, MAPVK_VK_TO_CHAR));
 -    shortcut += key;
--#elif defined(USE_AURA) || defined(OS_MACOSX)
+-#elif defined(USE_AURA) || defined(OS_MACOSX) || defined(OS_ANDROID)
 -    const uint16_t c = DomCodeToUsLayoutCharacter(
 -        UsLayoutKeyboardCodeToDomCode(key_code_), false);
 -    if (c != 0)
@@ -67,7 +67,7 @@ index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104
    }
  
    // Checking whether the character used for the accelerator is alphanumeric.
-@@ -231,7 +234,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+@@ -232,7 +235,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);

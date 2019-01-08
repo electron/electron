@@ -11,7 +11,7 @@ In the long term we should investigate why it happened, and take a more
 formal fix. But for now I'm just make this assertion silently pass away.
 
 diff --git a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
-index 87f2176ce897583b6682e8f49d1e4cac1392aacb..ce3d9ce19bff686640be08776a7dc5736e9bd83a 100644
+index e1378ffcd7e061aae635ad25078ee23674542786..6b07828930a9d5691609da394c192b9b5f531b5a 100644
 --- a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
 +++ b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
 @@ -98,8 +98,10 @@ v8::Local<v8::Function> V8ObjectConstructor::CreateInterfaceObject(
@@ -26,4 +26,4 @@ index 87f2176ce897583b6682e8f49d1e4cac1392aacb..ce3d9ce19bff686640be08776a7dc573
 +      return v8::Local<v8::Function>();
  
      prototype_object = prototype_value.As<v8::Object>();
-     if (prototype_object->InternalFieldCount() ==
+   }
