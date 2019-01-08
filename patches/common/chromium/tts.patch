@@ -9,12 +9,12 @@ Subject: tts.patch
   to remove reference to browser context when its signaled for
   destruction from content layer.
 
-diff --git a/chrome/browser/speech/tts_controller_impl.cc b/chrome/browser/speech/tts_controller_impl.cc
-index 46ea4689a38d1986055058c8bdeef088e732cf79..6156ddb10fba7fe8a1550f45bb364005bd225811 100644
---- a/chrome/browser/speech/tts_controller_impl.cc
-+++ b/chrome/browser/speech/tts_controller_impl.cc
-@@ -607,12 +607,14 @@ const PrefService* TtsControllerImpl::GetPrefService(
-     const Utterance* utterance) {
+diff --git a/chrome/browser/speech/tts_controller_delegate_impl.cc b/chrome/browser/speech/tts_controller_delegate_impl.cc
+index 9e071512872c1e9350b29e499a28e3033fa1b95f..905cd40368b029ed546af2fb37b42e6cd8cc1d8e 100644
+--- a/chrome/browser/speech/tts_controller_delegate_impl.cc
++++ b/chrome/browser/speech/tts_controller_delegate_impl.cc
+@@ -533,12 +533,14 @@ const PrefService* TtsControllerDelegateImpl::GetPrefService(
+     const content::Utterance* utterance) {
    const PrefService* prefs = nullptr;
    // The utterance->browser_context() is null in tests.
 +#if 0
@@ -29,7 +29,7 @@ index 46ea4689a38d1986055058c8bdeef088e732cf79..6156ddb10fba7fe8a1550f45bb364005
  }
  
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
-index 84d2dc145ece4d26c39a338b9a6fcf83a9a3a2da..ab911e1b7d29d675868d1476302d9b6dde7de288 100644
+index 7ff9a9219beffc015ae8a96303595ee529715819..d2394892c2a0d2b4f88407cd412af143cf40881d 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
 +++ b/chrome/browser/speech/tts_message_filter.cc
 @@ -10,8 +10,11 @@
@@ -76,7 +76,7 @@ index 84d2dc145ece4d26c39a338b9a6fcf83a9a3a2da..ab911e1b7d29d675868d1476302d9b6d
        browser_context_(browser_context),
 @@ -26,28 +52,27 @@ TtsMessageFilter::TtsMessageFilter(content::BrowserContext* browser_context)
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-   TtsController::GetInstance()->AddVoicesChangedDelegate(this);
+   content::TtsController::GetInstance()->AddVoicesChangedDelegate(this);
  
 -  // TODO(dmazzoni): make it so that we can listen for a BrowserContext
 -  // being destroyed rather than a Profile.  http://crbug.com/444668
@@ -117,8 +117,8 @@ index 84d2dc145ece4d26c39a338b9a6fcf83a9a3a2da..ab911e1b7d29d675868d1476302d9b6d
    }
  }
  
-@@ -209,10 +234,8 @@ void TtsMessageFilter::Cleanup() {
-   TtsController::GetInstance()->RemoveUtteranceEventDelegate(this);
+@@ -211,10 +236,8 @@ void TtsMessageFilter::Cleanup() {
+   content::TtsController::GetInstance()->RemoveUtteranceEventDelegate(this);
  }
  
 -void TtsMessageFilter::Observe(
@@ -132,30 +132,18 @@ index 84d2dc145ece4d26c39a338b9a6fcf83a9a3a2da..ab911e1b7d29d675868d1476302d9b6d
 +  browser_context_shutdown_notifier_.reset();
  }
 diff --git a/chrome/browser/speech/tts_message_filter.h b/chrome/browser/speech/tts_message_filter.h
-index cc9e2806b5c3942472785bf3a3a32e23d859971d..d21fb42f1aca2906b8d8968bd1a46721fbc55edb 100644
+index 2fbbc4b4f2a79eac6b686894f2b6463abe404e50..c4712cebfba0efeb62a9061a997055c94ae41e3e 100644
 --- a/chrome/browser/speech/tts_message_filter.h
 +++ b/chrome/browser/speech/tts_message_filter.h
-@@ -9,10 +9,9 @@
- #include "base/memory/weak_ptr.h"
- #include "base/synchronization/lock.h"
- #include "chrome/browser/speech/tts_controller.h"
-+#include "components/keyed_service/core/keyed_service_shutdown_notifier.h"
- #include "content/public/browser/browser_message_filter.h"
- #include "content/public/browser/browser_thread.h"
--#include "content/public/browser/notification_observer.h"
--#include "content/public/browser/notification_registrar.h"
+@@ -21,7 +21,6 @@ class BrowserContext;
+ struct TtsUtteranceRequest;
  
- namespace content {
- class BrowserContext;
-@@ -22,7 +21,6 @@ struct TtsUtteranceRequest;
- 
- class TtsMessageFilter
-     : public content::BrowserMessageFilter,
--      public content::NotificationObserver,
-       public UtteranceEventDelegate,
-       public VoicesChangedDelegate {
+ class TtsMessageFilter : public content::BrowserMessageFilter,
+-                         public content::NotificationObserver,
+                          public content::UtteranceEventDelegate,
+                          public content::VoicesChangedDelegate {
   public:
-@@ -64,15 +62,13 @@ class TtsMessageFilter
+@@ -63,15 +62,13 @@ class TtsMessageFilter : public content::BrowserMessageFilter,
    // about to be deleted.
    bool Valid();
  

@@ -435,12 +435,12 @@ index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..c98a7bd07ddd9527fc67b05b24463ed4
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_flash_renderer_host.cc b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
-index 66a532e2cb41cdbae83410dad95984cf02de4a67..e776d0e96c4a5e6523161a66a5c9a1c0e4ad2132 100644
+index 42248eae343754988e2461ef0fb080b6d0edafdf..bb768481e0721d742c105bf18405ddcd357f794d 100644
 --- a/chrome/renderer/pepper/pepper_flash_renderer_host.cc
 +++ b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
 @@ -13,7 +13,9 @@
- #include "base/macros.h"
  #include "base/metrics/histogram_macros.h"
+ #include "base/no_destructor.h"
  #include "base/strings/string_util.h"
 +#if 0
  #include "components/pdf/renderer/pepper_pdf_host.h"
@@ -448,7 +448,7 @@ index 66a532e2cb41cdbae83410dad95984cf02de4a67..e776d0e96c4a5e6523161a66a5c9a1c0
  #include "content/public/renderer/pepper_plugin_instance.h"
  #include "content/public/renderer/render_thread.h"
  #include "content/public/renderer/renderer_ppapi_host.h"
-@@ -130,9 +132,11 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
+@@ -132,9 +134,11 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
  }
  
  void RecordFlashNavigateUsage(FlashNavigateUsage usage) {
@@ -460,7 +460,7 @@ index 66a532e2cb41cdbae83410dad95984cf02de4a67..e776d0e96c4a5e6523161a66a5c9a1c0
  }
  
  }  // namespace
-@@ -374,6 +378,8 @@ int32_t PepperFlashRendererHost::OnIsRectTopmost(
+@@ -376,6 +380,8 @@ int32_t PepperFlashRendererHost::OnIsRectTopmost(
  
  int32_t PepperFlashRendererHost::OnInvokePrinting(
      ppapi::host::HostMessageContext* host_context) {
