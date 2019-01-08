@@ -14,7 +14,7 @@ Commit-Queue: David Benjamin <davidben@google.com>
 CQ-Verified: CQ bot account: commit-bot@chromium.org <commit-bot@chromium.org>
 
 diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
-index ae8b8385fc73701a4346202f213b5974af4e2aed..0f3d1747173ffb09eafd5c7d5d692ae3c35c9874 100644
+index c0d44ce2820fb20273b453def0b5bcb5ddcc14e9..f0d9dd45e2c41968a84c8a3f31a8c9e4f621f018 100644
 --- a/include/openssl/ssl.h
 +++ b/include/openssl/ssl.h
 @@ -4268,6 +4268,14 @@ OPENSSL_EXPORT int OPENSSL_init_ssl(uint64_t opts,
