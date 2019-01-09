@@ -221,7 +221,6 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   }
 
   commit.subject = subject.trim()
-
   return commit
 }
 
@@ -389,7 +388,7 @@ const getDependencyCommits = async (pool, from, to) => {
 ****  Main
 ***/
 
-const getNotes = async (fromRef, toRef) => {
+const getNotes = async (fromRef, toRef, newVersion) => {
   if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR)
   }
@@ -455,10 +454,50 @@ const getNotes = async (fromRef, toRef) => {
     }
   }
 
-  // remove uninteresting commits
+  // remove procedural commits
   pool.commits = pool.commits
     .filter(commit => commit.note !== NO_NOTES)
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
+
+  // if this is a stable release,
+  // remove notes for changes that already landed in a previous major/minor series
+  if (semver.valid(newVersion) && !semver.prerelease(newVersion)) {
+    // load all the prDatas
+    await Promise.all(
+      pool.commits.map(commit => new Promise(async (resolve) => {
+        const { pr } = commit
+        if (typeof pr === 'object') {
+          const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
+          if (prData) {
+            commit.prData = prData
+          }
+        }
+        resolve()
+      }))
+    )
+
+    // remove items that already landed in a previous major/minor series
+    pool.commits = pool.commits
+      .filter(commit => {
+        if (!commit.prData) {
+          return true
+        }
+        const reducer = (accumulator, current) => {
+          if (!semver.valid(accumulator)) { return current }
+          if (!semver.valid(current)) { return accumulator }
+          return semver.lt(accumulator, current) ? accumulator : current
+        }
+        const earliestRelease = commit.prData.data.labels
+          .map(label => label.name.match(/merged\/(\d+)-(\d+)-x/))
+          .filter(label => !!label)
+          .map(label => `${label[1]}.${label[2]}.0`)
+          .reduce(reducer, null)
+        if (!semver.valid(earliestRelease)) {
+          return true
+        }
+        return semver.diff(earliestRelease, newVersion).includes('patch')
+      })
+  }
 
   const notes = {
     breaks: [],
@@ -467,7 +506,7 @@ const getNotes = async (fromRef, toRef) => {
     fix: [],
     other: [],
     unknown: [],
-    ref: toRef
+    name: newVersion
   }
 
   pool.commits.forEach(commit => {
@@ -562,7 +601,7 @@ const renderCommit = (commit, explicitLinks) => {
 }
 
 const renderNotes = (notes, explicitLinks) => {
-  const rendered = [ `# Release Notes for ${notes.ref}\n\n` ]
+  const rendered = [ `# Release Notes for ${notes.name}\n\n` ]
 
   const renderSection = (title, commits) => {
     if (commits.length === 0) {
