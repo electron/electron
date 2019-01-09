@@ -525,6 +525,17 @@ AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
 }
 
+content::GeneratedCodeCacheSettings
+AtomBrowserClient::GetGeneratedCodeCacheSettings(
+    content::BrowserContext* context) {
+  // TODO(deepak1556): Use platform cache directory.
+  base::FilePath cache_path = context->GetPath();
+  // If we pass 0 for size, disk_cache will pick a default size using the
+  // heuristics based on available disk size. These are implemented in
+  // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
+  return content::GeneratedCodeCacheSettings(true, 0, cache_path);
+}
+
 void AtomBrowserClient::AllowCertificateError(
     content::WebContents* web_contents,
     int cert_error,
