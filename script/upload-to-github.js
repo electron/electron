@@ -21,7 +21,8 @@ const getHeaders = (filePath, fileName) => {
   const options = {
     'json': 'text/json',
     'zip': 'application/zip',
-    'txt': 'text/plain'
+    'txt': 'text/plain',
+    'ts': 'application/typescript'
   }
 
   return {
