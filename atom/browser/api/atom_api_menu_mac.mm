@@ -56,7 +56,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         base::Closure callback) {
   if (!native_window)
     return;
-  NSWindow* nswindow = native_window->GetNativeWindow();
+  NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
   auto close_callback = base::Bind(
       &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);

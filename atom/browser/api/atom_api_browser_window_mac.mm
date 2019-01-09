@@ -59,8 +59,9 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
   // Make NativeWindow use a NSView as content view.
   static_cast<NativeWindowMac*>(window())->OverrideNSWindowContentView();
   // Add webview to contentView.
-  NSView* webView = iwc->GetView()->GetNativeView();
-  NSView* contentView = [window()->GetNativeWindow() contentView];
+  NSView* webView = iwc->GetView()->GetNativeView().GetNativeNSView();
+  NSView* contentView =
+      [window()->GetNativeWindow().GetNativeNSWindow() contentView];
   [webView setFrame:[contentView bounds]];
 
   // ensure that buttons view is floated to top of view hierarchy
@@ -80,7 +81,7 @@ void BrowserWindow::UpdateDraggableRegions(
   // All ControlRegionViews should be added as children of the WebContentsView,
   // because WebContentsView will be removed and re-added when entering and
   // leaving fullscreen mode.
-  NSView* webView = web_contents()->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView().GetNativeNSView();
   NSInteger webViewWidth = NSWidth([webView bounds]);
   NSInteger webViewHeight = NSHeight([webView bounds]);
 
