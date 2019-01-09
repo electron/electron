@@ -240,7 +240,7 @@ namespace api {
 namespace {
 
 content::ServiceWorkerContext* GetServiceWorkerContext(
-    const content::WebContents* web_contents) {
+    content::WebContents* web_contents) {
   auto* context = web_contents->GetBrowserContext();
   auto* site_instance = web_contents->GetSiteInstance();
   if (!context || !site_instance)
@@ -1129,7 +1129,7 @@ void WebContents::NavigationEntryCommitted(
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  const auto* contents = web_contents();
+  auto* contents = web_contents();
   if (!contents) {
     return;
   }
