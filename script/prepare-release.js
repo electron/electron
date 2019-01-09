@@ -63,8 +63,8 @@ async function getReleaseNotes (currentBranch) {
 }
 
 async function createRelease (branchToTarget, isBeta) {
-  const releaseNotes = await getReleaseNotes(branchToTarget)
   const newVersion = await getNewVersion()
+  const releaseNotes = await getReleaseNotes(newVersion)
   await tagRelease(newVersion)
 
   console.log(`Checking for existing draft release.`)
