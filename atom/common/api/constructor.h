@@ -25,7 +25,7 @@ v8::Local<v8::Function> CreateConstructor(v8::Isolate* isolate,
       isolate, base::Bind(&mate::internal::InvokeNew<Sig>, func));
   templ->InstanceTemplate()->SetInternalFieldCount(1);
   T::BuildPrototype(isolate, templ);
-  return templ->GetFunction();
+  return templ->GetFunction(isolate->GetCurrentContext()).ToLocalChecked();
 }
 
 }  // namespace mate

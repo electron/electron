@@ -211,10 +211,11 @@ void SpellCheckClient::SpellCheckWords(
   v8::Local<v8::FunctionTemplate> templ = mate::CreateFunctionTemplate(
       isolate_, base::Bind(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));
 
+  auto context = isolate_->GetCurrentContext();
   v8::Local<v8::Value> args[] = {mate::ConvertToV8(isolate_, words),
-                                 templ->GetFunction()};
+                                 templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function
-  scope.spell_check_->Call(scope.provider_, 2, args);
+  scope.spell_check_->Call(context, scope.provider_, 2, args).ToLocalChecked();
 }
 
 // Returns whether or not the given string is a contraction.

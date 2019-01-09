@@ -805,8 +805,12 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Session", Session::GetConstructor(isolate)->GetFunction());
-  dict.Set("Cookies", Cookies::GetConstructor(isolate)->GetFunction());
+  dict.Set(
+      "Session",
+      Session::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set(
+      "Cookies",
+      Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

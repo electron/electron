@@ -1401,7 +1401,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());
+  dict.Set("App", atom::api::App::GetConstructor(isolate)
+                      ->GetFunction(context)
+                      .ToLocalChecked());
   dict.Set("app", atom::api::App::Create(isolate));
 #if defined(OS_MACOSX)
   auto browser = base::Unretained(Browser::Get());

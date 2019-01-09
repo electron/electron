@@ -164,7 +164,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("screen", Screen::Create(isolate));
-  dict.Set("Screen", Screen::GetConstructor(isolate)->GetFunction());
+  dict.Set(
+      "Screen",
+      Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
 }
 
 }  // namespace

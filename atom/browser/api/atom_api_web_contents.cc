@@ -2284,7 +2284,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("WebContents", WebContents::GetConstructor(isolate)->GetFunction());
+  dict.Set("WebContents", WebContents::GetConstructor(isolate)
+                              ->GetFunction(context)
+                              .ToLocalChecked());
   dict.SetMethod("create", &WebContents::Create);
   dict.SetMethod("fromId", &mate::TrackableObject<WebContents>::FromWeakMapID);
   dict.SetMethod("getAllWebContents",
