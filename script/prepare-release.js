@@ -35,7 +35,7 @@ async function getNewVersion (dryRun) {
   }
   const bumpScript = path.join(__dirname, 'bump-version.js')
   const scriptArgs = ['node', bumpScript, `--bump=${bumpType}`]
-  if (dryRun) scriptArgs.push('--dry-run')
+  if (dryRun) scriptArgs.push('--dryRun')
   try {
     let bumpVersion = execSync(scriptArgs.join(' '), { encoding: 'UTF-8' })
     bumpVersion = bumpVersion.substr(bumpVersion.indexOf(':') + 1).trim()
