@@ -17,7 +17,7 @@ bool WebContents::IsFocused() const {
     return false;
 
   if (GetType() != BACKGROUND_PAGE) {
-    auto window = [web_contents()->GetNativeView() window];
+    auto window = [web_contents()->GetNativeView().GetNativeNSView() window];
     // On Mac the render widget host view does not lose focus when the window
     // loses focus so check if the top level window is the key window.
     if (window && ![window isKeyWindow])
