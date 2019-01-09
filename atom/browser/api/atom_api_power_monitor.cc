@@ -141,8 +141,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", PowerMonitor::Create(isolate));
-  dict.Set("PowerMonitor",
-           PowerMonitor::GetConstructor(isolate)->GetFunction());
+  dict.Set("PowerMonitor", PowerMonitor::GetConstructor(isolate)
+                               ->GetFunction(context)
+                               .ToLocalChecked());
 }
 
 }  // namespace

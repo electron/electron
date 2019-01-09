@@ -263,8 +263,9 @@ void Initialize(v8::Local<v8::Object> exports,
   Notification::SetConstructor(isolate, base::Bind(&Notification::New));
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Notification",
-           Notification::GetConstructor(isolate)->GetFunction());
+  dict.Set("Notification", Notification::GetConstructor(isolate)
+                               ->GetFunction(context)
+                               .ToLocalChecked());
 
   dict.SetMethod("isSupported", &Notification::IsSupported);
 }

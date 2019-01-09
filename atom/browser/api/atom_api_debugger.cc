@@ -194,7 +194,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary(isolate, exports)
-      .Set("Debugger", Debugger::GetConstructor(isolate)->GetFunction());
+      .Set("Debugger", Debugger::GetConstructor(isolate)
+                           ->GetFunction(context)
+                           .ToLocalChecked());
 }
 
 }  // namespace

@@ -244,8 +244,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary(isolate, exports)
-      .Set("DownloadItem",
-           atom::api::DownloadItem::GetConstructor(isolate)->GetFunction());
+      .Set("DownloadItem", atom::api::DownloadItem::GetConstructor(isolate)
+                               ->GetFunction(context)
+                               .ToLocalChecked());
 }
 
 }  // namespace

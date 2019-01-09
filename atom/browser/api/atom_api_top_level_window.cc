@@ -1179,8 +1179,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   TopLevelWindow::SetConstructor(isolate, base::Bind(&TopLevelWindow::New));
 
-  mate::Dictionary constructor(
-      isolate, TopLevelWindow::GetConstructor(isolate)->GetFunction());
+  mate::Dictionary constructor(isolate, TopLevelWindow::GetConstructor(isolate)
+                                            ->GetFunction(context)
+                                            .ToLocalChecked());
   constructor.SetMethod("fromId",
                         &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
   constructor.SetMethod("getAllWindows",
