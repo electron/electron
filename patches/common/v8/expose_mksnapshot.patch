@@ -6,15 +6,15 @@ Subject: expose_mksnapshot.patch
 Needed in order to build mksnapshot on arm.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 5489b943f1d8bb8ffc02cabf4e0a15788c7d4e48..1f9dd022ac804e58263f527af5a47768c882de40 100644
+index 9fe1e8d67a25955fea69be89e0bcc27cf5d8529d..b47a698a2f41f221290861c938c15a38e34d7b00 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -3355,8 +3355,6 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -3471,8 +3471,6 @@ if (current_toolchain == v8_generator_toolchain) {
  
  if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
    v8_executable("mksnapshot") {
 -    visibility = [ ":*" ]  # Only targets in this file can depend on this.
 -
      sources = [
-       "src/snapshot/mksnapshot.cc",
-     ]
+       "src/snapshot/embedded-file-writer.cc",
+       "src/snapshot/embedded-file-writer.h",
