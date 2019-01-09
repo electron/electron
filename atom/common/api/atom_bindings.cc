@@ -19,8 +19,8 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/promise_util.h"
 #include "base/logging.h"
+#include "base/process/process.h"
 #include "base/process/process_handle.h"
-#include "base/process/process_info.h"
 #include "base/process/process_metrics_iocounters.h"
 #include "base/system/sys_info.h"
 #include "base/threading/thread_restrictions.h"
@@ -189,7 +189,7 @@ v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> AtomBindings::GetCreationTime(v8::Isolate* isolate) {
-  auto timeValue = base::CurrentProcessInfo::CreationTime();
+  auto timeValue = base::Process::Current().CreationTime();
   if (timeValue.is_null()) {
     return v8::Null(isolate);
   }
