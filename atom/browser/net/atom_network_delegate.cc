@@ -425,10 +425,6 @@ bool AtomNetworkDelegate::OnForcePrivacyMode(
   return false;
 }
 
-bool AtomNetworkDelegate::OnAreExperimentalCookieFeaturesEnabled() const {
-  return true;
-}
-
 bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
     const net::URLRequest& request,
     const GURL& target_url,
