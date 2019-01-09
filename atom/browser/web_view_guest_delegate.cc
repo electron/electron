@@ -42,7 +42,8 @@ void WebViewGuestDelegate::AttachToIframe(
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
   api_web_contents_->web_contents()->AttachToOuterWebContentsFrame(
-      embedder_web_contents_, embedder_frame);
+      base::WrapUnique<content::WebContents>(embedder_web_contents_),
+      embedder_frame);
 
   ResetZoomController();
 
