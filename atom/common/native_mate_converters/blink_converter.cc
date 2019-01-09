@@ -473,25 +473,26 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::WebReferrerPolicy>::ToV8(
+v8::Local<v8::Value> Converter<network::mojom::ReferrerPolicy>::ToV8(
     v8::Isolate* isolate,
-    const blink::WebReferrerPolicy& in) {
+    const network::mojom::ReferrerPolicy& in) {
   switch (in) {
-    case blink::kWebReferrerPolicyDefault:
+    case network::mojom::ReferrerPolicy::kDefault:
       return mate::StringToV8(isolate, "default");
-    case blink::kWebReferrerPolicyAlways:
+    case network::mojom::ReferrerPolicy::kAlways:
       return mate::StringToV8(isolate, "unsafe-url");
-    case blink::kWebReferrerPolicyNoReferrerWhenDowngrade:
+    case network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade:
       return mate::StringToV8(isolate, "no-referrer-when-downgrade");
-    case blink::kWebReferrerPolicyNever:
+    case network::mojom::ReferrerPolicy::kNever:
       return mate::StringToV8(isolate, "no-referrer");
-    case blink::kWebReferrerPolicyOrigin:
+    case network::mojom::ReferrerPolicy::kOrigin:
       return mate::StringToV8(isolate, "origin");
-    case blink::kWebReferrerPolicyNoReferrerWhenDowngradeOriginWhenCrossOrigin:
+    case network::mojom::ReferrerPolicy::
+        kNoReferrerWhenDowngradeOriginWhenCrossOrigin:
       return mate::StringToV8(isolate, "strict-origin-when-cross-origin");
-    case blink::kWebReferrerPolicySameOrigin:
+    case network::mojom::ReferrerPolicy::kSameOrigin:
       return mate::StringToV8(isolate, "same-origin");
-    case blink::kWebReferrerPolicyStrictOrigin:
+    case network::mojom::ReferrerPolicy::kStrictOrigin:
       return mate::StringToV8(isolate, "strict-origin");
     default:
       return mate::StringToV8(isolate, "no-referrer");
@@ -499,28 +500,28 @@ v8::Local<v8::Value> Converter<blink::WebReferrerPolicy>::ToV8(
 }
 
 // static
-bool Converter<blink::WebReferrerPolicy>::FromV8(
+bool Converter<network::mojom::ReferrerPolicy>::FromV8(
     v8::Isolate* isolate,
     v8::Handle<v8::Value> val,
-    blink::WebReferrerPolicy* out) {
+    network::mojom::ReferrerPolicy* out) {
   std::string policy = base::ToLowerASCII(gin::V8ToString(isolate, val));
   if (policy == "default")
-    *out = blink::kWebReferrerPolicyDefault;
+    *out = network::mojom::ReferrerPolicy::kDefault;
   else if (policy == "unsafe-url")
-    *out = blink::kWebReferrerPolicyAlways;
+    *out = network::mojom::ReferrerPolicy::kAlways;
   else if (policy == "no-referrer-when-downgrade")
-    *out = blink::kWebReferrerPolicyNoReferrerWhenDowngrade;
+    *out = network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade;
   else if (policy == "no-referrer")
-    *out = blink::kWebReferrerPolicyNever;
+    *out = network::mojom::ReferrerPolicy::kNever;
   else if (policy == "origin")
-    *out = blink::kWebReferrerPolicyOrigin;
+    *out = network::mojom::ReferrerPolicy::kOrigin;
   else if (policy == "strict-origin-when-cross-origin")
-    *out =
-        blink::kWebReferrerPolicyNoReferrerWhenDowngradeOriginWhenCrossOrigin;
+    *out = network::mojom::ReferrerPolicy::
+        kNoReferrerWhenDowngradeOriginWhenCrossOrigin;
   else if (policy == "same-origin")
-    *out = blink::kWebReferrerPolicySameOrigin;
+    *out = network::mojom::ReferrerPolicy::kSameOrigin;
   else if (policy == "strict-origin")
-    *out = blink::kWebReferrerPolicyStrictOrigin;
+    *out = network::mojom::ReferrerPolicy::kStrictOrigin;
   else
     return false;
   return true;

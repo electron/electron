@@ -1188,8 +1188,9 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (!options.Get("httpReferrer", &params.referrer)) {
     GURL http_referrer;
     if (options.Get("httpReferrer", &http_referrer))
-      params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
-                                          blink::kWebReferrerPolicyDefault);
+      params.referrer =
+          content::Referrer(http_referrer.GetAsReferrer(),
+                            network::mojom::ReferrerPolicy::kDefault);
   }
 
   std::string user_agent;
