@@ -444,10 +444,9 @@ void Session::ClearStorageData(mate::Arguments* args) {
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
     MediaDeviceIDSalt::Reset(browser_context()->prefs());
   }
-  storage_partition->ClearData(
-      options.storage_types, options.quota_types, options.origin,
-      content::StoragePartition::OriginMatcherFunction(), base::Time(),
-      base::Time::Max(), base::Bind(&OnClearStorageDataDone, callback));
+  storage_partition->ClearData(options.storage_types, options.quota_types,
+                               options.origin, base::Time(), base::Time::Max(),
+                               base::Bind(&OnClearStorageDataDone, callback));
 }
 
 void Session::FlushStorageData() {
