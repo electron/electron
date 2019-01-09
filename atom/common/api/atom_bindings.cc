@@ -22,7 +22,7 @@
 #include "base/process/process_handle.h"
 #include "base/process/process_info.h"
 #include "base/process/process_metrics_iocounters.h"
-#include "base/sys_info.h"
+#include "base/system/sys_info.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_version.h"
 #include "native_mate/dictionary.h"
