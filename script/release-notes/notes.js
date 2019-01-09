@@ -436,6 +436,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // scrape PRs for release note 'Notes:' comments
   for (const commit of pool.commits) {
     let pr = commit.pr
+    let prSubject
     while (pr && !commit.note) {
       const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
       if (!prData || !prData.data) {
@@ -443,15 +444,18 @@ const getNotes = async (fromRef, toRef, newVersion) => {
       }
 
       // try to pull a release note from the pull comment
-      commit.note = getNoteFromBody(prData.data.body)
-      if (commit.note) {
-        break
-      }
+      const prParsed = {}
+      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, prParsed)
+      commit.note = commit.note || prParsed.note
+      commit.type = commit.type || prParsed.type
+      prSubject = prSubject || prParsed.subject
 
-      // if the PR references another PR, maybe follow it
-      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, commit)
-      pr = pr.number !== commit.pr.number ? commit.pr : null
+      pr = prParsed.pr && (prParsed.pr.number !== pr.number) ? prParsed.pr : null
     }
+
+    // if we still don't have a note, it's because someone missed a 'Notes:
+    // comment in a PR somewhere... use the PR subject as a fallback.
+    commit.note = commit.note || prSubject
   }
 
   // remove procedural commits
