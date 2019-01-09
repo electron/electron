@@ -258,7 +258,7 @@ BrowserProcessImpl::safe_browsing_detection_service() {
   return nullptr;
 }
 
-subresource_filter::ContentRulesetService*
+subresource_filter::RulesetService*
 BrowserProcessImpl::subresource_filter_ruleset_service() {
   return nullptr;
 }
