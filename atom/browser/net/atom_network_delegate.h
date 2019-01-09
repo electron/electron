@@ -127,9 +127,8 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   bool OnCanAccessFile(const net::URLRequest& request,
                        const base::FilePath& original_path,
                        const base::FilePath& absolute_path) const override;
-  bool OnCanEnablePrivacyMode(
-      const GURL& url,
-      const GURL& first_party_for_cookies) const override;
+  bool OnForcePrivacyMode(const GURL& url,
+                          const GURL& first_party_for_cookies) const override;
   bool OnAreExperimentalCookieFeaturesEnabled() const override;
   bool OnCancelURLRequestWithPolicyViolatingReferrerHeader(
       const net::URLRequest& request,
