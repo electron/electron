@@ -137,8 +137,11 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
   // if the subject begins with 'word:', treat it as a semantic commit
   if ((match = subject.match(/^(\w+):\s(.*)$/))) {
-    commit.type = match[1].toLocaleLowerCase()
-    subject = match[2]
+    const type = match[1].toLocaleLowerCase()
+    if (knownTypes.has(type)) {
+      commit.type = type
+      subject = match[2]
+    }
   }
 
   // Check for GitHub commit message that indicates a PR
