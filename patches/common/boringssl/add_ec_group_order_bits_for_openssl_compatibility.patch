@@ -9,10 +9,10 @@ Commit-Queue: Adam Langley <agl@google.com>
 Reviewed-by: Adam Langley <agl@google.com>
 
 diff --git a/crypto/fipsmodule/ec/ec.c b/crypto/fipsmodule/ec/ec.c
-index 908e35e9d04e657c13ba61c8ea5bf4a4519228c5..43e170b9190bf1813216b10863bbaf6402331161 100644
+index bd0662a703d6285df51735c5d4870d21a82b39cf..90b9d71f61f8d6d7ddf838c47a59729748d0d0f2 100644
 --- a/crypto/fipsmodule/ec/ec.c
 +++ b/crypto/fipsmodule/ec/ec.c
-@@ -605,6 +605,10 @@ int EC_GROUP_get_order(const EC_GROUP *group, BIGNUM *order, BN_CTX *ctx) {
+@@ -625,6 +625,10 @@ int EC_GROUP_get_order(const EC_GROUP *group, BIGNUM *order, BN_CTX *ctx) {
    return 1;
  }
  
@@ -24,7 +24,7 @@ index 908e35e9d04e657c13ba61c8ea5bf4a4519228c5..43e170b9190bf1813216b10863bbaf64
                            BN_CTX *ctx) {
    // All |EC_GROUP|s have cofactor 1.
 diff --git a/include/openssl/ec.h b/include/openssl/ec.h
-index 41a9c34c5ad1bbfdff8e37c1e245ac7fac7a3869..e4195fc15a26e61ef1e74ac7054ddabb256ae9a3 100644
+index 966393ea3b726214aa84a604c8e5a13654dcdf76..c65a1a7519fd80b681d1cf899792ee46aaa8bad6 100644
 --- a/include/openssl/ec.h
 +++ b/include/openssl/ec.h
 @@ -133,6 +133,9 @@ OPENSSL_EXPORT const EC_POINT *EC_GROUP_get0_generator(const EC_GROUP *group);
