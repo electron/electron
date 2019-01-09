@@ -419,7 +419,7 @@ bool AtomNetworkDelegate::OnCanAccessFile(
   return true;
 }
 
-bool AtomNetworkDelegate::OnCanEnablePrivacyMode(
+bool AtomNetworkDelegate::OnForcePrivacyMode(
     const GURL& url,
     const GURL& first_party_for_cookies) const {
   return false;
