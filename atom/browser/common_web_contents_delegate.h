@@ -100,7 +100,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
-  void HandleKeyboardEvent(
+  bool HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
 

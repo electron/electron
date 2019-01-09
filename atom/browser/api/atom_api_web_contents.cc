@@ -617,15 +617,15 @@ void WebContents::UpdateTargetURL(content::WebContents* source,
   Emit("update-target-url", url);
 }
 
-void WebContents::HandleKeyboardEvent(
+bool WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (type_ == WEB_VIEW && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
-    embedder_->HandleKeyboardEvent(source, event);
+    return embedder_->HandleKeyboardEvent(source, event);
   } else {
     // Go to the default keyboard handling.
-    CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
+    return CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
   }
 }
 

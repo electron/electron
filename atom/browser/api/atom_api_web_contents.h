@@ -362,7 +362,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
   void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
-  void HandleKeyboardEvent(
+  bool HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
