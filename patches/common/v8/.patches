@@ -10,7 +10,4 @@ expose_mksnapshot.patch
 build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
 deps_provide_more_v8_backwards_compatibility.patch
-0001-deps-cherry-pick-0483e9a-from-upstream-V8.patch
-0002-deps-cherry-pick-b87d408-from-upstream-V8.patch
-0003-deps-cherry-pick-073073b-from-upstream-V8.patch
-0004-deps-cherry-pick-88f8fe1-from-upstream-V8.patch
+deps_cherry-pick_88f8fe1_from_upstream_v8.patch

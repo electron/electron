@@ -6,7 +6,7 @@ Subject: export_platform.patch
 v8::Platform::SystemClockTimeMillis must be exported so that node::NodePlatform can call it
 
 diff --git a/include/v8-platform.h b/include/v8-platform.h
-index d983c30249591bd05b760dbae6a1afb413c7d021..183d77e55619970644868747fab26d250f790c3c 100644
+index b9b0363a426de898c7db29a341f7179c45706f0a..48fba7921fd17eec79c569ab3c9173f084743218 100644
 --- a/include/v8-platform.h
 +++ b/include/v8-platform.h
 @@ -11,6 +11,7 @@
@@ -17,7 +17,7 @@ index d983c30249591bd05b760dbae6a1afb413c7d021..183d77e55619970644868747fab26d25
  #include "v8config.h"  // NOLINT(build/include)
  
  namespace v8 {
-@@ -394,7 +395,7 @@ class Platform {
+@@ -421,7 +422,7 @@ class Platform {
     * since epoch. Useful for implementing |CurrentClockTimeMillis| if
     * nothing special needed.
     */
