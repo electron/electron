@@ -107,10 +107,6 @@ class ResourceContext : public content::ResourceContext {
   ResourceContext() = default;
   ~ResourceContext() override = default;
 
-  net::URLRequestContext* GetRequestContext() override {
-    return request_context_;
-  }
-
  private:
   friend class URLRequestContextGetter;
 
