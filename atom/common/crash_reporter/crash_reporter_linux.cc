@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "atom/common/platform_util.h"
 #include "base/debug/crash_logging.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -46,7 +47,7 @@ CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
   }
 
   // Make base::g_linux_distro work.
-  base::SetLinuxDistro(base::GetLinuxDistro());
+  base::SetLinuxDistro(platform_util::GetLinuxDistro());
 }
 
 CrashReporterLinux::~CrashReporterLinux() {}

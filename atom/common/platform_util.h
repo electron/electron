@@ -68,6 +68,14 @@ bool SetLoginItemEnabled(bool enabled);
 // Returns a success flag.
 // Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
 bool GetDesktopName(std::string* setme);
+
+// Returns the name of the current Linux distribution, or "Unknown"
+// if not available. This function is different from Chromium's
+// `base::GetLinuxDistro` in that it retrieves the information from
+// /etc/os-release as opposed to running `lsb_release -d`. This way works on
+// more distros (e.g. Ubuntu, Fedora, CentOS).
+//
+std::string GetLinuxDistro();
 #endif
 
 }  // namespace platform_util

@@ -62,6 +62,98 @@ bool XDGEmail(const std::string& email, const bool wait_for_exit) {
   return XDGUtil("xdg-email", email, wait_for_exit);
 }
 
+const char* NextLine(const char* it) {
+  while (*it && *it++ != '\n') {
+  }
+  return it;
+}
+
+// Parses a line from /etc/os-release.
+// `input` must be a null-terminated string.
+// Upon return `name` and `value` contain the parsed variable. When parsing
+// fails, they contain an empty string. In all cases the function returns a
+// pointer to the next line, or to the terminating null character.
+//
+// Examples:
+//
+//      |input               |name      |value
+//      |--------------------|----------|----------
+//      |VAR=one\ two        |VAR       |one two
+//      |VAR=a b c           |          |
+//      |VAR=" a b c"        |VAR       | a b c
+//      |=                   |          |
+//      |VAR=""              |VAR       |
+//      | VAR=abc            |VAR       |abc
+//      |VAR = abc           |          |
+//      |#VAR=abc            |          |
+//
+const char* ParseOsReleaseVariable(const char* input,
+                                   std::string* name,
+                                   std::string* value) {
+  name->clear();
+  value->clear();
+
+  // skip leading whitespace
+  while (isspace(*input))
+    ++input;
+
+  // ignore comments
+  if (*input == '#')
+    return NextLine(input);
+
+  std::string tempName, tempValue;
+
+  // parse the variable name
+  auto* it = input;
+  for (;; ++it) {
+    auto c = *it;
+    if (!c || isspace(c))
+      return NextLine(it);
+    if (c == '=')
+      break;
+  }
+  tempName.assign(input, it);
+  ++it;  // skip over '='
+
+  // parse the value
+  char quote = (*it == '"') ? '"' : 0;
+  if (quote)
+    ++it;
+
+  for (;; ++it) {
+    auto c = *it;
+
+    if (!quote) {
+      // non-quoted string doesn't need a terminator
+      if (!c || c == '\n')
+        break;
+      // but it cannot contain unescaped spaces
+      if (isspace(c))
+        return NextLine(it);
+    } else {
+      // quoted string must end with quote
+      if (!c)
+        return it;
+      if (c == quote) {
+        ++it;
+        break;
+      }
+    }
+
+    if (c == '\\') {
+      c = *++it;
+      if (!c)
+        return it;
+    }
+
+    tempValue.push_back(c);
+  }
+
+  *name = move(tempName);
+  *value = move(tempValue);
+  return NextLine(it);
+}
+
 }  // namespace
 
 namespace platform_util {
@@ -159,6 +251,32 @@ bool GetDesktopName(std::string* setme) {
   }
 
   return found;
+}
+
+std::string GetLinuxDistro() {
+  // Reference: https://www.freedesktop.org/software/systemd/man/os-release.html
+
+  auto path1 = base::FilePath::FromUTF8Unsafe("/etc/os-release");
+  auto path2 = base::FilePath::FromUTF8Unsafe("/usr/lib/os-release");
+
+  std::string buffer;
+  if (!base::ReadFileToString(path1, &buffer)) {
+    base::ReadFileToString(path2, &buffer);
+  }
+
+  if (!buffer.empty()) {
+    std::string name, value;
+
+    const char* it = buffer.c_str();
+    while (*it) {
+      it = ParseOsReleaseVariable(it, &name, &value);
+      if (name == "PRETTY_NAME") {
+        return value;
+      }
+    }
+  }
+
+  return "Unknown";
 }
 
 }  // namespace platform_util
