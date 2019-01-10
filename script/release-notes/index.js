@@ -155,11 +155,13 @@ async function main () {
 easy usage: ${name} version
 
 full usage: ${name} [begin..]end [--version version] [--explicit-links]
- * 'begin' and 'end' are two git references -- tags, branches, etc -- from
-   which the release notes are generated.
- * if omitted, 'begin' defaults to the previous tag before 'end.'
- * if omitted, 'version' defaults to 'end'. An explicit version is
-   useful for making notes on a new version that hasn't yet been tagged.
+
+ * 'begin' and 'end' are two git references -- tags, branches, etc --
+   from which the release notes are generated.
+ * if omitted, 'begin' defaults to the previous tag in end's branch.
+ * if omitted, 'version' defaults to 'end'. Specifying a version is
+   useful if you're making notes on a new version that isn't tagged yet.
+ * 'explicit-links' makes every note's issue, commit, or pull an MD link
 
 For example, these invocations are equivalent:
   ${process.argv[1]} v4.0.1
