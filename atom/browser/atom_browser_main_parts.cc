@@ -49,6 +49,7 @@
 #include "ui/base/idle/idle.h"
 #include "ui/base/material_design/material_design_controller.h"
 #include "ui/base/ui_base_switches.h"
+#include "url/url_util.h"
 
 #if defined(USE_AURA)
 #include "ui/display/display.h"
@@ -412,9 +413,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
-
-  // url::Add*Scheme are not threadsafe, this helps prevent data races.
-  url::LockSchemeRegistries();
 
 #if defined(USE_X11)
   ui::TouchFactory::SetTouchDeviceListFromCommandLine();
