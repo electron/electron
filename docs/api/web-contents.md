@@ -29,6 +29,11 @@ const { webContents } = require('electron')
 console.log(webContents)
 ```
 
+### `webContents.getOwnerBrowserWindow()`
+
+Returns `BrowserWindow | null` - The BrowserWindow that owns the given `webContents`
+or `null` if the contents are not owned by a BrowserWindow.
+
 ### `webContents.getAllWebContents()`
 
 Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
