@@ -74,6 +74,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       service_manager::mojom::ServiceRequest* service_request) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
+  content::TtsControllerDelegate* GetTtsControllerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(

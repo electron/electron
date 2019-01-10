@@ -94,6 +94,7 @@
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
 #if BUILDFLAG(ENABLE_TTS)
+#include "chrome/browser/speech/tts_controller_delegate_impl.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
 
@@ -365,6 +366,14 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 content::SpeechRecognitionManagerDelegate*
 AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new AtomSpeechRecognitionManagerDelegate;
+}
+
+content::TtsControllerDelegate* AtomBrowserClient::GetTtsControllerDelegate() {
+#if BUILDFLAG(ENABLE_TTS)
+  return TtsControllerDelegateImpl::GetInstance();
+#else
+  return nullptr;
+#endif
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
