@@ -63,6 +63,18 @@ const setPullRequest = (commit, owner, repo, number) => {
   }
 }
 
+// copied from https://github.com/electron/clerk/blob/master/src/index.ts#L4-L13
+const OMIT_FROM_RELEASE_NOTES_KEYS = [
+  'no-notes',
+  'no notes',
+  'no_notes',
+  'none',
+  'no',
+  'nothing',
+  'empty',
+  'blank'
+]
+
 const getNoteFromBody = body => {
   if (!body) {
     return null
@@ -83,13 +95,8 @@ const getNoteFromBody = body => {
       .trim()
   }
 
-  if (note) {
-    if (note.match(/^[Nn]o[ _-][Nn]otes\.?$/)) {
-      return NO_NOTES
-    }
-    if (note.match(/^[Nn]one\.?$/)) {
-      return NO_NOTES
-    }
+  if (note && OMIT_FROM_RELEASE_NOTES_KEYS.includes(note.toLowerCase())) {
+    return NO_NOTES
   }
 
   return note
