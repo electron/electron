@@ -25,6 +25,8 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/content_client.h"
 #include "native_mate/dictionary.h"
+#include "third_party/blink/public/platform/web_string.h"
+#include "third_party/blink/public/web/web_security_policy.h"
 #include "url/url_util.h"
 
 using content::BrowserThread;
@@ -87,7 +89,8 @@ void RegisterSchemesAsPrivileged(const std::vector<std::string>& schemes,
       switches.insert(atom::switches::kCORSSchemes);
     }
     if (supportFetchAPI) {
-      // NYI
+      blink::WebSecurityPolicy::RegisterURLSchemeAsSupportingFetchAPI(
+          blink::WebString::FromUTF8(scheme));
       switches.insert(atom::switches::kFetchSchemes);
     }
   }

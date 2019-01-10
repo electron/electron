@@ -20,6 +20,8 @@
 #include "content/public/common/user_agent.h"
 #include "electron/buildflags/buildflags.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
+#include "third_party/blink/public/platform/web_string.h"
+#include "third_party/blink/public/web/web_security_policy.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
@@ -235,6 +237,10 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   ConvertStringWithSeparatorToVector(&splited, ",", switches::kCORSSchemes);
   for (const std::string& scheme : splited)
     schemes->cors_enabled_schemes.push_back(scheme);
+  ConvertStringWithSeparatorToVector(&splited, ",", switches::kFetchSchemes);
+  for (const std::string& scheme : splited)
+    blink::WebSecurityPolicy::RegisterURLSchemeAsSupportingFetchAPI(
+        blink::WebString::FromUTF8(scheme));
 }
 
 void AtomContentClient::AddPepperPlugins(
