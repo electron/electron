@@ -45,7 +45,6 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
 }
 
 bool ContentSettingsObserver::AllowIndexedDB(
-    const blink::WebString& name,
     const blink::WebSecurityOrigin& security_origin) {
   blink::WebFrame* frame = render_frame()->GetWebFrame();
   if (frame->GetSecurityOrigin().IsUnique() ||
