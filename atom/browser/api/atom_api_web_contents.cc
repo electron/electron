@@ -47,6 +47,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
+#include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -421,15 +422,14 @@ void WebContents::InitWithSessionAndOptions(
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
-  CR_DEFINE_STATIC_LOCAL(
-      const gfx::FontRenderParams, params,
-      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
-  prefs->should_antialias_text = params.antialiasing;
-  prefs->use_subpixel_positioning = params.subpixel_positioning;
-  prefs->hinting = params.hinting;
-  prefs->use_autohinter = params.autohinter;
-  prefs->use_bitmaps = params.use_bitmaps;
-  prefs->subpixel_rendering = params.subpixel_rendering;
+  static const base::NoDestructor<gfx::FontRenderParams> params(
+      gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr));
+  prefs->should_antialias_text = params->antialiasing;
+  prefs->use_subpixel_positioning = params->subpixel_positioning;
+  prefs->hinting = params->hinting;
+  prefs->use_autohinter = params->autohinter;
+  prefs->use_bitmaps = params->use_bitmaps;
+  prefs->subpixel_rendering = params->subpixel_rendering;
 #endif
 
   // Save the preferences in C++.
