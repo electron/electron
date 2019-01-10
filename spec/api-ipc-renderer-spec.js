@@ -139,104 +139,54 @@ describe('ipc renderer module', () => {
       contents = null
     })
 
-    it('sends message to WebContents', done => {
-      contents = webContents.create({
-        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+    const generateSpecs = (description, webPreferences) => {
+      describe(description, () => {
+        it('sends message to WebContents', done => {
+          contents = webContents.create({
+            preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
+            ...webPreferences
+          })
+
+          const payload = 'Hello World!'
+
+          ipcRenderer.once('pong', (event, data) => {
+            expect(payload).to.equal(data)
+            done()
+          })
+
+          contents.once('did-finish-load', () => {
+            ipcRenderer.sendTo(contents.id, 'ping', payload)
+          })
+
+          contents.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
+        })
+
+        it('sends message to WebContents (channel has special chars)', done => {
+          contents = webContents.create({
+            preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
+            ...webPreferences
+          })
+
+          const payload = 'Hello World!'
+
+          ipcRenderer.once('pong-æøåü', (event, data) => {
+            expect(payload).to.equal(data)
+            done()
+          })
+
+          contents.once('did-finish-load', () => {
+            ipcRenderer.sendTo(contents.id, 'ping-æøåü', payload)
+          })
+
+          contents.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
+        })
       })
+    }
 
-      const payload = 'Hello World!'
-
-      ipcRenderer.once('pong', (event, data) => {
-        expect(payload).to.equal(data)
-        done()
-      })
-
-      contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', payload)
-      })
-
-      contents.loadFile(path.join(fixtures, 'pages', 'ping-pong.html'))
-    })
-
-    it('sends message to WebContents (sandboxed renderer)', done => {
-      contents = webContents.create({
-        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js'),
-        sandbox: true
-      })
-
-      const payload = 'Hello World!'
-
-      ipcRenderer.once('pong', (event, data) => {
-        expect(payload).to.equal(data)
-        done()
-      })
-
-      contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', payload)
-      })
-
-      contents.loadFile(path.join(fixtures, 'pages', 'ping-pong.html'))
-    })
-
-    it('sends message to WebContents (context isolation)', done => {
-      contents = webContents.create({
-        preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
-        contextIsolation: true
-      })
-
-      const payload = 'Hello World!'
-
-      ipcRenderer.once('pong', (event, data) => {
-        expect(payload).to.equal(data)
-        done()
-      })
-
-      contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', payload)
-      })
-
-      contents.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-    })
-
-    it('sends message to WebContents (context isolation and sandboxed renderer)', done => {
-      contents = webContents.create({
-        preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
-        contextIsolation: true,
-        sandbox: true
-      })
-
-      const payload = 'Hello World!'
-
-      ipcRenderer.once('pong', (event, data) => {
-        expect(payload).to.equal(data)
-        done()
-      })
-
-      contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', payload)
-      })
-
-      contents.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-    })
-
-    it('sends message to WebContents (channel has special chars)', done => {
-      contents = webContents.create({
-        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
-      })
-
-      const payload = 'Hello World!'
-
-      ipcRenderer.once('pong-æøåü', (event, data) => {
-        expect(payload).to.equal(data)
-        done()
-      })
-
-      contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping-æøåü', payload)
-      })
-
-      contents.loadFile(path.join(fixtures, 'pages', 'ping-pong.html'))
-    })
+    generateSpecs('without sandbox', {})
+    generateSpecs('with sandbox', { sandbox: true })
+    generateSpecs('with contextIsolation', { contextIsolation: true })
+    generateSpecs('with contextIsolation + sandbox', { contextIsolation: true, sandbox: true })
   })
 
   describe('remote listeners', () => {
