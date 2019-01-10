@@ -467,7 +467,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     commit.note = commit.note || prSubject
   }
 
-  // remove procedural commits
+  // remove non-user-facing commits
   pool.commits = pool.commits
     .filter(commit => commit.note !== NO_NOTES)
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
