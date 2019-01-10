@@ -50,12 +50,12 @@ async function getNewVersion (dryRun) {
   }
 }
 
-async function getReleaseNotes (currentBranch) {
+async function getReleaseNotes (currentBranch, newVersion) {
   if (bumpType === 'nightly') {
     return { text: 'Nightlies do not get release notes, please compare tags for info.' }
   }
   console.log(`Generating release notes for ${currentBranch}.`)
-  const releaseNotes = await releaseNotesGenerator(currentBranch)
+  const releaseNotes = await releaseNotesGenerator(currentBranch, newVersion)
   if (releaseNotes.warning) {
     console.warn(releaseNotes.warning)
   }
@@ -63,8 +63,8 @@ async function getReleaseNotes (currentBranch) {
 }
 
 async function createRelease (branchToTarget, isBeta) {
-  const releaseNotes = await getReleaseNotes(branchToTarget)
   const newVersion = await getNewVersion()
+  const releaseNotes = await getReleaseNotes(branchToTarget, newVersion)
   await tagRelease(newVersion)
 
   console.log(`Checking for existing draft release.`)
@@ -194,7 +194,8 @@ async function prepareRelease (isBeta, notesOnly) {
   } else {
     const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(gitDir)
     if (notesOnly) {
-      const releaseNotes = await getReleaseNotes(currentBranch)
+      const newVersion = await getNewVersion(true)
+      const releaseNotes = await getReleaseNotes(currentBranch, newVersion)
       console.log(`Draft release notes are: \n${releaseNotes.text}`)
     } else {
       const changes = await changesToRelease(currentBranch)
