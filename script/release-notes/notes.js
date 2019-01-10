@@ -513,7 +513,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   }
 
   const notes = {
-    breaks: [],
+    breaking: [],
     docs: [],
     feat: [],
     fix: [],
@@ -527,7 +527,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     if (!str) {
       notes.unknown.push(commit)
     } else if (breakTypes.has(str)) {
-      notes.breaks.push(commit)
+      notes.breaking.push(commit)
     } else if (docTypes.has(str)) {
       notes.docs.push(commit)
     } else if (featTypes.has(str)) {
@@ -634,7 +634,7 @@ const renderNotes = (notes, explicitLinks) => {
     rendered.push(...lines.sort(), '\n')
   }
 
-  renderSection('Breaking Changes', notes.breaks)
+  renderSection('Breaking Changes', notes.breaking)
   renderSection('Features', notes.feat)
   renderSection('Fixes', notes.fix)
   renderSection('Other Changes', notes.other)
