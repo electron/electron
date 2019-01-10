@@ -431,7 +431,10 @@ describe('app module', () => {
     })
   })
 
-  describe('app.get/setLoginItemSettings API', () => {
+  describe('app.get/setLoginItemSettings API', function () {
+    // allow up to three retries to account for flaky mas results
+    this.retries(3)
+
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
@@ -439,9 +442,7 @@ describe('app module', () => {
     ]
 
     before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
+      if (process.platform === 'linux') this.skip()
     })
 
     beforeEach(() => {
@@ -512,11 +513,7 @@ describe('app module', () => {
     })
 
     it('allows you to pass a custom executable and arguments', function () {
-      if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
+      if (process.platform !== 'win32') this.skip()
 
       app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs })
 
