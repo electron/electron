@@ -27,8 +27,6 @@ class ViewsDelegate : public views::ViewsDelegate {
                                const std::string& window_name,
                                gfx::Rect* bounds,
                                ui::WindowShowState* show_state) const override;
-  void NotifyAccessibilityEvent(views::View* view,
-                                ax::mojom::Event event_type) override;
   void NotifyMenuItemFocused(const base::string16& menu_name,
                              const base::string16& menu_item_name,
                              int item_index,
