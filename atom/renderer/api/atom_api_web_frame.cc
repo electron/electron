@@ -500,10 +500,6 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
                  &WebFrame::AllowGuestViewElementDefinition)
       .SetMethod("getWebFrameId", &WebFrame::GetWebFrameId)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("_registerURLSchemeAsBypassingCSP",
-                 &WebFrame::RegisterURLSchemeAsBypassingCSP)
-      .SetMethod("_registerURLSchemeAsPrivileged",
-                 &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
