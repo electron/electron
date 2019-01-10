@@ -1,3 +1,5 @@
+'use strict'
+
 const { shell, Menu } = require('electron')
 
 const isMac = process.platform === 'darwin'

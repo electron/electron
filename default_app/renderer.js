@@ -1,3 +1,5 @@
+'use strict'
+
 const { remote, shell } = require('electron')
 const fs = require('fs')
 const path = require('path')
