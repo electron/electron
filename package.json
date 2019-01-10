@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "4.0.0-nightly.20181010",
+  "version": "5.0.0-nightly.20190107",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -18,7 +18,7 @@
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-mocha": "^5.2.0",
     "folder-hash": "^2.1.1",
-    "github": "^9.2.0",
+    "@octokit/rest": "^16.3.2",
     "html-entities": "^1.2.1",
     "husky": "^0.14.3",
     "lint": "^1.1.2",
@@ -41,7 +41,7 @@
   "scripts": {
     "asar": "asar",
     "browserify": "browserify",
-    "bump-version": "./script/bump-version.py",
+    "bump-version": "./script/bump-version.js",
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",

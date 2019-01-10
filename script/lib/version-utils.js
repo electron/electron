@@ -8,6 +8,12 @@ const { promisify } = require('util')
 const readFile = promisify(fs.readFile)
 const gitDir = path.resolve(__dirname, '..', '..')
 
+const preType = {
+  NONE: 'none',
+  PARTIAL: 'partial',
+  FULL: 'full'
+}
+
 const getCurrentDate = () => {
   const d = new Date()
   const dd = `${d.getDate()}`.padStart(2, '0')
@@ -23,9 +29,11 @@ const isStable = v => {
   return !!(parsed && parsed.prerelease.length === 0)
 }
 
-const makeVersion = (components, delim, withPre = false) => {
+const makeVersion = (components, delim, pre = preType.NONE) => {
   let version = [components.major, components.minor, components.patch].join(delim)
-  if (withPre) {
+  if (pre === preType.PARTIAL) {
+    version += `${delim}${components.pre[1]}`
+  } else if (pre === preType.FULL) {
     version += `-${components.pre[0]}${delim}${components.pre[1]}`
   }
   return version
@@ -52,7 +60,7 @@ async function nextNightly (v) {
   let next = semver.valid(semver.coerce(v))
   const pre = `nightly.${getCurrentDate()}`
 
-  const branch = await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)
+  const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)).stdout.trim()
   if (branch === 'master') {
     next = semver.inc(await getLastMajorForMaster(), 'major')
   } else if (isStable(v)) {
@@ -69,5 +77,6 @@ module.exports = {
   nextBeta,
   makeVersion,
   getElectronVersion,
-  nextNightly
+  nextNightly,
+  preType
 }

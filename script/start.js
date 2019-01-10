@@ -1,7 +1,5 @@
 const cp = require('child_process')
-
 const utils = require('./lib/utils')
-
 const electronPath = utils.getAbsoluteElectronExec()
 
 const child = cp.spawn(electronPath, process.argv.slice(2), { stdio: 'inherit' })

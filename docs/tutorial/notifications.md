@@ -23,9 +23,8 @@ While code and user experience across operating systems are similar, there
 are subtle differences.
 
 ## Windows
-
 * On Windows 10, a shortcut to your app with an [Application User
-Model ID][app-user-model-id] must be installed to the Start Menu.
+Model ID][app-user-model-id] must be installed to the Start Menu. This can be overkill during development, so adding `node_modules\electron\dist\electron.exe` to your Start Menu also does the trick. Navigate to the file in Explorer, right-click and 'Pin to Start Menu'. You will then need to add the line `app.setAppUserModelId(process.execPath)` to your main process to see notifications.
 * On Windows 8.1 and Windows 8, a shortcut to your app with an [Application User
 Model ID][app-user-model-id] must be installed to the Start screen. Note,
 however, that it does not need to be pinned to the Start screen.
@@ -37,7 +36,7 @@ Electron is used together with the installation and update framework Squirrel,
 [shortcuts will automatically be set correctly][squirrel-events]. Furthermore,
 Electron will detect that Squirrel was used and will automatically call
 `app.setAppUserModelId()` with the correct value. During development, you may have
-to call [`app.setAppUserModelId()`][[set-app-user-model-id]] yourself.
+to call [`app.setAppUserModelId()`][set-app-user-model-id] yourself.
 
 Furthermore, in Windows 8, the maximum length for the notification body is 250
 characters, with the Windows team recommending that notifications should be kept

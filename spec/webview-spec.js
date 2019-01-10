@@ -65,7 +65,13 @@ describe('<webview> tag', function () {
   })
 
   it('works without script tag in page', async () => {
-    const w = await openTheWindow({ show: false })
+    const w = await openTheWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true,
+        nodeIntegration: true
+      }
+    })
     w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
     await emittedOnce(ipcMain, 'pong')
   })
@@ -75,6 +81,7 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
+        nodeIntegration: true,
         contextIsolation: true
       }
     })
@@ -82,12 +89,12 @@ describe('<webview> tag', function () {
     await emittedOnce(ipcMain, 'pong')
   })
 
-  it('is disabled when nodeIntegration is disabled', async () => {
+  it('is disabled by default', async () => {
     const w = await openTheWindow({
       show: false,
       webPreferences: {
-        nodeIntegration: false,
-        preload: path.join(fixtures, 'module', 'preload-webview.js')
+        preload: path.join(fixtures, 'module', 'preload-webview.js'),
+        nodeIntegration: true
       }
     })
 
@@ -95,22 +102,6 @@ describe('<webview> tag', function () {
     const [, type] = await emittedOnce(ipcMain, 'webview')
 
     expect(type).to.equal('undefined', 'WebView still exists')
-  })
-
-  it('is enabled when the webviewTag option is enabled and the nodeIntegration option is disabled', async () => {
-    const w = await openTheWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        preload: path.join(fixtures, 'module', 'preload-webview.js'),
-        webviewTag: true
-      }
-    })
-
-    w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
-    const [, type] = await emittedOnce(ipcMain, 'webview')
-
-    expect(type).to.not.equal('undefined', 'WebView is not created')
   })
 
   describe('src attribute', () => {
@@ -1197,6 +1188,24 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('<webview>.getWebContents filtering', () => {
+    it('can return custom value', async () => {
+      const src = 'about:blank'
+      await loadWebView(webview, { src })
+
+      ipcRenderer.send('handle-next-remote-get-guest-web-contents', 'Hello World!')
+      expect(webview.getWebContents()).to.be.equal('Hello World!')
+    })
+
+    it('throws when no returnValue set', async () => {
+      const src = 'about:blank'
+      await loadWebView(webview, { src })
+
+      ipcRenderer.send('handle-next-remote-get-guest-web-contents')
+      expect(() => webview.getWebContents()).to.throw('Blocked remote.getGuestForWebContents()')
+    })
+  })
+
   // FIXME(deepak1556): Ch69 follow up.
   xdescribe('document.visibilityState/hidden', () => {
     afterEach(() => {
@@ -1289,7 +1298,13 @@ describe('<webview> tag', function () {
 
   describe('did-attach-webview event', () => {
     it('is emitted when a webview has been attached', async () => {
-      const w = await openTheWindow({ show: false })
+      const w = await openTheWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true
+        }
+      })
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'))
 
       const [, webContents] = await emittedOnce(w.webContents, 'did-attach-webview')
@@ -1299,7 +1314,13 @@ describe('<webview> tag', function () {
   })
 
   it('loads devtools extensions registered on the parent window', async () => {
-    const w = await openTheWindow({ show: false })
+    const w = await openTheWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true,
+        nodeIntegration: true
+      }
+    })
     BrowserWindow.removeDevToolsExtension('foo')
 
     const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
@@ -1391,6 +1412,8 @@ describe('<webview> tag', function () {
       const w = await openTheWindow({
         show: false,
         webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
           zoomFactor: 1.2
         }
       })
@@ -1405,6 +1428,8 @@ describe('<webview> tag', function () {
       return openTheWindow({
         show: false,
         webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
           zoomFactor: 1.2
         }
       }).then((w) => {
@@ -1434,6 +1459,8 @@ describe('<webview> tag', function () {
       return openTheWindow({
         show: false,
         webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
           zoomFactor: 1.2
         }
       }).then((w) => {
@@ -1458,6 +1485,8 @@ describe('<webview> tag', function () {
       const w = await openTheWindow({
         show: false,
         webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
           zoomFactor: 1.2
         }
       })

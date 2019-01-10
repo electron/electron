@@ -1,5 +1,43 @@
 const { expect } = require('chai')
 const { nextVersion } = require('../script/bump-version')
+const utils = require('../script/lib/version-utils')
+
+describe('bump-version utils', () => {
+  it('makes a version with a period delimeter', () => {
+    const components = {
+      major: 2,
+      minor: 0,
+      patch: 0
+    }
+
+    const version = utils.makeVersion(components, '.')
+    expect(version).to.equal('2.0.0')
+  })
+
+  it('makes a version with a period delimeter and a partial pre', () => {
+    const components = {
+      major: 2,
+      minor: 0,
+      patch: 0,
+      pre: [ 'nightly', 12345678 ]
+    }
+
+    const version = utils.makeVersion(components, '.', utils.preType.PARTIAL)
+    expect(version).to.equal('2.0.0.12345678')
+  })
+
+  it('makes a version with a period delimeter and a full pre', () => {
+    const components = {
+      major: 2,
+      minor: 0,
+      patch: 0,
+      pre: [ 'nightly', 12345678 ]
+    }
+
+    const version = utils.makeVersion(components, '.', utils.preType.FULL)
+    expect(version).to.equal('2.0.0-nightly.12345678')
+  })
+})
 
 describe('bump-version script', () => {
   const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g

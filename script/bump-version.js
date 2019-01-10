@@ -164,8 +164,8 @@ async function updateWinRC (components) {
   const arr = data.split('\n')
   arr.forEach((line, idx) => {
     if (line.includes('FILEVERSION')) {
-      arr[idx] = ` FILEVERSION ${utils.makeVersion(components, ',', true)}`
-      arr[idx + 1] = ` PRODUCTVERSION ${utils.makeVersion(components, ',', true)}`
+      arr[idx] = ` FILEVERSION ${utils.makeVersion(components, ',', utils.preType.PARTIAL)}`
+      arr[idx + 1] = ` PRODUCTVERSION ${utils.makeVersion(components, ',', utils.preType.PARTIAL)}`
     } else if (line.includes('FileVersion')) {
       arr[idx] = `            VALUE "FileVersion", "${utils.makeVersion(components, '.')}"`
       arr[idx + 5] = `            VALUE "ProductVersion", "${utils.makeVersion(components, '.')}"`

@@ -99,9 +99,9 @@ WebContentsPreferences::WebContentsPreferences(
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
-  bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
+  SetDefaultBoolIfUndefined(options::kNodeIntegration, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
-  SetDefaultBoolIfUndefined(options::kWebviewTag, node);
+  SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);

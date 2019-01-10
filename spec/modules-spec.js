@@ -162,7 +162,12 @@ describe('modules support', () => {
       let w
 
       beforeEach(() => {
-        w = new BrowserWindow({ show: false })
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
       })
 
       afterEach(async () => {
