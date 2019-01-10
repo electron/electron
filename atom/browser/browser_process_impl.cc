@@ -299,6 +299,11 @@ gcm::GCMDriver* BrowserProcessImpl::gcm_driver() {
   return nullptr;
 }
 
+resource_coordinator::ResourceCoordinatorParts*
+BrowserProcessImpl::resource_coordinator_parts() {
+  return nullptr;
+}
+
 resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
   return nullptr;
 }

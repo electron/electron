@@ -98,6 +98,8 @@ class BrowserProcessImpl : public BrowserProcess {
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;
   gcm::GCMDriver* gcm_driver() override;
+  resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
+      override;
   resource_coordinator::TabManager* GetTabManager() override;
   shell_integration::DefaultWebClientState CachedDefaultWebClientState()
       override;
