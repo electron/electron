@@ -132,10 +132,18 @@ index 7ff9a9219beffc015ae8a96303595ee529715819..d2394892c2a0d2b4f88407cd412af143
 +  browser_context_shutdown_notifier_.reset();
  }
 diff --git a/chrome/browser/speech/tts_message_filter.h b/chrome/browser/speech/tts_message_filter.h
-index 2fbbc4b4f2a79eac6b686894f2b6463abe404e50..c4712cebfba0efeb62a9061a997055c94ae41e3e 100644
+index 2fbbc4b4f2a79eac6b686894f2b6463abe404e50..e02c1af7e002a70df5fa925ba758c7c2379ffac5 100644
 --- a/chrome/browser/speech/tts_message_filter.h
 +++ b/chrome/browser/speech/tts_message_filter.h
-@@ -21,7 +21,6 @@ class BrowserContext;
+@@ -8,6 +8,7 @@
+ #include "base/macros.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/synchronization/lock.h"
++#include "components/keyed_service/core/keyed_service_shutdown_notifier.h"
+ #include "content/public/browser/browser_message_filter.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/notification_observer.h"
+@@ -21,7 +22,6 @@ class BrowserContext;
  struct TtsUtteranceRequest;
  
  class TtsMessageFilter : public content::BrowserMessageFilter,
@@ -143,7 +151,7 @@ index 2fbbc4b4f2a79eac6b686894f2b6463abe404e50..c4712cebfba0efeb62a9061a997055c9
                           public content::UtteranceEventDelegate,
                           public content::VoicesChangedDelegate {
   public:
-@@ -63,15 +62,13 @@ class TtsMessageFilter : public content::BrowserMessageFilter,
+@@ -63,15 +63,13 @@ class TtsMessageFilter : public content::BrowserMessageFilter,
    // about to be deleted.
    bool Valid();
  
