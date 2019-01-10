@@ -80,7 +80,7 @@ async function deleteTag (tag, targetRepo) {
     await github.gitdata.deleteReference({
       owner: 'electron',
       repo: targetRepo,
-      ref: tag
+      ref: `tags/${tag}`
     })
     console.log(`Successfully deleted tag ${tag} from ${targetRepo}`)
   } catch (err) {
