@@ -76,10 +76,9 @@ const getNoteFromBody = body => {
     .find(paragraph => paragraph.startsWith(NOTE_PREFIX))
 
   if (note) {
-    const placeholder = '<!-- One-line Change Summary Here-->'
     note = note
       .slice(NOTE_PREFIX.length)
-      .replace(placeholder, '')
+      .replace(/<!--.*-->/, '') // '<!-- change summary here-->'
       .replace(/\r?\n/, ' ') // remove newlines
       .trim()
   }
