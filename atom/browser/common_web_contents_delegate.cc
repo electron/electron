@@ -187,7 +187,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
   // Determien whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   offscreen_ =
-      !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
+      web_preferences && web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(
