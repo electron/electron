@@ -213,18 +213,28 @@ base::RefCountedMemory* AtomContentClient::GetDataResourceBytes(
 }
 
 void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
-  schemes->standard_schemes.push_back("chrome-extension");
-
   std::vector<std::string> splited;
   ConvertStringWithSeparatorToVector(&splited, ",",
-                                     switches::kRegisterServiceWorkerSchemes);
+                                     switches::kServiceWorkerSchemes);
   for (const std::string& scheme : splited)
     schemes->service_worker_schemes.push_back(scheme);
   schemes->service_worker_schemes.push_back(url::kFileScheme);
 
+  ConvertStringWithSeparatorToVector(&splited, ",", switches::kStandardSchemes);
+  for (const std::string& scheme : splited)
+    schemes->standard_schemes.push_back(scheme);
+  schemes->standard_schemes.push_back("chrome-extension");
+
   ConvertStringWithSeparatorToVector(&splited, ",", switches::kSecureSchemes);
   for (const std::string& scheme : splited)
     schemes->secure_schemes.push_back(scheme);
+  ConvertStringWithSeparatorToVector(&splited, ",",
+                                     switches::kBypassCSPSchemes);
+  for (const std::string& scheme : splited)
+    schemes->csp_bypassing_schemes.push_back(scheme);
+  ConvertStringWithSeparatorToVector(&splited, ",", switches::kCORSSchemes);
+  for (const std::string& scheme : splited)
+    schemes->cors_enabled_schemes.push_back(scheme);
 }
 
 void AtomContentClient::AddPepperPlugins(

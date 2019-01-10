@@ -615,6 +615,8 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
+  // url::Add*Scheme are not threadsafe, this helps prevent data races.
+  url::LockSchemeRegistries();
   Emit("ready", launch_info);
 }
 
