@@ -158,8 +158,6 @@ AtomBrowserClient* AtomBrowserClient::Get() {
 
 // static
 void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
       !base::PostTaskWithTraits(
           FROM_HERE, {BrowserThread::IO},
