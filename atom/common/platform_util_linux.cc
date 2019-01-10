@@ -139,11 +139,14 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
 
 void Beep() {
   // echo '\a' > /dev/console
-  FILE* console = fopen("/dev/console", "r");
-  if (console == NULL)
-    return;
-  fprintf(console, "\a");
-  fclose(console);
+  FILE* fp = fopen("/dev/console", "a");
+  if (fp == nullptr) {
+    fp = fopen("/dev/tty", "a");
+  }
+  if (fp != nullptr) {
+    fprintf(fp, "\a");
+    fclose(fp);
+  }
 }
 
 }  // namespace platform_util
