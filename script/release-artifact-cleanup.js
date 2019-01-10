@@ -72,7 +72,7 @@ async function deleteTag (tag, targetRepo) {
     await octokit.git.deleteRef({
       owner: 'electron',
       repo: targetRepo,
-      ref: tag
+      ref: `tags/${tag}`
     })
     console.log(`${pass} successfully deleted tag ${tag} from ${targetRepo}`)
   } catch (err) {
