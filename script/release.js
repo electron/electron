@@ -221,7 +221,7 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
     url: uploadUrl,
     headers: {
       'content-type': 'text/plain',
-      'content-length': fs.statSync(filePath).size
+      'content-size': fs.statSync(filePath).size
     },
     file: fs.createReadStream(filePath),
     name: fileName
