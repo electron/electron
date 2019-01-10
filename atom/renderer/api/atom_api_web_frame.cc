@@ -284,7 +284,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
         privileged_scheme);
   }
   if (corsEnabled) {
-    url::AddCORSEnabledScheme(scheme.c_str());
+    url::AddCorsEnabledScheme(scheme.c_str());
   }
 }
 
