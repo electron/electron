@@ -8,6 +8,10 @@
 #include <memory>
 #include <string>
 
+#if defined(OS_LINUX)
+#include <glib.h>  // for g_setenv()
+#endif
+
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/relauncher.h"
