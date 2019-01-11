@@ -5,8 +5,11 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "atom/common/atom_constants.h"
+#include "atom/browser/ui/views/root_view.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "ui/base/win/accessibility_misc_utils.h"
+#include "ui/display/win/screen_win.h"
+#include "ui/gfx/geometry/insets.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationCoreApi.h>
@@ -183,6 +186,45 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       return false;
     }
+    case WM_GETMINMAXINFO: {
+      WINDOWPLACEMENT wp;
+      wp.length = sizeof(WINDOWPLACEMENT);
+
+      // We do this to work around a Windows bug, where the minimized Window
+      // would report that the closest display to it is not the one that it was
+      // previously on (but the leftmost one instead). We restore the position
+      // of the window during the restore operation, this way chromium can
+      // use the proper display to calculate the scale factor to use.
+      if(!last_normal_placement_bounds_.IsEmpty() && GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+        last_normal_placement_bounds_.set_size(gfx::Size(0,0));
+        wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
+        SetWindowPlacement(GetAcceleratedWidget(), &wp);
+
+        last_normal_placement_bounds_ = gfx::Rect();
+      }
+
+      return false;
+    }
+    case WM_NCCALCSIZE: {
+      if (!has_frame() && w_param == TRUE) {
+        NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)l_param;
+        RECT PROPOSED = params->rgrc[0];
+        RECT BEFORE = params->rgrc[1];
+
+        // We need to call the default to have cascade and tile windows
+        // working (https://github.com/rossy/borderless-window/blob/master/borderless-window.c#L239),
+        // but we need to provide the proposed original value as suggested in
+        // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
+        DefWindowProcW(GetAcceleratedWidget(), WM_NCCALCSIZE, w_param, l_param);
+
+        params->rgrc[0] = PROPOSED;
+        params->rgrc[1] = BEFORE;
+
+        return true;
+      } else {
+        return false;
+      }
+    }
     case WM_COMMAND:
       // Handle thumbar button click message.
       if (HIWORD(w_param) == THBN_CLICKED)
@@ -258,15 +300,40 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   // Here we handle the WM_SIZE event in order to figure out what is the current
   // window state and notify the user accordingly.
   switch (w_param) {
-    case SIZE_MAXIMIZED:
+    case SIZE_MAXIMIZED: {
+      // Frameless maximized windows are size compensated by Windows for a
+      // border that's not actually there, so we must conter-compensate.
+      // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
+      if (!has_frame()) {
+        float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(
+            GetAcceleratedWidget());
+
+        int border =
+            GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+        if (!thick_frame_) {
+          border -= GetSystemMetrics(SM_CXBORDER);
+        }
+        root_view_->SetInsets(gfx::Insets(border).Scale(1.0f / scale_factor));
+      }
+
       last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
       if (consecutive_moves_) {
         last_normal_bounds_ = last_normal_bounds_before_move_;
       }
+
       NotifyWindowMaximize();
       break;
+    }
     case SIZE_MINIMIZED:
       last_window_state_ = ui::SHOW_STATE_MINIMIZED;
+
+      WINDOWPLACEMENT wp;
+      wp.length = sizeof(WINDOWPLACEMENT);
+
+      if(GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+        last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
+      }
+
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
@@ -278,10 +345,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
         switch (last_window_state_) {
           case ui::SHOW_STATE_MAXIMIZED:
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-
-            // Don't force out last known bounds onto the window as Windows
-            // actually gets these correct
-
+            root_view_->SetInsets(gfx::Insets(0));
             NotifyWindowUnmaximize();
             break;
           case ui::SHOW_STATE_MINIMIZED:
@@ -293,7 +357,9 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
               // When the window is restored we resize it to the previous known
               // normal size.
-              SetBounds(last_normal_bounds_, false);
+              if (has_frame()) {
+                SetBounds(last_normal_bounds_, false);
+              }
 
               NotifyWindowRestore();
             }

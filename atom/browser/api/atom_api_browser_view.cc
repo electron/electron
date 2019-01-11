@@ -68,6 +68,9 @@ void BrowserView::Init(v8::Isolate* isolate,
   api_web_contents_ = web_contents.get();
   Observe(web_contents->web_contents());
 
+  mate::Dictionary(isolate, web_contents->GetWrapper())
+      .Set("browserWindowOptions", options);
+
   view_.reset(
       NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
 

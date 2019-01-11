@@ -80,6 +80,27 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
     style &= ~flag;
   ::SetWindowLong(handle, GWL_STYLE, style);
 }
+
+// Similar to the ones in display::win::ScreenWin, but with rounded values
+// These help to avoid problems that arise from unresizable windows where the
+// original ceil()-ed values can cause calculation errors, since converting
+// both ways goes through a ceil() call. Related issue: #15816
+gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
+  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
+  dip_rect.set_origin(
+      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
+  return dip_rect;
+}
+
+gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
+  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  gfx::Rect screen_rect = ScaleToRoundedRect(pixel_bounds, scale_factor);
+  screen_rect.set_origin(
+      display::win::ScreenWin::DIPToScreenRect(hwnd, pixel_bounds).origin());
+  return screen_rect;
+}
+
 #endif
 
 class NativeWindowClientView : public views::ClientView {
@@ -238,7 +259,8 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
-    DWORD frame_style = WS_CAPTION;
+    // DWORD frame_style = WS_CAPTION | WS_OVERLAPPED | WS_SYSMENU;
+    DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
     if (resizable_)
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
@@ -1076,7 +1098,10 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 }
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
-  return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
+  if (GetNativeWindow() && GetNativeWindow()->GetHost())
+    return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
+  else
+    return nullptr;
 }
 
 NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
@@ -1091,8 +1116,8 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   gfx::Rect window_bounds(bounds);
 #if defined(OS_WIN)
   HWND hwnd = GetAcceleratedWidget();
-  gfx::Rect dpi_bounds = display::win::ScreenWin::DIPToScreenRect(hwnd, bounds);
-  window_bounds = display::win::ScreenWin::ScreenToDIPRect(
+  gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
+  window_bounds = ScreenToDIPRect(
       hwnd,
       widget()->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
 #endif
@@ -1113,8 +1138,7 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   gfx::Rect content_bounds(bounds);
 #if defined(OS_WIN)
   HWND hwnd = GetAcceleratedWidget();
-  content_bounds.set_size(
-      display::win::ScreenWin::DIPToScreenSize(hwnd, content_bounds.size()));
+  content_bounds.set_size(DIPToScreenRect(hwnd, content_bounds).size());
   RECT rect;
   SetRectEmpty(&rect);
   DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
@@ -1122,8 +1146,7 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   AdjustWindowRectEx(&rect, style, FALSE, ex_style);
   content_bounds.set_width(content_bounds.width() - (rect.right - rect.left));
   content_bounds.set_height(content_bounds.height() - (rect.bottom - rect.top));
-  content_bounds.set_size(
-      display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
+  content_bounds.set_size(ScreenToDIPRect(hwnd, content_bounds).size());
 #endif
 
   if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
