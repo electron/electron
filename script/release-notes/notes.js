@@ -6,15 +6,15 @@ const os = require('os')
 const path = require('path')
 
 const { GitProcess } = require('dugite')
-const GitHub = require('github')
+const octokit = require('@octokit/rest')()
 const semver = require('semver')
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
 const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
-const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
-github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
+
+octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
@@ -63,6 +63,18 @@ const setPullRequest = (commit, owner, repo, number) => {
   }
 }
 
+// copied from https://github.com/electron/clerk/blob/master/src/index.ts#L4-L13
+const OMIT_FROM_RELEASE_NOTES_KEYS = [
+  'no-notes',
+  'no notes',
+  'no_notes',
+  'none',
+  'no',
+  'nothing',
+  'empty',
+  'blank'
+]
+
 const getNoteFromBody = body => {
   if (!body) {
     return null
@@ -76,21 +88,15 @@ const getNoteFromBody = body => {
     .find(paragraph => paragraph.startsWith(NOTE_PREFIX))
 
   if (note) {
-    const placeholder = '<!-- One-line Change Summary Here-->'
     note = note
       .slice(NOTE_PREFIX.length)
-      .replace(placeholder, '')
+      .replace(/<!--.*-->/, '') // '<!-- change summary here-->'
       .replace(/\r?\n/, ' ') // remove newlines
       .trim()
   }
 
-  if (note) {
-    if (note.match(/^[Nn]o[ _-][Nn]otes\.?$/)) {
-      return NO_NOTES
-    }
-    if (note.match(/^[Nn]one\.?$/)) {
-      return NO_NOTES
-    }
+  if (note && OMIT_FROM_RELEASE_NOTES_KEYS.includes(note.toLowerCase())) {
+    return NO_NOTES
   }
 
   return note
@@ -137,8 +143,11 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
   // if the subject begins with 'word:', treat it as a semantic commit
   if ((match = subject.match(/^(\w+):\s(.*)$/))) {
-    commit.type = match[1].toLocaleLowerCase()
-    subject = match[2]
+    const type = match[1].toLocaleLowerCase()
+    if (knownTypes.has(type)) {
+      commit.type = type
+      subject = match[2]
+    }
   }
 
   // Check for GitHub commit message that indicates a PR
@@ -221,7 +230,6 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   }
 
   commit.subject = subject.trim()
-
   return commit
 }
 
@@ -275,7 +283,7 @@ const getPullRequest = async (number, owner, repo) => {
   const name = `${owner}-${repo}-pull-${number}`
   return checkCache(name, async () => {
     try {
-      return await github.pullRequests.get({ number, owner, repo })
+      return await octokit.pulls.get({ number, owner, repo })
     } catch (error) {
       // Silently eat 404s.
       // We can get a bad pull number if someone manually lists
@@ -389,7 +397,7 @@ const getDependencyCommits = async (pool, from, to) => {
 ****  Main
 ***/
 
-const getNotes = async (fromRef, toRef) => {
+const getNotes = async (fromRef, toRef, newVersion) => {
   if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR)
   }
@@ -437,6 +445,7 @@ const getNotes = async (fromRef, toRef) => {
   // scrape PRs for release note 'Notes:' comments
   for (const commit of pool.commits) {
     let pr = commit.pr
+    let prSubject
     while (pr && !commit.note) {
       const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
       if (!prData || !prData.data) {
@@ -444,30 +453,73 @@ const getNotes = async (fromRef, toRef) => {
       }
 
       // try to pull a release note from the pull comment
-      commit.note = getNoteFromBody(prData.data.body)
-      if (commit.note) {
-        break
-      }
+      const prParsed = {}
+      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, prParsed)
+      commit.note = commit.note || prParsed.note
+      commit.type = commit.type || prParsed.type
+      prSubject = prSubject || prParsed.subject
 
-      // if the PR references another PR, maybe follow it
-      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, commit)
-      pr = pr.number !== commit.pr.number ? commit.pr : null
+      pr = prParsed.pr && (prParsed.pr.number !== pr.number) ? prParsed.pr : null
     }
+
+    // if we still don't have a note, it's because someone missed a 'Notes:
+    // comment in a PR somewhere... use the PR subject as a fallback.
+    commit.note = commit.note || prSubject
   }
 
-  // remove uninteresting commits
+  // remove non-user-facing commits
   pool.commits = pool.commits
     .filter(commit => commit.note !== NO_NOTES)
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
+  // if this is a stable release,
+  // remove notes for changes that already landed in a previous major/minor series
+  if (semver.valid(newVersion) && !semver.prerelease(newVersion)) {
+    // load all the prDatas
+    await Promise.all(
+      pool.commits.map(commit => new Promise(async (resolve) => {
+        const { pr } = commit
+        if (typeof pr === 'object') {
+          const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
+          if (prData) {
+            commit.prData = prData
+          }
+        }
+        resolve()
+      }))
+    )
+
+    // remove items that already landed in a previous major/minor series
+    pool.commits = pool.commits
+      .filter(commit => {
+        if (!commit.prData) {
+          return true
+        }
+        const reducer = (accumulator, current) => {
+          if (!semver.valid(accumulator)) { return current }
+          if (!semver.valid(current)) { return accumulator }
+          return semver.lt(accumulator, current) ? accumulator : current
+        }
+        const earliestRelease = commit.prData.data.labels
+          .map(label => label.name.match(/merged\/(\d+)-(\d+)-x/))
+          .filter(label => !!label)
+          .map(label => `${label[1]}.${label[2]}.0`)
+          .reduce(reducer, null)
+        if (!semver.valid(earliestRelease)) {
+          return true
+        }
+        return semver.diff(earliestRelease, newVersion).includes('patch')
+      })
+  }
+
   const notes = {
-    breaks: [],
+    breaking: [],
     docs: [],
     feat: [],
     fix: [],
     other: [],
     unknown: [],
-    ref: toRef
+    name: newVersion
   }
 
   pool.commits.forEach(commit => {
@@ -475,7 +527,7 @@ const getNotes = async (fromRef, toRef) => {
     if (!str) {
       notes.unknown.push(commit)
     } else if (breakTypes.has(str)) {
-      notes.breaks.push(commit)
+      notes.breaking.push(commit)
     } else if (docTypes.has(str)) {
       notes.docs.push(commit)
     } else if (featTypes.has(str)) {
@@ -496,7 +548,28 @@ const getNotes = async (fromRef, toRef) => {
 ****  Render
 ***/
 
-const renderCommit = commit => {
+const renderLink = (commit, explicitLinks) => {
+  let link
+  const pr = commit.originalPr
+  if (pr) {
+    const { owner, repo, number } = pr
+    const url = `https://github.com/${owner}/${repo}/pull/${number}`
+    const text = owner === 'electron' && repo === 'electron'
+      ? `#${number}`
+      : `${owner}/${repo}#${number}`
+    link = explicitLinks ? `[${text}](${url})` : text
+  } else {
+    const { owner, repo, hash } = commit
+    const url = `https://github.com/${owner}/${repo}/commit/${hash}`
+    const text = owner === 'electron' && repo === 'electron'
+      ? `${hash.slice(0, 8)}`
+      : `${owner}/${repo}@${hash.slice(0, 8)}`
+    link = explicitLinks ? `[${text}](${url})` : text
+  }
+  return link
+}
+
+const renderCommit = (commit, explicitLinks) => {
   // clean up the note
   let note = commit.note || commit.subject
   note = note.trim()
@@ -535,29 +608,20 @@ const renderCommit = commit => {
     }
   }
 
-  // make a GH-markdown-friendly link
-  let link
-  const pr = commit.originalPr
-  if (!pr) {
-    link = `https://github.com/${commit.owner}/${commit.repo}/commit/${commit.hash}`
-  } else if (pr.owner === 'electron' && pr.repo === 'electron') {
-    link = `#${pr.number}`
-  } else {
-    link = `[${pr.owner}/${pr.repo}:${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
-  }
+  const link = renderLink(commit, explicitLinks)
 
   return { note, link }
 }
 
-const renderNotes = notes => {
-  const rendered = [ `# Release Notes for ${notes.ref}\n\n` ]
+const renderNotes = (notes, explicitLinks) => {
+  const rendered = [ `# Release Notes for ${notes.name}\n\n` ]
 
   const renderSection = (title, commits) => {
     if (commits.length === 0) {
       return
     }
     const notes = new Map()
-    for (const note of commits.map(commit => renderCommit(commit))) {
+    for (const note of commits.map(commit => renderCommit(commit, explicitLinks))) {
       if (!notes.has(note.note)) {
         notes.set(note.note, [note.link])
       } else {
@@ -570,17 +634,13 @@ const renderNotes = notes => {
     rendered.push(...lines.sort(), '\n')
   }
 
-  renderSection('Breaking Changes', notes.breaks)
+  renderSection('Breaking Changes', notes.breaking)
   renderSection('Features', notes.feat)
   renderSection('Fixes', notes.fix)
   renderSection('Other Changes', notes.other)
 
   if (notes.docs.length) {
-    const docs = notes.docs.map(commit => {
-      return commit.pr && commit.pr.number
-        ? `#${commit.pr.number}`
-        : `https://github.com/electron/electron/commit/${commit.hash}`
-    }).sort()
+    const docs = notes.docs.map(commit => renderLink(commit, explicitLinks)).sort()
     rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n')
   }
 
