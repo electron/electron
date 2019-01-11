@@ -10,6 +10,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/platform_util.h"
+#include "atom/common/promise_util.h"
 #include "native_mate/dictionary.h"
 
 #if defined(OS_WIN)
@@ -43,17 +44,16 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
-void OnOpenExternalFinished(
-    v8::Isolate* isolate,
-    const base::Callback<void(v8::Local<v8::Value>)>& callback,
-    const std::string& error) {
+void OnOpenExternalFinished(v8::Isolate* isolate,
+                            scoped_refptr<atom::util::Promise> promise,
+                            const std::string& error) {
   if (error.empty())
-    callback.Run(v8::Null(isolate));
+    promise->Resolve();
   else
-    callback.Run(v8::String::NewFromUtf8(isolate, error.c_str()));
+    promise->RejectWithErrorMessage(error.c_str());
 }
 
-bool OpenExternal(
+bool OpenExternalSync(
 #if defined(OS_WIN)
     const base::string16& url,
 #else
@@ -69,17 +69,36 @@ bool OpenExternal(
     }
   }
 
-  if (args->Length() >= 3) {
-    base::Callback<void(v8::Local<v8::Value>)> callback;
-    if (args->GetNext(&callback)) {
-      platform_util::OpenExternal(
-          url, options,
-          base::Bind(&OnOpenExternalFinished, args->isolate(), callback));
-      return true;
+  return platform_util::OpenExternal(url, options);
+}
+
+v8::Local<v8::Promise> OpenExternal(
+#if defined(OS_WIN)
+    const base::string16& url,
+#else
+    const GURL& url,
+#endif
+    mate::Arguments* args) {
+
+  v8::Locker locker(args->isolate());
+  v8::HandleScope handle_scope(args->isolate());
+  scoped_refptr<atom::util::Promise> promise =
+      new atom::util::Promise(args->isolate());
+
+  platform_util::OpenExternalOptions options;
+  if (args->Length() >= 2) {
+    mate::Dictionary obj;
+    if (args->GetNext(&obj)) {
+      obj.Get("activate", &options.activate);
+      obj.Get("workingDirectory", &options.working_dir);
     }
   }
 
-  return platform_util::OpenExternal(url, options);
+  platform_util::OpenExternal(
+      url, options,
+      base::Bind(&OnOpenExternalFinished, args->isolate(), promise));
+
+  return promise->GetHandle();
 }
 
 #if defined(OS_WIN)
@@ -144,6 +163,7 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);
+  dict.SetMethod("openExternalSync", &OpenExternalSync);
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash);
   dict.SetMethod("beep", &platform_util::Beep);

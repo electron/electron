@@ -16,14 +16,55 @@ describe('shell module', () => {
     iconIndex: 1
   }
 
-  // (alexeykuzmin): `.skip()` in `before` doesn't work for nested `describe`s.
-  beforeEach(function () {
-    if (process.platform !== 'win32') {
-      this.skip()
-    }
+  describe('shell.openExternal()', () => {
+    let envVars = {}
+
+    beforeEach(function () {
+      envVars = {
+        display: process.env.DISPLAY,
+        de: process.env.DE,
+        browser: process.env.BROWSER
+      }
+    })
+
+    afterEach(() => {
+      // reset env vars to prevent side effects
+      if (process.platform === 'linux') {
+        process.env.DE = envVars.de
+        process.env.BROWSER = envVars.browser
+        process.env.DISPLAY = envVars.display
+      }
+    })
+
+    it('opens an external link asynchronously', done => {
+      const url = 'http://www.example.com'
+      if (process.platform === 'linux') {
+        process.env.BROWSER = '/bin/true'
+        process.env.DE = 'generic'
+        process.env.DISPLAY = ''
+      }
+
+      shell.openExternal(url).then(() => done())
+    })
+
+    it('opens an external link synchronously', () => {
+      const url = 'http://www.example.com'
+      if (process.platform === 'linux') {
+        process.env.DE = 'generic'
+        process.env.DE = '/bin/true'
+        process.env.DISPLAY = ''
+      }
+
+      const success = shell.openExternalSync(url)
+      assert.strictEqual(true, success)
+    })
   })
 
   describe('shell.readShortcutLink(shortcutPath)', () => {
+    beforeEach(function () {
+      if (process.platform !== 'win32') this.skip()
+    })
+
     it('throws when failed', () => {
       assert.throws(() => {
         shell.readShortcutLink('not-exist')
@@ -37,6 +78,10 @@ describe('shell module', () => {
   })
 
   describe('shell.writeShortcutLink(shortcutPath[, operation], options)', () => {
+    beforeEach(function () {
+      if (process.platform !== 'win32') this.skip()
+    })
+
     const tmpShortcut = path.join(os.tmpdir(), `${Date.now()}.lnk`)
 
     afterEach(() => {

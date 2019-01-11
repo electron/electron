@@ -8,7 +8,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 
 ### Candidate Functions
 
-- [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
 - [ ] [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
 - [ ] [request.write(chunk[, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#write)
 - [ ] [request.end([chunk][, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#end)
@@ -41,7 +40,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [ses.clearHostResolverCache([callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearHostResolverCache)
 - [ ] [ses.getBlobData(identifier, callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#getBlobData)
 - [ ] [ses.clearAuthCache(options[, callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearAuthCache)
-- [ ] [shell.openExternal(url[, options, callback])](https://github.com/electron/electron/blob/master/docs/api/shell.md#openExternal)
 - [ ] [contents.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#executeJavaScript)
 - [ ] [contents.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomFactor)
 - [ ] [contents.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomLevel)
@@ -62,3 +60,5 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [win.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#capturePage)
 - [ ] [webviewTag.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#capturePage)
 - [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
+- [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
+- [ ] [shell.openExternal(url[, options, callback])](https://github.com/electron/electron/blob/master/docs/api/shell.md#openExternal)

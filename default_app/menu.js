@@ -13,13 +13,13 @@ const setDefaultApplicationMenu = () => {
       {
         label: 'Learn More',
         click () {
-          shell.openExternal('https://electronjs.org')
+          shell.openExternalSync('https://electronjs.org')
         }
       },
       {
         label: 'Documentation',
         click () {
-          shell.openExternal(
+          shell.openExternalSync(
             `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
           )
         }
@@ -27,13 +27,13 @@ const setDefaultApplicationMenu = () => {
       {
         label: 'Community Discussions',
         click () {
-          shell.openExternal('https://discuss.atom.io/c/electron')
+          shell.openExternalSync('https://discuss.atom.io/c/electron')
         }
       },
       {
         label: 'Search Issues',
         click () {
-          shell.openExternal('https://github.com/electron/electron/issues')
+          shell.openExternalSync('https://github.com/electron/electron/issues')
         }
       }
     ]

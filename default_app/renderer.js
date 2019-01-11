@@ -21,7 +21,7 @@ function initialize () {
 
     const openLinkExternally = (e) => {
       e.preventDefault()
-      shell.openExternal(url)
+      shell.openExternalSync(url)
     }
 
     link.addEventListener('click', openLinkExternally)
