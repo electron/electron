@@ -6,6 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const { ipcRenderer, remote } = require('electron')
+const features = process.atomBinding('features')
 
 const isCI = remote.getGlobal('isCi')
 chai.use(dirtyChai)
@@ -14,6 +15,12 @@ describe('node feature', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('child_process', () => {
+    beforeEach(function () {
+      if (!features.isRunAsNodeEnabled()) {
+        this.skip()
+      }
+    })
+
     describe('child_process.fork', () => {
       it('works in current process', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'))
@@ -208,6 +215,12 @@ describe('node feature', () => {
   describe('inspector', () => {
     let child = null
 
+    beforeEach(function () {
+      if (!features.isRunAsNodeEnabled()) {
+        this.skip()
+      }
+    })
+
     afterEach(() => {
       if (child !== null) child.kill()
     })
@@ -299,7 +312,7 @@ describe('node feature', () => {
 
   describe('net.connect', () => {
     before(function () {
-      if (process.platform !== 'darwin') {
+      if (!features.isRunAsNodeEnabled() || process.platform !== 'darwin') {
         this.skip()
       }
     })

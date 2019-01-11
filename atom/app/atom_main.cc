@@ -53,7 +53,7 @@ namespace {
 const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
 #endif
 
-bool IsEnvSet(const char* name) {
+ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
   size_t required_size;
   getenv_s(&required_size, nullptr, 0, name);
