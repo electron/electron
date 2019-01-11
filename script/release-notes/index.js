@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { GitProcess } = require('dugite')
+const minimist = require('minimist')
 const path = require('path')
 const semver = require('semver')
 
@@ -120,15 +121,19 @@ const getPreviousPoint = async (point) => {
   }
 }
 
-async function getReleaseNotes (range) {
+async function getReleaseNotes (range, newVersion, explicitLinks) {
   const rangeList = range.split('..') || ['HEAD']
   const to = rangeList.pop()
   const from = rangeList.pop() || (await getPreviousPoint(to))
-  console.log(`Generating release notes between ${from} and ${to}`)
 
-  const notes = await notesGenerator.get(from, to)
+  if (!newVersion) {
+    newVersion = to
+  }
+
+  console.log(`Generating release notes between ${from} and ${to} for version ${newVersion}`)
+  const notes = await notesGenerator.get(from, to, newVersion)
   const ret = {
-    text: notesGenerator.render(notes)
+    text: notesGenerator.render(notes, explicitLinks)
   }
 
   if (notes.unknown.length) {
@@ -139,13 +144,33 @@ async function getReleaseNotes (range) {
 }
 
 async function main () {
-  if (process.argv.length > 3) {
-    console.log('Use: script/release-notes/index.js [tag | tag1..tag2]')
-    return 1
+  const opts = minimist(process.argv.slice(2), {
+    boolean: [ 'explicit-links', 'help' ],
+    string: [ 'version' ]
+  })
+  opts.range = opts._.shift()
+  if (opts.help || !opts.range) {
+    const name = path.basename(process.argv[1])
+    console.log(`
+easy usage: ${name} version
+
+full usage: ${name} [begin..]end [--version version] [--explicit-links]
+
+ * 'begin' and 'end' are two git references -- tags, branches, etc --
+   from which the release notes are generated.
+ * if omitted, 'begin' defaults to the previous tag in end's branch.
+ * if omitted, 'version' defaults to 'end'. Specifying a version is
+   useful if you're making notes on a new version that isn't tagged yet.
+ * 'explicit-links' makes every note's issue, commit, or pull an MD link
+
+For example, these invocations are equivalent:
+  ${process.argv[1]} v4.0.1
+  ${process.argv[1]} v4.0.0..v4.0.1 --version v4.0.1
+`)
+    return 0
   }
 
-  const range = process.argv[2] || 'HEAD'
-  const notes = await getReleaseNotes(range)
+  const notes = await getReleaseNotes(opts.range, opts.version, opts['explicit-links'])
   console.log(notes.text)
   if (notes.warning) {
     throw new Error(notes.warning)
