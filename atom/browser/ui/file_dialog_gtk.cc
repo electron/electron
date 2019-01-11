@@ -23,6 +23,9 @@ DialogSettings::~DialogSettings() = default;
 
 namespace {
 
+static const int kPreviewWidth = 256;
+static const int kPreviewHeight = 512;
+
 // Makes sure that .jpg also shows .JPG.
 gboolean FileFilterCaseInsensitive(const GtkFileFilterInfo* file_info,
                                    std::string* file_extension) {
@@ -86,6 +89,11 @@ class FileChooserDialog {
 
     if (!settings.filters.empty())
       AddFilters(settings.filters);
+
+    preview_ = gtk_image_new();
+    g_signal_connect(dialog_, "update-preview",
+                     G_CALLBACK(OnUpdatePreviewThunk), this);
+    gtk_file_chooser_set_preview_widget(GTK_FILE_CHOOSER(dialog_), preview_);
   }
 
   ~FileChooserDialog() {
@@ -162,10 +170,14 @@ class FileChooserDialog {
   atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkWidget* dialog_;
+  GtkWidget* preview_;
 
   Filters filters_;
   SaveDialogCallback save_callback_;
   OpenDialogCallback open_callback_;
+
+  // Callback for when we update the preview for the selection.
+  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkWidget*);
 
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
@@ -205,6 +217,37 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog_), gtk_filter);
   }
+}
+
+void FileChooserDialog::OnUpdatePreview(GtkWidget* chooser) {
+  gchar* filename =
+      gtk_file_chooser_get_preview_filename(GTK_FILE_CHOOSER(chooser));
+  if (!filename) {
+    gtk_file_chooser_set_preview_widget_active(GTK_FILE_CHOOSER(chooser),
+                                               FALSE);
+    return;
+  }
+
+  // Don't attempt to open anything which isn't a regular file. If a named pipe,
+  // this may hang. See https://crbug.com/534754.
+  struct stat stat_buf;
+  if (stat(filename, &stat_buf) != 0 || !S_ISREG(stat_buf.st_mode)) {
+    g_free(filename);
+    gtk_file_chooser_set_preview_widget_active(GTK_FILE_CHOOSER(chooser),
+                                               FALSE);
+    return;
+  }
+
+  // This will preserve the image's aspect ratio.
+  GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file_at_size(filename, kPreviewWidth,
+                                                       kPreviewHeight, nullptr);
+  g_free(filename);
+  if (pixbuf) {
+    gtk_image_set_from_pixbuf(GTK_IMAGE(preview_), pixbuf);
+    g_object_unref(pixbuf);
+  }
+  gtk_file_chooser_set_preview_widget_active(GTK_FILE_CHOOSER(chooser),
+                                             pixbuf ? TRUE : FALSE);
 }
 
 }  // namespace
