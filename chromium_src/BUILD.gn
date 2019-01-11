@@ -90,6 +90,7 @@ static_library("chrome") {
         "//chrome/browser/ui/views/color_chooser_aura.cc",
         "//chrome/browser/ui/views/color_chooser_aura.h",
       ]
+      deps += [ "//components/feature_engagement" ]
     }
 
     if (is_mac) {
