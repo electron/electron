@@ -9,6 +9,8 @@ This is part of the fixes for https://github.com/electron/electron/issues/14211.
 We should revisit this bug after upgrading to newer versions of Chrome,
 this patch was introduced in Chrome 66.
 
+Update(zcbenz): The bug is still in Chrome 72.
+
 diff --git a/content/browser/frame_host/render_frame_proxy_host.cc b/content/browser/frame_host/render_frame_proxy_host.cc
 index cfa3fd15714c3743cb9d2900b35570c94545fa87..80785902890c57ffae2fa841831d3bd60a8fa11a 100644
 --- a/content/browser/frame_host/render_frame_proxy_host.cc

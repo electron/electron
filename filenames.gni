@@ -176,6 +176,7 @@ filenames = {
     "atom/browser/api/atom_api_view.h",
     "atom/browser/api/atom_api_web_contents.cc",
     "atom/browser/api/atom_api_web_contents.h",
+    "atom/browser/api/atom_api_web_contents_impl.cc",
     "atom/browser/api/atom_api_web_contents_mac.mm",
     "atom/browser/api/atom_api_web_contents_view.cc",
     "atom/browser/api/atom_api_web_contents_view.h",

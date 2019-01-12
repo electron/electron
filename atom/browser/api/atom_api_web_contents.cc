@@ -470,9 +470,9 @@ WebContents::~WebContents() {
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
     if (type_ == WEB_VIEW) {
+      DCHECK(!web_contents()->GetOuterWebContents())
+          << "Should never manually destroy an attached webview";
       // For webview simply destroy the WebContents immediately.
-      // TODO(zcbenz): Add an internal API for webview instead of using
-      // destroy(), so we don't have to add a special branch here.
       DestroyWebContents(false /* async */);
     } else if (type_ == BROWSER_WINDOW && owner_window()) {
       // For BrowserWindow we should close the window and clean up everything
@@ -2150,6 +2150,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("attachToIframe", &WebContents::AttachToIframe)
+      .SetMethod("detachFromOuterFrame", &WebContents::DetachFromOuterFrame)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
 #if BUILDFLAG(ENABLE_OSR)
       .SetMethod("startPainting", &WebContents::StartPainting)
