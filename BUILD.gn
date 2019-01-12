@@ -421,7 +421,6 @@ static_library("electron_lib") {
 
   if (enable_osr) {
     sources += [
-      "atom/browser/api/atom_api_web_contents_osr.cc",
       "atom/browser/osr/osr_output_device.cc",
       "atom/browser/osr/osr_output_device.h",
       "atom/browser/osr/osr_render_widget_host_view.cc",

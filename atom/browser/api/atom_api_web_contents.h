@@ -242,6 +242,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool IsGuest() const;
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);
+  void DetachFromOuterFrame();
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
