@@ -20,12 +20,15 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
 #include "base/values.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
@@ -175,8 +178,8 @@ int ResponseWriter::Write(net::IOBuffer* buffer,
   base::Value* id = new base::Value(stream_id_);
   base::Value* chunk_value = new base::Value(chunk);
 
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&InspectableWebContentsImpl::CallClientFunction, bindings_,
                      "DevToolsAPI.streamWrite", base::Owned(id),
                      base::Owned(chunk_value), nullptr));
@@ -426,7 +429,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  GetDevToolsWebContents()->DispatchBeforeUnload();
+  GetDevToolsWebContents()->DispatchBeforeUnload(false /* auto_cancel */);
 }
 
 void InspectableWebContentsImpl::LoadCompleted() {
@@ -801,19 +804,20 @@ content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
 
 void InspectableWebContentsImpl::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    const content::FileChooserParams& params) {
+    std::unique_ptr<content::FileSelectListener> listener,
+    const blink::mojom::FileChooserParams& params) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
-    delegate->RunFileChooser(render_frame_host, params);
+    delegate->RunFileChooser(render_frame_host, std::move(listener), params);
 }
 
 void InspectableWebContentsImpl::EnumerateDirectory(
     content::WebContents* source,
-    int request_id,
+    std::unique_ptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
-    delegate->EnumerateDirectory(source, request_id, path);
+    delegate->EnumerateDirectory(source, std::move(listener), path);
 }
 
 void InspectableWebContentsImpl::OnWebContentsFocused(

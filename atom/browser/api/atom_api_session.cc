@@ -32,6 +32,7 @@
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
@@ -39,6 +40,7 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
@@ -211,12 +213,12 @@ std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 
 // Runs the callback in UI thread.
 void RunCallbackInUI(const base::Callback<void()>& callback) {
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, callback);
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, callback);
 }
 template <typename... T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::BindOnce(callback, result...));
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
+                           base::BindOnce(callback, result...));
 }
 
 // Callback of HttpCache::GetBackend.
@@ -421,8 +423,8 @@ void Session::ResolveProxy(
 
 template <Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&DoCacheActionInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
                      action, callback));
@@ -533,8 +535,8 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&SetCertVerifyProcInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
                      base::Bind(&WrapVerifyProc, proc)));
@@ -568,8 +570,8 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
   base::Closure callback;
   args->GetNext(&callback);
 
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&ClearHostResolverCacheInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
                      callback));
@@ -584,16 +586,16 @@ void Session::ClearAuthCache(mate::Arguments* args) {
   base::Closure callback;
   args->GetNext(&callback);
 
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&ClearAuthCacheInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
                      options, callback));
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&AllowNTLMCredentialsForDomainsInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
                      domains));
@@ -623,8 +625,8 @@ void Session::GetBlobData(const std::string& uuid,
     return;
 
   AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&AtomBlobReader::StartReading,
                      base::Unretained(blob_reader), uuid, callback));
 }

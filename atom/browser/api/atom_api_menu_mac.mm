@@ -9,6 +9,8 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
 
@@ -43,7 +45,7 @@ void MenuMac::PopupAt(TopLevelWindow* window,
   auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                           native_window->GetWeakPtr(), window->weak_map_id(), x,
                           y, positioning_item, callback);
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, popup);
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,

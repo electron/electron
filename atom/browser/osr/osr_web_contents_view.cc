@@ -166,12 +166,6 @@ void OffScreenWebContentsView::RenderViewHostChanged(
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {}
 
 #if defined(OS_MACOSX)
-void OffScreenWebContentsView::SetAllowOtherViews(bool allow) {}
-
-bool OffScreenWebContentsView::GetAllowOtherViews() const {
-  return false;
-}
-
 bool OffScreenWebContentsView::IsEventTracking() const {
   return false;
 }

@@ -74,7 +74,9 @@
 #if defined(OS_WIN)
 #include "ui/base/cursor/cursor_loader_win.h"
 #include "ui/base/l10n/l10n_util_win.h"
+#include "ui/display/win/dpi.h"
 #include "ui/gfx/platform_font_win.h"
+#include "ui/strings/grit/app_locale_settings.h"
 #endif
 
 #if defined(OS_MACOSX)
@@ -102,12 +104,17 @@ void Erase(T* container, typename T::iterator iter) {
 
 #if defined(OS_WIN)
 // gfx::Font callbacks
-void AdjustUIFont(LOGFONT* logfont) {
-  l10n_util::AdjustUIFont(logfont);
+void AdjustUIFont(gfx::PlatformFontWin::FontAdjustment* font_adjustment) {
+  l10n_util::NeedOverrideDefaultUIFont(&font_adjustment->font_family_override,
+                                       &font_adjustment->font_scale);
+  font_adjustment->font_scale *= display::win::GetAccessibilityFontScale();
 }
 
 int GetMinimumFontSize() {
-  return 10;
+  int min_font_size;
+  base::StringToInt(l10n_util::GetStringUTF16(IDS_MINIMUM_UI_FONT_SIZE),
+                    &min_font_size);
+  return min_font_size;
 }
 #endif
 
@@ -276,10 +283,6 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destructors_.insert(destructors_.begin(), std::move(callback));
 }
 
-bool AtomBrowserMainParts::ShouldContentCreateFeatureList() {
-  return false;
-}
-
 int AtomBrowserMainParts::PreEarlyInitialization() {
   InitializeFeatureList();
   OverrideAppLogsPath();
@@ -393,8 +396,8 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(OS_WIN)
-  gfx::PlatformFontWin::adjust_font_callback = &AdjustUIFont;
-  gfx::PlatformFontWin::get_minimum_font_size_callback = &GetMinimumFontSize;
+  gfx::PlatformFontWin::SetAdjustFontCallback(&AdjustUIFont);
+  gfx::PlatformFontWin::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 
   wchar_t module_name[MAX_PATH] = {0};
   if (GetModuleFileName(NULL, module_name, MAX_PATH))

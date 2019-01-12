@@ -6,7 +6,7 @@ Subject: libgtkui_export.patch
 Export libgtkui symbols for the GN component build.
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index 1efb064df26488d9d893e1e58cb17110c10501f3..f89015361652803962d1b4198848fb24573beae5 100644
+index 32b0a390255dd39a7d02f094c0e59b205b00dabd..afa2d250beca30f50dbb1684d5217330c4d60bbb 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -17,9 +17,9 @@ index 1efb064df26488d9d893e1e58cb17110c10501f3..f89015361652803962d1b4198848fb24
  
  namespace aura {
  class Window;
-@@ -55,10 +56,10 @@ SkColor NormalURLColor(SkColor foreground);
- // saturation than to look exactly like the foreground color.
- SkColor SelectedURLColor(SkColor foreground, SkColor background);
+@@ -33,10 +34,10 @@ namespace libgtkui {
+ 
+ extern const color_utils::HSL kDefaultTintFrameIncognito;
  
 -void GtkInitFromCommandLine(const base::CommandLine& command_line);
 +LIBGTKUI_EXPORT void GtkInitFromCommandLine(const base::CommandLine& command_line);
@@ -30,16 +30,16 @@ index 1efb064df26488d9d893e1e58cb17110c10501f3..f89015361652803962d1b4198848fb24
  
  guint GetGdkKeyCodeForAccelerator(const ui::Accelerator& accelerator);
  
-@@ -73,7 +74,7 @@ void TurnButtonBlue(GtkWidget* button);
+@@ -51,7 +52,7 @@ void TurnButtonBlue(GtkWidget* button);
  
  // Sets |dialog| as transient for |parent|, which will keep it on top and center
  // it above |parent|. Do nothing if |parent| is nullptr.
 -void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
 +LIBGTKUI_EXPORT void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
  
- // Parses |button_string| into |leading_buttons| and
- // |trailing_buttons|.  The string is of the format
-@@ -173,7 +174,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
+ // Gets the transient parent aura window for |dialog|.
+ aura::Window* GetAuraTransientParent(GtkWidget* dialog);
+@@ -157,7 +158,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
  
  // Get the 'color' property from the style context created by
  // GetStyleContextFromCss(|css_selector|).
@@ -48,7 +48,7 @@ index 1efb064df26488d9d893e1e58cb17110c10501f3..f89015361652803962d1b4198848fb24
  
  ScopedCssProvider GetCssProvider(const std::string& css);
  
-@@ -186,7 +187,7 @@ void RenderBackground(const gfx::Size& size,
+@@ -170,7 +171,7 @@ void RenderBackground(const gfx::Size& size,
  // Renders a background from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
  // returns the average color.

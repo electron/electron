@@ -38,7 +38,6 @@ patch, GN refuses to generate the ninja files:
      action(_repack_target_name) {
      ^----------------------------
 
-
 Some alternatives to this patch:
 
 1. Refactor upstream in such a way that the "chrome" pak names were
@@ -49,14 +48,14 @@ Some alternatives to this patch:
    `electron_{100,200}_percent.pak`.
 3. Initialize the resource bundle with DO_NOT_LOAD_COMMON_RESOURCES and load
    the paks ourselves.
-   
+
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 4865a69fe984b428c4b6591d11d778e6c2669d2d..e8795d76f895580a398f748724b55eb5848a3528 100644
+index abbab2664254c9be1ec5074463722c1365590cd0..03c3df58fb407a490ce3438cdc2f4168f3013a8f 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1638,6 +1638,11 @@ if (is_chrome_branded && !is_android) {
+@@ -1646,6 +1646,11 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -68,7 +67,7 @@ index 4865a69fe984b428c4b6591d11d778e6c2669d2d..e8795d76f895580a398f748724b55eb5
  chrome_paks("packed_resources") {
    if (is_mac) {
      output_dir = "$root_gen_dir/repack"
-@@ -1659,6 +1664,7 @@ chrome_paks("packed_resources") {
+@@ -1667,6 +1672,7 @@ chrome_paks("packed_resources") {
      ]
    }
  }

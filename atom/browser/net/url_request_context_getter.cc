@@ -27,6 +27,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "components/prefs/value_map_pref_store.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
@@ -225,8 +226,8 @@ void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (main_request_context_getter_.get()) {
     if (BrowserThread::IsThreadInitialized(BrowserThread::IO)) {
-      BrowserThread::PostTask(
-          BrowserThread::IO, FROM_HERE,
+      base::PostTaskWithTraits(
+          FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&URLRequestContextGetter::NotifyContextShuttingDown,
                          base::RetainedRef(main_request_context_getter_),
                          std::move(resource_context_)));
@@ -340,7 +341,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
 scoped_refptr<base::SingleThreadTaskRunner>
 URLRequestContextGetter::GetNetworkTaskRunner() const {
-  return BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
+  return base::CreateSingleThreadTaskRunnerWithTraits({BrowserThread::IO});
 }
 
 }  // namespace atom

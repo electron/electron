@@ -54,17 +54,7 @@ config("branding") {
 }
 
 npm_action("atom_browserify_sandbox") {
-  deps = [
-    ":atom_js2c_copy",
-  ]
-
-  sandbox_args = [
-    "lib/sandboxed_renderer/init.js",
-    "-r",
-    "./lib/sandboxed_renderer/api/exports/electron.js:electron",
-    "-t",
-    "aliasify",
-  ]
+  script = "browserify"
 
   inputs = [
     # FIXME(zcbenz): The dependencies of these files are not listed here, so
@@ -73,36 +63,40 @@ npm_action("atom_browserify_sandbox") {
     "lib/sandboxed_renderer/init.js",
     "lib/sandboxed_renderer/api/exports/electron.js",
   ]
+
   outputs = [
     "$target_gen_dir/js2c/preload_bundle.js",
   ]
 
-  script = "browserify"
-  args = sandbox_args + [
-           "-o",
-           rebase_path(outputs[0]),
-         ]
+  args = [
+    "lib/sandboxed_renderer/init.js",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/electron.js:electron",
+    "-t",
+    "aliasify",
+    "-o",
+    rebase_path(outputs[0]),
+  ]
 }
 
 npm_action("atom_browserify_isolated") {
-  deps = [
-    ":atom_js2c_copy",
-  ]
+  script = "browserify"
 
   inputs = [
     "lib/isolated_renderer/init.js",
   ]
+
   outputs = [
     "$target_gen_dir/js2c/isolated_bundle.js",
   ]
 
-  script = "browserify"
-  args = inputs + [
-           "-t",
-           "aliasify",
-           "-o",
-           rebase_path(outputs[0]),
-         ]
+  args = [
+    "lib/isolated_renderer/init.js",
+    "-t",
+    "aliasify",
+    "-o",
+    rebase_path(outputs[0]),
+  ]
 }
 
 copy("atom_js2c_copy") {
@@ -122,23 +116,25 @@ action("atom_js2c") {
     ":atom_js2c_copy",
   ]
 
-  js2c_sources = filenames.js2c_sources
-
   browserify_sources = [
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/preload_bundle.js",
   ]
 
-  inputs = js2c_sources + browserify_sources
+  sources = browserify_sources + [
+              "$target_gen_dir/js2c/asar.js",
+              "$target_gen_dir/js2c/asar_init.js",
+            ]
 
+  inputs = sources
   outputs = [
-    "$target_gen_dir/atom_natives.h",
+    "$root_gen_dir/atom_natives.cc",
   ]
 
   script = "tools/js2c.py"
   args = [ rebase_path("//third_party/electron_node") ] +
          rebase_path(outputs, root_build_dir) +
-         [ rebase_path("$target_gen_dir/js2c", root_build_dir) ]
+         rebase_path(sources, root_build_dir)
 }
 
 asar("js2asar") {
@@ -182,16 +178,28 @@ grit("resources") {
     "electron_resources.pak",
   ]
 
+  # Mojo manifest overlays are generated.
+  source_is_generated = true
   grit_flags = [
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
   ]
 
   deps = [
+    ":copy_shell_devtools_discovery_page",
     ":electron_content_manifest_overlays",
   ]
 
   output_dir = "$target_gen_dir"
+}
+
+copy("copy_shell_devtools_discovery_page") {
+  sources = [
+    "//content/shell/resources/shell_devtools_discovery_page.html",
+  ]
+  outputs = [
+    "$target_gen_dir/shell_devtools_discovery_page.html",
+  ]
 }
 
 if (is_linux) {
@@ -244,7 +252,6 @@ static_library("electron_lib") {
     "//content/public/browser",
     "//content/public/child",
     "//content/public/common:service_names",
-    "//content/shell:copy_shell_resources",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",
@@ -325,8 +332,6 @@ static_library("electron_lib") {
       sources_assignment_filter + extra_source_filters)
   sources = filenames.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
-
-  sources += [ "$target_gen_dir/atom_natives.h" ]
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
@@ -576,7 +581,7 @@ if (is_mac) {
     }
     info_plist = "atom/common/resources/mac/Info.plist"
 
-    electron_version = read_file("VERSION", "trim string")
+    electron_version = read_file("ELECTRON_VERSION", "trim string")
     extra_substitutions = [
       "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
@@ -897,7 +902,7 @@ group("licenses") {
 
 copy("electron_version") {
   sources = [
-    "VERSION",
+    "ELECTRON_VERSION",
   ]
   outputs = [
     "$root_build_dir/version",

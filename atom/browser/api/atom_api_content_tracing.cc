@@ -71,20 +71,34 @@ void StopRecording(const base::FilePath& path,
       GetTraceDataEndpoint(path, callback));
 }
 
+bool GetCategories(
+    const base::RepeatingCallback<void(const std::set<std::string>&)>&
+        callback) {
+  return TracingController::GetInstance()->GetCategories(
+      base::BindOnce(callback));
+}
+
+bool StartTracing(const base::trace_event::TraceConfig& trace_config,
+                  const base::RepeatingCallback<void()>& callback) {
+  return TracingController::GetInstance()->StartTracing(
+      trace_config, base::BindOnce(callback));
+}
+
+bool GetTraceBufferUsage(
+    const base::RepeatingCallback<void(float, size_t)>& callback) {
+  return TracingController::GetInstance()->GetTraceBufferUsage(
+      base::BindOnce(callback));
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  auto controller = base::Unretained(TracingController::GetInstance());
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("getCategories",
-                 base::Bind(&TracingController::GetCategories, controller));
-  dict.SetMethod("startRecording",
-                 base::Bind(&TracingController::StartTracing, controller));
+  dict.SetMethod("getCategories", &GetCategories);
+  dict.SetMethod("startRecording", &StartTracing);
   dict.SetMethod("stopRecording", &StopRecording);
-  dict.SetMethod(
-      "getTraceBufferUsage",
-      base::Bind(&TracingController::GetTraceBufferUsage, controller));
+  dict.SetMethod("getTraceBufferUsage", &GetTraceBufferUsage);
 }
 
 }  // namespace

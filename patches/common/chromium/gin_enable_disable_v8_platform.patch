@@ -22,10 +22,10 @@ index 4491b392412caac052bf9e41c70a28086ada8a17..8ec7775b78b3645dbac5ee518404ca9a
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 6945a60181c420106b1a1defe2a2149b70a80d82..535b0caa02f89f8a0fde841057d35e3834ea087f 100644
+index 8cb2646bdd7dc3f5013d197f4b76e8707afb6817..95844885e478e460b1f03a7d98942bffe263e3d0 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -97,7 +97,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -98,7 +98,8 @@ class GIN_EXPORT IsolateHolder {
    static void Initialize(ScriptMode mode,
                           V8ExtrasMode v8_extras_mode,
                           v8::ArrayBuffer::Allocator* allocator,
@@ -36,10 +36,10 @@ index 6945a60181c420106b1a1defe2a2149b70a80d82..535b0caa02f89f8a0fde841057d35e38
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index cf51b27dd999391e28a3d69c2694d90d61ea214f..50ba87af55fd69dcf0ade1a1736e89ae13b4482f 100644
+index 48116401c0be193261811e14db31844727f980fb..3ae68bdd35f386292de218985a5ab6890fd73c83 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -236,12 +236,14 @@ LoadV8FileResult MapOpenedFile(const OpenedFileMap::mapped_type& file_region,
+@@ -205,12 +205,14 @@ enum LoadV8FileResult {
  
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
@@ -57,7 +57,7 @@ index cf51b27dd999391e28a3d69c2694d90d61ea214f..50ba87af55fd69dcf0ade1a1736e89ae
    if (!base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
      // We avoid explicitly passing --opt if kV8OptimizeJavascript is enabled
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index 6f3265ba4d06e70930630432bf739f89847d0b3c..29f28bebbdcde5a7f1c7b31a625d30f1b8079c39 100644
+index a749ccbecfc8b82217d4ed48dcf8a5d9ceba052c..00b21585e65b2fcb2401d28d425f7db2e5dec389 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -21,7 +21,8 @@ class GIN_EXPORT V8Initializer {

@@ -11,11 +11,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
-#if !defined(MAC_OS_X_VERSION_10_14) || \
-    MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_14
-NSString* const NSAppearanceNameDarkAqua = @"NSAppearanceNameDarkAqua";
-#endif  // MAC_OS_X_VERSION_10_14
-
 namespace {
 
 inline void dispatch_sync_main(dispatch_block_t block) {

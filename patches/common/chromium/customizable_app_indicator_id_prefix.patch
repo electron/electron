@@ -14,7 +14,7 @@ Reviewed-by: Scott Violet <sky@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#605435}
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_ui.cc b/chrome/browser/ui/libgtkui/gtk_ui.cc
-index 3e2f37380b1d23d2eaec82ca532843775b2f61d6..082162ce707bc575d7a0491471b430db041371da 100644
+index 3a829df4099f5223d0862c33a6ffc61b107b20b7..3b86e178d4c83f07231649360c8b65ca83143408 100644
 --- a/chrome/browser/ui/libgtkui/gtk_ui.cc
 +++ b/chrome/browser/ui/libgtkui/gtk_ui.cc
 @@ -234,11 +234,6 @@ typedef std::unique_ptr<GIcon, GObjectDeleter> ScopedGIcon;
@@ -29,7 +29,7 @@ index 3e2f37380b1d23d2eaec82ca532843775b2f61d6..082162ce707bc575d7a0491471b430db
  // Number of app indicators used (used as part of app-indicator id).
  int indicators_count;
  
-@@ -600,7 +595,8 @@ bool GtkUi::IsStatusIconSupported() const {
+@@ -545,7 +540,8 @@ bool GtkUi::IsStatusIconSupported() const {
  
  std::unique_ptr<views::StatusIconLinux> GtkUi::CreateLinuxStatusIcon(
      const gfx::ImageSkia& image,
@@ -39,7 +39,7 @@ index 3e2f37380b1d23d2eaec82ca532843775b2f61d6..082162ce707bc575d7a0491471b430db
  #if GTK_CHECK_VERSION(3, 90, 0)
    NOTIMPLEMENTED();
    return nullptr;
-@@ -608,8 +604,8 @@ std::unique_ptr<views::StatusIconLinux> GtkUi::CreateLinuxStatusIcon(
+@@ -553,8 +549,8 @@ std::unique_ptr<views::StatusIconLinux> GtkUi::CreateLinuxStatusIcon(
    if (AppIndicatorIcon::CouldOpen()) {
      ++indicators_count;
      return std::unique_ptr<views::StatusIconLinux>(new AppIndicatorIcon(
@@ -51,10 +51,10 @@ index 3e2f37380b1d23d2eaec82ca532843775b2f61d6..082162ce707bc575d7a0491471b430db
      return std::unique_ptr<views::StatusIconLinux>(
          new GtkStatusIcon(image, tool_tip));
 diff --git a/chrome/browser/ui/libgtkui/gtk_ui.h b/chrome/browser/ui/libgtkui/gtk_ui.h
-index 6f4899402ec5d7b8107c9dc2c43bd040492fd8dd..c52874dd745463d3a1b1e798992ac17e64937ea2 100644
+index 1c626d1cafd1ec979be8dd5ef6ddbbc9d1b29bc2..2c98c1990419eb5276c01553caad559cf60714ad 100644
 --- a/chrome/browser/ui/libgtkui/gtk_ui.h
 +++ b/chrome/browser/ui/libgtkui/gtk_ui.h
-@@ -92,7 +92,8 @@ class GtkUi : public views::LinuxUI {
+@@ -90,7 +90,8 @@ class GtkUi : public views::LinuxUI {
    bool IsStatusIconSupported() const override;
    std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
        const gfx::ImageSkia& image,
@@ -93,10 +93,10 @@ index eed6bb2eaf756189be016c382673e23eb7ca18e0..4694a9a920b1f9150399e183038f04ac
        return base::WrapUnique(
            new StatusIconLinuxWrapper(std::move(status_icon)));
 diff --git a/ui/views/linux_ui/linux_ui.h b/ui/views/linux_ui/linux_ui.h
-index 86a3c0a78cb748f679e2313db569ac0029c8da0f..bd01febaf6e0b3712e86183f7a56122d7f1ee666 100644
+index 759d4ab03f02a338f5e89bf971a423f6b42814ed..208c9a5ac7eb5441110f34b3f7859945c591df21 100644
 --- a/ui/views/linux_ui/linux_ui.h
 +++ b/ui/views/linux_ui/linux_ui.h
-@@ -132,10 +132,12 @@ class VIEWS_EXPORT LinuxUI : public ui::LinuxInputMethodContextFactory,
+@@ -130,10 +130,12 @@ class VIEWS_EXPORT LinuxUI : public ui::LinuxInputMethodContextFactory,
    // Checks for platform support for status icons.
    virtual bool IsStatusIconSupported() const = 0;
  

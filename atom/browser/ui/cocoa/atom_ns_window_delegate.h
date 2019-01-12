@@ -7,7 +7,7 @@
 
 #include <Quartz/Quartz.h>
 
-#include "ui/views/cocoa/views_nswindow_delegate.h"
+#include "ui/views_bridge_mac/views_nswindow_delegate.h"
 
 namespace atom {
 class NativeWindowMac;

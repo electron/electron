@@ -8,10 +8,10 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index 907922701280b589bf11691342de0ec95cdec6a1..eaf8bac18f8e3a2735ce7ded606199092a3746d3 100644
+index be1724e19eeb0186dc20dad48e0d604ff87918e5..3dea6a89eb12dc6be157c39787358cd86810da16 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
-@@ -593,6 +593,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+@@ -619,6 +619,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
      return false;
    }
  
@@ -22,10 +22,10 @@ index 907922701280b589bf11691342de0ec95cdec6a1..eaf8bac18f8e3a2735ce7ded60619909
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index f713d0cfbf90665d921f56f4d828887ad1f7842c..4fe21468aee93a7cb3783220ebfe8dd100a3d1d5 100644
+index ae4bfc6553f347ad5a7e5327d64155e700e6584e..e279ded9407bbfda6d76072cd6fa2c8a06379e9f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -57,6 +57,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
+@@ -59,6 +59,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
    return SiteInstanceForNavigationType::ASK_CHROMIUM;
  }
  
@@ -37,10 +37,10 @@ index f713d0cfbf90665d921f56f4d828887ad1f7842c..4fe21468aee93a7cb3783220ebfe8dd1
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4bf6b2b5f8110f539adc61858cfdc8f77f7ed08b..94454812e27d4d357eeee27cfc1e185386ea2003 100644
+index 5f6fdb2d66acfa73c895cac18714d0998eed2ab2..836851cfcbc94becdf3d4af682dbe3e098172c25 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -225,6 +225,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -233,6 +233,9 @@ class CONTENT_EXPORT ContentBrowserClient {
        content::RenderFrameHost* rfh,
        content::SiteInstance* pending_site_instance){};
  

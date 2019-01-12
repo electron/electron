@@ -17,6 +17,8 @@
 #include "atom/common/application_info.h"
 #include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
@@ -411,8 +413,8 @@ ToastEventHandler::~ToastEventHandler() {}
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     IInspectable* args) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::Bind(&Notification::NotificationClicked, notification_));
   if (IsDebuggingNotifications())
     LOG(INFO) << "Notification clicked";
@@ -423,8 +425,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::Bind(&Notification::NotificationDismissed, notification_));
   if (IsDebuggingNotifications())
     LOG(INFO) << "Notification dismissed";
@@ -435,8 +437,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::Bind(&Notification::NotificationFailed, notification_));
   if (IsDebuggingNotifications())
     LOG(INFO) << "Notification failed";

@@ -14,12 +14,14 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_constants.h"
 #include "base/sequenced_task_runner_helpers.h"
+#include "base/task/post_task.h"
 #include "content/browser/loader/resource_dispatcher_host_impl.h"
 #include "content/browser/loader/resource_request_info_impl.h"
 #include "content/browser/loader/stream_resource_handler.h"
 #include "content/browser/resource_context_impl.h"
 #include "content/browser/streams/stream.h"
 #include "content/browser/streams/stream_context.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -183,8 +185,8 @@ class PdfViewerUI::ResourceRequester
           new net::HttpResponseHeaders(headers->raw_headers());
     stream_info_->mime_type = mime_type;
 
-    BrowserThread::PostTask(
-        BrowserThread::UI, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
         base::Bind(&CallMigrationCallback<StreamResponseCallback>,
                    base::Passed(&stream_response_cb_),
                    base::Passed(&stream_info_)));
@@ -243,8 +245,8 @@ void PdfViewerUI::RenderFrameCreated(content::RenderFrameHost* rfh) {
   auto callback =
       base::BindOnce(&PdfViewerUI::OnPdfStreamCreated, base::Unretained(this));
   resource_requester_ = new ResourceRequester(std::move(callback));
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::Bind(&ResourceRequester::StartRequest, resource_requester_,
                  GURL(src_), GURL(kPdfViewerUIOrigin), render_process_id,
                  render_view_id, render_frame_id, resource_context));

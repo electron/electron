@@ -11,6 +11,7 @@
 #include "base/memory/read_only_shared_memory_region.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/ref_counted_memory.h"
+#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/browser/printing/printer_query.h"
@@ -18,6 +19,7 @@
 #include "components/printing/browser/print_manager_utils.h"
 #include "components/printing/common/print_messages.h"
 #include "components/services/pdf_compositor/public/cpp/pdf_service_mojo_types.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -38,22 +40,10 @@ void StopWorker(int document_cookie) {
   scoped_refptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
-    BrowserThread::PostTask(
-        BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::IO},
         base::BindOnce(&printing::PrinterQuery::StopWorker, printer_query));
   }
-}
-
-scoped_refptr<base::RefCountedMemory> GetDataFromHandle(
-    base::SharedMemoryHandle handle,
-    uint32_t data_size) {
-  auto shared_buf = std::make_unique<base::SharedMemory>(handle, true);
-  if (!shared_buf->Map(data_size)) {
-    return nullptr;
-  }
-
-  return base::MakeRefCounted<base::RefCountedSharedMemory>(
-      std::move(shared_buf), data_size);
 }
 
 }  // namespace
@@ -97,7 +87,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   StopWorker(params.document_cookie);
 
   const PrintHostMsg_DidPrintContent_Params& content = params.content;
-  if (!content.metafile_data_handle.IsValid() ||
+  if (!content.metafile_data_region.IsValid() ||
       params.expected_pages_count <= 0) {
     RunPrintToPDFCallback(ids.request_id, nullptr);
     return;
@@ -114,7 +104,8 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   } else {
     RunPrintToPDFCallback(
         ids.request_id,
-        GetDataFromHandle(content.metafile_data_handle, content.data_size));
+        base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
+            content.metafile_data_region));
   }
 }
 

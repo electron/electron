@@ -5,10 +5,10 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index fae4c74c977bb32836bf315c3cf77cfe3499af7a..06030ddb6db221c52e665ddb86e71189e95f72a6 100644
+index e155153ec1eec9d28242e9ab95c9d75a0d3f40d7..fab1bcd2d8176cdd7163e329552a0a848c601290 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -582,6 +582,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
+@@ -656,6 +656,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
    return frame_sink_id.is_valid() ? frame_sink_id : GetFrameSinkId();
  }
  
@@ -25,7 +25,7 @@ index fae4c74c977bb32836bf315c3cf77cfe3499af7a..06030ddb6db221c52e665ddb86e71189
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 08454f68a01d204902d4023ac321793431ef4e0e..3dec5957125b68990bb3d539cb2a05a26e8d26d6 100644
+index c48b0aa86d8acea34dfece9212da4e7b11ffdb64..115b5647dfc13eb14e4d560c1fb71b926b5af829 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -22,8 +22,10 @@
@@ -50,9 +50,9 @@ index 08454f68a01d204902d4023ac321793431ef4e0e..3dec5957125b68990bb3d539cb2a05a2
  class WebContentsAccessibility;
 +class WebContentsView;
  class WebCursor;
+ class DelegatedFrameHost;
  struct TextInputState;
- 
-@@ -144,6 +148,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -145,6 +149,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    TouchSelectionControllerClientManager*
    GetTouchSelectionControllerClientManager() override;
  
@@ -62,7 +62,7 @@ index 08454f68a01d204902d4023ac321793431ef4e0e..3dec5957125b68990bb3d539cb2a05a2
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -358,6 +365,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -369,6 +376,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

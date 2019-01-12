@@ -11,6 +11,8 @@
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 
@@ -36,10 +38,9 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStringJob> job,
     error = net::ERR_NOT_IMPLEMENTED;
   }
 
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&URLRequestStringJob::StartAsync, job,
-                     std::move(request_options), error));
+  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
+                           base::BindOnce(&URLRequestStringJob::StartAsync, job,
+                                          std::move(request_options), error));
 }
 
 }  // namespace
@@ -54,8 +55,8 @@ URLRequestStringJob::~URLRequestStringJob() = default;
 void URLRequestStringJob::Start() {
   auto request_details = std::make_unique<base::DictionaryValue>();
   FillRequestDetails(request_details.get(), request());
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
                      handler(), std::move(request_details),
                      base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));

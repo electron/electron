@@ -5,10 +5,10 @@ Subject: ostreams.patch
 
 
 diff --git a/src/ostreams.h b/src/ostreams.h
-index c6b64a1cd95b92ed37abe56d71dd6132c4ff9db4..236a73d01800f58a4f37c8abdd8df346d8fcf2c5 100644
+index 189f5384b99438f3dad1d77a0836ceb45f6ed938..83a5930d4bd690dde01749bcd88acb11d75aa0cb 100644
 --- a/src/ostreams.h
 +++ b/src/ostreams.h
-@@ -32,7 +32,7 @@ class OFStreamBase : public std::streambuf {
+@@ -32,7 +32,7 @@ class V8_EXPORT_PRIVATE OFStreamBase : public std::streambuf {
  };
  
  // An output stream writing to a file.
@@ -16,4 +16,4 @@ index c6b64a1cd95b92ed37abe56d71dd6132c4ff9db4..236a73d01800f58a4f37c8abdd8df346
 +class V8_EXPORT_PRIVATE OFStream : public NON_EXPORTED_BASE(std::ostream) {
   public:
    explicit OFStream(FILE* f);
-   virtual ~OFStream();
+   ~OFStream() override = default;

@@ -181,7 +181,7 @@ def get_electron_branding():
 
 def get_electron_version():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  version_file = os.path.join(SOURCE_ROOT, 'VERSION')
+  version_file = os.path.join(SOURCE_ROOT, 'ELECTRON_VERSION')
   with open(version_file) as f:
     return 'v' + f.read().strip()
 

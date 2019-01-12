@@ -18,7 +18,6 @@
 #include "third_party/blink/public/platform/web_mouse_event.h"
 #include "third_party/blink/public/platform/web_mouse_wheel_event.h"
 #include "third_party/blink/public/web/web_device_emulation_params.h"
-#include "third_party/blink/public/web/web_find_options.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
@@ -365,19 +364,6 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   dict.Get("deviceScaleFactor", &out->device_scale_factor);
   dict.Get("viewSize", &out->view_size);
   dict.Get("scale", &out->scale);
-  return true;
-}
-
-bool Converter<blink::WebFindOptions>::FromV8(v8::Isolate* isolate,
-                                              v8::Local<v8::Value> val,
-                                              blink::WebFindOptions* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-
-  dict.Get("forward", &out->forward);
-  dict.Get("matchCase", &out->match_case);
-  dict.Get("findNext", &out->find_next);
   return true;
 }
 

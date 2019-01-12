@@ -15,7 +15,7 @@
 #include "native_mate/wrappable.h"
 
 #include "atom/common/node_includes.h"
-#include "atom_natives.h"  // NOLINT: This file is generated with js2c.
+#include "third_party/electron_node/src/node_native_module.h"
 
 namespace {
 
@@ -122,23 +122,15 @@ void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> source,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
-  v8::Local<v8::Context> context(isolate->GetCurrentContext());
-  auto maybe_asar_init = v8::Script::Compile(
-      context, node::asar_init_value.ToStringChecked(isolate));
-  v8::Local<v8::Script> asar_init;
-  v8::Local<v8::Value> result;
-  if (maybe_asar_init.ToLocal(&asar_init))
-    result = asar_init->Run(context).ToLocalChecked();
+  std::vector<v8::Local<v8::String>> asar_init_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "source"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "require")};
 
-  // Initialize asar support.
-  DCHECK(result->IsFunction());
+  std::vector<v8::Local<v8::Value>> asar_init_args = {source, require};
 
-  v8::Local<v8::Value> args[] = {
-      source,
-      require,
-      node::asar_value.ToStringChecked(isolate),
-  };
-  result.As<v8::Function>()->Call(result, 3, args);
+  node::per_process::native_module_loader.CompileAndCall(
+      isolate->GetCurrentContext(), "electron/js2c/asar_init",
+      &asar_init_params, &asar_init_args, nullptr);
 }
 
 void Initialize(v8::Local<v8::Object> exports,

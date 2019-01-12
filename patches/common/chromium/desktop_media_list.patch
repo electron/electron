@@ -36,10 +36,10 @@ index 8e02a8a95eb07516162eacdf5b361231d3a02975..3497b85428a52c6019cfb5d30229071f
    virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 43dd95ef72f5b35b91471950cc114800d54945ab..d4662708f64934372422b853673eaaf8f05e4baf 100644
+index 727d1f564dc943026a4b10ab2584f9269bb2ae4a..66789680d51e74e533bfb9c6c99e5b9e0844b1d9 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -18,6 +18,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
+@@ -20,6 +20,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
  
  DesktopMediaListBase::~DesktopMediaListBase() {}
  
@@ -51,7 +51,7 @@ index 43dd95ef72f5b35b91471950cc114800d54945ab..d4662708f64934372422b853673eaaf8
  void DesktopMediaListBase::SetUpdatePeriod(base::TimeDelta period) {
    DCHECK(!observer_);
    update_period_ = period;
-@@ -31,10 +36,7 @@ void DesktopMediaListBase::SetViewDialogWindowId(DesktopMediaID dialog_id) {
+@@ -33,10 +38,7 @@ void DesktopMediaListBase::SetViewDialogWindowId(DesktopMediaID dialog_id) {
    view_dialog_id_ = dialog_id;
  }
  
@@ -63,7 +63,7 @@ index 43dd95ef72f5b35b91471950cc114800d54945ab..d4662708f64934372422b853673eaaf8
    Refresh();
  }
  
-@@ -49,6 +51,11 @@ const DesktopMediaList::Source& DesktopMediaListBase::GetSource(
+@@ -51,6 +53,11 @@ const DesktopMediaList::Source& DesktopMediaListBase::GetSource(
    return sources_[index];
  }
  
@@ -75,7 +75,7 @@ index 43dd95ef72f5b35b91471950cc114800d54945ab..d4662708f64934372422b853673eaaf8
  DesktopMediaID::Type DesktopMediaListBase::GetMediaListType() const {
    return type_;
  }
-@@ -60,6 +67,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
+@@ -62,6 +69,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
  
  void DesktopMediaListBase::UpdateSourcesList(
      const std::vector<SourceDescription>& new_sources) {
@@ -88,15 +88,15 @@ index 43dd95ef72f5b35b91471950cc114800d54945ab..d4662708f64934372422b853673eaaf8
    typedef std::set<DesktopMediaID> SourceSet;
    SourceSet new_source_set;
    for (size_t i = 0; i < new_sources.size(); ++i) {
-@@ -132,6 +145,8 @@ void DesktopMediaListBase::UpdateSourceThumbnail(DesktopMediaID id,
+@@ -134,6 +147,8 @@ void DesktopMediaListBase::UpdateSourceThumbnail(DesktopMediaID id,
  }
  
  void DesktopMediaListBase::ScheduleNextRefresh() {
 +  if (!observer_->ShouldScheduleNextRefresh(this))
 +    return;
-   BrowserThread::PostDelayedTask(BrowserThread::UI, FROM_HERE,
-                                  base::BindOnce(&DesktopMediaListBase::Refresh,
-                                                 weak_factory_.GetWeakPtr()),
+   base::PostDelayedTaskWithTraits(FROM_HERE, {BrowserThread::UI},
+                                   base::BindOnce(&DesktopMediaListBase::Refresh,
+                                                  weak_factory_.GetWeakPtr()),
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
 index 746df1210aa92af5c9d4703112b4bd6c09b94fdf..461e0edf8509569d05c86f466c02b5035183d0df 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
@@ -133,10 +133,10 @@ index 47401abc984e6fe26c7f4c5399aa565c687060b0..ca6a527ffac877c27aac94337ec5a7b5
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index f5f62407f0d6dbeb91db4d446b0260ecb5c66f28..818d2fee48c793b2ece7f761d7835a9077bf2e70 100644
+index 5eac54ba5336d51b15da1e084df0fc7f6dc09deb..e7c2478850d5231e258fb4c54dd57db555273efc 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -6,13 +6,14 @@
+@@ -6,14 +6,15 @@
  
  #include "base/hash.h"
  #include "base/single_thread_task_runner.h"
@@ -147,6 +147,7 @@ index f5f62407f0d6dbeb91db4d446b0260ecb5c66f28..818d2fee48c793b2ece7f761d7835a90
  #include "build/build_config.h"
  #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 -#include "chrome/grit/generated_resources.h"
+ #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
 +#include "electron/grit/electron_resources.h"
  #include "media/base/video_util.h"

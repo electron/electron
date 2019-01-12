@@ -9,6 +9,8 @@
 #include "atom/browser/net/url_request_stream_job.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 
 #include "atom/common/node_includes.h"
 
@@ -76,23 +78,21 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
 
   // Pass the data to the URLJob in IO thread.
   std::vector<char> buffer(data, data + length);
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&atom::URLRequestStreamJob::OnData, url_job_,
-                 base::Passed(&buffer)));
+  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
+                           base::Bind(&atom::URLRequestStreamJob::OnData,
+                                      url_job_, base::Passed(&buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::IO},
       base::Bind(&atom::URLRequestStreamJob::OnEnd, url_job_));
 }
 
 void StreamSubscriber::OnError(mate::Arguments* args) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&atom::URLRequestStreamJob::OnError, url_job_,
-                 net::ERR_FAILED));
+  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
+                           base::Bind(&atom::URLRequestStreamJob::OnError,
+                                      url_job_, net::ERR_FAILED));
 }
 
 void StreamSubscriber::RemoveAllListeners() {

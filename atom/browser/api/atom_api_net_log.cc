@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/system_network_context_manager.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
@@ -27,7 +28,8 @@ NetLog::NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   Init(isolate);
 
-  net_log_writer_ = g_browser_process->net_log()->net_export_file_writer();
+  net_log_writer_ = g_browser_process->system_network_context_manager()
+                        ->GetNetExportFileWriter();
   net_log_writer_->AddObserver(this);
 }
 

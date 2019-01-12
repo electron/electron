@@ -11,8 +11,8 @@
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtkui/gtk_signal.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "ui/base/glib/glib_signal.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
@@ -147,7 +147,11 @@ class FileChooserDialog {
     return paths;
   }
 
-  CHROMEGTK_CALLBACK_1(FileChooserDialog, void, OnFileDialogResponse, int);
+  CHROMEG_CALLBACK_1(FileChooserDialog,
+                     void,
+                     OnFileDialogResponse,
+                     GtkWidget*,
+                     int);
 
   GtkWidget* dialog() const { return dialog_; }
 

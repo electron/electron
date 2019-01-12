@@ -1,9 +1,4 @@
 filenames = {
-  js2c_sources = [
-    "lib/common/asar.js",
-    "lib/common/asar_init.js",
-  ]
-
   js_sources = [
     "lib/browser/api/app.js",
     "lib/browser/api/auto-updater.js",
@@ -74,9 +69,10 @@ filenames = {
     "lib/renderer/web-frame-init.js",
     "lib/renderer/window-setup.js",
     "lib/renderer/web-view/guest-view-internal.js",
-    "lib/renderer/web-view/web-view.js",
     "lib/renderer/web-view/web-view-attributes.js",
     "lib/renderer/web-view/web-view-constants.js",
+    "lib/renderer/web-view/web-view-element.js",
+    "lib/renderer/web-view/web-view-impl.js",
     "lib/renderer/api/exports/electron.js",
     "lib/renderer/api/crash-reporter.js",
     "lib/renderer/api/ipc-renderer.js",

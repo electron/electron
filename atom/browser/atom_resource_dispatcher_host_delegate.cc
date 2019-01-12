@@ -7,6 +7,8 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/render_frame_host.h"
@@ -90,8 +92,8 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
 
   if (mime_type == "application/pdf") {
     *origin = GURL(kPdfViewerUIOrigin);
-    content::BrowserThread::PostTask(
-        BrowserThread::UI, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
         base::Bind(&OnPdfResourceIntercepted, request->url(),
                    render_process_host_id, render_frame_id,
                    info->GetWebContentsGetterForRequest()));

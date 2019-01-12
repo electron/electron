@@ -201,7 +201,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
     canvas->DrawStringRectWithFlags(
         popup_->GetLabelAt(index), popup_->GetLabelFontListForRow(index),
         GetNativeTheme()->GetSystemColor(
-            ui::NativeTheme::kColorId_ResultsTableNormalDimmedText),
+            ui::NativeTheme::kColorId_ResultsTableDimmedText),
         gfx::Rect(label_x_align_left, entry_rect.y(), label_width,
                   entry_rect.height()),
         text_align);

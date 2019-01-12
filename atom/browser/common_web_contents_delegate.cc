@@ -31,6 +31,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
@@ -295,18 +296,21 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
 
 void CommonWebContentsDelegate::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    const content::FileChooserParams& params) {
+    std::unique_ptr<content::FileSelectListener> listener,
+    const blink::mojom::FileChooserParams& params) {
   if (!web_dialog_helper_)
     web_dialog_helper_.reset(new WebDialogHelper(owner_window(), offscreen_));
-  web_dialog_helper_->RunFileChooser(render_frame_host, params);
+  web_dialog_helper_->RunFileChooser(render_frame_host, std::move(listener),
+                                     params);
 }
 
-void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
-                                                   int request_id,
-                                                   const base::FilePath& path) {
+void CommonWebContentsDelegate::EnumerateDirectory(
+    content::WebContents* guest,
+    std::unique_ptr<content::FileSelectListener> listener,
+    const base::FilePath& path) {
   if (!web_dialog_helper_)
     web_dialog_helper_.reset(new WebDialogHelper(owner_window(), offscreen_));
-  web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
+  web_dialog_helper_->EnumerateDirectory(guest, std::move(listener), path);
 }
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(

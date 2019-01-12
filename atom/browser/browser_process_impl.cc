@@ -110,7 +110,7 @@ void BrowserProcessImpl::PreCreateThreads(
     }
   }
   // Initialize net log file exporter.
-  net_log_->net_export_file_writer()->Initialize();
+  system_network_context_manager_->GetNetExportFileWriter()->Initialize();
 
   // Manage global state of net and other IO thread related.
   io_thread_ = std::make_unique<IOThread>(

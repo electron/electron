@@ -11,6 +11,8 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/containers/linked_list.h"
 #include "base/memory/weak_ptr.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 #include "net/cert/cert_verify_result.h"
@@ -96,8 +98,8 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     request->certificate = params_.certificate();
     auto response_callback = base::Bind(&CertVerifierRequest::OnResponseInUI,
                                         weak_ptr_factory_.GetWeakPtr());
-    BrowserThread::PostTask(
-        BrowserThread::UI, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
         base::BindOnce(&CertVerifierRequest::OnVerifyRequestInUI,
                        cert_verifier_->verify_proc(), std::move(request),
                        response_callback));
@@ -112,8 +114,8 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
 
   static void OnResponseInUI(base::WeakPtr<CertVerifierRequest> self,
                              int result) {
-    BrowserThread::PostTask(
-        BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::IO},
         base::BindOnce(&CertVerifierRequest::NotifyResponseInIO, self, result));
   }
 

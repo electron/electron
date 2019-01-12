@@ -21,11 +21,11 @@ index 39831f1902c6ab85a0a4cac61a614931ee050ed6..fddb013aa122049de7142bca624d7d07
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
    long long lastModified() const;
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
-index a74beceda3e769aaf5673cabc6663bb883f54705..7196fd5f5f9e51616d49c09142247c8382e83cc0 100644
+index 940f8e62ce228beaf71f5a4be88539a431415ab1..0cf315636afe0e5e1533b3372cdfe2c09ec581e1 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
 +++ b/third_party/blink/renderer/core/fileapi/file.idl
-@@ -32,6 +32,7 @@
-     Exposed=(Window,Worker)
+@@ -33,6 +33,7 @@
+     Serializable
  ] interface File : Blob {
      readonly attribute DOMString name;
 +    readonly attribute DOMString path;
