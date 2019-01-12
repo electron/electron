@@ -565,6 +565,19 @@ describe('session module', () => {
     it('allows configuring proxy settings', (done) => {
       const config = { proxyRules: 'http=myproxy:80' }
       customSession.setProxy(config, () => {
+        customSession.resolveProxy('http://example.com/', (proxy) => {
+          assert.strictEqual(proxy, 'PROXY myproxy:80')
+          done()
+        })
+      })
+    })
+
+    it('allows removing the implicit bypass rules for localhost', (done) => {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<-loopback>'
+      }
+      customSession.setProxy(config, () => {
         customSession.resolveProxy('http://localhost', (proxy) => {
           assert.strictEqual(proxy, 'PROXY myproxy:80')
           done()
@@ -601,7 +614,7 @@ describe('session module', () => {
         proxyBypassRules: '<local>'
       }
       customSession.setProxy(config, () => {
-        customSession.resolveProxy('http://localhost', (proxy) => {
+        customSession.resolveProxy('http://example/', (proxy) => {
           assert.strictEqual(proxy, 'DIRECT')
           done()
         })
