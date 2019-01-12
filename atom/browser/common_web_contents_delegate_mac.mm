@@ -27,7 +27,7 @@ bool CommonWebContentsDelegate::HandleKeyboardEvent(
   // Escape exits tabbed fullscreen mode.
   if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen()) {
     ExitFullscreenModeForTab(source);
-    return;
+    return true;
   }
 
   // Check if the webContents has preferences and to ignore shortcuts
