@@ -140,20 +140,35 @@ describe('ipc renderer module', () => {
       contents = null
     })
 
-    it('sends message to WebContents', done => {
-      const webContentsId = remote.getCurrentWebContents().id
+    const generateSpecs = (description, webPreferences) => {
+      describe(description, () => {
+        it('sends message to WebContents', done => {
+          contents = webContents.create({
+            preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
+            ...webPreferences
+          })
 
-      ipcRenderer.once('pong', (event, id) => {
-        expect(webContentsId).to.equal(id)
-        done()
+          const payload = 'Hello World!'
+          const webContentsId = remote.getCurrentWebContents().id
+
+          ipcRenderer.once('pong', (event, data) => {
+            expect(payload).to.equal(data)
+            done()
+          })
+
+          contents.once('did-finish-load', () => {
+            ipcRenderer.sendTo(contents.id, 'ping', webContentsId, payload)
+          })
+
+          contents.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
+        })
       })
+    }
 
-      contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', webContentsId)
-      })
-
-      contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)
-    })
+    generateSpecs('without sandbox', {})
+    generateSpecs('with sandbox', { sandbox: true })
+    generateSpecs('with contextIsolation', { contextIsolation: true })
+    generateSpecs('with contextIsolation + sandbox', { contextIsolation: true, sandbox: true })
   })
 
   describe('remote listeners', () => {
