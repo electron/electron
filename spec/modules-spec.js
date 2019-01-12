@@ -5,6 +5,7 @@ const fs = require('fs')
 const { remote } = require('electron')
 const { BrowserWindow } = remote
 const { closeWindow } = require('./window-helpers')
+const features = process.atomBinding('features')
 
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
@@ -17,7 +18,12 @@ describe('modules support', () => {
         require('runas')
       })
 
-      it('can be required in node binary', (done) => {
+      it('can be required in node binary', function (done) {
+        if (!features.isRunAsNodeEnabled()) {
+          this.skip()
+          done()
+        }
+
         const runas = path.join(fixtures, 'module', 'runas.js')
         const child = require('child_process').fork(runas)
         child.on('message', (msg) => {

@@ -23,6 +23,10 @@ bool IsPDFViewerEnabled() {
   return BUILDFLAG(ENABLE_PDF_VIEWER);
 }
 
+bool IsRunAsNodeEnabled() {
+  return BUILDFLAG(ENABLE_RUN_AS_NODE);
+}
+
 bool IsFakeLocationProviderEnabled() {
   return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
 }
@@ -43,6 +47,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
+  dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);

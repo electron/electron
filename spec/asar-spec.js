@@ -13,6 +13,8 @@ const remote = require('electron').remote
 const ipcMain = remote.require('electron').ipcMain
 const BrowserWindow = remote.require('electron').BrowserWindow
 
+const features = process.atomBinding('features')
+
 describe('asar package', function () {
   const fixtures = path.join(__dirname, 'fixtures')
 
@@ -845,6 +847,12 @@ describe('asar package', function () {
     })
 
     describe('child_process.fork', function () {
+      before(function () {
+        if (!features.isRunAsNodeEnabled()) {
+          this.skip()
+        }
+      })
+
       it('opens a normal js file', function (done) {
         const child = ChildProcess.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
         child.on('message', function (msg) {
@@ -1029,6 +1037,12 @@ describe('asar package', function () {
     })
 
     describe('process.env.ELECTRON_NO_ASAR', function () {
+      before(function () {
+        if (!features.isRunAsNodeEnabled()) {
+          this.skip()
+        }
+      })
+
       it('disables asar support in forked processes', function (done) {
         const forked = ChildProcess.fork(path.join(__dirname, 'fixtures', 'module', 'no-asar.js'), [], {
           env: {
@@ -1185,6 +1199,11 @@ describe('asar package', function () {
     })
 
     it('is available in forked scripts', function (done) {
+      if (!features.isRunAsNodeEnabled()) {
+        this.skip()
+        done()
+      }
+
       const child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'))
       child.on('message', function (msg) {
         assert.strictEqual(msg, 'object')
