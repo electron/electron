@@ -60,6 +60,7 @@ void Beep();
 #if defined(OS_MACOSX)
 bool GetLoginItemEnabled();
 void SetLoginItemEnabled(bool enabled);
+bool IsAtLeastOS10_14();
 #endif
 
 }  // namespace platform_util

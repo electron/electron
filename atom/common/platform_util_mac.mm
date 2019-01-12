@@ -8,6 +8,8 @@
 #import <Cocoa/Cocoa.h>
 #import <ServiceManagement/ServiceManagement.h>
 
+#include "atom/common/platform_util.h"
+
 #include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -18,6 +20,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
+#include "third_party/WebKit/Source/platform/mac/VersionUtilMac.h"
 #include "url/gurl.h"
 
 namespace {
@@ -164,6 +167,10 @@ void OpenExternal(const GURL& url,
                      c.Run(error);
                    });
                  });
+}
+
+bool IsAtLeastOS10_14() {
+  return blink::internal::MacOSXMinorVersion() >= 14;
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

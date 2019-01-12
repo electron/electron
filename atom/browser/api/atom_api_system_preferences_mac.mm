@@ -308,6 +308,12 @@ void SystemPreferences::SetUserDefault(const std::string& name,
   }
 }
 
+// static
+bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
+  NSDictionary* options = @{(id)kAXTrustedCheckOptionPrompt : @(prompt)};
+  return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
+}
+
 void SystemPreferences::RemoveUserDefault(const std::string& name) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   [defaults removeObjectForKey:base::SysUTF8ToNSString(name)];
