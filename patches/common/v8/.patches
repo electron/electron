@@ -9,5 +9,6 @@ disable-warning-win.patch
 expose_mksnapshot.patch
 build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
+reland_don_t_use_v8_initializers_code_in_v8_base.patch
 deps_provide_more_v8_backwards_compatibility.patch
 deps_cherry-pick_88f8fe1_from_upstream_v8.patch

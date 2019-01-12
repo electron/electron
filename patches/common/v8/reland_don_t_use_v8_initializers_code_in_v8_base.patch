@@ -1,0 +1,719 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexander Timokhin <atimoxin@yandex-team.ru>
+Date: Thu, 13 Dec 2018 12:46:59 +0300
+Subject: Reland "Don't use |v8_initializers| code in |v8_base|"
+
+This is a reland of 2e36e9ea1ef3e332bc9b2d620c6d6ceb054f58a6
+
+Was reverted because of v8_presubmit.py issue in
+https://chromium-review.googlesource.com/c/v8/v8/+/1374292
+
+Original change's description:
+> Don't use |v8_initializers| code in |v8_base|
+>
+> Removing |CodeStubAssembler| from |v8_base| source list (see
+> https://chromium-review.googlesource.com/c/v8/v8/+/1346329) leads to
+> linkage problems with some build configurations because it was explicitly
+> and implicitly included in |v8_base| code.
+>
+> This CL decouple this code and fixes problems.
+>
+> Bug: v8:7777
+> Change-Id: I58de5c62914bc77645ed6cc9114409890bc13189
+> Reviewed-on: https://chromium-review.googlesource.com/c/1372067
+> Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+> Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+> Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+> Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#58200}
+
+Bug: v8:7777
+Change-Id: Iaa00e73c7dbd8c413fbf15a17709aa12eda9a706
+Reviewed-on: https://chromium-review.googlesource.com/c/1375654
+Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#58209}
+
+diff --git a/BUILD.gn b/BUILD.gn
+index e3c8390c299e4c12e4ddba8402ccdb050e7bb6f1..06c9a98f6888eff6c0794e0b83682e04abdbf1d7 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -1722,6 +1722,7 @@ v8_source_set("v8_base") {
+     "src/builtins/builtins-number.cc",
+     "src/builtins/builtins-object.cc",
+     "src/builtins/builtins-promise.cc",
++    "src/builtins/builtins-promise.h",
+     "src/builtins/builtins-reflect.cc",
+     "src/builtins/builtins-regexp.cc",
+     "src/builtins/builtins-sharedarraybuffer.cc",
+diff --git a/src/builtins/builtins-date.cc b/src/builtins/builtins-date.cc
+index b2e054d6a2efe039c3eb622467adfdff72f582f1..8635eefd21cba5065f9c60e266575f983449dd0f 100644
+--- a/src/builtins/builtins-date.cc
++++ b/src/builtins/builtins-date.cc
+@@ -5,7 +5,6 @@
+ #include "src/builtins/builtins-utils-inl.h"
+ #include "src/builtins/builtins.h"
+ #include "src/code-factory.h"
+-#include "src/code-stub-assembler.h"
+ #include "src/conversions.h"
+ #include "src/counters.h"
+ #include "src/date.h"
+diff --git a/src/builtins/builtins-object.cc b/src/builtins/builtins-object.cc
+index 5ab929a7a19edbf270f0dff518323003c3103baf..2b55abbc127c527ebd423e48fed23d51613a8302 100644
+--- a/src/builtins/builtins-object.cc
++++ b/src/builtins/builtins-object.cc
+@@ -5,7 +5,6 @@
+ #include "src/builtins/builtins-utils-inl.h"
+ #include "src/builtins/builtins.h"
+ #include "src/code-factory.h"
+-#include "src/code-stub-assembler.h"
+ #include "src/counters.h"
+ #include "src/keys.h"
+ #include "src/lookup.h"
+diff --git a/src/builtins/builtins-promise-gen.cc b/src/builtins/builtins-promise-gen.cc
+index 22f643e36df8addfcf65c98cc5004e514307f9d3..051b9d8bf82df0713df05c73e2c6677da74bd7ed 100644
+--- a/src/builtins/builtins-promise-gen.cc
++++ b/src/builtins/builtins-promise-gen.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "src/builtins/builtins-constructor-gen.h"
+ #include "src/builtins/builtins-iterator-gen.h"
++#include "src/builtins/builtins-promise.h"
+ #include "src/builtins/builtins-utils-gen.h"
+ #include "src/builtins/builtins.h"
+ #include "src/code-factory.h"
+@@ -210,14 +211,17 @@ Node* PromiseBuiltinsAssembler::CreatePromiseAllResolveElementContext(
+   TNode<JSArray> values_array = AllocateJSArray(
+       PACKED_ELEMENTS, array_map, IntPtrConstant(0), SmiConstant(0));
+ 
+-  Node* const context =
+-      CreatePromiseContext(native_context, kPromiseAllResolveElementLength);
++  Node* const context = CreatePromiseContext(
++      native_context, PromiseBuiltins::kPromiseAllResolveElementLength);
+   StoreContextElementNoWriteBarrier(
+-      context, kPromiseAllResolveElementRemainingSlot, SmiConstant(1));
++      context, PromiseBuiltins::kPromiseAllResolveElementRemainingSlot,
++      SmiConstant(1));
+   StoreContextElementNoWriteBarrier(
+-      context, kPromiseAllResolveElementCapabilitySlot, promise_capability);
++      context, PromiseBuiltins::kPromiseAllResolveElementCapabilitySlot,
++      promise_capability);
+   StoreContextElementNoWriteBarrier(
+-      context, kPromiseAllResolveElementValuesArraySlot, values_array);
++      context, PromiseBuiltins::kPromiseAllResolveElementValuesArraySlot,
++      values_array);
+ 
+   return context;
+ }
+@@ -245,20 +249,22 @@ Node* PromiseBuiltinsAssembler::CreatePromiseAllResolveElementFunction(
+ 
+ Node* PromiseBuiltinsAssembler::CreatePromiseResolvingFunctionsContext(
+     Node* promise, Node* debug_event, Node* native_context) {
+-  Node* const context =
+-      CreatePromiseContext(native_context, kPromiseContextLength);
+-  StoreContextElementNoWriteBarrier(context, kPromiseSlot, promise);
+-  StoreContextElementNoWriteBarrier(context, kAlreadyResolvedSlot,
+-                                    FalseConstant());
+-  StoreContextElementNoWriteBarrier(context, kDebugEventSlot, debug_event);
++  Node* const context = CreatePromiseContext(
++      native_context, PromiseBuiltins::kPromiseContextLength);
++  StoreContextElementNoWriteBarrier(context, PromiseBuiltins::kPromiseSlot,
++                                    promise);
++  StoreContextElementNoWriteBarrier(
++      context, PromiseBuiltins::kAlreadyResolvedSlot, FalseConstant());
++  StoreContextElementNoWriteBarrier(context, PromiseBuiltins::kDebugEventSlot,
++                                    debug_event);
+   return context;
+ }
+ 
+ Node* PromiseBuiltinsAssembler::CreatePromiseGetCapabilitiesExecutorContext(
+     Node* promise_capability, Node* native_context) {
+-  int kContextLength = kCapabilitiesContextLength;
++  int kContextLength = PromiseBuiltins::kCapabilitiesContextLength;
+   Node* context = CreatePromiseContext(native_context, kContextLength);
+-  StoreContextElementNoWriteBarrier(context, kCapabilitySlot,
++  StoreContextElementNoWriteBarrier(context, PromiseBuiltins::kCapabilitySlot,
+                                     promise_capability);
+   return context;
+ }
+@@ -750,22 +756,24 @@ TF_BUILTIN(PromiseCapabilityDefaultReject, PromiseBuiltinsAssembler) {
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+   // 2. Let promise be F.[[Promise]].
+-  Node* const promise = LoadContextElement(context, kPromiseSlot);
++  Node* const promise =
++      LoadContextElement(context, PromiseBuiltins::kPromiseSlot);
+ 
+   // 3. Let alreadyResolved be F.[[AlreadyResolved]].
+   Label if_already_resolved(this, Label::kDeferred);
+   Node* const already_resolved =
+-      LoadContextElement(context, kAlreadyResolvedSlot);
++      LoadContextElement(context, PromiseBuiltins::kAlreadyResolvedSlot);
+ 
+   // 4. If alreadyResolved.[[Value]] is true, return undefined.
+   GotoIf(IsTrue(already_resolved), &if_already_resolved);
+ 
+   // 5. Set alreadyResolved.[[Value]] to true.
+-  StoreContextElementNoWriteBarrier(context, kAlreadyResolvedSlot,
+-                                    TrueConstant());
++  StoreContextElementNoWriteBarrier(
++      context, PromiseBuiltins::kAlreadyResolvedSlot, TrueConstant());
+ 
+   // 6. Return RejectPromise(promise, reason).
+-  Node* const debug_event = LoadContextElement(context, kDebugEventSlot);
++  Node* const debug_event =
++      LoadContextElement(context, PromiseBuiltins::kDebugEventSlot);
+   Return(CallBuiltin(Builtins::kRejectPromise, context, promise, reason,
+                      debug_event));
+ 
+@@ -782,19 +790,20 @@ TF_BUILTIN(PromiseCapabilityDefaultResolve, PromiseBuiltinsAssembler) {
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+   // 2. Let promise be F.[[Promise]].
+-  Node* const promise = LoadContextElement(context, kPromiseSlot);
++  Node* const promise =
++      LoadContextElement(context, PromiseBuiltins::kPromiseSlot);
+ 
+   // 3. Let alreadyResolved be F.[[AlreadyResolved]].
+   Label if_already_resolved(this, Label::kDeferred);
+   Node* const already_resolved =
+-      LoadContextElement(context, kAlreadyResolvedSlot);
++      LoadContextElement(context, PromiseBuiltins::kAlreadyResolvedSlot);
+ 
+   // 4. If alreadyResolved.[[Value]] is true, return undefined.
+   GotoIf(IsTrue(already_resolved), &if_already_resolved);
+ 
+   // 5. Set alreadyResolved.[[Value]] to true.
+-  StoreContextElementNoWriteBarrier(context, kAlreadyResolvedSlot,
+-                                    TrueConstant());
++  StoreContextElementNoWriteBarrier(
++      context, PromiseBuiltins::kAlreadyResolvedSlot, TrueConstant());
+ 
+   // The rest of the logic (and the catch prediction) is
+   // encapsulated in the dedicated ResolvePromise builtin.
+@@ -1396,7 +1405,8 @@ TF_BUILTIN(PromiseGetCapabilitiesExecutor, PromiseBuiltinsAssembler) {
+   Node* const reject = Parameter(Descriptor::kReject);
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+-  Node* const capability = LoadContextElement(context, kCapabilitySlot);
++  Node* const capability =
++      LoadContextElement(context, PromiseBuiltins::kCapabilitySlot);
+ 
+   Label if_alreadyinvoked(this, Label::kDeferred);
+   GotoIfNot(IsUndefined(
+@@ -1464,12 +1474,12 @@ TF_BUILTIN(PromiseReject, PromiseBuiltinsAssembler) {
+ 
+ std::pair<Node*, Node*> PromiseBuiltinsAssembler::CreatePromiseFinallyFunctions(
+     Node* on_finally, Node* constructor, Node* native_context) {
+-  Node* const promise_context =
+-      CreatePromiseContext(native_context, kPromiseFinallyContextLength);
+-  StoreContextElementNoWriteBarrier(promise_context, kOnFinallySlot,
+-                                    on_finally);
+-  StoreContextElementNoWriteBarrier(promise_context, kConstructorSlot,
+-                                    constructor);
++  Node* const promise_context = CreatePromiseContext(
++      native_context, PromiseBuiltins::kPromiseFinallyContextLength);
++  StoreContextElementNoWriteBarrier(
++      promise_context, PromiseBuiltins::kOnFinallySlot, on_finally);
++  StoreContextElementNoWriteBarrier(
++      promise_context, PromiseBuiltins::kConstructorSlot, constructor);
+   Node* const map = LoadContextElement(
+       native_context, Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+   Node* const then_finally_info = LoadContextElement(
+@@ -1486,15 +1496,16 @@ std::pair<Node*, Node*> PromiseBuiltinsAssembler::CreatePromiseFinallyFunctions(
+ TF_BUILTIN(PromiseValueThunkFinally, PromiseBuiltinsAssembler) {
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+-  Node* const value = LoadContextElement(context, kValueSlot);
++  Node* const value = LoadContextElement(context, PromiseBuiltins::kValueSlot);
+   Return(value);
+ }
+ 
+ Node* PromiseBuiltinsAssembler::CreateValueThunkFunction(Node* value,
+                                                          Node* native_context) {
+   Node* const value_thunk_context = CreatePromiseContext(
+-      native_context, kPromiseValueThunkOrReasonContextLength);
+-  StoreContextElementNoWriteBarrier(value_thunk_context, kValueSlot, value);
++      native_context, PromiseBuiltins::kPromiseValueThunkOrReasonContextLength);
++  StoreContextElementNoWriteBarrier(value_thunk_context,
++                                    PromiseBuiltins::kValueSlot, value);
+   Node* const map = LoadContextElement(
+       native_context, Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+   Node* const value_thunk_info = LoadContextElement(
+@@ -1511,7 +1522,8 @@ TF_BUILTIN(PromiseThenFinally, PromiseBuiltinsAssembler) {
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+   // 1. Let onFinally be F.[[OnFinally]].
+-  Node* const on_finally = LoadContextElement(context, kOnFinallySlot);
++  Node* const on_finally =
++      LoadContextElement(context, PromiseBuiltins::kOnFinallySlot);
+ 
+   // 2.  Assert: IsCallable(onFinally) is true.
+   CSA_ASSERT(this, IsCallable(on_finally));
+@@ -1522,7 +1534,8 @@ TF_BUILTIN(PromiseThenFinally, PromiseBuiltinsAssembler) {
+       context, on_finally, UndefinedConstant());
+ 
+   // 4. Let C be F.[[Constructor]].
+-  Node* const constructor = LoadContextElement(context, kConstructorSlot);
++  Node* const constructor =
++      LoadContextElement(context, PromiseBuiltins::kConstructorSlot);
+ 
+   // 5. Assert: IsConstructor(C) is true.
+   CSA_ASSERT(this, IsConstructor(constructor));
+@@ -1542,7 +1555,7 @@ TF_BUILTIN(PromiseThenFinally, PromiseBuiltinsAssembler) {
+ TF_BUILTIN(PromiseThrowerFinally, PromiseBuiltinsAssembler) {
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+-  Node* const reason = LoadContextElement(context, kValueSlot);
++  Node* const reason = LoadContextElement(context, PromiseBuiltins::kValueSlot);
+   CallRuntime(Runtime::kThrow, context, reason);
+   Unreachable();
+ }
+@@ -1550,8 +1563,9 @@ TF_BUILTIN(PromiseThrowerFinally, PromiseBuiltinsAssembler) {
+ Node* PromiseBuiltinsAssembler::CreateThrowerFunction(Node* reason,
+                                                       Node* native_context) {
+   Node* const thrower_context = CreatePromiseContext(
+-      native_context, kPromiseValueThunkOrReasonContextLength);
+-  StoreContextElementNoWriteBarrier(thrower_context, kValueSlot, reason);
++      native_context, PromiseBuiltins::kPromiseValueThunkOrReasonContextLength);
++  StoreContextElementNoWriteBarrier(thrower_context,
++                                    PromiseBuiltins::kValueSlot, reason);
+   Node* const map = LoadContextElement(
+       native_context, Context::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+   Node* const thrower_info = LoadContextElement(
+@@ -1568,7 +1582,8 @@ TF_BUILTIN(PromiseCatchFinally, PromiseBuiltinsAssembler) {
+   Node* const context = Parameter(Descriptor::kContext);
+ 
+   // 1. Let onFinally be F.[[OnFinally]].
+-  Node* const on_finally = LoadContextElement(context, kOnFinallySlot);
++  Node* const on_finally =
++      LoadContextElement(context, PromiseBuiltins::kOnFinallySlot);
+ 
+   // 2. Assert: IsCallable(onFinally) is true.
+   CSA_ASSERT(this, IsCallable(on_finally));
+@@ -1579,7 +1594,8 @@ TF_BUILTIN(PromiseCatchFinally, PromiseBuiltinsAssembler) {
+       context, on_finally, UndefinedConstant());
+ 
+   // 4. Let C be F.[[Constructor]].
+-  Node* const constructor = LoadContextElement(context, kConstructorSlot);
++  Node* const constructor =
++      LoadContextElement(context, PromiseBuiltins::kConstructorSlot);
+ 
+   // 5. Assert: IsConstructor(C) is true.
+   CSA_ASSERT(this, IsConstructor(constructor));
+@@ -1908,9 +1924,11 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
+     // Set remainingElementsCount.[[Value]] to
+     //     remainingElementsCount.[[Value]] + 1.
+     TNode<Smi> const remaining_elements_count = CAST(LoadContextElement(
+-        resolve_element_context, kPromiseAllResolveElementRemainingSlot));
++        resolve_element_context,
++        PromiseBuiltins::kPromiseAllResolveElementRemainingSlot));
+     StoreContextElementNoWriteBarrier(
+-        resolve_element_context, kPromiseAllResolveElementRemainingSlot,
++        resolve_element_context,
++        PromiseBuiltins::kPromiseAllResolveElementRemainingSlot,
+         SmiAdd(remaining_elements_count, SmiConstant(1)));
+ 
+     // Let resolveElement be CreateBuiltinFunction(steps,
+@@ -2027,11 +2045,13 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
+     // Set remainingElementsCount.[[Value]] to
+     //    remainingElementsCount.[[Value]] - 1.
+     TNode<Smi> remaining_elements_count = CAST(LoadContextElement(
+-        resolve_element_context, kPromiseAllResolveElementRemainingSlot));
++        resolve_element_context,
++        PromiseBuiltins::kPromiseAllResolveElementRemainingSlot));
+     remaining_elements_count = SmiSub(remaining_elements_count, SmiConstant(1));
+-    StoreContextElementNoWriteBarrier(resolve_element_context,
+-                                      kPromiseAllResolveElementRemainingSlot,
+-                                      remaining_elements_count);
++    StoreContextElementNoWriteBarrier(
++        resolve_element_context,
++        PromiseBuiltins::kPromiseAllResolveElementRemainingSlot,
++        remaining_elements_count);
+     GotoIf(SmiEqual(remaining_elements_count, SmiConstant(0)),
+            &resolve_promise);
+ 
+@@ -2040,7 +2060,8 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
+     // fancy Thenable that calls the resolve callback immediately, so we need
+     // to handle that correctly here.
+     Node* const values_array = LoadContextElement(
+-        resolve_element_context, kPromiseAllResolveElementValuesArraySlot);
++        resolve_element_context,
++        PromiseBuiltins::kPromiseAllResolveElementValuesArraySlot);
+     Node* const old_elements = LoadElements(values_array);
+     TNode<Smi> const old_capacity = LoadFixedArrayBaseLength(old_elements);
+     TNode<Smi> const new_capacity = var_index.value();
+@@ -2063,7 +2084,8 @@ Node* PromiseBuiltinsAssembler::PerformPromiseAll(
+       Node* const resolve =
+           LoadObjectField(capability, PromiseCapability::kResolveOffset);
+       Node* const values_array = LoadContextElement(
+-          resolve_element_context, kPromiseAllResolveElementValuesArraySlot);
++          resolve_element_context,
++          PromiseBuiltins::kPromiseAllResolveElementValuesArraySlot);
+       Node* const resolve_call = CallJS(
+           CodeFactory::Call(isolate(), ConvertReceiverMode::kNullOrUndefined),
+           native_context, resolve, UndefinedConstant(), values_array);
+@@ -2146,9 +2168,10 @@ TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
+   // first time, in which case we make it point to the native context here
+   // to mark this resolve element closure as done.
+   GotoIf(IsNativeContext(context), &already_called);
+-  CSA_ASSERT(this,
+-             SmiEqual(LoadObjectField<Smi>(context, Context::kLengthOffset),
+-                      SmiConstant(kPromiseAllResolveElementLength)));
++  CSA_ASSERT(
++      this,
++      SmiEqual(LoadObjectField<Smi>(context, Context::kLengthOffset),
++               SmiConstant(PromiseBuiltins::kPromiseAllResolveElementLength)));
+   TNode<Context> native_context = LoadNativeContext(context);
+   StoreObjectField(function, JSFunction::kContextOffset, native_context);
+ 
+@@ -2161,8 +2184,8 @@ TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
+   TNode<IntPtrT> index = IntPtrSub(identity_hash, IntPtrConstant(1));
+ 
+   // Check if we need to grow the [[ValuesArray]] to store {value} at {index}.
+-  TNode<JSArray> values_array = CAST(
+-      LoadContextElement(context, kPromiseAllResolveElementValuesArraySlot));
++  TNode<JSArray> values_array = CAST(LoadContextElement(
++      context, PromiseBuiltins::kPromiseAllResolveElementValuesArraySlot));
+   TNode<FixedArray> elements = CAST(LoadElements(values_array));
+   TNode<IntPtrT> values_length =
+       LoadAndUntagObjectField(values_array, JSArray::kLengthOffset);
+@@ -2221,17 +2244,18 @@ TF_BUILTIN(PromiseAllResolveElementClosure, PromiseBuiltinsAssembler) {
+   }
+ 
+   BIND(&done);
+-  TNode<Smi> remaining_elements_count =
+-      CAST(LoadContextElement(context, kPromiseAllResolveElementRemainingSlot));
++  TNode<Smi> remaining_elements_count = CAST(LoadContextElement(
++      context, PromiseBuiltins::kPromiseAllResolveElementRemainingSlot));
+   remaining_elements_count = SmiSub(remaining_elements_count, SmiConstant(1));
+-  StoreContextElement(context, kPromiseAllResolveElementRemainingSlot,
++  StoreContextElement(context,
++                      PromiseBuiltins::kPromiseAllResolveElementRemainingSlot,
+                       remaining_elements_count);
+   GotoIf(SmiEqual(remaining_elements_count, SmiConstant(0)), &resolve_promise);
+   Return(UndefinedConstant());
+ 
+   BIND(&resolve_promise);
+-  TNode<PromiseCapability> capability = CAST(
+-      LoadContextElement(context, kPromiseAllResolveElementCapabilitySlot));
++  TNode<PromiseCapability> capability = CAST(LoadContextElement(
++      context, PromiseBuiltins::kPromiseAllResolveElementCapabilitySlot));
+   TNode<Object> resolve =
+       LoadObjectField(capability, PromiseCapability::kResolveOffset);
+   CallJS(CodeFactory::Call(isolate(), ConvertReceiverMode::kNullOrUndefined),
+diff --git a/src/builtins/builtins-promise-gen.h b/src/builtins/builtins-promise-gen.h
+index 435f1adc87b2393c0c7a4142bb946f50940d256e..8edc2331a51ad08f19b9e470a5e76a4d78cd69f5 100644
+--- a/src/builtins/builtins-promise-gen.h
++++ b/src/builtins/builtins-promise-gen.h
+@@ -6,7 +6,6 @@
+ #define V8_BUILTINS_BUILTINS_PROMISE_GEN_H_
+ 
+ #include "src/code-stub-assembler.h"
+-#include "src/contexts.h"
+ #include "src/objects/promise.h"
+ #include "torque-generated/builtins-base-from-dsl-gen.h"
+ #include "torque-generated/builtins-iterator-from-dsl-gen.h"
+@@ -18,59 +17,6 @@ typedef compiler::CodeAssemblerState CodeAssemblerState;
+ 
+ class PromiseBuiltinsAssembler : public CodeStubAssembler {
+  public:
+-  enum PromiseResolvingFunctionContextSlot {
+-    // The promise which resolve/reject callbacks fulfill.
+-    kPromiseSlot = Context::MIN_CONTEXT_SLOTS,
+-
+-    // Whether the callback was already invoked.
+-    kAlreadyResolvedSlot,
+-
+-    // Whether to trigger a debug event or not. Used in catch
+-    // prediction.
+-    kDebugEventSlot,
+-    kPromiseContextLength,
+-  };
+-
+-  // TODO(bmeurer): Move this to a proper context map in contexts.h?
+-  // Similar to the AwaitContext that we introduced for await closures.
+-  enum PromiseAllResolveElementContextSlots {
+-    // Remaining elements count
+-    kPromiseAllResolveElementRemainingSlot = Context::MIN_CONTEXT_SLOTS,
+-
+-    // Promise capability from Promise.all
+-    kPromiseAllResolveElementCapabilitySlot,
+-
+-    // Values array from Promise.all
+-    kPromiseAllResolveElementValuesArraySlot,
+-
+-    kPromiseAllResolveElementLength
+-  };
+-
+-  enum FunctionContextSlot {
+-    kCapabilitySlot = Context::MIN_CONTEXT_SLOTS,
+-
+-    kCapabilitiesContextLength,
+-  };
+-
+-  // This is used by the Promise.prototype.finally builtin to store
+-  // onFinally callback and the Promise constructor.
+-  // TODO(gsathya): For native promises we can create a variant of
+-  // this without extra space for the constructor to save memory.
+-  enum PromiseFinallyContextSlot {
+-    kOnFinallySlot = Context::MIN_CONTEXT_SLOTS,
+-    kConstructorSlot,
+-
+-    kPromiseFinallyContextLength,
+-  };
+-
+-  // This is used by the ThenFinally and CatchFinally builtins to
+-  // store the value to return or reason to throw.
+-  enum PromiseValueThunkOrReasonContextSlot {
+-    kValueSlot = Context::MIN_CONTEXT_SLOTS,
+-
+-    kPromiseValueThunkOrReasonContextLength,
+-  };
+-
+   explicit PromiseBuiltinsAssembler(compiler::CodeAssemblerState* state)
+       : CodeStubAssembler(state) {}
+   // These allocate and initialize a promise with pending state and
+diff --git a/src/builtins/builtins-promise.cc b/src/builtins/builtins-promise.cc
+index 88d54b26d0295e25ffb57f154dcfeb353e46d04f..0f18d8fb459b9d256648870706118a751012b01a 100644
+--- a/src/builtins/builtins-promise.cc
++++ b/src/builtins/builtins-promise.cc
+@@ -2,6 +2,8 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "src/builtins/builtins-promise.h"
++
+ #include "src/builtins/builtins-utils-inl.h"
+ #include "src/builtins/builtins.h"
+ #include "src/counters.h"
+diff --git a/src/builtins/builtins-promise.h b/src/builtins/builtins-promise.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..66545feafed2099992a0fa57aada74298e634994
+--- /dev/null
++++ b/src/builtins/builtins-promise.h
+@@ -0,0 +1,75 @@
++// Copyright 2018 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef V8_BUILTINS_BUILTINS_PROMISE_H_
++#define V8_BUILTINS_BUILTINS_PROMISE_H_
++
++#include "src/contexts.h"
++
++namespace v8 {
++namespace internal {
++
++class PromiseBuiltins {
++ public:
++  enum PromiseResolvingFunctionContextSlot {
++    // The promise which resolve/reject callbacks fulfill.
++    kPromiseSlot = Context::MIN_CONTEXT_SLOTS,
++
++    // Whether the callback was already invoked.
++    kAlreadyResolvedSlot,
++
++    // Whether to trigger a debug event or not. Used in catch
++    // prediction.
++    kDebugEventSlot,
++    kPromiseContextLength,
++  };
++
++  // TODO(bmeurer): Move this to a proper context map in contexts.h?
++  // Similar to the AwaitContext that we introduced for await closures.
++  enum PromiseAllResolveElementContextSlots {
++    // Remaining elements count
++    kPromiseAllResolveElementRemainingSlot = Context::MIN_CONTEXT_SLOTS,
++
++    // Promise capability from Promise.all
++    kPromiseAllResolveElementCapabilitySlot,
++
++    // Values array from Promise.all
++    kPromiseAllResolveElementValuesArraySlot,
++
++    kPromiseAllResolveElementLength
++  };
++
++  enum FunctionContextSlot {
++    kCapabilitySlot = Context::MIN_CONTEXT_SLOTS,
++
++    kCapabilitiesContextLength,
++  };
++
++  // This is used by the Promise.prototype.finally builtin to store
++  // onFinally callback and the Promise constructor.
++  // TODO(gsathya): For native promises we can create a variant of
++  // this without extra space for the constructor to save memory.
++  enum PromiseFinallyContextSlot {
++    kOnFinallySlot = Context::MIN_CONTEXT_SLOTS,
++    kConstructorSlot,
++
++    kPromiseFinallyContextLength,
++  };
++
++  // This is used by the ThenFinally and CatchFinally builtins to
++  // store the value to return or reason to throw.
++  enum PromiseValueThunkOrReasonContextSlot {
++    kValueSlot = Context::MIN_CONTEXT_SLOTS,
++
++    kPromiseValueThunkOrReasonContextLength,
++  };
++
++ private:
++  DISALLOW_IMPLICIT_CONSTRUCTORS(PromiseBuiltins);
++};
++
++}  // namespace internal
++}  // namespace v8
++
++#endif  // V8_BUILTINS_BUILTINS_PROMISE_H_
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 131b50b53e67d9cdb47e20ed570875cda84c0ba7..d5985d2cdc5a50a2f38012cef5291f6b6dde0154 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -5,7 +5,7 @@
+ #include "src/compiler/js-call-reducer.h"
+ 
+ #include "src/api-inl.h"
+-#include "src/builtins/builtins-promise-gen.h"
++#include "src/builtins/builtins-promise.h"
+ #include "src/builtins/builtins-utils.h"
+ #include "src/code-factory.h"
+ #include "src/code-stubs.h"
+@@ -5607,21 +5607,20 @@ Reduction JSCallReducer::ReducePromiseConstructor(Node* node) {
+   Node* promise_context = effect = graph()->NewNode(
+       javascript()->CreateFunctionContext(
+           handle(native_context().object()->scope_info(), isolate()),
+-          PromiseBuiltinsAssembler::kPromiseContextLength -
+-              Context::MIN_CONTEXT_SLOTS,
++          PromiseBuiltins::kPromiseContextLength - Context::MIN_CONTEXT_SLOTS,
+           FUNCTION_SCOPE),
+       context, effect, control);
+-  effect =
+-      graph()->NewNode(simplified()->StoreField(AccessBuilder::ForContextSlot(
+-                           PromiseBuiltinsAssembler::kPromiseSlot)),
+-                       promise_context, promise, effect, control);
+   effect = graph()->NewNode(
+-      simplified()->StoreField(AccessBuilder::ForContextSlot(
+-          PromiseBuiltinsAssembler::kAlreadyResolvedSlot)),
++      simplified()->StoreField(
++          AccessBuilder::ForContextSlot(PromiseBuiltins::kPromiseSlot)),
++      promise_context, promise, effect, control);
++  effect = graph()->NewNode(
++      simplified()->StoreField(
++          AccessBuilder::ForContextSlot(PromiseBuiltins::kAlreadyResolvedSlot)),
+       promise_context, jsgraph()->FalseConstant(), effect, control);
+   effect = graph()->NewNode(
+-      simplified()->StoreField(AccessBuilder::ForContextSlot(
+-          PromiseBuiltinsAssembler::kDebugEventSlot)),
++      simplified()->StoreField(
++          AccessBuilder::ForContextSlot(PromiseBuiltins::kDebugEventSlot)),
+       promise_context, jsgraph()->TrueConstant(), effect, control);
+ 
+   // Allocate the closure for the resolve case.
+@@ -5927,18 +5926,18 @@ Reduction JSCallReducer::ReducePromisePrototypeFinally(Node* node) {
+     context = etrue = graph()->NewNode(
+         javascript()->CreateFunctionContext(
+             handle(native_context().object()->scope_info(), isolate()),
+-            PromiseBuiltinsAssembler::kPromiseFinallyContextLength -
++            PromiseBuiltins::kPromiseFinallyContextLength -
+                 Context::MIN_CONTEXT_SLOTS,
+             FUNCTION_SCOPE),
+         context, etrue, if_true);
+-    etrue =
+-        graph()->NewNode(simplified()->StoreField(AccessBuilder::ForContextSlot(
+-                             PromiseBuiltinsAssembler::kOnFinallySlot)),
+-                         context, on_finally, etrue, if_true);
+-    etrue =
+-        graph()->NewNode(simplified()->StoreField(AccessBuilder::ForContextSlot(
+-                             PromiseBuiltinsAssembler::kConstructorSlot)),
+-                         context, constructor, etrue, if_true);
++    etrue = graph()->NewNode(
++        simplified()->StoreField(
++            AccessBuilder::ForContextSlot(PromiseBuiltins::kOnFinallySlot)),
++        context, on_finally, etrue, if_true);
++    etrue = graph()->NewNode(
++        simplified()->StoreField(
++            AccessBuilder::ForContextSlot(PromiseBuiltins::kConstructorSlot)),
++        context, constructor, etrue, if_true);
+ 
+     // Allocate the closure for the reject case.
+     SharedFunctionInfoRef catch_finally =
+diff --git a/src/isolate.cc b/src/isolate.cc
+index a3e93d0da3dd8054a04ea15edc2c7511972f7136..44dc67d22452e4153d44edc81f26c13eb96d2920 100644
+--- a/src/isolate.cc
++++ b/src/isolate.cc
+@@ -22,7 +22,7 @@
+ #include "src/base/sys-info.h"
+ #include "src/base/utils/random-number-generator.h"
+ #include "src/bootstrapper.h"
+-#include "src/builtins/builtins-promise-gen.h"
++#include "src/builtins/builtins-promise.h"
+ #include "src/builtins/constants-table-builder.h"
+ #include "src/cancelable-task.h"
+ #include "src/code-stubs.h"
+@@ -774,7 +774,7 @@ void CaptureAsyncStackTrace(Isolate* isolate, Handle<JSPromise> promise,
+       // find the promise capability that's being resolved when all
+       // the concurrent promises resolve.
+       int const index =
+-          PromiseBuiltinsAssembler::kPromiseAllResolveElementCapabilitySlot;
++          PromiseBuiltins::kPromiseAllResolveElementCapabilitySlot;
+       Handle<PromiseCapability> capability(
+           PromiseCapability::cast(context->get(index)), isolate);
+       if (!capability->promise()->IsJSPromise()) return;
+diff --git a/test/cctest/test-code-stub-assembler.cc b/test/cctest/test-code-stub-assembler.cc
+index 6db2eed1458bd0f07ae6774401e53a3f2d23b7ce..ab90d1a357fd141441cf1a89323a5dc7f332a882 100644
+--- a/test/cctest/test-code-stub-assembler.cc
++++ b/test/cctest/test-code-stub-assembler.cc
+@@ -7,6 +7,7 @@
+ #include "src/api-inl.h"
+ #include "src/base/utils/random-number-generator.h"
+ #include "src/builtins/builtins-promise-gen.h"
++#include "src/builtins/builtins-promise.h"
+ #include "src/builtins/builtins-string-gen.h"
+ #include "src/char-predicates.h"
+ #include "src/code-factory.h"
+@@ -2360,9 +2361,9 @@ TEST(CreatePromiseResolvingFunctionsContext) {
+   CHECK_EQ(isolate->native_context()->scope_info(), context_js->scope_info());
+   CHECK_EQ(ReadOnlyRoots(isolate).the_hole_value(), context_js->extension());
+   CHECK_EQ(*isolate->native_context(), context_js->native_context());
+-  CHECK(context_js->get(PromiseBuiltinsAssembler::kPromiseSlot)->IsJSPromise());
++  CHECK(context_js->get(PromiseBuiltins::kPromiseSlot)->IsJSPromise());
+   CHECK_EQ(ReadOnlyRoots(isolate).false_value(),
+-           context_js->get(PromiseBuiltinsAssembler::kDebugEventSlot));
++           context_js->get(PromiseBuiltins::kDebugEventSlot));
+ }
+ 
+ TEST(CreatePromiseResolvingFunctions) {
+@@ -2520,13 +2521,12 @@ TEST(CreatePromiseGetCapabilitiesExecutorContext) {
+       ft.Call(isolate->factory()->undefined_value()).ToHandleChecked();
+   CHECK(result_obj->IsContext());
+   Handle<Context> context_js = Handle<Context>::cast(result_obj);
+-  CHECK_EQ(PromiseBuiltinsAssembler::kCapabilitiesContextLength,
+-           context_js->length());
++  CHECK_EQ(PromiseBuiltins::kCapabilitiesContextLength, context_js->length());
+   CHECK_EQ(isolate->native_context()->scope_info(), context_js->scope_info());
+   CHECK_EQ(ReadOnlyRoots(isolate).the_hole_value(), context_js->extension());
+   CHECK_EQ(*isolate->native_context(), context_js->native_context());
+-  CHECK(context_js->get(PromiseBuiltinsAssembler::kCapabilitySlot)
+-            ->IsPromiseCapability());
++  CHECK(
++      context_js->get(PromiseBuiltins::kCapabilitySlot)->IsPromiseCapability());
+ }
+ 
+ TEST(NewPromiseCapability) {
+@@ -2573,10 +2573,8 @@ TEST(NewPromiseCapability) {
+       CHECK_EQ(isolate->native_context()->scope_info(), context->scope_info());
+       CHECK_EQ(ReadOnlyRoots(isolate).the_hole_value(), context->extension());
+       CHECK_EQ(*isolate->native_context(), context->native_context());
+-      CHECK_EQ(PromiseBuiltinsAssembler::kPromiseContextLength,
+-               context->length());
+-      CHECK_EQ(context->get(PromiseBuiltinsAssembler::kPromiseSlot),
+-               result->promise());
++      CHECK_EQ(PromiseBuiltins::kPromiseContextLength, context->length());
++      CHECK_EQ(context->get(PromiseBuiltins::kPromiseSlot), result->promise());
+     }
+   }
+ 
