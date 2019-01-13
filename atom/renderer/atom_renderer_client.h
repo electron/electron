@@ -53,9 +53,6 @@ class AtomRendererClient : public RendererClientBase {
 
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
 
-  // Whether the node integration has been initialized.
-  bool node_integration_initialized_ = false;
-
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
 

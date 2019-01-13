@@ -371,6 +371,14 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       English and not localized.
     * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
       file or link onto the page causes a navigation. Default is `false`.
+    * `nodeSupportInSubFrames` Boolean (optional) - Experimental option for
+      enabling NodeJS support in sub-frames such as iframes.  This may have
+      an increased chance of memory leaks.  All your preloads will load for
+      every iframe, you can use `process.isMainFrame` to determine if you are
+      in the main frame or not.  If you have `nodeIntegration=false` and
+      `nodeSupportInSubFrames=true` your preloads will still run in iframes
+      with node enabled but nodeIntegration will be disabled for all iframe
+      content just like your main frame.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

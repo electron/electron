@@ -59,6 +59,11 @@ process.once('loaded', () => {
 A `Boolean`. When app is started by being passed as parameter to the default app, this
 property is `true` in the main process, otherwise it is `undefined`.
 
+### `process.isMainFrame`
+
+A `Boolean`.  Set to `true` when the current renderer context is the "main" renderer
+frame.  If you want the ID of the current frame you should use `webFrame.routingId`.
+
 ### `process.mas`
 
 A `Boolean`. For Mac App Store build, this property is `true`, for other builds it is

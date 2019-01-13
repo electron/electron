@@ -75,6 +75,7 @@ extern const char kSandbox[];
 extern const char kWebSecurity[];
 extern const char kAllowRunningInsecureContent[];
 extern const char kOffscreen[];
+extern const char kNodeSupportInSubFrames[];
 
 }  // namespace options
 
@@ -107,6 +108,7 @@ extern const char kHiddenPage[];
 extern const char kNativeWindowOpen[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
+extern const char kNodeSupportInSubFrames[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
