@@ -4,6 +4,6 @@ workflow "Check for Release Notes in Pull Requests" {
 }
 
 action "Clerk" {
-  uses = "electron/clerk"
+  uses = "electron/clerk@master"
   secrets = ["GITHUB_TOKEN"]
 }
