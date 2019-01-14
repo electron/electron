@@ -442,8 +442,6 @@ describe('MenuItems', () => {
       if (process.platform === 'darwin') {
         expect(item.submenu.items[2].type).to.equal('separator')
         expect(item.submenu.items[3].role).to.equal('front')
-        expect(item.submenu.items[4].type).to.equal('separator')
-        expect(item.submenu.items[5].role).to.equal('window')
       } else {
         expect(item.submenu.items[2].role).to.equal('close')
       }
