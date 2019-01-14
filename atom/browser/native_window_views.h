@@ -161,6 +161,7 @@ class NativeWindowViews : public NativeWindow,
   void AutoresizeBrowserView(int width_delta,
                              int height_delta,
                              NativeBrowserView* browser_view);
+  void OnWidgetDestroying(views::Widget* widget) override;
   // views::WidgetDelegate:
   void DeleteDelegate() override;
   views::View* GetInitiallyFocusedView() override;
