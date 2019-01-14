@@ -231,7 +231,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [item setSubmenu:submenu];
 
     // Set submenu's role.
-    if (role == base::ASCIIToUTF16("window") && [submenu numberOfItems])
+    if ((role == base::ASCIIToUTF16("window") ||
+         role == base::ASCIIToUTF16("windowmenu")) &&
+        [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
     else if (role == base::ASCIIToUTF16("help"))
       [NSApp setHelpMenu:submenu];
