@@ -372,17 +372,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
       file or link onto the page causes a navigation. Default is `false`.
     * `autoplayPolicy` String (optional) - Autoplay policy to apply to
-      content in the window. Defaults to `'no-user-gesture-required'`. Valid
-      values are:
-      * `'no-user-gesture-required'` - no user gesture is required before
-        playing media on a page. This is the default behavior in Electron.
-      * `'user-gesture-required'` - user gesture is required before autoplaying
-        media.
-      * `'user-gesture-required-for-cross-origin'` - user gesture is required
-        for cross-origin iframes before allowing them to autoplay media.
-      * `'document-user-activation-required'` - document user activation is
-        required before autoplaying media. This is the default behavior in
-        Chromium.
+      content in the window, can be `no-user-gesture-required`,
+      `user-gesture-required`, `user-gesture-required-for-cross-origin`,
+      `document-user-activation-required`. Defaults to
+      `no-user-gesture-required`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
