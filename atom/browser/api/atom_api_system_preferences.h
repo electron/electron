@@ -93,6 +93,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
                       mate::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
+
+  static bool IsTrustedAccessibilityClient(bool prompt);
 #endif
   bool IsDarkMode();
   bool IsInvertedColorScheme();
