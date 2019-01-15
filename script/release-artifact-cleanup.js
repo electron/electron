@@ -10,7 +10,6 @@ const args = require('minimist')(process.argv.slice(2), {
 })
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
-const { getCurrentBranch } = require('./lib/utils.js')
 
 const GitHub = require('github')
 const path = require('path')
@@ -22,6 +21,18 @@ github.authenticate({
   type: 'token',
   token: process.env.ELECTRON_GITHUB_TOKEN
 })
+
+async function getCurrentBranch (gitDir) {
+  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
+  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
+  if (branchDetails.exitCode === 0) {
+    return branchDetails.stdout.trim()
+  }
+
+  const error = GitProcess.parseError(branchDetails.stderr)
+  console.error(`Couldn't get current branch: `, error)
+  process.exit(1)
+}
 
 function getLastBumpCommit (tag) {
   const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
@@ -47,7 +58,7 @@ async function deleteDraft (releaseId, targetRepo) {
     const result = await github.repos.getRelease({
       owner: 'electron',
       repo: targetRepo,
-      release_id: parseInt(releaseId, 10)
+      id: parseInt(releaseId, 10)
     })
     console.log(result)
     if (!result.data.draft) {
@@ -70,7 +81,7 @@ async function deleteDraft (releaseId, targetRepo) {
 
 async function deleteTag (tag, targetRepo) {
   try {
-    await github.gitdata.deleteRef({
+    await github.gitdata.deleteReference({
       owner: 'electron',
       repo: targetRepo,
       ref: `tags/${tag}`
