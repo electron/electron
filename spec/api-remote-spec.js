@@ -198,7 +198,7 @@ describe('remote module', () => {
       assert.strictEqual(typeof remote.app.getPath, 'function')
       assert.strictEqual(typeof remote.webContents.getFocusedWebContents, 'function')
       assert.strictEqual(typeof remote.clipboard.readText, 'function')
-      assert.strictEqual(typeof remote.shell.openExternal, 'function')
+      assert.strictEqual(typeof remote.shell.openExternalSync, 'function')
     })
 
     it('returns toString() of original function via toString()', () => {
