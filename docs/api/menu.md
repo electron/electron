@@ -25,10 +25,11 @@ indicate which letter should get a generated accelerator. For example, using
 opens the associated menu. The indicated character in the button label gets an
 underline. The `&` character is not displayed on the button label.
 
-Passing `null` will remove the menu bar on Windows and Linux but has no
-effect on macOS.
+Passing `null` will suppress the default menu. On Windows and Linux,
+this has the additional effect of removing the menu bar from the window.
 
-**Note:** This API has to be called after the `ready` event of `app` module.
+**Note:** The default menu will be created automatically if the app does not set one.
+It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
 
 #### `Menu.getApplicationMenu()`
 
