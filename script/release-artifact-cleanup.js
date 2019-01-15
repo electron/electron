@@ -22,6 +22,11 @@ github.authenticate({
   token: process.env.ELECTRON_GITHUB_TOKEN
 })
 
+function getLastBumpCommit (tag) {
+  const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
+  return JSON.parse(data)
+}
+
 async function getCurrentBranch (gitDir) {
   const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
   const branchDetails = await GitProcess.exec(gitArgs, gitDir)
@@ -32,11 +37,6 @@ async function getCurrentBranch (gitDir) {
   const error = GitProcess.parseError(branchDetails.stderr)
   console.error(`Couldn't get current branch: `, error)
   process.exit(1)
-}
-
-function getLastBumpCommit (tag) {
-  const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
-  return JSON.parse(data)
 }
 
 async function revertBumpCommit (tag) {
