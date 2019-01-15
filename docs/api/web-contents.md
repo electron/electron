@@ -663,6 +663,16 @@ Returns:
 Emitted when the associated window logs a console message. Will not be emitted
 for windows with *offscreen rendering* enabled.
 
+#### Event: 'preload-error'
+
+Returns:
+
+* `event` Event
+* `preloadPath` String
+* `error` Error
+
+Emitted when the preload script `preloadPath` throws an unhandled exception `error`.
+
 #### Event: 'desktop-capturer-get-sources'
 
 Returns:
