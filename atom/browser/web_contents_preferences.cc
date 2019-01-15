@@ -383,8 +383,9 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       IsEnabled("textAreasAreResizable", true /* default_value */);
   prefs->navigate_on_drag_drop =
       IsEnabled("navigateOnDragDrop", false /* default_value */);
-  prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
-  GetAsAutoplayPolicy(&preference_, "autoplayPolicy", &prefs->autoplay_policy);
+  if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy", &prefs->autoplay_policy)) {
+    prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
+  }
 
   // Check if webgl should be enabled.
   bool is_webgl_enabled = IsEnabled("webgl", true /* default_value */);
