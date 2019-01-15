@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "atom/common/api/locker.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
 
@@ -19,30 +20,55 @@ class Promise : public base::RefCounted<Promise> {
   explicit Promise(v8::Isolate* isolate);
 
   v8::Isolate* isolate() const { return isolate_; }
+  v8::Local<v8::Context> GetContext() {
+    return v8::Local<v8::Context>::New(isolate_, context_);
+  }
 
   virtual v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {
-    return GetInner()->Resolve(isolate()->GetCurrentContext(),
-                               v8::Undefined(isolate()));
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
   }
 
   v8::Maybe<bool> Reject() {
-    return GetInner()->Reject(isolate()->GetCurrentContext(),
-                              v8::Undefined(isolate()));
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
   // Promise resolution is a microtask
   // We use the MicrotasksRunner to trigger the running of pending microtasks
   template <typename T>
   v8::Maybe<bool> Resolve(const T& value) {
-    return GetInner()->Resolve(isolate()->GetCurrentContext(),
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Resolve(GetContext(),
                                mate::ConvertToV8(isolate(), value));
   }
 
   template <typename T>
   v8::Maybe<bool> Reject(const T& value) {
-    return GetInner()->Reject(isolate()->GetCurrentContext(),
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    return GetInner()->Reject(GetContext(),
                               mate::ConvertToV8(isolate(), value));
   }
 
@@ -52,6 +78,7 @@ class Promise : public base::RefCounted<Promise> {
   virtual ~Promise();
   friend class base::RefCounted<Promise>;
   v8::Isolate* isolate_;
+  v8::Global<v8::Context> context_;
 
  private:
   v8::Local<v8::Promise::Resolver> GetInner() const {

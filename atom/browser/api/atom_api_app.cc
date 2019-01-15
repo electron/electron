@@ -533,12 +533,8 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(v8::Isolate* isolate,
-                         scoped_refptr<util::Promise> promise,
+void OnIconDataAvailable(scoped_refptr<util::Promise> promise,
                          gfx::Image* icon) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-
   if (icon && !icon->IsEmpty()) {
     promise->Resolve(*icon);
   } else {
@@ -1130,9 +1126,6 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         mate::Arguments* args) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
@@ -1153,7 +1146,7 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
     promise->Resolve(*icon);
   } else {
     icon_manager->LoadIcon(normalized_path, icon_size,
-                           base::Bind(&OnIconDataAvailable, isolate(), promise),
+                           base::Bind(&OnIconDataAvailable, promise),
                            &cancelable_task_tracker_);
   }
   return promise->GetHandle();

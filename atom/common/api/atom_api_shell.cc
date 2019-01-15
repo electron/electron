@@ -44,17 +44,8 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
-void OnOpenExternalFinished(const v8::Global<v8::Context>& context,
-                            scoped_refptr<atom::util::Promise> promise,
+void OnOpenExternalFinished(scoped_refptr<atom::util::Promise> promise,
                             const std::string& error) {
-  v8::Isolate* isolate = promise->isolate();
-  mate::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, context));
-
   if (error.empty())
     promise->Resolve();
   else
@@ -99,11 +90,8 @@ v8::Local<v8::Promise> OpenExternal(
     }
   }
 
-  v8::Global<v8::Context> context(args->isolate(),
-                                  args->isolate()->GetCurrentContext());
-  platform_util::OpenExternal(
-      url, options,
-      base::Bind(&OnOpenExternalFinished, std::move(context), promise));
+  platform_util::OpenExternal(url, options,
+                              base::Bind(&OnOpenExternalFinished, promise));
 
   return promise->GetHandle();
 }
