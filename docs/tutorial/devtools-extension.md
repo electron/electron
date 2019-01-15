@@ -30,12 +30,12 @@ Using the [React Developer Tools][react-devtools] as example:
 1. Pass the location of the extension to `BrowserWindow.addDevToolsExtension`
    API, for the React Developer Tools, it is something like:
    ```javascript
-   const path = require('path');
-   const os = require('os');
+   const path = require('path')
+   const os = require('os')
 
    BrowserWindow.addDevToolsExtension(
-      path.join(os.homedir(),'/Library/Application\Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0')
-   );
+      path.join(os.homedir(), '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0')
+   )
    ```
 
 **Note:** The `BrowserWindow.addDevToolsExtension` API cannot be called before the
