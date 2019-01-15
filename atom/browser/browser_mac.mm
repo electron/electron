@@ -28,7 +28,7 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
 }
 
 void Browser::Focus() {
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:NO];
 }
 
 void Browser::Hide() {
