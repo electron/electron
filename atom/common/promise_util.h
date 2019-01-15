@@ -20,24 +20,30 @@ class Promise : public base::RefCounted<Promise> {
   explicit Promise(v8::Isolate* isolate);
 
   v8::Isolate* isolate() const { return isolate_; }
-  v8::Local<v8::Context> context() const { return context_; }
+  v8::Local<v8::Context> GetContext() {
+    return v8::Local<v8::Context>::New(isolate_, context_);
+  }
 
   virtual v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {
     v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), context()));
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    return GetInner()->Resolve(context(), v8::Undefined(isolate()));
+    return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
   }
 
   v8::Maybe<bool> Reject() {
     v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), context()));
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    return GetInner()->Reject(context(), v8::Undefined(isolate()));
+    return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
   // Promise resolution is a microtask
@@ -45,19 +51,25 @@ class Promise : public base::RefCounted<Promise> {
   template <typename T>
   v8::Maybe<bool> Resolve(const T& value) {
     v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), context()));
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    return GetInner()->Resolve(context(), mate::ConvertToV8(isolate(), value));
+    return GetInner()->Resolve(GetContext(),
+                               mate::ConvertToV8(isolate(), value));
   }
 
   template <typename T>
   v8::Maybe<bool> Reject(const T& value) {
     v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
-        v8::Local<v8::Context>::New(isolate(), context()));
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    return GetInner()->Reject(context(), mate::ConvertToV8(isolate(), value));
+    return GetInner()->Reject(GetContext(),
+                              mate::ConvertToV8(isolate(), value));
   }
 
   v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
@@ -66,7 +78,7 @@ class Promise : public base::RefCounted<Promise> {
   virtual ~Promise();
   friend class base::RefCounted<Promise>;
   v8::Isolate* isolate_;
-  v8::Local<v8::Context> context_;
+  v8::Global<v8::Context> context_;
 
  private:
   v8::Local<v8::Promise::Resolver> GetInner() const {

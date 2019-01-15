@@ -14,13 +14,6 @@ namespace util {
 Promise::Promise(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
 
-  mate::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, context));
-
   auto resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
   context_ = context;
   isolate_ = isolate;
