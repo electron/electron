@@ -22,6 +22,7 @@ Promise::Promise(v8::Isolate* isolate) {
       v8::Local<v8::Context>::New(isolate, context));
 
   auto resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
+  context_ = context;
   isolate_ = isolate;
   resolver_.Reset(isolate, resolver);
 }
