@@ -31,6 +31,7 @@
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
+#include "base/threading/thread_restrictions.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
@@ -517,6 +518,7 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
       auto module = model->cert_db()->GetPrivateSlot();
       rv = model->ImportFromPKCS12(module.get(), file_data, password, true,
                                    &imported_certs);
