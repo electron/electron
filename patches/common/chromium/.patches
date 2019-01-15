@@ -68,3 +68,4 @@ cross_site_document_resource_handler.patch
 content_allow_embedder_to_prevent_locking_scheme_registry.patch
 support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
+disable_time_ticks_dcheck.patch
