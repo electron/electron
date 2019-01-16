@@ -59,10 +59,6 @@ class WebFrame : public mate::Wrappable<WebFrame> {
                              const std::string& language,
                              v8::Local<v8::Object> provider);
 
-  void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
-  void RegisterURLSchemeAsPrivileged(const std::string& scheme,
-                                     mate::Arguments* args);
-
   // Editing.
   void InsertText(const std::string& text);
   void InsertCSS(const std::string& css);
