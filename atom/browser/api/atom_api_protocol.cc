@@ -4,9 +4,6 @@
 
 #include "atom/browser/api/atom_api_protocol.h"
 
-#include <unordered_set>
-
-#include "atom/app/atom_main_delegate.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
@@ -21,12 +18,8 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
-#include "base/threading/platform_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
-#include "content/public/common/content_client.h"
 #include "native_mate/dictionary.h"
-#include "third_party/blink/public/platform/web_string.h"
-#include "third_party/blink/public/web/web_security_policy.h"
 #include "url/url_util.h"
 
 using content::BrowserThread;
@@ -92,7 +85,7 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
                                  mate::Arguments* args) {
   std::vector<CustomScheme> custom_schemes;
   if (!mate::ConvertFromV8(args->isolate(), val, &custom_schemes)) {
-    args->ThrowError("Error");
+    args->ThrowError("Argument must be an array of custom schemes.");
     return;
   }
 
