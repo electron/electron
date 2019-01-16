@@ -15,7 +15,7 @@ Follow the guidelines below for building Electron on Windows.
   `depot_tools` still comes with Python 2.7.6, which will cause the `gclient`
   command to fail (see https://crbug.com/868864).
   * [Python for Windows (pywin32) Extensions](https://pypi.org/project/pywin32/#files)
-  is also needed in ordner to run the build process.
+  is also needed in order to run the build process.
 * [Node.js](https://nodejs.org/download/)
 * [Git](http://git-scm.com)
 * Debugging Tools for Windows of Windows SDK 10.0.15063.468 if you plan on
