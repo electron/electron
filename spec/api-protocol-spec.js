@@ -658,35 +658,35 @@ describe('protocol module', () => {
 
   describe('protocol.isProtocolHandled', () => {
     it('returns true for about:', (done) => {
-      protocol.isProtocolHandled('about', (result) => {
+      protocol.isProtocolHandled('about').then(result => {
         assert.strictEqual(result, true)
         done()
       })
     })
 
     it('returns true for file:', (done) => {
-      protocol.isProtocolHandled('file', (result) => {
+      protocol.isProtocolHandled('file').then(result => {
         assert.strictEqual(result, true)
         done()
       })
     })
 
     it('returns true for http:', (done) => {
-      protocol.isProtocolHandled('http', (result) => {
+      protocol.isProtocolHandled('http').then(result => {
         assert.strictEqual(result, true)
         done()
       })
     })
 
     it('returns true for https:', (done) => {
-      protocol.isProtocolHandled('https', (result) => {
+      protocol.isProtocolHandled('https').then(result => {
         assert.strictEqual(result, true)
         done()
       })
     })
 
     it('returns false when scheme is not registered', (done) => {
-      protocol.isProtocolHandled('no-exist', (result) => {
+      protocol.isProtocolHandled('no-exist').then(result => {
         assert.strictEqual(result, false)
         done()
       })
@@ -696,7 +696,7 @@ describe('protocol module', () => {
       const emptyHandler = (request, callback) => callback()
       protocol.registerStringProtocol(protocolName, emptyHandler, (error) => {
         assert.strictEqual(error, null)
-        protocol.isProtocolHandled(protocolName, (result) => {
+        protocol.isProtocolHandled(protocolName).then(result => {
           assert.strictEqual(result, true)
           done()
         })
@@ -707,7 +707,7 @@ describe('protocol module', () => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, (error) => {
         assert.strictEqual(error, null)
-        protocol.isProtocolHandled('http', (result) => {
+        protocol.isProtocolHandled('http').then(result => {
           assert.strictEqual(result, true)
           done()
         })

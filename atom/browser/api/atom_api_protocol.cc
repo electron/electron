@@ -103,27 +103,29 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
   return PROTOCOL_OK;
 }
 
+bool IsProtocolHandledInIO(
+    scoped_refptr<URLRequestContextGetter> request_context_getter,
+    const std::string& scheme) {
+  bool is_handled =
+      request_context_getter->job_factory()->IsHandledProtocol(scheme);
+  return is_handled;
+}
+
+void PromiseCallback(scoped_refptr<util::Promise> promise, bool handled) {
+  promise->Resolve(handled);
+}
+
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   auto* getter = static_cast<URLRequestContextGetter*>(
       browser_context_->GetRequestContext());
 
   base::PostTaskWithTraitsAndReplyWithResult(
-    FROM_HERE, {content::BrowserThread::IO},
-      base::Bind(&Protocol::IsProtocolHandledInIO, base::RetainedRef(getter),
-                 scheme), base::Bind(&Protocol::PromiseCallback, promise)));
+      FROM_HERE, {content::BrowserThread::IO},
+      base::Bind(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
+      base::Bind(&PromiseCallback, promise));
 
   return promise->GetHandle();
-}
-
-// static
-void Protocol::IsProtocolHandledInIO(
-    scoped_refptr<util::Promise> promise,
-    scoped_refptr<URLRequestContextGetter> request_context_getter,
-    const std::string& scheme) {
-  bool is_handled =
-      request_context_getter->job_factory()->IsHandledProtocol(scheme);
-  promise->Resolve(is_handled);
 }
 
 void Protocol::UninterceptProtocol(const std::string& scheme,

@@ -42,7 +42,6 @@ class Protocol : public mate::TrackableObject<Protocol> {
   using Handler =
       base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
-  using PromiseCallback = base::Callback<void(scoped_refptr<util::Promise>)>;
 
   static mate::Handle<Protocol> Create(v8::Isolate* isolate,
                                        AtomBrowserContext* browser_context);
@@ -138,10 +137,6 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
   // Whether the protocol has handler registered.
   v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
-  static void IsProtocolHandledInIO(
-      scoped_refptr<util::Promise> promise,
-      scoped_refptr<URLRequestContextGetter> request_context_getter,
-      const std::string& scheme);
 
   // Replace the protocol handler with a new one.
   template <typename RequestJob>
