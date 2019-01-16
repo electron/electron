@@ -31,7 +31,6 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
-#include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
 #include "url/url_util.h"
 
 #include "atom/common/node_includes.h"
@@ -260,54 +259,6 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   content::RenderFrame::ForEach(&spell_checker);
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client.get());
   new AtomWebFrameObserver(render_frame, std::move(spell_check_client));
-}
-
-void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
-  // Register scheme to bypass pages's Content Security Policy.
-  blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-}
-
-void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
-                                             mate::Arguments* args) {
-  // TODO(deepak1556): blink::SchemeRegistry methods should be called
-  // before any renderer threads are created. Fixing this would break
-  // current api. Change it with 2.0.
-
-  // Read optional flags
-  bool secure = true;
-  bool bypassCSP = true;
-  bool allowServiceWorkers = true;
-  bool supportFetchAPI = true;
-  bool corsEnabled = true;
-  if (args->Length() == 2) {
-    mate::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("secure", &secure);
-      options.Get("bypassCSP", &bypassCSP);
-      options.Get("allowServiceWorkers", &allowServiceWorkers);
-      options.Get("supportFetchAPI", &supportFetchAPI);
-      options.Get("corsEnabled", &corsEnabled);
-    }
-  }
-  // Register scheme to privileged list (https, wss, data, chrome-extension)
-  WTF::String privileged_scheme(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-  if (bypassCSP) {
-    blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        privileged_scheme);
-  }
-  if (allowServiceWorkers) {
-    blink::SchemeRegistry::RegisterURLSchemeAsAllowingServiceWorkers(
-        privileged_scheme);
-  }
-  if (supportFetchAPI) {
-    blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
-        privileged_scheme);
-  }
-  if (corsEnabled) {
-    url::AddCorsEnabledScheme(scheme.c_str());
-  }
 }
 
 void WebFrame::InsertText(const std::string& text) {
