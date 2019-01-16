@@ -1617,6 +1617,11 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 A `Integer` representing the unique ID of this WebContents.
 
+#### `contents.ipc`
+
+An [`EventEmitter`](https://nodejs.org/api/events.html#events_class_events_eventemitter),
+which allows handling IPC messages for this `contents` only.
+
 #### `contents.session`
 
 A [`Session`](session.md) used by this webContents.
