@@ -35,7 +35,7 @@ namespace api {
 
 std::vector<std::string> GetStandardSchemes();
 
-void RegisterSchemesAsPrivileged(const std::vector<std::string>& schemes,
+void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
                                  mate::Arguments* args);
 
 class Protocol : public mate::TrackableObject<Protocol> {
