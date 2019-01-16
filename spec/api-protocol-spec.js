@@ -1195,7 +1195,7 @@ describe('protocol module', () => {
     let w = null
 
     afterEach(function () {
-    // return closeWindow(w).then(function () { w = null })
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('supports fetch api by default', function (done) {
@@ -1210,12 +1210,11 @@ describe('protocol module', () => {
         })
     })
 
-    it(
-      'allows CORS requests by default',
+    it('allows CORS requests by default',
       function (done) {
-        allowsCORSRequests('all', 200, `<html>
+        allowsCORSRequests('cors', 200, `<html>
         <script>
-        const {ipcRenderer, webFrame} = require('electron')
+        const {ipcRenderer} = require('electron')
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status)
         }).catch(function (response) {
@@ -1225,40 +1224,37 @@ describe('protocol module', () => {
       </html>`, done)
       })
 
-    // it('disallows CORS, but allows fetch requests, when specified',
-    // function (done) {
-    //   allowsCORSRequests('no-cors', 'failed', `<html>
-    //     <script>
-    //     const {ipcRenderer, webFrame} = require('electron')
-    //     fetch('no-cors://myhost').then(function (response) {
-    //       ipcRenderer.send('response', response.status)
-    //     }).catch(function (response) {
-    //       ipcRenderer.send('response', 'failed')
-    //     })
-    //     </script>
-    //   </html>`, done)
-    // })
+    it('disallows CORS, but allows fetch requests, when specified',
+      function (done) {
+        allowsCORSRequests('no-cors', 'failed', `<html>
+        <script>
+        const {ipcRenderer} = require('electron')
+        fetch('no-cors://myhost').then(function (response) {
+          ipcRenderer.send('response', response.status)
+        }).catch(function (response) {
+          ipcRenderer.send('response', 'failed')
+        })
+        </script>
+      </html>`, done)
+      })
 
-    // it('allows CORS, but disallows fetch requests, when specified',
-    // function (done) {
-    //   allowsCORSRequests('failed', `<html>
-    //     <script>
-    //     const {ipcRenderer, webFrame} = require('electron')
-    //     webFrame.registerURLSchemeAsPrivileged('cors5', { supportFetchAPI:
-    //     false, corsEnabled: true }) fetch('cors5://myhost').then(function
-    //     (response) {
-    //       ipcRenderer.send('response', response.status)
-    //     }).catch(function (response) {
-    //       ipcRenderer.send('response', 'failed')
-    //     })
-    //     </script>
-    //   </html>`, done)
-    // })
+    it('allows CORS, but disallows fetch requests, when specified',
+      function (done) {
+        allowsCORSRequests('no-fetch', 'failed', `<html>
+        <script>
+        const {ipcRenderer} = require('electron')
+        fetch('no-fetch://myhost').then(function
+        (response) {
+          ipcRenderer.send('response', response.status)
+        }).catch(function (response) {
+          ipcRenderer.send('response', 'failed')
+        })
+        </script>
+      </html>`, done)
+      })
 
-    let runNumber = 1
     function allowsCORSRequests (corsScheme, expected, content, done) {
-      const standardScheme = remote.getGlobal('standardScheme') + runNumber
-      runNumber++
+      const standardScheme = remote.getGlobal('standardScheme')
 
       const url = standardScheme + '://fake-host'
       w = new BrowserWindow({ show: true })
