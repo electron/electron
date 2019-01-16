@@ -1087,7 +1087,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerStandardSchemes', () => {
+  describe('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = remote.getGlobal('standardScheme')
     const origin = `${standardScheme}://fake-host`
     const imageURL = `${origin}/test.png`
@@ -1188,5 +1188,110 @@ describe('protocol module', () => {
         w.loadURL(origin)
       })
     })
+  })
+
+  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+    const fixtures = path.resolve(__dirname, 'fixtures')
+    let w = null
+
+    afterEach(function () {
+    // return closeWindow(w).then(function () { w = null })
+    })
+
+    it('supports fetch api by default', function (done) {
+      const url = 'file://' + fixtures + '/assets/logo.png'
+      window.fetch(url)
+        .then(function (response) {
+          assert(response.ok)
+          done()
+        })
+        .catch(function (err) {
+          done('unexpected error : ' + err)
+        })
+    })
+
+    it(
+      'allows CORS requests by default',
+      function (done) {
+        allowsCORSRequests('all', 200, `<html>
+        <script>
+        const {ipcRenderer, webFrame} = require('electron')
+        fetch('cors://myhost').then(function (response) {
+          ipcRenderer.send('response', response.status)
+        }).catch(function (response) {
+          ipcRenderer.send('response', 'failed')
+        })
+        </script>
+      </html>`, done)
+      })
+
+    // it('disallows CORS, but allows fetch requests, when specified',
+    // function (done) {
+    //   allowsCORSRequests('no-cors', 'failed', `<html>
+    //     <script>
+    //     const {ipcRenderer, webFrame} = require('electron')
+    //     fetch('no-cors://myhost').then(function (response) {
+    //       ipcRenderer.send('response', response.status)
+    //     }).catch(function (response) {
+    //       ipcRenderer.send('response', 'failed')
+    //     })
+    //     </script>
+    //   </html>`, done)
+    // })
+
+    // it('allows CORS, but disallows fetch requests, when specified',
+    // function (done) {
+    //   allowsCORSRequests('failed', `<html>
+    //     <script>
+    //     const {ipcRenderer, webFrame} = require('electron')
+    //     webFrame.registerURLSchemeAsPrivileged('cors5', { supportFetchAPI:
+    //     false, corsEnabled: true }) fetch('cors5://myhost').then(function
+    //     (response) {
+    //       ipcRenderer.send('response', response.status)
+    //     }).catch(function (response) {
+    //       ipcRenderer.send('response', 'failed')
+    //     })
+    //     </script>
+    //   </html>`, done)
+    // })
+
+    let runNumber = 1
+    function allowsCORSRequests (corsScheme, expected, content, done) {
+      const standardScheme = remote.getGlobal('standardScheme') + runNumber
+      runNumber++
+
+      const url = standardScheme + '://fake-host'
+      w = new BrowserWindow({ show: true })
+      after(function (done) {
+        protocol.unregisterProtocol(corsScheme, function () {
+          protocol.unregisterProtocol(standardScheme, function () {
+            done()
+          })
+        })
+      })
+
+      const handler =
+            function (request, callback) {
+              callback({ data: content, mimeType: 'text/html' })
+            }
+      protocol.registerStringProtocol(
+        standardScheme, handler, function (error) {
+          if (error) { return done(error) }
+        })
+
+      protocol.registerStringProtocol(
+        corsScheme,
+        function (request, callback) {
+          callback('')
+        },
+        function (error) {
+          if (error) { return done(error) }
+          ipcMain.once('response', function (event, status) {
+            assert.strictEqual(status, expected)
+            done()
+          })
+          w.loadURL(url)
+        })
+    }
   })
 })

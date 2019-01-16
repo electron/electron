@@ -237,10 +237,6 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   ConvertStringWithSeparatorToVector(&splited, ",", switches::kCORSSchemes);
   for (const std::string& scheme : splited)
     schemes->cors_enabled_schemes.push_back(scheme);
-  ConvertStringWithSeparatorToVector(&splited, ",", switches::kFetchSchemes);
-  for (const std::string& scheme : splited)
-    blink::WebSecurityPolicy::RegisterURLSchemeAsSupportingFetchAPI(
-        blink::WebString::FromUTF8(scheme));
 }
 
 void AtomContentClient::AddPepperPlugins(

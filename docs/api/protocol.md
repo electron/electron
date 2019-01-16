@@ -28,12 +28,26 @@ of the `app` module gets emitted.
 
 The `protocol` module has the following methods:
 
-### `protocol.registerStandardSchemes(schemes[, options])`
+### `protocol.registerSchemesAsPrivileged(schemes[, options])`
 
-* `schemes` String[] - Custom schemes to be registered as standard schemes.
-* `options` Object (optional)
-  * `secure` Boolean (optional) - `true` to register the scheme as secure.
-    Default `false`.
+* `custom_schemes` [CustomScheme[]](structures/custom-scheme.md)
+
+
+**Note:** This method can only be used before the `ready` event of the `app`
+module gets emitted and can be called only once.
+
+Registers the `scheme` as standard, secure, bypasses content security policy for resources,
+allows registering ServiceWorker and supports fetch API.
+
+Specify an option with the value of `false` to omit it from the registration.
+An example of registering a privileged scheme, without bypassing Content Security Policy:
+
+```javascript
+const { protocol } = require('electron')
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'foo', options: { bypassCSP: false }
+])
+```
 
 A standard scheme adheres to what RFC 3986 calls [generic URI
 syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
@@ -59,23 +73,7 @@ error for the scheme.
 
 By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB, cookies)
 are disabled for non standard schemes. So in general if you want to register a
-custom protocol to replace the `http` protocol, you have to register it as a standard scheme:
-
-```javascript
-const { app, protocol } = require('electron')
-
-protocol.registerStandardSchemes(['atom'])
-app.on('ready', () => {
-  protocol.registerHttpProtocol('atom', '...')
-})
-```
-
-**Note:** This method can only be used before the `ready` event of the `app`
-module gets emitted.
-
-### `protocol.registerServiceWorkerSchemes(schemes)`
-
-* `schemes` String[] - Custom schemes to be registered to handle service workers.
+custom protocol to replace the `http` protocol, you have to register it as a standard scheme.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
