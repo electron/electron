@@ -45,7 +45,7 @@ An example of registering a privileged scheme, without bypassing Content Securit
 ```javascript
 const { protocol } = require('electron')
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'foo', options: { bypassCSP: false }
+  { scheme: 'foo', options: { bypassCSP: false }}
 ])
 ```
 
