@@ -5,10 +5,10 @@ Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3c039428271d6598fc4ad7137334176d80b92631..9fe1e8d67a25955fea69be89e0bcc27cf5d8529d 100644
+index bdbb29c66b2fa82e8a942421a8bdfce3d94d6e8f..fb3cfe848e97e0952829e39db5b56571e993d6a2 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -242,7 +242,7 @@ config("internal_config") {
+@@ -236,7 +236,7 @@ config("internal_config") {
  
    configs = [ "//build/config/compiler:wexit_time_destructors" ]
  
@@ -17,7 +17,7 @@ index 3c039428271d6598fc4ad7137334176d80b92631..9fe1e8d67a25955fea69be89e0bcc27c
      defines = [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -3481,6 +3481,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3389,6 +3389,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  
