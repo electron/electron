@@ -6,10 +6,10 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e9990cc5e78 100644
+index f1e287553244cfd1054c4949ffbb1acdaccbe1e2..94cbca68cedc314d55993375bc48159c9a9bfb3d 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
-@@ -8,7 +8,9 @@
+@@ -10,7 +10,9 @@
  #include "build/build_config.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/net/proxy_service_factory.h"
@@ -19,7 +19,7 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e99
  #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
-@@ -17,12 +19,13 @@
+@@ -19,12 +21,13 @@
  #include "chrome/browser/chromeos/profiles/profile_helper.h"
  #endif  // defined(OS_CHROMEOS)
  
@@ -34,7 +34,7 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e99
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -52,6 +55,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -54,6 +57,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
@@ -42,7 +42,7 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e99
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -132,9 +136,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -134,9 +138,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -54,7 +54,7 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e99
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -148,9 +154,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -150,9 +156,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      // controlled.
      return;
    }
@@ -67,10 +67,10 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e99
  }
  #endif
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index 172e71b085a58ff3060a3c90e7e3b9f3ef6df199..30764a251b9a09defaca86c2ac80877914dd1fe9 100644
+index c6c1fa51cbf35e8183a34848f79ed8dcbc97e0e2..c511bf188b0f24a9bf6c8729d9188c9bf342cf6a 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
-@@ -37,11 +37,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -38,11 +38,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  {
   public:
@@ -84,7 +84,7 @@ index 172e71b085a58ff3060a3c90e7e3b9f3ef6df199..30764a251b9a09defaca86c2ac808779
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
-@@ -88,7 +89,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -89,7 +90,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  #if BUILDFLAG(ENABLE_EXTENSIONS)
    mojo::BindingSet<network::mojom::ProxyErrorClient> error_binding_set_;

@@ -258,12 +258,12 @@ index aa4433cccff4bc637ce5e71039de3c4352e7cd6b..d9630fdf6b87e11fb9657814895dff36
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index d266f41233ff676539438d7cdd3799d83129e242..1cd381fd576fedd4ee382b33282ecd991d1f9ea7 100644
+index 5e468b261f400379d20bb5e8f6fed683229a6837..583474b7e5e2010bd1323be94f08845cc396fc3e 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -8,17 +8,21 @@
  
- #include "base/macros.h"
+ #include "base/stl_util.h"
  #include "base/task/post_task.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
@@ -310,7 +310,7 @@ index d266f41233ff676539438d7cdd3799d83129e242..1cd381fd576fedd4ee382b33282ecd99
        document_url_(document_url),
        ppapi_host_(ppapi_host) {
 +#if 0
-   for (size_t i = 0; i < arraysize(kPredefinedAllowedCrxFsOrigins); ++i)
+   for (size_t i = 0; i < base::size(kPredefinedAllowedCrxFsOrigins); ++i)
      allowed_crxfs_origins_.insert(kPredefinedAllowedCrxFsOrigins[i]);
 +#endif
  }
@@ -435,12 +435,12 @@ index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..c98a7bd07ddd9527fc67b05b24463ed4
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_flash_renderer_host.cc b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
-index 42248eae343754988e2461ef0fb080b6d0edafdf..bb768481e0721d742c105bf18405ddcd357f794d 100644
+index 05aadc1737ec3b90448eb37dc0c3b98a2b93c2e4..6e688ded28cc802997f7cbd100a32966751f522e 100644
 --- a/chrome/renderer/pepper/pepper_flash_renderer_host.cc
 +++ b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
 @@ -13,7 +13,9 @@
- #include "base/metrics/histogram_macros.h"
  #include "base/no_destructor.h"
+ #include "base/stl_util.h"
  #include "base/strings/string_util.h"
 +#if 0
  #include "components/pdf/renderer/pepper_pdf_host.h"
@@ -448,7 +448,7 @@ index 42248eae343754988e2461ef0fb080b6d0edafdf..bb768481e0721d742c105bf18405ddcd
  #include "content/public/renderer/pepper_plugin_instance.h"
  #include "content/public/renderer/render_thread.h"
  #include "content/public/renderer/renderer_ppapi_host.h"
-@@ -132,9 +134,11 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
+@@ -133,9 +135,11 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
  }
  
  void RecordFlashNavigateUsage(FlashNavigateUsage usage) {

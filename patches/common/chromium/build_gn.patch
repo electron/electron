@@ -5,7 +5,7 @@ Subject: build_gn.patch
 
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index f33cba178d7710b1ad624fcd1b649b370bb401a4..15ac71c3fddc63121f6959e69eb1ac8e9c15310d 100644
+index 9e843f3c30d28a529c22e21b7fe4ba7439978156..1bace3eb626b86c7a47c3dccaf5442c86a14a6b8 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
@@ -18,7 +18,7 @@ index f33cba178d7710b1ad624fcd1b649b370bb401a4..15ac71c3fddc63121f6959e69eb1ac8e
    # Set to enable the official build level of optimization. This has nothing
    # to do with branding, but enables an additional level of optimization above
    # release (!is_debug). This might be better expressed as a tri-state
-@@ -537,6 +540,7 @@ default_compiler_configs = [
+@@ -441,6 +444,7 @@ default_compiler_configs = [
    "//build/config/compiler:thin_archive",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
