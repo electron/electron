@@ -5,14 +5,14 @@ Subject: blink-worker-enable-csp-in-file-scheme.patch
 
 
 diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-index c0cec745454d8e7ec0730852bb324bcae72ed42e..4550698d31ae2c1a511820ae88ce1d914fe10f7f 100644
+index 03b5004edc9dd9bba39db188c71f52625bcce80e..ad37ea96307be715070a21b859b8756e6d837132 100644
 --- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
 +++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-@@ -285,7 +285,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
+@@ -307,7 +307,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
    // document (which is implemented in WorkerMessagingProxy, and
    // m_contentSecurityPolicy should be left as nullptr to inherit the policy).
-   if (!response.Url().ProtocolIs("blob") &&
--      !response.Url().ProtocolIs("file") &&
-       !response.Url().ProtocolIs("filesystem")) {
+   if (!response.CurrentRequestUrl().ProtocolIs("blob") &&
+-      !response.CurrentRequestUrl().ProtocolIs("file") &&
+       !response.CurrentRequestUrl().ProtocolIs("filesystem")) {
      content_security_policy_ = ContentSecurityPolicy::Create();
-     content_security_policy_->SetOverrideURLForSelf(response.Url());
+     content_security_policy_->SetOverrideURLForSelf(

@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index b3c01542f183a247df30e5b96bbba8298d828153..8fe7e1142cb79cb3abf3cbc1cabc73b27695a63a 100644
+index 66ddf5c2737785943c01adeb040b7da7d24ea624..a963ee677e4b3777ba6a8c6fcfd1bf0d8c7e07c8 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -288,6 +288,10 @@ const int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -49,7 +49,7 @@ index b3c01542f183a247df30e5b96bbba8298d828153..8fe7e1142cb79cb3abf3cbc1cabc73b2
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 2efafcdba85f2f8c940bb5fc2b07f1ec1abdb3c9..ce3fdf8ec003f0b18fe94368b18f6efca5d6d7b4 100644
+index 10c2fcd1742974d373f68d3fa13f2a0bb8ce2c76..533f80fd1a8f97e6153c610d6fab2f594590ffe3 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -182,6 +182,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
@@ -62,10 +62,10 @@ index 2efafcdba85f2f8c940bb5fc2b07f1ec1abdb3c9..ce3fdf8ec003f0b18fe94368b18f6efc
    HICON GetDefaultWindowIcon() const override;
    HICON GetSmallWindowIcon() const override;
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 17907e675bb1d9cf4bf2bff1d0668d36fdf42df0..0ca9cb470df588bb952faada6c658335dc76ed06 100644
+index a3c4e34bd26891e1bb98bc47038700da7e5a6b94..a919147ef1d46fe562ac74cdf515ae2d3ff8e2c4 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -45,6 +45,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // True if the widget associated with this window has a non-client view.
    virtual bool HasNonClientView() const = 0;
  
