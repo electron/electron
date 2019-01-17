@@ -494,7 +494,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.capturePage(rect)', () => {
+  describe('BrowserWindow.capturePage(rect)', (done) => {
     it('returns a Promise with a Buffer', async () => {
       const image = await w.capturePage({
         x: 0,
@@ -507,7 +507,7 @@ describe('BrowserWindow module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('returns a Promise with a Buffer (callback)', (done) => {
+    it('returns a Promise with a Buffer (callback)', () => {
       w.capturePage({
         x: 0,
         y: 0,
@@ -540,7 +540,7 @@ describe('BrowserWindow module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('preserves transparency (callback)', async (done) => {
+    it('preserves transparency (callback)', async () => {
       const w = await openTheWindow({
         show: false,
         width: 400,
