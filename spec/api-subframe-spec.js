@@ -58,7 +58,6 @@ describe('renderer nodeSupportInSubFrames', () => {
         const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
         event1[0].reply('preload-ping')
         const details = await pongPromise
-        console.log(details, event1[0].frameId)
         expect(details[1]).to.equal(event1[0].frameId)
       })
 
