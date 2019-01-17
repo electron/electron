@@ -14,6 +14,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/post_task.h"
@@ -41,7 +42,6 @@ class Protocol : public mate::TrackableObject<Protocol> {
   using Handler =
       base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
-  using BooleanCallback = base::Callback<void(bool)>;
 
   static mate::Handle<Protocol> Create(v8::Isolate* isolate,
                                        AtomBrowserContext* browser_context);
@@ -136,11 +136,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       const std::string& scheme);
 
   // Whether the protocol has handler registered.
-  void IsProtocolHandled(const std::string& scheme,
-                         const BooleanCallback& callback);
-  static bool IsProtocolHandledInIO(
-      scoped_refptr<URLRequestContextGetter> request_context_getter,
-      const std::string& scheme);
+  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
 
   // Replace the protocol handler with a new one.
   template <typename RequestJob>

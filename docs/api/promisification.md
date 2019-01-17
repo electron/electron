@@ -31,7 +31,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [inAppPurchase.purchaseProduct(productID, quantity, callback)](https://github.com/electron/electron/blob/master/docs/api/in-app-purchase.md#purchaseProduct)
 - [ ] [inAppPurchase.getProducts(productIDs, callback)](https://github.com/electron/electron/blob/master/docs/api/in-app-purchase.md#getProducts)
 - [ ] [netLog.stopLogging([callback])](https://github.com/electron/electron/blob/master/docs/api/net-log.md#stopLogging)
-- [ ] [protocol.isProtocolHandled(scheme, callback)](https://github.com/electron/electron/blob/master/docs/api/protocol.md#isProtocolHandled)
 - [ ] [ses.getCacheSize(callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#getCacheSize)
 - [ ] [ses.clearCache(callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#clearCache)
 - [ ] [ses.clearStorageData([options, callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearStorageData)
@@ -62,3 +61,4 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
 - [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
 - [ ] [shell.openExternal(url[, options, callback])](https://github.com/electron/electron/blob/master/docs/api/shell.md#openExternal)
+- [ ] [protocol.isProtocolHandled(scheme, callback)](https://github.com/electron/electron/blob/master/docs/api/protocol.md#isProtocolHandled)

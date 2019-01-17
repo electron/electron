@@ -275,6 +275,15 @@ Unregisters the custom protocol of `scheme`.
 The `callback` will be called with a boolean that indicates whether there is
 already a handler for `scheme`.
 
+**[Deprecated Soon](promisification.md)**
+
+### `protocol.isProtocolHandled(scheme)`
+
+* `scheme` String
+
+Returns `Promise<Boolean>` - fulfilled with a boolean that indicates whether there is
+already a handler for `scheme`.
+
 ### `protocol.interceptFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String
