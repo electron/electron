@@ -656,15 +656,29 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.isProtocolHandled', () => {
+  describe('protocol.isProtocolHandled', (done) => {
     it('returns true for about:', async () => {
       const result = await protocol.isProtocolHandled('about')
       assert.strictEqual(result, true)
     })
 
+    it('returns true for about: (callback)', () => {
+      protocol.isProtocolHandled('about', (result) => {
+        assert.strictEqual(result, true)
+        done()
+      })
+    })
+
     it('returns true for file:', async () => {
       const result = await protocol.isProtocolHandled('file')
       assert.strictEqual(result, true)
+    })
+
+    it('returns true for file: (callback)', () => {
+      protocol.isProtocolHandled('file', (result) => {
+        assert.strictEqual(result, true)
+        done()
+      })
     })
 
     it('returns true for http:', async () => {
@@ -682,7 +696,7 @@ describe('protocol module', () => {
       assert.strictEqual(result, false)
     })
 
-    it('returns true for custom protocol', (done) => {
+    it('returns true for custom protocol', () => {
       const emptyHandler = (request, callback) => callback()
       protocol.registerStringProtocol(protocolName, emptyHandler, async (error) => {
         assert.strictEqual(error, null)
@@ -692,13 +706,35 @@ describe('protocol module', () => {
       })
     })
 
-    it('returns true for intercepted protocol', (done) => {
+    it('returns true for custom protocol (callback)', () => {
+      const emptyHandler = (request, callback) => callback()
+      protocol.registerStringProtocol(protocolName, emptyHandler, (error) => {
+        assert.strictEqual(error, null)
+        protocol.isProtocolHandled(protocolName, (result) => {
+          assert.strictEqual(result, true)
+          done()
+        })
+      })
+    })
+
+    it('returns true for intercepted protocol', () => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, async (error) => {
         assert.strictEqual(error, null)
         const result = await protocol.isProtocolHandled('http')
         assert.strictEqual(result, true)
         done()
+      })
+    })
+
+    it('returns true for intercepted protocol (callback)', () => {
+      const emptyHandler = (request, callback) => callback()
+      protocol.interceptStringProtocol('http', emptyHandler, (error) => {
+        assert.strictEqual(error, null)
+        protocol.isProtocolHandled('http', (result) => {
+          assert.strictEqual(result, true)
+          done()
+        })
       })
     })
   })

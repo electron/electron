@@ -483,7 +483,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.getFocusedWindow()', (done) => {
+  describe('BrowserWindow.getFocusedWindow()', () => {
     it('returns the opener window when dev tools window is focused', (done) => {
       w.show()
       w.webContents.once('devtools-focused', () => {
@@ -506,6 +506,19 @@ describe('BrowserWindow module', () => {
       expect(image.isEmpty()).to.be.true()
     })
 
+    // TODO(codebytere): remove when promisification is complete
+    it('returns a Promise with a Buffer (callback)', (done) => {
+      w.capturePage({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
+      }, (image) => {
+        expect(image.isEmpty()).to.be.true()
+        done()
+      })
+    })
+
     it('preserves transparency', async () => {
       const w = await openTheWindow({
         show: false,
@@ -524,6 +537,27 @@ describe('BrowserWindow module', () => {
       // Check the 25th byte in the PNG.
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6)
+    })
+
+    it('preserves transparency (callback)', async (done) => {
+      const w = await openTheWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        transparent: true
+      })
+      const p = emittedOnce(w, 'ready-to-show')
+      w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
+      await p
+      w.show()
+
+      w.capturePage((image) => {
+        const imgBuffer = image.toPNG()
+        // Check the 25th byte in the PNG.
+        // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
+        expect(imgBuffer[25]).to.equal(6)
+        done()
+      })
     })
   })
 

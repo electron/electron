@@ -836,7 +836,7 @@ describe('app module', () => {
     })
   })
 
-  describe('getFileIcon() API', () => {
+  describe('getFileIcon() API', (done) => {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
       small: 16,
@@ -858,12 +858,31 @@ describe('app module', () => {
       expect(icon.isEmpty()).to.be.false()
     })
 
+    // TODO(codebytere): remove when promisification is complete
+    it('fetches a non-empty icon (callback)', () => {
+      app.getFileIcon(iconPath, (icon) => {
+        expect(icon.isEmpty()).to.be.false()
+        done()
+      })
+    })
+
     it('fetches normal icon size by default', async () => {
       const icon = await app.getFileIcon(iconPath)
       const size = icon.getSize()
 
       expect(size.height).to.equal(sizes.normal)
       expect(size.width).to.equal(sizes.normal)
+    })
+
+    // TODO(codebytere): remove when promisification is complete
+    it('fetches normal icon size by default (callback)', () => {
+      app.getFileIcon(iconPath, (icon) => {
+        const size = icon.getSize()
+
+        expect(size.height).to.equal(sizes.normal)
+        expect(size.width).to.equal(sizes.normal)
+        done()
+      })
     })
 
     describe('size option', () => {
@@ -881,6 +900,17 @@ describe('app module', () => {
 
         expect(size.height).to.equal(sizes.normal)
         expect(size.width).to.equal(sizes.normal)
+      })
+
+      // TODO(codebytere): remove when promisification is complete
+      it('fetches a normal icon (callback)', () => {
+        app.getFileIcon(iconPath, { size: 'normal' }, (icon) => {
+          const size = icon.getSize()
+
+          expect(size.height).to.equal(sizes.normal)
+          expect(size.width).to.equal(sizes.normal)
+          done()
+        })
       })
 
       it('fetches a large icon', async () => {
