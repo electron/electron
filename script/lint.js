@@ -29,7 +29,6 @@ const BLACKLIST = new Set([
   ['atom', 'common', 'common_message_generator.cc'],
   ['atom', 'common', 'common_message_generator.h'],
   ['atom', 'common', 'node_includes.h'],
-  ['atom', 'node', 'osfhandle.cc'],
   ['spec', 'static', 'jquery-2.0.3.min.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
