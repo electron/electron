@@ -662,6 +662,7 @@ describe('protocol module', () => {
       assert.strictEqual(result, true)
     })
 
+    // TODO(codebytere): remove when promisification is complete
     it('returns true for about: (callback)', () => {
       protocol.isProtocolHandled('about', (result) => {
         assert.strictEqual(result, true)
@@ -674,6 +675,7 @@ describe('protocol module', () => {
       assert.strictEqual(result, true)
     })
 
+    // TODO(codebytere): remove when promisification is complete
     it('returns true for file: (callback)', () => {
       protocol.isProtocolHandled('file', (result) => {
         assert.strictEqual(result, true)
@@ -706,6 +708,7 @@ describe('protocol module', () => {
       })
     })
 
+    // TODO(codebytere): remove when promisification is complete
     it('returns true for custom protocol (callback)', () => {
       const emptyHandler = (request, callback) => callback()
       protocol.registerStringProtocol(protocolName, emptyHandler, (error) => {
@@ -727,6 +730,7 @@ describe('protocol module', () => {
       })
     })
 
+    // TODO(codebytere): remove when promisification is complete
     it('returns true for intercepted protocol (callback)', () => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, (error) => {

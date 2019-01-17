@@ -539,6 +539,7 @@ describe('BrowserWindow module', () => {
       expect(imgBuffer[25]).to.equal(6)
     })
 
+    // TODO(codebytere): remove when promisification is complete
     it('preserves transparency (callback)', async (done) => {
       const w = await openTheWindow({
         show: false,
