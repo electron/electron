@@ -96,7 +96,8 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // If this is the first environment we are creating, prepare the node
   // bindings.
-  if (environments_.size() == 0) {
+  if (!node_integration_initialized_) {
+    node_integration_initialized_ = true;
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
   }
