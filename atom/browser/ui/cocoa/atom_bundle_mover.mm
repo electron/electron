@@ -48,7 +48,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
   // Activate app -- work-around for focus issues related to "scary file from
   // internet" OS dialog.
   if (![NSApp isActive]) {
-    [NSApp activateIgnoringOtherApps:false];
+    [NSApp activateIgnoringOtherApps:true];
   }
 
   // Move to applications folder
