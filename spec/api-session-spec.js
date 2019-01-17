@@ -524,14 +524,12 @@ describe('session module', () => {
       partitionProtocol.unregisterProtocol(protocolName, () => done())
     })
 
-    it('does not affect defaultSession', (done) => {
-      protocol.isProtocolHandled(protocolName, (result) => {
-        assert.strictEqual(result, false)
-        partitionProtocol.isProtocolHandled(protocolName, (result) => {
-          assert.strictEqual(result, true)
-          done()
-        })
-      })
+    it('does not affect defaultSession', async () => {
+      const result1 = await protocol.isProtocolHandled(protocolName)
+      assert.strictEqual(result1, false)
+
+      const result2 = await partitionProtocol.isProtocolHandled(protocolName)
+      assert.strictEqual(result2, true)
     })
 
     it('handles requests from partition', (done) => {
