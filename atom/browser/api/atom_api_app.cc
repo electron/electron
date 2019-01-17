@@ -517,8 +517,8 @@ int ImportIntoCertStore(CertificateManagerModel* model,
   options.GetString("password", &password);
 
   if (!cert_path.empty()) {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
       auto module = model->cert_db()->GetPrivateSlot();
       rv = model->ImportFromPKCS12(module.get(), file_data, password, true,
                                    &imported_certs);
