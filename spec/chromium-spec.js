@@ -520,27 +520,28 @@ describe('chromium feature', () => {
       b = window.open('about:blank')
     })
 
-    it('open a blank page when no URL is specified', (done) => {
-      let b = null
-      app.once('browser-window-created', (event, { webContents }) => {
-        webContents.once('did-finish-load', () => {
-          const { location } = b
-          b.close()
-          assert.strictEqual(location.href, 'about:blank')
+    it('open a blank page when no URL is specified', async () => {
+      const browserWindowCreated = emittedOnce(app, 'browser-window-created')
+      const w = window.open()
+      try {
+        const [, { webContents }] = await browserWindowCreated
+        await emittedOnce(webContents, 'did-finish-load')
+        assert.strictEqual(w.location.href, 'about:blank')
+      } finally {
+        w.close()
+      }
+    })
 
-          let c = null
-          app.once('browser-window-created', (event, { webContents }) => {
-            webContents.once('did-finish-load', () => {
-              const { location } = c
-              c.close()
-              assert.strictEqual(location.href, 'about:blank')
-              done()
-            })
-          })
-          c = window.open('')
-        })
-      })
-      b = window.open()
+    it('open a blank page when an empty URL is specified', async () => {
+      const browserWindowCreated = emittedOnce(app, 'browser-window-created')
+      const w = window.open('')
+      try {
+        const [, { webContents }] = await browserWindowCreated
+        await emittedOnce(webContents, 'did-finish-load')
+        assert.strictEqual(w.location.href, 'about:blank')
+      } finally {
+        w.close()
+      }
     })
 
     it('throws an exception when the arguments cannot be converted to strings', () => {
