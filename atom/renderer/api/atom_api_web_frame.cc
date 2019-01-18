@@ -4,6 +4,8 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+#include <utility>
+
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
@@ -137,6 +139,22 @@ class FrameSpellChecker : public content::RenderFrameVisitor {
 
 }  // namespace
 
+class AtomWebFrameObserver : public content::RenderFrameObserver {
+ public:
+  explicit AtomWebFrameObserver(
+      content::RenderFrame* render_frame,
+      std::unique_ptr<SpellCheckClient> spell_check_client)
+      : content::RenderFrameObserver(render_frame),
+        spell_check_client_(std::move(spell_check_client)) {}
+  ~AtomWebFrameObserver() final {}
+
+  // RenderFrameObserver implementation.
+  void OnDestruct() final { spell_check_client_.reset(nullptr); }
+
+ private:
+  std::unique_ptr<SpellCheckClient> spell_check_client_;
+};
+
 WebFrame::WebFrame(v8::Isolate* isolate)
     : web_frame_(blink::WebLocalFrame::FrameForCurrentContext()) {
   Init(isolate);
@@ -231,11 +249,13 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
       std::make_unique<SpellCheckClient>(language, args->isolate(), provider);
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
-  FrameSpellChecker spell_checker(
-      client.get(), content::RenderFrame::FromWebFrame(web_frame_));
+  auto* render_frame = content::RenderFrame::FromWebFrame(web_frame_);
+  FrameSpellChecker spell_checker(client.get(), render_frame);
   content::RenderFrame::ForEach(&spell_checker);
   spell_check_client_.swap(client);
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client_.get());
+  web_frame_observer_.reset(
+      new AtomWebFrameObserver(render_frame, std::move(spell_check_client_)));
 }
 
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
