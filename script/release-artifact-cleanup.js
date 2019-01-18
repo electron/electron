@@ -84,9 +84,13 @@ async function cleanReleaseArtifacts () {
   const releaseId = args.releaseID.length > 0 ? args.releaseID : null
   const isNightly = args.tag.includes('nightly')
 
+  // try to revert commit regardless of tag and draft deletion status
+  await revertBumpCommit(args.tag)
+
   if (releaseId) {
     if (isNightly) {
       const deletedNightlyDraft = await deleteDraft(releaseId, 'nightlies')
+
       // don't delete tag unless draft deleted successfully
       if (deletedNightlyDraft) {
         await Promise.all([
@@ -101,10 +105,12 @@ async function cleanReleaseArtifacts () {
         await deleteTag(args.tag, 'electron')
       }
     }
+  } else {
+    await Promise.all([
+      deleteTag(args.tag, 'electron'),
+      deleteTag(args.tag, 'nightlies')
+    ])
   }
-
-  // try to revert commit regardless of tag and draft deletion status
-  await revertBumpCommit(args.tag)
 
   console.log(`${pass} failed release artifact cleanup complete`)
 }
