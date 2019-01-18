@@ -102,6 +102,7 @@ async function cleanReleaseArtifacts () {
   if (releaseId) {
     if (isNightly) {
       const deletedNightlyDraft = await deleteDraft(releaseId, 'nightlies')
+
       // don't delete tag unless draft deleted successfully
       if (deletedNightlyDraft) {
         await Promise.all([
@@ -116,6 +117,11 @@ async function cleanReleaseArtifacts () {
         await deleteTag(args.tag, 'electron')
       }
     }
+  } else {
+    await Promise.all([
+      deleteTag(args.tag, 'electron'),
+      deleteTag(args.tag, 'nightlies')
+    ])
   }
 
   console.log(`${pass} failed release artifact cleanup complete`)
