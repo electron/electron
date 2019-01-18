@@ -506,6 +506,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     // if we made the remote API work with multiple frames.
     if (web_contents->GetVisibleURL().SchemeIs("chrome-devtools")) {
       command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+      command_line->AppendSwitch(::switches::kNoZygote);
     }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     if (web_preferences)
