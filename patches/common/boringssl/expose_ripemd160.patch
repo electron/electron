@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Fri, 18 Jan 2019 13:56:52 -0800
+Subject: expose ripemd160
+
+This adds references to the decrepit/ module from non-decrepit source,
+which is not allowed in upstream. Until upstream has a way to interface
+with node.js that allows exposing additional digests without patching,
+this patch is required to provide ripemd160 support in the nodejs crypto
+module.
+
+diff --git a/crypto/digest_extra/digest_extra.c b/crypto/digest_extra/digest_extra.c
+index 4b4bb38135e6089eaf6f47afda0199567a2397ef..43b7eca808b82a032055f56ce726ce4f38c5f2c5 100644
+--- a/crypto/digest_extra/digest_extra.c
++++ b/crypto/digest_extra/digest_extra.c
+@@ -81,6 +81,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+     {NID_sha384, EVP_sha384, SN_sha384, LN_sha384},
+     {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
+     {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
++    {NID_ripemd160, EVP_ripemd160, SN_ripemd160, LN_ripemd160},
+     // As a remnant of signing |EVP_MD|s, OpenSSL returned the corresponding
+     // hash function when given a signature OID. To avoid unintended lax parsing
+     // of hash OIDs, this is no longer supported for lookup by OID or NID.
+diff --git a/crypto/fipsmodule/digest/digests.c b/crypto/fipsmodule/digest/digests.c
+index f2fa349c2b32ae88766624af3109ece4b1d69909..bcaed59c5401bef071acba9b9919d9069e3ccd4d 100644
+--- a/crypto/fipsmodule/digest/digests.c
++++ b/crypto/fipsmodule/digest/digests.c
+@@ -63,6 +63,7 @@
+ #include <openssl/md5.h>
+ #include <openssl/nid.h>
+ #include <openssl/sha.h>
++#include <openssl/ripemd.h>
+ 
+ #include "internal.h"
+ #include "../delocate.h"
+@@ -277,4 +278,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_md5_sha1) {
+   out->ctx_size = sizeof(MD5_SHA1_CTX);
+ }
+ 
++static void ripemd160_init(EVP_MD_CTX *ctx) {
++  CHECK(RIPEMD160_Init(ctx->md_data));
++}
++
++static void ripemd160_update(EVP_MD_CTX *ctx, const void *data, size_t count) {
++  CHECK(RIPEMD160_Update(ctx->md_data, data, count));
++}
++
++static void ripemd160_final(EVP_MD_CTX *ctx, uint8_t *md) {
++  CHECK(RIPEMD160_Final(md, ctx->md_data));
++}
++
++DEFINE_METHOD_FUNCTION(EVP_MD, EVP_ripemd160) {
++  out->type = NID_ripemd160;
++  out->md_size = RIPEMD160_DIGEST_LENGTH;
++  out->flags = 0;
++  out->init = ripemd160_init;
++  out->update = ripemd160_update;
++  out->final = ripemd160_final;
++  out->block_size = 64;
++  out->ctx_size = sizeof(RIPEMD160_CTX);
++}
++
+ #undef CHECK
+diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
+index 38b8f9f78f76050174096740596ac59a0fe18757..acc4719b7e9c4c4461fc6142f2ae9156b407915b 100644
+--- a/decrepit/evp/evp_do_all.c
++++ b/decrepit/evp/evp_do_all.c
+@@ -66,6 +66,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
+   callback(EVP_sha256(), "SHA256", NULL, arg);
+   callback(EVP_sha384(), "SHA384", NULL, arg);
+   callback(EVP_sha512(), "SHA512", NULL, arg);
++  callback(EVP_ripemd160(), "RIPEMD160", NULL, arg);
+ 
+   callback(EVP_md4(), "md4", NULL, arg);
+   callback(EVP_md5(), "md5", NULL, arg);
+@@ -74,4 +75,5 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
+   callback(EVP_sha256(), "sha256", NULL, arg);
+   callback(EVP_sha384(), "sha384", NULL, arg);
+   callback(EVP_sha512(), "sha512", NULL, arg);
++  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
+ }
+diff --git a/include/openssl/digest.h b/include/openssl/digest.h
+index 1a1ca29732afae317c8e8740c629e8922fc83093..48ebdd1eb93b3febecddbc2545b7aae583f21525 100644
+--- a/include/openssl/digest.h
++++ b/include/openssl/digest.h
+@@ -88,6 +88,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_sha512(void);
+ // MD5 and SHA-1, as used in TLS 1.1 and below.
+ OPENSSL_EXPORT const EVP_MD *EVP_md5_sha1(void);
+ 
++// EVP_ripemd160 is in decrepit and not available by default.
++OPENSSL_EXPORT const EVP_MD *EVP_ripemd160(void);
++
+ // EVP_get_digestbynid returns an |EVP_MD| for the given NID, or NULL if no
+ // such digest is known.
+ OPENSSL_EXPORT const EVP_MD *EVP_get_digestbynid(int nid);

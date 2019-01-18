@@ -428,6 +428,18 @@ describe('node feature', () => {
     })
   })
 
+  describe('crypto', () => {
+    it('should list the ripemd160 hash in getHashes', () => {
+      expect(require('crypto').getHashes()).to.include('ripemd160')
+    })
+
+    it('should be able to create a ripemd160 hash and use it', () => {
+      const hash = require('crypto').createHash('ripemd160')
+      hash.update('electron-ripemd160')
+      expect(hash.digest('hex')).to.equal('fa7fec13c624009ab126ebb99eda6525583395fe')
+    })
+  })
+
   it('includes the electron version in process.versions', () => {
     expect(process.versions)
       .to.have.own.property('electron')
