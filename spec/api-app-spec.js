@@ -296,7 +296,7 @@ describe('app module', () => {
 
     afterEach(() => closeWindow(w).then(() => { w = null }))
 
-    it('can import certificate into platform cert store', done => {
+    it('can import certificate into platform cert store', (done) => {
       const options = {
         certificate: path.join(certPath, 'client.p12'),
         password: 'electron'
@@ -328,14 +328,11 @@ describe('app module', () => {
         event.sender.send('client-certificate-response', list[0])
       })
 
-      app.importCertificate(options)
-        .then(result => {
-          expect(result).toNotExist()
-          ipcRenderer.sendSync('set-client-certificate-option', false)
-          w.loadURL(secureUrl)
-        }).catch(err => {
-          console.log('Failed to import the certificate with err: ', err)
-        })
+      app.importCertificate(options).then(result => {
+        expect(result).toNotExist()
+        ipcRenderer.sendSync('set-client-certificate-option', false)
+        w.loadURL(secureUrl)
+      })
     })
   })
 

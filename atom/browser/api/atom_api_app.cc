@@ -1057,8 +1057,8 @@ v8::Local<v8::Promise> App::ImportCertificate(
     return promise->GetHandle();
   }
 
-  int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
-  promise->Resolve(rv);
+  promise->Resolve(
+      ImportIntoCertStore(certificate_manager_model_.get(), options));
   return promise->GetHandle();
 }
 
