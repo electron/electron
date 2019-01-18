@@ -111,6 +111,18 @@ describe('node feature', () => {
         })
         forked.send('hello')
       })
+
+      it('has the electron version in process.versions', (done) => {
+        const source = 'process.send(process.versions)'
+        const forked = ChildProcess.fork('--eval', [source])
+        forked.on('message', (message) => {
+          expect(message)
+            .to.have.own.property('electron')
+            .that.is.a('string')
+            .and.matches(/^\d+\.\d+\.\d+(\S*)?$/)
+          done()
+        })
+      })
     })
 
     describe('child_process.spawn', () => {

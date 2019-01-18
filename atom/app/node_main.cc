@@ -11,6 +11,7 @@
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/atom_version.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_bindings.h"
@@ -78,6 +79,11 @@ int NodeMain(int argc, char* argv[]) {
     auto reporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
     reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
     process.Set("crashReporter", reporter);
+
+    mate::Dictionary versions;
+    if (process.Get("versions", &versions)) {
+      versions.SetReadOnly(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
+    }
 
     node::LoadEnvironment(env);
 
