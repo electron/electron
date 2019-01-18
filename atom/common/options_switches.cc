@@ -154,7 +154,7 @@ const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
 
 const char kOffscreen[] = "offscreen";
 
-const char kNodeSupportInSubFrames[] = "nodeSupportInSubFrames";
+const char kNodeIntegrationInSubFrames[] = "nodeIntegrationInSubFrames";
 
 }  // namespace options
 
@@ -212,7 +212,7 @@ const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
 
 // Command switch passed to renderer process to control whether node
 // environments will be created in sub-frames.
-const char kNodeSupportInSubFrames[] = "node-support-in-subframes";
+const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
 
 // Widevine options
 // Path to Widevine CDM binaries.

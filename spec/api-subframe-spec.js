@@ -7,7 +7,7 @@ const { closeWindow } = require('./window-helpers')
 
 const { BrowserWindow } = remote
 
-describe('renderer nodeSupportInSubFrames', () => {
+describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (sandboxEnabled) => {
     describe(`with sandbox ${sandboxEnabled ? 'enabled' : 'disabled'}`, () => {
       let w
@@ -21,7 +21,7 @@ describe('renderer nodeSupportInSubFrames', () => {
           webPreferences: {
             sandbox: sandboxEnabled,
             preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
-            nodeSupportInSubFrames: true
+            nodeIntegrationInSubFrames: true
           }
         })
       })

@@ -183,10 +183,15 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
-  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame) &&
-      !IsDevToolsExtension(render_frame) &&
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeSupportInSubFrames))
+  bool is_main_frame = render_frame->IsMainFrame();
+  bool is_devtools =
+      IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  bool should_load_preload =
+      is_main_frame || is_devtools || allow_node_in_sub_frames;
+  if (!should_load_preload)
     return;
 
   // Wrap the bundle into a function that receives the binding object as
@@ -237,7 +242,7 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   // Or for sub frames when explicitly enabled
   if (!render_frame->IsMainFrame() &&
       !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeSupportInSubFrames))
+          switches::kNodeIntegrationInSubFrames))
     return;
 
   auto* isolate = context->GetIsolate();
