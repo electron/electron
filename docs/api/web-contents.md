@@ -1427,8 +1427,8 @@ app.on('ready', () => {
 * `...args` any[]
 
 Send an asynchronous message to a specific frame in a renderer process via
-`channel`, you can also send arbitrary arguments. Arguments will be serialized
-in JSON internally and hence no functions or prototype chain will be included.
+`channel`. Arguments will be serialized
+as JSON internally and as such no functions or prototype chains will be included.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.

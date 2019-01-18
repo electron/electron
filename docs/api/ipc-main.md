@@ -19,7 +19,7 @@ process, see [webContents.send][web-contents-send] for more information.
 * To reply to a synchronous message, you need to set `event.returnValue`.
 * To send an asynchronous message back to the sender, you can use
   `event.reply(...)`.  This helper method will automatically handle messages
-  coming from frames that aren't the main frame (E.g. IFrames) whereas
+  coming from frames that aren't the main frame (e.g. iframes) whereas
   `event.sender.send(...)` will always send to the main frame.
 
 An example of sending and handling messages between the render and main
