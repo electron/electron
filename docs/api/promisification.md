@@ -41,8 +41,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ses.getBlobData(identifier, callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#getBlobData)
 - [ses.clearAuthCache(options[, callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearAuthCache)
 - [contents.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#executeJavaScript)
-- [contents.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomFactor)
-- [contents.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomLevel)
 - [contents.hasServiceWorker(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#hasServiceWorker)
 - [contents.unregisterServiceWorker(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#unregisterServiceWorker)
 - [contents.print([options], [callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#print)
@@ -52,8 +50,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-frame.md#executeJavaScriptInIsolatedWorld)
 - [webviewTag.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#executeJavaScript)
 - [webviewTag.printToPDF(options, callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#printToPDF)
-- [webviewTag.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#getZoomFactor)
-- [webviewTag.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#getZoomLevel)
 
 ### Converted Functions
 

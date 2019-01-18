@@ -8,12 +8,10 @@
   let finalNavigation = false
   function SendZoomLevel() {
     return new Promise((resolve, reject) => {
-      view.getZoomLevel((zoomLevel) => {
-        view.getZoomFactor((zoomFactor) => {
-          ipcRenderer.send('webview-zoom-in-page', zoomLevel, zoomFactor, finalNavigation)
-          resolve()
-        })
-      })
+      const zoomLevel = view.getZoomLevel()
+      const zoomFactor = view.getZoomFactor()
+      ipcRenderer.send('webview-zoom-in-page', zoomLevel, zoomFactor, finalNavigation)
+      resolve()
     })
   }
   view.addEventListener('dom-ready', () => {
