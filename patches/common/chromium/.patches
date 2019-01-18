@@ -88,3 +88,4 @@ ensure_cookie_store.patch
 disable_color_correct_rendering.patch
 sqlite_upgrade_from_3_24_to_3_26.patch
 sqlite_update_api_3_26.patch
+tts.patch

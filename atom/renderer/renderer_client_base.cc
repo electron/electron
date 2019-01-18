@@ -19,7 +19,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
@@ -55,6 +54,10 @@
 #include "atom/renderer/printing/print_render_frame_helper_delegate.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
+
+#if BUILDFLAG(ENABLE_TTS)
+#include "chrome/renderer/tts_dispatcher.h"
+#endif  // BUILDFLAG(ENABLE_TTS)
 
 namespace atom {
 
@@ -228,7 +231,11 @@ void RendererClientBase::DidClearWindowObject(
 std::unique_ptr<blink::WebSpeechSynthesizer>
 RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
+#if BUILDFLAG(ENABLE_TTS)
   return std::make_unique<TtsDispatcher>(client);
+#else
+  return nullptr;
+#endif
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
