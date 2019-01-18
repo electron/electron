@@ -1050,6 +1050,75 @@ describe('webContents module', () => {
     })
   })
 
+  describe('preload-error event', () => {
+    const generateSpecs = (description, sandbox) => {
+      describe(description, () => {
+        it('is triggered when unhandled exception is thrown', async () => {
+          const preload = path.join(fixtures, 'module', 'preload-error-exception.js')
+
+          w.destroy()
+          w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.equal('Hello World!')
+        })
+
+        it('is triggered on syntax errors', async () => {
+          const preload = path.join(fixtures, 'module', 'preload-error-syntax.js')
+
+          w.destroy()
+          w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.equal('foobar is not defined')
+        })
+
+        it('is triggered when preload script loading fails', async () => {
+          const preload = path.join(fixtures, 'module', 'preload-invalid.js')
+
+          w.destroy()
+          w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox,
+              preload
+            }
+          })
+
+          const promise = emittedOnce(w.webContents, 'preload-error')
+          w.loadURL('about:blank')
+
+          const [, preloadPath, error] = await promise
+          expect(preloadPath).to.equal(preload)
+          expect(error.message).to.contain('preload-invalid.js')
+        })
+      })
+    }
+
+    generateSpecs('without sandbox', false)
+    generateSpecs('with sandbox', true)
+  })
+
   describe('takeHeapSnapshot()', () => {
     it('works with sandboxed renderers', async () => {
       w.destroy()
