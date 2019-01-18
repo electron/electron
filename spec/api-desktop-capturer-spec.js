@@ -1,11 +1,13 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
+const chaiAsPromised = require('chai-as-promised')
 const { desktopCapturer, ipcRenderer, remote } = require('electron')
 const { screen } = remote
 const features = process.atomBinding('features')
 
 const { expect } = chai
 chai.use(dirtyChai)
+chai.use(chaiAsPromised)
 
 const isCI = remote.getGlobal('isCi')
 
@@ -22,37 +24,43 @@ describe('desktopCapturer', () => {
     }
   })
 
-  it('should return a non-empty array of sources', done => {
-    desktopCapturer.getSources({
-      types: ['window', 'screen']
-    }, (error, sources) => {
-      expect(error).to.be.null()
+  it('should return a non-empty array of sources', async () => {
+    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+    expect(sources).to.be.an('array').that.is.not.empty()
+  })
+
+  // TODO(codebytere): remove when promisification is complete
+  it('should return a non-empty array of sources (callback)', (done) => {
+    desktopCapturer.getSources({ types: ['window', 'screen'] }, (err, sources) => {
       expect(sources).to.be.an('array').that.is.not.empty()
+      expect(err).to.be.null()
       done()
     })
   })
 
-  it('throws an error for invalid options', done => {
-    desktopCapturer.getSources(['window', 'screen'], error => {
-      expect(error.message).to.equal('Invalid options')
-      done()
-    })
+  it('throws an error for invalid options', async () => {
+    const promise = desktopCapturer.getSources(['window', 'screen'])
+    expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options')
   })
 
-  it('does not throw an error when called more than once (regression)', (done) => {
-    let callCount = 0
-    const callback = (error, sources) => {
-      callCount++
-      expect(error).to.be.null()
-      expect(sources).to.be.an('array').that.is.not.empty()
-      if (callCount === 2) done()
-    }
+  it('does not throw an error when called more than once (regression)', async () => {
+    const sources1 = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+    expect(sources1).to.be.an('array').that.is.not.empty()
 
-    desktopCapturer.getSources({ types: ['window', 'screen'] }, callback)
-    desktopCapturer.getSources({ types: ['window', 'screen'] }, callback)
+    const sources2 = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+    expect(sources2).to.be.an('array').that.is.not.empty()
   })
 
-  it('responds to subsequent calls of different options', done => {
+  it('responds to subsequent calls of different options', async () => {
+    const promise1 = desktopCapturer.getSources({ types: ['window'] })
+    expect(promise1).to.not.eventually.be.rejected()
+
+    const promise2 = desktopCapturer.getSources({ types: ['screen'] })
+    expect(promise2).to.not.eventually.be.rejected()
+  })
+
+  // TODO(codebytere): remove when promisification is complete
+  it('responds to subsequent calls of different options (callback)', (done) => {
     let callCount = 0
     const callback = (error, sources) => {
       callCount++
@@ -64,49 +72,36 @@ describe('desktopCapturer', () => {
     desktopCapturer.getSources({ types: ['screen'] }, callback)
   })
 
-  it('returns an empty display_id for window sources on Windows and Mac', done => {
+  it('returns an empty display_id for window sources on Windows and Mac', async () => {
     // Linux doesn't return any window sources.
-    if (process.platform !== 'win32' && process.platform !== 'darwin') {
-      return done()
-    }
+    if (process.platform !== 'win32' && process.platform !== 'darwin') return
 
     const { BrowserWindow } = remote
     const w = new BrowserWindow({ width: 200, height: 200 })
 
-    desktopCapturer.getSources({ types: ['window'] }, (error, sources) => {
-      w.destroy()
-      expect(error).to.be.null()
-      expect(sources).to.be.an('array').that.is.not.empty()
-      for (const { display_id: displayId } of sources) {
-        expect(displayId).to.be.a('string').and.be.empty()
-      }
-      done()
-    })
+    const sources = await desktopCapturer.getSources({ types: ['window'] })
+    w.destroy()
+    expect(sources).to.be.an('array').that.is.not.empty()
+    for (const { display_id: displayId } of sources) {
+      expect(displayId).to.be.a('string').and.be.empty()
+    }
   })
 
-  it('returns display_ids matching the Screen API on Windows and Mac', done => {
-    if (process.platform !== 'win32' && process.platform !== 'darwin') {
-      return done()
-    }
+  it('returns display_ids matching the Screen API on Windows and Mac', async () => {
+    if (process.platform !== 'win32' && process.platform !== 'darwin') return
 
     const displays = screen.getAllDisplays()
-    desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
-      expect(error).to.be.null()
-      expect(sources).to.be.an('array').of.length(displays.length)
+    const sources = await desktopCapturer.getSources({ types: ['screen'] })
+    expect(sources).to.be.an('array').of.length(displays.length)
 
-      for (let i = 0; i < sources.length; i++) {
-        expect(sources[i].display_id).to.equal(displays[i].id.toString())
-      }
-      done()
-    })
+    for (let i = 0; i < sources.length; i++) {
+      expect(sources[i].display_id).to.equal(displays[i].id.toString())
+    }
 
-    it('returns empty sources when blocked', done => {
+    it('returns empty sources when blocked', async () => {
       ipcRenderer.send('handle-next-desktop-capturer-get-sources')
-      desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
-        expect(error).to.be.null()
-        expect(sources).to.be.empty()
-        done()
-      })
+      const sources = await desktopCapturer.getSources({ types: ['screen'] })
+      expect(sources).to.be.empty()
     })
   })
 })
