@@ -438,6 +438,18 @@ describe('node feature', () => {
       hash.update('electron-ripemd160')
       expect(hash.digest('hex')).to.equal('fa7fec13c624009ab126ebb99eda6525583395fe')
     })
+
+    it('should list aes-{128,256}-cfb in getCiphers', () => {
+      expect(require('crypto').getCiphers()).to.include.members(['aes-128-cfb', 'aes-256-cfb'])
+    })
+
+    it('should be able to create an aes-128-cfb cipher', () => {
+      require('crypto').createCipheriv('aes-128-cfb', '0123456789abcdef', '0123456789abcdef')
+    })
+
+    it('should be able to create an aes-256-cfb cipher', () => {
+      require('crypto').createCipheriv('aes-256-cfb', '0123456789abcdef0123456789abcdef', '0123456789abcdef')
+    })
   })
 
   it('includes the electron version in process.versions', () => {
