@@ -27,6 +27,7 @@ namespace atom {
 namespace api {
 
 class SpellCheckClient;
+class AtomWebFrameObserver;
 
 class WebFrame : public mate::Wrappable<WebFrame> {
  public:
@@ -101,6 +102,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   v8::Local<v8::Value> RoutingId() const;
 
   std::unique_ptr<SpellCheckClient> spell_check_client_;
+  std::unique_ptr<AtomWebFrameObserver> web_frame_observer_;
 
   blink::WebLocalFrame* web_frame_;
 
