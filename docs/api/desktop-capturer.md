@@ -12,7 +12,7 @@ title is `Electron`:
 // In the renderer process.
 const { desktopCapturer } = require('electron')
 
-desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
+desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
   for (const source of sources) {
     if (source.name === 'Electron') {
       try {
