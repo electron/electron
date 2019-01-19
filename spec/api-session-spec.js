@@ -68,153 +68,156 @@ describe('session module', () => {
   })
 
   describe('ses.cookies', () => {
+    const name = '0'
+    const value = '0'
     it('should get cookies', (done) => {
       const server = http.createServer((req, res) => {
-        res.setHeader('Set-Cookie', ['0=0'])
+        res.setHeader('Set-Cookie', [`${name}=${value}`])
         res.end('finished')
         server.close()
       })
       server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.session.cookies.get({ url }, (error, list) => {
-            if (error) return done(error)
-            for (let i = 0; i < list.length; i++) {
-              const cookie = list[i]
-              if (cookie.name === '0') {
-                if (cookie.value === '0') {
-                  return done()
-                } else {
-                  return done(`cookie value is ${cookie.value} while expecting 0`)
-                }
-              }
-            }
-            done('Can\'t find cookie')
-          })
+        w.webContents.once('did-finish-load', async () => {
+          const list = await w.webContents.session.cookies.get({ url })
+          const cookie = list.find(cookie => cookie.name === name)
+
+          expect(cookie).to.exist.and.to.have.property('value', value)
+          done()
         })
+        const { port } = server.address()
         w.loadURL(`${url}:${port}`)
       })
     })
 
-    it('calls back with an error when setting a cookie with missing required fields', (done) => {
-      session.defaultSession.cookies.set({
-        url: '',
-        name: '1',
-        value: '1'
-      }, (error) => {
-        assert(error, 'Should have an error')
-        assert.strictEqual(error.message, 'Setting cookie failed')
-        done()
-      })
+    it('sets cookies', async () => {
+      let error
+      try {
+        const { cookies } = session.defaultSession
+        const name = '1'
+        const value = '1'
+
+        await cookies.set({ url, name, value })
+      } catch (e) {
+        error = e
+      }
+      expect(error).to.be.undefined(error)
     })
 
-    it('should over-write the existent cookie', (done) => {
-      session.defaultSession.cookies.set({
-        url,
-        name: '1',
-        value: '1'
-      }, (error) => {
-        if (error) return done(error)
-        session.defaultSession.cookies.get({ url }, (error, list) => {
-          if (error) return done(error)
-          for (let i = 0; i < list.length; i++) {
-            const cookie = list[i]
-            if (cookie.name === '1') {
-              if (cookie.value === '1') {
-                return done()
-              } else {
-                return done(`cookie value is ${cookie.value} while expecting 1`)
-              }
-            }
-          }
-          done('Can\'t find cookie')
-        })
-      })
+    it('yields an error when setting a cookie with missing required fields', async () => {
+      let error
+      try {
+        const { cookies } = session.defaultSession
+        const name = '1'
+        const value = '1'
+        await cookies.set({ url: '', name, value })
+      } catch (e) {
+        error = e
+      }
+      expect(error).is.an('Error')
+      expect(error).to.have.property('message').which.equals('Setting cookie failed')
     })
 
-    it('should remove cookies', (done) => {
-      session.defaultSession.cookies.set({
-        url: url,
-        name: '2',
-        value: '2'
-      }, (error) => {
-        if (error) return done(error)
-        session.defaultSession.cookies.remove(url, '2', () => {
-          session.defaultSession.cookies.get({ url }, (error, list) => {
-            if (error) return done(error)
-            for (let i = 0; i < list.length; i++) {
-              const cookie = list[i]
-              if (cookie.name === '2') return done('Cookie not deleted')
-            }
-            done()
-          })
-        })
-      })
+    it('should overwrite previous cookies', async () => {
+      let error
+      try {
+        const { cookies } = session.defaultSession
+        const name = 'DidOverwrite'
+        for (const value of [ 'No', 'Yes' ]) {
+          await cookies.set({ url, name, value })
+          const list = await cookies.get({ url })
+
+          expect(list.some(cookie => cookie.name === name && cookie.value === value))
+        }
+      } catch (e) {
+        error = e
+      }
+      expect(error).to.be.undefined(error)
     })
 
-    it('should set cookie for standard scheme', (done) => {
-      const standardScheme = remote.getGlobal('standardScheme')
-      const origin = standardScheme + '://fake-host'
-      session.defaultSession.cookies.set({
-        url: origin,
-        name: 'custom',
-        value: '1'
-      }, (error) => {
-        if (error) return done(error)
-        session.defaultSession.cookies.get({ url: origin }, (error, list) => {
-          if (error) return done(error)
-          assert.strictEqual(list.length, 1)
-          assert.strictEqual(list[0].name, 'custom')
-          assert.strictEqual(list[0].value, '1')
-          assert.strictEqual(list[0].domain, 'fake-host')
-          done()
-        })
-      })
+    it('should remove cookies', async () => {
+      let error
+      try {
+        const { cookies } = session.defaultSession
+        const name = '2'
+        const value = '2'
+
+        await cookies.set({ url, name, value })
+        await cookies.remove(url, name)
+        const list = await cookies.get({ url })
+
+        expect(list.some(cookie => cookie.name === name && cookie.value === value))
+      } catch (e) {
+        error = e
+      }
+      expect(error).to.be.undefined(error)
     })
 
-    it('emits a changed event when a cookie is added or removed', (done) => {
-      const { cookies } = session.fromPartition('cookies-changed')
+    it('should set cookie for standard scheme', async () => {
+      let error
+      try {
+        const { cookies } = session.defaultSession
+        const standardScheme = remote.getGlobal('standardScheme')
+        const domain = 'fake-host'
+        const url = `${standardScheme}://${domain}`
+        const name = 'custom'
+        const value = '1'
 
-      cookies.once('changed', (event, cookie, cause, removed) => {
-        assert.strictEqual(cookie.name, 'foo')
-        assert.strictEqual(cookie.value, 'bar')
-        assert.strictEqual(cause, 'explicit')
-        assert.strictEqual(removed, false)
+        await cookies.set({ url, name, value })
+        const list = await cookies.get({ url })
 
-        cookies.once('changed', (event, cookie, cause, removed) => {
-          assert.strictEqual(cookie.name, 'foo')
-          assert.strictEqual(cookie.value, 'bar')
-          assert.strictEqual(cause, 'explicit')
-          assert.strictEqual(removed, true)
-          done()
-        })
+        expect(list).to.have.lengthOf(1)
+        expect(list[0]).to.have.property('name', name)
+        expect(list[0]).to.have.property('value', value)
+        expect(list[0]).to.have.property('domain', domain)
+      } catch (e) {
+        error = e
+      }
 
-        cookies.remove(url, 'foo', (error) => {
-          if (error) return done(error)
-        })
-      })
-
-      cookies.set({
-        url: url,
-        name: 'foo',
-        value: 'bar'
-      }, (error) => {
-        if (error) return done(error)
-      })
+      expect(error).to.be.undefined(error)
     })
 
-    describe('ses.cookies.flushStore(callback)', () => {
-      it('flushes the cookies to disk and invokes the callback when done', (done) => {
-        session.defaultSession.cookies.set({
-          url: url,
-          name: 'foo',
-          value: 'bar'
-        }, (error) => {
-          if (error) return done(error)
-          session.defaultSession.cookies.flushStore(() => {
-            done()
-          })
-        })
+    it('emits a changed event when a cookie is added or removed', async () => {
+      let error
+      const changes = []
+
+      try {
+        const { cookies } = session.fromPartition('cookies-changed')
+        const name = 'foo'
+        const value = 'bar'
+        const eventName = 'changed'
+        const listener = (event, cookie, cause, removed) => { changes.push({ cookie, cause, removed }) }
+
+        cookies.on(eventName, listener)
+        await cookies.set({ url, name, value })
+        await cookies.remove(url, name)
+        cookies.off(eventName, listener)
+
+        expect(changes).to.have.lengthOf(2)
+        expect(changes.every(change => change.cookie.name === name))
+        expect(changes.every(change => change.cookie.value === value))
+        expect(changes.every(change => change.cause === 'explicit'))
+        expect(changes[0].removed).to.be.false()
+        expect(changes[1].removed).to.be.true()
+      } catch (e) {
+        error = e
+      }
+      expect(error).to.be.undefined(error)
+    })
+
+    describe('ses.cookies.flushStore()', async () => {
+      it('flushes the cookies to disk and invokes the callback when done', async () => {
+        let error
+        try {
+          const name = 'foo'
+          const value = 'bar'
+          const { cookies } = session.defaultSession
+
+          await cookies.set({ url, name, value })
+          await cookies.flushStore()
+        } catch (e) {
+          error = e
+        }
+        expect(error).to.be.undefined(error)
       })
     })
 
@@ -232,7 +235,7 @@ describe('session module', () => {
             { env: { PHASE: phase, ...process.env } }
           )
 
-          appProcess.stdout.on('data', (data) => { output += data })
+          appProcess.stdout.on('data', data => { output += data })
           appProcess.stdout.on('end', () => {
             output = output.replace(/(\r\n|\n|\r)/gm, '')
             assert.strictEqual(output, result)

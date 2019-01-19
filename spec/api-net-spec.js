@@ -550,12 +550,12 @@ describe('net module', () => {
             handleUnexpectedURL(request, response)
         }
       })
+
       customSession.cookies.set({
         url: `${server.url}`,
         name: 'test',
         value: '11111'
-      }, (error) => {
-        if (error) return done(error)
+      }).then(() => { // resolved
         const urlRequest = net.request({
           method: 'GET',
           url: `${server.url}${requestUrl}`,
@@ -575,6 +575,8 @@ describe('net module', () => {
         assert.strictEqual(urlRequest.getHeader(cookieHeaderName),
           cookieHeaderValue)
         urlRequest.end()
+      }, (error) => {
+        done(error)
       })
     })
 
