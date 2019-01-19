@@ -136,6 +136,21 @@ inline net::CookieStore* GetCookieStore(
   return getter->GetURLRequestContext()->cookie_store();
 }
 
+void ResolvePromiseWithCookies(scoped_refptr<util::Promise> promise,
+                               net::CookieList cookieList) {
+  promise->Resolve(cookieList);
+}
+
+void ResolvePromise(scoped_refptr<util::Promise> promise) {
+  promise->Resolve();
+}
+
+// Resolve |promise| in UI thread.
+void ResolvePromiseInUI(scoped_refptr<util::Promise> promise) {
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
+                           base::BindOnce(ResolvePromise, std::move(promise)));
+}
+
 // Run |callback| on UI thread.
 void RunCallbackInUI(const base::Closure& callback) {
   base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, callback);
@@ -143,25 +158,28 @@ void RunCallbackInUI(const base::Closure& callback) {
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
-                   const Cookies::GetCallback& callback,
+                   scoped_refptr<util::Promise> promise,
                    const net::CookieList& list) {
   net::CookieList result;
   for (const auto& cookie : list) {
     if (MatchesCookie(filter.get(), cookie))
       result.push_back(cookie);
   }
-  RunCallbackInUI(base::Bind(callback, Cookies::SUCCESS, result));
+
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::UI},
+      base::BindOnce(ResolvePromiseWithCookies, std::move(promise), result));
 }
 
 // Receives cookies matching |filter| in IO thread.
 void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                     std::unique_ptr<base::DictionaryValue> filter,
-                    const Cookies::GetCallback& callback) {
+                    scoped_refptr<util::Promise> promise) {
   std::string url;
   filter->GetString("url", &url);
 
   auto filtered_callback =
-      base::Bind(FilterCookies, base::Passed(&filter), callback);
+      base::Bind(FilterCookies, base::Passed(&filter), std::move(promise));
 
   // Empty url will match all url cookies.
   if (url.empty())
@@ -172,31 +190,42 @@ void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 }
 
 // Removes cookie with |url| and |name| in IO thread.
-void RemoveCookieOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
-                            const GURL& url,
-                            const std::string& name,
-                            const base::Closure& callback) {
+void RemoveCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
+                      const GURL& url,
+                      const std::string& name,
+                      scoped_refptr<util::Promise> promise) {
   GetCookieStore(getter)->DeleteCookieAsync(
-      url, name, base::BindOnce(RunCallbackInUI, callback));
+      url, name, base::BindOnce(ResolvePromiseInUI, promise));
+}
+
+// Resolves/rejects the |promise| in UI thread.
+void SettlePromiseInUI(scoped_refptr<util::Promise> promise,
+                       const std::string& errmsg) {
+  if (errmsg.empty()) {
+    promise->Resolve();
+  } else {
+    promise->RejectWithErrorMessage(errmsg);
+  }
 }
 
 // Callback of SetCookie.
-void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
-  RunCallbackInUI(
-      base::Bind(callback, success ? Cookies::SUCCESS : Cookies::FAILED));
+void OnSetCookie(scoped_refptr<util::Promise> promise, bool success) {
+  const std::string errmsg = success ? "" : "Setting cookie failed";
+  RunCallbackInUI(base::Bind(SettlePromiseInUI, std::move(promise), errmsg));
 }
 
 // Flushes cookie store in IO thread.
 void FlushCookieStoreOnIOThread(
     scoped_refptr<net::URLRequestContextGetter> getter,
-    const base::Closure& callback) {
-  GetCookieStore(getter)->FlushStore(base::BindOnce(RunCallbackInUI, callback));
+    scoped_refptr<util::Promise> promise) {
+  GetCookieStore(getter)->FlushStore(
+      base::BindOnce(ResolvePromiseInUI, promise));
 }
 
 // Sets cookie with |details| in IO thread.
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                    std::unique_ptr<base::DictionaryValue> details,
-                   const Cookies::SetCallback& callback) {
+                   scoped_refptr<util::Promise> promise) {
   std::string url, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
@@ -237,7 +266,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
           GURL(url), name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
-  auto completion_callback = base::BindOnce(OnSetCookie, callback);
+  auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     std::move(completion_callback).Run(false);
     return;
@@ -267,43 +296,56 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 Cookies::~Cookies() {}
 
-void Cookies::Get(const base::DictionaryValue& filter,
-                  const GetCallback& callback) {
+v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto copy = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(filter.Clone()));
   auto* getter = browser_context_->GetRequestContext();
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), std::move(copy),
-                     callback));
+                     promise));
+
+  return promise->GetHandle();
 }
 
-void Cookies::Remove(const GURL& url,
-                     const std::string& name,
-                     const base::Closure& callback) {
+v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
+                                       const std::string& name) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto* getter = browser_context_->GetRequestContext();
   base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(RemoveCookieOnIOThread, base::RetainedRef(getter), url,
-                     name, callback));
+      FROM_HERE, {content::BrowserThread::IO},
+      base::BindOnce(RemoveCookieOnIO, base::RetainedRef(getter), url, name,
+                     promise));
+
+  return promise->GetHandle();
 }
 
-void Cookies::Set(const base::DictionaryValue& details,
-                  const SetCallback& callback) {
+v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto copy = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(details.Clone()));
   auto* getter = browser_context_->GetRequestContext();
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
-                     callback));
+                     promise));
+
+  return promise->GetHandle();
 }
 
-void Cookies::FlushStore(const base::Closure& callback) {
+v8::Local<v8::Promise> Cookies::FlushStore() {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::IO},
+  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
                            base::BindOnce(FlushCookieStoreOnIOThread,
-                                          base::RetainedRef(getter), callback));
+                                          base::RetainedRef(getter), promise));
+
+  return promise->GetHandle();
 }
 
 void Cookies::OnCookieChanged(const CookieDetails* details) {
