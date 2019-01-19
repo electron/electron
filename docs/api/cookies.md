@@ -13,21 +13,30 @@ For example:
 const { session } = require('electron')
 
 // Query all cookies.
-session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(error, cookies)
-})
+session.defaultSession.cookies.get({})
+  .then((cookies) => {
+    // success
+  }).catch((error) => {
+    console.log(error)
+  })
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url: 'http://www.github.com' }, (error, cookies) => {
-  console.log(error, cookies)
-})
+session.defaultSession.cookies.get({ url: 'http://www.github.com' })
+  .then((cookies) => {
+    // success
+  }).catch((error) => {
+    console.log(error)
+  })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
 const cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
-session.defaultSession.cookies.set(cookie, (error) => {
-  if (error) console.error(error)
-})
+session.defaultSession.cookies.set(cookie)
+  .then(() => {
+    // success
+  }, (error) => {
+    console.error(error)
+  })
 ```
 
 ### Instance Events
@@ -55,7 +64,7 @@ expired.
 
 The following methods are available on instances of `Cookies`:
 
-#### `cookies.get(filter, callback)`
+#### `cookies.get(filter)`
 
 * `filter` Object
   * `url` String (optional) - Retrieves cookies which are associated with
@@ -66,14 +75,13 @@ The following methods are available on instances of `Cookies`:
   * `path` String (optional) - Retrieves cookies whose path matches `path`.
   * `secure` Boolean (optional) - Filters cookies by their Secure property.
   * `session` Boolean (optional) - Filters out session or persistent cookies.
-* `callback` Function
-  * `error` Error
-  * `cookies` [Cookie[]](structures/cookie.md) - an array of cookie objects.
 
-Sends a request to get all cookies matching `filter`, `callback` will be called
-with `callback(error, cookies)` on complete.
+* Returns `Promise<Cookie[]>` - A promise which resolves an array of cookie objects.
 
-#### `cookies.set(details, callback)`
+Sends a request to get all cookies matching `filter`, and resolves a promise with
+the response.
+
+#### `cookies.set(details)`
 
 * `details` Object
   * `url` String - The url to associate the cookie with.
@@ -88,23 +96,22 @@ with `callback(error, cookies)` on complete.
   * `expirationDate` Double (optional) - The expiration date of the cookie as the number of
     seconds since the UNIX epoch. If omitted then the cookie becomes a session
     cookie and will not be retained between sessions.
-* `callback` Function
-  * `error` Error
 
-Sets a cookie with `details`, `callback` will be called with `callback(error)`
-on complete.
+* Returns `Promise<void>` - A promise which resolves when the cookie has been set
 
-#### `cookies.remove(url, name, callback)`
+Sets a cookie with `details`.
+
+#### `cookies.remove(url, name)`
 
 * `url` String - The URL associated with the cookie.
 * `name` String - The name of cookie to remove.
-* `callback` Function
 
-Removes the cookies matching `url` and `name`, `callback` will called with
-`callback()` on complete.
+* Returns `Promise<void>` - A promise which resolves when the cookie has been removed
 
-#### `cookies.flushStore(callback)`
+Removes the cookies matching `url` and `name`
 
-* `callback` Function
+#### `cookies.flushStore()`
+
+* Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed
 
 Writes any unwritten cookies data to disk.
