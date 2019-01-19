@@ -8,6 +8,7 @@ You can use the [Menu] module to configure keyboard shortcuts that will
 be triggered only when the app is focused. To do so, specify an
 [`accelerator`] property when creating a [MenuItem].
 
+This will create a new application menu with the 'Print' item.
 ```js
 const { Menu, MenuItem } = require('electron')
 const menu = new Menu()
@@ -17,6 +18,21 @@ menu.append(new MenuItem({
   accelerator: 'CmdOrCtrl+P',
   click: () => { console.log('time to print stuff') }
 }))
+
+Menu.setApplicationMenu(menu);
+```
+
+Use this to append to the existing application menu:
+```js
+const { Menu, MenuItem } = require('electron')
+
+Menu.getApplicationMenu().append(new MenuItem({
+  label: 'Print',
+  accelerator: 'CmdOrCtrl+P',
+  click: () => { console.log('time to print stuff') }
+}))
+
+Menu.setApplicationMenu(Menu.getApplicationMenu());
 ```
 
 You can configure different key combinations based on the user's operating system.
