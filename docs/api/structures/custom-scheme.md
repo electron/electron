@@ -2,9 +2,9 @@
 
 * `scheme` String - Custom schemes to be registered with options.
 * `options` Object (optional)
-  * `standard` Boolean (optional) - Default true.
-  * `secure` Boolean (optional) - Default true.
-  * `bypassCSP` Boolean (optional) - Default true.
-  * `allowServiceWorkers` Boolean (optional) - Default true.
-  * `supportFetchAPI` Boolean (optional) - Default true.
-  * `corsEnabled` Boolean (optional) - Default true.
+  * `standard` Boolean (optional) - Default false.
+  * `secure` Boolean (optional) - Default false.
+  * `bypassCSP` Boolean (optional) - Default false.
+  * `allowServiceWorkers` Boolean (optional) - Default false.
+  * `supportFetchAPI` Boolean (optional) - Default false.
+  * `corsEnabled` Boolean (optional) - Default false.
