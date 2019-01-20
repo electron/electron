@@ -39,13 +39,13 @@ module gets emitted and can be called only once.
 Registers the `scheme` as standard, secure, bypasses content security policy for resources,
 allows registering ServiceWorker and supports fetch API.
 
-Specify an option with the value of `false` to omit it from the registration.
-An example of registering a privileged scheme, without bypassing Content Security Policy:
+Specify an option with the value of `true` to enable the capability.
+An example of registering a privileged scheme, with bypassing Content Security Policy:
 
 ```javascript
 const { protocol } = require('electron')
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'foo', options: { bypassCSP: false }}
+  { scheme: 'foo', options: { bypassCSP: true } }
 ])
 ```
 

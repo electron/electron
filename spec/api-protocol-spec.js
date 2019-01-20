@@ -1191,14 +1191,22 @@ describe('protocol module', () => {
   })
 
   describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+    const standardScheme = remote.getGlobal('standardScheme')
     const fixtures = path.resolve(__dirname, 'fixtures')
     let w = null
 
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
+    beforeEach((done) => {
+      protocol.unregisterProtocol(standardScheme, () => done())
     })
 
-    it('supports fetch api by default', function (done) {
+    afterEach((done) => {
+      closeWindow(w).then(() => {
+        w = null
+        done()
+      })
+    })
+
+    it('supports fetch api by default', (done) => {
       const url = 'file://' + fixtures + '/assets/logo.png'
       window.fetch(url)
         .then(function (response) {
@@ -1210,9 +1218,8 @@ describe('protocol module', () => {
         })
     })
 
-    it('allows CORS requests by default',
-      function (done) {
-        allowsCORSRequests('cors', 200, `<html>
+    it('allows CORS requests by default', (done) => {
+      allowsCORSRequests('cors', 200, `<html>
         <script>
         const {ipcRenderer} = require('electron')
         fetch('cors://myhost').then(function (response) {
@@ -1221,12 +1228,11 @@ describe('protocol module', () => {
           ipcRenderer.send('response', 'failed')
         })
         </script>
-      </html>`, done)
-      })
+        </html>`, done)
+    })
 
-    it('disallows CORS, but allows fetch requests, when specified',
-      function (done) {
-        allowsCORSRequests('no-cors', 'failed', `<html>
+    it('disallows CORS, but allows fetch requests, when specified', (done) => {
+      allowsCORSRequests('no-cors', 'failed', `<html>
         <script>
         const {ipcRenderer} = require('electron')
         fetch('no-cors://myhost').then(function (response) {
@@ -1235,12 +1241,11 @@ describe('protocol module', () => {
           ipcRenderer.send('response', 'failed')
         })
         </script>
-      </html>`, done)
-      })
+        </html>`, done)
+    })
 
-    it('allows CORS, but disallows fetch requests, when specified',
-      function (done) {
-        allowsCORSRequests('no-fetch', 'failed', `<html>
+    it('allows CORS, but disallows fetch requests, when specified', (done) => {
+      allowsCORSRequests('no-fetch', 'failed', `<html>
         <script>
         const {ipcRenderer} = require('electron')
         fetch('no-fetch://myhost').then(function
@@ -1250,41 +1255,33 @@ describe('protocol module', () => {
           ipcRenderer.send('response', 'failed')
         })
         </script>
-      </html>`, done)
-      })
+        </html>`, done)
+    })
 
     function allowsCORSRequests (corsScheme, expected, content, done) {
-      const standardScheme = remote.getGlobal('standardScheme')
-
       const url = standardScheme + '://fake-host'
-      w = new BrowserWindow({ show: true })
-      after(function (done) {
-        protocol.unregisterProtocol(corsScheme, function () {
-          protocol.unregisterProtocol(standardScheme, function () {
-            done()
-          })
-        })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
 
-      const handler =
-            function (request, callback) {
-              callback({ data: content, mimeType: 'text/html' })
-            }
-      protocol.registerStringProtocol(
-        standardScheme, handler, function (error) {
-          if (error) { return done(error) }
-        })
+      const handler = (request, callback) => {
+        callback({ data: content, mimeType: 'text/html' })
+      }
+      protocol.registerStringProtocol(standardScheme, handler, (error) => {
+        if (error) { return done(error) }
+      })
 
-      protocol.registerStringProtocol(
-        corsScheme,
-        function (request, callback) {
+      protocol.registerStringProtocol(corsScheme,
+        (request, callback) => {
           callback('')
-        },
-        function (error) {
+        }, (error) => {
           if (error) { return done(error) }
           ipcMain.once('response', function (event, status) {
             assert.strictEqual(status, expected)
-            done()
+            protocol.unregisterProtocol(corsScheme, () => done())
           })
           w.loadURL(url)
         })

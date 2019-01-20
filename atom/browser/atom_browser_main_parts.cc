@@ -413,6 +413,9 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
+  // url::Add*Scheme are not threadsafe, this helps prevent data races.
+  url::LockSchemeRegistries();
+
 #if defined(USE_X11)
   ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif

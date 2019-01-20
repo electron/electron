@@ -228,10 +228,12 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   ConvertStringWithSeparatorToVector(&splited, ",", switches::kSecureSchemes);
   for (const std::string& scheme : splited)
     schemes->secure_schemes.push_back(scheme);
+
   ConvertStringWithSeparatorToVector(&splited, ",",
                                      switches::kBypassCSPSchemes);
   for (const std::string& scheme : splited)
     schemes->csp_bypassing_schemes.push_back(scheme);
+
   ConvertStringWithSeparatorToVector(&splited, ",", switches::kCORSSchemes);
   for (const std::string& scheme : splited)
     schemes->cors_enabled_schemes.push_back(scheme);

@@ -30,12 +30,12 @@ namespace {
 std::vector<std::string> g_standard_schemes;
 
 struct SchemeOptions {
-  bool standard = true;
-  bool secure = true;
-  bool bypassCSP = true;
-  bool allowServiceWorkers = true;
-  bool supportFetchAPI = true;
-  bool corsEnabled = true;
+  bool standard = false;
+  bool secure = false;
+  bool bypassCSP = false;
+  bool allowServiceWorkers = false;
+  bool supportFetchAPI = false;
+  bool corsEnabled = false;
 };
 
 struct CustomScheme {
@@ -60,6 +60,7 @@ struct Converter<CustomScheme> {
     mate::Dictionary opt;
     // options are optional. Default values specified in SchemeOptions are used
     if (dict.Get("options", &opt)) {
+      opt.Get("standard", &(out->options.standard));
       opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("secure", &(out->options.secure));
       opt.Get("bypassCSP", &(out->options.bypassCSP));
@@ -89,15 +90,15 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
     return;
   }
 
-  std::vector<std::string> standard_schemes, secure_schemes,
-      cspbypassing_schemes, fetch_schemes, service_worker_schemes, cors_schemes;
-  auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
+  std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
+      service_worker_schemes, cors_schemes;
   for (const auto& custom_scheme : custom_schemes) {
     // Register scheme to privileged list (https, wss, data, chrome-extension)
     if (custom_scheme.options.standard) {
+      auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
       url::AddStandardScheme(custom_scheme.scheme.c_str(),
                              url::SCHEME_WITH_HOST);
-      standard_schemes.push_back(custom_scheme.scheme);
+      g_standard_schemes.push_back(custom_scheme.scheme);
       policy->RegisterWebSafeScheme(custom_scheme.scheme);
     }
     if (custom_scheme.options.secure) {
@@ -110,7 +111,7 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
     }
     if (custom_scheme.options.corsEnabled) {
       cors_schemes.push_back(custom_scheme.scheme);
-      url::AddCORSEnabledScheme(custom_scheme.scheme.c_str());
+      url::AddCorsEnabledScheme(custom_scheme.scheme.c_str());
     }
     if (custom_scheme.options.supportFetchAPI) {
       fetch_schemes.push_back(custom_scheme.scheme);
@@ -135,10 +136,7 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
   AppendSchemesToCmdLine(atom::switches::kFetchSchemes, fetch_schemes);
   AppendSchemesToCmdLine(atom::switches::kServiceWorkerSchemes,
                          service_worker_schemes);
-  AppendSchemesToCmdLine(atom::switches::kStandardSchemes, standard_schemes);
-
-  g_standard_schemes.insert(g_standard_schemes.end(), standard_schemes.begin(),
-                            standard_schemes.end());
+  AppendSchemesToCmdLine(atom::switches::kStandardSchemes, g_standard_schemes);
 }
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)

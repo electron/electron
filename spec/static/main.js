@@ -100,9 +100,9 @@ global.zoomScheme = 'zoom'
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, options: { standard: true, secure: true } },
   { scheme: global.zoomScheme, options: { standard: true, secure: true } },
-  { scheme: 'cors', options: { corsEnabled: true } },
-  { scheme: 'no-cors', options: { supportFetchAPI: true, corsEnabled: false } },
-  { scheme: 'no-fetch', options: { corsEnabled: true, supportFetchAPI: false } }
+  { scheme: 'cors', options: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'no-cors', options: { supportFetchAPI: true } },
+  { scheme: 'no-fetch', options: { corsEnabled: true } }
 ])
 
 app.on('window-all-closed', function () {
