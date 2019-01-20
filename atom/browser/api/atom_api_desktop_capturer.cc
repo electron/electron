@@ -137,11 +137,12 @@ bool DesktopCapturer::ShouldScheduleNextRefresh(DesktopMediaList* list) {
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
-  std::vector<DesktopCapturer::Source> window_sources;
   if (capture_window_ &&
       list->GetMediaListType() == content::DesktopMediaID::TYPE_WINDOW) {
     capture_window_ = false;
     const auto& media_list_sources = list->GetSources();
+    std::vector<DesktopCapturer::Source> window_sources;
+    window_sources.reserve(media_list_sources.size());
     for (const auto& media_list_source : media_list_sources) {
       window_sources.emplace_back(DesktopCapturer::Source{
           media_list_source, std::string(), fetch_window_icons_});
@@ -150,11 +151,12 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
               std::back_inserter(captured_sources_));
   }
 
-  std::vector<DesktopCapturer::Source> screen_sources;
   if (capture_screen_ &&
       list->GetMediaListType() == content::DesktopMediaID::TYPE_SCREEN) {
     capture_screen_ = false;
     const auto& media_list_sources = list->GetSources();
+    std::vector<DesktopCapturer::Source> screen_sources;
+    screen_sources.reserve(media_list_sources.size());
     for (const auto& media_list_source : media_list_sources) {
       screen_sources.emplace_back(
           DesktopCapturer::Source{media_list_source, std::string()});
