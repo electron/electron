@@ -1156,7 +1156,7 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   std::vector<mate::Dictionary> result;
   result.reserve(app_metrics_.size());
   int processor_count = base::SysInfo::NumberOfProcessors();
-  
+
   for (const auto& process_metric : app_metrics_) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
