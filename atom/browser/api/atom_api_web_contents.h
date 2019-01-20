@@ -480,11 +480,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Called when received a message from renderer.
   void OnRendererMessage(content::RenderFrameHost* frame_host,
+                         bool internal,
                          const std::string& channel,
                          const base::ListValue& args);
 
   // Called when received a synchronous message from renderer.
   void OnRendererMessageSync(content::RenderFrameHost* frame_host,
+                             bool internal,
                              const std::string& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
@@ -496,6 +498,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            int32_t web_contents_id,
                            const std::string& channel,
                            const base::ListValue& args);
+
+  // Called when received a message from renderer to host.
+  void OnRendererMessageHost(content::RenderFrameHost* frame_host,
+                             const std::string& channel,
+                             const base::ListValue& args);
 
   // Called when received a synchronous message from renderer to
   // set temporary zoom level.

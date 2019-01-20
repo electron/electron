@@ -280,10 +280,12 @@ struct WebContents::FrameDispatchHelper {
     api_web_contents->OnGetZoomLevel(rfh, reply_msg);
   }
 
-  void OnRendererMessageSync(const std::string& channel,
+  void OnRendererMessageSync(bool internal,
+                             const std::string& channel,
                              const base::ListValue& args,
                              IPC::Message* message) {
-    api_web_contents->OnRendererMessageSync(rfh, channel, args, message);
+    api_web_contents->OnRendererMessageSync(rfh, internal, channel, args,
+                                            message);
   }
 };
 
@@ -1070,6 +1072,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_Message_Sync, &helper,
                                     FrameDispatchHelper::OnRendererMessageSync)
     IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_To, OnRendererMessageTo)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_Host, OnRendererMessageHost)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(
         AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
@@ -2206,18 +2209,22 @@ AtomBrowserContext* WebContents::GetBrowserContext() const {
 }
 
 void WebContents::OnRendererMessage(content::RenderFrameHost* frame_host,
+                                    bool internal,
                                     const std::string& channel,
                                     const base::ListValue& args) {
-  // webContents.emit(channel, new Event(), args...);
-  EmitWithSender(channel, frame_host, nullptr, args);
+  // webContents.emit('-ipc-message', new Event(), internal, channel, args);
+  EmitWithSender("-ipc-message", frame_host, nullptr, internal, channel, args);
 }
 
 void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
+                                        bool internal,
                                         const std::string& channel,
                                         const base::ListValue& args,
                                         IPC::Message* message) {
-  // webContents.emit(channel, new Event(sender, message), args...);
-  EmitWithSender(channel, frame_host, message, args);
+  // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
+  // channel, args);
+  EmitWithSender("-ipc-message-sync", frame_host, message, internal, channel,
+                 args);
 }
 
 void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
@@ -2233,6 +2240,13 @@ void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel, args,
                                            ID());
   }
+}
+
+void WebContents::OnRendererMessageHost(content::RenderFrameHost* frame_host,
+                                        const std::string& channel,
+                                        const base::ListValue& args) {
+  // webContents.emit('ipc-message-host', new Event(), channel, args);
+  EmitWithSender("ipc-message-host", frame_host, nullptr, channel, args);
 }
 
 // static

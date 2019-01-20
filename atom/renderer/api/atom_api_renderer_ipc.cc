@@ -5,7 +5,6 @@
 #include <string>
 
 #include "atom/common/api/api_messages.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
@@ -29,6 +28,7 @@ RenderFrame* GetCurrentRenderFrame() {
 }
 
 void Send(mate::Arguments* args,
+          bool internal,
           const std::string& channel,
           const base::ListValue& arguments) {
   RenderFrame* render_frame = GetCurrentRenderFrame();
@@ -36,13 +36,14 @@ void Send(mate::Arguments* args,
     return;
 
   bool success = render_frame->Send(new AtomFrameHostMsg_Message(
-      render_frame->GetRoutingID(), channel, arguments));
+      render_frame->GetRoutingID(), internal, channel, arguments));
 
   if (!success)
     args->ThrowError("Unable to send AtomFrameHostMsg_Message");
 }
 
 base::ListValue SendSync(mate::Arguments* args,
+                         bool internal,
                          const std::string& channel,
                          const base::ListValue& arguments) {
   base::ListValue result;
@@ -52,7 +53,7 @@ base::ListValue SendSync(mate::Arguments* args,
     return result;
 
   IPC::SyncMessage* message = new AtomFrameHostMsg_Message_Sync(
-      render_frame->GetRoutingID(), channel, arguments, &result);
+      render_frame->GetRoutingID(), internal, channel, arguments, &result);
   bool success = render_frame->Send(message);
 
   if (!success)
@@ -79,6 +80,20 @@ void SendTo(mate::Arguments* args,
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_To");
 }
 
+void SendToHost(mate::Arguments* args,
+                const std::string& channel,
+                const base::ListValue& arguments) {
+  RenderFrame* render_frame = GetCurrentRenderFrame();
+  if (render_frame == nullptr)
+    return;
+
+  bool success = render_frame->Send(new AtomFrameHostMsg_Message_Host(
+      render_frame->GetRoutingID(), channel, arguments));
+
+  if (!success)
+    args->ThrowError("Unable to send AtomFrameHostMsg_Message_Host");
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -87,6 +102,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("send", &Send);
   dict.SetMethod("sendSync", &SendSync);
   dict.SetMethod("sendTo", &SendTo);
+  dict.SetMethod("sendToHost", &SendToHost);
 }
 
 }  // namespace

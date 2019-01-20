@@ -114,11 +114,12 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
     auto context = renderer_client_->GetContext(frame, isolate);
     v8::Context::Scope context_scope(context);
 
-    v8::Local<v8::Value> argv[] = {mate::ConvertToV8(isolate, channel),
+    v8::Local<v8::Value> argv[] = {mate::ConvertToV8(isolate, internal),
+                                   mate::ConvertToV8(isolate, channel),
                                    mate::ConvertToV8(isolate, args),
                                    mate::ConvertToV8(isolate, sender_id)};
     renderer_client_->InvokeIpcCallback(
-        context, internal ? "onInternalMessage" : "onMessage",
+        context, "onMessage",
         std::vector<v8::Local<v8::Value>>(argv, argv + node::arraysize(argv)));
   }
 

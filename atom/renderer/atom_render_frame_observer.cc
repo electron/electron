@@ -212,11 +212,10 @@ void AtomRenderFrameObserver::OnTakeHeapSnapshot(
   bool success = TakeHeapSnapshot(blink::MainThreadIsolate(), &file);
 
   base::ListValue args;
-  args.AppendString(channel);
   args.AppendBoolean(success);
 
   render_frame_->Send(new AtomFrameHostMsg_Message(
-      render_frame_->GetRoutingID(), "ipc-internal-message", args));
+      render_frame_->GetRoutingID(), true, channel, args));
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
