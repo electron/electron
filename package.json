@@ -54,7 +54,7 @@
     "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
-    "precommit": "python script/run-clang-format.py -r -c atom/ chromium_src/ && node ./script/lint.js -c && remark docs -qf || (echo \"Code not formatted correctly.\" && exit 1)",
+    "precommit": "lint-staged",
     "prepack": "check-for-leaks",
     "prepush": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
@@ -73,12 +73,15 @@
   },
   "lint-staged": {
     "*.{js,ts}": [
-      "npm run lint:js --fix",
+      "node script/lint.js --js --fix --only --",
       "git add"
     ],
     "*.{cc,mm,c,h}": [
-      "python script/run-clang-format.py -r -c --fix atom/ chromium_src/",
+      "python script/run-clang-format.py -r -c --fix",
       "git add"
+    ],
+    "*.md": [
+      "remark -qf"
     ]
   }
 }
