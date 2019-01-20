@@ -76,6 +76,19 @@ describe('<webview> tag', function () {
     await emittedOnce(ipcMain, 'pong')
   })
 
+  it('works with sandbox', async () => {
+    const w = await openTheWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true,
+        nodeIntegration: true,
+        sandbox: true
+      }
+    })
+    w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
+    await emittedOnce(ipcMain, 'pong')
+  })
+
   it('works with contextIsolation', async () => {
     const w = await openTheWindow({
       show: false,
@@ -83,6 +96,20 @@ describe('<webview> tag', function () {
         webviewTag: true,
         nodeIntegration: true,
         contextIsolation: true
+      }
+    })
+    w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
+    await emittedOnce(ipcMain, 'pong')
+  })
+
+  it('works with contextIsolation + sandbox', async () => {
+    const w = await openTheWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true,
+        nodeIntegration: true,
+        contextIsolation: true,
+        sandbox: true
       }
     })
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
@@ -1349,47 +1376,56 @@ describe('<webview> tag', function () {
       if (div != null) div.remove()
     })
 
-    it('emits resize events', async () => {
-      const firstResizeSignal = waitForEvent(webview, 'resize')
-      const domReadySignal = waitForEvent(webview, 'dom-ready')
+    const generateSpecs = (description, sandbox) => {
+      describe(description, () => {
+        it('emits resize events', async () => {
+          const firstResizeSignal = waitForEvent(webview, 'resize')
+          const domReadySignal = waitForEvent(webview, 'dom-ready')
 
-      webview.src = `file://${fixtures}/pages/a.html`
-      div.appendChild(webview)
-      document.body.appendChild(div)
+          webview.src = `file://${fixtures}/pages/a.html`
+          webview.webpreferences = `sandbox=${sandbox ? 'yes' : 'no'}`
+          div.appendChild(webview)
+          document.body.appendChild(div)
 
-      const firstResizeEvent = await firstResizeSignal
-      expect(firstResizeEvent.target).to.equal(webview)
-      expect(firstResizeEvent.newWidth).to.equal(100)
-      expect(firstResizeEvent.newHeight).to.equal(10)
+          const firstResizeEvent = await firstResizeSignal
+          expect(firstResizeEvent.target).to.equal(webview)
+          expect(firstResizeEvent.newWidth).to.equal(100)
+          expect(firstResizeEvent.newHeight).to.equal(10)
 
-      await domReadySignal
+          await domReadySignal
 
-      const secondResizeSignal = waitForEvent(webview, 'resize')
+          const secondResizeSignal = waitForEvent(webview, 'resize')
 
-      const newWidth = 1234
-      const newHeight = 789
-      div.style.width = `${newWidth}px`
-      div.style.height = `${newHeight}px`
+          const newWidth = 1234
+          const newHeight = 789
+          div.style.width = `${newWidth}px`
+          div.style.height = `${newHeight}px`
 
-      const secondResizeEvent = await secondResizeSignal
-      expect(secondResizeEvent.target).to.equal(webview)
-      expect(secondResizeEvent.newWidth).to.equal(newWidth)
-      expect(secondResizeEvent.newHeight).to.equal(newHeight)
-    })
+          const secondResizeEvent = await secondResizeSignal
+          expect(secondResizeEvent.target).to.equal(webview)
+          expect(secondResizeEvent.newWidth).to.equal(newWidth)
+          expect(secondResizeEvent.newHeight).to.equal(newHeight)
+        })
 
-    it('emits focus event', async () => {
-      const domReadySignal = waitForEvent(webview, 'dom-ready')
-      webview.src = `file://${fixtures}/pages/a.html`
-      document.body.appendChild(webview)
+        it('emits focus event', async () => {
+          const domReadySignal = waitForEvent(webview, 'dom-ready')
+          webview.src = `file://${fixtures}/pages/a.html`
+          webview.webpreferences = `sandbox=${sandbox ? 'yes' : 'no'}`
+          document.body.appendChild(webview)
 
-      await domReadySignal
+          await domReadySignal
 
-      // If this test fails, check if webview.focus() still works.
-      const focusSignal = waitForEvent(webview, 'focus')
-      webview.focus()
+          // If this test fails, check if webview.focus() still works.
+          const focusSignal = waitForEvent(webview, 'focus')
+          webview.focus()
 
-      await focusSignal
-    })
+          await focusSignal
+        })
+      })
+    }
+
+    generateSpecs('without sandbox', false)
+    generateSpecs('with sandbox', true)
   })
 
   describe('zoom behavior', () => {
