@@ -138,7 +138,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
   void RegisterOutOfProcessServices(OutOfProcessServiceMap* services) override;
-  std::unique_ptr<base::Value> GetServiceManifestOverlay(
+  base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
   net::NetLog* GetNetLog() override;
   content::MediaObserver* GetMediaObserver() override;

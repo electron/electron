@@ -714,8 +714,8 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
 #endif
 }
 
-std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
-    base::StringPiece name) {
+base::Optional<service_manager::Manifest>
+AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
   int id = -1;
   if (name == content::mojom::kBrowserServiceName)
@@ -724,10 +724,11 @@ std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
     id = IDR_ELECTRON_CONTENT_PACKAGED_SERVICES_MANIFEST_OVERLAY;
 
   if (id == -1)
-    return nullptr;
+    return base::nullopt;
 
   base::StringPiece manifest_contents = rb.GetRawDataResource(id);
-  return base::JSONReader::Read(manifest_contents);
+  return service_manager::Manifest::FromValueDeprecated(
+      base::JSONReader::Read(manifest_contents));
 }
 
 net::NetLog* AtomBrowserClient::GetNetLog() {

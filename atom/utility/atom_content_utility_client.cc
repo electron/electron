@@ -10,6 +10,7 @@
 #include "content/public/child/child_thread.h"
 #include "content/public/common/service_manager_connection.h"
 #include "content/public/common/simple_connection_filter.h"
+#include "content/public/utility/utility_thread.h"
 #include "services/proxy_resolver/proxy_resolver_service.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/sandbox/switches.h"
