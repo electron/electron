@@ -62,7 +62,7 @@ property is `true` in the main process, otherwise it is `undefined`.
 ### `process.isMainFrame`
 
 A `Boolean`, `true` when the current renderer context is the "main" renderer
-frame.  If you want the ID of the current frame you should use `webFrame.routingId`.
+frame. If you want the ID of the current frame you should use `webFrame.routingId`.
 
 ### `process.mas`
 
