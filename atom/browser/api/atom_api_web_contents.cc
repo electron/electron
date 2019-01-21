@@ -999,8 +999,7 @@ void WebContents::DevToolsOpened() {
 
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = managed_web_contents()->GetDevToolsWebContents();
-  bool has_window =
-      devtools->GetUserData(NativeWindowRelay::kNativeWindowRelayUserDataKey);
+  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
   if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
 

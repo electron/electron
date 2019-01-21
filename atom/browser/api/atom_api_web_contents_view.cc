@@ -31,8 +31,12 @@ class WebContentsViewRelay
 
   atom::api::WebContentsView* view_ = nullptr;
 
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
+
   DISALLOW_COPY_AND_ASSIGN(WebContentsViewRelay);
 };
+
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsViewRelay)
 
 }  // namespace
 

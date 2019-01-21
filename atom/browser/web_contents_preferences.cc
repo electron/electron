@@ -436,4 +436,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->default_encoding = encoding;
 }
 
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)
+
 }  // namespace atom

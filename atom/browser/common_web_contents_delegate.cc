@@ -213,8 +213,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
                                             owner_window->GetWeakPtr());
   } else {
     owner_window_ = nullptr;
-    web_contents->RemoveUserData(
-        NativeWindowRelay::kNativeWindowRelayUserDataKey);
+    web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());
   }
 #if BUILDFLAG(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
