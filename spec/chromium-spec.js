@@ -175,8 +175,8 @@ describe('chromium feature', () => {
           session: ses
         }
       })
-      w.webContents.on('ipc-message', (event, args) => {
-        if (args[0] === 'deviceIds') deviceIds.push(args[1])
+      w.webContents.on('ipc-message', (event, channel, deviceId) => {
+        if (channel === 'deviceIds') deviceIds.push(deviceId)
         if (deviceIds.length === 2) {
           assert.notDeepStrictEqual(deviceIds[0], deviceIds[1])
           closeWindow(w).then(() => {
@@ -216,13 +216,13 @@ describe('chromium feature', () => {
           partition: 'sw-file-scheme-spec'
         }
       })
-      w.webContents.on('ipc-message', (event, args) => {
-        if (args[0] === 'reload') {
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
           w.webContents.reload()
-        } else if (args[0] === 'error') {
-          done(args[1])
-        } else if (args[0] === 'response') {
-          assert.strictEqual(args[1], 'Hello from serviceWorker!')
+        } else if (channel === 'error') {
+          done(message)
+        } else if (channel === 'response') {
+          assert.strictEqual(message, 'Hello from serviceWorker!')
           session.fromPartition('sw-file-scheme-spec').clearStorageData({
             storages: ['serviceworkers']
           }, () => done())
@@ -255,13 +255,13 @@ describe('chromium feature', () => {
           session: customSession
         }
       })
-      w.webContents.on('ipc-message', (event, args) => {
-        if (args[0] === 'reload') {
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
           w.webContents.reload()
-        } else if (args[0] === 'error') {
-          done(`unexpected error : ${args[1]}`)
-        } else if (args[0] === 'response') {
-          assert.strictEqual(args[1], 'Hello from serviceWorker!')
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`)
+        } else if (channel === 'response') {
+          assert.strictEqual(message, 'Hello from serviceWorker!')
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }, () => {
@@ -298,8 +298,8 @@ describe('chromium feature', () => {
           partition: 'geolocation-spec'
         }
       })
-      w.webContents.on('ipc-message', (event, args) => {
-        if (args[0] === 'success') {
+      w.webContents.on('ipc-message', (event, channel) => {
+        if (channel === 'success') {
           done()
         } else {
           done('unexpected response from geolocation api')
@@ -584,18 +584,18 @@ describe('chromium feature', () => {
 
   describe('window.opener', () => {
     const url = `file://${fixtures}/pages/window-opener.html`
-    it('is null for main window', (done) => {
+    it('is null for main window', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
         }
       })
-      w.webContents.once('ipc-message', (event, args) => {
-        assert.deepStrictEqual(args, ['opener', null])
-        done()
-      })
+      const promise = emittedOnce(w.webContents, 'ipc-message')
       w.loadFile(path.join(fixtures, 'pages', 'window-opener.html'))
+      const [, channel, opener] = await promise
+      expect(channel).to.equal('opener')
+      expect(opener).to.equal(null)
     })
 
     it('is not null for window opened by window.open', (done) => {

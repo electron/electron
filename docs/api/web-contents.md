@@ -673,6 +673,26 @@ Returns:
 
 Emitted when the preload script `preloadPath` throws an unhandled exception `error`.
 
+#### Event: 'ipc-message'
+
+Returns:
+
+* `event` Event
+* `channel` String
+* `...args` any[]
+
+Emitted when the renderer process sends an asynchronous message via `ipcRenderer.send()`.
+
+#### Event: 'ipc-message-sync'
+
+Returns:
+
+* `event` Event
+* `channel` String
+* `...args` any[]
+
+Emitted when the renderer process sends a synchronous message via `ipcRenderer.sendSync()`.
+
 #### Event: 'desktop-capturer-get-sources'
 
 Returns:
