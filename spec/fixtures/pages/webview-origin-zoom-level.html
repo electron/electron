@@ -13,8 +13,7 @@
     document.body.appendChild(view2)
   })
   view2.addEventListener('dom-ready', () => {
-    view2.getZoomLevel((level) => {
-      ipcRenderer.send('webview-origin-zoom-level', level)
-    })
+    const zoomLevel = view2.getZoomLevel()
+    ipcRenderer.send('webview-origin-zoom-level', zoomLevel)
   })
 </script>
