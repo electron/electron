@@ -182,7 +182,14 @@ bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
 }
 
 void BrowserWindow::OnCloseContents() {
-  DCHECK(web_contents());
+  // On some machines it may happen that the window gets destroyed for twice,
+  // checking web_contents() can effectively guard against that.
+  // https://github.com/electron/electron/issues/16202.
+  //
+  // TODO(zcbenz): We should find out the root cause and improve the closing
+  // procedure of BrowserWindow.
+  if (!web_contents())
+    return;
 
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
