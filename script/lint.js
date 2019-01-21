@@ -116,12 +116,12 @@ const LINTERS = [ {
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'c++', 'javascript', 'python', 'gn', 'help', 'changed', 'fix', 'verbose' ],
+    boolean: [ 'c++', 'javascript', 'python', 'gn', 'help', 'changed', 'fix', 'verbose', 'only' ],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
     unknown: arg => { help = true }
   })
   if (help || opts.help) {
-    console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix]')
+    console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]')
     process.exit(0)
   }
   return opts
@@ -161,6 +161,8 @@ async function findFiles (args, linter) {
     if (!whitelist.size) {
       return []
     }
+  } else if (args.only) {
+    whitelist = new Set(args._)
   }
 
   // accumulate the raw list of files

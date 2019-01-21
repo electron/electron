@@ -4,6 +4,7 @@
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
+    "@octokit/rest": "^16.3.2",
     "aliasify": "^2.1.0",
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
@@ -18,9 +19,9 @@
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-mocha": "^5.2.0",
     "folder-hash": "^2.1.1",
-    "@octokit/rest": "^16.3.2",
     "husky": "^0.14.3",
     "lint": "^1.1.2",
+    "lint-staged": "^8.1.0",
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
     "octicons": "^7.3.0",
@@ -53,7 +54,7 @@
     "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
-    "precommit": "python script/run-clang-format.py -r -c atom/ chromium_src/ && node ./script/lint.js -c && remark docs -qf || (echo \"Code not formatted correctly.\" && exit 1)",
+    "precommit": "lint-staged",
     "prepack": "check-for-leaks",
     "prepush": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
@@ -69,5 +70,18 @@
     "replacements": {
       "@electron/internal/(.+)": "./lib/$1"
     }
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "node script/lint.js --js --fix --only --",
+      "git add"
+    ],
+    "*.{cc,mm,c,h}": [
+      "python script/run-clang-format.py -r -c --fix",
+      "git add"
+    ],
+    "*.md": [
+      "remark -qf"
+    ]
   }
 }
