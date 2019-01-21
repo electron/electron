@@ -5,9 +5,10 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
+#include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "content/public/common/media_stream_request.h"
+#include "third_party/blink/public/common/mediastream/media_stream_request.h"
 
 namespace atom {
 
@@ -36,7 +37,7 @@ class WebContentsPermissionHelper
 
   // Synchronous Checks
   bool CheckMediaAccessPermission(const GURL& security_origin,
-                                  content::MediaStreamType type) const;
+                                  blink::MediaStreamType type) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);

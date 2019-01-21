@@ -16,11 +16,11 @@
 
 namespace {
 
-std::string MediaStreamTypeToString(content::MediaStreamType type) {
+std::string MediaStreamTypeToString(blink::MediaStreamType type) {
   switch (type) {
-    case content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
+    case blink::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
       return "audio";
-    case content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
+    case blink::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
       return "video";
     default:
       return "unknown";
@@ -40,7 +40,7 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
   if (allowed)
     controller.TakeAction();
   else
-    controller.Deny(content::MEDIA_DEVICE_PERMISSION_DENIED);
+    controller.Deny(blink::MEDIA_DEVICE_PERMISSION_DENIED);
 }
 
 void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
@@ -105,11 +105,11 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   base::DictionaryValue details;
   std::unique_ptr<base::ListValue> media_types(new base::ListValue);
   if (request.audio_type ==
-      content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
+      blink::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
     media_types->AppendString("audio");
   }
   if (request.video_type ==
-      content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
+      blink::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
     media_types->AppendString("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
@@ -145,7 +145,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
     const GURL& security_origin,
-    content::MediaStreamType type) const {
+    blink::MediaStreamType type) const {
   base::DictionaryValue details;
   details.SetString("securityOrigin", security_origin.spec());
   details.SetString("mediaType", MediaStreamTypeToString(type));
