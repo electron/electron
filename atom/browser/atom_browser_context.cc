@@ -11,7 +11,6 @@
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/atom_paths.h"
 #include "atom/browser/atom_permission_manager.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/cookie_change_notifier.h"
 #include "atom/browser/net/resolve_proxy_helper.h"
 #include "atom/browser/pref_store_delegate.h"
@@ -20,17 +19,14 @@
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/zoom_level_delegate.h"
 #include "atom/common/application_info.h"
-#include "atom/common/atom_version.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_paths.h"
-#include "chrome/common/chrome_version.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/prefs/json_pref_store.h"
@@ -42,7 +38,6 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/common/user_agent.h"
 #include "net/base/escape.h"
 
 using content::BrowserThread;
@@ -50,14 +45,6 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
-
-std::string RemoveWhitespace(const std::string& str) {
-  std::string trimmed;
-  if (base::RemoveChars(str, " ", &trimmed))
-    return trimmed;
-  else
-    return str;
-}
 
 // Convert string to lower case and escape it.
 std::string MakePartitionName(const std::string& input) {
@@ -78,19 +65,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
-  // Construct user agent string.
-  Browser* browser = Browser::Get();
-  std::string name = RemoveWhitespace(browser->GetName());
-  std::string user_agent;
-  if (name == ATOM_PRODUCT_NAME) {
-    user_agent = "Chrome/" CHROME_VERSION_STRING " " ATOM_PRODUCT_NAME
-                 "/" ATOM_VERSION_STRING;
-  } else {
-    user_agent = base::StringPrintf(
-        "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
-        name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
-  }
-  user_agent_ = content::BuildUserAgentFromProduct(user_agent);
+  user_agent_ = GetApplicationUserAgent();
 
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
