@@ -278,4 +278,6 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   SetZoomLevel(zoom_level);
 }
 
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsZoomController)
+
 }  // namespace atom

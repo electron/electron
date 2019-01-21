@@ -180,4 +180,6 @@ void PrintPreviewMessageHandler::RunPrintToPDFCallback(
   print_to_pdf_callback_map_.erase(request_id);
 }
 
+WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintPreviewMessageHandler)
+
 }  // namespace atom

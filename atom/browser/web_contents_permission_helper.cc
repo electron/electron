@@ -154,4 +154,6 @@ bool WebContentsPermissionHelper::CheckMediaAccessPermission(
   return CheckPermission(content::PermissionType::AUDIO_CAPTURE, &details);
 }
 
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)
+
 }  // namespace atom
