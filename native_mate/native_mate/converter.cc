@@ -140,13 +140,16 @@ bool Converter<double>::FromV8(Isolate* isolate,
 }
 
 Local<Value> Converter<const char*>::ToV8(Isolate* isolate, const char* val) {
-  return v8::String::NewFromUtf8(isolate, val);
+  return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
+      .ToLocalChecked();
 }
 
 Local<Value> Converter<base::StringPiece>::ToV8(Isolate* isolate,
                                                 const base::StringPiece& val) {
-  return v8::String::NewFromUtf8(isolate, val.data(), v8::String::kNormalString,
-                                 static_cast<uint32_t>(val.length()));
+  return v8::String::NewFromUtf8(isolate, val.data(),
+                                 v8::NewStringType::kNormal,
+                                 static_cast<uint32_t>(val.length()))
+      .ToLocalChecked();
 }
 
 Local<Value> Converter<std::string>::ToV8(Isolate* isolate,
@@ -255,8 +258,9 @@ bool Converter<Local<Value>>::FromV8(Isolate* isolate,
 v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
                                      const base::StringPiece& val) {
   return v8::String::NewFromUtf8(isolate, val.data(),
-                                 v8::String::kInternalizedString,
-                                 static_cast<uint32_t>(val.length()));
+                                 v8::NewStringType::kInternalized,
+                                 static_cast<uint32_t>(val.length()))
+      .ToLocalChecked();
 }
 
 }  // namespace mate
