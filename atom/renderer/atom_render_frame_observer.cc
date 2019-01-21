@@ -216,7 +216,7 @@ void AtomRenderFrameObserver::OnTakeHeapSnapshot(
   args.AppendBoolean(success);
 
   render_frame_->Send(new AtomFrameHostMsg_Message(
-      render_frame_->GetRoutingID(), "ipc-message", args));
+      render_frame_->GetRoutingID(), "ipc-internal-message", args));
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
