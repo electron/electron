@@ -7,12 +7,14 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "content/public/child/child_thread.h"
 #include "content/public/common/service_manager_connection.h"
 #include "content/public/common/simple_connection_filter.h"
 #include "content/public/utility/utility_thread.h"
 #include "services/proxy_resolver/proxy_resolver_service.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
+#include "services/service_manager/public/cpp/service.h"
 #include "services/service_manager/sandbox/switches.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -29,6 +31,40 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {
+
+namespace {
+
+void RunServiceAsyncThenTerminateProcess(
+    std::unique_ptr<service_manager::Service> service) {
+  service_manager::Service::RunAsyncUntilTermination(
+      std::move(service),
+      base::BindOnce([] { content::UtilityThread::Get()->ReleaseProcess(); }));
+}
+
+std::unique_ptr<service_manager::Service> CreateProxyResolverService(
+    service_manager::mojom::ServiceRequest request) {
+  return std::make_unique<proxy_resolver::ProxyResolverService>(
+      std::move(request));
+}
+
+using ServiceFactory =
+    base::OnceCallback<std::unique_ptr<service_manager::Service>()>;
+void RunServiceOnIOThread(ServiceFactory factory) {
+  base::OnceClosure terminate_process = base::BindOnce(
+      base::IgnoreResult(&base::SequencedTaskRunner::PostTask),
+      base::SequencedTaskRunnerHandle::Get(), FROM_HERE,
+      base::BindOnce([] { content::UtilityThread::Get()->ReleaseProcess(); }));
+  content::ChildThread::Get()->GetIOTaskRunner()->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](ServiceFactory factory, base::OnceClosure terminate_process) {
+            service_manager::Service::RunAsyncUntilTermination(
+                std::move(factory).Run(), std::move(terminate_process));
+          },
+          std::move(factory), std::move(terminate_process)));
+}
+
+}  // namespace
 
 AtomContentUtilityClient::AtomContentUtilityClient() : elevated_(false) {
 #if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
@@ -85,31 +121,35 @@ bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
   return false;
 }
 
-void AtomContentUtilityClient::RegisterServices(StaticServiceMap* services) {
-  service_manager::EmbeddedServiceInfo proxy_resolver_info;
-  proxy_resolver_info.task_runner =
-      content::ChildThread::Get()->GetIOTaskRunner();
-  proxy_resolver_info.factory =
-      base::BindRepeating(&proxy_resolver::ProxyResolverService::CreateService);
-  services->emplace(proxy_resolver::mojom::kProxyResolverServiceName,
-                    proxy_resolver_info);
+bool AtomContentUtilityClient::HandleServiceRequest(
+    const std::string& service_name,
+    service_manager::mojom::ServiceRequest request) {
+  if (service_name == proxy_resolver::mojom::kProxyResolverServiceName) {
+    RunServiceOnIOThread(
+        base::BindOnce(&CreateProxyResolverService, std::move(request)));
+    return true;
+  }
 
-#if BUILDFLAG(ENABLE_PRINTING)
-  service_manager::EmbeddedServiceInfo printing_info;
-  printing_info.factory =
-      base::BindRepeating(&printing::PrintingService::CreateService);
-  services->emplace(printing::mojom::kChromePrintingServiceName, printing_info);
-#endif
+  auto service = MaybeCreateMainThreadService(service_name, std::move(request));
+  if (service) {
+    RunServiceAsyncThenTerminateProcess(std::move(service));
+    return true;
+  }
+
+  return false;
 }
 
 std::unique_ptr<service_manager::Service>
-AtomContentUtilityClient::HandleServiceRequest(
+AtomContentUtilityClient::MaybeCreateMainThreadService(
     const std::string& service_name,
     service_manager::mojom::ServiceRequest request) {
 #if BUILDFLAG(ENABLE_PRINTING)
   if (service_name == printing::mojom::kServiceName) {
-    return printing::CreatePdfCompositorService(std::string(),
-                                                std::move(request));
+    return printing::CreatePdfCompositorService(std::move(request));
+  }
+
+  if (service_name == printing::mojom::kChromePrintingServiceName) {
+    return std::make_unique<printing::PrintingService>(std::move(request));
   }
 #endif
 
