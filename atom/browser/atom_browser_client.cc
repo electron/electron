@@ -478,7 +478,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       switches::kServiceWorkerSchemes};
   command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                  kCommonSwitchNames,
-                                 arraysize(kCommonSwitchNames));
+                                 base::size(kCommonSwitchNames));
 
 #if defined(OS_WIN)
   // Append --app-user-model-id.

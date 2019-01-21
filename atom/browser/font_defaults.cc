@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "base/stl_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
@@ -103,7 +104,7 @@ const FontDefault kFontDefaults[] = {
      IDS_FIXED_FONT_FAMILY_TRADITIONAL_HAN},
 #endif
 };
-const size_t kFontDefaultsLength = arraysize(kFontDefaults);
+const size_t kFontDefaultsLength = base::size(kFontDefaults);
 
 // ^^^^^ DO NOT EDIT ^^^^^
 

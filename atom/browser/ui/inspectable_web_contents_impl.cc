@@ -16,6 +16,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/metrics/histogram.h"
+#include "base/stl_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -109,7 +110,7 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 
 double GetNextZoomLevel(double level, bool out) {
   double factor = content::ZoomLevelToZoomFactor(level);
-  size_t size = arraysize(kPresetZoomFactors);
+  size_t size = base::size(kPresetZoomFactors);
   for (size_t i = 0; i < size; ++i) {
     if (!content::ZoomValuesEqual(kPresetZoomFactors[i], factor))
       continue;

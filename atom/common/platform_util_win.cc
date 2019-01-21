@@ -20,6 +20,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
@@ -263,7 +264,7 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
 
   const ITEMIDLIST* highlight[] = {file_item};
 
-  hr = SHOpenFolderAndSelectItems(dir_item, arraysize(highlight), highlight,
+  hr = SHOpenFolderAndSelectItems(dir_item, base::size(highlight), highlight,
                                   NULL);
   if (!FAILED(hr))
     return true;
