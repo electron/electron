@@ -529,8 +529,8 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   UpdateBackgroundColorFromRenderer(color);
 
   if (render_widget_host_) {
-    render_widget_host_->SetBackgroundOpaque(SkColorGetA(color) ==
-                                             SK_AlphaOPAQUE);
+    render_widget_host_->owner_delegate()->SetBackgroundOpaque(
+        SkColorGetA(color) == SK_AlphaOPAQUE);
   }
 }
 

@@ -32,6 +32,7 @@
 #include "third_party/blink/public/web/web_plugin_params.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_security_policy.h"
+#include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
 
 #if defined(OS_MACOSX)
@@ -221,16 +222,16 @@ void RendererClientBase::RenderFrameCreated(
 
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {
-    blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
-    if (web_frame_widget) {
+    blink::WebView* webview = render_view->GetWebView();
+    if (webview) {
       base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
       if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-        web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
+        webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
       } else {  // normal window.
         std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
         SkColor color =
             name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-        web_frame_widget->SetBaseBackgroundColor(color);
+        webview->SetBaseBackgroundColor(color);
       }
     }
   }
