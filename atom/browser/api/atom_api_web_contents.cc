@@ -1126,7 +1126,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     return;
   }
 
-  const auto* render_process_host = render_view_host->GetProcess();
+  auto* render_process_host = render_view_host->GetProcess();
   if (!render_process_host) {
     return;
   }
