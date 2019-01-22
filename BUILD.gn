@@ -1,3 +1,8 @@
+import("build/asar.gni")
+import("build/npm.gni")
+import("buildflags/buildflags.gni")
+import("electron_paks.gni")
+import("filenames.gni")
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
@@ -9,11 +14,6 @@ import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
-import("build/asar.gni")
-import("build/npm.gni")
-import("buildflags/buildflags.gni")
-import("electron_paks.gni")
-import("filenames.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -421,6 +421,7 @@ static_library("electron_lib") {
 
   if (enable_osr) {
     sources += [
+      "atom/browser/api/atom_api_web_contents_osr.cc",
       "atom/browser/osr/osr_output_device.cc",
       "atom/browser/osr/osr_output_device.h",
       "atom/browser/osr/osr_render_widget_host_view.cc",

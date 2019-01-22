@@ -156,7 +156,7 @@ int ShowMessageBox(NativeWindow* parent_window,
               andAlert:alert
           callEndModal:true];
 
-  NSWindow* window = parent_window->GetNativeWindow().GetNativeNSWindow();
+  NSWindow* window = parent_window->GetNativeWindow();
   [alert beginSheetModalForWindow:window
                     modalDelegate:delegate
                    didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
@@ -193,9 +193,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                                                              andAlert:alert
                                                          callEndModal:false];
 
-    NSWindow* window =
-        parent_window ? parent_window->GetNativeWindow().GetNativeNSWindow()
-                      : nil;
+    NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
     [alert
         beginSheetModalForWindow:window
                    modalDelegate:delegate

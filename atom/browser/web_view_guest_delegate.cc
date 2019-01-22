@@ -38,13 +38,11 @@ void WebViewGuestDelegate::AttachToIframe(
   DCHECK_EQ(embedder_web_contents_,
             content::WebContents::FromRenderFrameHost(embedder_frame));
 
-  content::WebContents* guest_web_contents = api_web_contents_->web_contents();
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
-  guest_web_contents->AttachToOuterWebContentsFrame(
-      base::WrapUnique<content::WebContents>(guest_web_contents),
-      embedder_frame);
+  api_web_contents_->web_contents()->AttachToOuterWebContentsFrame(
+      embedder_web_contents_, embedder_frame);
 
   ResetZoomController();
 

@@ -258,7 +258,7 @@ BrowserProcessImpl::safe_browsing_detection_service() {
   return nullptr;
 }
 
-subresource_filter::RulesetService*
+subresource_filter::ContentRulesetService*
 BrowserProcessImpl::subresource_filter_ruleset_service() {
   return nullptr;
 }
@@ -296,11 +296,6 @@ network_time::NetworkTimeTracker* BrowserProcessImpl::network_time_tracker() {
 }
 
 gcm::GCMDriver* BrowserProcessImpl::gcm_driver() {
-  return nullptr;
-}
-
-resource_coordinator::ResourceCoordinatorParts*
-BrowserProcessImpl::resource_coordinator_parts() {
   return nullptr;
 }
 

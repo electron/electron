@@ -2117,8 +2117,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // visibilitychange event is broken upstream, see crbug.com/920839
-  xdescribe('document.visibilityState/hidden', () => {
+  describe('document.visibilityState/hidden', () => {
     beforeEach(() => { w.destroy() })
 
     function onVisibilityChange (callback) {

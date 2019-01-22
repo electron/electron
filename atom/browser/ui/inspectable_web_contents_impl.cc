@@ -779,11 +779,12 @@ bool InspectableWebContentsImpl::ShouldCreateWebContents(
   return false;
 }
 
-bool InspectableWebContentsImpl::HandleKeyboardEvent(
+void InspectableWebContentsImpl::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   auto* delegate = web_contents_->GetDelegate();
-  return !delegate || delegate->HandleKeyboardEvent(source, event);
+  if (delegate)
+    delegate->HandleKeyboardEvent(source, event);
 }
 
 void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {

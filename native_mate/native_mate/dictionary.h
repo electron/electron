@@ -106,9 +106,7 @@ class Dictionary {
   bool SetMethod(const base::StringPiece& key, const T& callback) {
     return GetHandle()->Set(
         StringToV8(isolate_, key),
-        CallbackTraits<T>::CreateTemplate(isolate_, callback)
-            ->GetFunction(isolate_->GetCurrentContext())
-            .ToLocalChecked());
+        CallbackTraits<T>::CreateTemplate(isolate_, callback)->GetFunction());
   }
 
   bool Delete(const base::StringPiece& key) {

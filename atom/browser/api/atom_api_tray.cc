@@ -254,9 +254,7 @@ void Initialize(v8::Local<v8::Object> exports,
   Tray::SetConstructor(isolate, base::Bind(&Tray::New));
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set(
-      "Tray",
-      Tray::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("Tray", Tray::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

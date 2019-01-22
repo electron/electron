@@ -123,12 +123,12 @@ struct Converter<blink::WebCache::ResourceTypeStats> {
 };
 
 template <>
-struct Converter<network::mojom::ReferrerPolicy> {
+struct Converter<blink::WebReferrerPolicy> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const network::mojom::ReferrerPolicy& in);
+                                   const blink::WebReferrerPolicy& in);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     network::mojom::ReferrerPolicy* out);
+                     blink::WebReferrerPolicy* out);
 };
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);

@@ -347,8 +347,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
   widget()->Init(params);
-  window_ = static_cast<AtomNSWindow*>(
-      widget()->GetNativeWindow().GetNativeNSWindow());
+  window_ = static_cast<AtomNSWindow*>(widget()->GetNativeWindow());
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
@@ -498,7 +497,7 @@ void NativeWindowMac::SetContentView(views::View* view) {
 void NativeWindowMac::Close() {
   // When this is a sheet showing, performClose won't work.
   if (is_modal() && parent() && IsVisible()) {
-    [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
+    [parent()->GetNativeWindow() endSheet:window_];
     CloseImmediately();
     return;
   }
@@ -546,10 +545,9 @@ bool NativeWindowMac::IsFocused() {
 void NativeWindowMac::Show() {
   if (is_modal() && parent()) {
     if ([window_ sheetParent] == nil)
-      [parent()->GetNativeWindow().GetNativeNSWindow()
-                 beginSheet:window_
-          completionHandler:^(NSModalResponse){
-          }];
+      [parent()->GetNativeWindow() beginSheet:window_
+                            completionHandler:^(NSModalResponse){
+                            }];
     return;
   }
 
@@ -575,7 +573,7 @@ void NativeWindowMac::ShowInactive() {
 void NativeWindowMac::Hide() {
   if (is_modal() && parent()) {
     [window_ orderOut:nil];
-    [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
+    [parent()->GetNativeWindow() endSheet:window_];
     return;
   }
 
@@ -899,7 +897,7 @@ void NativeWindowMac::FlashFrame(bool flash) {
 void NativeWindowMac::SetSkipTaskbar(bool skip) {}
 
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
-  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  NSWindow* window = GetNativeWindow();
 
   if (simple_fullscreen && !is_simple_fullscreen_) {
     is_simple_fullscreen_ = true;
@@ -1081,8 +1079,7 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   add_browser_view(view);
-  auto* native_view =
-      view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* native_view = view->GetInspectableWebContentsView()->GetNativeView();
   [[window_ contentView] addSubview:native_view
                          positioned:NSWindowAbove
                          relativeTo:nil];
@@ -1100,8 +1097,7 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-          removeFromSuperview];
+  [view->GetInspectableWebContentsView()->GetNativeView() removeFromSuperview];
   remove_browser_view(view);
 
   [CATransaction commit];
@@ -1216,12 +1212,11 @@ void NativeWindowMac::ToggleTabBar() {
 }
 
 bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
-  if (window_ == window->GetNativeWindow().GetNativeNSWindow()) {
+  if (window_ == window->GetNativeWindow()) {
     return false;
   } else {
     if (@available(macOS 10.12, *))
-      [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
-                       ordered:NSWindowAbove];
+      [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
   }
   return true;
 }
@@ -1446,8 +1441,7 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
   NativeWindow::SetParentWindow(parent);
 
   // Do not remove/add if we are already properly attached.
-  if (attach && parent &&
-      [window_ parentWindow] == parent->GetNativeWindow().GetNativeNSWindow())
+  if (attach && parent && [window_ parentWindow] == parent->GetNativeWindow())
     return;
 
   // Remove current parent window.
@@ -1457,9 +1451,7 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
   // Set new parent window.
   // Note that this method will force the window to become visible.
   if (parent && attach)
-    [parent->GetNativeWindow().GetNativeNSWindow()
-        addChildWindow:window_
-               ordered:NSWindowAbove];
+    [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
 }
 
 void NativeWindowMac::ShowWindowButton(NSWindowButton button) {

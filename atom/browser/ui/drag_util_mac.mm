@@ -33,27 +33,26 @@ void DragFileItems(const std::vector<base::FilePath>& files,
 
   // Synthesize a drag event, since we don't have access to the actual event
   // that initiated a drag (possibly consumed by the Web UI, for example).
-  NSWindow* window = [view.GetNativeNSView() window];
-  NSPoint position = [window mouseLocationOutsideOfEventStream];
+  NSPoint position = [[view window] mouseLocationOutsideOfEventStream];
   NSTimeInterval eventTime = [[NSApp currentEvent] timestamp];
   NSEvent* dragEvent = [NSEvent mouseEventWithType:NSLeftMouseDragged
                                           location:position
                                      modifierFlags:NSLeftMouseDraggedMask
                                          timestamp:eventTime
-                                      windowNumber:[window windowNumber]
+                                      windowNumber:[[view window] windowNumber]
                                            context:nil
                                        eventNumber:0
                                         clickCount:1
                                           pressure:1.0];
 
   // Run the drag operation.
-  [window dragImage:icon.ToNSImage()
-                 at:position
-             offset:NSZeroSize
-              event:dragEvent
-         pasteboard:pasteboard
-             source:view.GetNativeNSView()
-          slideBack:YES];
+  [[view window] dragImage:icon.ToNSImage()
+                        at:position
+                    offset:NSZeroSize
+                     event:dragEvent
+                pasteboard:pasteboard
+                    source:view
+                 slideBack:YES];
 }
 
 }  // namespace atom

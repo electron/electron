@@ -160,8 +160,7 @@ namespace atom {
 NativeBrowserViewMac::NativeBrowserViewMac(
     InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* view = GetInspectableWebContentsView()->GetNativeView();
   view.autoresizingMask = kDefaultAutoResizingMask;
 }
 
@@ -176,14 +175,12 @@ void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
     autoresizing_mask |= NSViewHeightSizable;
   }
 
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* view = GetInspectableWebContentsView()->GetNativeView();
   view.autoresizingMask = autoresizing_mask;
 }
 
 void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* view = GetInspectableWebContentsView()->GetNativeView();
   auto* superview = view.superview;
   const auto superview_height = superview ? superview.frame.size.height : 0;
   view.frame =
@@ -192,17 +189,15 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* view = GetInspectableWebContentsView()->GetNativeView();
   view.wantsLayer = YES;
   view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
     const std::vector<gfx::Rect>& drag_exclude_rects) {
-  NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();
-  NSView* inspectable_view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  NSView* web_view = GetWebContents()->GetNativeView();
+  NSView* inspectable_view = GetInspectableWebContentsView()->GetNativeView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
 

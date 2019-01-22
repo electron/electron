@@ -222,9 +222,7 @@ int WebFrame::GetWebFrameId(v8::Local<v8::Value> content_window) {
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
                                      const std::string& language,
                                      v8::Local<v8::Object> provider) {
-  auto context = args->isolate()->GetCurrentContext();
-  if (!provider->Has(context, mate::StringToV8(args->isolate(), "spellCheck"))
-           .ToChecked()) {
+  if (!provider->Has(mate::StringToV8(args->isolate(), "spellCheck"))) {
     args->ThrowError("\"spellCheck\" has to be defined");
     return;
   }
@@ -284,7 +282,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
         privileged_scheme);
   }
   if (corsEnabled) {
-    url::AddCorsEnabledScheme(scheme.c_str());
+    url::AddCORSEnabledScheme(scheme.c_str());
   }
 }
 
@@ -543,9 +541,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("webFrame", WebFrame::Create(isolate));
-  dict.Set(
-      "WebFrame",
-      WebFrame::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("WebFrame", WebFrame::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

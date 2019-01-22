@@ -23,7 +23,8 @@ SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
                              const SkColor& background_color)
     : views::MenuButton(gfx::RemoveAcceleratorChar(title, '&', NULL, NULL),
-                        menu_button_listener),
+                        menu_button_listener,
+                        false),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
@@ -71,7 +72,7 @@ void SubmenuButton::SetUnderlineColor(SkColor color) {
 }
 
 void SubmenuButton::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->SetName(GetAccessibleName());
+  node_data->SetName(accessible_name());
   node_data->role = ax::mojom::Role::kPopUpButton;
 }
 

@@ -331,9 +331,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
     v8::Local<v8::Value> toISOString =
         date->Get(v8::String::NewFromUtf8(isolate, "toISOString"));
     if (toISOString->IsFunction()) {
-      v8::Local<v8::Value> result = toISOString.As<v8::Function>()
-                                        ->Call(context, val, 0, nullptr)
-                                        .ToLocalChecked();
+      v8::Local<v8::Value> result =
+          toISOString.As<v8::Function>()->Call(val, 0, nullptr);
       if (!result.IsEmpty()) {
         v8::String::Utf8Value utf8(isolate,
                                    result->ToString(context).ToLocalChecked());

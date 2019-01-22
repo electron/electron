@@ -132,9 +132,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
-  dict.Set("InAppPurchase", InAppPurchase::GetConstructor(isolate)
-                                ->GetFunction(context)
-                                .ToLocalChecked());
+  dict.Set("InAppPurchase",
+           InAppPurchase::GetConstructor(isolate)->GetFunction());
 #endif
 }
 

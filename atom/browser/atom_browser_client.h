@@ -74,7 +74,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       service_manager::mojom::ServiceRequest* service_request) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
-  content::TtsControllerDelegate* GetTtsControllerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
@@ -92,8 +91,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
   content::QuotaPermissionContext* CreateQuotaPermissionContext() override;
-  content::GeneratedCodeCacheSettings GetGeneratedCodeCacheSettings(
-      content::BrowserContext* context) override;
   void AllowCertificateError(
       content::WebContents* web_contents,
       int cert_error,
@@ -168,9 +165,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
       ui::PageTransition page_transition,
-      bool has_user_gesture,
-      const std::string& method,
-      const net::HttpRequestHeaders& headers) override;
+      bool has_user_gesture) override;
 
  private:
   struct ProcessPreferences {

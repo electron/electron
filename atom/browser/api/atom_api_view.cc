@@ -76,9 +76,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   View::SetConstructor(isolate, base::Bind(&View::New));
 
-  mate::Dictionary constructor(
-      isolate,
-      View::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  mate::Dictionary constructor(isolate,
+                               View::GetConstructor(isolate)->GetFunction());
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("View", constructor);

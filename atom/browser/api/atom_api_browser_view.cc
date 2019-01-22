@@ -159,9 +159,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   BrowserView::SetConstructor(isolate, base::Bind(&BrowserView::New));
 
-  mate::Dictionary browser_view(isolate, BrowserView::GetConstructor(isolate)
-                                             ->GetFunction(context)
-                                             .ToLocalChecked());
+  mate::Dictionary browser_view(
+      isolate, BrowserView::GetConstructor(isolate)->GetFunction());
   browser_view.SetMethod("fromId",
                          &mate::TrackableObject<BrowserView>::FromWeakMapID);
   browser_view.SetMethod("getAllViews",

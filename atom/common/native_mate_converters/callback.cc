@@ -43,19 +43,16 @@ void CallTranslater(v8::Local<v8::External> external,
                     mate::Arguments* args) {
   // Whether the callback should only be called for once.
   v8::Isolate* isolate = args->isolate();
-  auto context = isolate->GetCurrentContext();
-  bool one_time =
-      state->Has(context, mate::StringToSymbol(isolate, "oneTime")).ToChecked();
+  bool one_time = state->Has(mate::StringToSymbol(isolate, "oneTime"));
 
   // Check if the callback has already been called.
   if (one_time) {
     auto called_symbol = mate::StringToSymbol(isolate, "called");
-    if (state->Has(context, called_symbol).ToChecked()) {
+    if (state->Has(called_symbol)) {
       args->ThrowError("callback can only be called for once");
       return;
     } else {
-      state->Set(context, called_symbol, v8::Boolean::New(isolate, true))
-          .ToChecked();
+      state->Set(called_symbol, v8::Boolean::New(isolate, true));
     }
   }
 
@@ -133,10 +130,9 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
   Dictionary state = mate::Dictionary::CreateEmpty(isolate);
   if (one_time)
     state.Set("oneTime", true);
-  auto context = isolate->GetCurrentContext();
-  return BindFunctionWith(
-      isolate, context, call_translater->GetFunction(context).ToLocalChecked(),
-      holder->handle.Get(isolate), state.GetHandle());
+  return BindFunctionWith(isolate, isolate->GetCurrentContext(),
+                          call_translater->GetFunction(),
+                          holder->handle.Get(isolate), state.GetHandle());
 }
 
 // func.bind(func, arg1).

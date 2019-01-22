@@ -92,9 +92,7 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
   SecTrustRef trust = nullptr;
   SecTrustCreateWithCertificates(cert_chain, sec_policy, &trust);
 
-  NSWindow* window = parent_window
-                         ? parent_window->GetNativeWindow().GetNativeNSWindow()
-                         : nil;
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
   auto msg = base::SysUTF8ToNSString(message);
 
   auto panel = [[SFCertificateTrustPanel alloc] init];

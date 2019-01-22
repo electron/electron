@@ -121,9 +121,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("systemPreferences", SystemPreferences::Create(isolate));
-  dict.Set("SystemPreferences", SystemPreferences::GetConstructor(isolate)
-                                    ->GetFunction(context)
-                                    .ToLocalChecked());
+  dict.Set("SystemPreferences",
+           SystemPreferences::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

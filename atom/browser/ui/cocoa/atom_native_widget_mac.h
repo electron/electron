@@ -21,7 +21,7 @@ class AtomNativeWidgetMac : public views::NativeWidgetMac {
  protected:
   // NativeWidgetMac:
   NativeWidgetMacNSWindow* CreateNSWindow(
-      const views_bridge_mac::mojom::CreateWindowParams* params) override;
+      const views::Widget::InitParams& params) override;
 
  private:
   NativeWindowMac* shell_;

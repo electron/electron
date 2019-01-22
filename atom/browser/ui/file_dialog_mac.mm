@@ -210,8 +210,7 @@ int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
       settings.force_detached) {
     chosen = [dialog runModal];
   } else {
-    NSWindow* window =
-        settings.parent_window->GetNativeWindow().GetNativeNSWindow();
+    NSWindow* window = settings.parent_window->GetNativeWindow();
 
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger c) {
@@ -329,8 +328,7 @@ void ShowOpenDialog(const DialogSettings& settings,
       OpenDialogCompletion(chosen, dialog, settings, callback);
     }];
   } else {
-    NSWindow* window =
-        settings.parent_window->GetNativeWindow().GetNativeNSWindow();
+    NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger chosen) {
                      OpenDialogCompletion(chosen, dialog, settings, callback);
@@ -391,8 +389,7 @@ void ShowSaveDialog(const DialogSettings& settings,
       SaveDialogCompletion(chosen, dialog, settings, callback);
     }];
   } else {
-    NSWindow* window =
-        settings.parent_window->GetNativeWindow().GetNativeNSWindow();
+    NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger chosen) {
                      SaveDialogCompletion(chosen, dialog, settings, callback);

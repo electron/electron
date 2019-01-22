@@ -47,7 +47,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
-#include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -241,7 +240,7 @@ namespace api {
 namespace {
 
 content::ServiceWorkerContext* GetServiceWorkerContext(
-    content::WebContents* web_contents) {
+    const content::WebContents* web_contents) {
   auto* context = web_contents->GetBrowserContext();
   auto* site_instance = web_contents->GetSiteInstance();
   if (!context || !site_instance)
@@ -422,14 +421,15 @@ void WebContents::InitWithSessionAndOptions(
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
-  static const base::NoDestructor<gfx::FontRenderParams> params(
-      gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr));
-  prefs->should_antialias_text = params->antialiasing;
-  prefs->use_subpixel_positioning = params->subpixel_positioning;
-  prefs->hinting = params->hinting;
-  prefs->use_autohinter = params->autohinter;
-  prefs->use_bitmaps = params->use_bitmaps;
-  prefs->subpixel_rendering = params->subpixel_rendering;
+  CR_DEFINE_STATIC_LOCAL(
+      const gfx::FontRenderParams, params,
+      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
 #endif
 
   // Save the preferences in C++.
@@ -470,9 +470,9 @@ WebContents::~WebContents() {
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
     if (type_ == WEB_VIEW) {
-      DCHECK(!web_contents()->GetOuterWebContents())
-          << "Should never manually destroy an attached webview";
       // For webview simply destroy the WebContents immediately.
+      // TODO(zcbenz): Add an internal API for webview instead of using
+      // destroy(), so we don't have to add a special branch here.
       DestroyWebContents(false /* async */);
     } else if (type_ == BROWSER_WINDOW && owner_window()) {
       // For BrowserWindow we should close the window and clean up everything
@@ -617,15 +617,15 @@ void WebContents::UpdateTargetURL(content::WebContents* source,
   Emit("update-target-url", url);
 }
 
-bool WebContents::HandleKeyboardEvent(
+void WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (type_ == WEB_VIEW && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
-    return embedder_->HandleKeyboardEvent(source, event);
+    embedder_->HandleKeyboardEvent(source, event);
   } else {
     // Go to the default keyboard handling.
-    return CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
+    CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
   }
 }
 
@@ -1129,7 +1129,7 @@ void WebContents::NavigationEntryCommitted(
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  auto* contents = web_contents();
+  const auto* contents = web_contents();
   if (!contents) {
     return;
   }
@@ -1188,9 +1188,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (!options.Get("httpReferrer", &params.referrer)) {
     GURL http_referrer;
     if (options.Get("httpReferrer", &http_referrer))
-      params.referrer =
-          content::Referrer(http_referrer.GetAsReferrer(),
-                            network::mojom::ReferrerPolicy::kDefault);
+      params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
+                                          blink::kWebReferrerPolicyDefault);
   }
 
   std::string user_agent;
@@ -1794,7 +1793,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
   // Start dragging.
   if (!files.empty()) {
-    base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+    base::MessageLoop::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
     args->ThrowError("Must specify either 'file' or 'files' option");
@@ -2150,7 +2149,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("attachToIframe", &WebContents::AttachToIframe)
-      .SetMethod("detachFromOuterFrame", &WebContents::DetachFromOuterFrame)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
 #if BUILDFLAG(ENABLE_OSR)
       .SetMethod("startPainting", &WebContents::StartPainting)
@@ -2286,9 +2284,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("WebContents", WebContents::GetConstructor(isolate)
-                              ->GetFunction(context)
-                              .ToLocalChecked());
+  dict.Set("WebContents", WebContents::GetConstructor(isolate)->GetFunction());
   dict.SetMethod("create", &WebContents::Create);
   dict.SetMethod("fromId", &mate::TrackableObject<WebContents>::FromWeakMapID);
   dict.SetMethod("getAllWebContents",

@@ -20,7 +20,6 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/task/post_task.h"
-#include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/browser/ui/browser_dialogs.h"
@@ -122,14 +121,14 @@ std::unique_ptr<base::DictionaryValue> CreateFileSystemValue(
 }
 
 void WriteToFile(const base::FilePath& path, const std::string& content) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::WILL_BLOCK);
+  base::AssertBlockingAllowed();
   DCHECK(!path.empty());
 
   base::WriteFile(path, content.data(), content.size());
 }
 
 void AppendToFile(const base::FilePath& path, const std::string& content) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::WILL_BLOCK);
+  base::AssertBlockingAllowed();
   DCHECK(!path.empty());
 
   base::AppendToFile(path, content.data(), content.size());

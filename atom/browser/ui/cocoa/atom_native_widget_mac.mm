@@ -19,7 +19,7 @@ AtomNativeWidgetMac::AtomNativeWidgetMac(
 AtomNativeWidgetMac::~AtomNativeWidgetMac() {}
 
 NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
-    const views_bridge_mac::mojom::CreateWindowParams* params) {
+    const views::Widget::InitParams& params) {
   return [[[AtomNSWindow alloc] initWithShell:shell_ styleMask:style_mask_]
       autorelease];
 }

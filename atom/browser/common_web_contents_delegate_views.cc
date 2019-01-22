@@ -17,28 +17,25 @@
 
 namespace atom {
 
-bool CommonWebContentsDelegate::HandleKeyboardEvent(
+void CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   // Escape exits tabbed fullscreen mode.
   if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen()) {
     ExitFullscreenModeForTab(source);
-    return true;
+    return;
   }
 
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
   if (web_preferences &&
       web_preferences->IsEnabled("ignoreMenuShortcuts", false))
-    return false;
+    return;
 
   // Let the NativeWindow handle other parts.
   if (owner_window()) {
     owner_window()->HandleKeyboardEvent(source, event);
-    return true;
   }
-
-  return false;
 }
 
 void CommonWebContentsDelegate::ShowAutofillPopup(

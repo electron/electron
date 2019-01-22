@@ -1,0 +1,136 @@
+From e36e9dde38caf3517890da2265e6dd9f127abe72 Mon Sep 17 00:00:00 2001
+From: Peter Marshall <petermarshall@chromium.org>
+Date: Fri, 9 Nov 2018 13:06:07 +0100
+Subject: [PATCH 2/4] deps: cherry-pick b87d408 from upstream V8
+
+Original commit message:
+
+    [heap-profiler] Fix a use-after-free when snapshots are deleted
+
+    If a caller starts the sampling heap profiler and takes a snapshot,
+    and then deletes the snapshot before the sampling has completed, a
+    use-after-free will occur on the StringsStorage pointer.
+
+    The same issue applies for StartTrackingHeapObjects which shares the
+    same StringsStorage object.
+
+    Bug: v8:8373
+    Change-Id: I5d69d60d3f9465f9dd3b3bef107c204e0fda0643
+    Reviewed-on: https://chromium-review.googlesource.com/c/1301477
+    Commit-Queue: Peter Marshall <petermarshall@chromium.org>
+    Reviewed-by: Alexei Filippov <alph@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#57114}
+
+PR-URL: https://github.com/nodejs/node/pull/24272
+Refs:
+https://github.com/v8/v8/commit/b87d408f65b9ab49a4d199e850d2358995deaeb2
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Daniel Bevenius <daniel.bevenius@gmail.com>
+---
+ src/profiler/heap-profiler.cc     |  9 ++++++++-
+ src/profiler/heap-profiler.h      |  2 ++
+ test/cctest/test-heap-profiler.cc | 42 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 1 deletion(-)
+
+diff --git a/src/profiler/heap-profiler.cc b/src/profiler/heap-profiler.cc
+index 0978e76cff..58a8f3851f 100644
+--- a/src/profiler/heap-profiler.cc
++++ b/src/profiler/heap-profiler.cc
+@@ -23,9 +23,14 @@ HeapProfiler::~HeapProfiler() = default;
+ 
+ void HeapProfiler::DeleteAllSnapshots() {
+   snapshots_.clear();
+-  names_.reset(new StringsStorage());
++  MaybeClearStringsStorage();
+ }
+ 
++void HeapProfiler::MaybeClearStringsStorage() {
++  if (snapshots_.empty() && !sampling_heap_profiler_ && !allocation_tracker_) {
++    names_.reset(new StringsStorage());
++  }
++}
+ 
+ void HeapProfiler::RemoveSnapshot(HeapSnapshot* snapshot) {
+   snapshots_.erase(
+@@ -126,6 +131,7 @@ bool HeapProfiler::StartSamplingHeapProfiler(
+ 
+ void HeapProfiler::StopSamplingHeapProfiler() {
+   sampling_heap_profiler_.reset();
++  MaybeClearStringsStorage();
+ }
+ 
+ 
+@@ -159,6 +165,7 @@ void HeapProfiler::StopHeapObjectsTracking() {
+   ids_->StopHeapObjectsTracking();
+   if (allocation_tracker_) {
+     allocation_tracker_.reset();
++    MaybeClearStringsStorage();
+     heap()->RemoveHeapObjectAllocationTracker(this);
+   }
+ }
+diff --git a/src/profiler/heap-profiler.h b/src/profiler/heap-profiler.h
+index acbdc6aa7a..1e3527765e 100644
+--- a/src/profiler/heap-profiler.h
++++ b/src/profiler/heap-profiler.h
+@@ -92,6 +92,8 @@ class HeapProfiler : public HeapObjectAllocationTracker {
+                     v8::PersistentValueVector<v8::Object>* objects);
+ 
+  private:
++  void MaybeClearStringsStorage();
++
+   Heap* heap() const;
+ 
+   // Mapping from HeapObject addresses to objects' uids.
+diff --git a/test/cctest/test-heap-profiler.cc b/test/cctest/test-heap-profiler.cc
+index 257ef1c723..f3c545fd83 100644
+--- a/test/cctest/test-heap-profiler.cc
++++ b/test/cctest/test-heap-profiler.cc
+@@ -3875,3 +3875,45 @@ TEST(WeakReference) {
+   const v8::HeapSnapshot* snapshot = heap_profiler->TakeHeapSnapshot();
+   CHECK(ValidateSnapshot(snapshot));
+ }
++
++TEST(Bug8373_1) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
++
++  heap_profiler->StartSamplingHeapProfiler(100);
++
++  heap_profiler->TakeHeapSnapshot();
++  // Causes the StringsStorage to be deleted.
++  heap_profiler->DeleteAllHeapSnapshots();
++
++  // Triggers an allocation sample that tries to use the StringsStorage.
++  for (int i = 0; i < 2 * 1024; ++i) {
++    CompileRun(
++        "new Array(64);"
++        "new Uint8Array(16);");
++  }
++
++  heap_profiler->StopSamplingHeapProfiler();
++}
++
++TEST(Bug8373_2) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
++
++  heap_profiler->StartTrackingHeapObjects(true);
++
++  heap_profiler->TakeHeapSnapshot();
++  // Causes the StringsStorage to be deleted.
++  heap_profiler->DeleteAllHeapSnapshots();
++
++  // Triggers an allocations that try to use the StringsStorage.
++  for (int i = 0; i < 2 * 1024; ++i) {
++    CompileRun(
++        "new Array(64);"
++        "new Uint8Array(16);");
++  }
++
++  heap_profiler->StopTrackingHeapObjects();
++}
+-- 
+2.14.3 (Apple Git-98)
+

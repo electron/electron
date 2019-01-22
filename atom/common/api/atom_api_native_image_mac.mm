@@ -52,7 +52,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
       png_data = bufferFromNSImage(
           gfx::Image(gfx::ImageSkiaOperations::CreateHSLShiftedImage(
                          gfx_image.AsImageSkia(), shift))
-              .AsNSImage());
+              .CopyNSImage());
     }
 
     return CreateFromPNG(args->isolate(), (char*)[png_data bytes],

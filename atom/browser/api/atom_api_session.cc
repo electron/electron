@@ -444,9 +444,10 @@ void Session::ClearStorageData(mate::Arguments* args) {
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
     MediaDeviceIDSalt::Reset(browser_context()->prefs());
   }
-  storage_partition->ClearData(options.storage_types, options.quota_types,
-                               options.origin, base::Time(), base::Time::Max(),
-                               base::Bind(&OnClearStorageDataDone, callback));
+  storage_partition->ClearData(
+      options.storage_types, options.quota_types, options.origin,
+      content::StoragePartition::OriginMatcherFunction(), base::Time(),
+      base::Time::Max(), base::Bind(&OnClearStorageDataDone, callback));
 }
 
 void Session::FlushStorageData() {
@@ -804,12 +805,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set(
-      "Session",
-      Session::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set(
-      "Cookies",
-      Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("Session", Session::GetConstructor(isolate)->GetFunction());
+  dict.Set("Cookies", Cookies::GetConstructor(isolate)->GetFunction());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 
