@@ -119,15 +119,14 @@ namespace {
 bool g_suppress_renderer_process_restart = false;
 
 bool IsSameWebSite(content::BrowserContext* browser_context,
-                   const GURL& src_url,
+                   content::SiteInstance* site_instance,
                    const GURL& dest_url) {
-  return content::SiteInstance::IsSameWebSite(browser_context, src_url,
-                                              dest_url) ||
-         // `IsSameWebSite` doesn't seem to work for some URIs such as `file:`,
-         // handle these scenarios by comparing only the site as defined by
-         // `GetSiteForURL`.
-         content::SiteInstance::GetSiteForURL(browser_context, dest_url) ==
-             src_url;
+  return site_instance->IsSameSiteWithURL(dest_url) ||
+         // `IsSameSiteWithURL` doesn't seem to work for some URIs such as
+         // `file:`, handle these scenarios by comparing only the site as
+         // defined by `GetSiteForURL`.
+         (content::SiteInstance::GetSiteForURL(browser_context, dest_url) ==
+          site_instance->GetSiteURL());
 }
 
 AtomBrowserClient* g_browser_client = nullptr;
@@ -226,8 +225,7 @@ bool AtomBrowserClient::ShouldForceNewSiteInstance(
   }
 
   // Create new a SiteInstance if navigating to a different site.
-  auto src_url = current_instance->GetSiteURL();
-  return !IsSameWebSite(browser_context, src_url, url);
+  return !IsSameWebSite(browser_context, current_instance, url);
 }
 
 bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
@@ -238,13 +236,12 @@ bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
     bool has_response_started) const {
   bool navigation_was_redirected = false;
   if (has_response_started) {
-    navigation_was_redirected = !IsSameWebSite(
-        browser_context, current_instance->GetSiteURL(), dest_url);
+    navigation_was_redirected =
+        !IsSameWebSite(browser_context, current_instance, dest_url);
   } else {
     navigation_was_redirected =
         speculative_instance &&
-        !IsSameWebSite(browser_context, speculative_instance->GetSiteURL(),
-                       dest_url);
+        !IsSameWebSite(browser_context, speculative_instance, dest_url);
   }
 
   return navigation_was_redirected;
@@ -308,7 +305,7 @@ content::SiteInstance* AtomBrowserClient::GetSiteInstanceFromAffinity(
     auto iter = site_per_affinities_.find(affinity);
     GURL dest_site = content::SiteInstance::GetSiteForURL(browser_context, url);
     if (iter != site_per_affinities_.end() &&
-        IsSameWebSite(browser_context, iter->second->GetSiteURL(), dest_site)) {
+        IsSameWebSite(browser_context, iter->second, dest_site)) {
       return iter->second;
     }
   }
