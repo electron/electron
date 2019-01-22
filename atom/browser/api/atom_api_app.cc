@@ -1250,19 +1250,6 @@ void App::EnableSandbox(mate::Arguments* args) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
-void App::EnableMixedSandbox(mate::Arguments* args) {
-  if (Browser::Get()->is_ready()) {
-    args->ThrowError(
-        "app.enableMixedSandbox() can only be called "
-        "before app is ready");
-    return;
-  }
-
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  RemoveNoSandboxSwitch(command_line);
-  command_line->AppendSwitch(switches::kEnableMixedSandbox);
-}
-
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(mate::Arguments* args) {
   return ui::cocoa::AtomBundleMover::Move(args);
@@ -1370,8 +1357,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
-      .SetMethod("enableSandbox", &App::EnableSandbox)
-      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
+      .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
 }  // namespace api

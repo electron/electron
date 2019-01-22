@@ -161,9 +161,6 @@ namespace switches {
 // Enable chromium sandbox.
 const char kEnableSandbox[] = "enable-sandbox";
 
-// Enable sandbox in only remote content windows.
-const char kEnableMixedSandbox[] = "enable-mixed-sandbox";
-
 // Enable plugins.
 const char kEnablePlugins[] = "enable-plugins";
 
