@@ -321,8 +321,8 @@ void InspectableWebContentsImpl::ShowDevTools(bool activate) {
 
   // Show devtools only after it has done loading, this is to make sure the
   // SetIsDocked is called *BEFORE* ShowDevTools.
-  embedder_message_dispatcher_.reset(
-      DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
+  embedder_message_dispatcher_ =
+      DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this);
 
   if (!external_devtools_web_contents_) {  // no external devtools
     managed_devtools_web_contents_ = content::WebContents::Create(
