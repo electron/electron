@@ -88,6 +88,8 @@ class AtomBrowserContext
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector request_interceptors) override;
   net::URLRequestContextGetter* CreateMediaRequestContext() override;
+  content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
+      override;
 
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
