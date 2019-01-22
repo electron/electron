@@ -202,6 +202,30 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
       &preload_bundle_params, &preload_bundle_args, nullptr);
 }
 
+void AtomSandboxedRendererClient::SetupMainWorldOverrides(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  // Setup window overrides in the main world context
+  // Wrap the bundle into a function that receives the isolatedWorld as
+  // an argument.
+  auto* isolate = context->GetIsolate();
+
+  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  process.SetMethod("binding", GetBinding);
+
+  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
+
+  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
+      process.GetHandle(),
+      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
+
+  node::per_process::native_module_loader.CompileAndCall(
+      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
+      &isolated_bundle_args, nullptr);
+}
+
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {

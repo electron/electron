@@ -74,6 +74,7 @@ filenames = {
     "lib/renderer/web-view/web-view-constants.js",
     "lib/renderer/web-view/web-view-element.js",
     "lib/renderer/web-view/web-view-impl.js",
+    "lib/renderer/web-view/web-view-init.js",
     "lib/renderer/api/exports/electron.js",
     "lib/renderer/api/crash-reporter.js",
     "lib/renderer/api/ipc-renderer.js",
