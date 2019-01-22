@@ -58,6 +58,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "atom/renderer/printing/print_render_frame_helper_delegate.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
+#include "printing/print_settings.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {
@@ -285,6 +286,12 @@ bool RendererClientBase::IsKeySystemsUpdateNeeded() {
   return key_systems_provider_.IsKeySystemsUpdateNeeded();
 #else
   return false;
+#endif
+}
+
+void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
+#if BUILDFLAG(ENABLE_PRINTING)
+  printing::SetAgent(user_agent);
 #endif
 }
 

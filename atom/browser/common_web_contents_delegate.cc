@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
