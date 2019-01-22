@@ -2,22 +2,23 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/api/atom_api_renderer_ipc.h"
+#include <string>
+
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
+#include "base/values.h"
 #include "content/public/renderer/render_frame.h"
+#include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
 using content::RenderFrame;
 
-namespace atom {
-
-namespace api {
+namespace {
 
 RenderFrame* GetCurrentRenderFrame() {
   WebLocalFrame* frame = WebLocalFrame::FrameForCurrentContext();
@@ -78,20 +79,14 @@ void SendTo(mate::Arguments* args,
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_To");
 }
 
-}  // namespace api
-
-}  // namespace atom
-
-namespace {
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("send", &atom::api::Send);
-  dict.SetMethod("sendSync", &atom::api::SendSync);
-  dict.SetMethod("sendTo", &atom::api::SendTo);
+  dict.SetMethod("send", &Send);
+  dict.SetMethod("sendSync", &SendSync);
+  dict.SetMethod("sendTo", &SendTo);
 }
 
 }  // namespace
