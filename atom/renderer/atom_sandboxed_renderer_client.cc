@@ -11,7 +11,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
-#include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
