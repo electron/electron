@@ -376,12 +376,11 @@ step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
 step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
   run:
     name: Native mksnapshot build (arm/arm64)
+    no_output_timeout: 30m
     command: |
       if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
-        # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
-        # machine size and ninja mis-detects the number of CPUs available.
-        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j3
+        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j18
       else
         echo 'Skipping native mksnapshot build for non arm build'
       fi
@@ -928,7 +927,7 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm-native-mksnapshot:
-    <<: *machine-linux-medium
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-release-build
@@ -988,7 +987,7 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm64-native-mksnapshot:
-    <<: *machine-linux-medium
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-release-build
