@@ -35,7 +35,8 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
   }
 
   return v8::Local<v8::ObjectTemplate>::New(isolate, event_template)
-      ->NewInstance();
+      ->NewInstance(isolate->GetCurrentContext())
+      .ToLocalChecked();
 }
 
 }  // namespace

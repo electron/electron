@@ -30,7 +30,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
-#include "base/sys_info.h"
+#include "base/system/sys_info.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
@@ -780,24 +780,24 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.GetHandle());
+  ChildProcessLaunched(data.process_type, data.GetProcess().Handle());
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(base::GetProcId(data.GetHandle()));
+  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetHandle()));
+  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetHandle()));
+  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
@@ -1387,7 +1387,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());
+  dict.Set("App", atom::api::App::GetConstructor(isolate)
+                      ->GetFunction(context)
+                      .ToLocalChecked());
   dict.Set("app", atom::api::App::Create(isolate));
 #if defined(OS_MACOSX)
   auto browser = base::Unretained(Browser::Get());

@@ -105,7 +105,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void OnFilesSelected(std::vector<FileChooserFileInfoPtr> file_info) {
     if (listener_) {
-      listener_->FileSelected(std::move(file_info), mode_);
+      listener_->FileSelected(std::move(file_info), base::FilePath(), mode_);
       listener_.reset();
     }
     render_frame_host_ = nullptr;
@@ -265,7 +265,7 @@ void WebDialogHelper::EnumerateDirectory(
         blink::mojom::NativeFileInfo::New(path, base::string16())));
   }
 
-  listener->FileSelected(std::move(file_info),
+  listener->FileSelected(std::move(file_info), dir,
                          FileChooserParams::Mode::kUploadFolder);
 }
 

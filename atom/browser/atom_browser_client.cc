@@ -95,6 +95,7 @@
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
 #if BUILDFLAG(ENABLE_TTS)
+#include "chrome/browser/speech/tts_controller_delegate_impl.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
 
@@ -158,8 +159,6 @@ AtomBrowserClient* AtomBrowserClient::Get() {
 
 // static
 void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
       !base::PostTaskWithTraits(
           FROM_HERE, {BrowserThread::IO},
@@ -368,6 +367,14 @@ AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new AtomSpeechRecognitionManagerDelegate;
 }
 
+content::TtsControllerDelegate* AtomBrowserClient::GetTtsControllerDelegate() {
+#if BUILDFLAG(ENABLE_TTS)
+  return TtsControllerDelegateImpl::GetInstance();
+#else
+  return nullptr;
+#endif
+}
+
 void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
                                             content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
@@ -534,6 +541,17 @@ std::string AtomBrowserClient::GetGeolocationApiKey() {
 content::QuotaPermissionContext*
 AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
+}
+
+content::GeneratedCodeCacheSettings
+AtomBrowserClient::GetGeneratedCodeCacheSettings(
+    content::BrowserContext* context) {
+  // TODO(deepak1556): Use platform cache directory.
+  base::FilePath cache_path = context->GetPath();
+  // If we pass 0 for size, disk_cache will pick a default size using the
+  // heuristics based on available disk size. These are implemented in
+  // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
+  return content::GeneratedCodeCacheSettings(true, 0, cache_path);
 }
 
 void AtomBrowserClient::AllowCertificateError(
@@ -804,7 +822,9 @@ bool AtomBrowserClient::HandleExternalProtocol(
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
     ui::PageTransition page_transition,
-    bool has_user_gesture) {
+    bool has_user_gesture,
+    const std::string& method,
+    const net::HttpRequestHeaders& headers) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,

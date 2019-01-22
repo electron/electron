@@ -112,7 +112,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
-  std::string custom_locale_;
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcessImpl> fake_browser_process_;

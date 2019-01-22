@@ -47,9 +47,7 @@
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/material_design/material_design_controller.h"
-#include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
 #if defined(USE_AURA)
@@ -73,6 +71,7 @@
 
 #if defined(OS_WIN)
 #include "ui/base/cursor/cursor_loader_win.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/platform_font_win.h"
@@ -355,9 +354,6 @@ int AtomBrowserMainParts::PreCreateThreads() {
     layout_provider_.reset(new views::LayoutProvider());
 
   // Initialize the app locale.
-  AtomBrowserClient::SetApplicationLocale(
-      l10n_util::GetApplicationLocale(custom_locale_));
-
   fake_browser_process_->SetApplicationLocale(
       AtomBrowserClient::Get()->GetApplicationLocale());
 
@@ -513,29 +509,6 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 #endif
 
 void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
-  // Initialize ui::ResourceBundle.
-  ui::ResourceBundle::InitSharedInstanceWithLocale(
-      "", nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
-  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  if (cmd_line->HasSwitch(switches::kLang)) {
-    const std::string locale = cmd_line->GetSwitchValueASCII(switches::kLang);
-    const base::FilePath locale_file_path =
-        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
-    if (!locale_file_path.empty()) {
-      custom_locale_ = locale;
-#if defined(OS_LINUX)
-      /* When built with USE_GLIB, libcc's GetApplicationLocaleInternal() uses
-       * glib's g_get_language_names(), which keys off of getenv("LC_ALL") */
-      g_setenv("LC_ALL", custom_locale_.c_str(), TRUE);
-#endif
-    }
-  }
-
-#if defined(OS_MACOSX)
-  if (custom_locale_.empty())
-    l10n_util::OverrideLocaleWithCocoaLocale();
-#endif
-  LoadResourceBundle(custom_locale_);
 #if defined(OS_MACOSX)
   InitializeMainNib();
 #endif

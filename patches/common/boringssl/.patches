@@ -1,3 +1,2 @@
-implement_ssl_get_tlsext_status_type.patch
 add_ec_group_order_bits_for_openssl_compatibility.patch
 add_ec_key_key2buf_for_openssl_compatibility.patch

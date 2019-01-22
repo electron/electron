@@ -52,10 +52,19 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index abbab2664254c9be1ec5074463722c1365590cd0..03c3df58fb407a490ce3438cdc2f4168f3013a8f 100644
+index b3ebd3da653f731094d1c1a88fdedeccfa9be682..dc0b51a3fd113ba363d1f7944d578fb85d174eb7 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1646,6 +1646,11 @@ if (is_chrome_branded && !is_android) {
+@@ -1634,7 +1634,7 @@ if (is_chrome_branded && !is_android) {
+   }
+ }
+ 
+-if (!is_android) {
++if (!is_android && !is_electron_build) {
+   chrome_paks("packed_resources") {
+     if (is_mac) {
+       output_dir = "$root_gen_dir/repack"
+@@ -1658,6 +1658,12 @@ if (!is_android) {
    }
  }
  
@@ -63,15 +72,8 @@ index abbab2664254c9be1ec5074463722c1365590cd0..03c3df58fb407a490ce3438cdc2f4168
 +  group("packed_resources") {
 +    public_deps = [ "//electron:packed_resources" ]
 +  }
-+} else {
- chrome_paks("packed_resources") {
-   if (is_mac) {
-     output_dir = "$root_gen_dir/repack"
-@@ -1667,6 +1672,7 @@ chrome_paks("packed_resources") {
-     ]
-   }
- }
 +}
- 
++
  repack("browser_tests_pak") {
    sources = [
+     "$root_gen_dir/chrome/webui_test_resources.pak",

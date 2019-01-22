@@ -5,7 +5,7 @@ Subject: browser_compositor_mac.patch
 
 
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
-index 71a9e1024b6055b1b1cc1e51d898a030e7f72111..479110fef40183c0d5d301686c1e8ae754317b29 100644
+index da7e3391774e14550f7adf5956ca44b8b880662e..8b399558ad2469f6452e1793e8834d5c4f93adeb 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.h
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.h
 @@ -60,6 +60,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
@@ -14,10 +14,10 @@ index 71a9e1024b6055b1b1cc1e51d898a030e7f72111..479110fef40183c0d5d301686c1e8ae7
  
 +  ui::Layer* GetRootLayer() { return root_layer_.get(); }
 +
-   // Ensure that the currect compositor frame be cleared (even if it is
-   // potentially visible).
-   void ClearCompositorFrame();
-@@ -70,6 +72,7 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
+   // Force a new surface id to be allocated. Returns true if the
+   // RenderWidgetHostImpl sent the resulting surface id to the renderer.
+   bool ForceNewSurfaceId();
+@@ -68,6 +70,7 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
    // no valid frame is available.
    const gfx::CALayerParams* GetLastCALayerParams() const;
  
@@ -26,10 +26,10 @@ index 71a9e1024b6055b1b1cc1e51d898a030e7f72111..479110fef40183c0d5d301686c1e8ae7
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
    void OnDidNotProduceFrame(const viz::BeginFrameAck& ack);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 65670cccb50312a7cf0895ae39db01bc19d42d3d..235303a210fadd7ecfa7d1878df9fc93f2655b38 100644
+index 21d3b34cc13f3471dcef456ec92ad7c1c4a012f4..cffbf04e781cff2d10283c7ef2093959f25e432b 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -79,6 +79,12 @@
+@@ -79,6 +79,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
    DCHECK_EQ(1u, num_erased);
  }
  

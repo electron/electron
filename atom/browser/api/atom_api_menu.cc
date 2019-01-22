@@ -233,7 +233,9 @@ void Initialize(v8::Local<v8::Object> exports,
   Menu::SetConstructor(isolate, base::Bind(&Menu::New));
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Menu", Menu::GetConstructor(isolate)->GetFunction());
+  dict.Set(
+      "Menu",
+      Menu::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
