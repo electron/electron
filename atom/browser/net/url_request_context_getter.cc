@@ -107,15 +107,7 @@ class ResourceContext : public content::ResourceContext {
   ResourceContext() = default;
   ~ResourceContext() override = default;
 
-  net::URLRequestContext* GetRequestContext() override {
-    return request_context_;
-  }
-
  private:
-  friend class URLRequestContextGetter;
-
-  net::URLRequestContext* request_context_ = nullptr;
-
   DISALLOW_COPY_AND_ASSIGN(ResourceContext);
 };
 
@@ -332,8 +324,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
     top_job_factory_->Chain(std::move(inner_job_factory));
     url_request_context_->set_job_factory(top_job_factory_.get());
-
-    context_handle_->resource_context_->request_context_ = url_request_context_;
   }
 
   return url_request_context_;

@@ -96,3 +96,38 @@ index c04e0e8bff1a7a41a1e18aca5403aed16a80aead..d63cec971f0a98f7b8ff30c1f6a0fa84
  
    EnsureLoaded();
    bool result = false;
+diff --git a/third_party/blink/renderer/modules/storage/cached_storage_area.cc b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
+index 35a114eb8fc2ee6176c25377081df7f04f8b72f1..689df99ebd955e544bbc1e3048842801fb9c5367 100644
+--- a/third_party/blink/renderer/modules/storage/cached_storage_area.cc
++++ b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
+@@ -101,11 +101,13 @@ bool CachedStorageArea::SetItem(const String& key,
+                                 Source* source) {
+   DCHECK(areas_->Contains(source));
+ 
++#if 0
+   // A quick check to reject obviously overbudget items to avoid priming the
+   // cache.
+   if ((key.length() + value.length()) * 2 >
+       mojom::blink::StorageArea::kPerStorageAreaQuota)
+     return false;
++#endif
+ 
+   EnsureLoaded();
+   String old_value;
+diff --git a/third_party/blink/renderer/modules/storage/storage_area_map.cc b/third_party/blink/renderer/modules/storage/storage_area_map.cc
+index 62ab01c2864baa2ef1945031faf42cbeefbfc72b..e7edaff1778c66812ab9f7058e89f84bfba94339 100644
+--- a/third_party/blink/renderer/modules/storage/storage_area_map.cc
++++ b/third_party/blink/renderer/modules/storage/storage_area_map.cc
+@@ -104,10 +104,12 @@ bool StorageAreaMap::SetItemInternal(const String& key,
+   size_t new_item_size = QuotaForString(key) + QuotaForString(value);
+   size_t new_quota_used = quota_used_ - old_item_size + new_item_size;
+ 
++#if 0
+   // Only check quota if the size is increasing, this allows
+   // shrinking changes to pre-existing files that are over budget.
+   if (check_quota && new_item_size > old_item_size && new_quota_used > quota_)
+     return false;
++#endif
+ 
+   keys_values_.Set(key, value);
+   ResetKeyIterator();

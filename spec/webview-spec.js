@@ -1332,10 +1332,12 @@ describe('<webview> tag', function () {
           nodeIntegration: true
         }
       })
+      const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview')
+      const webviewDomReady = emittedOnce(ipcMain, 'webview-dom-ready')
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'))
 
-      const [, webContents] = await emittedOnce(w.webContents, 'did-attach-webview')
-      const [, id] = await emittedOnce(ipcMain, 'webview-dom-ready')
+      const [, webContents] = await didAttachWebview
+      const [, id] = await webviewDomReady
       expect(webContents.id).to.equal(id)
     })
   })

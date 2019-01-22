@@ -182,7 +182,7 @@ class InspectableWebContentsImpl
       const GURL& target_url,
       const std::string& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
-  void HandleKeyboardEvent(content::WebContents*,
+  bool HandleKeyboardEvent(content::WebContents*,
                            const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
   content::ColorChooser* OpenColorChooser(

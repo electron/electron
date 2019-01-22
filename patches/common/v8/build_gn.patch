@@ -5,19 +5,19 @@ Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 83f1fdb0bf75dd5f7efa490cd5bd1221e31748ed..5489b943f1d8bb8ffc02cabf4e0a15788c7d4e48 100644
+index 3c039428271d6598fc4ad7137334176d80b92631..9fe1e8d67a25955fea69be89e0bcc27cf5d8529d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -226,7 +226,7 @@ config("internal_config") {
+@@ -242,7 +242,7 @@ config("internal_config") {
  
-   defines = []
+   configs = [ "//build/config/compiler:wexit_time_destructors" ]
  
 -  if (is_component_build) {
 +  if (is_component_build || is_electron_build) {
-     defines += [ "BUILDING_V8_SHARED" ]
+     defines = [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -3363,6 +3363,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3481,6 +3481,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  

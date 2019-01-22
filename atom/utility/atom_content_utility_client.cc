@@ -4,7 +4,6 @@
 
 #include "atom/utility/atom_content_utility_client.h"
 
-#include <string>
 #include <utility>
 
 #include "base/command_line.h"
@@ -95,16 +94,25 @@ void AtomContentUtilityClient::RegisterServices(StaticServiceMap* services) {
                     proxy_resolver_info);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  service_manager::EmbeddedServiceInfo pdf_compositor_info;
-  pdf_compositor_info.factory =
-      base::BindRepeating(&printing::CreatePdfCompositorService, std::string());
-  services->emplace(printing::mojom::kServiceName, pdf_compositor_info);
-
   service_manager::EmbeddedServiceInfo printing_info;
   printing_info.factory =
       base::BindRepeating(&printing::PrintingService::CreateService);
   services->emplace(printing::mojom::kChromePrintingServiceName, printing_info);
 #endif
+}
+
+std::unique_ptr<service_manager::Service>
+AtomContentUtilityClient::HandleServiceRequest(
+    const std::string& service_name,
+    service_manager::mojom::ServiceRequest request) {
+#if BUILDFLAG(ENABLE_PRINTING)
+  if (service_name == printing::mojom::kServiceName) {
+    return printing::CreatePdfCompositorService(std::string(),
+                                                std::move(request));
+  }
+#endif
+
+  return nullptr;
 }
 
 }  // namespace atom

@@ -31,7 +31,9 @@ void Net::BuildPrototype(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
-  return URLRequest::GetConstructor(isolate)->GetFunction();
+  return URLRequest::GetConstructor(isolate)
+      ->GetFunction(isolate->GetCurrentContext())
+      .ToLocalChecked();
 }
 
 }  // namespace api
@@ -53,7 +55,8 @@ void Initialize(v8::Local<v8::Object> exports,
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));
-  dict.Set("Net", Net::GetConstructor(isolate)->GetFunction());
+  dict.Set("Net",
+           Net::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
 }
 
 }  // namespace

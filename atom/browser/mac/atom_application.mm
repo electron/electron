@@ -8,8 +8,11 @@
 #import "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
 #include "base/auto_reset.h"
+#include "base/observer_list.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/native_event_processor_mac.h"
+#include "content/public/browser/native_event_processor_observer_mac.h"
 
 namespace {
 
@@ -21,6 +24,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 }  // namespace
+
+@interface AtomApplication () <NativeEventProcessor> {
+  base::ObserverList<content::NativeEventProcessorObserver>::Unchecked
+      observers_;
+}
+@end
 
 @implementation AtomApplication
 
@@ -48,6 +57,8 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 
 - (void)sendEvent:(NSEvent*)event {
   base::AutoReset<BOOL> scoper(&handlingSendEvent_, YES);
+  content::ScopedNotifyNativeEventProcessorObserver scopedObserverNotifier(
+      &observers_, event);
   [super sendEvent:event];
 }
 
@@ -186,6 +197,16 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 
 - (void)orderFrontStandardAboutPanel:(id)sender {
   atom::Browser::Get()->ShowAboutPanel();
+}
+
+- (void)addNativeEventProcessorObserver:
+    (content::NativeEventProcessorObserver*)observer {
+  observers_.AddObserver(observer);
+}
+
+- (void)removeNativeEventProcessorObserver:
+    (content::NativeEventProcessorObserver*)observer {
+  observers_.RemoveObserver(observer);
 }
 
 @end

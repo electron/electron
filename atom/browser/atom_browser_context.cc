@@ -191,11 +191,6 @@ base::FilePath AtomBrowserContext::GetPath() const {
   return path_;
 }
 
-base::FilePath AtomBrowserContext::GetCachePath() const {
-  // TODO(deepak1556): Use platform cache directory.
-  return path_;
-}
-
 bool AtomBrowserContext::IsOffTheRecord() const {
   return in_memory_;
 }

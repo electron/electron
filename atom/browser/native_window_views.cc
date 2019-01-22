@@ -1216,6 +1216,14 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   }
 }
 
+void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
+#if defined(OS_LINUX)
+  aura::Window* window = GetNativeWindow();
+  if (window)
+    window->RemovePreTargetHandler(this);
+#endif
+}
+
 void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && this->parent()) {
     auto* parent = this->parent();

@@ -7,10 +7,10 @@ Do not check for unique origin in CacheStorage, in Electron we may have
 scripts running without an origin.
 
 diff --git a/content/browser/cache_storage/cache_storage.cc b/content/browser/cache_storage/cache_storage.cc
-index 5371daf3c552d4ad506439ba6e37b80a353b1036..bd5a480552fd420d5d15f97a39b08e693edff22d 100644
+index 334699f5f3832cbb90f595e31de0f443c6e62d26..4c5c7ec26b67afcf804649e3441cbb53c96e5956 100644
 --- a/content/browser/cache_storage/cache_storage.cc
 +++ b/content/browser/cache_storage/cache_storage.cc
-@@ -133,7 +133,7 @@ class CacheStorage::CacheLoader {
+@@ -130,7 +130,7 @@ class CacheStorage::CacheLoader {
          cache_storage_(cache_storage),
          origin_(origin),
          owner_(owner) {

@@ -5,10 +5,10 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index e155153ec1eec9d28242e9ab95c9d75a0d3f40d7..fab1bcd2d8176cdd7163e329552a0a848c601290 100644
+index 20733af1a1d9cae2c13a381b61aa4aecfebb0877..1b7404c2f05a0225c6dd55aacc7e8b31290ef68f 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -656,6 +656,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
+@@ -657,6 +657,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
    return frame_sink_id.is_valid() ? frame_sink_id : GetFrameSinkId();
  }
  
@@ -25,10 +25,10 @@ index e155153ec1eec9d28242e9ab95c9d75a0d3f40d7..fab1bcd2d8176cdd7163e329552a0a84
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index c48b0aa86d8acea34dfece9212da4e7b11ffdb64..115b5647dfc13eb14e4d560c1fb71b926b5af829 100644
+index 62bc30a0539f2e0d5b9e86716fe1be9b45726ff7..4b2111b57ca1bf10f5bc4d2589bd23964fa34d62 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -22,8 +22,10 @@
+@@ -23,8 +23,10 @@
  #include "components/viz/common/surfaces/surface_id.h"
  #include "components/viz/host/hit_test/hit_test_query.h"
  #include "content/browser/renderer_host/event_with_latency_info.h"
@@ -39,7 +39,7 @@ index c48b0aa86d8acea34dfece9212da4e7b11ffdb64..115b5647dfc13eb14e4d560c1fb71b92
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/input_event_ack_state.h"
  #include "content/public/common/screen_info.h"
-@@ -83,10 +85,12 @@ class CursorManager;
+@@ -84,10 +86,12 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -52,7 +52,7 @@ index c48b0aa86d8acea34dfece9212da4e7b11ffdb64..115b5647dfc13eb14e4d560c1fb71b92
  class WebCursor;
  class DelegatedFrameHost;
  struct TextInputState;
-@@ -145,6 +149,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -142,6 +146,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    TouchSelectionControllerClientManager*
    GetTouchSelectionControllerClientManager() override;
  
@@ -62,7 +62,7 @@ index c48b0aa86d8acea34dfece9212da4e7b11ffdb64..115b5647dfc13eb14e4d560c1fb71b92
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -369,6 +376,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -363,6 +370,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

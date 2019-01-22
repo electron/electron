@@ -86,8 +86,8 @@ class BrowserProcessImpl : public BrowserProcess {
   safe_browsing::SafeBrowsingService* safe_browsing_service() override;
   safe_browsing::ClientSideDetectionService* safe_browsing_detection_service()
       override;
-  subresource_filter::ContentRulesetService*
-  subresource_filter_ruleset_service() override;
+  subresource_filter::RulesetService* subresource_filter_ruleset_service()
+      override;
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
   net_log::ChromeNetLog* net_log() override;
@@ -98,6 +98,8 @@ class BrowserProcessImpl : public BrowserProcess {
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;
   gcm::GCMDriver* gcm_driver() override;
+  resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
+      override;
   resource_coordinator::TabManager* GetTabManager() override;
   shell_integration::DefaultWebClientState CachedDefaultWebClientState()
       override;

@@ -147,7 +147,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("autoUpdater", AutoUpdater::Create(isolate));
-  dict.Set("AutoUpdater", AutoUpdater::GetConstructor(isolate)->GetFunction());
+  dict.Set("AutoUpdater", AutoUpdater::GetConstructor(isolate)
+                              ->GetFunction(context)
+                              .ToLocalChecked());
 }
 
 }  // namespace

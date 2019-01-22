@@ -9,6 +9,7 @@
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
+#include "ui/views/cocoa/bridged_native_widget_host_impl.h"
 #include "ui/views/widget/native_widget_mac.h"
 #include "ui/views_bridge_mac/bridged_native_widget_impl.h"
 
@@ -21,12 +22,13 @@
   // on the fly.
   // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
   // window delegate.
-  auto* bridged_view = views::BridgedNativeWidgetImpl::GetFromNativeWindow(
+  auto* bridge_host = views::BridgedNativeWidgetHostImpl::GetFromNativeWindow(
       shell->GetNativeWindow());
+  auto* bridged_view = bridge_host->bridge_impl();
   if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
     shell_ = shell;
     is_zooming_ = false;
-    level_ = [shell_->GetNativeWindow() level];
+    level_ = [shell_->GetNativeWindow().GetNativeNSWindow() level];
   }
   return self;
 }
@@ -138,7 +140,7 @@
 }
 
 - (void)windowWillMiniaturize:(NSNotification*)notification {
-  NSWindow* window = shell_->GetNativeWindow();
+  NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
   // store the current status window level to be restored in
   // windowDidDeminiaturize
   level_ = [window level];
@@ -152,7 +154,7 @@
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
   [super windowDidDeminiaturize:notification];
-  [shell_->GetNativeWindow() setLevel:level_];
+  [shell_->GetNativeWindow().GetNativeNSWindow() setLevel:level_];
   shell_->NotifyWindowRestore();
 }
 
@@ -179,7 +181,7 @@
   // artifacts.
   if (@available(macOS 10.10, *)) {
     if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      NSWindow* window = shell_->GetNativeWindow();
+      NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
       [window setToolbar:nil];
     }
   }
@@ -192,7 +194,7 @@
     // For frameless window we don't show set title for normal mode since the
     // titlebar is expected to be empty, but after entering fullscreen mode we
     // have to set one, because title bar is visible here.
-    NSWindow* window = shell_->GetNativeWindow();
+    NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     if ((shell_->transparent() || !shell_->has_frame()) &&
         // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
         // fullscreen mode.
@@ -221,7 +223,7 @@
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
   if (@available(macOS 10.10, *)) {
     // Restore the titlebar visibility.
-    NSWindow* window = shell_->GetNativeWindow();
+    NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     if ((shell_->transparent() || !shell_->has_frame()) &&
         (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
          shell_->fullscreen_window_title())) {
@@ -247,8 +249,9 @@
   // Clears the delegate when window is going to be closed, since EL Capitan it
   // is possible that the methods of delegate would get called after the window
   // has been closed.
-  auto* bridged_view = views::BridgedNativeWidgetImpl::GetFromNativeWindow(
+  auto* bridge_host = views::BridgedNativeWidgetHostImpl::GetFromNativeWindow(
       shell_->GetNativeWindow());
+  auto* bridged_view = bridge_host->bridge_impl();
   bridged_view->OnWindowWillClose();
 }
 

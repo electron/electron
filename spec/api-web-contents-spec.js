@@ -264,7 +264,9 @@ describe('webContents module', () => {
 
   describe('openDevTools() API', () => {
     it('can show window with activation', async () => {
+      const focused = emittedOnce(w, 'focus')
       w.show()
+      await focused
       assert.strictEqual(w.isFocused(), true)
       const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
       w.webContents.openDevTools({ mode: 'detach', activate: true })

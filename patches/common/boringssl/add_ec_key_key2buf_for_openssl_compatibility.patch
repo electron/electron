@@ -9,7 +9,7 @@ Reviewed-by: Adam Langley <agl@google.com>
 Commit-Queue: Adam Langley <agl@google.com>
 
 diff --git a/crypto/fipsmodule/ec/ec_key.c b/crypto/fipsmodule/ec/ec_key.c
-index a6d469767adfad1c9095cc58c567b10c71e95cfa..ba69e83cb8f49c70a98c8fd68fd7fa4b122da5cd 100644
+index 632dc9b2d902dfba01567f4c02ad7ad6d0c8c3e8..4bc12a073650f66f5ae8ba2beabb9a6fb2b21878 100644
 --- a/crypto/fipsmodule/ec/ec_key.c
 +++ b/crypto/fipsmodule/ec/ec_key.c
 @@ -394,6 +394,33 @@ err:

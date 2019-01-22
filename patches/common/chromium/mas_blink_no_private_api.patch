@@ -18,7 +18,7 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..2ec7f04c71824b47de1ddbf1f0e8625d
  extern "C" {
  
  // Kill ring calls. Would be better to use NSKillRing.h, but that's not
-@@ -39,38 +40,53 @@
+@@ -39,38 +40,53 @@ NSString* _NSYankFromKillRing();
  void _NSNewKillRingSequence();
  void _NSSetKillRingToYankedState();
  }
@@ -92,7 +92,7 @@ index 7a1260db0a139f9f3f8a823af2c220f36162812a..bf9cf7046e2fc9cdfee5b92f2a348185
  
  namespace blink {
  
-@@ -73,10 +75,12 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
+@@ -73,10 +75,12 @@ bool ThemePainterMac::PaintTextField(const Node* node,
    // behavior change while remaining a fragile solution.
    // https://bugs.chromium.org/p/chromium/issues/detail?id=658085#c3
    if (!use_ns_text_field_cell) {
@@ -105,7 +105,7 @@ index 7a1260db0a139f9f3f8a823af2c220f36162812a..bf9cf7046e2fc9cdfee5b92f2a348185
      return false;
    }
  
-@@ -162,10 +166,12 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
+@@ -162,10 +166,12 @@ bool ThemePainterMac::PaintTextArea(const Node* node,
                                      const PaintInfo& paint_info,
                                      const IntRect& r) {
    LocalCurrentGraphicsContext local_context(paint_info.context, r);

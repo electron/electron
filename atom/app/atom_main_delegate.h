@@ -25,6 +25,7 @@ class AtomMainDelegate : public content::ContentMainDelegate {
   bool BasicStartupComplete(int* exit_code) override;
   void PreSandboxStartup() override;
   void PreCreateMainMessageLoop() override;
+  void PostEarlyInitialization(bool is_running_tests) override;
   content::ContentBrowserClient* CreateContentBrowserClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
