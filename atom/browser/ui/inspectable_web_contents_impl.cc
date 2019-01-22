@@ -732,10 +732,10 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
     return;
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+  frontend_host_ = content::DevToolsFrontendHost::Create(
       new_host,
       base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                 weak_factory_.GetWeakPtr())));
+                 weak_factory_.GetWeakPtr()));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
@@ -836,11 +836,11 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
         frontend_host_) {
       return;
     }
-    frontend_host_.reset(content::DevToolsFrontendHost::Create(
+    frontend_host_ = content::DevToolsFrontendHost::Create(
         web_contents()->GetMainFrame(),
         base::Bind(
             &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-            base::Unretained(this))));
+            base::Unretained(this)));
     return;
   }
 }
