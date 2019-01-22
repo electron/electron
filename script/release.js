@@ -14,6 +14,7 @@ const args = require('minimist')(process.argv.slice(2), {
 const fs = require('fs')
 const { execSync } = require('child_process')
 const nugget = require('nugget')
+const got = require('got')
 const pkg = require('../package.json')
 const pkgVersion = `v${pkg.version}`
 const pass = '\u2713'.green
@@ -312,7 +313,7 @@ async function verifyAssets (release) {
   const shaSumFile = 'SHASUMS256.txt'
 
   let filesToCheck = await Promise.all(release.assets.map(async asset => {
-    const assetDetails = await octokit.repos.getReleaseAsset({
+    const requestOptions = await octokit.repos.getReleaseAsset.endpoint({
       owner: 'electron',
       repo: targetRepo,
       asset_id: asset.id,
@@ -320,7 +321,17 @@ async function verifyAssets (release) {
         Accept: 'application/octet-stream'
       }
     })
-    await downloadFiles(assetDetails.meta.location, downloadDir, asset.name)
+
+    const { url, headers } = requestOptions
+    headers.authorization = `token ${process.env.ELECTRON_GITHUB_TOKEN}`
+
+    const response = await got(url, {
+      followRedirect: false,
+      method: 'HEAD',
+      headers
+    })
+
+    await downloadFiles(response.headers.location, downloadDir, asset.name)
     return asset.name
   })).catch(err => {
     console.log(`${fail} Error downloading files from GitHub`, err)
