@@ -11,9 +11,8 @@ const appVeyorJobs = {
 }
 
 const circleCIJobs = [
-  // FIXME(codebytere): re-enable
-  // 'linux-arm-publish',
-  // 'linux-arm64-publish',
+  'linux-arm-publish',
+  'linux-arm64-publish',
   'linux-ia32-publish',
   'linux-x64-publish'
 ]
@@ -23,11 +22,10 @@ const vstsJobs = [
   'electron-release-osx-x64'
 ]
 
-// FIXME(codebytere): re-enable
-// const vstsArmJobs = [
-//   'electron-arm-testing',
-//   'electron-arm64-testing'
-// ]
+const vstsArmJobs = [
+  'electron-arm-testing',
+  'electron-arm64-testing'
+]
 
 async function makeRequest (requestOptions, parseResponse) {
   return new Promise((resolve, reject) => {
@@ -136,11 +134,9 @@ function buildCircleCI (targetBranch, options) {
 }
 
 async function buildVSTS (targetBranch, options) {
-  // FIXME(codebytere): re-enable
-  // if (options.armTest) {
-  //   assert(vstsArmJobs.includes(options.job), `Unknown VSTS CI arm test job name: ${options.job}. Valid values are: ${vstsArmJobs}.`)
-  // }
-  if (options.job) {
+  if (options.armTest) {
+    assert(vstsArmJobs.includes(options.job), `Unknown VSTS CI arm test job name: ${options.job}. Valid values are: ${vstsArmJobs}.`)
+  } else if (options.job) {
     assert(vstsJobs.includes(options.job), `Unknown VSTS CI job name: ${options.job}. Valid values are: ${vstsJobs}.`)
   }
   console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
