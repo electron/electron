@@ -167,6 +167,7 @@ step-gn-gen-default: &step-gn-gen-default
 step-electron-build: &step-electron-build
   run:
     name: Electron build
+    no_output_timeout: 30m
     command: |
       cd src
       ninja -C out/Default electron -j18
