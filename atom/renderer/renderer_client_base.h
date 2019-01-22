@@ -61,6 +61,7 @@ class RendererClientBase : public content::ContentRendererClient {
       std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
       override;
   bool IsKeySystemsUpdateNeeded() override;
+  void DidSetUserAgent(const std::string& user_agent) override;
 
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
