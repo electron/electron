@@ -235,6 +235,12 @@ app.on('ready', function () {
   })
 })
 
+ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
+  event.sender.once('ipc-message-sync', (event, channel, args) => {
+    event.returnValue = returnValue
+  })
+})
+
 for (const eventName of [
   'remote-require',
   'remote-get-global',

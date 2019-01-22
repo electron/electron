@@ -651,7 +651,7 @@ describe('<webview> tag', function () {
   })
 
   describe('ipc-message event', () => {
-    it('emits when guest sends a ipc message to browser', async () => {
+    it('emits when guest sends an ipc message to browser', async () => {
       loadWebView(webview, {
         nodeintegration: 'on',
         src: `file://${fixtures}/pages/ipc-message.html`
