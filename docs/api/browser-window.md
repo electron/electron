@@ -255,6 +255,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
+    * `nodeIntegrationInSubFrames` Boolean (optional) - Experimental option for
+      enabling NodeJS support in sub-frames such as iframes. All your preloads will load for
+      every iframe, you can use `process.isMainFrame` to determine if you are
+      in the main frame or not.
     * `preload` String (optional) - Specifies a script that will be loaded before other
       scripts run in the page. This script will always have access to node APIs
       no matter whether node integration is turned on or off. The value should

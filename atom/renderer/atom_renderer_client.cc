@@ -79,25 +79,27 @@ void AtomRendererClient::DidCreateScriptContext(
     content::RenderFrame* render_frame) {
   RendererClientBase::DidCreateScriptContext(context, render_frame);
 
-  // Only allow node integration for the main frame of the top window, unless it
-  // is a devtools extension page. Allowing child frames or child windows to
-  // have node integration would result in memory leak, since we don't destroy
-  // node environment when script context is destroyed.
-  //
-  // DevTools extensions do not follow this rule because our implementation
-  // requires node integration in iframes to work. And usually DevTools
-  // extensions do not dynamically add/remove iframes.
-  //
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
-  if (!(render_frame->IsMainFrame() &&
-        !render_frame->GetWebFrame()->Opener()) &&
-      !IsDevToolsExtension(render_frame))
+
+  // Do not load node if we're aren't a main frame or a devtools extension
+  // unless node support has been explicitly enabled for sub frames
+  bool is_main_frame =
+      render_frame->IsMainFrame() && !render_frame->GetWebFrame()->Opener();
+  bool is_devtools = IsDevToolsExtension(render_frame);
+  bool allow_node_in_subframes =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  bool should_load_node =
+      is_main_frame || is_devtools || allow_node_in_subframes;
+  if (!should_load_node) {
     return;
+  }
 
   injected_frames_.insert(render_frame);
 
-  // Prepare the node bindings.
+  // If this is the first environment we are creating, prepare the node
+  // bindings.
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
@@ -115,6 +117,8 @@ void AtomRendererClient::DidCreateScriptContext(
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object());
+  mate::Dictionary process_dict(env->isolate(), env->process_object());
+  process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
@@ -146,11 +150,13 @@ void AtomRendererClient::WillReleaseScriptContext(
   if (env == node_bindings_->uv_env())
     node_bindings_->set_uv_env(nullptr);
 
-  // Destroy the node environment.
-  // This is disabled because pending async tasks may still use the environment
-  // and would cause crashes later. Node does not seem to clear all async tasks
-  // when the environment is destroyed.
-  // node::FreeEnvironment(env);
+  // Destroy the node environment.  We only do this if node support has been
+  // enabled for sub-frames to avoid a change-of-behavior / introduce crashes
+  // for existing users.
+  // TODO(MarshallOfSOund): Free the environment regardless of this switch
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames))
+    node::FreeEnvironment(env);
 
   // AtomBindings is tracking node environments.
   atom_bindings_->EnvironmentDestroyed(env);

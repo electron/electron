@@ -187,7 +187,7 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool internal,
     return;
 
   blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
-  if (!frame || !render_frame_->IsMainFrame())
+  if (!frame)
     return;
 
   EmitIPCEvent(frame, internal, channel, args, sender_id);
