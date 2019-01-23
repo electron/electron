@@ -17,7 +17,7 @@ class MacHelper : public content::BrowserCompositorMacClient,
                   public ui::AcceleratedWidgetMacNSView {
  public:
   explicit MacHelper(OffScreenRenderWidgetHostView* view) : view_(view) {
-    [view_->GetNativeView() setWantsLayer:YES];
+    [view_->GetNativeView().GetNativeNSView() setWantsLayer:YES];
   }
 
   virtual ~MacHelper() {}
