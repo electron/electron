@@ -1204,14 +1204,6 @@ workflows:
             - mas-testing
 
   nightly-release-test:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-                - *chromium-upgrade-branches
     jobs:
       - linux-checkout
 
