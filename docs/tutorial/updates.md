@@ -67,6 +67,11 @@ handling releases and does not require releases to originate on GitHub.
 Atlassian. Supports multiple applications and channels; uses a static file store
 to minify server cost.
 
+## Using Saas
+
+If you don't want to run your own service, you can use one of this online service : 
+- [Update Rock!](update.rocks) - Update server which support private releases and is free for open source project.
+
 ## Implementing Updates in Your App
 
 Once you've deployed your update server, continue with importing the required
