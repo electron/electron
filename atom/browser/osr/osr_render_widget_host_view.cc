@@ -252,6 +252,50 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
   DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
 };
 
+#if !defined(OS_MACOSX)
+class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
+ public:
+  explicit AtomDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
+      : view_(view) {}
+
+  ui::Layer* DelegatedFrameHostGetLayer() const override {
+    return view_->GetRootLayer();
+  }
+
+  bool DelegatedFrameHostIsVisible() const override {
+    return view_->IsShowing();
+  }
+
+  SkColor DelegatedFrameHostGetGutterColor() const override {
+    if (view_->render_widget_host()->delegate() &&
+        view_->render_widget_host()->delegate()->IsFullscreenForCurrentTab()) {
+      return SK_ColorWHITE;
+    }
+    return *view_->GetBackgroundColor();
+  }
+
+  void OnFrameTokenChanged(uint32_t frame_token) override {
+    view_->render_widget_host()->DidProcessFrame(frame_token);
+  }
+
+  float GetDeviceScaleFactor() const override {
+    return view_->GetDeviceScaleFactor();
+  }
+
+  std::vector<viz::SurfaceId> CollectSurfaceIdsForEviction() override {
+    return view_->render_widget_host()->CollectSurfaceIdsForEviction();
+  }
+
+  void OnBeginFrame(base::TimeTicks frame_time) override {}
+  void InvalidateLocalSurfaceIdOnEviction() override {}
+
+ private:
+  OffScreenRenderWidgetHostView* const view_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomDelegatedFrameHostClient);
+};
+#endif  // !defined(OS_MACOSX)
+
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     bool painting,
@@ -274,17 +318,22 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
+
+  current_device_scale_factor_ = kDefaultScaleFactor;
+
+  local_surface_id_allocator_.GenerateId();
+  local_surface_id_allocation_ =
+      local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
+
 #if !defined(OS_MACOSX)
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
-      AllocateFrameSinkId(is_guest_view_hack), this,
+      AllocateFrameSinkId(is_guest_view_hack),
+      delegated_frame_host_client_.get(),
       true /* should_register_frame_sink_id */);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
-
-  current_device_scale_factor_ = kDefaultScaleFactor;
-
-  local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
 #if defined(OS_MACOSX)
   last_frame_root_background_color_ = SK_ColorTRANSPARENT;
@@ -374,7 +423,7 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
   begin_frame_number_++;
 
   if (renderer_compositor_frame_sink_)
-    renderer_compositor_frame_sink_->OnBeginFrame(begin_frame_args);
+    renderer_compositor_frame_sink_->OnBeginFrame(begin_frame_args, {});
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -433,8 +482,9 @@ void OffScreenRenderWidgetHostView::Show() {
   browser_compositor_->SetRenderWidgetHostIsHidden(false);
 #else
   delegated_frame_host_->AttachToCompositor(compositor_.get());
-  delegated_frame_host_->WasShown(GetLocalSurfaceId(),
-                                  GetRootLayer()->bounds().size(), false);
+  delegated_frame_host_->WasShown(
+      GetLocalSurfaceIdAllocation().local_surface_id(),
+      GetRootLayer()->bounds().size(), false);
 #endif
 
   if (render_widget_host_)
@@ -587,7 +637,7 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
 }
 
 void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
-  GetDelegatedFrameHost()->ClearDelegatedFrame();
+  // GetDelegatedFrameHost()->EvictDelegatedFrame();
 }
 
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
@@ -667,9 +717,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
 
 void OffScreenRenderWidgetHostView::SetTooltipText(const base::string16&) {}
 
-void OffScreenRenderWidgetHostView::SelectionBoundsChanged(
-    const ViewHostMsg_SelectionBounds_Params&) {}
-
 uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
   return latest_capture_sequence_number_;
 }
@@ -698,7 +745,6 @@ void OffScreenRenderWidgetHostView::InitAsGuest(
     content::RenderWidgetHostView* parent_host_view,
     content::RenderWidgetHostViewGuest* guest_view) {
   parent_host_view_->AddGuestHostView(this);
-  parent_host_view_->RegisterGuestViewFrameSwappedCallback(guest_view);
 }
 
 void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
@@ -745,39 +791,10 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
       render_widget_host, embedder_host_view, size());
 }
 
-#if !defined(OS_MACOSX)
-ui::Layer* OffScreenRenderWidgetHostView::DelegatedFrameHostGetLayer() const {
-  return const_cast<ui::Layer*>(root_layer_.get());
+const viz::LocalSurfaceIdAllocation&
+OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
+  return local_surface_id_allocation_;
 }
-
-bool OffScreenRenderWidgetHostView::DelegatedFrameHostIsVisible() const {
-  return is_showing_;
-}
-
-SkColor OffScreenRenderWidgetHostView::DelegatedFrameHostGetGutterColor()
-    const {
-  if (render_widget_host_->delegate() &&
-      render_widget_host_->delegate()->IsFullscreenForCurrentTab()) {
-    return SK_ColorWHITE;
-  }
-  return background_color_;
-}
-
-void OffScreenRenderWidgetHostView::OnFirstSurfaceActivation(
-    const viz::SurfaceInfo& surface_info) {}
-
-void OffScreenRenderWidgetHostView::OnBeginFrame(base::TimeTicks frame_time) {}
-
-void OffScreenRenderWidgetHostView::OnFrameTokenChanged(uint32_t frame_token) {
-  render_widget_host_->DidProcessFrame(frame_token);
-}
-
-const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
-    const {
-  return local_surface_id_;
-}
-
-#endif  // !defined(OS_MACOSX)
 
 const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
   return GetDelegatedFrameHost()->frame_sink_id();
@@ -873,21 +890,6 @@ void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
     OffscreenViewProxy* proxy) {
   proxy_views_.erase(proxy);
   Invalidate();
-}
-
-void OffScreenRenderWidgetHostView::RegisterGuestViewFrameSwappedCallback(
-    content::RenderWidgetHostViewGuest* guest_host_view) {
-  guest_host_view->RegisterFrameSwappedCallback(base::BindOnce(
-      &OffScreenRenderWidgetHostView::OnGuestViewFrameSwapped,
-      weak_ptr_factory_.GetWeakPtr(), base::Unretained(guest_host_view)));
-}
-
-void OffScreenRenderWidgetHostView::OnGuestViewFrameSwapped(
-    content::RenderWidgetHostViewGuest* guest_host_view) {
-  InvalidateBounds(gfx::ConvertRectToPixel(current_device_scale_factor_,
-                                           guest_host_view->GetViewBounds()));
-
-  RegisterGuestViewFrameSwappedCallback(guest_host_view);
 }
 
 std::unique_ptr<viz::SoftwareOutputDevice>
@@ -1026,7 +1028,8 @@ void OffScreenRenderWidgetHostView::SynchronizeVisualProperties() {
   if (render_widget_host_)
     render_widget_host_->SynchronizeVisualProperties();
   GetDelegatedFrameHost()->EmbedSurface(
-      local_surface_id_, size_, cc::DeadlinePolicy::UseDefaultDeadline());
+      local_surface_id_allocation_.local_surface_id(), size_,
+      cc::DeadlinePolicy::UseDefaultDeadline());
 }
 
 void OffScreenRenderWidgetHostView::SendMouseEvent(
@@ -1204,11 +1207,6 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
-  if (GetCompositor()) {
-    GetCompositor()->SetAuthoritativeVSyncInterval(
-        base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
-  }
-
   if (copy_frame_generator_.get()) {
     copy_frame_generator_->set_frame_rate_threshold_us(
         frame_rate_threshold_us_);
@@ -1260,18 +1258,21 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
-  local_surface_id_ = local_surface_id_allocator_.GenerateId();
+  local_surface_id_allocator_.GenerateId();
+  local_surface_id_allocation_ =
+      local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
   GetCompositor()->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
-                                   local_surface_id_);
+                                   local_surface_id_allocation_);
 
 #if defined(OS_MACOSX)
   bool resized = UpdateNSViewAndDisplay();
 #else
   bool resized = true;
   GetDelegatedFrameHost()->EmbedSurface(
-      local_surface_id_, size, cc::DeadlinePolicy::UseDefaultDeadline());
+      local_surface_id_allocation_.local_surface_id(), size,
+      cc::DeadlinePolicy::UseDefaultDeadline());
 #endif
 
   // Note that |render_widget_host_| will retrieve resize parameters from the

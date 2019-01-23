@@ -132,14 +132,15 @@ display::Display OffScreenRenderWidgetHostView::GetDisplay() {
 void OffScreenRenderWidgetHostView::OnDidUpdateVisualPropertiesComplete(
     const cc::RenderFrameMetadata& metadata) {
   DCHECK_EQ(current_device_scale_factor_, metadata.device_scale_factor);
-  browser_compositor_->SynchronizeVisualProperties(
+  browser_compositor_->UpdateSurfaceFromChild(
       metadata.device_scale_factor, metadata.viewport_size_in_pixels,
-      metadata.local_surface_id.value_or(viz::LocalSurfaceId()));
+      metadata.local_surface_id_allocation.value_or(
+          viz::LocalSurfaceIdAllocation()));
 }
 
-const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
-    const {
-  return browser_compositor_->GetRendererLocalSurfaceId();
+const viz::LocalSurfaceIdAllocation&
+OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
+  return browser_compositor_->GetRendererLocalSurfaceIdAllocation();
 }
 
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
