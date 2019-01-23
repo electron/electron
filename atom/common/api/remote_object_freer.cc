@@ -56,13 +56,12 @@ void RemoteObjectFreer::RunDestructor() {
   if (!render_frame)
     return;
 
-  auto* channel = "ipc-internal-message";
+  auto* channel = "ELECTRON_BROWSER_DEREFERENCE";
   base::ListValue args;
-  args.AppendString("ELECTRON_BROWSER_DEREFERENCE");
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
   render_frame->Send(new AtomFrameHostMsg_Message(render_frame->GetRoutingID(),
-                                                  channel, args));
+                                                  true, channel, args));
 }
 
 }  // namespace atom
