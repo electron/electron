@@ -39,6 +39,10 @@ bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
+bool IsTtsEnabled() {
+  return BUILDFLAG(ENABLE_TTS);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -52,6 +56,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
+  dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
 }
 
 }  // namespace

@@ -1312,4 +1312,41 @@ describe('chromium feature', () => {
       })
     })
   })
+
+  describe('SpeechSynthesis', () => {
+    before(function () {
+      if (isCI || !features.isTtsEnabled()) {
+        this.skip()
+      }
+    })
+
+    it('should emit lifecycle events', async () => {
+      const sentence = `long sentence which will take at least a few seconds to
+          utter so that it's possible to pause and resume before the end`
+      const utter = new SpeechSynthesisUtterance(sentence)
+      // Create a dummy utterence so that speech synthesis state
+      // is initialized for later calls.
+      speechSynthesis.speak(new SpeechSynthesisUtterance())
+      speechSynthesis.cancel()
+      speechSynthesis.speak(utter)
+      // paused state after speak()
+      expect(speechSynthesis.paused).to.be.false()
+      await new Promise((resolve) => { utter.onstart = resolve })
+      // paused state after start event
+      expect(speechSynthesis.paused).to.be.false()
+
+      speechSynthesis.pause()
+      // paused state changes async, right before the pause event
+      expect(speechSynthesis.paused).to.be.false()
+      await new Promise((resolve) => { utter.onpause = resolve })
+      expect(speechSynthesis.paused).to.be.true()
+
+      speechSynthesis.resume()
+      await new Promise((resolve) => { utter.onresume = resolve })
+      // paused state after resume event
+      expect(speechSynthesis.paused).to.be.false()
+
+      await new Promise((resolve) => { utter.onend = resolve })
+    })
+  })
 })

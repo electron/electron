@@ -90,6 +90,10 @@
 #include "components/services/pdf_compositor/public/interfaces/pdf_compositor.mojom.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
+#if BUILDFLAG(ENABLE_TTS)
+#include "chrome/browser/speech/tts_message_filter.h"
+#endif  // BUILDFLAG(ENABLE_TTS)
+
 using content::BrowserThread;
 
 namespace atom {
@@ -220,6 +224,10 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 #if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(
       process_id, host->GetBrowserContext()));
+#endif
+
+#if BUILDFLAG(ENABLE_TTS)
+  host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
   ProcessPreferences prefs;
