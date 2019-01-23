@@ -107,7 +107,7 @@ hooks = [
     'action': [
       'python',
       '-c',
-      'import os; os.chdir("src"); os.chdir("electron"); os.system("npm install")',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npm.py", "install"]);',
     ],
   },
   {
@@ -117,7 +117,7 @@ hooks = [
     'action': [
       'python',
       '-c',
-      'import os; os.chdir("src"); os.chdir("electron"); os.chdir("vendor"); os.chdir("boto"); os.system("python setup.py build");',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "boto")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],
   },
   {
@@ -127,9 +127,9 @@ hooks = [
     'action': [
       'python',
       '-c',
-      'import os; os.chdir("src"); os.chdir("electron"); os.chdir("vendor"); os.chdir("requests"); os.system("python setup.py build");',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "requests")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],
-  }
+  },
 ]
 
 recursedeps = [
