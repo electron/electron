@@ -4,7 +4,10 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include "content/browser/frame_host/frame_tree.h"
+#include "content/browser/frame_host/frame_tree_node.h"
 #include "content/browser/web_contents/web_contents_impl.h"
+#include "content/public/browser/guest_mode.h"
 
 #if BUILDFLAG(ENABLE_OSR)
 #include "atom/browser/osr/osr_render_widget_host_view.h"
@@ -21,8 +24,15 @@ namespace api {
 
 void WebContents::DetachFromOuterFrame() {
   // See detach_webview_frame.patch on how to detach.
-  auto* impl = static_cast<content::WebContentsImpl*>(web_contents());
-  impl->GetRenderManagerForTesting()->RemoveOuterDelegateFrame();
+  DCHECK(content::GuestMode::IsCrossProcessFrameGuest(web_contents()));
+  int frame_tree_node_id =
+      static_cast<content::WebContentsImpl*>(web_contents())
+          ->GetOuterDelegateFrameTreeNodeId();
+  if (frame_tree_node_id != content::FrameTreeNode::kFrameTreeNodeInvalidId) {
+    auto* node = content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+    DCHECK(node->parent());
+    node->frame_tree()->RemoveFrame(node);
+  }
 }
 
 #if BUILDFLAG(ENABLE_OSR)
