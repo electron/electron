@@ -67,7 +67,7 @@ steps:
 
 - bash: |
     cd src
-    python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+    python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg --no-sandbox
   displayName: Verify non proprietary ffmpeg
   timeoutInMinutes: 5
 
@@ -79,7 +79,7 @@ steps:
 
 - bash: |
    cd src
-   ./out/Default/electron electron/spec --ci --enable-logging
+   ./out/Default/electron electron/spec --ci --enable-logging --no-sandbox
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
 

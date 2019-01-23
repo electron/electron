@@ -45,7 +45,10 @@ def main():
     env['ELECTRON_ENABLE_STACK_DUMPING'] = 'true'
     # FIXME: Enable after ELECTRON_ENABLE_LOGGING works again
     # env['ELECTRON_ENABLE_LOGGING'] = 'true'
-    subprocess.check_call([electron, test_path] + sys.argv[1:], env=env)
+    extra_args = []
+    if args.no_sandbox:
+      extra_args.append('--no-sandbox')
+    subprocess.check_call([electron, test_path] + extra_args, env=env)
   except subprocess.CalledProcessError as e:
     returncode = e.returncode
   except KeyboardInterrupt:
@@ -86,6 +89,9 @@ def parse_args():
                           Relative to the --source-root.',
                       default=None,
                       required=True)
+  parser.add_argument('--no-sandbox',
+                      help='Run electron without sandbox.',
+                      action='store_true')
   return parser.parse_args()
 
 if __name__ == '__main__':
