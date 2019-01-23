@@ -360,7 +360,7 @@ jobs:
 
   - bash: |
       export ELECTRON_OUT_DIR=Default
-      (cd src/electron && npm run test -- --ci)
+      (cd src/electron && npm run test -- --ci --enable-logging)
     displayName: Run Electron test suite
     timeoutInMinutes: 10
 
