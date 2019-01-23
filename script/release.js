@@ -6,11 +6,15 @@ const args = require('minimist')(process.argv.slice(2), {
   boolean: [
     'validateRelease',
     'skipVersionCheck',
-    'automaticRelease'
-  ]
+    'automaticRelease',
+    'verboseNugget'
+  ],
+  default: { 'verboseNugget': false }
 })
 const fs = require('fs')
 const { execSync } = require('child_process')
+const nugget = require('nugget')
+const got = require('got')
 const pkg = require('../package.json')
 const pkgVersion = `v${pkg.version}`
 const pass = '\u2713'.green
@@ -19,8 +23,6 @@ const fail = '\u2717'.red
 const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
-const axios = require('axios')
-const contentDisposition = require('content-disposition')
 
 const octokit = require('@octokit/rest')()
 octokit.authenticate({
@@ -45,11 +47,11 @@ async function getDraftRelease (version, skipValidation) {
   const draft = drafts[0]
   if (!skipValidation) {
     failureCount = 0
-    check(drafts.length === 1, 'Draft exists.', true)
+    check(drafts.length === 1, 'one draft exists', true)
     if (versionToCheck.indexOf('beta') > -1) {
-      check(draft.prerelease, 'Draft is a prerelease.')
+      check(draft.prerelease, 'draft is a prerelease')
     }
-    check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'Draft has release notes.')
+    check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
     check((failureCount === 0), `Draft release looks good to go.`, true)
   }
   return draft
@@ -309,13 +311,25 @@ async function verifyAssets (release) {
   const shaSumFile = 'SHASUMS256.txt'
 
   let filesToCheck = await Promise.all(release.assets.map(async asset => {
-    const assetDetails = await octokit.repos.getReleaseAsset({
+    const requestOptions = await octokit.repos.getReleaseAsset.endpoint({
       owner: 'electron',
       repo: targetRepo,
-      asset_id: asset.id
+      asset_id: asset.id,
+      headers: {
+        Accept: 'application/octet-stream'
+      }
     })
-    const downloadURL = assetDetails.data.url.replace('://', '://' + process.env.ELECTRON_GITHUB_TOKEN + ':@')
-    await downloadFiles(downloadURL, downloadDir, asset.name)
+
+    const { url, headers } = requestOptions
+    headers.authorization = `token ${process.env.ELECTRON_GITHUB_TOKEN}`
+
+    const response = await got(url, {
+      followRedirect: false,
+      method: 'HEAD',
+      headers
+    })
+
+    await downloadFiles(response.headers.location, downloadDir, asset.name)
     return asset.name
   })).catch(err => {
     console.log(`${fail} Error downloading files from GitHub`, err)
@@ -334,40 +348,21 @@ async function verifyAssets (release) {
   })
 }
 
-async function downloadFiles (urls, directory, targetName) {
-  const allUrls = Array.isArray(urls) ? urls : [urls]
+function downloadFiles (urls, directory, targetName) {
+  return new Promise((resolve, reject) => {
+    const nuggetOpts = { dir: directory }
+    nuggetOpts.quiet = !args.verboseNugget
+    if (targetName) nuggetOpts.target = targetName
 
-  await Promise.all(allUrls.map(async (targetUrl) => {
-    const axiosResponse = await axios.get(targetUrl, {
-      responseType: 'stream',
-      headers: {
-        Accept: 'application/octet-stream'
+    nugget(urls, nuggetOpts, (err) => {
+      if (err) {
+        reject(err)
+      } else {
+        console.log(`${pass} all files downloaded successfully!`)
+        resolve()
       }
     })
-
-    if (axiosResponse.status !== 200) {
-      throw new Error(`Expected 200 status fetching "${targetUrl}" but got "${axiosResponse.status}"`)
-    }
-    let fileName = targetName
-    if (!fileName) {
-      if (axiosResponse.headers['content-disposition']) {
-        const parsed = contentDisposition.parse(axiosResponse.headers['content-disposition'])
-        fileName = parsed.parameters.filename
-      }
-    }
-    if (!fileName) {
-      const url = new URL(targetUrl)
-      fileName = path.basename(url.pathname)
-    }
-    if (!fileName) throw new Error(`Unknown filename for request: "${targetUrl}"`)
-    const writeStream = fs.createWriteStream(path.resolve(directory, fileName))
-    axiosResponse.data.pipe(writeStream)
-    return new Promise((resolve, reject) => {
-      writeStream.on('error', reject)
-      axiosResponse.data.on('error', reject)
-      writeStream.on('close', resolve)
-    })
-  }))
+  })
 }
 
 async function verifyShasums (urls, isS3) {
