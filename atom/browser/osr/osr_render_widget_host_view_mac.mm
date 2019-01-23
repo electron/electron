@@ -44,23 +44,12 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void DestroyCompositorForShutdown() override {}
 
-  bool SynchronizeVisualProperties(
-      const base::Optional<viz::LocalSurfaceId>&
-          child_allocated_local_surface_id) override {
-    auto* browser_compositor = view_->browser_compositor();
-    if (child_allocated_local_surface_id) {
-      browser_compositor->UpdateRendererLocalSurfaceIdFromChild(
-          *child_allocated_local_surface_id);
-    } else {
-      browser_compositor->AllocateNewRendererLocalSurfaceId();
-    }
-
-    if (auto* host = browser_compositor->GetDelegatedFrameHost()) {
-      host->EmbedSurface(browser_compositor->GetRendererLocalSurfaceId(),
-                         browser_compositor->GetRendererSize(),
-                         cc::DeadlinePolicy::UseDefaultDeadline());
-    }
+  bool OnBrowserCompositorSurfaceIdChanged() override {
     return view_->render_widget_host()->SynchronizeVisualProperties();
+  }
+
+  std::vector<viz::SurfaceId> CollectSurfaceIdsForEviction() override {
+    return view_->render_widget_host()->CollectSurfaceIdsForEviction();
   }
 
  private:
@@ -76,12 +65,8 @@ void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
 void OffScreenRenderWidgetHostView::SpeakSelection() {}
 
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
-  return browser_compositor_->UpdateNSViewAndDisplay(
+  return browser_compositor_->UpdateSurfaceFromNSView(
       GetRootLayer()->bounds().size(), GetDisplay());
-}
-
-bool OffScreenRenderWidgetHostView::ShouldContinueToPauseForFrame() {
-  return browser_compositor_->ShouldContinueToPauseForFrame();
 }
 
 void OffScreenRenderWidgetHostView::CreatePlatformWidget(

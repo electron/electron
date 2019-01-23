@@ -117,7 +117,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
-  bool ShouldContinueToPauseForFrame() override;
   bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MACOSX)
 
