@@ -101,6 +101,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, options: { standard: true, secure: true } },
   { scheme: global.zoomScheme, options: { standard: true, secure: true } },
   { scheme: 'cors', options: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'cors-blob', options: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', options: { supportFetchAPI: true } },
   { scheme: 'no-fetch', options: { corsEnabled: true } }
 ])
