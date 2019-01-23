@@ -32,7 +32,7 @@ const filter = {
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
   details.requestHeaders['User-Agent'] = 'MyAgent'
-  callback({ cancel: false, requestHeaders: details.requestHeaders })
+  callback({ requestHeaders: details.requestHeaders })
 })
 ```
 
@@ -130,7 +130,7 @@ response are visible by the time this listener is fired.
     * `responseHeaders` Object
   * `callback` Function
     * `response` Object
-      * `cancel` Boolean
+      * `cancel` Boolean (optional)
       * `responseHeaders` Object (optional) - When provided, the server is assumed
         to have responded with these headers.
       * `statusLine` String (optional) - Should be provided when overriding
