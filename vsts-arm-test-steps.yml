@@ -73,7 +73,7 @@ steps:
 
 - bash: |
     cd src
-    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --no-sandbox
   displayName: Verify mksnapshot
   timeoutInMinutes: 5
 

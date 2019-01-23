@@ -55,7 +55,10 @@ def main():
       else:
         electron = os.path.join(app_path, PROJECT_NAME)
 
-      subprocess.check_call([electron, test_path])
+      extra_args = []
+      if args.no_sandbox:
+        extra_args.append('--no-sandbox')
+      subprocess.check_call([electron, test_path] + extra_args)
       print 'ok successfully used custom snapshot.'
   except subprocess.CalledProcessError as e:
     print 'not ok an error was encountered while testing mksnapshot.'
@@ -96,6 +99,8 @@ def parse_args():
   parser.add_argument('--source-root',
                       default=SOURCE_ROOT,
                       required=False)
+  parser.add_argument('--no-sandbox',
+                      action='store_True')
   return parser.parse_args()
 
 if __name__ == '__main__':
