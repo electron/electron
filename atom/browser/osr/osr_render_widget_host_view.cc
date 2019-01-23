@@ -324,9 +324,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   local_surface_id_allocator_.GenerateId();
   local_surface_id_allocation_ =
       local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
-  delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
 
 #if !defined(OS_MACOSX)
+  delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack),
       delegated_frame_host_client_.get(),
@@ -585,9 +585,6 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     const viz::LocalSurfaceId& local_surface_id,
     viz::CompositorFrame frame,
     base::Optional<viz::HitTestRegionList> hit_test_region_list) {
-  TRACE_EVENT0("electron",
-               "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
-
 #if defined(OS_MACOSX)
   last_frame_root_background_color_ = frame.metadata.root_background_color;
 #endif
@@ -791,11 +788,6 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
       render_widget_host, embedder_host_view, size());
 }
 
-const viz::LocalSurfaceIdAllocation&
-OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
-  return local_surface_id_allocation_;
-}
-
 const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
   return GetDelegatedFrameHost()->frame_sink_id();
 }
@@ -939,8 +931,6 @@ void OffScreenRenderWidgetHostView::SetWantsAnimateOnlyBeginFrames() {
 
 void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
                                             const SkBitmap& bitmap) {
-  TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
-
   HoldResize();
 
   if (parent_callback_) {
@@ -1193,6 +1183,11 @@ ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
 
 ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
   return root_layer_.get();
+}
+
+const viz::LocalSurfaceIdAllocation&
+OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
+  return local_surface_id_allocation_;
 }
 
 content::DelegatedFrameHost*
