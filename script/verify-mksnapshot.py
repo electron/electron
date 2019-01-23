@@ -100,7 +100,7 @@ def parse_args():
                       default=SOURCE_ROOT,
                       required=False)
   parser.add_argument('--no-sandbox',
-                      action='store_True')
+                      action='store_true')
   return parser.parse_args()
 
 if __name__ == '__main__':
