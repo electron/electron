@@ -494,6 +494,48 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.moveTop()', () => {
+    it('should not steal focus', async () => {
+      const posDelta = 50
+      const wShownInactive = emittedOnce(w, 'show')
+      w.showInactive()
+      await wShownInactive
+      assert(!w.isFocused())
+
+      const otherWindow = new BrowserWindow({ show: false, title: 'otherWindow' })
+      const otherWindowShown = emittedOnce(otherWindow, 'show')
+      otherWindow.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
+      otherWindow.show()
+      await otherWindowShown
+      assert(otherWindow.isFocused())
+
+      w.moveTop()
+      const wPos = w.getPosition()
+      const wMoving = emittedOnce(w, 'move')
+      w.setPosition(wPos[0] + posDelta, wPos[1] + posDelta)
+      await wMoving
+      assert(!w.isFocused())
+      assert(otherWindow.isFocused())
+
+      const wFocused = emittedOnce(w, 'focus')
+      w.focus()
+      await wFocused
+      assert(w.isFocused())
+
+      otherWindow.moveTop()
+      const otherWindowPos = otherWindow.getPosition()
+      const otherWindowMoving = emittedOnce(otherWindow, 'move')
+      otherWindow.setPosition(otherWindowPos[0] + posDelta, otherWindowPos[1] + posDelta)
+      await otherWindowMoving
+      assert(!otherWindow.isFocused())
+      assert(w.isFocused())
+
+      await closeWindow(otherWindow, { assertSingleWindow: false }).then(() => {
+        assert.strictEqual(BrowserWindow.getAllWindows().length, 2) // Test window + w
+      })
+    })
+  })
+
   describe('BrowserWindow.capturePage(rect)', (done) => {
     it('returns a Promise with a Buffer', async () => {
       const image = await w.capturePage({

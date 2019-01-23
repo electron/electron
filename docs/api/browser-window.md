@@ -1089,7 +1089,7 @@ can not be focused on.
 
 Returns `Boolean` - Whether the window is always on top of other windows.
 
-#### `win.moveTop()` _macOS_ _Windows_
+#### `win.moveTop()`
 
 Moves window to top(z-order) regardless of focus
 

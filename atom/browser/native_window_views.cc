@@ -657,15 +657,19 @@ void NativeWindowViews::SetResizable(bool resizable) {
   resizable_ = resizable;
 }
 
-#if defined(OS_WIN)
 void NativeWindowViews::MoveTop() {
+  // TODO(julien.isorce): fix chromium in order to use existing
+  // widget()->StackAtTop().
+#if defined(OS_WIN)
   gfx::Point pos = GetPosition();
   gfx::Size size = GetSize();
   ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP, pos.x(), pos.y(),
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-}
+#elif defined(USE_X11)
+  atom::MoveWindowToForeground(GetAcceleratedWidget());
 #endif
+}
 
 bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)

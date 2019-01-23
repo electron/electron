@@ -23,6 +23,9 @@ void SetWindowType(::Window xwindow, const std::string& type);
 // Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
 bool ShouldUseGlobalMenuBar();
 
+// Bring the given window to the front and give it the focus.
+void MoveWindowToForeground(::Window xwindow);
+
 }  // namespace atom
 
 #endif  // ATOM_BROWSER_UI_X_X_WINDOW_UTILS_H_
