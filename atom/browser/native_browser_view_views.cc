@@ -13,10 +13,7 @@ namespace atom {
 
 NativeBrowserViewViews::NativeBrowserViewViews(
     InspectableWebContents* inspectable_web_contents)
-    : NativeBrowserView(inspectable_web_contents),
-      auto_resize_flags_(0),
-      auto_horizontal_proportion_set_(false),
-      auto_vertical_proportion_set_(false) {}
+    : NativeBrowserView(inspectable_web_contents) {}
 
 NativeBrowserViewViews::~NativeBrowserViewViews() {}
 
@@ -25,7 +22,8 @@ void NativeBrowserViewViews::SetAutoResizeFlags(uint8_t flags) {
   ResetAutoResizeProportions();
 }
 
-void NativeBrowserViewViews::SetAutoResizeProportions(gfx::Size window_size) {
+void NativeBrowserViewViews::SetAutoResizeProportions(
+    const gfx::Size& window_size) {
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeHorizontal) &&
       !auto_horizontal_proportion_set_) {
     auto* view = GetInspectableWebContentsView()->GetView();
