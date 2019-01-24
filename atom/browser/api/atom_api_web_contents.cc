@@ -1459,13 +1459,23 @@ v8::Local<v8::Promise> WebContents::HasServiceWorker() {
   return promise->GetHandle();
 }
 
-void WebContents::UnregisterServiceWorker(
-    const base::Callback<void(bool)>& callback) {
+void OnUnregisterServiceWorker(scoped_refptr<util::Promise> promise,
+                               bool success) {
+  promise->Resolve(success);
+}
+
+v8::Local<v8::Promise> WebContents::UnregisterServiceWorker() {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   auto* context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
-                                   callback);
+  if (!context) {
+    promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
+  }
+
+  context->UnregisterServiceWorker(
+      web_contents()->GetLastCommittedURL(),
+      base::BindOnce(&OnUnregisterServiceWorker, promise));
+
+  return promise->GetHandle();
 }
 
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {

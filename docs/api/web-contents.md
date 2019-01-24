@@ -1179,6 +1179,12 @@ Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 
+**[Deprecated Soon](promisification.md)**
+
+#### `contents.unregisterServiceWorker()`
+
+Returns `Promise<Boolean>` - Resolves with a boolean that's `true` if the ServiceWorker was successfully unregistered and `false` otherwise.
+
 #### `contents.getPrinters()`
 
 Get the system printer list.
