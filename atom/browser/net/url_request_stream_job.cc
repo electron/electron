@@ -139,6 +139,7 @@ void URLRequestStreamJob::StartAsync(
 }
 
 void URLRequestStreamJob::OnData(std::vector<char>&& buffer) {  // NOLINT
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (write_buffer_.empty()) {
     // Quick branch without copying.
     write_buffer_ = std::move(buffer);
@@ -173,7 +174,7 @@ void URLRequestStreamJob::OnError(int error) {
 int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   response_start_time_ = base::TimeTicks::Now();
 
-  if (ended_)
+  if (ended_ && write_buffer_.empty())
     return 0;
 
   // When write_buffer_ is empty, there is no data valable yet, we have to save
