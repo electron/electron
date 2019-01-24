@@ -654,6 +654,30 @@ describe('protocol module', () => {
         })
       })
     })
+
+    it('can handle large responses', async () => {
+      const data = Buffer.alloc(128 * 1024)
+      const handler = (request, callback) => {
+        callback(getStream(data.length, data))
+      }
+      await new Promise((resolve, reject) => {
+        protocol.registerStreamProtocol(protocolName, handler, err => {
+          if (err) return reject(err)
+          resolve()
+        })
+      })
+      const r = await new Promise((resolve, reject) => {
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: resolve,
+          error: (xhr, errorType, error) => {
+            reject(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+      assert.strictEqual(r.length, data.length)
+    })
   })
 
   describe('protocol.isProtocolHandled', (done) => {
