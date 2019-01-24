@@ -316,7 +316,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
 
   auto* getter = browser_context_->GetRequestContext();
   base::PostTaskWithTraits(
-      FROM_HERE, {content::BrowserThread::IO},
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(RemoveCookieOnIO, base::RetainedRef(getter), url, name,
                      promise));
 
@@ -341,7 +341,7 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
   auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::IO},
                            base::BindOnce(FlushCookieStoreOnIOThread,
                                           base::RetainedRef(getter), promise));
 
