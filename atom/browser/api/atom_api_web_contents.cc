@@ -1433,28 +1433,24 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
+void OnServiceWorkerCheckDone(scoped_refptr<util::Promise> promise,
+                              content::ServiceWorkerCapability capability) {
+  promise->Resolve(capability !=
+                   content::ServiceWorkerCapability::NO_SERVICE_WORKER);
+}
+
+v8::Local<v8::Promise> WebContents::HasServiceWorker() {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   auto* context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  struct WrappedCallback {
-    base::Callback<void(bool)> callback_;
-    explicit WrappedCallback(const base::Callback<void(bool)>& callback)
-        : callback_(callback) {}
-    void Run(content::ServiceWorkerCapability capability) {
-      callback_.Run(capability !=
-                    content::ServiceWorkerCapability::NO_SERVICE_WORKER);
-      delete this;
-    }
-  };
-
-  auto* wrapped_callback = new WrappedCallback(callback);
+  if (!context) {
+    promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
+  }
 
   context->CheckHasServiceWorker(
       web_contents()->GetLastCommittedURL(), GURL::EmptyGURL(),
-      base::BindOnce(&WrappedCallback::Run,
-                     base::Unretained(wrapped_callback)));
+      base::BindOnce(&OnServiceWorkerCheckDone, promise));
+
+  return promise->GetHandle();
 }
 
 void WebContents::UnregisterServiceWorker(

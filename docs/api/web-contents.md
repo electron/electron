@@ -1164,6 +1164,12 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 Checks if any ServiceWorker is registered and returns a boolean as
 response to `callback`.
 
+**[Deprecated Soon](promisification.md)**
+
+#### `contents.hasServiceWorker()`
+
+Returns `Promise<Boolean>` - Resolves with a boolean depending on whether or not the current `webContents` has a registered ServiceWorker
+
 #### `contents.unregisterServiceWorker(callback)`
 
 * `callback` Function
