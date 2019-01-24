@@ -84,9 +84,6 @@ bool GetAsAutoplayPolicy(const base::Value* val,
     } else if (policy_str == "user-gesture-required") {
       *out = content::AutoplayPolicy::kUserGestureRequired;
       return true;
-    } else if (policy_str == "user-gesture-required-for-cross-origin") {
-      *out = content::AutoplayPolicy::kUserGestureRequiredForCrossOrigin;
-      return true;
     } else if (policy_str == "document-user-activation-required") {
       *out = content::AutoplayPolicy::kDocumentUserActivationRequired;
       return true;
