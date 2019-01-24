@@ -5,7 +5,7 @@ Subject: webview_cross_drag.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 04cd7481f4e8ba382411dfad0d3c8afc74bca45b..0185081062ead3c00237d3d4692a8ebe00425749 100644
+index 8e02ca39a947abc26b001f230f4e568fa9e61a89..dfed57b3f79ad359a3807567765fa70214771a3a 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
 @@ -676,6 +676,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
@@ -17,10 +17,10 @@ index 04cd7481f4e8ba382411dfad0d3c8afc74bca45b..0185081062ead3c00237d3d4692a8ebe
        GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
        drag_start_view_id_;
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index e8ae8e1f8da88dbb3be0274c8254098c038bda58..2dc8e8c5937c28b542d238bfb39b41079cef635c 100644
+index 576d60b4718e7742ee3eab31904590ed0b447e88..c28be0a78759b48954298cd9bbfdae37a0b72fb8 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -334,6 +334,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+@@ -335,6 +335,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
