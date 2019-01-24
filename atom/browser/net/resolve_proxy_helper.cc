@@ -52,7 +52,7 @@ void ResolveProxyHelper::StartPendingRequest() {
   binding_.Bind(mojo::MakeRequest(&proxy_lookup_client));
   binding_.set_connection_error_handler(
       base::BindOnce(&ResolveProxyHelper::OnProxyLookupComplete,
-                     base::Unretained(this), base::nullopt));
+                     base::Unretained(this), net::ERR_ABORTED, base::nullopt));
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->LookUpProxyForURL(pending_requests_.front().url,
@@ -60,6 +60,7 @@ void ResolveProxyHelper::StartPendingRequest() {
 }
 
 void ResolveProxyHelper::OnProxyLookupComplete(
+    int32_t net_error,
     const base::Optional<net::ProxyInfo>& proxy_info) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!pending_requests_.empty());
