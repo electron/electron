@@ -70,7 +70,8 @@ describe('session module', () => {
   describe('ses.cookies', () => {
     const name = '0'
     const value = '0'
-    it('should get cookies', (done) => {
+
+    it('should get cookies with promises', (done) => {
       const server = http.createServer((req, res) => {
         res.setHeader('Set-Cookie', [`${name}=${value}`])
         res.end('finished')
@@ -89,7 +90,27 @@ describe('session module', () => {
       })
     })
 
-    it('sets cookies', async () => {
+    it('should get cookies with callbacks', (done) => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('Set-Cookie', [`${name}=${value}`])
+        res.end('finished')
+        server.close()
+      })
+      server.listen(0, '127.0.0.1', () => {
+        w.webContents.once('did-finish-load', () => {
+          w.webContents.session.cookies.get({ url }, (error, list) => {
+            if (error) return done(error)
+            const cookie = list.find(cookie => cookie.name === name)
+            expect(cookie).to.exist.and.to.have.property('value', value)
+            done()
+          })
+        })
+        const { port } = server.address()
+        w.loadURL(`${url}:${port}`)
+      })
+    })
+
+    it('sets cookies with promises', async () => {
       let error
       try {
         const { cookies } = session.defaultSession
@@ -101,6 +122,13 @@ describe('session module', () => {
         error = e
       }
       expect(error).to.be.undefined(error)
+    })
+
+    it('sets cookies with callbacks', (done) => {
+      const { cookies } = session.defaultSession
+      const name = '1'
+      const value = '1'
+      cookies.set({ url, name, value }, (error, list) => done(error))
     })
 
     it('yields an error when setting a cookie with missing required fields', async () => {
@@ -126,7 +154,7 @@ describe('session module', () => {
           await cookies.set({ url, name, value })
           const list = await cookies.get({ url })
 
-          expect(list.some(cookie => cookie.name === name && cookie.value === value))
+          assert(list.some(cookie => cookie.name === name && cookie.value === value))
         }
       } catch (e) {
         error = e
@@ -134,7 +162,7 @@ describe('session module', () => {
       expect(error).to.be.undefined(error)
     })
 
-    it('should remove cookies', async () => {
+    it('should remove cookies with promises', async () => {
       let error
       try {
         const { cookies } = session.defaultSession
@@ -145,11 +173,29 @@ describe('session module', () => {
         await cookies.remove(url, name)
         const list = await cookies.get({ url })
 
-        expect(list.some(cookie => cookie.name === name && cookie.value === value))
+        assert(!list.some(cookie => cookie.name === name && cookie.value === value))
       } catch (e) {
         error = e
       }
       expect(error).to.be.undefined(error)
+    })
+
+    it('should remove cookies with callbacks', (done) => {
+      const { cookies } = session.defaultSession
+      const name = '2'
+      const value = '2'
+
+      cookies.set({ url, name, value }, (error) => {
+        if (error) return done(error)
+        cookies.remove(url, name, (error) => {
+          if (error) return done(error)
+          cookies.get({ url }, (error, list) => {
+            if (error) return done(error)
+            assert(!list.some(cookie => cookie.name === name))
+            done()
+          })
+        })
+      })
     })
 
     it('should set cookie for standard scheme', async () => {
@@ -205,19 +251,31 @@ describe('session module', () => {
     })
 
     describe('ses.cookies.flushStore()', async () => {
-      it('flushes the cookies to disk and invokes the callback when done', async () => {
-        let error
-        try {
+      describe('flushes the cookies to disk and invokes the callback when done', async () => {
+        it('with promises', async () => {
+          let error
+          try {
+            const name = 'foo'
+            const value = 'bar'
+            const { cookies } = session.defaultSession
+
+            await cookies.set({ url, name, value })
+            await cookies.flushStore()
+          } catch (e) {
+            error = e
+          }
+          expect(error).to.be.undefined(error)
+        })
+        it('with callbacks', (done) => {
           const name = 'foo'
           const value = 'bar'
           const { cookies } = session.defaultSession
 
-          await cookies.set({ url, name, value })
-          await cookies.flushStore()
-        } catch (e) {
-          error = e
-        }
-        expect(error).to.be.undefined(error)
+          cookies.set({ url, name, value }, error => {
+            if (error) return done(error)
+            cookies.flushStore(error => done(error))
+          })
+        })
       })
     })
 
