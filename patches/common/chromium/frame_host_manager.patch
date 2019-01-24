@@ -7,7 +7,7 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance.
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 75804f991fb2e75115de6408e50fe7328dc58ef9..0cbd955d3e4ff9196e6666fe0ab0b66ffe8c5261 100644
+index 53586512b68f79ebf9addf0d344a5a0785d89877..1417ce14d9e976da08c8924e32d2cb8e6408652b 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -1970,6 +1970,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -108,7 +108,7 @@ index 75804f991fb2e75115de6408e50fe7328dc58ef9..0cbd955d3e4ff9196e6666fe0ab0b66f
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 499c853a9a3d4c294ae0e6bfdb857ac67c31a144..cbd25b0f44a74671c924fd7a35f6fd84632c5f8c 100644
+index e2f2b8e8d09d1f14b58eb8b093042b89141cdd35..84b324992f22a65030b8badc05f6ce542929dea6 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -48,6 +48,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -129,7 +129,7 @@ index 499c853a9a3d4c294ae0e6bfdb857ac67c31a144..cbd25b0f44a74671c924fd7a35f6fd84
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 384b51c1faa7045f2319854db59be27af779569d..d2aa50c1e0ff84ef2313fa058b9ecc677cd20d5c 100644
+index 5dc21230970fe23a25ad6e811d65c434760d1d1b..031332e91cf38cb3d69cd73778a9e4a0701f7645 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -206,8 +206,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(

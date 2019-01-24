@@ -20,10 +20,10 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ruben Bridgewater <ruben@bridgewater.de>
 
 diff --git a/src/flag-definitions.h b/src/flag-definitions.h
-index e0d486feb1da25db98faa4222f014d79d9bc37e2..26798147f40e35f3496ceebd225f2de0fd105296 100644
+index 82729fe9a3e8ac4c7ea7ec984421d2af055d4922..b5de2854a6ff348b44f0bae8169b1d16a0209d71 100644
 --- a/src/flag-definitions.h
 +++ b/src/flag-definitions.h
-@@ -1276,7 +1276,7 @@ DEFINE_BOOL(log_function_events, false,
+@@ -1289,7 +1289,7 @@ DEFINE_BOOL(log_function_events, false,
  DEFINE_BOOL(prof, false,
              "Log statistical profiling information (implies --log-code).")
  

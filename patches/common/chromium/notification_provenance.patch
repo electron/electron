@@ -106,10 +106,10 @@ index 653f487b0b0e01de7cdda8483f081550a9077e98..da9e5f53d07eaaf11525efd996be9420
  
    // Removes |service| from the list of owned services, for example because the
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 87ecafbac4bd9cdba9036238d3bd2bd4ae661e8a..75ed7fc917083e70194cee68ba19f8f8c4d20a28 100644
+index 8e4df0b15aebc30c517a8c99f20201d8148777e0..ad49782df16c92a6ed0f736a5980263de908c137 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
-@@ -182,7 +182,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
+@@ -189,7 +189,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
                      RenderProcessHost* host, const url::Origin& origin) {
          static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
              ->GetPlatformNotificationContext()

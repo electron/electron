@@ -5,10 +5,10 @@ Subject: webgl_context_attributes.patch
 
 
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index e4acd1d1ec3ca10f10aacb6f4a4ad132ea8d4316..e75ddaf4d518172242287ee277f7e5bc6f91bcbe 100644
+index 704ee01d0a30f68275653591428e9d16eeb5d5a0..2adc208e36b66fcf8cbdbf05abfa1cd877361745 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -895,8 +895,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
+@@ -896,8 +896,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
    attributes.sample_buffers = 0;
    attributes.bind_generates_resource = false;
    attributes.enable_raster_interface = web_attributes.enable_raster_interface;

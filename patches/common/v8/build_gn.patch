@@ -5,7 +5,7 @@ Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index bdbb29c66b2fa82e8a942421a8bdfce3d94d6e8f..fb3cfe848e97e0952829e39db5b56571e993d6a2 100644
+index cc9b7a906a111451eff86e8f78571617256136f1..139a777e304ab0449693664feb248a714995aa26 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -236,7 +236,7 @@ config("internal_config") {
@@ -17,7 +17,7 @@ index bdbb29c66b2fa82e8a942421a8bdfce3d94d6e8f..fb3cfe848e97e0952829e39db5b56571
      defines = [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -3389,6 +3389,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3386,6 +3386,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  

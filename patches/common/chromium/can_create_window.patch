@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index a76dcf7c0197a146ac060cabcdf8f0d77b7d80f1..b9871c1fb327352dd9c83a751efea0052cc1e997 100644
+index 1a023385a3d27d9145f2a0a069ff6799c69ec66a..30328f5e62b4fdbb423a97454ee0591c076ac6bc 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3664,6 +3664,38 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3669,6 +3669,38 @@ void RenderFrameHostImpl::CreateNewWindow(
                 "frame_tree_node", frame_tree_node_->frame_tree_node_id(), "url",
                 params->target_url.possibly_invalid_spec());
  
@@ -47,7 +47,7 @@ index a76dcf7c0197a146ac060cabcdf8f0d77b7d80f1..b9871c1fb327352dd9c83a751efea005
    bool no_javascript_access = false;
  
    // Filter out URLs to which navigation is disallowed from this context.
-@@ -3692,6 +3724,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3697,6 +3729,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -56,10 +56,10 @@ index a76dcf7c0197a146ac060cabcdf8f0d77b7d80f1..b9871c1fb327352dd9c83a751efea005
            &no_javascript_access);
  
 diff --git a/content/browser/security_exploit_browsertest.cc b/content/browser/security_exploit_browsertest.cc
-index 0da371ff7af08265ff5a06c5fe8c3bea59b5f1ea..2f00c1e7fd7dd138c53c3eff3e0010f17db68ca3 100644
+index 8d01f4e181793677a1eee7585fd7c484767a58b0..01f7a49e7a559e6ae70a4311a2539bc4f60849d7 100644
 --- a/content/browser/security_exploit_browsertest.cc
 +++ b/content/browser/security_exploit_browsertest.cc
-@@ -387,6 +387,7 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
+@@ -364,6 +364,7 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
  
    mojom::CreateNewWindowParamsPtr params = mojom::CreateNewWindowParams::New();
    params->target_url = GURL("about:blank");
@@ -117,7 +117,7 @@ index e566a15b798e2586fa4fae3c4db97ce5f4f2f09f..8a08c7a79eba24bce7f11cf8c4994325
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index dc653fc3af345d20fbff9fc4c399bc1452c4850b..499c853a9a3d4c294ae0e6bfdb857ac67c31a144 100644
+index bce9b68c989da1e287b7e593e1ae281923d1a557..e2f2b8e8d09d1f14b58eb8b093042b89141cdd35 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -494,6 +494,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -130,7 +130,7 @@ index dc653fc3af345d20fbff9fc4c399bc1452c4850b..499c853a9a3d4c294ae0e6bfdb857ac6
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2e5e199c4bc6ff6b1559f8c6f1e03e344fcb110b..384b51c1faa7045f2319854db59be27af779569d 100644
+index 92425b0bded161d513a3e39b8f9631d4c98c143c..5dc21230970fe23a25ad6e811d65c434760d1d1b 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -171,6 +171,7 @@ class RenderFrameHost;
@@ -151,7 +151,7 @@ index 2e5e199c4bc6ff6b1559f8c6f1e03e344fcb110b..384b51c1faa7045f2319854db59be27a
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index ceb8568c9da3109dbc2f9a04cc8fc93e394d5294..bba68744d600f5f4482cf9cb3941f38a79478966 100644
+index ad23a9040c21a674c1b011e7120d4288a722f2bb..c16005d6e20b801217249ed8b902cb42d9223dc4 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -76,6 +76,7 @@
