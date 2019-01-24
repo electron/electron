@@ -147,7 +147,11 @@ class AtomWebFrameObserver : public content::RenderFrameObserver {
   ~AtomWebFrameObserver() final {}
 
   // RenderFrameObserver implementation.
-  void OnDestruct() final { spell_check_client_.reset(nullptr); }
+  void OnDestruct() final {
+    spell_check_client_.reset();
+    // Frame observers should delete themselves
+    delete this;
+  }
 
  private:
   std::unique_ptr<SpellCheckClient> spell_check_client_;
@@ -240,17 +244,15 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
     return;
   }
 
-  auto client = std::make_unique<SpellCheckClient>(
+  auto spell_check_client = std::make_unique<SpellCheckClient>(
       language, auto_spell_correct_turned_on, args->isolate(), provider);
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
   auto* render_frame = content::RenderFrame::FromWebFrame(web_frame_);
-  FrameSpellChecker spell_checker(client.get(), render_frame);
+  FrameSpellChecker spell_checker(spell_check_client.get(), render_frame);
   content::RenderFrame::ForEach(&spell_checker);
-  spell_check_client_.swap(client);
-  web_frame_->SetSpellCheckPanelHostClient(spell_check_client_.get());
-  web_frame_observer_.reset(
-      new AtomWebFrameObserver(render_frame, std::move(spell_check_client_)));
+  web_frame_->SetSpellCheckPanelHostClient(spell_check_client.get());
+  new AtomWebFrameObserver(render_frame, std::move(spell_check_client));
 }
 
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
