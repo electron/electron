@@ -15,7 +15,7 @@ const { session } = require('electron')
 // Query all cookies.
 session.defaultSession.cookies.get({})
   .then((cookies) => {
-    // success
+    console.log(cookies)
   }).catch((error) => {
     console.log(error)
   })
@@ -23,7 +23,7 @@ session.defaultSession.cookies.get({})
 // Query all cookies associated with a specific url.
 session.defaultSession.cookies.get({ url: 'http://www.github.com' })
   .then((cookies) => {
-    // success
+    console.log(cookies)
   }).catch((error) => {
     console.log(error)
   })
