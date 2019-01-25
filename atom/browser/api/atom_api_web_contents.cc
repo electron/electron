@@ -1413,6 +1413,23 @@ void WebContents::InspectElement(int x, int y) {
   managed_web_contents()->InspectElement(x, y);
 }
 
+void WebContents::InspectSharedWorker() {
+  if (type_ == REMOTE)
+    return;
+
+  if (!enable_devtools_)
+    return;
+
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::kTypeSharedWorker) {
+      OpenDevTools(nullptr);
+      managed_web_contents()->AttachTo(agent_host);
+      break;
+    }
+  }
+}
+
 void WebContents::InspectServiceWorker() {
   if (type_ == REMOTE)
     return;
@@ -2174,6 +2191,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unregisterServiceWorker",
                  &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
+      .SetMethod("inspectSharedWorker", &WebContents::InspectSharedWorker)
 #if BUILDFLAG(ENABLE_PRINTING)
       .SetMethod("_print", &WebContents::Print)
       .SetMethod("_getPrinters", &WebContents::GetPrinterList)

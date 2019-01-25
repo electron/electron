@@ -160,6 +160,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
+  void InspectSharedWorker();
   void InspectServiceWorker();
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);

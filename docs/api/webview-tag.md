@@ -408,6 +408,10 @@ Returns `Boolean` - Whether DevTools window of guest page is focused.
 
 Starts inspecting element at position (`x`, `y`) of guest page.
 
+### `<webview>.inspectSharedWorker()`
+
+Opens the DevTools for the shared worker context present in the guest page.
+
 ### `<webview>.inspectServiceWorker()`
 
 Opens the DevTools for the service worker context present in the guest page.
