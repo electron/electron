@@ -597,6 +597,7 @@ describe('webContents module', () => {
       }
     })
 
+    // TODO(codebytere): remove when promisification is complete
     it('can set the correct zoom level (callback)', async () => {
       try {
         await w.loadURL('about:blank')
