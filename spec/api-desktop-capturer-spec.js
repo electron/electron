@@ -62,9 +62,10 @@ describe('desktopCapturer', () => {
   // TODO(codebytere): remove when promisification is complete
   it('responds to subsequent calls of different options (callback)', (done) => {
     let callCount = 0
-    const callback = (error, sources) => {
+    const callback = (err, sources) => {
       callCount++
-      expect(error).to.be.null()
+      expect(err).to.be.null()
+      expect(sources).to.not.be.null()
       if (callCount === 2) done()
     }
 

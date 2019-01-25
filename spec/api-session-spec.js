@@ -250,7 +250,7 @@ describe('session module', () => {
       expect(error).to.be.undefined(error)
     })
 
-    describe.only('ses.cookies.flushStore()', async () => {
+    describe('ses.cookies.flushStore()', async () => {
       describe('flushes the cookies to disk and invokes the callback when done', async () => {
         it('with promises', async () => {
           let error
@@ -266,17 +266,17 @@ describe('session module', () => {
           }
           expect(error).to.be.undefined(error)
         })
+
         it('with callbacks', (done) => {
           const name = 'foo'
           const value = 'bar'
           const { cookies } = session.defaultSession
 
-      cookies.set({
-        url: url,
-        name: 'foo',
-        value: 'bar'
-      }, (error) => {
-        if (error) return done(error)
+          cookies.set({ url, name, value }, (error) => {
+            if (error) return done(error)
+            cookies.flushStore(error => done(error))
+          })
+        })
       })
     })
 

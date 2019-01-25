@@ -151,8 +151,7 @@ describe('deprecations', () => {
 
       let callbackCount = 0
       const invocationCount = 3
-      const callback = (error, actual) => {
-        expect(error).to.be.null()
+      const callback = (actual) => {
         expect(actual).to.equal(expected)
         expect(warnings).to.have.lengthOf(1)
         expect(warnings[0]).to.include('promiseFunc')
