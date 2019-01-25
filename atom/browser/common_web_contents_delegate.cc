@@ -275,6 +275,7 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   load_url_params.should_replace_current_entry =
       params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.initiator_origin = params.initiator_origin;
   load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);
