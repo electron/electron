@@ -7,5 +7,7 @@
 
   "src/electron/patches/common/skia": "src/third_party/skia",
 
+  "src/electron/patches/common/webrtc":  "src/third_party/webrtc",
+
   "src/electron/patches/common/v8":  "src/v8"
 }
