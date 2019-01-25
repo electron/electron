@@ -597,19 +597,6 @@ describe('webContents module', () => {
       }
     })
 
-    it('can set the correct zoom level (callback)', async () => {
-      try {
-        await w.loadURL('about:blank')
-        const zoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))
-        expect(zoomLevel).to.eql(0.0)
-        w.webContents.setZoomLevel(0.5)
-        const newZoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))
-        expect(newZoomLevel).to.eql(0.5)
-      } finally {
-        w.webContents.setZoomLevel(0)
-      }
-    })
-
     it('can persist zoom level across navigation', (done) => {
       let finalNavigation = false
       ipcMain.on('set-zoom', (e, host) => {
