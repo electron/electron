@@ -1154,6 +1154,7 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
 
 std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   std::vector<mate::Dictionary> result;
+  result.reserve(app_metrics_.size());
   int processor_count = base::SysInfo::NumberOfProcessors();
 
   for (const auto& process_metric : app_metrics_) {
