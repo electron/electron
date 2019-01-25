@@ -76,7 +76,7 @@ The following methods are available on instances of `Cookies`:
   * `secure` Boolean (optional) - Filters cookies by their Secure property.
   * `session` Boolean (optional) - Filters out session or persistent cookies.
 
-* Returns `Promise<Cookie[]>` - A promise which resolves an array of cookie objects.
+Returns `Promise<Cookie[]>` - A promise which resolves an array of cookie objects.
 
 Sends a request to get all cookies matching `filter`, and resolves a promise with
 the response.
@@ -117,7 +117,7 @@ with `callback(error, cookies)` on complete.
     seconds since the UNIX epoch. If omitted then the cookie becomes a session
     cookie and will not be retained between sessions.
 
-* Returns `Promise<void>` - A promise which resolves when the cookie has been set
+Returns `Promise<void>` - A promise which resolves when the cookie has been set
 
 Sets a cookie with `details`.
 
@@ -149,7 +149,7 @@ on complete.
 * `url` String - The URL associated with the cookie.
 * `name` String - The name of cookie to remove.
 
-* Returns `Promise<void>` - A promise which resolves when the cookie has been removed
+Returns `Promise<void>` - A promise which resolves when the cookie has been removed
 
 Removes the cookies matching `url` and `name`
 
@@ -166,7 +166,7 @@ Removes the cookies matching `url` and `name`, `callback` will called with
 
 #### `cookies.flushStore()`
 
-* Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed
+Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed
 
 Writes any unwritten cookies data to disk.
 
