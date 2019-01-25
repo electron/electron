@@ -228,6 +228,23 @@ describe('webContents module', () => {
     })
   })
 
+  describe('ServiceWorker APIs', () => {
+    it('can successfully register a ServiceWorker', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html'))
+      const hasSW = await w.webContents.hasServiceWorker()
+      expect(hasSW).to.be.true()
+    })
+
+    it('can successfully register a ServiceWorker (callback)', (done) => {
+      w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html')).then(() => {
+        w.webContents.hasServiceWorker(hasSW => {
+          expect(hasSW).to.be.true()
+          done()
+        })
+      })
+    })
+  })
+
   describe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
       const webContents = remote.getCurrentWebContents()

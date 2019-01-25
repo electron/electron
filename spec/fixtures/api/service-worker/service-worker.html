@@ -1,0 +1,12 @@
+<html>
+<body>
+  <script>
+      window.onerror = (err) => console.log(error)
+      
+      navigator.serviceWorker.register('service-worker.js', {
+        scope: './'
+      }).then(sw => {
+        console.log("registered")
+      }).catch(err => console.log(error))
+  </script>
+</body>

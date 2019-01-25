@@ -1447,7 +1447,8 @@ v8::Local<v8::Promise> WebContents::HasServiceWorker() {
   }
 
   context->CheckHasServiceWorker(
-      web_contents()->GetLastCommittedURL(), GURL::EmptyGURL(),
+      web_contents()->GetLastCommittedURL(),
+      web_contents()->GetLastCommittedURL(),
       base::BindOnce(&OnServiceWorkerCheckDone, promise));
 
   return promise->GetHandle();
@@ -1458,7 +1459,6 @@ void WebContents::UnregisterServiceWorker(
   auto* context = GetServiceWorkerContext(web_contents());
   if (!context)
     return;
-
   context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
                                    callback);
 }
