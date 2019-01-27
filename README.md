@@ -1,6 +1,5 @@
 [![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-
 [![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
 [![AppVeyor Build Status](https://windows-ci.electronjs.org/api/projects/status/nilyf07hcef14dvj/branch/master?svg=true)](https://windows-ci.electronjs.org/project/AppVeyor/electron/branch/master)
 [![Azure Pipelines Build Status](https://github.visualstudio.com/electron/_apis/build/status/electron-builds/electron-osx-testing?branchName=master)](https://github.visualstudio.com/electron/_build/latest?definitionId=36)
@@ -12,11 +11,10 @@ View these docs in other languages at [electron/i18n](https://github.com/electro
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
-[Chromium](https://www.chromium.org) and is used by the [Atom
-editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
+[Chromium](https://www.chromium.org) and is used by the [Atomeditor]
+(https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
-Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
-announcements.
+Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important announcements.
 
 This project adheres to the Contributor Covenant
 [code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
@@ -26,11 +24,9 @@ behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 ## Installation
 
 To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
-The preferred method is to install Electron as a development dependency in your
-app:
+The preferred method is to install Electron as a development dependency in your app:
 
-```sh
-npm install electron --save-dev [--save-exact]
+```sh npm install electron --save-dev [--save-exact]
 ```
 
 The `--save-exact` flag is recommended for Electron prior to version 2, as it does not follow semantic
