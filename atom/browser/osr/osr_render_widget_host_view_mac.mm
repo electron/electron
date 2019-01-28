@@ -11,6 +11,8 @@
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #include "ui/display/screen.h"
 
+#include "components/viz/common/features.h"
+
 namespace atom {
 
 class MacHelper : public content::BrowserCompositorMacClient,
@@ -75,6 +77,10 @@ void OffScreenRenderWidgetHostView::CreatePlatformWidget(
   browser_compositor_.reset(new content::BrowserCompositorMac(
       mac_helper_, mac_helper_, render_widget_host_->is_hidden(), GetDisplay(),
       AllocateFrameSinkId(is_guest_view_hack)));
+
+  if (!base::FeatureList::IsEnabled(features::kVizDisplayCompositor)) {
+    SetNeedsBeginFrames(true);
+  }
 }
 
 void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {

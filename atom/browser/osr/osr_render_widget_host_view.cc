@@ -321,11 +321,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   current_device_scale_factor_ = kDefaultScaleFactor;
 
+#if !defined(OS_MACOSX)
   local_surface_id_allocator_.GenerateId();
   local_surface_id_allocation_ =
       local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
-
-#if !defined(OS_MACOSX)
   delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack),
@@ -575,10 +574,16 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
 void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
     viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
   renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
+
+#if defined(OS_MACOSX)
+  browser_compositor_->DidCreateNewRendererCompositorFrameSink(
+      renderer_compositor_frame_sink_);
+#else
   if (GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
         renderer_compositor_frame_sink_);
   }
+#endif
 }
 
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
@@ -634,7 +639,7 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
 }
 
 void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
-  // GetDelegatedFrameHost()->EvictDelegatedFrame();
+  NOTREACHED();
 }
 
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
@@ -919,7 +924,7 @@ void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
   begin_frame_timer_->SetActive(needs_begin_frames);
 
   if (software_output_device_) {
-    software_output_device_->SetActive(needs_begin_frames && painting_, false);
+    software_output_device_->SetActive(painting_, false);
   }
 }
 
@@ -1015,11 +1020,6 @@ void OffScreenRenderWidgetHostView::SynchronizeVisualProperties() {
   }
 
   ResizeRootLayer(false);
-  if (render_widget_host_)
-    render_widget_host_->SynchronizeVisualProperties();
-  GetDelegatedFrameHost()->EmbedSurface(
-      local_surface_id_allocation_.local_surface_id(), size_,
-      cc::DeadlinePolicy::UseDefaultDeadline());
 }
 
 void OffScreenRenderWidgetHostView::SendMouseEvent(
@@ -1185,10 +1185,12 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
   return root_layer_.get();
 }
 
+#if !defined(OS_MACOSX)
 const viz::LocalSurfaceIdAllocation&
 OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
   return local_surface_id_allocation_;
 }
+#endif  // defined(OS_MACOSX)
 
 content::DelegatedFrameHost*
 OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
@@ -1250,6 +1252,11 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
       size == GetRootLayer()->bounds().size())
     return;
 
+  GetRootLayer()->SetBounds(gfx::Rect(size));
+
+#if defined(OS_MACOSX)
+  bool resized = UpdateNSViewAndDisplay();
+#else
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
@@ -1257,13 +1264,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   local_surface_id_allocation_ =
       local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
-  GetRootLayer()->SetBounds(gfx::Rect(size));
   GetCompositor()->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
                                    local_surface_id_allocation_);
-
-#if defined(OS_MACOSX)
-  bool resized = UpdateNSViewAndDisplay();
-#else
   bool resized = true;
   GetDelegatedFrameHost()->EmbedSurface(
       local_surface_id_allocation_.local_surface_id(), size,
@@ -1273,8 +1275,9 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   // Note that |render_widget_host_| will retrieve resize parameters from the
   // DelegatedFrameHost, so it must have SynchronizeVisualProperties called
   // after.
-  if (resized && render_widget_host_)
+  if (resized && render_widget_host_) {
     render_widget_host_->SynchronizeVisualProperties();
+  }
 }
 
 viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
