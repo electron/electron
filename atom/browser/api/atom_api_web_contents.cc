@@ -1469,6 +1469,7 @@ v8::Local<v8::Promise> WebContents::UnregisterServiceWorker() {
   auto* context = GetServiceWorkerContext(web_contents());
   if (!context) {
     promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
+    return promise->GetHandle();
   }
 
   context->UnregisterServiceWorker(

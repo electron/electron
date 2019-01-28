@@ -248,6 +248,24 @@ describe('webContents module', () => {
         })
       })
     })
+
+    it('can successfully unregister a ServiceWorker', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html'))
+      const success = await w.webContents.unregisterServiceWorker()
+      expect(success).to.be.true()
+    })
+
+    it('can successfully unregister a ServiceWorker', (done) => {
+      w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html')).then(() => {
+        w.webContents.hasServiceWorker(hasSW => {
+          expect(hasSW).to.be.true()
+          w.webContents.unregisterServiceWorker(success => {
+            expect(success).to.be.true()
+            done()
+          })
+        })
+      })
+    })
   })
 
   describe('isCurrentlyAudible() API', () => {
