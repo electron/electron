@@ -81,8 +81,6 @@ test_script:
       if ((-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
         $env:RUN_TESTS="true"
       }
-  - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
-  - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
   - ps: >-
       if ($env:RUN_TESTS -eq 'true') {
         New-Item .\out\Default\gen\node_headers\Release -Type directory
@@ -91,8 +89,10 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & npm run test -- --ci )
+  - if "%RUN_TESTS%"=="true" ( echo Running test suite & npm run test -- --ci --enable-logging)
   - cd ..
+  - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
+  - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
 deploy_script:
   - cd electron
   - ps: >-
