@@ -1444,12 +1444,17 @@ v8::Local<v8::Promise> WebContents::HasServiceWorker() {
   auto* context = GetServiceWorkerContext(web_contents());
   if (!context) {
     promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
+    return promise->GetHandle();
+  }
+
+  GURL url = web_contents()->GetLastCommittedURL();
+  if (!url.is_valid()) {
+    promise->RejectWithErrorMessage("URL invalid or not yet loaded.");
+    return promise->GetHandle();
   }
 
   context->CheckHasServiceWorker(
-      web_contents()->GetLastCommittedURL(),
-      web_contents()->GetLastCommittedURL(),
-      base::BindOnce(&OnServiceWorkerCheckDone, promise));
+      url, url, base::BindOnce(&OnServiceWorkerCheckDone, promise));
 
   return promise->GetHandle();
 }

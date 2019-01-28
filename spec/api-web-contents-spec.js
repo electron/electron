@@ -235,6 +235,11 @@ describe('webContents module', () => {
       expect(hasSW).to.be.true()
     })
 
+    it('throws properly for invalid url', async () => {
+      const promise = w.webContents.hasServiceWorker()
+      return expect(promise).to.be.eventually.rejectedWith(Error, 'URL invalid or not yet loaded.')
+    })
+
     it('can successfully register a ServiceWorker (callback)', (done) => {
       w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html')).then(() => {
         w.webContents.hasServiceWorker(hasSW => {
