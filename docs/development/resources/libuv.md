@@ -1,6 +1,6 @@
 # Libuv Resources
 
-Understanding Nodejs better is helpful for working with electron. Node's event loop is implemented using the libuv library, created by the node team. It replaces the libeio and libenv, the original libraries used to implement the event loop. 
+Understanding Node.js better is helpful for working with Electron. Node's event loop is implemented using the libuv library, created by the node team. It replaces the libeio and libenv, the original libraries used to implement the event loop. 
 
 Roughly, the event loop is callbacks -> sleep -> callbacks -> sleep. Whenever there isn't work to do, the event loop is sleeping.
 
