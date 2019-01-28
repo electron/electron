@@ -1308,8 +1308,11 @@ Same as `webContents.reload`.
 
 * `menu` Menu | null
 
-Sets the `menu` as the window's menu bar, setting it to `null` will remove the
-menu bar.
+Sets the `menu` as the window's menu bar, setting it to `null` will remove the menu bar.
+
+#### `win.removeMenu()` _Linux_ _Windows_
+
+Remove the window's menu bar.
 
 #### `win.setProgressBar(progress[, options])`
 
