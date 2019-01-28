@@ -1307,6 +1307,40 @@ Sets the application's [dock menu][dock-menu].
 
 Sets the `image` associated with this dock icon.
 
+### `app.sysInfo.freeDiskSpace(path)`
+
+* `path` String
+
+Returns `Number` - The available disk space in bytes on the volume containing `path`.
+
+**NOTE:** Returns -1 on failure.
+
+### `app.sysInfo.totalDiskSpace(path)`
+
+* `path` String
+
+Returns `Number` - The total disk space in bytes on the volume containing `path`.
+
+**NOTE:** Returns -1 on failure.
+
+### `app.sysInfo.hardwareInfo()`
+
+Returns `Promise<HardwareInfo>` - Resolves with a [HardwareInfo](structures/hardware-info.md)
+
+### `app.sysInfo.operatingSystemName()`
+
+Returns `String` - The name of the host operating system.
+
+### `app.sysInfo.operatingSystemVersion()`
+
+Returns `String` - The version of the host operating system.
+
+### `app.sysInfo.operatingSystemArchitecture()`
+
+Returns `String` - The architecture of the running operating system.
+
+**NOTE:** Exact return value may differ across platforms.
+
 ## Properties
 
 ### `app.isPackaged`

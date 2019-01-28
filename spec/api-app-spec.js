@@ -6,6 +6,7 @@ const https = require('https')
 const net = require('net')
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
 const cp = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { emittedOnce } = require('./events-helpers')
@@ -1199,6 +1200,45 @@ describe('app module', () => {
     it('returns an empty string when not present', async () => {
       const { getSwitchValue } = await runTestApp('command-line')
       expect(getSwitchValue).to.equal('')
+    })
+  })
+
+  describe('sysInfo.freeDiskSpace', () => {
+    it('returns a number', () => {
+      expect(app.sysInfo.freeDiskSpace(os.homedir())).to.be.a('number')
+    })
+  })
+
+  describe('sysInfo.totalDiskSpace', () => {
+    it('returns a number', () => {
+      expect(app.sysInfo.totalDiskSpace(os.homedir())).to.be.a('number')
+    })
+  })
+
+  describe('sysInfo.hardwareInfo', () => {
+    it('returns the information', async () => {
+      const info = await app.sysInfo.hardwareInfo()
+      expect(info).to.have.own.property('manufacturer').that.is.a('string')
+      expect(info).to.have.own.property('model').that.is.a('string')
+      expect(info).to.have.own.property('serialNumber').that.is.a('string')
+    })
+  })
+
+  describe('sysInfo.operatingSystemName', () => {
+    it('returns a string', () => {
+      expect(app.sysInfo.operatingSystemName()).to.be.a('string')
+    })
+  })
+
+  describe('sysInfo.operatingSystemVersion', () => {
+    it('returns a string', () => {
+      expect(app.sysInfo.operatingSystemVersion()).to.be.a('string')
+    })
+  })
+
+  describe('sysInfo.operatingSystemArchitecture', () => {
+    it('returns a string', () => {
+      expect(app.sysInfo.operatingSystemArchitecture()).to.be.a('string')
     })
   })
 })

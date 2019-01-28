@@ -48,6 +48,7 @@
   V(atom_browser_protocol)                   \
   V(atom_browser_render_process_preferences) \
   V(atom_browser_session)                    \
+  V(atom_browser_sysinfo)                    \
   V(atom_browser_system_preferences)         \
   V(atom_browser_top_level_window)           \
   V(atom_browser_tray)                       \
