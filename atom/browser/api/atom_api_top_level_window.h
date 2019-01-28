@@ -165,6 +165,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
+  void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   virtual void SetBrowserView(v8::Local<v8::Value> value);
   virtual void AddBrowserView(v8::Local<v8::Value> value);

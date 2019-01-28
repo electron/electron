@@ -659,6 +659,13 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   }
 }
 
+void TopLevelWindow::RemoveMenu() {
+  mate::Handle<Menu> menu;
+
+  menu_.Reset();
+  window_->SetMenu(nullptr);
+}
+
 void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
                                      mate::Arguments* args) {
   if (IsModal()) {
@@ -1103,6 +1110,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setContentProtection", &TopLevelWindow::SetContentProtection)
       .SetMethod("setFocusable", &TopLevelWindow::SetFocusable)
       .SetMethod("setMenu", &TopLevelWindow::SetMenu)
+      .SetMethod("removeMenu", &TopLevelWindow::RemoveMenu)
       .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
