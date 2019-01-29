@@ -108,10 +108,9 @@ v8::Local<v8::Promise> StartTracing(
 
   bool success = TracingController::GetInstance()->StartTracing(
       trace_config, base::BindOnce(&OnTracingStarted, promise));
-  if (!success) {
+
+  if (!success)
     promise->RejectWithErrorMessage("Could not start tracing");
-    return promise->GetHandle();
-  }
 
   return promise->GetHandle();
 }

@@ -72,7 +72,7 @@ called once all child processes have acknowledged the `startRecording` request.
 
 * `options` ([TraceCategoriesAndOptions](structures/trace-categories-and-options.md) | [TraceConfig](structures/trace-config.md))
 
-Returns `Promise<any>` - resolved once all child processes have acknowledged the `startRecording` request.
+Returns `Promise<void>` - resolved once all child processes have acknowledged the `startRecording` request.
 
 Start recording on all processes.
 
