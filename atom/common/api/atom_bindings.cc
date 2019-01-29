@@ -239,28 +239,19 @@ v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
     return promise->GetHandle();
   }
 
-  v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
-      ->RequestGlobalDumpForPid(base::GetCurrentProcId(),
-                                std::vector<std::string>(),
-                                base::Bind(&AtomBindings::DidReceiveMemoryDump,
-                                           std::move(context), promise));
+      ->RequestGlobalDumpForPid(
+          base::GetCurrentProcId(), std::vector<std::string>(),
+          base::Bind(&AtomBindings::DidReceiveMemoryDump, promise));
   return promise->GetHandle();
 }
 
 // static
 void AtomBindings::DidReceiveMemoryDump(
-    const v8::Global<v8::Context>& context,
     scoped_refptr<util::Promise> promise,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   v8::Isolate* isolate = promise->isolate();
-  mate::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, context));
 
   if (!success) {
     promise->RejectWithErrorMessage("Failed to create memory dump");
