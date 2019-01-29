@@ -28,28 +28,12 @@ describe('contentTracing', () => {
     }
   })
 
-  const startRecording = async (options) => {
-    return new Promise((resolve) => {
-      contentTracing.startRecording(options, () => {
-        resolve()
-      })
-    })
-  }
-
-  const stopRecording = async (filePath) => {
-    return new Promise((resolve) => {
-      contentTracing.stopRecording(filePath, (resultFilePath) => {
-        resolve(resultFilePath)
-      })
-    })
-  }
-
   const record = async (options, outputFilePath, recordTimeInMilliseconds = 1e3) => {
     await app.whenReady()
 
-    await startRecording(options)
+    await contentTracing.startRecording(options)
     await timeout(recordTimeInMilliseconds)
-    const resultFilePath = await stopRecording(outputFilePath)
+    const resultFilePath = await contentTracing.stopRecording(outputFilePath)
 
     return resultFilePath
   }
