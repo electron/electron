@@ -114,9 +114,6 @@ namespace {
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
-// Custom schemes to be registered to handle service worker.
-base::NoDestructor<std::string> g_custom_service_worker_schemes;
-
 bool IsSameWebSite(content::BrowserContext* browser_context,
                    const GURL& src_url,
                    const GURL& dest_url) {
@@ -146,11 +143,6 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
 // static
 void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
-}
-
-void AtomBrowserClient::SetCustomServiceWorkerSchemes(
-    const std::vector<std::string>& schemes) {
-  *g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
 AtomBrowserClient* AtomBrowserClient::Get() {
@@ -477,17 +469,14 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     return;
 
   // Copy following switches to child process.
-  static const char* const kCommonSwitchNames[] = {switches::kStandardSchemes,
-                                                   switches::kEnableSandbox,
-                                                   switches::kSecureSchemes};
+  static const char* const kCommonSwitchNames[] = {
+      switches::kStandardSchemes,     switches::kEnableSandbox,
+      switches::kSecureSchemes,       switches::kBypassCSPSchemes,
+      switches::kCORSSchemes,         switches::kFetchSchemes,
+      switches::kServiceWorkerSchemes};
   command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                  kCommonSwitchNames,
                                  arraysize(kCommonSwitchNames));
-
-  // The registered service worker schemes.
-  if (!g_custom_service_worker_schemes->empty())
-    command_line->AppendSwitchASCII(switches::kRegisterServiceWorkerSchemes,
-                                    *g_custom_service_worker_schemes);
 
 #if defined(OS_WIN)
   // Append --app-user-model-id.

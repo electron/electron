@@ -24,47 +24,119 @@
 
 using content::BrowserThread;
 
-namespace atom {
-
-namespace api {
-
 namespace {
 
 // List of registered custom standard schemes.
 std::vector<std::string> g_standard_schemes;
 
+struct SchemeOptions {
+  bool standard = false;
+  bool secure = false;
+  bool bypassCSP = false;
+  bool allowServiceWorkers = false;
+  bool supportFetchAPI = false;
+  bool corsEnabled = false;
+};
+
+struct CustomScheme {
+  std::string scheme;
+  SchemeOptions options;
+};
+
 }  // namespace
+
+namespace mate {
+
+template <>
+struct Converter<CustomScheme> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     CustomScheme* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    if (!dict.Get("scheme", &(out->scheme)))
+      return false;
+    mate::Dictionary opt;
+    // options are optional. Default values specified in SchemeOptions are used
+    if (dict.Get("options", &opt)) {
+      opt.Get("standard", &(out->options.standard));
+      opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
+      opt.Get("secure", &(out->options.secure));
+      opt.Get("bypassCSP", &(out->options.bypassCSP));
+      opt.Get("allowServiceWorkers", &(out->options.allowServiceWorkers));
+      opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
+      opt.Get("corsEnabled", &(out->options.corsEnabled));
+    }
+    return true;
+  }
+};
+
+}  // namespace mate
+
+namespace atom {
+
+namespace api {
 
 std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
 }
 
-void RegisterStandardSchemes(const std::vector<std::string>& schemes,
-                             mate::Arguments* args) {
-  g_standard_schemes = schemes;
+void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
+                                 mate::Arguments* args) {
+  std::vector<CustomScheme> custom_schemes;
+  if (!mate::ConvertFromV8(args->isolate(), val, &custom_schemes)) {
+    args->ThrowError("Argument must be an array of custom schemes.");
+    return;
+  }
 
-  mate::Dictionary opts;
-  bool secure = false;
-  args->GetNext(&opts) && opts.Get("secure", &secure);
-
-  // Dynamically register the schemes.
-  auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
-  for (const std::string& scheme : schemes) {
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
-    if (secure) {
-      url::AddSecureScheme(scheme.c_str());
+  std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
+      service_worker_schemes, cors_schemes;
+  for (const auto& custom_scheme : custom_schemes) {
+    // Register scheme to privileged list (https, wss, data, chrome-extension)
+    if (custom_scheme.options.standard) {
+      auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
+      url::AddStandardScheme(custom_scheme.scheme.c_str(),
+                             url::SCHEME_WITH_HOST);
+      g_standard_schemes.push_back(custom_scheme.scheme);
+      policy->RegisterWebSafeScheme(custom_scheme.scheme);
     }
-    policy->RegisterWebSafeScheme(scheme);
+    if (custom_scheme.options.secure) {
+      secure_schemes.push_back(custom_scheme.scheme);
+      url::AddSecureScheme(custom_scheme.scheme.c_str());
+    }
+    if (custom_scheme.options.bypassCSP) {
+      cspbypassing_schemes.push_back(custom_scheme.scheme);
+      url::AddCSPBypassingScheme(custom_scheme.scheme.c_str());
+    }
+    if (custom_scheme.options.corsEnabled) {
+      cors_schemes.push_back(custom_scheme.scheme);
+      url::AddCorsEnabledScheme(custom_scheme.scheme.c_str());
+    }
+    if (custom_scheme.options.supportFetchAPI) {
+      fetch_schemes.push_back(custom_scheme.scheme);
+    }
+    if (custom_scheme.options.allowServiceWorkers) {
+      service_worker_schemes.push_back(custom_scheme.scheme);
+    }
   }
 
-  // Add the schemes to command line switches, so child processes can also
-  // register them.
-  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      atom::switches::kStandardSchemes, base::JoinString(schemes, ","));
-  if (secure) {
+  const auto AppendSchemesToCmdLine = [](const char* switch_name,
+                                         std::vector<std::string> schemes) {
+    // Add the schemes to command line switches, so child processes can also
+    // register them.
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-        atom::switches::kSecureSchemes, base::JoinString(schemes, ","));
-  }
+        switch_name, base::JoinString(schemes, ","));
+  };
+
+  AppendSchemesToCmdLine(atom::switches::kSecureSchemes, secure_schemes);
+  AppendSchemesToCmdLine(atom::switches::kBypassCSPSchemes,
+                         cspbypassing_schemes);
+  AppendSchemesToCmdLine(atom::switches::kCORSSchemes, cors_schemes);
+  AppendSchemesToCmdLine(atom::switches::kFetchSchemes, fetch_schemes);
+  AppendSchemesToCmdLine(atom::switches::kServiceWorkerSchemes,
+                         service_worker_schemes);
+  AppendSchemesToCmdLine(atom::switches::kStandardSchemes, g_standard_schemes);
 }
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -73,12 +145,6 @@ Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 }
 
 Protocol::~Protocol() {}
-
-void Protocol::RegisterServiceWorkerSchemes(
-    const std::vector<std::string>& schemes) {
-  atom::AtomBrowserClient::SetCustomServiceWorkerSchemes(schemes);
-}
-
 void Protocol::UnregisterProtocol(const std::string& scheme,
                                   mate::Arguments* args) {
   CompletionCallback callback;
@@ -195,8 +261,6 @@ void Protocol::BuildPrototype(v8::Isolate* isolate,
                               v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Protocol"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("registerServiceWorkerSchemes",
-                 &Protocol::RegisterServiceWorkerSchemes)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocol<URLRequestStringJob>)
       .SetMethod("registerBufferProtocol",
@@ -228,16 +292,16 @@ void Protocol::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void RegisterStandardSchemes(const std::vector<std::string>& schemes,
-                             mate::Arguments* args) {
+void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
+                                 mate::Arguments* args) {
   if (atom::Browser::Get()->is_ready()) {
     args->ThrowError(
-        "protocol.registerStandardSchemes should be called before "
+        "protocol.registerSchemesAsPrivileged should be called before "
         "app is ready");
     return;
   }
 
-  atom::api::RegisterStandardSchemes(schemes, args);
+  atom::api::RegisterSchemesAsPrivileged(val, args);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -246,7 +310,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
+  dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &atom::api::GetStandardSchemes);
 }
 
