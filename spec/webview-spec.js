@@ -1010,6 +1010,21 @@ describe('<webview> tag', function () {
     })
   })
 
+  it('supports inserting CSS', async () => {
+    await loadWebView(webview, { src: `file://${fixtures}/pages/base-page.html` })
+    await webview.insertCSS('body { background-repeat: round; }')
+    const result = await webview.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+    expect(result).to.equal('round')
+  })
+
+  it('supports removing inserted CSS', async () => {
+    await loadWebView(webview, { src: `file://${fixtures}/pages/base-page.html` })
+    const key = await webview.insertCSS('body { background-repeat: round; }')
+    await webview.removeInsertedCSS(key)
+    const result = await webview.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+    expect(result).to.equal('repeat')
+  })
+
   describe('sendInputEvent', () => {
     it('can send keyboard event', async () => {
       loadWebView(webview, {
