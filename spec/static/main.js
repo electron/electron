@@ -97,7 +97,14 @@ global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 // Register app as standard scheme.
 global.standardScheme = 'app'
 global.zoomScheme = 'zoom'
-protocol.registerStandardSchemes([global.standardScheme, global.zoomScheme], { secure: true })
+protocol.registerSchemesAsPrivileged([
+  { scheme: global.standardScheme, options: { standard: true, secure: true } },
+  { scheme: global.zoomScheme, options: { standard: true, secure: true } },
+  { scheme: 'cors', options: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'cors-blob', options: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'no-cors', options: { supportFetchAPI: true } },
+  { scheme: 'no-fetch', options: { corsEnabled: true } }
+])
 
 app.on('window-all-closed', function () {
   app.quit()

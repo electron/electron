@@ -89,8 +89,11 @@ extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
 extern const char kDisableHttpCache[];
 extern const char kStandardSchemes[];
-extern const char kRegisterServiceWorkerSchemes[];
+extern const char kServiceWorkerSchemes[];
 extern const char kSecureSchemes[];
+extern const char kBypassCSPSchemes[];
+extern const char kFetchSchemes[];
+extern const char kCORSSchemes[];
 extern const char kAppUserModelId[];
 extern const char kAppPath[];
 
