@@ -1464,7 +1464,7 @@ void OnUnregisterServiceWorker(scoped_refptr<util::Promise> promise,
   promise->Resolve(success);
 }
 
-v8::Local<v8::Promise> WebContents::UnregisterServiceWorker() {
+v8::Local<v8::Promise> WebContents::UnregisterServiceWorker(const GURL& url) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   auto* context = GetServiceWorkerContext(web_contents());
   if (!context) {
@@ -1473,8 +1473,7 @@ v8::Local<v8::Promise> WebContents::UnregisterServiceWorker() {
   }
 
   context->UnregisterServiceWorker(
-      web_contents()->GetLastCommittedURL(),
-      base::BindOnce(&OnUnregisterServiceWorker, promise));
+      url, base::BindOnce(&OnUnregisterServiceWorker, promise));
 
   return promise->GetHandle();
 }

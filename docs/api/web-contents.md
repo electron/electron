@@ -1166,16 +1166,19 @@ response to `callback`.
 
 **[Deprecated Soon](promisification.md)**
 
-#### `contents.hasServiceWorker()`
+#### `contents.hasServiceWorker(url)`
 
-Returns `Promise<Boolean>` - Resolves with a boolean depending on whether or not the current `webContents` has a registered ServiceWorker
+* `url` String - the file url to check
 
-#### `contents.unregisterServiceWorker(callback)`
+Returns `Promise<Boolean>` - Resolves with a boolean depending on whether or not the current `webContents` has a registered ServiceWorker at the specified `url`.
 
+#### `contents.unregisterServiceWorker(url, callback)`
+
+* `url` String
 * `callback` Function
   * `success` Boolean
 
-Unregisters any ServiceWorker if present and returns a boolean as
+Unregisters any ServiceWorker if present in the specified `url` and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 

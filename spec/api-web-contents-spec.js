@@ -229,19 +229,16 @@ describe('webContents module', () => {
   })
 
   describe('ServiceWorker APIs', () => {
+    const filePath = path.join(fixtures, 'api', 'service-worker', 'service-worker.html')
+
     it('can successfully check for presence of a ServiceWorker', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html'))
+      await w.loadFile(filePath)
       const hasSW = await w.webContents.hasServiceWorker()
       expect(hasSW).to.be.true()
     })
 
-    it('throws properly for invalid url', async () => {
-      const promise = w.webContents.hasServiceWorker()
-      return expect(promise).to.be.eventually.rejectedWith(Error, 'URL invalid or not yet loaded.')
-    })
-
     it('can successfully check for presence of a ServiceWorker (callback)', (done) => {
-      w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html')).then(() => {
+      w.loadFile(filePath).then(() => {
         w.webContents.hasServiceWorker(hasSW => {
           expect(hasSW).to.be.true()
           done()
@@ -250,8 +247,8 @@ describe('webContents module', () => {
     })
 
     it('can successfully unregister a ServiceWorker', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html'))
-      const success = await w.webContents.unregisterServiceWorker()
+      await w.loadFile(filePath)
+      const success = await w.webContents.unregisterServiceWorker(`file://${filePath}`)
       expect(success).to.be.true()
     })
 
@@ -259,7 +256,7 @@ describe('webContents module', () => {
       w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html')).then(() => {
         w.webContents.hasServiceWorker(hasSW => {
           expect(hasSW).to.be.true()
-          w.webContents.unregisterServiceWorker(success => {
+          w.webContents.unregisterServiceWorker(`file://${filePath}`, success => {
             expect(success).to.be.true()
             done()
           })

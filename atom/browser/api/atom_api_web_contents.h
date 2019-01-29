@@ -162,7 +162,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void InspectElement(int x, int y);
   void InspectServiceWorker();
   v8::Local<v8::Promise> HasServiceWorker();
-  v8::Local<v8::Promise> UnregisterServiceWorker();
+  v8::Local<v8::Promise> UnregisterServiceWorker(const GURL& url);
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
