@@ -259,7 +259,6 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
-    // DWORD frame_style = WS_CAPTION | WS_OVERLAPPED | WS_SYSMENU;
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
     if (resizable_)
       frame_style |= WS_THICKFRAME;
