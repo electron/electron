@@ -17,6 +17,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `getHeapStatistics()`
 - `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
+- `getSystemVersion()`
 - `getCPUUsage()`
 - `getIOCounters()`
 - `argv`
@@ -205,6 +206,17 @@ Returns `Object`:
 
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
+
+### `process.getSystemVersion()`
+
+Returns `String` - The version of the host operating system.
+
+Examples:
+- macOS: `10.13.6`
+- Windows: `10.0.17763`
+- Linux: `4.15.0-45-generic`
+
+**Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 
 ### `process.takeHeapSnapshot(filePath)`
 
