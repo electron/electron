@@ -82,10 +82,8 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   bool success = TracingController::GetInstance()->GetCategories(
       base::BindOnce(&OnCategoriesAvailable, promise));
 
-  if (!success) {
+  if (!success)
     promise->RejectWithErrorMessage("Could not get categories.");
-    return promise->GetHandle();
-  }
 
   return promise->GetHandle();
 }
