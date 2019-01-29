@@ -66,10 +66,19 @@ scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
       result_file_path, base::Bind(callback, result_file_path));
 }
 
-void StopRecording(const base::FilePath& path,
-                   const CompletionCallback& callback) {
+void OnRecordingStopped(scoped_refptr<atom::util::Promise> promise,
+                        const base::FilePath& path) {
+  promise->Resolve(path);
+}
+
+v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
+                                     const base::FilePath& path) {
+  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+
   TracingController::GetInstance()->StopTracing(
-      GetTraceDataEndpoint(path, callback));
+      GetTraceDataEndpoint(path, base::Bind(&OnRecordingStopped, promise)));
+
+  return promise->GetHandle();
 }
 
 void OnCategoriesAvailable(scoped_refptr<atom::util::Promise> promise,
