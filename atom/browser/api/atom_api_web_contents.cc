@@ -1439,17 +1439,11 @@ void OnServiceWorkerCheckDone(scoped_refptr<util::Promise> promise,
                    content::ServiceWorkerCapability::NO_SERVICE_WORKER);
 }
 
-v8::Local<v8::Promise> WebContents::HasServiceWorker() {
+v8::Local<v8::Promise> WebContents::HasServiceWorker(const GURL& url) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   auto* context = GetServiceWorkerContext(web_contents());
   if (!context) {
     promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
-    return promise->GetHandle();
-  }
-
-  GURL url = web_contents()->GetLastCommittedURL();
-  if (!url.is_valid()) {
-    promise->RejectWithErrorMessage("URL invalid or not yet loaded.");
     return promise->GetHandle();
   }
 
