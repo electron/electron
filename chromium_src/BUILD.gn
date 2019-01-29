@@ -41,6 +41,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_service_factory.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
+    "//chrome/browser/ui/autofill/popup_view_common.cc",
+    "//chrome/browser/ui/autofill/popup_view_common.h",
     "//chrome/browser/win/chrome_process_finder.cc",
     "//chrome/browser/win/chrome_process_finder.h",
     "//extensions/browser/app_window/size_constraints.cc",
@@ -51,6 +53,7 @@ static_library("chrome") {
   ]
   deps = [
     "//chrome/common",
+    "//components/feature_engagement:buildflags",
     "//components/keyed_service/content",
     "//components/proxy_config",
     "//components/security_state/content",
