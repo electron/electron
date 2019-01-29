@@ -88,10 +88,23 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   return promise->GetHandle();
 }
 
-bool StartTracing(const base::trace_event::TraceConfig& trace_config,
-                  const base::RepeatingCallback<void()>& callback) {
-  return TracingController::GetInstance()->StartTracing(
-      trace_config, base::BindOnce(callback));
+void OnTracingStarted(scoped_refptr<atom::util::Promise> promise) {
+  promise->Resolve();
+}
+
+v8::Local<v8::Promise> StartTracing(
+    v8::Isolate* isolate,
+    const base::trace_event::TraceConfig& trace_config) {
+  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+
+  bool success = TracingController::GetInstance()->StartTracing(
+      trace_config, base::BindOnce(&OnTracingStarted, promise));
+  if (!success) {
+    promise->RejectWithErrorMessage("Could not start tracing");
+    return promise->GetHandle();
+  }
+
+  return promise->GetHandle();
 }
 
 bool GetTraceBufferUsage(

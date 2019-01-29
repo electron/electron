@@ -12,7 +12,6 @@ result.
 **Note:** You should not use this module until the `ready` event of the app
 module is emitted.
 
-
 ```javascript
 const { app, contentTracing } = require('electron')
 
@@ -66,6 +65,19 @@ Start recording on all processes.
 Recording begins immediately locally and asynchronously on child processes
 as soon as they receive the EnableRecording request. The `callback` will be
 called once all child processes have acknowledged the `startRecording` request.
+
+**[Deprecated Soon](promisification.md)**
+
+### `contentTracing.startRecording(options)`
+
+* `options` ([TraceCategoriesAndOptions](structures/trace-categories-and-options.md) | [TraceConfig](structures/trace-config.md))
+
+Returns `Promise<any>` - resolved once all child processes have acknowledged the `startRecording` request.
+
+Start recording on all processes.
+
+Recording begins immediately locally and asynchronously on child processes
+as soon as they receive the EnableRecording request.
 
 ### `contentTracing.stopRecording(resultFilePath, callback)`
 
