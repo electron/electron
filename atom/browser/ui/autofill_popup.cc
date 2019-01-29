@@ -43,7 +43,7 @@ namespace atom {
 
 class PopupViewCommon : public autofill::PopupViewCommon {
  public:
-  PopupViewCommon(const gfx::Rect& window_bounds)
+  explicit PopupViewCommon(const gfx::Rect& window_bounds)
       : window_bounds_(window_bounds) {}
 
   gfx::Rect GetWindowBounds(gfx::NativeView container_view) override {
