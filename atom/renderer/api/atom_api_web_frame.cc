@@ -4,6 +4,8 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+#include <utility>
+
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
@@ -135,6 +137,26 @@ class FrameSpellChecker : public content::RenderFrameVisitor {
 
 }  // namespace
 
+class AtomWebFrameObserver : public content::RenderFrameObserver {
+ public:
+  explicit AtomWebFrameObserver(
+      content::RenderFrame* render_frame,
+      std::unique_ptr<SpellCheckClient> spell_check_client)
+      : content::RenderFrameObserver(render_frame),
+        spell_check_client_(std::move(spell_check_client)) {}
+  ~AtomWebFrameObserver() final {}
+
+  // RenderFrameObserver implementation.
+  void OnDestruct() final {
+    spell_check_client_.reset();
+    // Frame observers should delete themselves
+    delete this;
+  }
+
+ private:
+  std::unique_ptr<SpellCheckClient> spell_check_client_;
+};
+
 WebFrame::WebFrame(v8::Isolate* isolate)
     : web_frame_(blink::WebLocalFrame::FrameForCurrentContext()) {
   Init(isolate);
@@ -222,15 +244,15 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
     return;
   }
 
-  auto client = std::make_unique<SpellCheckClient>(
+  auto spell_check_client = std::make_unique<SpellCheckClient>(
       language, auto_spell_correct_turned_on, args->isolate(), provider);
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
-  FrameSpellChecker spell_checker(
-      client.get(), content::RenderFrame::FromWebFrame(web_frame_));
+  auto* render_frame = content::RenderFrame::FromWebFrame(web_frame_);
+  FrameSpellChecker spell_checker(spell_check_client.get(), render_frame);
   content::RenderFrame::ForEach(&spell_checker);
-  spell_check_client_.swap(client);
-  web_frame_->SetSpellCheckPanelHostClient(spell_check_client_.get());
+  web_frame_->SetSpellCheckPanelHostClient(spell_check_client.get());
+  new AtomWebFrameObserver(render_frame, std::move(spell_check_client));
 }
 
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
