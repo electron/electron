@@ -606,7 +606,7 @@ You can request the following paths by the name:
 
 Fetches a path's associated icon.
 
-On _Windows_, there a 2 kinds of icons:
+On _Windows_, there are 2 kinds of icons:
 
 - Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
 - Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
