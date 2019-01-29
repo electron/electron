@@ -10,6 +10,7 @@
 #include "atom/browser/ui/autofill_popup.h"
 #include "atom/common/api/api_messages.h"
 #include "base/i18n/rtl.h"
+#include "chrome/browser/ui/autofill/popup_view_common.h"
 #include "electron/buildflags/buildflags.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -24,104 +25,34 @@
 #include "atom/browser/osr/osr_view_proxy.h"
 #endif
 
+namespace chrome {
+struct Browser;
+
+Browser* FindBrowserWithWindow(gfx::NativeWindow window) {
+  return NULL;
+}
+}  // namespace chrome
+
+namespace platform_util {
+gfx::NativeWindow GetTopLevel(gfx::NativeView view) {
+  return NULL;
+}
+}  // namespace platform_util
+
 namespace atom {
 
-namespace {
+class PopupViewCommon : public autofill::PopupViewCommon {
+ public:
+  PopupViewCommon(const gfx::Rect& window_bounds)
+      : window_bounds_(window_bounds) {}
 
-struct WidthCalculationResults {
-  int right_growth_start;
-  int left_growth_end;
-  int right_available;
-  int left_available;
-  int max_popup_width;
+  gfx::Rect GetWindowBounds(gfx::NativeView container_view) override {
+    return window_bounds_;
+  }
+
+ private:
+  gfx::Rect window_bounds_;
 };
-
-WidthCalculationResults CalculateWidthValues(int leftmost_available_x,
-                                             int rightmost_available_x,
-                                             const gfx::Rect& element_bounds) {
-  WidthCalculationResults result;
-  result.right_growth_start =
-      std::max(leftmost_available_x,
-               std::min(rightmost_available_x, element_bounds.x()));
-  result.left_growth_end =
-      std::max(leftmost_available_x,
-               std::min(rightmost_available_x, element_bounds.right()));
-
-  result.right_available = rightmost_available_x - result.right_growth_start;
-  result.left_available = result.left_growth_end - leftmost_available_x;
-
-  result.max_popup_width =
-      std::max(result.right_available, result.left_available);
-  return result;
-}
-
-void CalculatePopupXAndWidth(int leftmost_available_x,
-                             int rightmost_available_x,
-                             int popup_required_width,
-                             const gfx::Rect& element_bounds,
-                             bool is_rtl,
-                             gfx::Rect* popup_bounds) {
-  WidthCalculationResults result = CalculateWidthValues(
-      leftmost_available_x, rightmost_available_x, element_bounds);
-
-  int popup_width = std::min(popup_required_width, result.max_popup_width);
-
-  bool grow_left = false;
-  if (is_rtl) {
-    grow_left = result.left_available >= popup_width ||
-                result.left_available >= result.right_available;
-  } else {
-    grow_left = result.right_available < popup_width &&
-                result.right_available < result.left_available;
-  }
-
-  popup_bounds->set_width(popup_width);
-  popup_bounds->set_x(grow_left ? result.left_growth_end - popup_width
-                                : result.right_growth_start);
-}
-
-void CalculatePopupYAndHeight(int topmost_available_y,
-                              int bottommost_available_y,
-                              int popup_required_height,
-                              const gfx::Rect& element_bounds,
-                              gfx::Rect* popup_bounds) {
-  int top_growth_end =
-      std::max(topmost_available_y,
-               std::min(bottommost_available_y, element_bounds.y()));
-  int bottom_growth_start =
-      std::max(topmost_available_y,
-               std::min(bottommost_available_y, element_bounds.bottom()));
-
-  int top_available = top_growth_end - topmost_available_y;
-  int bottom_available = bottommost_available_y - bottom_growth_start;
-
-  if (bottom_available >= popup_required_height ||
-      bottom_available >= top_available) {
-    popup_bounds->set_height(std::min(bottom_available, popup_required_height));
-    popup_bounds->set_y(bottom_growth_start);
-  } else {
-    popup_bounds->set_height(std::min(top_available, popup_required_height));
-    popup_bounds->set_y(top_growth_end - popup_bounds->height());
-  }
-}
-
-gfx::Rect CalculatePopupBounds(int desired_width,
-                               int desired_height,
-                               const gfx::Rect& element_bounds,
-                               gfx::Rect window_bounds,
-                               bool is_rtl) {
-  gfx::Rect popup_bounds;
-  CalculatePopupXAndWidth(window_bounds.x(),
-                          window_bounds.x() + window_bounds.width(),
-                          desired_width, element_bounds, is_rtl, &popup_bounds);
-  CalculatePopupYAndHeight(window_bounds.y(),
-                           window_bounds.y() + window_bounds.height(),
-                           desired_height, element_bounds, &popup_bounds);
-
-  return popup_bounds;
-}
-
-}  // namespace
 
 AutofillPopup::AutofillPopup() {
   bold_font_list_ = gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
@@ -203,9 +134,10 @@ void AutofillPopup::UpdatePopupBounds() {
   gfx::Rect bounds(origin, element_bounds_.size());
   gfx::Rect window_bounds = parent_->GetBoundsInScreen();
 
-  popup_bounds_ =
-      CalculatePopupBounds(GetDesiredPopupWidth(), GetDesiredPopupHeight(),
-                           bounds, window_bounds, base::i18n::IsRTL());
+  PopupViewCommon popup_view_common(window_bounds);
+  popup_bounds_ = popup_view_common.CalculatePopupBounds(
+      GetDesiredPopupWidth(), GetDesiredPopupHeight(), bounds,
+      gfx::NativeView(), base::i18n::IsRTL());
 }
 
 gfx::Rect AutofillPopup::popup_bounds_in_view() {
