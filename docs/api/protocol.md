@@ -28,10 +28,9 @@ of the `app` module gets emitted.
 
 The `protocol` module has the following methods:
 
-### `protocol.registerSchemesAsPrivileged(schemes[, options])`
+### `protocol.registerSchemesAsPrivileged(schemes)`
 
-* `custom_schemes` [CustomScheme[]](structures/custom-scheme.md)
-
+* `schemes` [CustomScheme[]](structures/custom-scheme.md)
 
 **Note:** This method can only be used before the `ready` event of the `app`
 module gets emitted and can be called only once.
