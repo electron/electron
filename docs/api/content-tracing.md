@@ -43,11 +43,18 @@ The `contentTracing` module has the following methods:
 * `callback` Function
   * `categories` String[]
 
-Get a set of category groups. The category groups can change as new code paths
-are reached.
+Get a set of category groups. The category groups can change as new code paths are reached.
 
-Once all child processes have acknowledged the `getCategories` request the
-`callback` is invoked with an array of category groups.
+Once all child processes have acknowledged the `getCategories` request the `callback` is invoked with an array of category groups.
+
+**[Deprecated Soon](promisification.md)**
+
+### `contentTracing.getCategories()`
+
+Returns `Promise<String[]>` - resolves with an array of category groups once all child processes have acknowledged the `getCategories` request
+
+Get a set of category groups. The category groups can change as new code paths are reached.
+
 
 ### `contentTracing.startRecording(options, callback)`
 

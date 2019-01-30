@@ -8,6 +8,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/promise_util.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "content/public/browser/tracing_controller.h"
@@ -71,11 +72,20 @@ void StopRecording(const base::FilePath& path,
       GetTraceDataEndpoint(path, callback));
 }
 
-bool GetCategories(
-    const base::RepeatingCallback<void(const std::set<std::string>&)>&
-        callback) {
-  return TracingController::GetInstance()->GetCategories(
-      base::BindOnce(callback));
+void OnCategoriesAvailable(scoped_refptr<atom::util::Promise> promise,
+                           const std::set<std::string>& categories) {
+  promise->Resolve(categories);
+}
+
+v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
+  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+  bool success = TracingController::GetInstance()->GetCategories(
+      base::BindOnce(&OnCategoriesAvailable, promise));
+
+  if (!success)
+    promise->RejectWithErrorMessage("Could not get categories.");
+
+  return promise->GetHandle();
 }
 
 bool StartTracing(const base::trace_event::TraceConfig& trace_config,
