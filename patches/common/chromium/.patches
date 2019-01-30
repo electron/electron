@@ -70,3 +70,4 @@ support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
 disable_time_ticks_dcheck.patch
 fix_test_compilation_error.patch
+autofill_size_calculation.patch

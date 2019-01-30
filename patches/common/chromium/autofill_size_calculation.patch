@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Heilig Benedek <benecene@gmail.com>
+Date: Wed, 30 Jan 2019 17:04:33 +0100
+Subject: don't call into chrome internals for autofill popup size calculations
+
+The default GetWindowBounds calls into chrome internal functions to
+find out the size of the window - this can be overridden but even
+then some methods call into the original. Let's just return an empty
+gfx::Rect and do the actual job in the subclass.
+
+diff --git a/chrome/browser/ui/autofill/popup_view_common.cc b/chrome/browser/ui/autofill/popup_view_common.cc
+index 004e9cb86bee7c10f6a68cdf6ceb60bf39627e1d..ddd54707e7ffce7c88511c25cf7ca5311bbad9c2 100644
+--- a/chrome/browser/ui/autofill/popup_view_common.cc
++++ b/chrome/browser/ui/autofill/popup_view_common.cc
+@@ -172,17 +172,17 @@ gfx::Rect PopupViewCommon::GetWindowBounds(gfx::NativeView container_view) {
+ #if defined(OS_ANDROID)
+   return container_view->GetWindowAndroid()->bounds();
+ #else
+-  views::Widget* widget =
+-      views::Widget::GetTopLevelWidgetForNativeView(container_view);
+-  if (widget)
+-    return widget->GetWindowBoundsInScreen();
++  // views::Widget* widget =
++  //     views::Widget::GetTopLevelWidgetForNativeView(container_view);
++  // if (widget)
++  //   return widget->GetWindowBoundsInScreen();
+
+   // If the widget is null, try to get these bounds from a browser window. This
+   // is common on Mac when the window is drawn using Cocoa.
+-  gfx::NativeWindow window = platform_util::GetTopLevel(container_view);
+-  Browser* browser = chrome::FindBrowserWithWindow(window);
+-  if (browser)
+-    return browser->window()->GetBounds();
++  // gfx::NativeWindow window = platform_util::GetTopLevel(container_view);
++  // Browser* browser = chrome::FindBrowserWithWindow(window);
++  // if (browser)
++  //   return browser->window()->GetBounds();
+
+   // If the browser is null, simply return an empty rect. The most common reason
+   // to end up here is that the NativeView has been destroyed externally, which
