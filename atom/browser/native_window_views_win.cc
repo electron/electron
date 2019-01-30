@@ -4,8 +4,8 @@
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
-#include "atom/common/atom_constants.h"
 #include "atom/browser/ui/views/root_view.h"
+#include "atom/common/atom_constants.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "ui/base/win/accessibility_misc_utils.h"
 #include "ui/display/win/screen_win.h"
@@ -195,8 +195,9 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       // previously on (but the leftmost one instead). We restore the position
       // of the window during the restore operation, this way chromium can
       // use the proper display to calculate the scale factor to use.
-      if(!last_normal_placement_bounds_.IsEmpty() && GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
-        last_normal_placement_bounds_.set_size(gfx::Size(0,0));
+      if (!last_normal_placement_bounds_.IsEmpty() &&
+          GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+        last_normal_placement_bounds_.set_size(gfx::Size(0, 0));
         wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
         SetWindowPlacement(GetAcceleratedWidget(), &wp);
 
@@ -207,12 +208,14 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     }
     case WM_NCCALCSIZE: {
       if (!has_frame() && w_param == TRUE) {
-        NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)l_param;
+        NCCALCSIZE_PARAMS* params =
+            reinterpret_cast<NCCALCSIZE_PARAMS*>(l_param);
         RECT PROPOSED = params->rgrc[0];
         RECT BEFORE = params->rgrc[1];
 
         // We need to call the default to have cascade and tile windows
-        // working (https://github.com/rossy/borderless-window/blob/master/borderless-window.c#L239),
+        // working
+        // (https://github.com/rossy/borderless-window/blob/master/borderless-window.c#L239),
         // but we need to provide the proposed original value as suggested in
         // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
         DefWindowProcW(GetAcceleratedWidget(), WM_NCCALCSIZE, w_param, l_param);
@@ -330,7 +333,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
 
-      if(GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+      if (GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
       }
 
