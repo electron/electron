@@ -916,6 +916,13 @@ describe('webContents module', () => {
   })
 
   describe('create()', () => {
+    before(function () {
+      // FIXME(jkleinsc): Test is consistently failing on Windows 32 bit.
+      if (process.arch === 'ia32') {
+        this.skip()
+      }
+    })
+
     it('does not crash on exit', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontents.js')
       const electronPath = remote.getGlobal('process').execPath
