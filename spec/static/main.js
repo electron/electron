@@ -98,12 +98,12 @@ global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 global.standardScheme = 'app'
 global.zoomScheme = 'zoom'
 protocol.registerSchemesAsPrivileged([
-  { scheme: global.standardScheme, options: { standard: true, secure: true } },
-  { scheme: global.zoomScheme, options: { standard: true, secure: true } },
-  { scheme: 'cors', options: { corsEnabled: true, supportFetchAPI: true } },
-  { scheme: 'cors-blob', options: { corsEnabled: true, supportFetchAPI: true } },
-  { scheme: 'no-cors', options: { supportFetchAPI: true } },
-  { scheme: 'no-fetch', options: { corsEnabled: true } }
+  { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
+  { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-fetch', privileges: { corsEnabled: true } }
 ])
 
 app.on('window-all-closed', function () {
