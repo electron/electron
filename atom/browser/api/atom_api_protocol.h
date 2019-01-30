@@ -34,8 +34,9 @@ namespace atom {
 namespace api {
 
 std::vector<std::string> GetStandardSchemes();
-void RegisterStandardSchemes(const std::vector<std::string>& schemes,
-                             mate::Arguments* args);
+
+void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
+                                 mate::Arguments* args);
 
 class Protocol : public mate::TrackableObject<Protocol> {
  public:
@@ -93,9 +94,6 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
   };
-
-  // Register schemes that can handle service worker.
-  void RegisterServiceWorkerSchemes(const std::vector<std::string>& schemes);
 
   // Register the protocol with certain request job.
   template <typename RequestJob>

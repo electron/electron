@@ -163,6 +163,25 @@ void RendererClientBase::RenderThreadStarted() {
     blink::SchemeRegistry::RegisterURLSchemeAsSecure(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
+  std::vector<std::string> fetch_enabled_schemes =
+      ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);
+  for (const std::string& scheme : fetch_enabled_schemes) {
+    blink::WebSecurityPolicy::RegisterURLSchemeAsSupportingFetchAPI(
+        blink::WebString::FromASCII(scheme));
+  }
+
+  std::vector<std::string> service_worker_schemes =
+      ParseSchemesCLISwitch(command_line, switches::kServiceWorkerSchemes);
+  for (const std::string& scheme : service_worker_schemes)
+    blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers(
+        blink::WebString::FromASCII(scheme));
+
+  std::vector<std::string> csp_bypassing_schemes =
+      ParseSchemesCLISwitch(command_line, switches::kBypassCSPSchemes);
+  for (const std::string& scheme : csp_bypassing_schemes)
+    blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
+        WTF::String::FromUTF8(scheme.data(), scheme.length()));
+
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
