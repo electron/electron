@@ -11,13 +11,15 @@
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #include "ui/display/screen.h"
 
+#include "components/viz/common/features.h"
+
 namespace atom {
 
 class MacHelper : public content::BrowserCompositorMacClient,
                   public ui::AcceleratedWidgetMacNSView {
  public:
   explicit MacHelper(OffScreenRenderWidgetHostView* view) : view_(view) {
-    [view_->GetNativeView() setWantsLayer:YES];
+    [view_->GetNativeView().GetNativeNSView() setWantsLayer:YES];
   }
 
   virtual ~MacHelper() {}
@@ -44,23 +46,12 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void DestroyCompositorForShutdown() override {}
 
-  bool SynchronizeVisualProperties(
-      const base::Optional<viz::LocalSurfaceId>&
-          child_allocated_local_surface_id) override {
-    auto* browser_compositor = view_->browser_compositor();
-    if (child_allocated_local_surface_id) {
-      browser_compositor->UpdateRendererLocalSurfaceIdFromChild(
-          *child_allocated_local_surface_id);
-    } else {
-      browser_compositor->AllocateNewRendererLocalSurfaceId();
-    }
-
-    if (auto* host = browser_compositor->GetDelegatedFrameHost()) {
-      host->EmbedSurface(browser_compositor->GetRendererLocalSurfaceId(),
-                         browser_compositor->GetRendererSize(),
-                         cc::DeadlinePolicy::UseDefaultDeadline());
-    }
+  bool OnBrowserCompositorSurfaceIdChanged() override {
     return view_->render_widget_host()->SynchronizeVisualProperties();
+  }
+
+  std::vector<viz::SurfaceId> CollectSurfaceIdsForEviction() override {
+    return view_->render_widget_host()->CollectSurfaceIdsForEviction();
   }
 
  private:
@@ -76,12 +67,8 @@ void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
 void OffScreenRenderWidgetHostView::SpeakSelection() {}
 
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
-  return browser_compositor_->UpdateNSViewAndDisplay(
+  return browser_compositor_->UpdateSurfaceFromNSView(
       GetRootLayer()->bounds().size(), GetDisplay());
-}
-
-bool OffScreenRenderWidgetHostView::ShouldContinueToPauseForFrame() {
-  return browser_compositor_->ShouldContinueToPauseForFrame();
 }
 
 void OffScreenRenderWidgetHostView::CreatePlatformWidget(
@@ -90,6 +77,10 @@ void OffScreenRenderWidgetHostView::CreatePlatformWidget(
   browser_compositor_.reset(new content::BrowserCompositorMac(
       mac_helper_, mac_helper_, render_widget_host_->is_hidden(), GetDisplay(),
       AllocateFrameSinkId(is_guest_view_hack)));
+
+  if (!base::FeatureList::IsEnabled(features::kVizDisplayCompositor)) {
+    SetNeedsBeginFrames(true);
+  }
 }
 
 void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
@@ -132,14 +123,15 @@ display::Display OffScreenRenderWidgetHostView::GetDisplay() {
 void OffScreenRenderWidgetHostView::OnDidUpdateVisualPropertiesComplete(
     const cc::RenderFrameMetadata& metadata) {
   DCHECK_EQ(current_device_scale_factor_, metadata.device_scale_factor);
-  browser_compositor_->SynchronizeVisualProperties(
+  browser_compositor_->UpdateSurfaceFromChild(
       metadata.device_scale_factor, metadata.viewport_size_in_pixels,
-      metadata.local_surface_id.value_or(viz::LocalSurfaceId()));
+      metadata.local_surface_id_allocation.value_or(
+          viz::LocalSurfaceIdAllocation()));
 }
 
-const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
-    const {
-  return browser_compositor_->GetRendererLocalSurfaceId();
+const viz::LocalSurfaceIdAllocation&
+OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
+  return browser_compositor_->GetRendererLocalSurfaceIdAllocation();
 }
 
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {

@@ -66,13 +66,12 @@ class AtomBeginFrameTimer;
 
 #if defined(OS_MACOSX)
 class MacHelper;
+#else
+class AtomDelegatedFrameHostClient;
 #endif
 
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                       public ui::CompositorDelegate,
-#if !defined(OS_MACOSX)
-                                      public content::DelegatedFrameHostClient,
-#endif
                                       public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
@@ -118,7 +117,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
-  bool ShouldContinueToPauseForFrame() override;
   bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MACOSX)
 
@@ -144,8 +142,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void Destroy(void) override;
   void SetTooltipText(const base::string16&) override;
   content::CursorManager* GetCursorManager() override;
-  void SelectionBoundsChanged(
-      const ViewHostMsg_SelectionBounds_Params&) override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
@@ -170,18 +166,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       content::RenderWidgetHost*,
       content::WebContentsView*) override;
 
-#if !defined(OS_MACOSX)
-  // content::DelegatedFrameHostClient:
-  int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
-  ui::Layer* DelegatedFrameHostGetLayer(void) const override;
-  bool DelegatedFrameHostIsVisible(void) const override;
-  SkColor DelegatedFrameHostGetGutterColor() const override;
-  void OnFirstSurfaceActivation(const viz::SurfaceInfo& surface_info) override;
-  void OnBeginFrame(base::TimeTicks frame_time) override;
-  void OnFrameTokenChanged(uint32_t frame_token) override;
-#endif  // !defined(OS_MACOSX)
-
-  const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
+  const viz::LocalSurfaceIdAllocation& GetLocalSurfaceIdAllocation()
+      const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
 
   void DidNavigate() override;
@@ -220,16 +206,13 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
-  void RegisterGuestViewFrameSwappedCallback(
-      content::RenderWidgetHostViewGuest* guest_host_view);
-  void OnGuestViewFrameSwapped(
-      content::RenderWidgetHostViewGuest* guest_host_view);
-
   void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
   void OnPopupPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
 
-  bool IsPopupWidget() const { return popup_type_ != blink::kWebPopupTypeNone; }
+  bool IsPopupWidget() const {
+    return widget_type_ == content::WidgetType::kPopup;
+  }
 
   void HoldResize();
   void ReleaseResize();
@@ -322,7 +305,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool paint_callback_running_ = false;
 
-  viz::LocalSurfaceId local_surface_id_;
+  viz::LocalSurfaceIdAllocation local_surface_id_allocation_;
   viz::ParentLocalSurfaceIdAllocator local_surface_id_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
@@ -349,6 +332,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   // Selected text on the renderer.
   std::string selected_text_;
+#else
+  std::unique_ptr<AtomDelegatedFrameHostClient> delegated_frame_host_client_;
 #endif
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
