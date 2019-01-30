@@ -32,6 +32,7 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/native_widget_types.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -1100,7 +1101,7 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   if (GetNativeWindow() && GetNativeWindow()->GetHost())
     return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
   else
-    return nullptr;
+    return gfx::kNullAcceleratedWidget;
 }
 
 NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
