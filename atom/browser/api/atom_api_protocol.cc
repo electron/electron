@@ -59,7 +59,7 @@ struct Converter<CustomScheme> {
       return false;
     mate::Dictionary opt;
     // options are optional. Default values specified in SchemeOptions are used
-    if (dict.Get("options", &opt)) {
+    if (dict.Get("privileges", &opt)) {
       opt.Get("standard", &(out->options.standard));
       opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("secure", &(out->options.secure));
