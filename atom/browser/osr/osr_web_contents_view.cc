@@ -128,7 +128,7 @@ OffScreenWebContentsView::CreateViewForWidget(
 }
 
 content::RenderWidgetHostViewBase*
-OffScreenWebContentsView::CreateViewForPopupWidget(
+OffScreenWebContentsView::CreateViewForChildWidget(
     content::RenderWidgetHost* render_widget_host) {
   content::WebContentsImpl* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
