@@ -115,11 +115,10 @@ v8::Local<v8::Promise> StartTracing(
   return promise->GetHandle();
 }
 
-void OnTraceBufferUsageAvailable(v8::Isolate* isolate,
-                                 scoped_refptr<atom::util::Promise> promise,
+void OnTraceBufferUsageAvailable(scoped_refptr<atom::util::Promise> promise,
                                  float percent_full,
                                  size_t approximate_count) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise->isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
@@ -129,12 +128,10 @@ void OnTraceBufferUsageAvailable(v8::Isolate* isolate,
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
   scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
   bool success = TracingController::GetInstance()->GetTraceBufferUsage(
-      base::BindOnce(&OnTraceBufferUsageAvailable, isolate, promise));
+      base::BindOnce(&OnTraceBufferUsageAvailable, promise));
 
-  if (!success) {
+  if (!success)
     promise->RejectWithErrorMessage("Could not get trace buffer usage.");
-    return promise->GetHandle();
-  }
 
   return promise->GetHandle();
 }
