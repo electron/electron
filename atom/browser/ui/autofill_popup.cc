@@ -25,20 +25,6 @@
 #include "atom/browser/osr/osr_view_proxy.h"
 #endif
 
-namespace chrome {
-struct Browser;
-
-Browser* FindBrowserWithWindow(gfx::NativeWindow window) {
-  return NULL;
-}
-}  // namespace chrome
-
-namespace platform_util {
-gfx::NativeWindow GetTopLevel(gfx::NativeView view) {
-  return NULL;
-}
-}  // namespace platform_util
-
 namespace atom {
 
 class PopupViewCommon : public autofill::PopupViewCommon {
