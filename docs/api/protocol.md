@@ -28,9 +28,9 @@ of the `app` module gets emitted.
 
 The `protocol` module has the following methods:
 
-### `protocol.registerSchemesAsPrivileged(schemes[, options])`
+### `protocol.registerSchemesAsPrivileged(customSchemes)`
 
-* `custom_schemes` [CustomScheme[]](structures/custom-scheme.md)
+* `customSchemes` [CustomScheme[]](structures/custom-scheme.md)
 
 
 **Note:** This method can only be used before the `ready` event of the `app`
@@ -39,13 +39,13 @@ module gets emitted and can be called only once.
 Registers the `scheme` as standard, secure, bypasses content security policy for resources,
 allows registering ServiceWorker and supports fetch API.
 
-Specify an option with the value of `true` to enable the capability.
+Specify a privilege with the value of `true` to enable the capability.
 An example of registering a privileged scheme, with bypassing Content Security Policy:
 
 ```javascript
 const { protocol } = require('electron')
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'foo', options: { bypassCSP: true } }
+  { scheme: 'foo', privileges: { bypassCSP: true } }
 ])
 ```
 
