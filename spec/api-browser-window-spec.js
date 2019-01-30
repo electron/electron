@@ -1382,23 +1382,29 @@ describe('BrowserWindow module', () => {
         assert.deepStrictEqual(defaultSession.getPreloads(), preloads)
       })
 
-      it('loads the script before other scripts in window including normal preloads', function (done) {
-        ipcMain.once('vars', function (event, preload1, preload2, preload3) {
-          assert.strictEqual(preload1, 'preload-1')
-          assert.strictEqual(preload2, 'preload-1-2')
-          assert.strictEqual(preload3, 'preload-1-2-3')
-          done()
+      const generateSpecs = (description, sandbox) => {
+        describe(description, () => {
+          it('loads the script before other scripts in window including normal preloads', function (done) {
+            ipcMain.once('vars', function (event, preload1, preload2) {
+              assert.strictEqual(preload1, 'preload-1')
+              assert.strictEqual(preload2, 'preload-1-2')
+              done()
+            })
+            w.destroy()
+            w = new BrowserWindow({
+              show: false,
+              webPreferences: {
+                sandbox,
+                preload: path.join(fixtures, 'module', 'get-global-preload.js')
+              }
+            })
+            w.loadURL('about:blank')
+          })
         })
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
-          }
-        })
-        w.loadFile(path.join(fixtures, 'api', 'preloads.html'))
-      })
+      }
+
+      generateSpecs('without sandbox', false)
+      generateSpecs('with sandbox', true)
     })
 
     describe('"additionalArguments" option', () => {
