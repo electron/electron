@@ -36,17 +36,28 @@ const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/relea
 let retry = 0
 
 function uploadToGitHub () {
+  const fakeFileNamePrefix = `fake-${fileName}-fake-`
+  const fakeFileName = `${fakeFileNamePrefix}${Date.now()}`
+
   octokit.repos.uploadReleaseAsset({
     url: uploadUrl,
     headers: getHeaders(filePath, fileName),
     file: fs.createReadStream(filePath),
-    name: fileName
-  }).then(() => {
-    console.log(`Successfully uploaded ${fileName} to GitHub.`)
-    process.exit()
+    name: fakeFileName
+  }).then((uploadResponse) => {
+    console.log(`Successfully uploaded ${fileName} to GitHub as ${fakeFileName}. Going for the rename now.`)
+    return octokit.repos.updateReleaseAsset({
+      owner: 'electron',
+      repo: 'electron',
+      asset_id: uploadResponse.data.id,
+      name: fileName
+    }).then(() => {
+      console.log(`Successfully renamed ${fakeFileName} to ${fileName}. All done now.`)
+      process.exit(0)
+    })
   }).catch((err) => {
     if (retry < 4) {
-      console.log(`Error uploading ${fileName} to GitHub, will retry.  Error was:`, err)
+      console.log(`Error uploading ${fileName} as ${fakeFileName} to GitHub, will retry.  Error was:`, err)
       retry++
 
       octokit.repos.listAssetsForRelease({
@@ -56,15 +67,17 @@ function uploadToGitHub () {
       }).then(assets => {
         console.log('Got list of assets for existing release:')
         console.log(JSON.stringify(assets.data, null, '  '))
-        const existingAssets = assets.data.filter(asset => asset.name === fileName)
+        const existingAssets = assets.data.filter(asset => asset.name.startsWith(fakeFileNamePrefix) || asset.name === fileName)
 
         if (existingAssets.length > 0) {
           console.log(`${fileName} already exists; will delete before retrying upload.`)
-          octokit.repos.deleteReleaseAsset({
-            owner: 'electron',
-            repo: targetRepo,
-            asset_id: existingAssets[0].id
-          }).catch((deleteErr) => {
+          Promise.all(
+            existingAssets.map(existingAsset => octokit.repos.deleteReleaseAsset({
+              owner: 'electron',
+              repo: targetRepo,
+              asset_id: existingAsset.id
+            }))
+          ).catch((deleteErr) => {
             console.log(`Failed to delete existing asset ${fileName}.  Error was:`, deleteErr)
           }).then(uploadToGitHub)
         } else {
