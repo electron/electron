@@ -82,8 +82,13 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   } else if (options.Get(options::kCenter, &center) && center) {
     Center();
   }
+
+  bool use_content_size = false;
+  options.Get(options::kUseContentSize, &use_content_size);
+
   // On Linux and Window we may already have maximum size defined.
-  extensions::SizeConstraints size_constraints(GetContentSizeConstraints());
+  extensions::SizeConstraints size_constraints(
+      use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
   int min_height = 0, min_width = 0;
   if (options.Get(options::kMinHeight, &min_height) |
       options.Get(options::kMinWidth, &min_width)) {
@@ -94,8 +99,6 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
       options.Get(options::kMaxWidth, &max_width)) {
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
   }
-  bool use_content_size = false;
-  options.Get(options::kUseContentSize, &use_content_size);
   if (use_content_size) {
     SetContentSizeConstraints(size_constraints);
   } else {
