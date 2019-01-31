@@ -836,7 +836,7 @@ describe('app module', () => {
     })
   })
 
-  describe('getFileIcon() API', (done) => {
+  describe('getFileIcon() API', () => {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
       small: 16,
@@ -859,7 +859,7 @@ describe('app module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('fetches a non-empty icon (callback)', () => {
+    it('fetches a non-empty icon (callback)', (done) => {
       app.getFileIcon(iconPath, (icon) => {
         expect(icon.isEmpty()).to.be.false()
         done()
@@ -875,7 +875,7 @@ describe('app module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('fetches normal icon size by default (callback)', () => {
+    it('fetches normal icon size by default (callback)', (done) => {
       app.getFileIcon(iconPath, (icon) => {
         const size = icon.getSize()
 
@@ -903,7 +903,7 @@ describe('app module', () => {
       })
 
       // TODO(codebytere): remove when promisification is complete
-      it('fetches a normal icon (callback)', () => {
+      it('fetches a normal icon (callback)', (done) => {
         app.getFileIcon(iconPath, { size: 'normal' }, (icon) => {
           const size = icon.getSize()
 

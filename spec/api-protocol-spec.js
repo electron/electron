@@ -680,14 +680,14 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.isProtocolHandled', (done) => {
+  describe('protocol.isProtocolHandled', () => {
     it('returns true for about:', async () => {
       const result = await protocol.isProtocolHandled('about')
       assert.strictEqual(result, true)
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('returns true for about: (callback)', () => {
+    it('returns true for about: (callback)', (done) => {
       protocol.isProtocolHandled('about', (result) => {
         assert.strictEqual(result, true)
         done()
@@ -700,7 +700,7 @@ describe('protocol module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('returns true for file: (callback)', () => {
+    it('returns true for file: (callback)', (done) => {
       protocol.isProtocolHandled('file', (result) => {
         assert.strictEqual(result, true)
         done()
@@ -722,7 +722,7 @@ describe('protocol module', () => {
       assert.strictEqual(result, false)
     })
 
-    it('returns true for custom protocol', () => {
+    it('returns true for custom protocol', (done) => {
       const emptyHandler = (request, callback) => callback()
       protocol.registerStringProtocol(protocolName, emptyHandler, async (error) => {
         assert.strictEqual(error, null)
@@ -733,7 +733,7 @@ describe('protocol module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('returns true for custom protocol (callback)', () => {
+    it('returns true for custom protocol (callback)', (done) => {
       const emptyHandler = (request, callback) => callback()
       protocol.registerStringProtocol(protocolName, emptyHandler, (error) => {
         assert.strictEqual(error, null)
@@ -744,7 +744,7 @@ describe('protocol module', () => {
       })
     })
 
-    it('returns true for intercepted protocol', () => {
+    it('returns true for intercepted protocol', (done) => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, async (error) => {
         assert.strictEqual(error, null)
@@ -755,7 +755,7 @@ describe('protocol module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('returns true for intercepted protocol (callback)', () => {
+    it('returns true for intercepted protocol (callback)', (done) => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, (error) => {
         assert.strictEqual(error, null)
