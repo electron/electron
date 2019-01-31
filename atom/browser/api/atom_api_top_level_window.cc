@@ -650,6 +650,9 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
       mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());
+  } else if (value->IsNull()) {
+    menu_.Reset();
+    window_->SetMenu(nullptr);
   } else {
     isolate->ThrowException(
         v8::Exception::TypeError(mate::StringToV8(isolate, "Invalid Menu")));
