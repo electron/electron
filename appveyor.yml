@@ -92,7 +92,6 @@ test_script:
   - if "%RUN_TESTS%"=="true" ( echo Running test suite & npm run test -- --ci --enable-logging)
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
-  - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
 deploy_script:
   - cd electron
   - ps: >-
