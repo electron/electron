@@ -132,8 +132,6 @@ hooks = [
   },
 ]
 
-# bump
-
 recursedeps = [
   'src',
 ]
