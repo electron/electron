@@ -187,9 +187,9 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
   // https://www.conventionalcommits.org/en
   if (commitMessage
-    .split(/\r?\n\r?\n/) // split into paragraphs
-    .map(paragraph => paragraph.trim())
-    .some(paragraph => paragraph.startsWith('BREAKING CHANGE'))) {
+    .split(/\r?\n/) // split into lines
+    .map(line => line.trim())
+    .some(line => line.startsWith('BREAKING CHANGE'))) {
     commit.type = 'breaking-change'
   }
 
