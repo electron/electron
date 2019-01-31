@@ -229,16 +229,29 @@ describe('webContents module', () => {
   })
 
   describe('ServiceWorker APIs', () => {
-    const filePath = path.join(fixtures, 'api', 'service-worker', 'service-worker.html')
-
-    it('can successfully check for presence of a ServiceWorker', async () => {
+    it('can successfully check when a ServiceWorker is present', async () => {
+      const filePath = path.join(fixtures, 'api', 'service-worker', 'service-worker.html')
       await w.loadFile(filePath)
       const hasSW = await w.webContents.hasServiceWorker(`file://${filePath}`)
       expect(hasSW).to.be.true()
     })
 
+    it('can successfully check when a ServiceWorker is not present', async () => {
+      const filePath = path.join(fixtures, 'pages', 'a.html')
+      await w.loadFile(filePath)
+      const hasSW = await w.webContents.hasServiceWorker(`file://${filePath}`)
+      expect(hasSW).to.be.false()
+    })
+
+    it('hasServiceWorker should reject on a malformed or nonexistent url', async () => {
+      const filePath = path.join(fixtures, 'api', 'service-worker', 'service-worker.html')
+      await w.loadFile(filePath)
+      expect(w.webContents.hasServiceWorker(`bad-file-bad`)).to.eventually.be.rejectedWith('URL is invalid.')
+    })
+
     it('can successfully check for presence of a ServiceWorker (callback)', (done) => {
-      w.loadFile(path.join(path.join(fixtures, 'api', 'service-worker', 'service-worker.html'))).then(() => {
+      const filePath = path.join(fixtures, 'api', 'service-worker', 'service-worker.html')
+      w.loadFile(filePath).then(() => {
         w.webContents.hasServiceWorker(`file://${filePath}`, hasSW => {
           expect(hasSW).to.be.true()
           done()

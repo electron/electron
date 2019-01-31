@@ -1447,6 +1447,11 @@ v8::Local<v8::Promise> WebContents::HasServiceWorker(const GURL& url) {
     return promise->GetHandle();
   }
 
+  if (!url.is_valid()) {
+    promise->RejectWithErrorMessage("URL is invalid.");
+    return promise->GetHandle();
+  }
+
   context->CheckHasServiceWorker(
       url, url, base::BindOnce(&OnServiceWorkerCheckDone, promise));
 
