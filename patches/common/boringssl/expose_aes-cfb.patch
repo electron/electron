@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Fri, 18 Jan 2019 14:23:28 -0800
+Subject: expose aes-{128,256}-cfb
+
+
+diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
+index 1b23ad32f8cff2a00512ba58d24b47b628e7920c..be7ef07b2c188a76890deb0f305cf92fcc57a64e 100644
+--- a/crypto/cipher_extra/cipher_extra.c
++++ b/crypto/cipher_extra/cipher_extra.c
+@@ -101,10 +101,14 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
+     return EVP_des_ede3_cbc();
+   } else if (OPENSSL_strcasecmp(name, "aes-128-cbc") == 0) {
+     return EVP_aes_128_cbc();
++  } else if (OPENSSL_strcasecmp(name, "aes-128-cfb") == 0) {
++    return EVP_aes_128_cfb128();
+   } else if (OPENSSL_strcasecmp(name, "aes-192-cbc") == 0) {
+     return EVP_aes_192_cbc();
+   } else if (OPENSSL_strcasecmp(name, "aes-256-cbc") == 0) {
+     return EVP_aes_256_cbc();
++  } else if (OPENSSL_strcasecmp(name, "aes-256-cfb") == 0) {
++    return EVP_aes_256_cfb128();
+   } else if (OPENSSL_strcasecmp(name, "aes-128-ctr") == 0) {
+     return EVP_aes_128_ctr();
+   } else if (OPENSSL_strcasecmp(name, "aes-192-ctr") == 0) {
+diff --git a/decrepit/cfb/cfb.c b/decrepit/cfb/cfb.c
+index d3a176163303a202baeb1f95727c6ed3525439d6..21d108a7b73d454aa6b0e324df4b67088d60302a 100644
+--- a/decrepit/cfb/cfb.c
++++ b/decrepit/cfb/cfb.c
+@@ -57,4 +57,12 @@ static const EVP_CIPHER aes_128_cfb128 = {
+     NULL /* cleanup */,  NULL /* ctrl */,
+ };
+ 
++static const EVP_CIPHER aes_256_cfb128 = {
++    NID_aes_128_cfb128,  1 /* block_size */,  32 /* key_size */,
++    16 /* iv_len */,     sizeof(EVP_CFB_CTX), EVP_CIPH_CFB_MODE,
++    NULL /* app_data */, aes_cfb_init_key,    aes_cfb128_cipher,
++    NULL /* cleanup */,  NULL /* ctrl */,
++};
++
+ const EVP_CIPHER *EVP_aes_128_cfb128(void) { return &aes_128_cfb128; }
++const EVP_CIPHER *EVP_aes_256_cfb128(void) { return &aes_256_cfb128; }
+diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
+index acc4719b7e9c4c4461fc6142f2ae9156b407915b..8b008a401ec2f2d0673f6876609dd5786cace4c2 100644
+--- a/decrepit/evp/evp_do_all.c
++++ b/decrepit/evp/evp_do_all.c
+@@ -20,10 +20,12 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+                                                const char *unused, void *arg),
+                               void *arg) {
+   callback(EVP_aes_128_cbc(), "AES-128-CBC", NULL, arg);
++  callback(EVP_aes_128_cfb128(), "AES-128-CFB", NULL, arg);
+   callback(EVP_aes_128_ctr(), "AES-128-CTR", NULL, arg);
+   callback(EVP_aes_128_ecb(), "AES-128-ECB", NULL, arg);
+   callback(EVP_aes_128_ofb(), "AES-128-OFB", NULL, arg);
+   callback(EVP_aes_256_cbc(), "AES-256-CBC", NULL, arg);
++  callback(EVP_aes_256_cfb128(), "AES-256-CFB", NULL, arg);
+   callback(EVP_aes_256_ctr(), "AES-256-CTR", NULL, arg);
+   callback(EVP_aes_256_ecb(), "AES-256-ECB", NULL, arg);
+   callback(EVP_aes_256_ofb(), "AES-256-OFB", NULL, arg);
+@@ -38,10 +40,12 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+ 
+   // OpenSSL returns everything twice, the second time in lower case.
+   callback(EVP_aes_128_cbc(), "aes-128-cbc", NULL, arg);
++  callback(EVP_aes_128_cfb128(), "aes-128-cfb", NULL, arg);
+   callback(EVP_aes_128_ctr(), "aes-128-ctr", NULL, arg);
+   callback(EVP_aes_128_ecb(), "aes-128-ecb", NULL, arg);
+   callback(EVP_aes_128_ofb(), "aes-128-ofb", NULL, arg);
+   callback(EVP_aes_256_cbc(), "aes-256-cbc", NULL, arg);
++  callback(EVP_aes_256_cfb128(), "aes-256-cfb", NULL, arg);
+   callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
+   callback(EVP_aes_256_ecb(), "aes-256-ecb", NULL, arg);
+   callback(EVP_aes_256_ofb(), "aes-256-ofb", NULL, arg);
+diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
+index 59634138cb60237f008eb99e7d8df54da7629c1a..b30b8434b301fb5b8630ae954698b6fee255df77 100644
+--- a/include/openssl/cipher.h
++++ b/include/openssl/cipher.h
+@@ -421,6 +421,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_ofb(void);
+ 
+ // EVP_aes_128_cfb128 is only available in decrepit.
+ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);
++OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_256_cfb128(void);
+ 
+ // The following flags do nothing and are included only to make it easier to
+ // compile code with BoringSSL.
