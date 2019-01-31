@@ -396,6 +396,28 @@ const getDependencyCommits = async (pool, from, to) => {
     : getDependencyCommitsGN(pool, from, to)
 }
 
+// Changes are interesting if they make a change relative to a previous
+// release in the same series. For example if you fix a Y.0.0 bug, that
+// should be included in the Y.0.1 notes even if it's also tropped back
+// to X.0.1.
+//
+// The phrase 'previous release' is important: if this is the first
+// prerelease or first stable release in a series, we omit previous
+// branches' changes. Otherwise we will have an overwhelmingly long
+// list of mostly-irrelevant changes.
+const shouldIncludeMultibranchChanges = (version) => {
+  let show = true
+
+  if (semver.valid(version)) {
+    const prerelease = semver.prerelease(version)
+    show = prerelease
+      ? parseInt(prerelease.pop()) > 1
+      : semver.patch(version) > 0
+  }
+
+  return show
+}
+
 /***
 ****  Main
 ***/
@@ -475,9 +497,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     .filter(commit => commit.note !== NO_NOTES)
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
-  // if this is a stable release,
-  // remove notes for changes that already landed in a previous major/minor series
-  if (semver.valid(newVersion) && !semver.prerelease(newVersion)) {
+  if (!shouldIncludeMultibranchChanges(newVersion)) {
     // load all the prDatas
     await Promise.all(
       pool.commits.map(commit => new Promise(async (resolve) => {
