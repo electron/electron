@@ -127,7 +127,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                  download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
                  download::DOWNLOAD_INTERRUPT_REASON_NONE);
-  };
+  }
 }
 
 #if defined(MAS_BUILD)
@@ -174,7 +174,8 @@ void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
   const auto interrupt_reason =
       download_path.empty() ? download::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
                             : download::DOWNLOAD_INTERRUPT_REASON_NONE;
-  download_callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
+  download_callback.Run(download_path,
+                        download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
                         download_path, interrupt_reason);
 }
