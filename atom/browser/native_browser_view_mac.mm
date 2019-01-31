@@ -175,6 +175,14 @@ void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
   if (flags & kAutoResizeHeight) {
     autoresizing_mask |= NSViewHeightSizable;
   }
+  if (flags & kAutoResizeHorizontal) {
+    autoresizing_mask |=
+        NSViewMaxXMargin | NSViewMinXMargin | NSViewWidthSizable;
+  }
+  if (flags & kAutoResizeVertical) {
+    autoresizing_mask |=
+        NSViewMaxYMargin | NSViewMinYMargin | NSViewHeightSizable;
+  }
 
   auto* view =
       GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();

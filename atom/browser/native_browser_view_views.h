@@ -15,13 +15,29 @@ class NativeBrowserViewViews : public NativeBrowserView {
       InspectableWebContents* inspectable_web_contents);
   ~NativeBrowserViewViews() override;
 
+  void SetAutoResizeProportions(const gfx::Size& window_size);
+  void AutoResize(const gfx::Rect& new_window,
+                  int width_delta,
+                  int height_delta);
   uint8_t GetAutoResizeFlags() { return auto_resize_flags_; }
+
+  // NativeBrowserView:
   void SetAutoResizeFlags(uint8_t flags) override;
   void SetBounds(const gfx::Rect& bounds) override;
   void SetBackgroundColor(SkColor color) override;
 
  private:
-  uint8_t auto_resize_flags_;
+  void ResetAutoResizeProportions();
+
+  uint8_t auto_resize_flags_ = 0;
+
+  bool auto_horizontal_proportion_set_ = false;
+  float auto_horizontal_proportion_width_ = 0.;
+  float auto_horizontal_proportion_left_ = 0.;
+
+  bool auto_vertical_proportion_set_ = false;
+  float auto_vertical_proportion_height_ = 0.;
+  float auto_vertical_proportion_top_ = 0.;
 
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserViewViews);
 };
