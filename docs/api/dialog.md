@@ -117,6 +117,9 @@ The `filters` specifies an array of file types that can be displayed, see
 If a `callback` is passed, the API call will be asynchronous and the result
 will be passed via `callback(filename)`.
 
+**Note:** On macOS, using the `callback` is recommended to avoid issues when
+expanding and collapsing the dialog.
+
 ### `dialog.showMessageBox([browserWindow, ]options[, callback])`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
