@@ -64,6 +64,35 @@ const setPullRequest = (commit, owner, repo, number) => {
   }
 }
 
+const getNoteFromClerk = async (number, owner, repo) => {
+  const comments = await getComments(number, owner, repo)
+  if (!comments && !comments.data) {
+    return
+  }
+
+  const CLERK_LOGIN = 'release-clerk[bot]'
+  const PERSIST_LEAD = '**Release Notes Persisted**\n\n'
+  const QUOTE_LEAD = '> '
+
+  for (const comment of comments.data.reverse()) {
+    if (comment.user.login !== CLERK_LOGIN) {
+      continue
+    }
+    if (!comment.body.startsWith(PERSIST_LEAD)) {
+      continue
+    }
+    const note = comment.body
+      .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
+      .split('\r?\n') // break into lines
+      .map(line => line.trim())
+      .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
+      .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
+      .join(' ') // join the note lines
+      .trim()
+    return note
+  }
+}
+
 // copied from https://github.com/electron/clerk/blob/master/src/index.ts#L4-L13
 const OMIT_FROM_RELEASE_NOTES_KEYS = [
   'no-notes',
@@ -298,6 +327,22 @@ const getPullRequest = async (number, owner, repo) => {
   })
 }
 
+const getComments = async (number, owner, repo) => {
+  const name = `${owner}-${repo}-pull-${number}-comments`
+  return checkCache(name, async () => {
+    try {
+      return await octokit.issues.listComments({ number, owner, repo, per_page: 100 })
+    } catch (error) {
+      // Silently eat 404s.
+      // We can get a bad pull number if someone manually lists
+      // an issue number in PR number notation, e.g. 'fix: foo (#123)'
+      if (error.code !== 404) {
+        throw error
+      }
+    }
+  })
+}
+
 const addRepoToPool = async (pool, repo, from, to) => {
   const commonAncestor = await getCommonAncestor(repo.dir, from, to)
   const oldHashes = await getLocalCommitHashes(repo.dir, from)
@@ -470,8 +515,19 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // scrape PRs for release note 'Notes:' comments
   for (const commit of pool.commits) {
     let pr = commit.pr
+
     let prSubject
     while (pr && !commit.note) {
+      const note = await getNoteFromClerk(pr.number, pr.owner, pr.repo)
+      if (note) {
+        commit.note = note
+      }
+
+      // if we already have all the data we need, stop scraping the PRs
+      if (commit.note && commit.type && prSubject) {
+        break
+      }
+
       const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
       if (!prData || !prData.data) {
         break
