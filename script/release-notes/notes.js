@@ -82,10 +82,12 @@ const getNoteFromBody = body => {
   }
 
   const NOTE_PREFIX = 'Notes: '
+  const NOTE_HEADER = '#### Release Notes'
 
   let note = body
     .split(/\r?\n\r?\n/) // split into paragraphs
     .map(paragraph => paragraph.trim())
+    .map(paragraph => paragraph.startsWith(NOTE_HEADER) ? paragraph.slice(NOTE_HEADER.length).trim() : paragraph)
     .find(paragraph => paragraph.startsWith(NOTE_PREFIX))
 
   if (note) {
