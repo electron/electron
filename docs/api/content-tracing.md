@@ -12,7 +12,6 @@ result.
 **Note:** You should not use this module until the `ready` event of the app
 module is emitted.
 
-
 ```javascript
 const { app, contentTracing } = require('electron')
 
@@ -60,6 +59,19 @@ Recording begins immediately locally and asynchronously on child processes
 as soon as they receive the EnableRecording request. The `callback` will be
 called once all child processes have acknowledged the `startRecording` request.
 
+**[Deprecated Soon](promisification.md)**
+
+### `contentTracing.startRecording(options)`
+
+* `options` ([TraceCategoriesAndOptions](structures/trace-categories-and-options.md) | [TraceConfig](structures/trace-config.md))
+
+Returns `Promise<void>` - resolved once all child processes have acknowledged the `startRecording` request.
+
+Start recording on all processes.
+
+Recording begins immediately locally and asynchronously on child processes
+as soon as they receive the EnableRecording request.
+
 ### `contentTracing.stopRecording(resultFilePath, callback)`
 
 * `resultFilePath` String
@@ -80,6 +92,25 @@ Once all child processes have acknowledged the `stopRecording` request,
 Trace data will be written into `resultFilePath` if it is not empty or into a
 temporary file. The actual file path will be passed to `callback` if it's not
 `null`.
+
+**[Deprecated Soon](promisification.md)**
+
+### `contentTracing.stopRecording(resultFilePath)`
+
+* `resultFilePath` String
+
+Returns `Promise<String>` - resolves with a file that contains the traced data once all child processes have acknowledged the `stopRecording` request
+
+Stop recording on all processes.
+
+Child processes typically cache trace data and only rarely flush and send
+trace data back to the main process. This helps to minimize the runtime overhead
+of tracing since sending trace data over IPC can be an expensive operation. So,
+to end tracing, we must asynchronously ask all child processes to flush any
+pending trace data.
+
+Trace data will be written into `resultFilePath` if it is not empty or into a
+temporary file.
 
 ### `contentTracing.getTraceBufferUsage(callback)`
 

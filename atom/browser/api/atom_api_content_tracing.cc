@@ -8,6 +8,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/promise_util.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "content/public/browser/tracing_controller.h"
@@ -65,10 +66,19 @@ scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
       result_file_path, base::Bind(callback, result_file_path));
 }
 
-void StopRecording(const base::FilePath& path,
-                   const CompletionCallback& callback) {
+void OnRecordingStopped(scoped_refptr<atom::util::Promise> promise,
+                        const base::FilePath& path) {
+  promise->Resolve(path);
+}
+
+v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
+                                     const base::FilePath& path) {
+  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+
   TracingController::GetInstance()->StopTracing(
-      GetTraceDataEndpoint(path, callback));
+      GetTraceDataEndpoint(path, base::Bind(&OnRecordingStopped, promise)));
+
+  return promise->GetHandle();
 }
 
 bool GetCategories(
@@ -78,10 +88,22 @@ bool GetCategories(
       base::BindOnce(callback));
 }
 
-bool StartTracing(const base::trace_event::TraceConfig& trace_config,
-                  const base::RepeatingCallback<void()>& callback) {
-  return TracingController::GetInstance()->StartTracing(
-      trace_config, base::BindOnce(callback));
+void OnTracingStarted(scoped_refptr<atom::util::Promise> promise) {
+  promise->Resolve();
+}
+
+v8::Local<v8::Promise> StartTracing(
+    v8::Isolate* isolate,
+    const base::trace_event::TraceConfig& trace_config) {
+  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+
+  bool success = TracingController::GetInstance()->StartTracing(
+      trace_config, base::BindOnce(&OnTracingStarted, promise));
+
+  if (!success)
+    promise->RejectWithErrorMessage("Could not start tracing");
+
+  return promise->GetHandle();
 }
 
 bool GetTraceBufferUsage(
