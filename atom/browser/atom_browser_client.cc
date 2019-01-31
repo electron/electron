@@ -71,7 +71,6 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
-#include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "v8/include/v8.h"
@@ -494,16 +493,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    // devtools processes must be launched unsandboxed in order for the remote
-    // API to work in devtools extensions. This is due to the fact that the
-    // remote API assumes that it will only be used from the main frame, but
-    // devtools extensions are loaded from an iframe.
-    // It would be possible to sandbox devtools extensions processes by default
-    // if we made the remote API work with multiple frames.
-    if (web_contents->GetVisibleURL().SchemeIs("chrome-devtools")) {
-      command_line->AppendSwitch(service_manager::switches::kNoSandbox);
-      command_line->AppendSwitch(::switches::kNoZygote);
-    }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(command_line);
