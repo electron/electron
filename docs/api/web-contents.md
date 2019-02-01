@@ -1381,6 +1381,10 @@ Toggles the developer tools.
 
 Starts inspecting element at position (`x`, `y`).
 
+#### `contents.inspectSharedWorker()`
+
+Opens the developer tools for the shared worker context.
+
 #### `contents.inspectServiceWorker()`
 
 Opens the developer tools for the service worker context.
