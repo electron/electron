@@ -65,6 +65,7 @@ describe('desktopCapturer', () => {
     const callback = (error, sources) => {
       callCount++
       expect(error).to.be.null()
+      expect(sources).to.not.be.null()
       if (callCount === 2) done()
     }
 

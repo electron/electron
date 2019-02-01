@@ -138,7 +138,7 @@ describe('deprecations', () => {
 
     it('acts as a pass-through for promise-based invocations', async () => {
       enableCallbackWarnings()
-      promiseFunc = deprecate.promisify(promiseFunc, 1)
+      promiseFunc = deprecate.promisify(promiseFunc)
 
       const actual = await promiseFunc(expected)
       expect(actual).to.equal(expected)
@@ -147,7 +147,7 @@ describe('deprecations', () => {
 
     it('warns exactly once for callback-based invocations', (done) => {
       enableCallbackWarnings()
-      promiseFunc = deprecate.promisify(promiseFunc, 1)
+      promiseFunc = deprecate.promisify(promiseFunc)
 
       let callbackCount = 0
       const invocationCount = 3

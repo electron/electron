@@ -507,7 +507,7 @@ describe('BrowserWindow module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('returns a Promise with a Buffer (callback)', () => {
+    it('returns a Promise with a Buffer (callback)', (done) => {
       w.capturePage({
         x: 0,
         y: 0,
@@ -540,24 +540,25 @@ describe('BrowserWindow module', () => {
     })
 
     // TODO(codebytere): remove when promisification is complete
-    it('preserves transparency (callback)', async () => {
-      const w = await openTheWindow({
+    it('preserves transparency (callback)', (done) => {
+      openTheWindow({
         show: false,
         width: 400,
         height: 400,
         transparent: true
-      })
-      const p = emittedOnce(w, 'ready-to-show')
-      w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
-      await p
-      w.show()
-
-      w.capturePage((image) => {
-        const imgBuffer = image.toPNG()
-        // Check the 25th byte in the PNG.
-        // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
-        expect(imgBuffer[25]).to.equal(6)
-        done()
+      }).then(w => {
+        const p = emittedOnce(w, 'ready-to-show')
+        w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
+        p.then(() => {
+          w.show()
+          w.capturePage((image) => {
+            const imgBuffer = image.toPNG()
+            // Check the 25th byte in the PNG.
+            // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
+            expect(imgBuffer[25]).to.equal(6)
+            done()
+          })
+        })
       })
     })
   })
