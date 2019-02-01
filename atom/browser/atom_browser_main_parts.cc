@@ -455,7 +455,7 @@ bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
 
 void AtomBrowserMainParts::PreDefaultMainMessageLoopRun(
     base::OnceClosure quit_closure) {
-  Browser::SetMainMessageLoopQuitClosure(std::move(quit_closure));
+  Browser::Get()->SetMainMessageLoopQuitClosure(std::move(quit_closure));
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopStart() {
