@@ -244,7 +244,7 @@ class Browser : public WindowListObserver {
 
   // Stores the supplied |quit_closure|, to be run when the last Browser
   // instance is destroyed.
-  static void SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure);
+  void SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure);
 
   void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
 
@@ -286,6 +286,9 @@ class Browser : public WindowListObserver {
 
   // The browser is being shutdown.
   bool is_shutdown_ = false;
+
+  // Null until/unless the default main message loop is running.
+  base::OnceClosure quit_main_message_loop_;
 
   int badge_count_ = 0;
 
