@@ -1303,28 +1303,6 @@ workflows:
           requires:
             - osx-testing
 
-      - osx-release:
-          requires:
-            - mac-checkout
-      - osx-release-tests:
-          requires:
-            - osx-release
-      - osx-verify-ffmpeg:
-          requires:
-            - osx-release
-      - osx-verify-mksnapshot:
-          requires:
-            - osx-release
-      - osx-chromedriver:
-          requires:
-            - mac-checkout
-      - osx-release-summary:
-          requires:
-          - osx-release
-          - osx-release-tests
-          - osx-verify-ffmpeg
-          - osx-chromedriver
-
       - mas-testing:
           requires:
             - mac-checkout
@@ -1333,29 +1311,7 @@ workflows:
           requires:
             - mas-testing
 
-      - mas-release:
-          requires:
-            - mac-checkout
-      - mas-release-tests:
-          requires:
-            - mas-release
-      - mas-verify-ffmpeg:
-          requires:
-            - mas-release
-      - mas-verify-mksnapshot:
-          requires:
-            - mas-release
-      - mas-chromedriver:
-          requires:
-            - mac-checkout
-      - mas-release-summary:
-          requires:
-          - mas-release
-          - mas-release-tests
-          - mas-verify-ffmpeg
-          - mas-chromedriver
-
-  nightly-release-test:
+  nightly-linux-release-test:
     triggers:
       - schedule:
           cron: "0 0 * * *"
@@ -1440,6 +1396,62 @@ workflows:
             - linux-arm64-release
             - linux-arm64-chromedriver
             - linux-arm64-native-mksnapshot
+
+  nightly-mac-release-test:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - *chromium-upgrade-branches
+    jobs:
+      - mac-checkout
+
+      - osx-release:
+          requires:
+            - mac-checkout
+      - osx-release-tests:
+          requires:
+            - osx-release
+      - osx-verify-ffmpeg:
+          requires:
+            - osx-release
+      - osx-verify-mksnapshot:
+          requires:
+            - osx-release
+      - osx-chromedriver:
+          requires:
+            - mac-checkout
+      - osx-release-summary:
+          requires:
+          - osx-release
+          - osx-release-tests
+          - osx-verify-ffmpeg
+          - osx-chromedriver
+
+      - mas-release:
+          requires:
+            - mac-checkout
+      - mas-release-tests:
+          requires:
+            - mas-release
+      - mas-verify-ffmpeg:
+          requires:
+            - mas-release
+      - mas-verify-mksnapshot:
+          requires:
+            - mas-release
+      - mas-chromedriver:
+          requires:
+            - mac-checkout
+      - mas-release-summary:
+          requires:
+          - mas-release
+          - mas-release-tests
+          - mas-verify-ffmpeg
+          - mas-chromedriver
 
   # Various slow and non-essential checks we run only nightly.
   # Sanitizer jobs should be added here.
