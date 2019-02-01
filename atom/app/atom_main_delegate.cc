@@ -164,6 +164,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
     base::debug::EnableInProcessStackDumping();
 
+  if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
+    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+
   chrome::RegisterPathProvider();
 
 #if defined(OS_MACOSX)
