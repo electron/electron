@@ -95,13 +95,15 @@ ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
   ipcRendererInternal.sendToAll(senderWebContentsId, `CHROME_TABS_EXECUTESCRIPT_RESULT_${requestId}`, result)
 })
 
-// Read the renderer process preferences.
-const preferences = process.getRenderProcessPreferences()
-if (preferences) {
-  for (const pref of preferences) {
-    if (pref.contentScripts) {
-      for (const script of pref.contentScripts) {
-        injectContentScript(pref.extensionId, script)
+module.exports = (getRenderProcessPreferences) => {
+  // Read the renderer process preferences.
+  const preferences = getRenderProcessPreferences()
+  if (preferences) {
+    for (const pref of preferences) {
+      if (pref.contentScripts) {
+        for (const script of pref.contentScripts) {
+          injectContentScript(pref.extensionId, script)
+        }
       }
     }
   }

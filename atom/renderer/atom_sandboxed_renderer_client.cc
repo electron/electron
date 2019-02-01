@@ -151,7 +151,6 @@ void AtomSandboxedRendererClient::InitializeBindings(
   b.Set("process", process);
 
   AtomBindings::BindProcess(isolate, &process, metrics_.get());
-  AddRenderBindings(isolate, process.GetHandle());
 
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
@@ -201,6 +200,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   auto* isolate = context->GetIsolate();
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context, render_frame->IsMainFrame());
+  AddRenderBindings(isolate, binding);
 
   std::vector<v8::Local<v8::String>> preload_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "binding")};

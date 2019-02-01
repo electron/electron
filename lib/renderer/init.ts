@@ -86,7 +86,7 @@ switch (window.location.protocol) {
 
     // Inject content scripts.
     if (process.isMainFrame) {
-      require('@electron/internal/renderer/content-scripts-injector')
+      require('@electron/internal/renderer/content-scripts-injector')(process.getRenderProcessPreferences)
     }
   }
 }
