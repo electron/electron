@@ -33,7 +33,7 @@ function uploadToGitHub () {
     return github.repos.editAsset({
       owner: 'electron',
       repo: 'electron',
-      asset_id: uploadResponse.data.id,
+      asset_id: uploadResponse.id,
       name: fileName
     }).then(() => {
       console.log(`Successfully renamed ${fakeFileName} to ${fileName}. All done now.`)
