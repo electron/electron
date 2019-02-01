@@ -30,7 +30,7 @@ function uploadToGitHub () {
 
   github.repos.uploadAsset(githubOpts).then((uploadResponse) => {
     console.log(`Successfully uploaded ${fileName} to GitHub as ${fakeFileName}. Going for the rename now.`)
-    return github.repos.updateAsset({
+    return github.repos.editAsset({
       owner: 'electron',
       repo: 'electron',
       asset_id: uploadResponse.data.id,
