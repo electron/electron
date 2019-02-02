@@ -30,10 +30,10 @@ function uploadToGitHub () {
 
   github.repos.uploadAsset(githubOpts).then((uploadResponse) => {
     console.log(`Successfully uploaded ${fileName} to GitHub as ${fakeFileName}. Going for the rename now.`)
-    return github.repos.editAsset({
+    return github.repos.updateAsset({
       owner: 'electron',
       repo: 'electron',
-      id: uploadResponse.data.id,
+      asset_id: uploadResponse.data.id,
       name: fileName
     }).then(() => {
       console.log(`Successfully renamed ${fakeFileName} to ${fileName}. All done now.`)
@@ -53,7 +53,7 @@ function uploadToGitHub () {
             existingAssets.map(existingAsset => github.repos.deleteAsset({
               owner: 'electron',
               repo: targetRepo,
-              id: existingAsset.id
+              asset_id: existingAsset.id
             }))
           ).catch((deleteErr) => {
             console.log(`Failed to delete existing asset ${fileName}.  Error was:`, deleteErr)
