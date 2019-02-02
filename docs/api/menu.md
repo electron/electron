@@ -52,7 +52,7 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-* `template` MenuItemConstructorOptions[] | MenuItem[]
+* `template` (MenuItemConstructorOptions | MenuItem)[]
 
 Returns `Menu`
 
