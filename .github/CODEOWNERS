@@ -19,3 +19,6 @@
 /docs/ @electron/docs
 /docs-translations/ @electron/i18n
 /npm/ @electron/electrocats
+
+# WG CODEOWNER Patterns
+/script/ @electron/wg-releases
