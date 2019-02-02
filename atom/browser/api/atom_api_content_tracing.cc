@@ -81,11 +81,20 @@ v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
   return promise->GetHandle();
 }
 
-bool GetCategories(
-    const base::RepeatingCallback<void(const std::set<std::string>&)>&
-        callback) {
-  return TracingController::GetInstance()->GetCategories(
-      base::BindOnce(callback));
+void OnCategoriesAvailable(scoped_refptr<atom::util::Promise> promise,
+                           const std::set<std::string>& categories) {
+  promise->Resolve(categories);
+}
+
+v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
+  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+  bool success = TracingController::GetInstance()->GetCategories(
+      base::BindOnce(&OnCategoriesAvailable, promise));
+
+  if (!success)
+    promise->RejectWithErrorMessage("Could not get categories.");
+
+  return promise->GetHandle();
 }
 
 void OnTracingStarted(scoped_refptr<atom::util::Promise> promise) {
