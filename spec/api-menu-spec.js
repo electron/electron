@@ -21,6 +21,24 @@ describe('Menu module', () => {
       expect(menu.items[0].extra).to.equal('field')
     })
 
+    it('should be able to accept only MenuItems', () => {
+      const menu = Menu.buildFromTemplate([
+        new MenuItem({ label: 'one' }),
+        new MenuItem({ label: 'two' })
+      ])
+      expect(menu.items[0].label).to.equal('one')
+      expect(menu.items[1].label).to.equal('two')
+    })
+
+    it('should be able to accept MenuItems and plain objects', () => {
+      const menu = Menu.buildFromTemplate([
+        new MenuItem({ label: 'one' }),
+        { label: 'two' }
+      ])
+      expect(menu.items[0].label).to.equal('one')
+      expect(menu.items[1].label).to.equal('two')
+    })
+
     it('does not modify the specified template', () => {
       const template = [{ label: 'text', submenu: [{ label: 'sub' }] }]
       const result = ipcRenderer.sendSync('eval', `const template = [{label: 'text', submenu: [{label: 'sub'}]}]\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
@@ -86,6 +104,35 @@ describe('Menu module', () => {
               afterGroupContaining: ['1']
             }
           ]
+
+          expect(sortMenuItems(items)).to.deep.equal(expected)
+        })
+
+        it('does a simple sort with MenuItems', () => {
+          const items = [
+            new MenuItem({
+              label: 'two',
+              id: '2',
+              afterGroupContaining: ['1'] }),
+            new MenuItem({ type: 'separator' }),
+            new MenuItem({
+              id: '1',
+              label: 'one'
+            })
+          ].map(item => delete item.commandId)
+
+          const expected = [
+            new MenuItem({
+              id: '1',
+              label: 'one'
+            }),
+            new MenuItem({ type: 'separator' }),
+            new MenuItem({
+              id: '2',
+              label: 'two',
+              afterGroupContaining: ['1']
+            })
+          ].map(item => delete item.commandId)
 
           expect(sortMenuItems(items)).to.deep.equal(expected)
         })
