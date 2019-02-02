@@ -109,30 +109,16 @@ describe('Menu module', () => {
         })
 
         it('does a simple sort with MenuItems', () => {
-          const items = [
-            new MenuItem({
-              label: 'two',
-              id: '2',
-              afterGroupContaining: ['1'] }),
-            new MenuItem({ type: 'separator' }),
-            new MenuItem({
-              id: '1',
-              label: 'one'
-            })
-          ].map(item => delete item.commandId)
+          const firstItem = new MenuItem({ id: '1', label: 'one' })
+          const secondItem = new MenuItem({
+            label: 'two',
+            id: '2',
+            afterGroupContaining: ['1']
+          })
+          const sep = new MenuItem({ type: 'separator' })
 
-          const expected = [
-            new MenuItem({
-              id: '1',
-              label: 'one'
-            }),
-            new MenuItem({ type: 'separator' }),
-            new MenuItem({
-              id: '2',
-              label: 'two',
-              afterGroupContaining: ['1']
-            })
-          ].map(item => delete item.commandId)
+          const items = [ secondItem, sep, firstItem ]
+          const expected = [ firstItem, sep, secondItem ]
 
           expect(sortMenuItems(items)).to.deep.equal(expected)
         })
@@ -610,6 +596,34 @@ describe('Menu module', () => {
             label: 'one',
             before: ['2']
           }
+        ])
+
+        expect(menu.items[0].label).to.equal('one')
+        expect(menu.items[1].label).to.equal('two')
+        expect(menu.items[2].label).to.equal('three')
+        expect(menu.items[3].label).to.equal('four')
+        expect(menu.items[4].label).to.equal('five')
+      })
+
+      it('should continue inserting MenuItems at next index when no specifier is present', () => {
+        const menu = Menu.buildFromTemplate([
+          new MenuItem({
+            id: '2',
+            label: 'two'
+          }), new MenuItem({
+            id: '3',
+            label: 'three'
+          }), new MenuItem({
+            id: '4',
+            label: 'four'
+          }), new MenuItem({
+            id: '5',
+            label: 'five'
+          }), new MenuItem({
+            id: '1',
+            label: 'one',
+            before: ['2']
+          })
         ])
 
         expect(menu.items[0].label).to.equal('one')
