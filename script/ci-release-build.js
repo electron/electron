@@ -14,9 +14,7 @@ const circleCIJobs = [
   'linux-arm-publish',
   'linux-arm64-publish',
   'linux-ia32-publish',
-  'linux-x64-publish',
-  'mas-publish',
-  'osx-publish'
+  'linux-x64-publish'
 ]
 
 const vstsJobs = [

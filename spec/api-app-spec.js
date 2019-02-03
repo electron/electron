@@ -529,6 +529,9 @@ describe('app module', () => {
   })
 
   describe('app.get/setLoginItemSettings API', function () {
+    // allow up to three retries to account for flaky mas results
+    this.retries(3)
+
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
@@ -536,7 +539,7 @@ describe('app module', () => {
     ]
 
     before(function () {
-      if (process.platform === 'linux' || process.mas) this.skip()
+      if (process.platform === 'linux') this.skip()
     })
 
     beforeEach(() => {
@@ -551,26 +554,34 @@ describe('app module', () => {
 
     it('sets and returns the app as a login item', done => {
       app.setLoginItemSettings({ openAtLogin: true })
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
-      done()
+      // Wait because login item settings are not applied immediately in MAS build
+      const delay = process.mas ? 250 : 0
+      setTimeout(() => {
+        expect(app.getLoginItemSettings()).to.deep.equal({
+          openAtLogin: true,
+          openAsHidden: false,
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false,
+          restoreState: false
+        })
+        done()
+      }, delay)
     })
 
     it('adds a login item that loads in hidden mode', done => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
-      done()
+      // Wait because login item settings are not applied immediately in MAS build
+      const delay = process.mas ? 250 : 0
+      setTimeout(() => {
+        expect(app.getLoginItemSettings()).to.deep.equal({
+          openAtLogin: true,
+          openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false,
+          restoreState: false
+        })
+        done()
+      }, delay)
     })
 
     it('correctly sets and unsets the LoginItem', function () {
@@ -584,7 +595,7 @@ describe('app module', () => {
     })
 
     it('correctly sets and unsets the LoginItem as hidden', function () {
-      if (process.platform !== 'darwin') this.skip()
+      if (process.platform !== 'darwin' || process.mas) this.skip()
 
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
       expect(app.getLoginItemSettings().openAsHidden).to.be.false()
