@@ -470,13 +470,18 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                     operation:LAAccessControlOperationUseKeySign
               localizedReason:[NSString stringWithUTF8String:reason.c_str()]
                         reply:^(BOOL success, NSError* error) {
-                          runner->PostTask(FROM_HERE,
-                                           base::BindOnce(&OnTouchIDCompleted,
+                          if (!success) {
+                            promise->RejectWithErrorMessage(std::string(
+                                [error.localizedDescription UTF8String]));
+                          } else {
+                            runner->PostTask(
+                                FROM_HERE, base::BindOnce(&OnTouchIDCompleted,
                                                           promise, !!success));
+                          }
                         }];
   } else {
     promise->RejectWithErrorMessage(
-        "This API is not available on macOS older than 10.12");
+        "This API is not available on macOS versions older than 10.12.1");
   }
   return promise->GetHandle();
 }

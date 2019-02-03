@@ -380,6 +380,20 @@ You can use the `setAppLevelAppearance` API to set this value.
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
 
+### `systemPreferences.promptTouchID(reason)` _macOS_
+
+* `reason` String - The reason you are asking for Touch ID authentication
+
+Returns `Promise<Boolean>` - whether ot not the user has successfully authenticated with Touch ID.
+
+```javascript
+const { systemPreferences } = require('electron')
+
+systemPreferences.promptTouchID('To get consent for In-App Purchase').then(success => {
+  console.log('You have successfully authenticated with Touch ID!')
+})
+```
+
 ### `systemPreferences.isTrustedAccessibilityClient(prompt)` _macOS_
 
 * `prompt` Boolean - whether or not the user will be informed via prompt if the current process is untrusted.
