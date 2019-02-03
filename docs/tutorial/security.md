@@ -62,17 +62,17 @@ your application security could be in jeopardy.
 
 * **Adopt secure coding practices.** The first line of defense for your application 
 is your own code. Common web vulnerabilities, such as Cross-Site Scripting (XSS), 
-have a higher security impact on Electron applications hence it is highly recommend 
+have a higher security impact on Electron applications hence it is highly recommended 
 to adopt secure software development best practices and perform security testing.
 
 
 ## Isolation For Untrusted Content
 
 A security issue exists whenever you receive code from an untrusted source (e.g.
-a remote server) and executes it locally. As an example, consider a remote
+a remote server) and execute it locally. As an example, consider a remote
 website being displayed inside a default [`BrowserWindow`][browser-window]. If
 an attacker somehow manages to change said content (either by attacking the
-source directly, or by sitting between your app and the actual destination), she
+source directly, or by sitting between your app and the actual destination), they
 will be able to execute native code on the user's machine.
 
 > :warning: Under no circumstances should you load and execute remote code with
@@ -236,9 +236,8 @@ practice, that means that global objects like `Array.prototype.push` or
 Electron uses the same technology as Chromium's [Content Scripts](https://developer.chrome.com/extensions/content_scripts#execution-environment)
 to enable this behavior.
 
-Even when you use `nodeIntegration: false`, to enforce strong isolation and
-prevent the use of Node primitives, `contextIsolation` must
-be used.
+Even when you use `nodeIntegration: false` to enforce strong isolation and
+prevent the use of Node primitives, `contextIsolation` must also be used.
 
 ### Why?
 
