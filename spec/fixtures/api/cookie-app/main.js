@@ -3,51 +3,30 @@ const { app, session } = require('electron')
 app.on('ready', async function () {
   const url = 'http://foo.bar'
   const persistentSession = session.fromPartition('persist:ence-test')
+  const name = 'test'
+  const value = 'true'
 
-  const set = () => {
-    return new Promise((resolve, reject) => {
-      persistentSession.cookies.set({
-        url,
-        name: 'test',
-        value: 'true',
-        expirationDate: Date.now() + 60000
-      }, error => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve()
-        }
-      })
-    })
-  }
+  const set = () => persistentSession.cookies.set({
+    url,
+    name,
+    value,
+    expirationDate: Date.now() + 60000
+  })
 
-  const get = () => {
-    return new Promise((resolve, reject) => {
-      persistentSession.cookies.get({ url }, (error, list) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve(list)
-        }
-      })
-    })
-  }
+  const get = () => persistentSession.cookies.get({
+    url
+  })
 
-  const maybeRemove = (pred) => {
-    return new Promise((resolve, reject) => {
+  const maybeRemove = async (pred) => new Promise(async (resolve, reject) => {
+    try {
       if (pred()) {
-        persistentSession.cookies.remove(url, 'test', error => {
-          if (error) {
-            reject(error)
-          } else {
-            resolve()
-          }
-        })
-      } else {
-        resolve()
+        await persistentSession.cookies.remove(url, name)
       }
-    })
-  }
+      resolve()
+    } catch (error) {
+      reject(error)
+    }
+  })
 
   try {
     await maybeRemove(() => process.env.PHASE === 'one')
