@@ -95,6 +95,9 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
   std::string GetSystemColor(const std::string& color, mate::Arguments* args);
 
+  v8::Local<v8::Promise> PromptTouchID(v8::Isolate* isolate,
+                                       const std::string& reason);
+
   static bool IsTrustedAccessibilityClient(bool prompt);
 
   // TODO(codebytere): Write tests for these methods once we

@@ -93,6 +93,7 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("setAppLevelAppearance",
                  &SystemPreferences::SetAppLevelAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
+      .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
       .SetMethod("isTrustedAccessibilityClient",
                  &SystemPreferences::IsTrustedAccessibilityClient)
       .SetMethod("getMediaAccessStatus",
