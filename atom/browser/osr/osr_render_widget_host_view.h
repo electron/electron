@@ -101,7 +101,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
-  void EnsureSurfaceSynchronizedForLayoutTest() override;
+  void EnsureSurfaceSynchronizedForWebTest() override;
   gfx::Rect GetViewBounds(void) const override;
   gfx::Size GetVisibleViewportSize() const override;
   void SetInsets(const gfx::Insets&) override;

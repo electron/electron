@@ -509,7 +509,7 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
-void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForLayoutTest() {
+void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
   ++latest_capture_sequence_number_;
   SynchronizeVisualProperties();
 }
