@@ -443,6 +443,16 @@ std::string SystemPreferences::GetSystemColor(const std::string& color,
   }
 }
 
+bool SystemPreferences::IsTouchIDAvailable() {
+  if (@available(macOS 10.12.2, *)) {
+    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+    return [context
+        canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                    error:nil];
+  }
+  return false;
+}
+
 void OnTouchIDCompleted(scoped_refptr<util::Promise> promise, bool success) {
   promise->Resolve(success);
 }
@@ -451,7 +461,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     v8::Isolate* isolate,
     const std::string& reason) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
-  if (@available(macOS 10.12.1, *)) {
+  if (@available(macOS 10.12.2, *)) {
     base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
     base::ScopedCFTypeRef<SecAccessControlRef> access_control =
         base::ScopedCFTypeRef<SecAccessControlRef>(
@@ -481,7 +491,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                         }];
   } else {
     promise->RejectWithErrorMessage(
-        "This API is not available on macOS versions older than 10.12.1");
+        "This API is not available on macOS versions older than 10.12.2");
   }
   return promise->GetHandle();
 }

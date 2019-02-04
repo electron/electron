@@ -95,6 +95,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
   std::string GetSystemColor(const std::string& color, mate::Arguments* args);
 
+  bool IsTouchIDAvailable();
   v8::Local<v8::Promise> PromptTouchID(v8::Isolate* isolate,
                                        const std::string& reason);
 
