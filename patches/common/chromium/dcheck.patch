@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index 63f520bae169ecdcc311bf038b962b1ff3e30126..734e51af5ecbf5faa210255a1fae3efda5293ac8 100644
+index 5249401e58a57f0278665f2c6648c7e6e8e1bf77..518b1279714888121095af9bdb077f3622c1255d 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1153,8 +1153,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1170,8 +1170,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index 63f520bae169ecdcc311bf038b962b1ff3e30126..734e51af5ecbf5faa210255a1fae3efd
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1395,7 +1397,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1412,7 +1414,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -75,10 +75,10 @@ index 3073b0856d29e442f8905041350a2bb196aa24ce..e997f094c75e055b44ce4a31c359c31c
          << AsciiForDebugging() << " " << CurrentThread();
  #endif
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 1857bfa07ce3d8656105e696363a760889794e77..c25d8c241907fb166218670533a3b6e1e2f32769 100644
+index 49654c95675e0240d82232eb971f85ab3611ab29..8f0737841f70144770dc4dfd7353f7bdba3ffcfd 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -913,9 +913,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+@@ -726,9 +726,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
  }
  
  void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {

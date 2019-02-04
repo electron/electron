@@ -10,10 +10,10 @@ Electron does, so this patch makes sure that the build doesn't try to run
 the mksnapshot binary if it was built for arm or arm64.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index b593ac20ef722146ca0c50ba01d6ee6b8d6d3035..da0d7810547ab1205f7ad768b76ce27b197f6505 100644
+index 0fa207082101165ec5d888cd21e4ca916ee458a9..129b6ce1ba23089254fb0da8a67e4bdfd95cb4d1 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -1240,9 +1240,19 @@ if (v8_use_snapshot && v8_use_external_startup_data) {
+@@ -1241,9 +1241,19 @@ if (v8_use_snapshot && v8_use_external_startup_data) {
      ]
      public_deps = [
        ":natives_blob",
