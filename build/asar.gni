@@ -1,3 +1,5 @@
+import("node.gni")
+
 # TODO(MarshallOfSound): Move to electron/node, this is the only place it is used now
 # Run an action with a given working directory. Behaves identically to the
 # action() target type, with the exception that it changes directory before
@@ -36,7 +38,7 @@ template("asar") {
          "Need asar name (as 1-element array, e.g. \$root_out_dir/foo.asar)")
   assert(defined(invoker.root), "Need the base dir for generating the ASAR")
 
-  action(target_name) {
+  node_action(target_name) {
     forward_variables_from(invoker,
                            "*",
                            [
@@ -44,10 +46,7 @@ template("asar") {
                              "args",
                            ])
 
-    script = "//electron/tools/build-asar.py"
-    inputs = [
-      "//electron/script/gn-asar.js",
-    ]
+    script = "//electron/script/gn-asar.js"
     args = [
              "--base",
              rebase_path(root),

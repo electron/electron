@@ -140,7 +140,9 @@ action("atom_js2c") {
 target_gen_electron_js = "$target_gen_dir/js/electron"
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
-copy("copy_lib_js") {
+# TODO(MarshallOfSound)
+# This copy will be replaced by a call to tsc in the future
+copy("lib_js") {
   sources = filenames.js_sources
   if (enable_desktop_capturer) {
     sources += [
@@ -165,40 +167,41 @@ copy("copy_lib_js") {
   ]
 }
 
-asar("electron.asar") {
+asar("electron_asar") {
   deps = [
-    ":copy_lib_js",
+    ":lib_js",
   ]
 
   root = "$target_gen_electron_js/electron/lib"
-  sources = get_target_outputs(deps[0])
+  sources = get_target_outputs(":lib_js")
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]
 }
 
-copy("copy_default_app_js") {
+copy("default_app_js") {
   sources = filenames.default_app_sources
   outputs = [
     "$target_gen_default_app_js/{{source}}",
   ]
 }
 
-copy("copy_default_app_octicon_deps") {
+copy("default_app_octicon_deps") {
   sources = filenames.default_app_octicon_sources
   outputs = [
     "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}",
   ]
 }
 
-asar("default_app.asar") {
+asar("default_app_asar") {
   deps = [
-    ":copy_default_app_js",
-    ":copy_default_app_octicon_deps",
+    ":default_app_js",
+    ":default_app_octicon_deps",
   ]
 
   root = "$target_gen_default_app_js/electron/default_app"
-  sources = get_target_outputs(deps[0]) + get_target_outputs(deps[1])
+  sources = get_target_outputs(":default_app_js") +
+            get_target_outputs(":default_app_octicon_deps")
   outputs = [
     "$root_out_dir/resources/default_app.asar",
   ]
@@ -746,9 +749,9 @@ if (is_mac) {
 
   bundle_data("electron_app_resources") {
     public_deps = [
-      ":default_app.asar",
-      ":electron.asar",
+      ":default_app_asar",
       ":electron_app_strings_bundle_data",
+      ":electron_asar",
     ]
     sources = [
       "$root_out_dir/resources/default_app.asar",
@@ -794,9 +797,9 @@ if (is_mac) {
     sources = filenames.app_sources
     include_dirs = [ "." ]
     deps = [
-      ":default_app.asar",
-      ":electron.asar",
+      ":default_app_asar",
       ":electron_app_manifest",
+      ":electron_asar",
       ":electron_lib",
       ":packed_resources",
       "//content:sandbox_helper_win",

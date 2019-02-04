@@ -35,24 +35,27 @@ for (const file of files) {
   }
 }
 
-const tmpPath = fs.mkdtempSync(path.resolve(os.tmpdir(), 'electron-gn-asar-'));
+const tmpPath = fs.mkdtempSync(path.resolve(os.tmpdir(), 'electron-gn-asar-'))
 
-(async () => {
+try {
   // Copy all files to a tmp dir to avoid including scrap files in the ASAR
   for (const file of files) {
     const newLocation = path.resolve(tmpPath, path.relative(base[0], file))
     fs.mkdirsSync(path.dirname(newLocation))
     fs.writeFileSync(newLocation, fs.readFileSync(file))
   }
-
-  // Create the ASAR archive
-  await new Promise((resolve, reject) => {
-    asar.createPackageWithOptions(tmpPath, out[0], {}, (err) => {
-      if (err) return reject(err)
-      resolve()
-    })
-  })
-})().then(() => fs.remove(tmpPath)).catch((err) => {
+} catch (err) {
   console.error('Unexpected error while generating ASAR', err)
-  fs.remove(tmpPath).then(() => process.exit(1))
+  fs.removeSync(tmpPath)
+  process.exit(1)
+}
+
+// Create the ASAR archive
+asar.createPackageWithOptions(tmpPath, out[0], {}, (err) => {
+  fs.removeSync(tmpPath)
+
+  if (err) {
+    console.error('Unexpected error while generating ASAR', err)
+    process.exit(1)
+  }
 })
