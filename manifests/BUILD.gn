@@ -1,0 +1,23 @@
+import("//printing/buildflags/buildflags.gni")
+
+source_set("manifests") {
+  sources = [
+    "//electron/atom/app/manifests.cc",
+    "//electron/atom/app/manifests.h",
+  ]
+
+  include_dirs = [ "//electron" ]
+
+  deps = [
+    "//printing/buildflags",
+    "//services/proxy_resolver:proxy_resolver_manifest",
+  ]
+
+  if (enable_basic_printing) {
+    deps += [ "//components/services/pdf_compositor:pdf_compositor_manifest" ]
+  }
+
+  if (enable_print_preview) {
+    deps += [ "//chrome/services/printing:manifest" ]
+  }
+}
