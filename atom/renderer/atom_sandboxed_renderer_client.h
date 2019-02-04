@@ -34,6 +34,8 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
   void RenderViewCreated(content::RenderView*) override;
+  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
 
  private:
   std::unique_ptr<base::ProcessMetrics> metrics_;

@@ -176,6 +176,32 @@ void AtomSandboxedRendererClient::RenderViewCreated(
   RendererClientBase::RenderViewCreated(render_view);
 }
 
+void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
+  v8::HandleScope main_handle_scope(blink::MainThreadIsolate());
+  v8::Local<v8::Context> context =
+      render_frame->GetWebFrame()->MainWorldScriptContext();
+
+  auto* isolate = context->GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  InvokeIpcCallback(context, "onDocumentStart",
+                    std::vector<v8::Local<v8::Value>>());
+}
+
+void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+  v8::HandleScope main_handle_scope(blink::MainThreadIsolate());
+  v8::Local<v8::Context> context =
+      render_frame->GetWebFrame()->MainWorldScriptContext();
+
+  auto* isolate = context->GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  InvokeIpcCallback(context, "onDocumentEnd",
+                    std::vector<v8::Local<v8::Value>>());
+}
+
 void AtomSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
