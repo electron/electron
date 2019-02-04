@@ -59,3 +59,6 @@ spec/.hash
 
 # Generated native addon files
 /spec/fixtures/native-addon/echo/build/
+
+# If someone runs tsc this is where stuff will end up
+ts-gen

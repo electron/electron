@@ -5,6 +5,7 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@octokit/rest": "^16.3.2",
+    "@types/node": "^10.12.21",
     "aliasify": "^2.1.0",
     "asar": "^0.14.6",
     "browserify": "^16.2.3",
@@ -15,9 +16,10 @@
     "dugite": "^1.45.0",
     "electron-docs-linter": "^2.4.0",
     "electron-typescript-definitions": "^6.0.0",
-    "eslint": "^5.6.0",
+    "eslint": "^5.13.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-mocha": "^5.2.0",
+    "eslint-plugin-typescript": "^0.14.0",
     "folder-hash": "^2.1.1",
     "husky": "^0.14.3",
     "lint": "^1.1.2",
@@ -33,7 +35,9 @@
     "serve": "^6.5.8",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
-    "temp": "^0.8.3"
+    "temp": "^0.8.3",
+    "typescript": "~3.1.1",
+    "typescript-eslint-parser": "^21.0.0"
   },
   "private": true,
   "scripts": {
@@ -53,13 +57,15 @@
     "lint:js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts",
+    "gn-typescript-definitions": "npm run create-typescript-definitions && cp electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
     "precommit": "lint-staged",
     "prepack": "check-for-leaks",
     "prepush": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
-    "test": "node ./script/spec-runner.js electron/spec"
+    "test": "node ./script/spec-runner.js electron/spec",
+    "tsc": "tsc"
   },
   "license": "MIT",
   "author": "Electron Community",
@@ -89,6 +95,10 @@
     ],
     "*.py": [
       "node script/lint.js --py --fix --only --",
+      "git add"
+    ],
+    "docs/api/*.md": [
+      "node script/gen-filenames.js",
       "git add"
     ]
   }

@@ -1,11 +1,10 @@
-'use strict'
+import { Buffer } from 'buffer'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as util from 'util'
+import * as v8 from 'v8'
 
-const { Buffer } = require('buffer')
-const fs = require('fs')
-const path = require('path')
-const util = require('util')
 const Module = require('module')
-const v8 = require('v8')
 
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
@@ -25,10 +24,10 @@ globalPaths.push(path.join(__dirname, 'api', 'exports'))
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
   // handle console output when running as GUI program.
-  const consoleLog = function (...args) {
-    return process.log(util.format(...args) + '\n')
+  const consoleLog = (format: any, ...args: any[]) => {
+    return process.log(util.format(format, ...args) + '\n')
   }
-  const streamWrite = function (chunk, encoding, callback) {
+  const streamWrite: NodeJS.WritableStream['write'] = function (chunk: Buffer | string, encoding?: any, callback?: Function) {
     if (Buffer.isBuffer(chunk)) {
       chunk = chunk.toString(encoding)
     }
@@ -90,7 +89,7 @@ if (process.platform === 'win32') {
 }
 
 // Map process.exit to app.exit, which quits gracefully.
-process.exit = app.exit
+process.exit = app.exit as () => never
 
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server')
@@ -103,13 +102,15 @@ require('@electron/internal/browser/guest-window-manager')
 let packagePath = null
 let packageJson = null
 const searchPaths = ['app', 'app.asar', 'default_app.asar']
-for (packagePath of searchPaths) {
-  try {
-    packagePath = path.join(process.resourcesPath, packagePath)
-    packageJson = require(path.join(packagePath, 'package.json'))
-    break
-  } catch (error) {
-    continue
+if (process.resourcesPath) {
+  for (packagePath of searchPaths) {
+    try {
+      packagePath = path.join(process.resourcesPath, packagePath)
+      packageJson = require(path.join(packagePath, 'package.json'))
+      break
+    } catch (error) {
+      continue
+    }
   }
 }
 
@@ -148,9 +149,6 @@ if (packageJson.v8Flags != null) {
 app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
 app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
 app.setAppPath(packagePath)
-
-// Load the chrome devtools support.
-require('@electron/internal/browser/chrome-devtools')
 
 // Load the chrome extension support.
 require('@electron/internal/browser/chrome-extension')
@@ -199,5 +197,10 @@ const { setDefaultApplicationMenu } = require('@electron/internal/browser/defaul
 // Create default menu.
 app.once('ready', setDefaultApplicationMenu)
 
-// Finally load app's main.js and transfer control to C++.
-Module._load(path.join(packagePath, mainStartupScript), Module, true)
+if (packagePath) {
+  // Finally load app's main.js and transfer control to C++.
+  Module._load(path.join(packagePath, mainStartupScript), Module, true)
+} else {
+  console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)')
+  console.error('This normally means you\'ve damaged the Electron package somehow')
+}

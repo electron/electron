@@ -40,7 +40,7 @@ filenames = {
     "lib/browser/default-menu.js",
     "lib/browser/guest-view-manager.js",
     "lib/browser/guest-window-manager.js",
-    "lib/browser/init.js",
+    "lib/browser/init.ts",
     "lib/browser/ipc-main-internal-utils.js",
     "lib/browser/ipc-main-internal.js",
     "lib/browser/navigation-controller.js",
@@ -92,13 +92,16 @@ filenames = {
     "lib/worker/init.js",
   ]
 
-  default_app_sources = [
-    "default_app/default_app.js",
+  default_app_ts_sources = [
+    "default_app/default_app.ts",
+    "default_app/main.ts",
+    "default_app/renderer.ts",
+  ]
+
+  default_app_static_sources = [
     "default_app/icon.png",
     "default_app/index.html",
-    "default_app/main.js",
     "default_app/package.json",
-    "default_app/renderer.js",
     "default_app/styles.css",
   ]
 

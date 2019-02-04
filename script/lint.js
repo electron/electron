@@ -75,10 +75,10 @@ const LINTERS = [ {
   key: 'javascript',
   roots: ['lib', 'spec', 'script', 'default_app'],
   ignoreRoots: ['spec/node_modules'],
-  test: filename => filename.endsWith('.js'),
+  test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
-    const args = [ '--cache', ...filenames ]
+    const args = [ '--cache', '--ext', '.js,.ts', ...filenames ]
     if (opts.fix) args.unshift('--fix')
     spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT })
   }

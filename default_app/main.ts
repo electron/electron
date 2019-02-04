@@ -1,20 +1,31 @@
-'use strict'
+import { app, dialog } from 'electron'
 
-const { app, dialog } = require('electron')
+import * as fs from 'fs'
+import * as path from 'path'
+import * as url from 'url'
 
-const fs = require('fs')
+type DefaultAppOptions = {
+  file: null | string;
+  noHelp: boolean;
+  version: boolean;
+  webdriver: boolean;
+  interactive: boolean;
+  abi: boolean;
+  modules: string[];
+}
+
 const Module = require('module')
-const path = require('path')
-const url = require('url')
 
 // Parse command line options.
 const argv = process.argv.slice(1)
 
-const option = {
+const option: DefaultAppOptions = {
   file: null,
   noHelp: Boolean(process.env.ELECTRON_NO_HELP),
-  version: null,
-  webdriver: null,
+  version: false,
+  webdriver: false,
+  interactive: false,
+  abi: false,
   modules: []
 }
 
@@ -62,7 +73,7 @@ if (option.modules.length > 0) {
   Module._preloadModules(option.modules)
 }
 
-function loadApplicationPackage (packagePath) {
+function loadApplicationPackage (packagePath: string) {
   // Add a flag indicating app is started from default app.
   Object.defineProperty(process, 'defaultApp', {
     configurable: false,
@@ -112,14 +123,15 @@ function loadApplicationPackage (packagePath) {
   }
 }
 
-function showErrorMessage (message) {
+function showErrorMessage (message: string) {
   app.focus()
   dialog.showErrorBox('Error launching app', message)
   process.exit(1)
 }
 
-function loadApplicationByUrl (appUrl) {
-  require('./default_app').load(appUrl)
+async function loadApplicationByUrl (appUrl: string) {
+  const { load } = await import('./default_app')
+  load(appUrl)
 }
 
 function startRepl () {
