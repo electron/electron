@@ -30,6 +30,19 @@ describe('Menu module', () => {
       expect(menu.items[1].label).to.equal('two')
     })
 
+    it('should be able to accept only MenuItems in a submenu', () => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'one',
+          submenu: [
+            new MenuItem({ label: 'two' })
+          ]
+        }
+      ])
+      expect(menu.items[0].label).to.equal('one')
+      expect(menu.items[0].submenu.items[0].label).to.equal('two')
+    })
+
     it('should be able to accept MenuItems and plain objects', () => {
       const menu = Menu.buildFromTemplate([
         new MenuItem({ label: 'one' }),
