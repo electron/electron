@@ -23,6 +23,7 @@
 #include "content/browser/renderer_host/cursor_manager.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -286,6 +287,8 @@ class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
     return view_->render_widget_host()->CollectSurfaceIdsForEviction();
   }
 
+  bool ShouldShowStaleContentOnEviction() override { return false; }
+
   void OnBeginFrame(base::TimeTicks frame_time) override {}
   void InvalidateLocalSurfaceIdOnEviction() override {}
 
@@ -526,7 +529,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   // We short-cut here to show a sensible color before that happens.
   UpdateBackgroundColorFromRenderer(color);
 
-  if (render_widget_host_) {
+  if (render_widget_host_ && render_widget_host_->owner_delegate()) {
     render_widget_host_->owner_delegate()->SetBackgroundOpaque(
         SkColorGetA(color) == SK_AlphaOPAQUE);
   }
