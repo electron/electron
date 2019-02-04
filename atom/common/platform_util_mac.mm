@@ -141,8 +141,11 @@ void Beep() {
 
 bool GetLoginItemEnabled() {
   BOOL enabled = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   // SMJobCopyDictionary does not work in sandbox (see rdar://13626319)
   CFArrayRef jobs = SMCopyAllJobDictionaries(kSMDomainUserLaunchd);
+#pragma clang diagnostic pop
   NSArray* jobs_ = CFBridgingRelease(jobs);
   NSString* identifier = GetLoginHelperBundleIdentifier();
   if (jobs_ && [jobs_ count] > 0) {

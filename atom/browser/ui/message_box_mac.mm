@@ -157,10 +157,13 @@ int ShowMessageBox(NativeWindow* parent_window,
           callEndModal:true];
 
   NSWindow* window = parent_window->GetNativeWindow().GetNativeNSWindow();
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   [alert beginSheetModalForWindow:window
                     modalDelegate:delegate
                    didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                       contextInfo:nil];
+#pragma clang diagnostic pop
 
   [NSApp runModalForWindow:window];
   return ret_code;
@@ -196,11 +199,14 @@ void ShowMessageBox(NativeWindow* parent_window,
     NSWindow* window =
         parent_window ? parent_window->GetNativeWindow().GetNativeNSWindow()
                       : nil;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     [alert
         beginSheetModalForWindow:window
                    modalDelegate:delegate
                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                      contextInfo:nil];
+#pragma clang diagnostic pop
   }
 }
 
