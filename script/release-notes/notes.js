@@ -65,9 +65,7 @@ const setPullRequest = (commit, owner, repo, number) => {
 
 const getNoteFromClerk = async (number, owner, repo) => {
   const comments = await getComments(number, owner, repo)
-  if (!comments && !comments.data) {
-    return
-  }
+  if (!comments || !comments.data) return
 
   const CLERK_LOGIN = 'release-clerk[bot]'
   const PERSIST_LEAD = '**Release Notes Persisted**\n\n'
