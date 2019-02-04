@@ -88,19 +88,53 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   if (relay)
     window = relay->GetNativeWindow();
 
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
-  bool offscreen =
-      !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
-
+  // Show save dialog if save path was not set already on item
   base::FilePath path;
   GetItemSavePath(item, &path);
-  // Show save dialog if save path was not set already on item
-  file_dialog::DialogSettings settings;
-  settings.parent_window = window;
-  settings.force_detached = offscreen;
-  settings.title = item->GetURL().spec();
-  settings.default_path = default_path;
-  if (path.empty() && file_dialog::ShowSaveDialog(settings, &path)) {
+  if (path.empty()) {
+    file_dialog::DialogSettings settings;
+    settings.parent_window = window;
+    settings.title = item->GetURL().spec();
+    settings.default_path = default_path;
+
+    auto* web_preferences = WebContentsPreferences::From(web_contents);
+    const bool offscreen =
+        !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
+    settings.force_detached = offscreen;
+
+    auto dialog_callback =
+        base::Bind(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
+                   base::Unretained(this), download_id, callback);
+    file_dialog::ShowSaveDialog(settings, dialog_callback);
+  } else {
+    callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
+                 download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
+                 download::DOWNLOAD_INTERRUPT_REASON_NONE);
+  }
+}
+
+#if defined(MAS_BUILD)
+void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
+    uint32_t download_id,
+    const content::DownloadTargetCallback& download_callback,
+    bool result,
+    const base::FilePath& path,
+    const std::string& bookmark)
+#else
+void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
+    uint32_t download_id,
+    const content::DownloadTargetCallback& download_callback,
+    bool result,
+    const base::FilePath& path)
+#endif
+{
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  auto* item = download_manager_->GetDownload(download_id);
+  if (!item)
+    return;
+
+  if (result) {
     // Remember the last selected download directory.
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
         download_manager_->GetBrowserContext());
@@ -117,12 +151,16 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   }
 
   // Running the DownloadTargetCallback with an empty FilePath signals that the
-  // download should be cancelled.
-  // If user cancels the file save dialog, run the callback with empty FilePath.
-  callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
-               download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
-               path.empty() ? download::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
-                            : download::DOWNLOAD_INTERRUPT_REASON_NONE);
+  // download should be cancelled. If user cancels the file save dialog, run
+  // the callback with empty FilePath.
+  const base::FilePath download_path = result ? path : base::FilePath();
+  const auto interrupt_reason =
+      download_path.empty() ? download::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
+                            : download::DOWNLOAD_INTERRUPT_REASON_NONE;
+  download_callback.Run(download_path,
+                        download::DownloadItem::TARGET_DISPOSITION_PROMPT,
+                        download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                        download_path, interrupt_reason);
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {
