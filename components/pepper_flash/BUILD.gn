@@ -47,6 +47,7 @@ component("pepper_flash") {
     "//skia",
     "//third_party/adobe/flash:flapper_version_h",
     "//ui/base",
+    "//ui/base/clipboard",
   ]
   if (is_mac) {
     sources += [
