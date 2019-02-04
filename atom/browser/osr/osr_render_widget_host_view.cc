@@ -349,12 +349,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       content::ImageTransportFactory::GetInstance();
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
-  compositor_.reset(
-      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-                         content::GetContextFactory(), context_factory_private,
-                         base::ThreadTaskRunnerHandle::Get(),
-                         features::IsSurfaceSynchronizationEnabled(),
-                         false /* enable_pixel_canvas */));
+  compositor_.reset(new ui::Compositor(
+      context_factory_private->AllocateFrameSinkId(),
+      content::GetContextFactory(), context_factory_private,
+      base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */));
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 #endif
