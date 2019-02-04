@@ -82,6 +82,10 @@
     ],
     "*.md": [
       "remark -qf"
+    ],
+    "*.{gn,gni}": [
+      "python script/run-gn-format.py",
+      "git add"
     ]
   }
 }
