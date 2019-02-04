@@ -32,7 +32,7 @@ index 5aeda7bd9caf6b5b9e2a95293e4409dc7f9a6d2d..d15e1462babe97b5d68014f4d6723665
      } else {
        DCHECK(context_provider);
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index a445b569ede1cd9331003e21b0427971d98ef924..087802fc0d47276c1449b4d9153756f6beb39bad 100644
+index 313431f82ee7e181dad2c48dd27950129afbb223..b8c2632e49b7b96adbb06a03678961823f0790f6 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -25,6 +25,7 @@
@@ -69,7 +69,7 @@ index a445b569ede1cd9331003e21b0427971d98ef924..087802fc0d47276c1449b4d9153756f6
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -440,6 +453,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -442,6 +455,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    ui::ContextFactory* context_factory_;
    ui::ContextFactoryPrivate* context_factory_private_;
  

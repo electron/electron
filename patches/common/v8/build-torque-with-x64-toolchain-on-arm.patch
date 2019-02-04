@@ -6,7 +6,7 @@ Subject: build-torque-with-x64-toolchain-on-arm.patch
 torque binary has to be run during the build.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 8bdc4ac595e82e1272ade2f715188bcb07653c82..b593ac20ef722146ca0c50ba01d6ee6b8d6d3035 100644
+index b70c09aa34aa7547e7d26d9e35795904a17c092f..0fa207082101165ec5d888cd21e4ca916ee458a9 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -184,7 +184,8 @@ declare_args() {
@@ -19,7 +19,7 @@ index 8bdc4ac595e82e1272ade2f715188bcb07653c82..b593ac20ef722146ca0c50ba01d6ee6b
    v8_generator_toolchain = "//build/toolchain/linux:clang_x64"
  }
  
-@@ -3351,7 +3352,7 @@ if (v8_monolithic) {
+@@ -3352,7 +3353,7 @@ if (v8_monolithic) {
  # Executables
  #
  
@@ -28,7 +28,7 @@ index 8bdc4ac595e82e1272ade2f715188bcb07653c82..b593ac20ef722146ca0c50ba01d6ee6b
    v8_executable("bytecode_builtins_list_generator") {
      visibility = [ ":*" ]  # Only targets in this file can depend on this.
  
-@@ -3401,7 +3402,7 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3402,7 +3403,7 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
    }
  }
  

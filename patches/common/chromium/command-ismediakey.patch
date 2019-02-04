@@ -15,10 +15,10 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-index 5ab71f9a7632f0211f2efd7be2298203f32fa83d..e99f55c82e1d59e919fbab65b9cbe833dfa79771 100644
+index befe726af9c10b1563a7fc0bb77cc55f65943d5c..46c6fe08bab8471007f78d3ef227e5195bfdf0e1 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
 +++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-@@ -20,6 +20,26 @@
+@@ -21,6 +21,26 @@
  
  namespace extensions {
  
@@ -46,10 +46,10 @@ index 5ab71f9a7632f0211f2efd7be2298203f32fa83d..e99f55c82e1d59e919fbab65b9cbe833
  GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index e5cfd70cc2effcbfd75e60357a44ce467e35fbc9..41d3ebd0628b4a8b5966b2b573d5feac4a19dc82 100644
+index eb58c51eb768bb013e293649e0308786c5482e21..e469e5115fce12fe5d382bd75d9c6f41fa24293e 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
-@@ -60,6 +60,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
+@@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -80,7 +80,7 @@ index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e487
    ui::Accelerator accelerator(
        ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 2320015f9d38f3313bee1de6872910e27cd259d1..33f2ac9c021b69fe17c1857b6dfaa9808e90136b 100644
+index b48fa8e63867021bdd77bf585a0e02c366980d91..bae9e24e7bcf7615be243bcb5629cc5981a31b06 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -31,6 +31,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
@@ -96,7 +96,7 @@ index 2320015f9d38f3313bee1de6872910e27cd259d1..33f2ac9c021b69fe17c1857b6dfaa980
    }
    return VKEY_UNKNOWN;
  }
-@@ -189,7 +195,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -190,7 +196,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

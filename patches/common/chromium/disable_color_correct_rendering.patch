@@ -19,7 +19,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index bc110bfd003e41b1b170c4d8cd404ab0a88240e3..8979c777978216b6e0f7f89f19200afc57f08012 100644
+index 6a44080f30936c8383f575c8c65c5582d9ed7fc3..b4394286e0a54357973d23ed94731ae7e830b2a8 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1569,6 +1569,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -218,10 +218,10 @@ index 6ee04d0919d9b4ae5e2d6719f1417f00a3d600fa..62c0b5da24e02102b268429b1d8e3654
 +
 +#undef PATCH_CS
 diff --git a/components/viz/service/display/skia_renderer.cc b/components/viz/service/display/skia_renderer.cc
-index 54e1614d979ef2afa5e23404541cfc2d1227e17d..97190566b60140cbdac43a5c57deb03e1fc48982 100644
+index 5a757c437d36f98d6d813ef2af81b46434cdc5de..86ed034d207fe5cdf6810de085cc34ea8981169c 100644
 --- a/components/viz/service/display/skia_renderer.cc
 +++ b/components/viz/service/display/skia_renderer.cc
-@@ -707,9 +707,11 @@ void SkiaRenderer::DrawPictureQuad(const PictureDrawQuad* quad,
+@@ -708,9 +708,11 @@ void SkiaRenderer::DrawPictureQuad(const PictureDrawQuad* quad,
  
    std::unique_ptr<SkCanvas> color_transform_canvas;
    // TODO(enne): color transform needs to be replicated in gles2_cmd_decoder
@@ -268,7 +268,7 @@ index 4aa391a6bfe2408b84da4ffe5b3dc27a0544d0ca..649efb7ed16e6f4850010c8b9df5d0b7
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ecbfc65e474409a0d073362d6734047b098d2c7f..2aa5ba9d51adda083a5eeac2c200b2ffba106b21 100644
+index 5759d527ecc355a88cb8632a2cebdf2e76ab3940..2c9d59feb24caf009dfd909f19334486ab87177d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -221,6 +221,7 @@
@@ -288,10 +288,10 @@ index ecbfc65e474409a0d073362d6734047b098d2c7f..2aa5ba9d51adda083a5eeac2c200b2ff
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 6d5833dc1bef727aba4c012563c3e161a9dab9ae..3215ab16ad51e7d519baa1e82fd0a9c489b8e31a 100644
+index 3eb59602364dc178fc783867c5dff036c8be70d3..4f4f4c08bf62752df1a47d5e8c91452365b8ea5b 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2641,6 +2641,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2658,6 +2658,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
