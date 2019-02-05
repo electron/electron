@@ -2,10 +2,10 @@ const temp = require('temp')
 const fs = require('fs')
 const path = require('path')
 const childProcess = require('child_process')
-const { getCurrentBranch } = require('./lib/utils.js')
+const { getCurrentBranch } = require('../lib/utils.js')
 const request = require('request')
 const semver = require('semver')
-const rootPackageJson = require('../package.json')
+const rootPackageJson = require('../../package.json')
 const octokit = require('@octokit/rest')({
   headers: { 'User-Agent': 'electron-npm-publisher' }
 })

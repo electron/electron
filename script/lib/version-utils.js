@@ -1,7 +1,7 @@
 const path = require('path')
 const fs = require('fs')
 const semver = require('semver')
-const { getLastMajorForMaster } = require('../get-last-major-for-master')
+const { getLastMajorForMaster } = require('../release/get-last-major-for-master')
 const { GitProcess } = require('dugite')
 const { promisify } = require('util')
 

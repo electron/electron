@@ -1,7 +1,7 @@
 const { GitProcess } = require('dugite')
 const path = require('path')
 const semver = require('semver')
-const gitDir = path.resolve(__dirname, '..')
+const gitDir = path.resolve(__dirname, '../..')
 
 async function getLastMajorForMaster () {
   let branchNames

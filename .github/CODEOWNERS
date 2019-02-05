@@ -21,4 +21,4 @@
 /npm/ @electron/electrocats
 
 # WG CODEOWNER Patterns
-/script/ @electron/wg-releases
+/script/release/ @electron/wg-releases
