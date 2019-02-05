@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import os
 import sys
 import urllib2
@@ -15,6 +16,13 @@ BASE_URL = 'https://electron-metadumper.herokuapp.com/?version='
 version = sys.argv[1]
 authToken = os.getenv('META_DUMPER_AUTH_HEADER')
 
+def is_json(myjson):
+  try:
+    json.loads(myjson)
+  except ValueError:
+    return False
+  return True
+
 def get_content(retry_count = 5):
   try:
     request = urllib2.Request(
@@ -22,9 +30,14 @@ def get_content(retry_count = 5):
       headers={"Authorization" : authToken}
     )
 
-    return urllib2.urlopen(
+    proposed_content = urllib2.urlopen(
       request
     ).read()
+
+    if is_json(proposed_content):
+      return proposed_content
+    print("bad attempt")
+    raise Exception("Failed to fetch valid JSON from the metadumper service")
   except Exception as e:
     if retry_count == 0:
       raise e
