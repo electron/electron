@@ -6,8 +6,8 @@
   "devDependencies": {
     "@octokit/rest": "^16.3.2",
     "aliasify": "^2.1.0",
-    "asar": "^0.11.0",
-    "browserify": "^13.1.0",
+    "asar": "^0.14.6",
+    "browserify": "^16.2.3",
     "check-for-leaks": "^1.0.2",
     "clang-format": "^1.2.3",
     "colors": "^1.1.2",
