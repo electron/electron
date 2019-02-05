@@ -1562,10 +1562,9 @@ the cursor when dragging.
   * `HTMLOnly` - Save only the HTML of the page.
   * `HTMLComplete` - Save complete-html page.
   * `MHTML` - Save complete-html page as MHTML.
-* `callback` Function - `(error) => {}`.
+* `callback` Function
   * `error` Error
-
-Returns `Boolean` - true if the process of saving page has been initiated successfully.
+  * `success` Boolean - `true` if the process of saving page has been initiated successfully.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -1574,9 +1573,34 @@ let win = new BrowserWindow()
 win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', () => {
-  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (error) => {
-    if (!error) console.log('Save page successfully')
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (err, success) => {
+    if (err) throw err
+    if (success) console.log('Save page successfully')
   })
+})
+```
+
+**[Deprecated Soon](promisification.md)**
+
+#### `contents.savePage(fullPath, saveType)`
+
+* `fullPath` String - The full file path.
+* `saveType` String - Specify the save type.
+  * `HTMLOnly` - Save only the HTML of the page.
+  * `HTMLComplete` - Save complete-html page.
+  * `MHTML` - Save complete-html page as MHTML.
+
+Returns `Promise<Boolean>` - resolves with `true` if the process of saving page has been initiated successfully.
+
+```javascript
+const { BrowserWindow } = require('electron')
+let win = new BrowserWindow()
+
+win.loadURL('https://github.com')
+
+win.webContents.on('did-finish-load', async () => {
+  const success = await win.webContents.savePage('/tmp/test.html', 'HTMLComplete')
+  if (!success) console.log('Save page successfully')
 })
 ```
 

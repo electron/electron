@@ -16,8 +16,8 @@ namespace atom {
 namespace api {
 
 SavePageHandler::SavePageHandler(content::WebContents* web_contents,
-                                 const SavePageCallback& callback)
-    : web_contents_(web_contents), callback_(callback) {}
+                                 scoped_refptr<atom::util::Promise> promise)
+    : web_contents_(web_contents), promise_(promise) {}
 
 SavePageHandler::~SavePageHandler() {}
 
@@ -50,16 +50,10 @@ bool SavePageHandler::Handle(const base::FilePath& full_path,
 
 void SavePageHandler::OnDownloadUpdated(download::DownloadItem* item) {
   if (item->IsDone()) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
-    if (item->GetState() == download::DownloadItem::COMPLETE) {
-      callback_.Run(v8::Null(isolate));
-    } else {
-      v8::Local<v8::String> error_message =
-          v8::String::NewFromUtf8(isolate, "Fail to save page");
-      callback_.Run(v8::Exception::Error(error_message));
-    }
+    if (item->GetState() == download::DownloadItem::COMPLETE)
+      promise_->Resolve(true);
+    else
+      promise_->RejectWithErrorMessage("Failed to save the page.");
     Destroy(item);
   }
 }

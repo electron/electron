@@ -2575,15 +2575,24 @@ describe('BrowserWindow module', () => {
 
     it('should save page to disk', async () => {
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'))
-      const error = await new Promise(resolve => {
-        w.webContents.savePage(savePageHtmlPath, 'HTMLComplete', function (error) {
-          resolve(error)
-        })
-      })
-      expect(error).to.be.null()
+      await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete')
+
       assert(fs.existsSync(savePageHtmlPath))
       assert(fs.existsSync(savePageJsPath))
       assert(fs.existsSync(savePageCssPath))
+    })
+
+    it('should save page to disk (callback)', (done) => {
+      w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html')).then(() => {
+        w.webContents.savePage(savePageHtmlPath, 'HTMLComplete', (err, success) => {
+          expect(err).to.be.null()
+          expect(success).to.be.true()
+          assert(fs.existsSync(savePageHtmlPath))
+          assert(fs.existsSync(savePageJsPath))
+          assert(fs.existsSync(savePageCssPath))
+          done()
+        })
+      })
     })
   })
 
