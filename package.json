@@ -82,6 +82,14 @@
     ],
     "*.md": [
       "remark -qf"
+    ],
+    "*.{gn,gni}": [
+      "python script/run-gn-format.py",
+      "git add"
+    ],
+    "*.py": [
+      "node script/lint.js --py --fix --only --",
+      "git add"
     ]
   }
 }
