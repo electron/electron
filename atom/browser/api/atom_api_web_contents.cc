@@ -240,21 +240,6 @@ namespace api {
 
 namespace {
 
-content::ServiceWorkerContext* GetServiceWorkerContext(
-    content::WebContents* web_contents) {
-  auto* context = web_contents->GetBrowserContext();
-  auto* site_instance = web_contents->GetSiteInstance();
-  if (!context || !site_instance)
-    return nullptr;
-
-  auto* storage_partition =
-      content::BrowserContext::GetStoragePartition(context, site_instance);
-  if (!storage_partition)
-    return nullptr;
-
-  return storage_partition->GetServiceWorkerContext();
-}
-
 // Called when CapturePage is done.
 void OnCapturePageDone(scoped_refptr<util::Promise> promise,
                        const SkBitmap& bitmap) {
@@ -1450,41 +1435,6 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-void OnServiceWorkerCheckDone(scoped_refptr<util::Promise> promise,
-                              content::ServiceWorkerCapability capability) {
-  promise->Resolve(capability !=
-                   content::ServiceWorkerCapability::NO_SERVICE_WORKER);
-}
-
-v8::Local<v8::Promise> WebContents::HasServiceWorker() {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
-  auto* context = GetServiceWorkerContext(web_contents());
-  if (!context) {
-    promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
-    return promise->GetHandle();
-  }
-
-  GURL url = web_contents()->GetLastCommittedURL();
-  if (!url.is_valid()) {
-    promise->RejectWithErrorMessage("URL invalid or not yet loaded.");
-    return promise->GetHandle();
-  }
-
-  context->CheckHasServiceWorker(
-      url, url, base::BindOnce(&OnServiceWorkerCheckDone, promise));
-
-  return promise->GetHandle();
-}
-
-void WebContents::UnregisterServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto* context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
-                                   callback);
-}
-
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   DCHECK(web_preferences);
@@ -2191,9 +2141,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("_isRemoteModuleEnabled", &WebContents::IsRemoteModuleEnabled)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
-      .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
-      .SetMethod("unregisterServiceWorker",
-                 &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("inspectSharedWorker", &WebContents::InspectSharedWorker)
 #if BUILDFLAG(ENABLE_PRINTING)
