@@ -1188,22 +1188,25 @@ Start accessing a security scoped resource. With this method Electron applicatio
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
-* `switch` String - A command-line switch
+* `switch` String - A command-line switch, without the leading `--`
 * `value` String (optional) - A value for the given switch
 
 Append a switch (with optional `value`) to Chromium's command line.
 
-**Note:** This will not affect `process.argv`, and is mainly used by developers
-to control some low-level Chromium behaviors.
+**Note:** This will not affect `process.argv`. The intended usage of this function is to
+control Chromium's behavior.
 
 ### `app.commandLine.appendArgument(value)`
 
 * `value` String - The argument to append to the command line
 
 Append an argument to Chromium's command line. The argument will be quoted
-correctly.
+correctly. Switches will precede arguments regardless of appending order.
 
-**Note:** This will not affect `process.argv`.
+If you're appending a switch like `--switch=value`, consider using `appendSwitch()` instead.
+
+**Note:** This will not affect `process.argv`. The intended usage of this function is to
+control Chromium's behavior.
 
 ### `app.commandLine.hasSwitch(switch)`
 
@@ -1217,7 +1220,7 @@ Returns `Boolean` - Whether the command-line switch is present.
 
 Returns `String` - The command-line switch value.
 
-**Note:** When the switch is not present, it returns empty string.
+**Note:** When the switch is not present or has no value, it returns empty string.
 
 ### `app.enableSandbox()` _Experimental_ _macOS_ _Windows_
 
