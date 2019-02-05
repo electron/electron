@@ -1089,17 +1089,23 @@ void NativeWindowMac::SetProgressBar(double progress,
                                      const NativeWindow::ProgressState state) {
   NSDockTile* dock_tile = [NSApp dockTile];
 
+  // Sometimes macOS would install a default contentView for dock, we must
+  // verify whether NSProgressIndicator has been installed.
+  bool first_time = !dock_tile.contentView ||
+                    [[dock_tile.contentView subviews] count] == 0 ||
+                    ![[[dock_tile.contentView subviews] lastObject]
+                        isKindOfClass:[NSProgressIndicator class]];
+
   // For the first time API invoked, we need to create a ContentView in
   // DockTile.
-  if (dock_tile.contentView == nullptr) {
-    NSImageView* image_view = [[NSImageView alloc] init];
+  if (first_time) {
+    NSImageView* image_view = [[[NSImageView alloc] init] autorelease];
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];
-  }
 
-  if ([[dock_tile.contentView subviews] count] == 0) {
-    NSProgressIndicator* progress_indicator = [[AtomProgressBar alloc]
-        initWithFrame:NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0)];
+    NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
+    NSProgressIndicator* progress_indicator =
+        [[[AtomProgressBar alloc] initWithFrame:frame] autorelease];
     [progress_indicator setStyle:NSProgressIndicatorBarStyle];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
@@ -1110,7 +1116,7 @@ void NativeWindowMac::SetProgressBar(double progress,
   }
 
   NSProgressIndicator* progress_indicator = static_cast<NSProgressIndicator*>(
-      [[[dock_tile contentView] subviews] objectAtIndex:0]);
+      [[[dock_tile contentView] subviews] lastObject]);
   if (progress < 0) {
     [progress_indicator setHidden:YES];
   } else if (progress > 1) {
