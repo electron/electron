@@ -173,9 +173,13 @@ step-install-nodejs-on-mac: &step-install-nodejs-on-mac
     name: Install Node.js 10 on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install node@10
-        echo 'export PATH="/usr/local/opt/node@10/bin:$PATH"' >> $BASH_ENV
+        curl -sSLf https://get.notionjs.com | bash
+        export NOTION_HOME="$HOME/.notion"
+        source "$NOTION_HOME/load.sh"
+        notion install node 10
+        echo 'export NOTION_HOME="$HOME/.notion"' >> $BASH_ENV
+        echo 'source "$NOTION_HOME/load.sh"' >> $BASH_ENV
+        echo 'export PATH="$PATH:'$NOTION_HOME'/bin"' >> $BASH_ENV
       fi
 
 step-install-gnutar-on-mac: &step-install-gnutar-on-mac
@@ -183,8 +187,7 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
     name: Install gnu-tar on macos
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install gnu-tar
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install gnu-tar
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
       fi
 
