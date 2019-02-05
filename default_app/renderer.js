@@ -35,7 +35,7 @@ function initialize () {
   document.querySelector('.command-example').innerText = `${electronPath} path-to-app`
 
   function getOcticonSvg (name) {
-    const octiconPath = path.resolve(__dirname, 'node_modules', 'octicons', 'build', 'svg', `${name}.svg`)
+    const octiconPath = path.resolve(__dirname, 'octicon', `${name}.svg`)
     if (fs.existsSync(octiconPath)) {
       const content = fs.readFileSync(octiconPath, 'utf8')
       const div = document.createElement('div')

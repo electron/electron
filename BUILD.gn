@@ -137,7 +137,12 @@ action("atom_js2c") {
          rebase_path(sources, root_build_dir)
 }
 
-asar("js2asar") {
+target_gen_electron_js = "$target_gen_dir/js/electron"
+target_gen_default_app_js = "$target_gen_dir/js/default_app"
+
+# TODO(MarshallOfSound)
+# This copy will be replaced by a call to tsc in the future
+copy("lib_js") {
   sources = filenames.js_sources
   if (enable_desktop_capturer) {
     sources += [
@@ -156,18 +161,50 @@ asar("js2asar") {
       "lib/browser/api/views/text-field.js",
     ]
   }
+
+  outputs = [
+    "$target_gen_electron_js/{{source}}",
+  ]
+}
+
+asar("electron_asar") {
+  deps = [
+    ":lib_js",
+  ]
+
+  root = "$target_gen_electron_js/electron/lib"
+  sources = get_target_outputs(":lib_js")
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]
-  root = "lib"
 }
 
-asar("app2asar") {
+copy("default_app_js") {
   sources = filenames.default_app_sources
+  outputs = [
+    "$target_gen_default_app_js/{{source}}",
+  ]
+}
+
+copy("default_app_octicon_deps") {
+  sources = filenames.default_app_octicon_sources
+  outputs = [
+    "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}",
+  ]
+}
+
+asar("default_app_asar") {
+  deps = [
+    ":default_app_js",
+    ":default_app_octicon_deps",
+  ]
+
+  root = "$target_gen_default_app_js/electron/default_app"
+  sources = get_target_outputs(":default_app_js") +
+            get_target_outputs(":default_app_octicon_deps")
   outputs = [
     "$root_out_dir/resources/default_app.asar",
   ]
-  root = "default_app"
 }
 
 grit("resources") {
@@ -712,9 +749,9 @@ if (is_mac) {
 
   bundle_data("electron_app_resources") {
     public_deps = [
-      ":app2asar",
+      ":default_app_asar",
       ":electron_app_strings_bundle_data",
-      ":js2asar",
+      ":electron_asar",
     ]
     sources = [
       "$root_out_dir/resources/default_app.asar",
@@ -760,10 +797,10 @@ if (is_mac) {
     sources = filenames.app_sources
     include_dirs = [ "." ]
     deps = [
-      ":app2asar",
+      ":default_app_asar",
       ":electron_app_manifest",
+      ":electron_asar",
       ":electron_lib",
-      ":js2asar",
       ":packed_resources",
       "//content:sandbox_helper_win",
       "//ui/strings",
