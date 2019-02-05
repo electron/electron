@@ -18,8 +18,8 @@ authToken = os.getenv('META_DUMPER_AUTH_HEADER')
 
 def is_json(myjson):
   try:
-    json_object = json.loads(myjson)
-  except ValueError, e:
+    json.loads(myjson)
+  except ValueError:
     return False
   return True
 
