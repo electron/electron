@@ -305,7 +305,7 @@ v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), std::move(copy),
-                     promise));
+                     std::move(promise)));
 
   return promise->GetHandle();
 }
@@ -318,7 +318,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(RemoveCookieOnIO, base::RetainedRef(getter), url, name,
-                     promise));
+                     std::move(promise)));
 
   return promise->GetHandle();
 }
@@ -332,7 +332,7 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
-                     promise));
+                     std::move(promise)));
 
   return promise->GetHandle();
 }
@@ -341,9 +341,10 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
   auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::IO},
-                           base::BindOnce(FlushCookieStoreOnIOThread,
-                                          base::RetainedRef(getter), promise));
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
+      base::BindOnce(FlushCookieStoreOnIOThread, base::RetainedRef(getter),
+                     std::move(promise)));
 
   return promise->GetHandle();
 }
