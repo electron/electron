@@ -174,9 +174,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
-  void PrintToPDF(
-      const base::DictionaryValue& settings,
-      const PrintPreviewMessageHandler::PrintToPDFCallback& callback);
+  v8::Local<v8::Promise> PrintToPDF(const base::DictionaryValue& settings);
 #endif
 
   // DevTools workspace api.

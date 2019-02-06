@@ -1202,6 +1202,25 @@ settings.
 The `callback` will be called with `callback(error, data)` on completion. The
 `data` is a `Buffer` that contains the generated PDF data.
 
+**[Deprecated Soon](promisification.md)**
+
+#### `contents.printToPDF(options)`
+
+* `options` Object
+  * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
+    default margin, 1 for no margin, and 2 for minimum margin.
+  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
+    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
+    and `width` in microns.
+  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
+  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
+  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
+
+* Returns `Promise<Buffer>` - Resolves with the generated PDF data.
+
+Prints window's web page as PDF with Chromium's preview printing custom
+settings.
+
 The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
 
 By default, an empty `options` will be regarded as:

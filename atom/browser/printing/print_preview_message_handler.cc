@@ -89,7 +89,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   const PrintHostMsg_DidPrintContent_Params& content = params.content;
   if (!content.metafile_data_region.IsValid() ||
       params.expected_pages_count <= 0) {
-    RunPrintToPDFCallback(ids.request_id, nullptr);
+    RejectPromise(ids.request_id);
     return;
   }
 
@@ -102,10 +102,9 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
         base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfDocumentDone,
                        weak_ptr_factory_.GetWeakPtr(), ids));
   } else {
-    RunPrintToPDFCallback(
-        ids.request_id,
-        base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
-            content.metafile_data_region));
+    ResolvePromise(ids.request_id,
+                   base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
+                       content.metafile_data_region));
   }
 }
 
@@ -117,11 +116,11 @@ void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
 
   if (status != printing::mojom::PdfCompositor::Status::SUCCESS) {
     DLOG(ERROR) << "Compositing pdf failed with error " << status;
-    RunPrintToPDFCallback(ids.request_id, nullptr);
+    RejectPromise(ids.request_id);
     return;
   }
 
-  RunPrintToPDFCallback(
+  ResolvePromise(
       ids.request_id,
       base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(region));
 }
@@ -131,7 +130,7 @@ void PrintPreviewMessageHandler::OnPrintPreviewFailed(
     const PrintHostMsg_PreviewIds& ids) {
   StopWorker(document_cookie);
 
-  RunPrintToPDFCallback(ids.request_id, nullptr);
+  RejectPromise(ids.request_id);
 }
 
 void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
@@ -139,15 +138,15 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
     const PrintHostMsg_PreviewIds& ids) {
   StopWorker(document_cookie);
 
-  RunPrintToPDFCallback(ids.request_id, nullptr);
+  RejectPromise(ids.request_id);
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
     const base::DictionaryValue& options,
-    const PrintToPDFCallback& callback) {
+    scoped_refptr<atom::util::Promise> promise) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
-  print_to_pdf_callback_map_[request_id] = callback;
+  promise_map_[request_id] = std::move(promise);
 
   auto* focused_frame = web_contents()->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
@@ -156,28 +155,44 @@ void PrintPreviewMessageHandler::PrintToPDF(
   rfh->Send(new PrintMsg_PrintPreview(rfh->GetRoutingID(), options));
 }
 
-void PrintPreviewMessageHandler::RunPrintToPDFCallback(
+scoped_refptr<atom::util::Promise> PrintPreviewMessageHandler::GetPromise(
+    int request_id) {
+  auto it = promise_map_.find(request_id);
+  DCHECK(it != promise_map_.end());
+
+  auto promise = it->second;
+  promise_map_.erase(it);
+
+  return promise;
+}
+
+void PrintPreviewMessageHandler::ResolvePromise(
     int request_id,
     scoped_refptr<base::RefCountedMemory> data_bytes) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
+  auto promise = GetPromise(request_id);
+
+  v8::Isolate* isolate = promise->isolate();
+  mate::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  if (data_bytes && data_bytes->size()) {
-    v8::Local<v8::Value> buffer =
-        node::Buffer::Copy(isolate,
-                           reinterpret_cast<const char*>(data_bytes->front()),
-                           data_bytes->size())
-            .ToLocalChecked();
-    print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
-  } else {
-    v8::Local<v8::String> error_message =
-        v8::String::NewFromUtf8(isolate, "Failed to generate PDF");
-    print_to_pdf_callback_map_[request_id].Run(
-        v8::Exception::Error(error_message), v8::Null(isolate));
-  }
-  print_to_pdf_callback_map_.erase(request_id);
+  v8::Context::Scope context_scope(
+      v8::Local<v8::Context>::New(isolate, promise->GetContext()));
+
+  v8::Local<v8::Value> buffer =
+      node::Buffer::Copy(isolate,
+                         reinterpret_cast<const char*>(data_bytes->front()),
+                         data_bytes->size())
+          .ToLocalChecked();
+
+  promise->Resolve(buffer);
+}
+
+void PrintPreviewMessageHandler::RejectPromise(int request_id) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  auto promise = GetPromise(request_id);
+  promise->RejectWithErrorMessage("Failed to generate PDF");
 }
 
 }  // namespace atom
