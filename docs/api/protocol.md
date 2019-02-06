@@ -78,7 +78,11 @@ custom protocol to replace the `http` protocol, you have to register it as a sta
 To replicate the functionality of the previous `protocol.registerStandardSchemes` and `webFrame.registerURLSchemeAs*` functions that existed prior to Electron 5.0.0, for example:
 ```
 # before (<= v4.x)
+// Main
 protocol.registerStandardSchemes(['scheme1', 'scheme2'], { secure: true })
+// Renderer
+webFrame.registerURLSchemeAsPrivileged('scheme1', { secure: true })
+webFrame.registerURLSchemeAsPrivileged('scheme2', { secure: true })
 
 # after (>= v5.x)
 protocol.registerSchemesAsPriviliged([
