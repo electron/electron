@@ -40,6 +40,11 @@ class AtomSandboxedRendererClient : public RendererClientBase {
  private:
   std::unique_ptr<base::ProcessMetrics> metrics_;
 
+  // Getting main script context from web frame would lazily initializes
+  // its script context. Doing so in a web page without scripts would trigger
+  // assertion, so we have to keep a book of injected web frames.
+  std::set<content::RenderFrame*> injected_frames_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRendererClient);
 };
 

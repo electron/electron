@@ -178,22 +178,32 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return;
+
   auto* isolate = blink::MainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
+
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
   v8::Context::Scope context_scope(context);
+
   InvokeIpcCallback(context, "onDocumentStart",
                     std::vector<v8::Local<v8::Value>>());
 }
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return;
+
   auto* isolate = blink::MainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
+
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
   v8::Context::Scope context_scope(context);
+
   InvokeIpcCallback(context, "onDocumentEnd",
                     std::vector<v8::Local<v8::Value>>());
 }
@@ -216,6 +226,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
       is_main_frame || is_devtools || allow_node_in_sub_frames;
   if (!should_load_preload)
     return;
+
+  injected_frames_.insert(render_frame);
 
   // Wrap the bundle into a function that receives the binding object as
   // argument.
@@ -261,6 +273,10 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return;
+  injected_frames_.erase(render_frame);
+
   // Only allow preload for the main frame
   // Or for sub frames when explicitly enabled
   if (!render_frame->IsMainFrame() &&
