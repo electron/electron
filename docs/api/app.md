@@ -1203,7 +1203,7 @@ control Chromium's behavior.
 Append an argument to Chromium's command line. The argument will be quoted
 correctly. Switches will precede arguments regardless of appending order.
 
-If you're appending a switch like `--switch=value`, consider using `appendSwitch()` instead.
+If you're appending an argument like `--switch=value`, consider using `appendSwitch('switch', 'value')` instead.
 
 **Note:** This will not affect `process.argv`. The intended usage of this function is to
 control Chromium's behavior.
