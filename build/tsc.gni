@@ -1,0 +1,50 @@
+import("npm.gni")
+
+template("typescript_build") {
+  assert(defined(invoker.tsconfig), "Need tsconfig name to run")
+  assert(defined(invoker.sources), "Need tsc sources to run")
+  assert(defined(invoker.output_dir_name),
+         "Need output_dir_name to run, should be 'lib' or other top level dir")
+  assert(defined(invoker.output_gen_dir),
+         "Need output_gen_dir to run, should be relative to the root gen dir")
+
+  npm_action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "outputs",
+                           ])
+    script = "tsc"
+
+    sources = invoker.sources
+    inputs = [
+      invoker.tsconfig,
+      "//electron/tsconfig.json",
+      "//electron/package-lock.json",
+    ]
+
+    type_roots = "node_modules/@types,typings"
+    if (defined(invoker.type_root)) {
+      type_roots += "," + invoker.type_root
+    }
+
+    base_out_path = invoker.output_gen_dir + "/electron/"
+    args = [
+      "-p",
+      rebase_path(invoker.tsconfig),
+      "--outDir",
+      rebase_path("$base_out_path" + invoker.output_dir_name),
+      "--typeRoots",
+      type_roots,
+    ]
+
+    outputs = []
+
+    foreach(invoker_source, invoker.sources) {
+      # The output of TSC is all inputs but with JS instead of TS as the extension
+      outputs += [ "$base_out_path" + get_path_info(invoker_source, "dir") +
+                   "/" + get_path_info(invoker_source, "name") + ".js" ]
+    }
+  }
+}

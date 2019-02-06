@@ -1,0 +1,14 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "lib",
+	},
+	"exclude": [
+		"script",
+		"spec",
+		"tools",
+		"default_app",
+		"npm",
+		"electron.d.ts"
+	]
+}

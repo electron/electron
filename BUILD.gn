@@ -11,8 +11,10 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
 import("build/asar.gni")
 import("build/npm.gni")
+import("build/tsc.gni")
 import("buildflags/buildflags.gni")
 import("electron_paks.gni")
+import("filenames.auto.gni")
 import("filenames.gni")
 
 if (is_mac) {
@@ -50,6 +52,21 @@ config("branding") {
   defines = [
     "ATOM_PRODUCT_NAME=\"$electron_product_name\"",
     "ATOM_PROJECT_NAME=\"$electron_project_name\"",
+  ]
+}
+
+# We geneate the definitions twice here, once in //electron/electron.d.ts
+# and once in $target_gen_dir
+# The one in $target_gen_dir is used for the actual TSC build later one
+# and the one in //electron/electron.d.ts is used by your IDE (vscode)
+# for typescript prompting
+npm_action("build_electron_definitions") {
+  script = "gn-typescript-definitions"
+  args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
+  inputs = auto_filenames.api_docs + [ "package-lock.json" ]
+
+  outputs = [
+    "$target_gen_dir/tsc/typings/electron.d.ts",
   ]
 }
 
@@ -140,9 +157,12 @@ action("atom_js2c") {
 target_gen_electron_js = "$target_gen_dir/js/electron"
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
-# TODO(MarshallOfSound)
-# This copy will be replaced by a call to tsc in the future
-copy("lib_js") {
+typescript_build("lib_js") {
+  deps = [
+    ":build_electron_definitions",
+  ]
+  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
+
   sources = filenames.js_sources
   if (enable_desktop_capturer) {
     sources += [
@@ -162,9 +182,9 @@ copy("lib_js") {
     ]
   }
 
-  outputs = [
-    "$target_gen_electron_js/{{source}}",
-  ]
+  output_gen_dir = target_gen_electron_js
+  output_dir_name = "lib"
+  tsconfig = "tsconfig.electron.json"
 }
 
 asar("electron_asar") {
@@ -179,8 +199,21 @@ asar("electron_asar") {
   ]
 }
 
-copy("default_app_js") {
-  sources = filenames.default_app_sources
+typescript_build("default_app_js") {
+  deps = [
+    ":build_electron_definitions",
+  ]
+  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
+
+  sources = filenames.default_app_ts_sources
+
+  output_gen_dir = target_gen_default_app_js
+  output_dir_name = "default_app"
+  tsconfig = "tsconfig.default_app.json"
+}
+
+copy("default_app_static") {
+  sources = filenames.default_app_static_sources
   outputs = [
     "$target_gen_default_app_js/{{source}}",
   ]
@@ -197,10 +230,12 @@ asar("default_app_asar") {
   deps = [
     ":default_app_js",
     ":default_app_octicon_deps",
+    ":default_app_static",
   ]
 
   root = "$target_gen_default_app_js/electron/default_app"
   sources = get_target_outputs(":default_app_js") +
+            get_target_outputs(":default_app_static") +
             get_target_outputs(":default_app_octicon_deps")
   outputs = [
     "$root_out_dir/resources/default_app.asar",

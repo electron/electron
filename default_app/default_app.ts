@@ -1,19 +1,17 @@
-'use strict'
+import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
+import * as path from 'path'
 
-const { app, BrowserWindow } = require('electron')
-const path = require('path')
-
-let mainWindow = null
+let mainWindow: BrowserWindow | null = null
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   app.quit()
 })
 
-exports.load = async (appUrl) => {
+export const load = async (appUrl: string) => {
   await app.whenReady()
 
-  const options = {
+  const options: BrowserWindowConstructorOptions = {
     width: 900,
     height: 600,
     autoHideMenuBar: true,
@@ -33,7 +31,7 @@ exports.load = async (appUrl) => {
 
   mainWindow = new BrowserWindow(options)
 
-  mainWindow.on('ready-to-show', () => mainWindow.show())
+  mainWindow.on('ready-to-show', () => mainWindow!.show())
 
   mainWindow.loadURL(appUrl)
   mainWindow.focus()

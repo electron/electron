@@ -1,0 +1,13 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "default_app",
+	},
+	"exclude": [
+		"script",
+		"spec",
+		"tools",
+		"lib",
+		"npm"
+	]
+}
