@@ -277,13 +277,6 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
     return;
   injected_frames_.erase(render_frame);
 
-  // Only allow preload for the main frame
-  // Or for sub frames when explicitly enabled
-  if (!render_frame->IsMainFrame() &&
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames))
-    return;
-
   auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
