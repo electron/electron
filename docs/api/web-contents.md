@@ -34,6 +34,10 @@ console.log(webContents)
 Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
 for all windows, webviews, opened devtools, and devtools extension background pages.
 
+### `webContents.getType()`
+
+Returns `String` - the type of the webContent.
+
 ### `webContents.getFocusedWebContents()`
 
 Returns `WebContents` - The web contents that is focused in this application, otherwise
