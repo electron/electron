@@ -458,6 +458,11 @@ step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
 # Lists of steps.
 steps-checkout: &steps-checkout
   steps:
+    - restore_cache:
+        paths:
+          - /usr/local/Homebrew
+        keys:
+          - v1-brew-cache-{{ arch }}
     - *step-checkout-electron
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
@@ -481,6 +486,10 @@ steps-checkout: &steps-checkout
         paths:
           - ~/.gclient-cache
         key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+    - save_cache:
+        paths:
+          - /usr/local/Homebrew
+        key: v1-brew-cache-{{ arch }}
 
     - run:
         name: Remove some unused data to avoid storing it in the workspace
