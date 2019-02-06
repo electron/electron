@@ -112,15 +112,15 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
 
-class FrameSpellChecker : public content::RenderFrameVisitor {
+class FrameSetSpellChecker : public content::RenderFrameVisitor {
  public:
-  explicit FrameSpellChecker(SpellCheckClient* spell_check_client,
-                             content::RenderFrame* main_frame)
-      : spell_check_client_(spell_check_client), main_frame_(main_frame) {}
-  ~FrameSpellChecker() override {
-    spell_check_client_ = nullptr;
-    main_frame_ = nullptr;
+  FrameSetSpellChecker(SpellCheckClient* spell_check_client,
+                       content::RenderFrame* main_frame)
+      : spell_check_client_(spell_check_client), main_frame_(main_frame) {
+    content::RenderFrame::ForEach(this);
+    main_frame->GetWebFrame()->SetSpellCheckPanelHostClient(spell_check_client);
   }
+
   bool Visit(content::RenderFrame* render_frame) override {
     auto* view = render_frame->GetRenderView();
     if (view->GetMainRenderFrame() == main_frame_ ||
@@ -133,30 +133,69 @@ class FrameSpellChecker : public content::RenderFrameVisitor {
  private:
   SpellCheckClient* spell_check_client_;
   content::RenderFrame* main_frame_;
-  DISALLOW_COPY_AND_ASSIGN(FrameSpellChecker);
+
+  DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
+};
+
+class SpellCheckerHolder : public content::RenderFrameObserver {
+ public:
+  // Find existing holder for the |render_frame|.
+  static SpellCheckerHolder* FromRenderFrame(
+      content::RenderFrame* render_frame) {
+    for (auto* holder : instances_) {
+      if (holder->render_frame() == render_frame)
+        return holder;
+    }
+    return nullptr;
+  }
+
+  SpellCheckerHolder(content::RenderFrame* render_frame,
+                     std::unique_ptr<SpellCheckClient> spell_check_client)
+      : content::RenderFrameObserver(render_frame),
+        spell_check_client_(std::move(spell_check_client)) {
+    DCHECK(!FromRenderFrame(render_frame));
+    instances_.insert(this);
+  }
+
+  ~SpellCheckerHolder() final { instances_.erase(this); }
+
+  void UnsetAndDestroy() {
+    FrameSetSpellChecker set_spell_checker(nullptr, render_frame());
+    delete this;
+  }
+
+  // RenderFrameObserver implementation.
+  void OnDestruct() final {
+    // Since we delete this in WillReleaseScriptContext, this method is unlikely
+    // to be called, but override anyway since I'm not sure if there are some
+    // corner cases.
+    //
+    // Note that while there are two "delete this", it is totally fine as the
+    // observer unsubscribes automatically in destructor and the other one won't
+    // be called.
+    //
+    // Also note that we should not call UnsetAndDestroy here, as the render
+    // frame is going to be destroyed.
+    delete this;
+  }
+
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int world_id) final {
+    // Unset spell checker when the script context is going to be released, as
+    // the spell check implementation lives there.
+    UnsetAndDestroy();
+  }
+
+ private:
+  static std::set<SpellCheckerHolder*> instances_;
+
+  std::unique_ptr<SpellCheckClient> spell_check_client_;
 };
 
 }  // namespace
 
-class AtomWebFrameObserver : public content::RenderFrameObserver {
- public:
-  explicit AtomWebFrameObserver(
-      content::RenderFrame* render_frame,
-      std::unique_ptr<SpellCheckClient> spell_check_client)
-      : content::RenderFrameObserver(render_frame),
-        spell_check_client_(std::move(spell_check_client)) {}
-  ~AtomWebFrameObserver() final {}
-
-  // RenderFrameObserver implementation.
-  void OnDestruct() final {
-    spell_check_client_.reset();
-    // Frame observers should delete themselves
-    delete this;
-  }
-
- private:
-  std::unique_ptr<SpellCheckClient> spell_check_client_;
-};
+// static
+std::set<SpellCheckerHolder*> SpellCheckerHolder::instances_;
 
 void SetName(v8::Local<v8::Value> window, const std::string& name) {
   GetRenderFrame(window)->GetWebFrame()->SetName(
@@ -246,16 +285,20 @@ void SetSpellCheckProvider(mate::Arguments* args,
     return;
   }
 
-  auto spell_check_client = std::make_unique<SpellCheckClient>(
-      language, auto_spell_correct_turned_on, args->isolate(), provider);
+  // Remove the old client.
+  content::RenderFrame* render_frame = GetRenderFrame(window);
+  auto* existing = SpellCheckerHolder::FromRenderFrame(render_frame);
+  if (existing)
+    existing->UnsetAndDestroy();
+
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
-  content::RenderFrame* render_frame = GetRenderFrame(window);
-  FrameSpellChecker spell_checker(spell_check_client.get(), render_frame);
-  content::RenderFrame::ForEach(&spell_checker);
-  render_frame->GetWebFrame()->SetSpellCheckPanelHostClient(
-      spell_check_client.get());
-  new AtomWebFrameObserver(render_frame, std::move(spell_check_client));
+  auto spell_check_client = std::make_unique<SpellCheckClient>(
+      language, auto_spell_correct_turned_on, args->isolate(), provider);
+  FrameSetSpellChecker spell_checker(spell_check_client.get(), render_frame);
+
+  // Attach the spell checker to RenderFrame.
+  new SpellCheckerHolder(render_frame, std::move(spell_check_client));
 }
 
 void RegisterURLSchemeAsBypassingCSP(v8::Local<v8::Value> window,
