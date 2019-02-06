@@ -2581,19 +2581,6 @@ describe('BrowserWindow module', () => {
       assert(fs.existsSync(savePageJsPath))
       assert(fs.existsSync(savePageCssPath))
     })
-
-    it('should save page to disk (callback)', (done) => {
-      w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html')).then(() => {
-        w.webContents.savePage(savePageHtmlPath, 'HTMLComplete', (err, success) => {
-          expect(err).to.be.null()
-          expect(success).to.be.true()
-          assert(fs.existsSync(savePageHtmlPath))
-          assert(fs.existsSync(savePageJsPath))
-          assert(fs.existsSync(savePageCssPath))
-          done()
-        })
-      })
-    })
   })
 
   describe('BrowserWindow options argument is optional', () => {

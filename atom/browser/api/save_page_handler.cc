@@ -51,7 +51,7 @@ bool SavePageHandler::Handle(const base::FilePath& full_path,
 void SavePageHandler::OnDownloadUpdated(download::DownloadItem* item) {
   if (item->IsDone()) {
     if (item->GetState() == download::DownloadItem::COMPLETE)
-      promise_->Resolve(true);
+      promise_->Resolve();
     else
       promise_->RejectWithErrorMessage("Failed to save the page.");
     Destroy(item);
