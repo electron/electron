@@ -520,7 +520,7 @@ void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
 #if defined(OS_MACOSX)
   if (identity.name() == video_capture::mojom::kServiceName ||
       identity.name() == audio::mojom::kServiceName)
-    command_line->AppendSwitch(switches::kMessageLoopTypeUi);
+    command_line->AppendSwitch(::switches::kMessageLoopTypeUi);
 #endif
 }
 
