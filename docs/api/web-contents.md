@@ -36,7 +36,7 @@ for all windows, webviews, opened devtools, and devtools extension background pa
 
 ### `webContents.getType()`
 
-Returns `String` - the type of the webContent.
+Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
 ### `webContents.getFocusedWebContents()`
 
