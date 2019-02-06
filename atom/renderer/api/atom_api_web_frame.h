@@ -26,6 +26,8 @@ namespace atom {
 
 namespace api {
 
+class AtomWebFrameObserver;
+
 class WebFrame : public mate::Wrappable<WebFrame> {
  public:
   static mate::Handle<WebFrame> Create(v8::Isolate* isolate);
@@ -92,7 +94,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   v8::Local<v8::Value> RoutingId() const;
 
   blink::WebLocalFrame* web_frame_;
-
+  std::unique_ptr<AtomWebFrameObserver> web_frame_observer_;
   DISALLOW_COPY_AND_ASSIGN(WebFrame);
 };
 

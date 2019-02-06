@@ -149,9 +149,15 @@ class AtomWebFrameObserver : public content::RenderFrameObserver {
 
   // RenderFrameObserver implementation.
   void OnDestruct() final {
-    spell_check_client_.reset();
     // Frame observers should delete themselves
     delete this;
+  }
+
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int world_id) override {
+    // Render frame will not be destroyed in sandbox mode
+    // So delete spell check client here instead of OnDestruct method.
+    spell_check_client_.reset();
   }
 
  private:
@@ -258,7 +264,8 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   FrameSpellChecker spell_checker(spell_check_client.get(), render_frame);
   content::RenderFrame::ForEach(&spell_checker);
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client.get());
-  new AtomWebFrameObserver(render_frame, std::move(spell_check_client));
+  web_frame_observer_.reset(
+      new AtomWebFrameObserver(render_frame, std::move(spell_check_client)));
 }
 
 void WebFrame::InsertText(const std::string& text) {
