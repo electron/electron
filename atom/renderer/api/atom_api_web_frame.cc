@@ -264,8 +264,7 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   FrameSpellChecker spell_checker(spell_check_client.get(), render_frame);
   content::RenderFrame::ForEach(&spell_checker);
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client.get());
-  web_frame_observer_.reset(
-      new AtomWebFrameObserver(render_frame, std::move(spell_check_client)));
+  new AtomWebFrameObserver(render_frame, std::move(spell_check_client));
 }
 
 void WebFrame::InsertText(const std::string& text) {
