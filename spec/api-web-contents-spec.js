@@ -345,6 +345,54 @@ describe('webContents module', () => {
     })
   })
 
+  describe('zoom-changed', () => {
+    before(function () {
+      // On Mac, zooming isn't done with the mouse wheel.
+      if (process.platform === 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('is emitted with the correct zooming info', (done) => {
+      w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
+      w.webContents.once('did-finish-load', () => {
+        const testZoomChanged = (opts) => {
+          return new Promise((resolve, reject) => {
+            w.webContents.once('zoom-changed', (event, zoomingIn) => {
+              assert.strictEqual(zoomingIn, opts.zoomingIn)
+              resolve()
+            })
+
+            const modifiers = ['control', 'meta']
+            const inputEvent = {
+              type: 'mousewheel',
+              x: 300,
+              y: 300,
+              deltaX: 0,
+              deltaY: opts.zoomingIn ? 1 : -1,
+              wheelTicksX: 0,
+              wheelTicksY: opts.zoomingIn ? 1 : -1,
+              phase: 'began',
+              modifiers
+            }
+
+            w.webContents.sendInputEvent(inputEvent)
+          })
+        }
+
+        Promise.resolve().then(() => {
+          return testZoomChanged({
+            zoomingIn: true
+          })
+        }).then(() => {
+          return testZoomChanged({
+            zoomingIn: false
+          })
+        }).then(done).catch(done)
+      })
+    })
+  })
+
   describe('devtools window', () => {
     let testFn = it
     if (process.platform === 'darwin' && isCi) {
