@@ -82,6 +82,8 @@
 #include "net/ssl/client_cert_store_win.h"
 #elif defined(OS_MACOSX)
 #include "net/ssl/client_cert_store_mac.h"
+#include "services/audio/public/mojom/constants.mojom.h"
+#include "services/video_capture/public/mojom/constants.mojom.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
 #endif
@@ -510,6 +512,16 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
   }
+}
+
+void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
+    const service_manager::Identity& identity,
+    base::CommandLine* command_line) {
+#if defined(OS_MACOSX)
+  if (identity.name() == video_capture::mojom::kServiceName ||
+      identity.name() == audio::mojom::kServiceName)
+    command_line->AppendSwitch(switches::kMessageLoopTypeUi);
+#endif
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
