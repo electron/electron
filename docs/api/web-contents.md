@@ -34,10 +34,6 @@ console.log(webContents)
 Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
 for all windows, webviews, opened devtools, and devtools extension background pages.
 
-### `webContents.getType()`
-
-Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
-
 ### `webContents.getFocusedWebContents()`
 
 Returns `WebContents` - The web contents that is focused in this application, otherwise
@@ -1666,6 +1662,10 @@ Takes a V8 heap snapshot and saves it to `filePath`.
 
 Controls whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
+
+#### `contents.getType()`
+
+Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
 ### Instance Properties
 
