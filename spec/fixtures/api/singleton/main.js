@@ -6,8 +6,11 @@ app.once('ready', () => {
 
 const gotTheLock = app.requestSingleInstanceLock()
 
-app.on('second-instance', () => {
-  setImmediate(() => app.exit(0))
+app.on('second-instance', (event, args) => {
+  setImmediate(() => {
+    console.log(JSON.stringify(args))
+    app.exit(0)
+  })
 })
 
 if (!gotTheLock) {

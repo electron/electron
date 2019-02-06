@@ -226,6 +226,27 @@ describe('app module', () => {
         })
       })
     })
+
+    it('passes arguments to the second-instance event', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath])
+      const firstExited = emittedOnce(first, 'exit')
+
+      // Wait for the first app to boot.
+      const data1 = await emittedOnce(first.stdout, 'data')
+      const data2Promise = emittedOnce(first.stdout, 'data')
+
+      const secondInstanceArgs = [remote.process.execPath, appPath, '--some-switch', 'some-arg']
+      const second = ChildProcess.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1))
+      const [code2] = await emittedOnce(second, 'exit')
+      expect(code2).to.equal(1)
+      const [code1] = await firstExited
+      expect(code1).to.equal(0)
+      const data2 = (await data2Promise).toString('ascii')
+      const secondInstanceArgsReceived = JSON.parse(data2.toString('ascii'))
+      expect(secondInstanceArgsReceived).to.eql(secondInstanceArgs,
+        `expected ${JSON.stringify(secondInstanceArgs)} but got ${data2.toString('ascii')}`)
+    })
   })
 
   describe('app.relaunch', () => {
