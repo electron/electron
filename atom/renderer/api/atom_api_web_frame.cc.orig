@@ -399,9 +399,10 @@ void SetIsolatedWorldHumanReadableName(v8::Local<v8::Value> window,
       world_id, blink::WebString::FromUTF8(name));
 }
 
-void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
-                          int world_id,
-                          mate::Arguments* args) {
+<<<<<<< HEAD
+blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
+=======
+void WebFrame::SetIsolatedWorldInfo(int world_id, mate::Arguments* args) {
   if (args->Length() < 1) {
     args->ThrowError("Invalid args");
     return;
@@ -428,14 +429,21 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
   }
 
   if (!origin.empty())
-    SetIsolatedWorldSecurityOrigin(window, world_id, origin);
+    SetIsolatedWorldSecurityOrigin(world_id, origin);
   if (!csp.empty())
-    SetIsolatedWorldContentSecurityPolicy(window, world_id, csp);
+    SetIsolatedWorldContentSecurityPolicy(world_id, csp);
   if (!name.empty())
-    SetIsolatedWorldHumanReadableName(window, world_id, name);
+    SetIsolatedWorldHumanReadableName(world_id, name);
 }
 
-blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
+// static
+mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new WebFrame(isolate));
+}
+
+blink::WebCache::ResourceTypeStats WebFrame::GetResourceUsage(
+    v8::Isolate* isolate) {
+>>>>>>> chore: Add new webFrame IsolatedWorldInfo API and deprecate
   blink::WebCache::ResourceTypeStats stats;
   blink::WebCache::GetResourceTypeStats(&stats);
   return stats;
@@ -532,8 +540,52 @@ v8::Local<v8::Value> FindFrameByName(v8::Isolate* isolate,
     return v8::Null(isolate);
 }
 
+<<<<<<< HEAD
 int GetRoutingId(v8::Local<v8::Value> window) {
   return GetRenderFrame(window)->GetRoutingID();
+=======
+// static
+void WebFrame::BuildPrototype(v8::Isolate* isolate,
+                              v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "WebFrame"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("setName", &WebFrame::SetName)
+      .SetMethod("setZoomLevel", &WebFrame::SetZoomLevel)
+      .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
+      .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
+      .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
+      .SetMethod("setVisualZoomLevelLimits",
+                 &WebFrame::SetVisualZoomLevelLimits)
+      .SetMethod("setLayoutZoomLevelLimits",
+                 &WebFrame::SetLayoutZoomLevelLimits)
+      .SetMethod("allowGuestViewElementDefinition",
+                 &WebFrame::AllowGuestViewElementDefinition)
+      .SetMethod("getWebFrameId", &WebFrame::GetWebFrameId)
+      .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
+      .SetMethod("insertText", &WebFrame::InsertText)
+      .SetMethod("insertCSS", &WebFrame::InsertCSS)
+      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+                 &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("_setIsolatedWorldSecurityOrigin",
+                 &WebFrame::SetIsolatedWorldSecurityOrigin)
+      .SetMethod("_setIsolatedWorldContentSecurityPolicy",
+                 &WebFrame::SetIsolatedWorldContentSecurityPolicy)
+      .SetMethod("_setIsolatedWorldHumanReadableName",
+                 &WebFrame::SetIsolatedWorldHumanReadableName)
+      .SetMethod("setIsolatedWorldInfo", &WebFrame::SetIsolatedWorldInfo)
+      .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
+      .SetMethod("clearCache", &WebFrame::ClearCache)
+      .SetMethod("getFrameForSelector", &WebFrame::GetFrameForSelector)
+      .SetMethod("findFrameByName", &WebFrame::FindFrameByName)
+      .SetProperty("opener", &WebFrame::Opener)
+      .SetProperty("parent", &WebFrame::Parent)
+      .SetProperty("top", &WebFrame::Top)
+      .SetProperty("firstChild", &WebFrame::FirstChild)
+      .SetProperty("nextSibling", &WebFrame::NextSibling)
+      .SetProperty("routingId", &WebFrame::RoutingId)
+      .SetMethod("findFrameByRoutingId", &WebFrame::FindFrameByRoutingId);
+>>>>>>> chore: Add new webFrame IsolatedWorldInfo API and deprecate
 }
 
 }  // namespace api
@@ -566,13 +618,12 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("executeJavaScript", &ExecuteJavaScript);
   dict.SetMethod("executeJavaScriptInIsolatedWorld",
                  &ExecuteJavaScriptInIsolatedWorld);
-  dict.SetMethod("_setIsolatedWorldSecurityOrigin",
+  dict.SetMethod("setIsolatedWorldSecurityOrigin",
                  &SetIsolatedWorldSecurityOrigin);
-  dict.SetMethod("_setIsolatedWorldContentSecurityPolicy",
+  dict.SetMethod("setIsolatedWorldContentSecurityPolicy",
                  &SetIsolatedWorldContentSecurityPolicy);
-  dict.SetMethod("_setIsolatedWorldHumanReadableName",
+  dict.SetMethod("setIsolatedWorldHumanReadableName",
                  &SetIsolatedWorldHumanReadableName);
-  dict.SetMethod("setIsolatedWorldInfo", &SetIsolatedWorldInfo);
   dict.SetMethod("getResourceUsage", &GetResourceUsage);
   dict.SetMethod("clearCache", &ClearCache);
   dict.SetMethod("_findFrameByRoutingId", &FindFrameByRoutingId);
