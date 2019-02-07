@@ -548,11 +548,9 @@ std::vector<int> TopLevelWindow::GetPosition() {
   return result;
 }
 
-#if defined(OS_WIN) || defined(OS_MACOSX)
 void TopLevelWindow::MoveTop() {
   window_->MoveTop();
 }
-#endif
 
 void TopLevelWindow::SetTitle(const std::string& title) {
   window_->SetTitle(title);
@@ -1067,9 +1065,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setResizable", &TopLevelWindow::SetResizable)
       .SetMethod("isResizable", &TopLevelWindow::IsResizable)
       .SetMethod("setMovable", &TopLevelWindow::SetMovable)
-#if defined(OS_WIN) || defined(OS_MACOSX)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
-#endif
       .SetMethod("isMovable", &TopLevelWindow::IsMovable)
       .SetMethod("setMinimizable", &TopLevelWindow::SetMinimizable)
       .SetMethod("isMinimizable", &TopLevelWindow::IsMinimizable)
