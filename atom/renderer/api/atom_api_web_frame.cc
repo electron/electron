@@ -411,7 +411,7 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
   args->GetNext(&val);
 
   mate::Dictionary options;
-  if (!mate::ConvertFromV8(args->isolate(), val, &options)) {
+  if (!args->GetNext(&options)) {
     args->ThrowError("Must pass valid object");
     return;
   }
