@@ -139,11 +139,6 @@ A `MenuItem[]` array containing the menu's items.
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
 can have a submenu.
 
-### Instance Events
-
-Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit
-the following events:
-
 ## Examples
 
 The `Menu` class is only available in the main process, but you can also use it
