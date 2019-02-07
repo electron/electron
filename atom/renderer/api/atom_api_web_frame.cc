@@ -423,16 +423,13 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
 
   if (!csp.empty() && origin.empty()) {
     args->ThrowError(
-        "If csp is spicified, securityOrigin should also be specified");
+        "If csp is specified, securityOrigin should also be specified");
     return;
   }
 
-  if (!origin.empty())
-    SetIsolatedWorldSecurityOrigin(window, world_id, origin);
-  if (!csp.empty())
-    SetIsolatedWorldContentSecurityPolicy(window, world_id, csp);
-  if (!name.empty())
-    SetIsolatedWorldHumanReadableName(window, world_id, name);
+  SetIsolatedWorldSecurityOrigin(window, world_id, origin);
+  SetIsolatedWorldContentSecurityPolicy(window, world_id, csp);
+  SetIsolatedWorldHumanReadableName(window, world_id, name);
 }
 
 blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
