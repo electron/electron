@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Load in every file that will be changed via this commit into an array
+changes=( `git diff --name-only --cached` )
+commit_file="../.git/COMMIT_EDITMSG"
+
+# Load the dir patterns to skip into an array
+declare -a blacklist=("script/*" "tools/*" "docs/*")
+
+for i in "${blacklist[@]}"
+do
+	# Remove the current pattern from the list of changes
+	changes=( ${changes[@]/$i/} )
+
+	if [[ ${#changes[@]} -eq 0 ]]; then
+		break
+	fi
+done
+
+if [[ ${#changes[@]} -gt 0 ]]; then
+	# if still changes left leave the commit alone.
+	exit
+fi
+
+# Prefix the commit message with "[skip ci]"
+echo "[skip ci] $(cat $commit_file)" > $commit_file
