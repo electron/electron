@@ -401,18 +401,8 @@ void SetIsolatedWorldHumanReadableName(v8::Local<v8::Value> window,
 
 void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
                           int world_id,
+                          const mate::Dictionary& options,
                           mate::Arguments* args) {
-  if (args->Length() < 1) {
-    args->ThrowError("Invalid args");
-    return;
-  }
-
-  mate::Dictionary options;
-  if (!args->GetNext(&options)) {
-    args->ThrowError("Must pass valid object");
-    return;
-  }
-
   std::string origin, csp, name;
   options.Get("securityOrigin", &origin);
   options.Get("csp", &csp);
