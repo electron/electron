@@ -77,7 +77,7 @@ A new API, `protocol.registerSchemesAsPrivileged` has been added and should be u
 // Deprecated
 powerMonitor.querySystemIdleState(threshold, callback)
 // Replace with synchronous API
-idleState = getSystemIdleState(threshold)
+const idleState = getSystemIdleState(threshold)
 ```
 
 ## `powerMonitor.querySystemIdleTime`
@@ -86,7 +86,7 @@ idleState = getSystemIdleState(threshold)
 // Deprecated
 powerMonitor.querySystemIdleTime(callback)
 // Replace with synchronous API
-idleTime = getSystemIdleTime()
+const idleTime = getSystemIdleTime()
 ```
 
 # Planned Breaking API Changes (4.0)

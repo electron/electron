@@ -179,15 +179,15 @@ describe('powerMonitor', () => {
       it('does not accept non positive integer threshold', () => {
         expect(() => {
           powerMonitor.getSystemIdleState(-1)
-        }).to.throw()
+        }).to.throw(/must be greater than 0/)
 
         expect(() => {
           powerMonitor.getSystemIdleState(NaN)
-        }).to.throw()
+        }).to.throw(/conversion failure/)
 
         expect(() => {
           powerMonitor.getSystemIdleState('a')
-        }).to.throw()
+        }).to.throw(/conversion failure/)
       })
     })
 
