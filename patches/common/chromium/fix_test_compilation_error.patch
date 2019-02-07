@@ -1,14 +1,13 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xianzhu Wang <wangxianzhu@chromium.org>
-Date: Thu Dec 6 02:00:06 2018 +0000
-
-Backport dedab04b5256f88ec4dbbbae9492941e8cf1221a which fixes
-compilation error for the test files.
+Date: Thu, 6 Dec 2018 02:00:06 +0000
+Subject: Backport dedab04b5256f88ec4dbbbae9492941e8cf1221a which fixes
+ compilation error for the test files.
 
 This patch can be removed after updating to Chrome 73.
 
 diff --git a/third_party/blink/renderer/platform/graphics/paint/display_item_raster_invalidator_test.cc b/third_party/blink/renderer/platform/graphics/paint/display_item_raster_invalidator_test.cc
-index 97ffe553cd1e..771392a0137b 100644
+index 97ffe553cd1e620152126639a1589621abaad00e..771392a0137b3eeb465651a228201e4fa5fa7b8f 100644
 --- a/third_party/blink/renderer/platform/graphics/paint/display_item_raster_invalidator_test.cc
 +++ b/third_party/blink/renderer/platform/graphics/paint/display_item_raster_invalidator_test.cc
 @@ -8,13 +8,15 @@
@@ -177,7 +176,7 @@ index 97ffe553cd1e..771392a0137b 100644
    GraphicsContext context(GetPaintController());
  
 diff --git a/third_party/blink/renderer/platform/graphics/paint/raster_invalidator_test.cc b/third_party/blink/renderer/platform/graphics/paint/raster_invalidator_test.cc
-index 7f8306e2703e..4cecc2c3c41f 100644
+index 13cbaaab2ea04726d0a2461fbd8e78e865443ce4..6a7e25139ad4848e14cb1548105eff2cdfdb94a1 100644
 --- a/third_party/blink/renderer/platform/graphics/paint/raster_invalidator_test.cc
 +++ b/third_party/blink/renderer/platform/graphics/paint/raster_invalidator_test.cc
 @@ -8,13 +8,15 @@

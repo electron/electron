@@ -6,7 +6,7 @@ Subject: disable_time_ticks_dcheck.patch
 The DCHECK is failing for some reason.
 
 diff --git a/content/common/inter_process_time_ticks_converter.cc b/content/common/inter_process_time_ticks_converter.cc
-index 128abab37eb8..4d8e5e9c05b1 100644
+index 128abab37eb8a96535ef92ebf11a463e863cc485..4d8e5e9c05b11083a69537d5badc85924b6fbae2 100644
 --- a/content/common/inter_process_time_ticks_converter.cc
 +++ b/content/common/inter_process_time_ticks_converter.cc
 @@ -55,13 +55,13 @@ LocalTimeTicks InterProcessTimeTicksConverter::ToLocalTimeTicks(
