@@ -50,6 +50,9 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
                             int idle_threshold,
                             const ui::IdleCallback& callback);
   void QuerySystemIdleTime(const ui::IdleTimeCallback& callback);
+  v8::Local<v8::Value> GetSystemIdleState(v8::Isolate* isolate,
+                                          int idle_threshold);
+  int GetSystemIdleTime();
 
 #if defined(OS_WIN)
   // Static callback invoked when a message comes in to our messaging window.

@@ -12,6 +12,19 @@
 
 #include "atom/common/node_includes.h"
 
+namespace {
+// TODO(nitsakh): Remove in electron 6.
+void SystemIdleTimeCallback(int* idle_time, int time) {
+  *idle_time = time;
+}
+
+// TODO(nitsakh): Remove in electron 6.
+void SystemIdleStateCallback(ui::IdleState* idle_state, ui::IdleState state) {
+  *idle_state = state;
+}
+
+}  // namespace
+
 namespace mate {
 template <>
 struct Converter<ui::IdleState> {
@@ -99,6 +112,35 @@ void PowerMonitor::QuerySystemIdleTime(const ui::IdleTimeCallback& callback) {
   ui::CalculateIdleTime(callback);
 }
 
+v8::Local<v8::Value> PowerMonitor::GetSystemIdleState(v8::Isolate* isolate,
+                                                      int idle_threshold) {
+  ui::IdleState idle_state;
+  // Chromium calls the SystemIdleStateCallback synchronously, so idle_state
+  // is guaranteed to have the right value before the function returns.
+  // However, this is highly dependent on the chromium implementation and is
+  // a bad way to do things.
+  // Chromium 73 made the calls synchronous and removed the callbacks.
+  // So this will go away for electron 6 (chromium >=73).
+  // TODO(nitsakh): Call synchronous chromium API.
+  QuerySystemIdleState(isolate, idle_threshold,
+                       base::Bind(&SystemIdleStateCallback, &idle_state));
+  return mate::ConvertToV8<ui::IdleState>(isolate, idle_state);
+}
+
+int PowerMonitor::GetSystemIdleTime() {
+  int idle_time;
+  // Chromium calls the SystemIdleTimeCallback synchronously, so idle_time
+  // is guaranteed to have the right value before the function returns.
+  // However, this is highly dependent on the chromium implementation and is
+  // a bad way to do things.
+  // Chromium 73 made the calls synchronous and removed the callbacks.
+  // So this will go away for electron 6 (chromium >=73).
+  // TODO(nitsakh): Call synchronous chromium API.
+  QuerySystemIdleTime(base::Bind(&SystemIdleTimeCallback, &idle_time));
+
+  return idle_time;
+}
+
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
@@ -122,8 +164,10 @@ void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
       .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
 #endif
-      .SetMethod("querySystemIdleState", &PowerMonitor::QuerySystemIdleState)
-      .SetMethod("querySystemIdleTime", &PowerMonitor::QuerySystemIdleTime);
+      .SetMethod("_querySystemIdleState", &PowerMonitor::QuerySystemIdleState)
+      .SetMethod("_querySystemIdleTime", &PowerMonitor::QuerySystemIdleTime)
+      .SetMethod("getSystemIdleState", &PowerMonitor::GetSystemIdleState)
+      .SetMethod("getSystemIdleTime", &PowerMonitor::GetSystemIdleTime);
 }
 
 }  // namespace api
