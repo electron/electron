@@ -1,9 +1,11 @@
-'use strict'
+import * as timers from 'timers'
+import * as util from 'util'
 
-const timers = require('timers')
-const util = require('util')
+import { atomBindingSetup } from '@electron/internal/common/atom-binding-setup'
 
-process.atomBinding = require('@electron/internal/common/atom-binding-setup')(process.binding, process.type)
+process.atomBinding = atomBindingSetup(process.binding, process.type)
+
+type AnyFn = (...args: any[]) => any
 
 // setImmediate and process.nextTick makes use of uv_check and uv_prepare to
 // run the callbacks, however since we only run uv loop on requests, the
@@ -11,19 +13,25 @@ process.atomBinding = require('@electron/internal/common/atom-binding-setup')(pr
 // which would delay the callbacks for arbitrary long time. So we should
 // initiatively activate the uv loop once setImmediate and process.nextTick is
 // called.
-const wrapWithActivateUvLoop = function (func) {
+const wrapWithActivateUvLoop = function <T extends AnyFn> (func: T): T {
   return wrap(func, function (func) {
-    return function () {
+    return function (this: any, ...args: any[]) {
       process.activateUvLoop()
-      return func.apply(this, arguments)
+      return func.apply(this, args)
     }
-  })
+  }) as T
 }
 
-function wrap (func, wrapper) {
+/**
+ * Casts to any below for func are due to Typescript not supporting symbols
+ * in index signatures
+ *
+ * Refs: https://github.com/Microsoft/TypeScript/issues/1863
+ */
+function wrap <T extends AnyFn> (func: T, wrapper: (fn: AnyFn) => T) {
   const wrapped = wrapper(func)
-  if (func[util.promisify.custom]) {
-    wrapped[util.promisify.custom] = wrapper(func[util.promisify.custom])
+  if ((func as any)[util.promisify.custom]) {
+    (wrapped as any)[util.promisify.custom] = wrapper((func as any)[util.promisify.custom])
   }
   return wrapped
 }
@@ -47,7 +55,11 @@ if (process.platform === 'win32') {
   const { Readable } = require('stream')
   const stdin = new Readable()
   stdin.push(null)
-  process.__defineGetter__('stdin', function () {
-    return stdin
+  Object.defineProperty(process, 'stdin', {
+    configurable: false,
+    enumerable: true,
+    get () {
+      return stdin
+    }
   })
 }
