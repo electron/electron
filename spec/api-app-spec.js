@@ -402,7 +402,7 @@ describe('app module', () => {
     ]
 
     before(function () {
-      if (process.platform === 'linux') {
+      if (process.platform === 'linux' || process.mas) {
         this.skip()
       }
     })
