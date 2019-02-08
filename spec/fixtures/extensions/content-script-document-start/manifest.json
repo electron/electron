@@ -1,0 +1,14 @@
+{
+    "name": "document-start",
+    "version": "1.0",
+    "description": "",
+    "content_scripts": [
+      {
+        "matches": ["*://*/*"],
+        "js": ["start.js"],
+        "run_at": "document_start"
+      }
+    ],
+    "manifest_version": 2
+  }
+  

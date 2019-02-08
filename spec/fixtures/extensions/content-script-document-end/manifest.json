@@ -1,0 +1,14 @@
+{
+    "name": "document-end",
+    "version": "1.0",
+    "description": "",
+    "content_scripts": [
+      {
+        "matches": ["*://*/*"],
+        "js": ["end.js"],
+        "run_at": "document_end"
+      }
+    ],
+    "manifest_version": 2
+  }
+  

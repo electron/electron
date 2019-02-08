@@ -1,0 +1,14 @@
+{
+    "name": "document-idle",
+    "version": "1.0",
+    "description": "",
+    "content_scripts": [
+      {
+        "matches": ["*://*/*"],
+        "js": ["idle.js"],
+        "run_at": "document_idle"
+      }
+    ],
+    "manifest_version": 2
+  }
+  
