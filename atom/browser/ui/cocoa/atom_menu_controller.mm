@@ -15,6 +15,7 @@
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
+#include "ui/strings/grit/ui_strings.h"
 
 using content::BrowserThread;
 
@@ -71,11 +72,10 @@ bool MenuHasVisibleItems(const atom::AtomMenuModel* model) {
 // "(empty)" into the submenu. Matches Windows behavior.
 NSMenu* MakeEmptySubmenu() {
   base::scoped_nsobject<NSMenu> submenu([[NSMenu alloc] initWithTitle:@""]);
-  base::string16 empty_menu_title = base::ASCIIToUTF16("(empty)");
-  NSString* empty_menu_label =
-      l10n_util::FixUpWindowsStyleLabel(empty_menu_title);
+  NSString* empty_menu_title =
+      l10n_util::GetNSString(IDS_APP_MENU_EMPTY_SUBMENU);
 
-  [submenu addItemWithTitle:empty_menu_label action:NULL keyEquivalent:@""];
+  [submenu addItemWithTitle:empty_menu_title action:NULL keyEquivalent:@""];
   [[submenu itemAtIndex:0] setEnabled:NO];
   return submenu.autorelease();
 }
