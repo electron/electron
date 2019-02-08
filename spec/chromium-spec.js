@@ -9,7 +9,7 @@ const url = require('url')
 const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { emittedOnce } = require('./events-helpers')
-const { closeWindow } = require('./window-helpers')
+const { closeWindow, waitForWebContentsToLoad } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
@@ -525,7 +525,7 @@ describe('chromium feature', () => {
       const w = window.open()
       try {
         const [, { webContents }] = await browserWindowCreated
-        await emittedOnce(webContents, 'did-finish-load')
+        await waitForWebContentsToLoad(webContents)
         assert.strictEqual(w.location.href, 'about:blank')
       } finally {
         w.close()
@@ -537,7 +537,7 @@ describe('chromium feature', () => {
       const w = window.open('')
       try {
         const [, { webContents }] = await browserWindowCreated
-        await emittedOnce(webContents, 'did-finish-load')
+        await waitForWebContentsToLoad(webContents)
         assert.strictEqual(w.location.href, 'about:blank')
       } finally {
         w.close()
