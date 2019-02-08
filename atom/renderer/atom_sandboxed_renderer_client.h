@@ -5,6 +5,7 @@
 #define ATOM_RENDERER_ATOM_SANDBOXED_RENDERER_CLIENT_H_
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
