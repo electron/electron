@@ -7,8 +7,8 @@ const { closeWindow } = require('./window-helpers')
 const { BrowserWindow } = remote
 
 describe('chrome content scripts', () => {
-  const generateTests = (sandboxEnabled) => {
-    describe(`with sandbox ${sandboxEnabled ? 'enabled' : 'disabled'}`, () => {
+  const generateTests = (sandboxEnabled, contextIsolationEnabled) => {
+    describe(`with sandbox ${sandboxEnabled ? 'enabled' : 'disabled'} and context isolation ${contextIsolationEnabled ? 'enabled' : 'disabled'}`, () => {
       let w
 
       beforeEach(async () => {
@@ -18,6 +18,7 @@ describe('chrome content scripts', () => {
           width: 400,
           height: 400,
           webPreferences: {
+            contextIsolation: contextIsolationEnabled,
             sandbox: sandboxEnabled
           }
         })
@@ -61,6 +62,8 @@ describe('chrome content scripts', () => {
     })
   }
 
-  generateTests(false)
-  generateTests(true)
+  generateTests(false, false)
+  generateTests(false, true)
+  generateTests(true, false)
+  generateTests(true, true)
 })
