@@ -242,7 +242,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[NSMenu alloc] initWithTitle:label];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
-  } else if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
+  } else if (type == atom::AtomMenuModel::TYPE_SUBMENU &&
+             model->IsVisibleAt(index)) {
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
