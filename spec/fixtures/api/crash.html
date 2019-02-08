@@ -2,9 +2,9 @@
 
 <body>
   <script type="text/javascript" charset="utf-8">
-    const url = require('url').parse(window.location.href, true);
-    const uploadToServer = !url.query.skipUpload;
-    const port = url.query.port;
+    const query = new URLSearchParams(location.search)
+    const port = query.get('port')
+    const uploadToServer = !query.has('skipUpload')
     const {crashReporter, ipcRenderer} = require('electron');
 
     crashReporter.start({
