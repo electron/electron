@@ -58,6 +58,30 @@ Role kRolesMap[] = {
     {@selector(clearRecentDocuments:), "clearrecentdocuments"},
 };
 
+// Called when adding a submenu to the menu and checks if the submenu, via its
+// |model|, has visible child items.
+bool MenuHasVisibleItems(const atom::AtomMenuModel* model) {
+  int count = model->GetItemCount();
+  for (int index = 0; index < count; index++) {
+    if (model->IsVisibleAt(index))
+      return true;
+  }
+  return false;
+}
+
+// Called when an empty submenu is created. This inserts a menu item labeled
+// "(empty)" into the submenu. Matches Windows behavior.
+NSMenu* MakeEmptySubmenu() {
+  base::scoped_nsobject<NSMenu> submenu([[NSMenu alloc] initWithTitle:@""]);
+  base::string16 empty_menu_title = base::ASCIIToUTF16("(empty)");
+  NSString* empty_menu_label =
+      l10n_util::FixUpWindowsStyleLabel(empty_menu_title);
+
+  [submenu addItemWithTitle:empty_menu_label action:NULL keyEquivalent:@""];
+  [[submenu itemAtIndex:0] setEnabled:NO];
+  return submenu.autorelease();
+}
+
 }  // namespace
 
 // Menu item is located for ease of removing it from the parent owner
@@ -226,7 +250,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [item setAction:nil];
     atom::AtomMenuModel* submenuModel =
         static_cast<atom::AtomMenuModel*>(model->GetSubmenuModelAt(index));
-    NSMenu* submenu = [self menuFromModel:submenuModel];
+    NSMenu* submenu = MenuHasVisibleItems(submenuModel)
+                          ? [self menuFromModel:submenuModel]
+                          : MakeEmptySubmenu();
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 
