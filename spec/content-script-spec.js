@@ -12,6 +12,9 @@ describe('chrome content scripts', () => {
       let w
 
       beforeEach(async () => {
+        Object.keys(BrowserWindow.getExtensions()).map(extName => {
+          BrowserWindow.removeExtension(extName)
+        })
         await closeWindow(w)
         w = new BrowserWindow({
           show: false,
