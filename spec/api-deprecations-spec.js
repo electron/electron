@@ -145,6 +145,24 @@ describe('deprecations', () => {
       expect(warnings).to.have.lengthOf(0)
     })
 
+    it('only calls back an error if the callback is called with (err, data)', (done) => {
+      enableCallbackWarnings()
+      let erringPromiseFunc = () => new Promise((resolve, reject) => {
+        reject(new Error('fail'))
+      })
+      erringPromiseFunc = deprecate.promisify(erringPromiseFunc)
+
+      erringPromiseFunc((err, data) => {
+        expect(data).to.be.an('undefined')
+        expect(err).to.be.an.instanceOf(Error).with.property('message', 'fail')
+        erringPromiseFunc(data => {
+          expect(data).to.not.be.an.instanceOf(Error)
+          expect(data).to.be.an('undefined')
+          done()
+        })
+      })
+    })
+
     it('warns exactly once for callback-based invocations', (done) => {
       enableCallbackWarnings()
       promiseFunc = deprecate.promisify(promiseFunc)
