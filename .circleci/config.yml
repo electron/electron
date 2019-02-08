@@ -77,6 +77,7 @@ env-arm64: &env-arm64
 
 env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
+  MAS_BUILD: 'true'
 
 # Misc build configuration options.
 env-enable-sccache: &env-enable-sccache
