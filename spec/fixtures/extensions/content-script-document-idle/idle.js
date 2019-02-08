@@ -1,1 +1,1 @@
-document.documentElement.style.backgroundColor = 'red'
+document.body.style.backgroundColor = 'red'

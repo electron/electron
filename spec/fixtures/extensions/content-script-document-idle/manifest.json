@@ -4,7 +4,7 @@
     "description": "",
     "content_scripts": [
       {
-        "matches": ["*://*/*"],
+        "matches": ["<all_urls>"],
         "js": ["idle.js"],
         "run_at": "document_idle"
       }

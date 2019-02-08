@@ -38,11 +38,13 @@ describe('chrome content scripts', () => {
 
       it('should run content script at document_start', (done) => {
         addExtension('content-script-document-start')
-        w.loadURL('about:blank')
-        w.webContents.executeJavaScript('document.body.style.backgroundColor', (result) => {
-          expect(result).to.equal('red')
-          done()
+        w.webContents.once('dom-ready', () => {
+          w.webContents.executeJavaScript('document.documentElement.style.backgroundColor', (result) => {
+            expect(result).to.equal('red')
+            done()
+          })
         })
+        w.loadURL('about:blank')
       })
 
       it('should run content script at document_idle', (done) => {
@@ -56,11 +58,13 @@ describe('chrome content scripts', () => {
 
       it('should run content script at document_end', (done) => {
         addExtension('content-script-document-end')
-        w.loadURL('about:blank')
-        w.webContents.executeJavaScript('document.body.style.backgroundColor', (result) => {
-          expect(result).to.equal('red')
-          done()
+        w.webContents.once('did-finish-load', () => {
+          w.webContents.executeJavaScript('document.documentElement.style.backgroundColor', (result) => {
+            expect(result).to.equal('red')
+            done()
+          })
         })
+        w.loadURL('about:blank')
       })
     })
   }
