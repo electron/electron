@@ -539,7 +539,7 @@ describe('app module', () => {
     ]
 
     before(function () {
-      if (process.platform === 'linux') this.skip()
+      if (process.platform === 'linux' || process.mas) this.skip()
     })
 
     beforeEach(() => {
