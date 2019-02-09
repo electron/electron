@@ -51,4 +51,3 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [webviewTag.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#capturePage)
 - [webviewTag.printToPDF(options, callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#printToPDF)
 - [win.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#capturePage)
-- [desktopCapturer.getSources(options, callback)](https://github.com/electron/electron/blob/master/docs/api/desktop-capturer.md#getSources)
