@@ -174,7 +174,7 @@ If [sub-pixel anti-aliasing](http://alienryderflex.com/sub_pixel/) is deactivate
 
 ![subpixel rendering example](images/subpixel-rendering-screenshot.gif)
 
-Sub-pixel anti-aliasing needs a non-transparent background to work (See [this issue](https://github.com/electron/electron/issues/6344#issuecomment-420371918) for more info).
+Sub-pixel anti-aliasing needs a non-transparent background of the layer containing the font glyphs. (See [this issue](https://github.com/electron/electron/issues/6344#issuecomment-420371918) for more info).
 
 You can set the background in the constructor for [BrowserWindow][browser-window]:
 
