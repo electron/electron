@@ -14,14 +14,6 @@ function request () {
   })
 }
 
-function stopLogging (netLog) {
-  return new Promise((resolve) => {
-    netLog.stopLogging((path) => {
-      resolve()
-    })
-  })
-}
-
 app.on('ready', async () => {
   const netLog = session.defaultSession.netLog
 
@@ -38,7 +30,7 @@ app.on('ready', async () => {
     await request()
 
     if (process.env.TEST_MANUAL_STOP) {
-      await stopLogging(netLog)
+      await netLog.stopLogging()
     }
 
     app.quit()
