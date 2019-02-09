@@ -10,7 +10,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 
 - [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
 - [contentTracing.getTraceBufferUsage(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getTraceBufferUsage)
-- [debugger.sendCommand(method[, commandParams, callback])](https://github.com/electron/electron/blob/master/docs/api/debugger.md#sendCommand)
 - [dialog.showOpenDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showOpenDialog)
 - [dialog.showSaveDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showSaveDialog)
 - [dialog.showMessageBox([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showMessageBox)
@@ -45,6 +44,7 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [cookies.get(filter, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#get)
 - [cookies.remove(url, name, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#remove)
 - [cookies.set(details, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#set)
+- [debugger.sendCommand(method[, commandParams, callback])](https://github.com/electron/electron/blob/master/docs/api/debugger.md#sendCommand)
 - [desktopCapturer.getSources(options, callback)](https://github.com/electron/electron/blob/master/docs/api/desktop-capturer.md#getSources)
 - [protocol.isProtocolHandled(scheme, callback)](https://github.com/electron/electron/blob/master/docs/api/protocol.md#isProtocolHandled)
 - [shell.openExternal(url[, options, callback])](https://github.com/electron/electron/blob/master/docs/api/shell.md#openExternal)
