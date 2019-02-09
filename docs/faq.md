@@ -176,13 +176,13 @@ If [sub-pixel anti-aliasing](http://alienryderflex.com/sub_pixel/) is deactivate
 
 Sub-pixel anti-aliasing needs a non-transparent background of the layer containing the font glyphs. (See [this issue](https://github.com/electron/electron/issues/6344#issuecomment-420371918) for more info).
 
-You can set the background in the constructor for [BrowserWindow][browser-window]:
+To achieve this goal, set the background in the constructor for [BrowserWindow][browser-window]:
 
 ```javascript
 new BrowserWindow({backgroundColor: '#fff'});
 ```
 
-The effect is visible only on (some?) LCD screens. Even if you dont see a difference, some of your users may. It is best to always set the background in the BrowserWindow constructor, unless you have reasons not to do so.
+The effect is visible only on (some?) LCD screens. Even if you dont see a difference, some of your users may. It is best to always set the background this way, unless you have reasons not to do so.
 
 Notice that just setting the background in the CSS has not the desired effect.
 
