@@ -256,7 +256,7 @@ index 0aba701c131f11f5e8be6ce9c1bebe6ccb44edf8..aac9c128ed3d212758d8d4a3ec774b65
    base::Optional<skia::OpacityFilterCanvas> opacity_canvas;
    if (needs_transparency || disable_image_filtering) {
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 4aa391a6bfe2408b84da4ffe5b3dc27a0544d0ca..649efb7ed16e6f4850010c8b9df5d0b79c03bb3e 100644
+index 12e38b8b4a7cf7e44a63dd2801e86eb37eb31623..f4352788d2480b06681a0f886d78efe4bad517d8 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -193,6 +193,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(

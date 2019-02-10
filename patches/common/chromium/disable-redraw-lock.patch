@@ -37,7 +37,7 @@ index f3523d2a05c3f93215c6a78e81e015c4b965b758..39ff4f17822b4552218cb3a11c478eb2
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -941,6 +946,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
+@@ -940,6 +945,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
        hwnd());
  }
  

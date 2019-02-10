@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Tue, 5 Feb 2019 13:32:33 +0530
+Date: Wed, 6 Feb 2019 16:39:34 +0530
 Subject: DISALLOW_IMPLICIT_CONSTRUCTORS for MacroAssembler
 
 When BUILDING_V8_SHARED in release builds __declspec(dllexport)
@@ -22,6 +22,29 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
                                  ^
 1 error generated.
 
+The original changes were made in https://chromium-review.googlesource.com/c/v8/v8/+/1414913
+
+R=mstarzinger@chromium.org,jgruber@chromium.org,clemensh@chromium.org
+
+Bug: NONE
+Change-Id: I87a5a678b8bae13b3adc6f1c6ac0b9313ed18d85
+Reviewed-on: https://chromium-review.googlesource.com/c/1454676
+Commit-Queue: Clemens Hammacher <clemensh@chromium.org>
+Reviewed-by: Clemens Hammacher <clemensh@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#59427}
+
+diff --git a/AUTHORS b/AUTHORS
+index 57c8890f29728856f09461d03666bbff73966bca..7adf005528b280581133eb43a2b6fcd3e98198d1 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -68,6 +68,7 @@ Colin Ihrig <cjihrig@gmail.com>
+ Daniel Andersson <kodandersson@gmail.com>
+ Daniel Bevenius <daniel.bevenius@gmail.com>
+ Daniel James <dnljms@gmail.com>
++Deepak Mohan <hop2deep@gmail.com>
+ Deon Dior <diaoyuanjie@gmail.com>
+ Dominic Farolini <domfarolino@gmail.com>
+ Douglas Crosher <dtc-v8@scieneer.com>
 diff --git a/src/arm/macro-assembler-arm.h b/src/arm/macro-assembler-arm.h
 index 9b67a683e849d306bb8c085f525102a1b9ac3854..29fa10cfeac9cdfb140024c8301465ca76278f4c 100644
 --- a/src/arm/macro-assembler-arm.h
@@ -36,18 +59,18 @@ index 9b67a683e849d306bb8c085f525102a1b9ac3854..29fa10cfeac9cdfb140024c8301465ca
  
  // -----------------------------------------------------------------------------
 diff --git a/src/arm64/macro-assembler-arm64.h b/src/arm64/macro-assembler-arm64.h
-index 9327fce64064dad168b120901423ab2e7d8ecbcb..331be44a1b006ef74bd65eafc2b0dbc9af52d2a8 100644
+index 9327fce64064dad168b120901423ab2e7d8ecbcb..ba1885a2484e6922352078e849f531fa49c9d71d 100644
 --- a/src/arm64/macro-assembler-arm64.h
 +++ b/src/arm64/macro-assembler-arm64.h
-@@ -1981,6 +1981,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
-                                Label* on_successful_conversion = nullptr,
-                                Label* on_failed_conversion = nullptr);
- 
-+  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+@@ -1994,6 +1994,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // branch isntructions with a range of +-128MB. If that becomes too little
+   // (!), the mechanism can be extended to generate special veneers for really
+   // far targets.
 +
-  public:
-   // Far branches resolving.
-   //
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ 
 diff --git a/src/ia32/macro-assembler-ia32.h b/src/ia32/macro-assembler-ia32.h
 index 6839a1ac5b1533e179f6cb13f9b76dc4aaf42329..d26152663aa2900ea1c81ea27bbb2a1953e8b76a 100644
 --- a/src/ia32/macro-assembler-ia32.h
