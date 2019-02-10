@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index a6c9e15b29af4ede177593db58a189153a392515..23ecf8e1a679676ef11ad82616bc68f845be1643 100644
+index b4a3b637fa67bfc065490f77e87050a50f3dcfba..22563747f5e667894b65ee765e6d9372536d4b1e 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3723,6 +3723,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3725,6 +3725,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,7 +32,7 @@ index e566a15b798e2586fa4fae3c4db97ce5f4f2f09f..08f52fd73bc9b6231a75f7804bb9b9f3
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index abc9829f296f26c2217066f68927861d032d9868..f43321b9f7513a1e51367bbd38006e7e2f930923 100644
+index 07d71b3a06f9b3b7ab4ea4f16a27fc82e51c2a6c..9d00218ae972b34073c84f2de78dee934962c3d8 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -494,6 +494,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,7 +45,7 @@ index abc9829f296f26c2217066f68927861d032d9868..f43321b9f7513a1e51367bbd38006e7e
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 694796bf8dbba514ae9f09e51186e53be14ae50e..73ea7c49ee5993536902f21a51c8cd3bbe30e3f2 100644
+index eaa7d8b25141f8f2d461f0b37054c772c8df6297..09aca495389e48a8dbc1ea45b8bb636aa13d2486 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -171,6 +171,7 @@ class RenderFrameHost;
@@ -66,7 +66,7 @@ index 694796bf8dbba514ae9f09e51186e53be14ae50e..73ea7c49ee5993536902f21a51c8cd3b
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 77b93bd04c8b7887f9fc5e9dc7d5f42c034e3bfa..468e9ed1d7c24b7b3a1e4e37239c42b75be4e7a9 100644
+index 676b344fe809fd97da67f6edebe6a869402453cc..b386bb2e3e5334f9f6c5c50a2c6ddae086c61755 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -76,6 +76,7 @@

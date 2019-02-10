@@ -19,7 +19,7 @@ index fc20cf50c3a6dc66c37b8b46d06db7a2f0f558ce..f23567c1429ae0bbc5f916e4ee0a1190
    bool InContext();
  
 diff --git a/src/api.cc b/src/api.cc
-index 55b2a1a2da257924eba7e3757994d68c1b508367..279edffbcc283ebfd11faf263d60f5a20c121d87 100644
+index 59527269d2dec81e02089ebc926e74893ea7827f..4000a95a2e52aad0e9f6110a5c53c5ea1db82645 100644
 --- a/src/api.cc
 +++ b/src/api.cc
 @@ -7966,6 +7966,13 @@ void Isolate::SetIdle(bool is_idle) {
