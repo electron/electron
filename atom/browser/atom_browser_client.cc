@@ -505,6 +505,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     if (web_contents->GetVisibleURL().SchemeIs("chrome-devtools")) {
       command_line->AppendSwitch(service_manager::switches::kNoSandbox);
       command_line->AppendSwitch(::switches::kNoZygote);
+      command_line->AppendSwitch(switches::kDisableRemoteModule);
     }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     if (web_preferences)
