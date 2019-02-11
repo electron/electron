@@ -128,6 +128,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
+  SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined("javascript", true);
   SetDefaultBoolIfUndefined("images", true);
