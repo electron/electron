@@ -146,6 +146,7 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   dict.Set("workArea", val.work_area());
   dict.Set("accelerometerSupport", val.accelerometer_support());
   dict.Set("monochrome", val.is_monochrome());
+  dict.Set("colorDepth", val.color_depth());
   dict.Set("depthPerComponent", val.depth_per_component());
   dict.Set("size", val.size());
   dict.Set("workAreaSize", val.work_area_size());
