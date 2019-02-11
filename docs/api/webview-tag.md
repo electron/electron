@@ -102,19 +102,6 @@ Assigning `src` its own value will reload the current page.
 The `src` attribute can also accept data URLs, such as
 `data:text/plain,Hello, world!`.
 
-### `autosize`
-
-```html
-<webview src="https://www.github.com/" autosize minwidth="576" minheight="432"></webview>
-```
-
-When this attribute is present the `webview` container will automatically resize
-within the bounds specified by the attributes `minwidth`, `minheight`,
-`maxwidth`, and `maxheight`. These constraints do not impact the `webview`
-unless `autosize` is enabled. When `autosize` is enabled, the `webview`
-container size cannot be less than the minimum values or greater than the
-maximum.
-
 ### `nodeintegration`
 
 ```html
