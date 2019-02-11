@@ -12,6 +12,7 @@
 * `size` [Size](size.md)
 * `workArea` [Rectangle](rectangle.md)
 * `workAreaSize` [Size](size.md)
+* `internal` Boolean - `true` for an internal display and `false` for an external display
 
 The `Display` object represents a physical display connected to the system. A
 fake `Display` may exist on a headless system, or a `Display` may correspond to

@@ -151,6 +151,7 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   dict.Set("workAreaSize", val.work_area_size());
   dict.Set("scaleFactor", val.device_scale_factor());
   dict.Set("rotation", val.RotationAsDegree());
+  dict.Set("internal", val.IsInternal());
   dict.Set("touchSupport", val.touch_support());
   return dict.GetHandle();
 }
