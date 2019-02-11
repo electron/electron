@@ -3632,8 +3632,9 @@ describe('BrowserWindow module', () => {
       w.webContents.once('paint', function (event, rect, data) {
         assert.notStrictEqual(data.length, 0)
         const size = data.getSize()
-        assertWithinDelta(size.width, 100, 2, 'width')
-        assertWithinDelta(size.height, 100, 2, 'height')
+        const scale = process.platform === 'darwin' ? devicePixelRatio : 1
+        assertWithinDelta(size.width, 100 * scale, 2, 'width')
+        assertWithinDelta(size.height, 100 * scale, 2, 'height')
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
