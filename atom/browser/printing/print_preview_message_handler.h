@@ -7,6 +7,7 @@
 
 #include <map>
 
+#include "atom/common/promise_util.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/memory/weak_ptr.h"
 #include "components/services/pdf_compositor/public/interfaces/pdf_compositor.mojom.h"
@@ -28,13 +29,10 @@ class PrintPreviewMessageHandler
     : public content::WebContentsObserver,
       public content::WebContentsUserData<PrintPreviewMessageHandler> {
  public:
-  using PrintToPDFCallback =
-      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
-
   ~PrintPreviewMessageHandler() override;
 
   void PrintToPDF(const base::DictionaryValue& options,
-                  const PrintToPDFCallback& callback);
+                  scoped_refptr<atom::util::Promise> promise);
 
  protected:
   // content::WebContentsObserver implementation.
@@ -57,11 +55,15 @@ class PrintPreviewMessageHandler
                             const PrintHostMsg_PreviewIds& ids);
   void OnPrintPreviewCancelled(int document_cookie,
                                const PrintHostMsg_PreviewIds& ids);
-  void RunPrintToPDFCallback(int request_id,
-                             scoped_refptr<base::RefCountedMemory> data_bytes);
 
-  using PrintToPDFCallbackMap = std::map<int, PrintToPDFCallback>;
-  PrintToPDFCallbackMap print_to_pdf_callback_map_;
+  scoped_refptr<atom::util::Promise> GetPromise(int request_id);
+
+  void ResolvePromise(int request_id,
+                      scoped_refptr<base::RefCountedMemory> data_bytes);
+  void RejectPromise(int request_id);
+
+  using PromiseMap = std::map<int, scoped_refptr<atom::util::Promise>>;
+  PromiseMap promise_map_;
 
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
 

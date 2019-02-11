@@ -1499,11 +1499,12 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   return printers;
 }
 
-void WebContents::PrintToPDF(
-    const base::DictionaryValue& settings,
-    const PrintPreviewMessageHandler::PrintToPDFCallback& callback) {
+v8::Local<v8::Promise> WebContents::PrintToPDF(
+    const base::DictionaryValue& settings) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   PrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(settings, callback);
+      ->PrintToPDF(settings, promise);
+  return promise->GetHandle();
 }
 #endif
 

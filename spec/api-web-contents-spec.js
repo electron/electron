@@ -1268,7 +1268,22 @@ describe('webContents module', () => {
       }
     })
 
-    it('can print to PDF', (done) => {
+    it('can print to PDF', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      await w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+      const data = await w.webContents.printToPDF({})
+      assert.strictEqual(data instanceof Buffer, true)
+      assert.notStrictEqual(data.length, 0)
+    })
+
+    // TODO(miniak): remove when promisification is complete
+    it('can print to PDF (callback)', (done) => {
       w.destroy()
       w = new BrowserWindow({
         show: false,
