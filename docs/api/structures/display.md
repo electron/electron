@@ -5,6 +5,9 @@
   clock-wise degrees.
 * `scaleFactor` Number - Output device's pixel scale factor.
 * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
+* `monochrome` Boolean - Whether or not the display is a monochrome display.
+* `accelerometerSupport` String - Can be `available`, `unavailable`, `unknown`.
+* `depthPerComponent` Number - The number of bits per color component.
 * `bounds` [Rectangle](rectangle.md)
 * `size` [Size](size.md)
 * `workArea` [Rectangle](rectangle.md)
