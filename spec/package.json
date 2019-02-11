@@ -12,7 +12,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "coffee-script": "1.12.7",
-    "dbus-native": "^0.2.5",
+    "dbus-native": "^0.4.0",
     "dirty-chai": "^2.0.1",
     "echo": "file:fixtures/native-addon/echo",
     "graceful-fs": "^4.1.11",
