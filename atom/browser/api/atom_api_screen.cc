@@ -49,6 +49,8 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
     array.push_back("scaleFactor");
   if (metrics & display::DisplayObserver::DISPLAY_METRIC_ROTATION)
     array.push_back("rotation");
+  if (metrics & display::DisplayObserver::DISPLAY_METRIC_PRIMARY)
+    array.push_back("primary");
   return array;
 }
 
