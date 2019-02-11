@@ -27,8 +27,8 @@
     "temp": "^0.9.0",
     "walkdir": "^0.3.2",
     "winreg": "^1.2.4",
-    "ws": "^5.2.0",
-    "yargs": "^11.0.0"
+    "ws": "^6.1.3",
+    "yargs": "^12.0.5"
   },
   "optionalDependencies": {
     "robotjs": "^0.5.1"
