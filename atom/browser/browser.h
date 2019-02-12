@@ -171,7 +171,7 @@ class Browser : public WindowListObserver {
 
   // Hide/Show dock.
   void DockHide();
-  void DockShow();
+  v8::Local<v8::Promise> DockShow(v8::Isolate* isolate);
   bool DockIsVisible();
 
   // Set docks' menu.

@@ -11,6 +11,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/application_info.h"
 #include "atom/common/platform_util.h"
+#include "atom/common/promise_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
@@ -338,7 +339,8 @@ bool Browser::DockIsVisible() {
           NSApplicationActivationPolicyRegular);
 }
 
-void Browser::DockShow() {
+v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
   if (active) {
@@ -357,11 +359,14 @@ void Browser::DockShow() {
       dispatch_after(one_ms, dispatch_get_main_queue(), ^{
         [[NSRunningApplication currentApplication]
             activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+        promise->Resolve();
       });
     });
   } else {
     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+    promise->Resolve();
   }
+  return promise->GetHandle();
 }
 
 void Browser::DockSetMenu(AtomMenuModel* model) {
