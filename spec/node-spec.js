@@ -456,7 +456,9 @@ describe('node feature', () => {
     })
 
     it('should be able to create an des-ede-cbc cipher', () => {
-      require('crypto').createCipheriv('des-ede-cbc', '0123456789abcdeff1e0d3c2b5a49786', 'fedcba9876543210')
+      const key = Buffer.from('0123456789abcdeff1e0d3c2b5a49786', 'hex')
+      const iv = Buffer.from('fedcba9876543210', 'hex')
+      require('crypto').createCipheriv('des-ede-cbc', key, iv)
     })
   })
 
