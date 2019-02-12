@@ -201,15 +201,18 @@ export const windowSetup = (
   ) {
     // Manually dispatch event instead of using postMessage because we also need to
     // set event.source.
-    const messageEvent = new MessageEvent('message', {
-      data: message,
-      origin: sourceOrigin,
-      source: getOrCreateProxy(ipcRenderer, sourceId) as any as Window,
-      bubbles: false,
-      cancelable: false
-    })
+    //
+    // Why any? We can't construct a MessageEvent and we can't
+    // use `as MessageEvent` because you're not supposed to override
+    // data, origin, and source
+    const event: any = document.createEvent('Event')
+    event.initEvent('message', false, false)
 
-    window.dispatchEvent(messageEvent)
+    event.data = message
+    event.origin = sourceOrigin
+    event.source = getOrCreateProxy(ipcRenderer, sourceId)
+
+    window.dispatchEvent(event as MessageEvent)
   })
 
   window.history.back = function () {
