@@ -1,7 +1,5 @@
-'use strict'
-
-module.exports = function atomBindingSetup (binding, processType) {
-  return function atomBinding (name) {
+export function atomBindingSetup (binding: typeof process['binding'], processType: typeof process['type']): typeof process['atomBinding'] {
+  return function atomBinding (name: string) {
     try {
       return binding(`atom_${processType}_${name}`)
     } catch (error) {

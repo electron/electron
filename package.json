@@ -36,6 +36,7 @@
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
+    "tsify": "^4.0.1",
     "typescript": "~3.1.1",
     "typescript-eslint-parser": "^21.0.0"
   },

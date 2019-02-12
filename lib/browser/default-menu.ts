@@ -1,14 +1,13 @@
-'use strict'
+import { shell, Menu } from 'electron'
 
-const { shell, Menu } = require('electron')
 const v8Util = process.atomBinding('v8_util')
 
 const isMac = process.platform === 'darwin'
 
-const setDefaultApplicationMenu = () => {
-  if (v8Util.getHiddenValue(global, 'applicationMenuSet')) return
+export const setDefaultApplicationMenu = () => {
+  if (v8Util.getHiddenValue<boolean>(global, 'applicationMenuSet')) return
 
-  const helpMenu = {
+  const helpMenu: Electron.MenuItemConstructorOptions = {
     role: 'help',
     submenu: [
       {
@@ -40,8 +39,9 @@ const setDefaultApplicationMenu = () => {
     ]
   }
 
-  const template = [
-    ...(isMac ? [{ role: 'appMenu' }] : []),
+  const macAppMenu: Electron.MenuItemConstructorOptions = { role: 'appMenu' }
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(isMac ? [macAppMenu] : []),
     { role: 'fileMenu' },
     { role: 'editMenu' },
     { role: 'viewMenu' },
@@ -51,8 +51,4 @@ const setDefaultApplicationMenu = () => {
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
-}
-
-module.exports = {
-  setDefaultApplicationMenu
 }

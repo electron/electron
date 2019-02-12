@@ -49,10 +49,15 @@ process.on('uncaughtException', function (error) {
   }
 
   // Show error in GUI.
-  const dialog = require('electron').dialog
-  const stack = error.stack ? error.stack : `${error.name}: ${error.message}`
-  const message = 'Uncaught Exception:\n' + stack
-  dialog.showErrorBox('A JavaScript error occurred in the main process', message)
+  // We can't import { dialog } at the top of this file as this file is
+  // responsible for setting up the require hook for the "electron" module
+  // so we import it inside the handler down here
+  import('electron')
+    .then(({ dialog }) => {
+      const stack = error.stack ? error.stack : `${error.name}: ${error.message}`
+      const message = 'Uncaught Exception:\n' + stack
+      dialog.showErrorBox('A JavaScript error occurred in the main process', message)
+    })
 })
 
 // Emit 'exit' event on quit.
@@ -195,10 +200,13 @@ app.on('window-all-closed', () => {
   }
 })
 
-const { setDefaultApplicationMenu } = require('@electron/internal/browser/default-menu')
-
-// Create default menu.
-app.once('ready', setDefaultApplicationMenu)
+Promise.all([
+  import('@electron/internal/browser/default-menu'),
+  app.whenReady
+]).then(([{ setDefaultApplicationMenu }]) => {
+  // Create default menu
+  setDefaultApplicationMenu()
+})
 
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
