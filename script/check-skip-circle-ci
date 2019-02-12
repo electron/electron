@@ -1,21 +1,7 @@
 #!/usr/bin/env bash
 
-# Load in every file that will be changed via this commit into an array
-changes=( `git diff --name-only --cached` )
-commit_file="../.git/COMMIT_EDITMSG"
-
-# Load the dir patterns to skip into an array
-declare -a blacklist=("script/*" "tools/*" "docs/*")
-
-for i in "${blacklist[@]}"
-do
-	# Remove the current pattern from the list of changes
-	changes=( ${changes[@]/$i/} )
-
-	if [[ ${#changes[@]} -eq 0 ]]; then
-		break
-	fi
-done
+# Get all changes that are not in omitted folders
+changes=( `git diff --name-only --cached ':!docs' ':!script' ':!tools'` )
 
 if [[ ${#changes[@]} -gt 0 ]]; then
 	exit
