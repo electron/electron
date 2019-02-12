@@ -72,7 +72,7 @@ filenames = {
     "lib/renderer/remote.js",
     "lib/renderer/security-warnings.js",
     "lib/renderer/web-frame-init.js",
-    "lib/renderer/window-setup.js",
+    "lib/renderer/window-setup.ts",
     "lib/renderer/web-view/guest-view-internal.js",
     "lib/renderer/web-view/web-view-attributes.js",
     "lib/renderer/web-view/web-view-constants.js",
