@@ -118,7 +118,7 @@ class LocationProxy {
       pathname: propertyProxyFor<string>(LocationProperties.pathname),
       port: propertyProxyFor<string>(LocationProperties.port),
       protocol: propertyProxyFor<string>(LocationProperties.protocol),
-      search: propertyProxyFor<URL>(LocationProperties.search)
+      search: propertyProxyFor<URLSearchParams>(LocationProperties.search)
     })
   }
 
