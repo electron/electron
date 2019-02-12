@@ -2,19 +2,25 @@
 
 const { app } = require('electron')
 
-app.once('ready', () => {
+app.on('ready', () => {
+  let returnCode = 0
   try {
     const testValue = f() // eslint-disable-line no-undef
     if (testValue === 86) {
       console.log('ok test snapshot successfully loaded.')
-      app.exit(0)
     } else {
       console.log('not ok test snapshot could not be successfully loaded.')
-      app.exit(1)
+      returnCode = 1
     }
-    return
   } catch (ex) {
     console.log('Error running custom snapshot', ex)
-    app.exit(1)
+    returnCode = 1
   }
+  setImmediate(function () {
+    app.exit(returnCode)
+  })
+})
+
+process.on('exit', function (code) {
+  console.log('test snapshot exited with code: ' + code)
 })
