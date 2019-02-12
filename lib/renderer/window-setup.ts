@@ -75,19 +75,19 @@ class LocationProxy {
   public protocol!: string;
   public search!: URLSearchParams;
 
-  constructor(ipcRenderer: Electron.IpcRenderer, guestId: number) {
-    function getGuestURL(): URL | null {
+  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
+    function getGuestURL (): URL | null {
       const urlString = ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', guestId, 'getURL')
       try {
         return new URL(urlString)
       } catch (e) {
         console.error('LocationProxy: failed to parse string', urlString, e)
       }
-  
+
       return null
     }
-  
-    function propertyProxyFor<T>(property: LocationProperties) {
+
+    function propertyProxyFor<T> (property: LocationProperties) {
       return {
         get: function (): T | string {
           const guestURL = getGuestURL()
@@ -100,7 +100,7 @@ class LocationProxy {
             // TypeScript doesn't want us to assign to read-only variables.
             // It's right, that's bad, but we're doing it anway.
             (guestURL as any)[property] = newVal
-  
+
             return ipcRenderer.sendSync(
               'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC',
               guestId, 'loadURL', guestURL.toString())
@@ -108,7 +108,7 @@ class LocationProxy {
         }
       }
     }
-  
+
     defineProperties(this, {
       hash: propertyProxyFor<string>(LocationProperties.hash),
       href: propertyProxyFor<string>(LocationProperties.href),
@@ -122,7 +122,7 @@ class LocationProxy {
     })
   }
 
-  public toString(): string {
+  public toString (): string {
     return this.href
   }
 }
@@ -135,10 +135,10 @@ class BrowserWindowProxy {
   // TypeScript doesn't allow getters/accessors with different types,
   // so for now, we'll have to make do with an "any" in the mix.
   // https://github.com/Microsoft/TypeScript/issues/2521
-  public get location(): LocationProxy | any {
+  public get location (): LocationProxy | any {
     return this._location
   }
-  public set location(url: string | any) {
+  public set location (url: string | any) {
     url = resolveURL(url)
     this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'loadURL', url)
   }
@@ -151,28 +151,28 @@ class BrowserWindowProxy {
       this.closed = true
     })
   }
-  
-  public close() {
+
+  public close () {
     this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', this.guestId)
   }
 
-  public focus() {
+  public focus () {
     this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'focus')
   }
 
-  public blur() {
+  public blur () {
     this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'blur')
   }
 
-  public print() {
+  public print () {
     this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'print')
   }
 
-  public postMessage(message: any, targetOrigin: any) {
+  public postMessage (message: any, targetOrigin: any) {
     this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
   }
 
-  public eval(...args: any[]) {
+  public eval (...args: any[]) {
     this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'executeJavaScript', ...args)
   }
 }
