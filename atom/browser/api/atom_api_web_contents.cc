@@ -1305,9 +1305,9 @@ v8::Local<v8::Promise> WebContents::SavePage(
     const content::SavePageType& save_type) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   auto* handler = new SavePageHandler(web_contents(), promise);
-  bool success = handler->Handle(full_file_path, save_type);
 
-  if (!success)
+  const bool saveStarted = handler->Handle(full_file_path, save_type);
+  if (!saveStarted)
     promise->RejectWithErrorMessage("Failed to save the page");
 
   return promise->GetHandle();

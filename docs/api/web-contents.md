@@ -1563,7 +1563,7 @@ the cursor when dragging.
   * `HTMLComplete` - Save complete-html page.
   * `MHTML` - Save complete-html page as MHTML.
 
-Returns `Promise<void>` - resolves if the process of saving page has been initiated successfully.
+Returns `Promise<void>` - resolves if the process of saving page has been successfully completed.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -1573,7 +1573,7 @@ win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', async () => {
   win.webContents.savePage('/tmp/test.html', 'HTMLComplete').then(() => {
-    console.log('Save page successfully')
+    console.log('Page was saved successfully.')
   }).catch(err => {
     console.log(err)
   })
