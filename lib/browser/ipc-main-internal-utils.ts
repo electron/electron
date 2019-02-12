@@ -1,9 +1,9 @@
-'use strict'
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal'
+import * as errorUtils from '@electron/internal/common/error-utils'
 
-const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal')
-const errorUtils = require('@electron/internal/common/error-utils')
+type IPCHandler = (...args: any[]) => any
 
-const callHandler = async function (handler, event, args, reply) {
+const callHandler = async function (handler: IPCHandler, event: Electron.Event, args: any[], reply: (args: any[]) => void) {
   try {
     const result = await handler(event, ...args)
     reply([null, result])
@@ -12,7 +12,7 @@ const callHandler = async function (handler, event, args, reply) {
   }
 }
 
-exports.handle = function (channel, handler) {
+export const handle = function <T extends IPCHandler> (channel: string, handler: T) {
   ipcMainInternal.on(channel, (event, requestId, ...args) => {
     callHandler(handler, event, args, responseArgs => {
       event._replyInternal(`${channel}_RESPONSE_${requestId}`, ...responseArgs)
@@ -20,7 +20,7 @@ exports.handle = function (channel, handler) {
   })
 }
 
-exports.handleSync = function (channel, handler) {
+export const handleSync = function <T extends IPCHandler> (channel: string, handler: T) {
   ipcMainInternal.on(channel, (event, ...args) => {
     callHandler(handler, event, args, responseArgs => {
       event.returnValue = responseArgs

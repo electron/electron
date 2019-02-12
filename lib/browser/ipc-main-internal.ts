@@ -1,12 +1,8 @@
-'use strict'
-
-const { EventEmitter } = require('events')
+import { EventEmitter } from 'events'
 
 const emitter = new EventEmitter()
 
 // Do not throw exception when channel name is "error".
 emitter.on('error', () => {})
 
-module.exports = {
-  ipcMainInternal: emitter
-}
+export const ipcMainInternal = emitter
