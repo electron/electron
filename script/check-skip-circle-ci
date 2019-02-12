@@ -18,9 +18,8 @@ do
 done
 
 if [[ ${#changes[@]} -gt 0 ]]; then
-	# if still changes left leave the commit alone.
 	exit
 fi
 
 # Prefix the commit message with "[skip ci]"
-echo "[skip ci] $(cat $commit_file)" > $commit_file
+sed -i.bak -e "1s/^/[skip ci] /" "$GIT_DIR/COMMIT_EDITMSG"

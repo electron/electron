@@ -60,7 +60,7 @@
     "gn-typescript-definitions": "npm run create-typescript-definitions && cp electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
     "precommit": "lint-staged",
-    "commitmsg": "script/check-skip-circle-ci", 
+    "preparecommitmsg": "script/check-skip-circle-ci", 
     "prepack": "check-for-leaks",
     "prepush": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
