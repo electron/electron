@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
-Date: Thurs, 7 Feb 2019 11:11:35 -0800
+Date: Thu, 7 Feb 2019 11:11:35 -0800
 Subject: sync EVP_get_cipherbyname with EVP_do_all_sorted
 
 EVP_get_cipherbyname should work on everything that EVP_do_all_sorted
@@ -9,7 +9,7 @@ EVP_get_cipherbyname works on that EVP_do_all_sorted doesn't list.
 This thus does that.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index be7ef07b2..588a47734 100644
+index be7ef07b2c188a76890deb0f305cf92fcc57a64e..588a4773437c311877f275bf3679f9688cda3c46 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
 @@ -133,6 +133,14 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
@@ -28,7 +28,7 @@ index be7ef07b2..588a47734 100644
  
    return NULL;
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index 8b008a401..3e88b29cb 100644
+index 8b008a401ec2f2d0673f6876609dd5786cace4c2..3e88b29cb599730d2e8682070aaa4be38d06ed80 100644
 --- a/decrepit/evp/evp_do_all.c
 +++ b/decrepit/evp/evp_do_all.c
 @@ -21,15 +21,21 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
