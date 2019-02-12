@@ -53,15 +53,15 @@ const removeProxy = (guestId: number) => {
 type LocationProperties = 'hash' | 'href' | 'host' | 'hostname' | 'origin' | 'pathname' | 'port' | 'protocol' | 'search'
 
 class LocationProxy {
-  @LocationProxy.ProxyProperty public hash: string;
-  @LocationProxy.ProxyProperty public href: string;
+  @LocationProxy.ProxyProperty public hash!: string;
+  @LocationProxy.ProxyProperty public href!: string;
   @LocationProxy.ProxyProperty public host!: string;
-  @LocationProxy.ProxyProperty public hostname: string;
-  @LocationProxy.ProxyProperty public origin: string;
-  @LocationProxy.ProxyProperty public pathname: string;
-  @LocationProxy.ProxyProperty public port: string;
-  @LocationProxy.ProxyProperty public protocol: string;
-  @LocationProxy.ProxyProperty public search: URLSearchParams;
+  @LocationProxy.ProxyProperty public hostname!: string;
+  @LocationProxy.ProxyProperty public origin!: string;
+  @LocationProxy.ProxyProperty public pathname!: string;
+  @LocationProxy.ProxyProperty public port!: string;
+  @LocationProxy.ProxyProperty public protocol!: string;
+  @LocationProxy.ProxyProperty public search!: URLSearchParams;
 
   private ipcRenderer: Electron.IpcRenderer;
   private guestId: number;
