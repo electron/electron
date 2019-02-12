@@ -450,6 +450,16 @@ describe('node feature', () => {
     it('should be able to create an aes-256-cfb cipher', () => {
       require('crypto').createCipheriv('aes-256-cfb', '0123456789abcdef0123456789abcdef', '0123456789abcdef')
     })
+
+    it('should list des-ede-cbc in getCiphers', () => {
+      expect(require('crypto').getCiphers()).to.include('des-ede-cbc')
+    })
+
+    it('should be able to create an des-ede-cbc cipher', () => {
+      const key = Buffer.from('0123456789abcdeff1e0d3c2b5a49786', 'hex')
+      const iv = Buffer.from('fedcba9876543210', 'hex')
+      require('crypto').createCipheriv('des-ede-cbc', key, iv)
+    })
   })
 
   it('includes the electron version in process.versions', () => {
