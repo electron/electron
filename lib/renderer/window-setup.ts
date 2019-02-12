@@ -50,76 +50,61 @@ const removeProxy = (guestId: number) => {
   delete windowProxies[guestId]
 }
 
-enum LocationProperties {
-  hash = 'hash',
-  href = 'href',
-  host = 'host',
-  hostname = 'hostname',
-  origin = 'origin',
-  pathname = 'pathname',
-  port = 'port',
-  protocol = 'protocol',
-  search = 'search'
-}
+type LocationProperties = 'hash' | 'href' | 'host' | 'hostname' | 'origin' | 'pathname' | 'port' | 'protocol' | 'search'
 
 class LocationProxy {
-  // Defined via defineProperties(), which is hard for TS to understand.
-  // We therefore help it with the "!" expression.
-  public hash!: string;
-  public href!: string;
-  public host!: string;
-  public hostname!: string;
-  public origin!: string;
-  public pathname!: string;
-  public port!: string;
-  public protocol!: string;
-  public search!: URLSearchParams;
+  @LocationProxy.ProxyProperty public hash: string;
+  @LocationProxy.ProxyProperty public href: string;
+  @LocationProxy.ProxyProperty public host!: string;
+  @LocationProxy.ProxyProperty public hostname: string;
+  @LocationProxy.ProxyProperty public origin: string;
+  @LocationProxy.ProxyProperty public pathname: string;
+  @LocationProxy.ProxyProperty public port: string;
+  @LocationProxy.ProxyProperty public protocol: string;
+  @LocationProxy.ProxyProperty public search: URLSearchParams;
 
-  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
-    function getGuestURL (): URL | null {
-      const urlString = ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', guestId, 'getURL')
-      try {
-        return new URL(urlString)
-      } catch (e) {
-        console.error('LocationProxy: failed to parse string', urlString, e)
-      }
+  private ipcRenderer: Electron.IpcRenderer;
+  private guestId: number;
 
-      return null
-    }
+  private static ProxyProperty = <T>(target: LocationProxy, propertyKey: LocationProperties) => {
+    Object.defineProperty(target, propertyKey, {
+      get: function (): T | string {
+        const guestURL = target.getGuestURL()
+        const value = guestURL ? guestURL[propertyKey] : ''
+        return value === undefined ? '' : value
+      },
+      set: function (newVal: T) {
+        const guestURL = target.getGuestURL()
+        if (guestURL) {
+          // TypeScript doesn't want us to assign to read-only variables.
+          // It's right, that's bad, but we're doing it anway.
+          (guestURL as any)[propertyKey] = newVal
 
-    function propertyProxyFor<T> (property: LocationProperties) {
-      return {
-        get: function (): T | string {
-          const guestURL = getGuestURL()
-          const value = guestURL ? guestURL[property] : ''
-          return value === undefined ? '' : value
-        },
-        set: function (newVal: T) {
-          const guestURL = getGuestURL()
-          if (guestURL) {
-            // TypeScript doesn't want us to assign to read-only variables.
-            // It's right, that's bad, but we're doing it anway.
-            (guestURL as any)[property] = newVal
-
-            return ipcRenderer.sendSync(
-              'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC',
-              guestId, 'loadURL', guestURL.toString())
-          }
+          return target.ipcRenderer.sendSync(
+            'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC',
+            target.guestId, 'loadURL', guestURL.toString())
         }
       }
+    })
+  }
+
+  private getGuestURL = (): URL | null => {
+    const urlString = this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'getURL')
+    try {
+      return new URL(urlString)
+    } catch (e) {
+      console.error('LocationProxy: failed to parse string', urlString, e)
     }
 
-    defineProperties(this, {
-      hash: propertyProxyFor<string>(LocationProperties.hash),
-      href: propertyProxyFor<string>(LocationProperties.href),
-      host: propertyProxyFor<string>(LocationProperties.host),
-      hostname: propertyProxyFor<string>(LocationProperties.hostname),
-      origin: propertyProxyFor<string>(LocationProperties.origin),
-      pathname: propertyProxyFor<string>(LocationProperties.pathname),
-      port: propertyProxyFor<string>(LocationProperties.port),
-      protocol: propertyProxyFor<string>(LocationProperties.protocol),
-      search: propertyProxyFor<URLSearchParams>(LocationProperties.search)
-    })
+    return null
+  }
+
+  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
+    // eslint will consider the constructor "useless"
+    // unless we assign them in the body. It's fine, that's what
+    // TS would do anyway.
+    this.ipcRenderer = ipcRenderer
+    this.guestId = guestId
   }
 
   public toString (): string {
@@ -177,7 +162,7 @@ class BrowserWindowProxy {
   }
 }
 
-const windowSetup = (
+export const windowSetup = (
   ipcRenderer: Electron.IpcRenderer, guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
   if (guestInstanceId == null) {
@@ -212,7 +197,7 @@ const windowSetup = (
   }
 
   ipcRenderer.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
-    _event: Event, sourceId: number, message: any, sourceOrigin: string
+    _event: Electron.Event, sourceId: number, message: any, sourceOrigin: string
   ) {
     // Manually dispatch event instead of using postMessage because we also need to
     // set event.source.
@@ -224,7 +209,7 @@ const windowSetup = (
       cancelable: false
     })
 
-    window.dispatchEvent(messageEvent as MessageEvent)
+    window.dispatchEvent(messageEvent)
   })
 
   window.history.back = function () {
@@ -256,7 +241,7 @@ const windowSetup = (
     let cachedVisibilityState = isHiddenPage ? 'hidden' : 'visible'
 
     // Subscribe to visibilityState changes.
-    ipcRenderer.on('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', function (_event: Event, visibilityState: VisibilityState) {
+    ipcRenderer.on('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', function (_event: Electron.Event, visibilityState: VisibilityState) {
       if (cachedVisibilityState !== visibilityState) {
         cachedVisibilityState = visibilityState
         document.dispatchEvent(new Event('visibilitychange'))
@@ -277,5 +262,3 @@ const windowSetup = (
     })
   }
 }
-
-export default windowSetup
