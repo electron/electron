@@ -75,7 +75,7 @@ By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB, co
 are disabled for non standard schemes. So in general if you want to register a
 custom protocol to replace the `http` protocol, you have to register it as a standard scheme.
 
-To replicate the functionality of the previous `protocol.registerStandardSchemes`, `webFrame.registerURLSchemeAs*` and `protocol.registerServiceWorkerSchemes` functions that existed prior to Electron 5.0.0, for example:
+`protocol.registerSchemesAsPriviliged` can be used to replicate the functionality of the previous `protocol.registerStandardSchemes`, `webFrame.registerURLSchemeAs*` and `protocol.registerServiceWorkerSchemes` functions that existed prior to Electron 5.0.0, for example:
 ```
 # before (<= v4.x)
 // Main
