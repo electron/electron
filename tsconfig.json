@@ -8,7 +8,7 @@
       "dom.iterable"
     ],
     "sourceMap": true,
-    "experimentalDecorators": false,
+    "experimentalDecorators": true,
     "strict": true,
     "baseUrl": ".",
     "allowJs": true,
