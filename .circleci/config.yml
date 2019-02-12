@@ -658,6 +658,7 @@ steps-chromedriver-build: &steps-chromedriver-build
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-fix-sync-on-mac
     - *step-gn-gen-default
 
     - *step-electron-chromedriver-build
