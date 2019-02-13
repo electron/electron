@@ -521,10 +521,13 @@ const getNotes = async (fromRef, toRef, newVersion) => {
       }
 
       // try to pull a release note from the pull comment
-      const prParsed = {}
-      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, prParsed)
-      commit.note = commit.note || prParsed.note
-      commit.type = commit.type || prParsed.type
+      const prParsed = parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo)
+      if (!commit.note) {
+        commit.note = prParsed.note
+      }
+      if (!commit.type || prParsed.type === 'breaking-change') {
+        commit.type = prParsed.type
+      }
       prSubject = prSubject || prParsed.subject
 
       pr = prParsed.pr && (prParsed.pr.number !== pr.number) ? prParsed.pr : null
