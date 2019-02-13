@@ -1515,11 +1515,7 @@ describe('font fallback', () => {
     try {
       await w.loadURL(`data:text/html,${html}`)
       w.webContents.debugger.attach()
-      const sendCommand = (...args) => new Promise((resolve, reject) => {
-        w.webContents.debugger.sendCommand(...args, (e, r) => {
-          if (e) { reject(e) } else { resolve(r) }
-        })
-      })
+      const sendCommand = (...args) => w.webContents.debugger.sendCommand(...args)
       const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
       await sendCommand('CSS.enable')
       const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', { nodeId })
