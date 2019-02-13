@@ -7,6 +7,7 @@
 #include "base/mac/scoped_sending_event.h"
 
 #import <AVFoundation/AVFoundation.h>
+#import <LocalAuthentication/LocalAuthentication.h>
 
 // Forward Declare Appearance APIs
 @interface NSApplication (HighSierraSDK)
@@ -23,10 +24,10 @@ typedef NS_ENUM(NSInteger, LABiometryType) {
   LABiometryTypeNone = 0,
   LABiometryTypeFaceID = 1,
   LABiometryTypeTouchID = 2,
-};
+} API_AVAILABLE(macosx(10.13.2));
 
-@interface LAContext (HighSierraSDK)
-@property(copy, readonly)
+@interface LAContext (HighSierraPointTwoSDK)
+@property(nonatomic, readonly)
     LABiometryType biometryType API_AVAILABLE(macosx(10.13.2));
 @end
 
