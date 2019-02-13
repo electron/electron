@@ -1,11 +1,11 @@
-From 3a68808c9e49e9a249ee9056015e30543747cd00 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ales Pergl <alpergl@microsoft.com>
 Date: Thu, 20 Sep 2018 17:44:49 -0700
 Subject: allow_new_privs.patch
 
 
 diff --git a/base/process/launch.h b/base/process/launch.h
-index 7a2def2ef436..50afeaf5553a 100644
+index 7a2def2ef4365ee3dba0752fca46a6f7aa33ad81..50afeaf5553a1a4ae14ca30aa95ab65c258a0322 100644
 --- a/base/process/launch.h
 +++ b/base/process/launch.h
 @@ -180,7 +180,7 @@ struct BASE_EXPORT LaunchOptions {

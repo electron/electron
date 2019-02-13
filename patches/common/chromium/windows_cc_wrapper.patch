@@ -6,7 +6,7 @@ Subject: windows_cc_wrapper.patch
 Allow use of cc_wrapper (eg sccache).
 
 diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
-index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d47490d57 100644
+index fdffcdbdbbfe1280f50c5b8401b117e24ea5267f..0b7487e1d288a65a94cace8795c90c880649eef7 100644
 --- a/build/toolchain/win/BUILD.gn
 +++ b/build/toolchain/win/BUILD.gn
 @@ -6,6 +6,7 @@ import("//build/config/clang/clang.gni")

@@ -6,7 +6,7 @@ Subject: gtk_visibility.patch
 Allow electron and brightray to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index deae4d3455a8..fd5d906b98b0 100644
+index deae4d3455a8b54292dd3abc0a316f9ca60b4104..fd5d906b98b047b245824a4b3d6f0c528c96ee1b 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
 @@ -18,6 +18,8 @@ group("gtk") {

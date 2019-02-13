@@ -19,7 +19,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index f51e30c0d2a55f104ca0912e487484102e443c85..fbec9767bdefc3b90335ecc423ffd4ea31bf914d 100644
+index 507ece40522fc29a56908d9a6532947a7f67db35..1659c05bfeecbf8ef4264f946aa045d58beb2775 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1578,6 +1578,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -34,7 +34,7 @@ index f51e30c0d2a55f104ca0912e487484102e443c85..fbec9767bdefc3b90335ecc423ffd4ea
    // The pending tree will have the most recently updated color space, so
    // prefer that.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index e124035096b02e82d526d7dfd0e70d4cf73819be..4f182c826a8d08a8674e3ca2f0bf833aa49a1309 100644
+index 736df815a2815484b561bdc4828dbb8592a43d3a..b9b624e475bc244154febb214d88c63aaba5bbab 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -98,6 +98,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -47,7 +47,7 @@ index e124035096b02e82d526d7dfd0e70d4cf73819be..4f182c826a8d08a8674e3ca2f0bf833a
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 1327e8607c5192f2440341a33fc210aecd47ced5..543d6937a908560270c6bba431a255436b522608 100644
+index 740cb2ab71cfad11f51418f011ad8a68764c51f4..8c882d58a70a8f6c8f5d4ea861a38b24ffdd4573 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -18,6 +18,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -80,7 +80,7 @@ index eca6020535249e51b428de9dd6454273e6c9dd71..e190d2fb2e2cc41135c119485c2d4475
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_WIN)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index a9ba5ca388b8d0979a1235a0d976b8cb3277f6d3..574deb6ad7d1b088eea43d87b8fe4637b980139b 100644
+index f37adb85d10e344ec9251334b0f46809428cd87a..4d26492492da3ddff0a2529a5e52e5506560a31c 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -77,6 +77,9 @@
@@ -237,10 +237,10 @@ index 0544d031b60d38279104a4ca9c6dc25126dea185..1acb3dfa55f39b8ecb9fccaa4627ac25
    base::Optional<skia::OpacityFilterCanvas> opacity_canvas;
    if (needs_transparency || disable_image_filtering) {
 diff --git a/components/viz/service/display/software_renderer.cc b/components/viz/service/display/software_renderer.cc
-index 5c41958ed259b1d3ae076312b97a802746897c98..4cb9801a859c12dae03e03073085ff82ea0e4a32 100644
+index b72323450524eb53e2ae1938da4e9410d456417f..bba0fd17ac0f95879e77c8112cb8f4da7b49e3ee 100644
 --- a/components/viz/service/display/software_renderer.cc
 +++ b/components/viz/service/display/software_renderer.cc
-@@ -334,9 +334,11 @@ void SoftwareRenderer::DrawPictureQuad(const PictureDrawQuad* quad) {
+@@ -333,9 +333,11 @@ void SoftwareRenderer::DrawPictureQuad(const PictureDrawQuad* quad) {
  
    std::unique_ptr<SkCanvas> color_transform_canvas;
    // TODO(enne): color transform needs to be replicated in gles2_cmd_decoder
@@ -256,10 +256,10 @@ index 5c41958ed259b1d3ae076312b97a802746897c98..4cb9801a859c12dae03e03073085ff82
    base::Optional<skia::OpacityFilterCanvas> opacity_canvas;
    if (needs_transparency || disable_image_filtering) {
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9511100e6077b6788abfead4b1962773a22ae40b..db2d8a4fc979b20810776cf2a31018d197cdba7d 100644
+index bdecceea7e66605869548efc15181d88cfb8a438..844790266cecd6f7dcfbd4f25e73fc16749f77dd 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -193,6 +193,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -192,6 +192,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -268,10 +268,10 @@ index 9511100e6077b6788abfead4b1962773a22ae40b..db2d8a4fc979b20810776cf2a31018d1
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 1f2897aabf94124f108a0f0449e4d687b084f1a4..4f88e4425ceada8af6b412b087ac134572222824 100644
+index 05e0ee79e5ada8eee03b2bff9c127b4f11610c17..35fdb9d351db5a6bdaa61742ec49dc75fe70cfa4 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -218,6 +218,7 @@
+@@ -213,6 +213,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -279,7 +279,7 @@ index 1f2897aabf94124f108a0f0449e4d687b084f1a4..4f88e4425ceada8af6b412b087ac1345
  #include "ui/gl/gl_switches.h"
  #include "ui/gl/gpu_switching_manager.h"
  #include "ui/native_theme/native_theme_features.h"
-@@ -2931,6 +2932,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2779,6 +2780,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -288,10 +288,10 @@ index 1f2897aabf94124f108a0f0449e4d687b084f1a4..4f88e4425ceada8af6b412b087ac1345
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 6d0580d5b0b76109bbaf0d058ce4201dc970adf0..f0271310ec6112ca7276c5af13ee6677d393109e 100644
+index 560c7caaa74c295a203bfa53c1acc63f1eb4283f..c10f893e1734e59f3102c8d862ccdaca01a3d73f 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2565,6 +2565,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2458,6 +2458,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

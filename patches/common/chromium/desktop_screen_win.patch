@@ -1,11 +1,11 @@
-From 0dbac64c4877f7783726d3bc04f332a1491285b7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:45:44 -0700
 Subject: desktop_screen_win.patch
 
 
 diff --git a/ui/views/widget/desktop_aura/desktop_screen_win.cc b/ui/views/widget/desktop_aura/desktop_screen_win.cc
-index f772f64d656e..7d13f9f81b6c 100644
+index f772f64d656e88cd2631e388f92e00a845f84f16..7d13f9f81b6c4a9b2ac5ce7e54e6a0c58225517c 100644
 --- a/ui/views/widget/desktop_aura/desktop_screen_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_screen_win.cc
 @@ -32,6 +32,8 @@ display::Display DesktopScreenWin::GetDisplayMatching(

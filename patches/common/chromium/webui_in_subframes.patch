@@ -5,7 +5,7 @@ Subject: webui_in_subframes.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_delegate.cc b/content/browser/frame_host/render_frame_host_delegate.cc
-index 26b8eec2bb76..fb3843168f14 100644
+index 26b8eec2bb763c6a1e29309abe34c4c068eee609..fb3843168f14fa7b584e2ec52f1c1495aa7dd070 100644
 --- a/content/browser/frame_host/render_frame_host_delegate.cc
 +++ b/content/browser/frame_host/render_frame_host_delegate.cc
 @@ -99,7 +99,9 @@ RenderFrameHostDelegate::GetFocusedFrameIncludingInnerWebContents() {
@@ -20,7 +20,7 @@ index 26b8eec2bb76..fb3843168f14 100644
  }
  
 diff --git a/content/browser/frame_host/render_frame_host_delegate.h b/content/browser/frame_host/render_frame_host_delegate.h
-index 7919ac1e5795..03f331915213 100644
+index 7919ac1e579592815fa96e88f30537c51b110fa9..03f33191521354031357a4886fe7ef3417ba17b6 100644
 --- a/content/browser/frame_host/render_frame_host_delegate.h
 +++ b/content/browser/frame_host/render_frame_host_delegate.h
 @@ -278,7 +278,8 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
@@ -34,7 +34,7 @@ index 7919ac1e5795..03f331915213 100644
    // Called by |frame| to notify that it has received an update on focused
    // element. |bounds_in_root_view| is the rectangle containing the element that
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 783dc705f748..9fa14c824032 100644
+index 783dc705f748bc6c9d3b8630ce12ad39ff2fd7d2..9fa14c824032463cedbbf5db41f1dbe3490c4a69 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -26,6 +26,7 @@
@@ -71,7 +71,7 @@ index 783dc705f748..9fa14c824032 100644
        pending_web_ui_type_ = new_web_ui_type;
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 64ad6ca91d93..88211169a7d7 100644
+index 64ad6ca91d9331a09d09f7e29b7c24a0c12852a2..88211169a7d731cb805f34c48ae4caf2fdcd1c84 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -788,6 +788,25 @@ RenderFrameHostManager* WebContentsImpl::GetRenderManagerForTesting() {
@@ -127,7 +127,7 @@ index 64ad6ca91d93..88211169a7d7 100644
  
  NavigationEntry*
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index d16a99122772..907738e0bf80 100644
+index d16a99122772385e6fcdb13a8080c82ee0695232..907738e0bf80e4a34c5f068e67a6ba15d5d8338d 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -542,7 +542,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,

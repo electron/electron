@@ -48,7 +48,7 @@ index e4e0da40981ca58964dfdcbd3fc0f730c9c09ec1..af028715ada9b8023f0ff7cf60e0f7e7
    Gtk2StatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
    ~Gtk2StatusIcon() override;
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209d7d5cf3f 100644
+index d9f245070249f5f153bd8fe11e0a5e718c7d3629..05875b9ca744b6bf7e0891bca3b193f36a98b19d 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@

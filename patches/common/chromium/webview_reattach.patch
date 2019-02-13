@@ -7,7 +7,7 @@ Backports https://chromium-review.googlesource.com/c/chromium/src/+/1161391
 Fixes webview not working after renderer process restarted.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 64ad6ca91d9331a09d09f7e29b7c24a0c12852a2..ec3d1ccbad7e3e4184205f87b6b3fb7dcd4c07f2 100644
+index 88211169a7d731cb805f34c48ae4caf2fdcd1c84..7b2715aea2afb9e939a6d5cf7fa7ec23f330194a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4906,6 +4906,12 @@ void WebContentsImpl::NotifyViewSwapped(RenderViewHost* old_host,
