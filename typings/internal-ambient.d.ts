@@ -36,7 +36,26 @@ declare namespace NodeJS {
   }
 }
 
+declare interface Blob {
+  name?: string;
+}
+
 declare interface Window {
-  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean
-  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean
+  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
+  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
+  InspectorFrontendHost?: {
+    showContextMenuAtPoint: (x: number, y: number, items: any[]) => void
+  };
+  DevToolsAPI?: {
+    contextMenuItemSelected: (id: number) => void;
+    contextMenuCleared: () => void
+  };
+  UI?: {
+    createFileSelectorElement: (callback: () => void) => HTMLSpanElement
+  };
+  Persistence?: {
+    FileSystemWorkspaceBinding: {
+      completeURL: (project: string, path: string) => string;
+    }
+  }
 }

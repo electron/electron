@@ -66,7 +66,7 @@ filenames = {
     "lib/renderer/chrome-api.js",
     "lib/renderer/content-scripts-injector.ts",
     "lib/renderer/init.js",
-    "lib/renderer/inspector.js",
+    "lib/renderer/inspector.ts",
     "lib/renderer/ipc-renderer-internal-utils.ts",
     "lib/renderer/ipc-renderer-internal.ts",
     "lib/renderer/remote.ts",
