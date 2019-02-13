@@ -66,29 +66,46 @@ class LocationProxy {
   private ipcRenderer: Electron.IpcRenderer;
   private guestId: number;
 
-  private static ProxyProperty = <T>(target: LocationProxy, propertyKey: LocationProperties) => {
+  /**
+   * Beware: This decorator will have the _prototype_ as the `target`. It defines properties
+   * commonly found in URL on the LocationProxy.
+   */
+  private static ProxyProperty<T> (target: LocationProxy, propertyKey: LocationProperties) {
     Object.defineProperty(target, propertyKey, {
       get: function (): T | string {
-        const guestURL = target.getGuestURL()
+        const guestURL = this.getGuestURL()
         const value = guestURL ? guestURL[propertyKey] : ''
         return value === undefined ? '' : value
       },
       set: function (newVal: T) {
-        const guestURL = target.getGuestURL()
+        const guestURL = this.getGuestURL()
         if (guestURL) {
           // TypeScript doesn't want us to assign to read-only variables.
           // It's right, that's bad, but we're doing it anway.
           (guestURL as any)[propertyKey] = newVal
 
-          return target.ipcRenderer.sendSync(
+          return this.ipcRenderer.sendSync(
             'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC',
-            target.guestId, 'loadURL', guestURL.toString())
+            this.guestId, 'loadURL', guestURL.toString())
         }
       }
     })
   }
 
-  private getGuestURL = (): URL | null => {
+  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
+    // eslint will consider the constructor "useless"
+    // unless we assign them in the body. It's fine, that's what
+    // TS would do anyway.
+    this.ipcRenderer = ipcRenderer
+    this.guestId = guestId
+    this.getGuestURL = this.getGuestURL.bind(this)
+  }
+
+  public toString (): string {
+    return this.href
+  }
+
+  private getGuestURL (): URL | null {
     const urlString = this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'getURL')
     try {
       return new URL(urlString)
@@ -98,24 +115,14 @@ class LocationProxy {
 
     return null
   }
-
-  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
-    // eslint will consider the constructor "useless"
-    // unless we assign them in the body. It's fine, that's what
-    // TS would do anyway.
-    this.ipcRenderer = ipcRenderer
-    this.guestId = guestId
-  }
-
-  public toString (): string {
-    return this.href
-  }
 }
 
 class BrowserWindowProxy {
   public closed: boolean = false
 
   private _location: LocationProxy
+  private guestId: number
+  private ipcRenderer: Electron.IpcRenderer
 
   // TypeScript doesn't allow getters/accessors with different types,
   // so for now, we'll have to make do with an "any" in the mix.
@@ -128,7 +135,9 @@ class BrowserWindowProxy {
     this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'loadURL', url)
   }
 
-  constructor (private ipcRenderer: Electron.IpcRenderer, private guestId: any) {
+  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
+    this.guestId = guestId
+    this.ipcRenderer = ipcRenderer
     this._location = new LocationProxy(ipcRenderer, guestId)
 
     ipcRenderer.once(`ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_${guestId}`, () => {
