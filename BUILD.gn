@@ -717,8 +717,10 @@ if (is_mac) {
     output_name = electron_helper_name
     deps = [
       ":electron_framework+link",
-      "//sandbox/mac:seatbelt",
     ]
+    if (!is_mas_build) {
+      deps += [ "//sandbox/mac:seatbelt" ]
+    }
     defines = [ "HELPER_EXECUTABLE" ]
     sources = filenames.app_sources
     include_dirs = [ "." ]
