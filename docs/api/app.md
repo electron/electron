@@ -1295,13 +1295,11 @@ Hides the dock icon.
 
 ### `app.dock.show()` _macOS_
 
-Shows the dock icon.
+Returns `Promise<void>` - Resolves when the dock icon is shown.
 
 ### `app.dock.isVisible()` _macOS_
 
 Returns `Boolean` - Whether the dock icon is visible.
-The `app.dock.show()` call is asynchronous so this method might not
-return true immediately after that call.
 
 ### `app.dock.setMenu(menu)` _macOS_
 

@@ -1110,17 +1110,29 @@ describe('app module', () => {
     })
   })
 
-  describe('dock.setMenu', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
+  describe('dock APIs', () => {
+    describe('dock.setMenu()', () => {
+      it('keeps references to the menu', function () {
+        if (process.platform !== 'darwin') this.skip()
+
+        app.dock.setMenu(new Menu())
+        const v8Util = process.atomBinding('v8_util')
+        v8Util.requestGarbageCollectionForTesting()
+      })
     })
 
-    it('keeps references to the menu', () => {
-      app.dock.setMenu(new Menu())
-      const v8Util = process.atomBinding('v8_util')
-      v8Util.requestGarbageCollectionForTesting()
+    describe('dock.show()', () => {
+      before(function () {
+        if (process.platform !== 'darwin') this.skip()
+      })
+
+      it('returns a Promise', () => {
+        expect(app.dock.show()).to.be.a('promise')
+      })
+
+      it('eventually fulfills', () => {
+        expect(app.dock.show()).to.be.eventually.fulfilled()
+      })
     })
   })
 
@@ -1131,7 +1143,7 @@ describe('app module', () => {
 
     it('becomes fulfilled if the app is already ready', () => {
       expect(app.isReady()).to.be.true()
-      return expect(app.whenReady()).to.be.eventually.fulfilled
+      expect(app.whenReady()).to.be.eventually.fulfilled()
     })
   })
 
