@@ -1,5 +1,20 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import { runInThisContext } from 'vm'
+import { webFrame } from 'electron'
+
+// https://cs.chromium.org/chromium/src/content/public/common/isolated_world_ids.h?q=ISOLATED_WORLD&sq=package:chromium&l=13&dr=CSs
+const IsolatedWorldIDs = {
+  // Lowest isolated world ID
+  ISOLATED_WORLD_ID_EXTENSIONS: 10
+}
+
+let isolatedWorldIds = IsolatedWorldIDs.ISOLATED_WORLD_ID_EXTENSIONS
+
+// https://cs.chromium.org/chromium/src/extensions/renderer/script_injection.cc?type=cs&sq=package:chromium&g=0&l=52
+const getIsolatedWorldIdForInstance = () => {
+  // TODO(samuelmaddock): allocate and cleanup IDs
+  return isolatedWorldIds++
+}
 
 // Check whether pattern matches.
 // https://developer.chrome.com/extensions/match_patterns
@@ -12,21 +27,32 @@ const matchesPattern = function (pattern: string) {
 
 // Run the code with chrome API integrated.
 const runContentScript = function (this: any, extensionId: string, url: string, code: string) {
-  const context: { chrome?: any } = {}
-  require('@electron/internal/renderer/chrome-api').injectTo(extensionId, false, context)
+  // const context = {}
+  // require('@electron/internal/renderer/chrome-api').injectTo(extensionId, false, context)
   const wrapper = `((chrome) => {\n  ${code}\n  })`
-  try {
-    const compiledWrapper = runInThisContext(wrapper, {
-      filename: url,
-      lineOffset: 1,
-      displayErrors: true
-    })
-    return compiledWrapper.call(this, context.chrome)
-  } catch (error) {
-    // TODO(samuelmaddock): Run scripts in isolated world, see chromium script_injection.cc
-    console.error(`Error running content script JavaScript for '${extensionId}'`)
-    console.error(error)
-  }
+  // try {
+  //   const compiledWrapper = runInThisContext(wrapper, {
+  //     filename: url,
+  //     lineOffset: 1,
+  //     displayErrors: true
+  //   })
+  //   return compiledWrapper.call(this, context.chrome)
+  // } catch (error) {
+  //   // TODO(samuelmaddock): Run scripts in isolated world, see chromium script_injection.cc
+  //   console.error(`Error running content script JavaScript for '${extensionId}'`)
+  //   console.error(error)
+  // }
+  const sources = [
+    {
+      code: wrapper,
+      url
+    }
+  ]
+
+  const worldId = getIsolatedWorldIdForInstance()
+  webFrame.setIsolatedWorldHumanReadableName(worldId, extensionId)
+  // webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
+  webFrame.executeJavaScriptInIsolatedWorld(worldId, sources)
 }
 
 const runAllContentScript = function (scripts: Array<Electron.InjectionBase>, extensionId: string) {
@@ -36,28 +62,27 @@ const runAllContentScript = function (scripts: Array<Electron.InjectionBase>, ex
 }
 
 const runStylesheet = function (this: any, url: string, code: string) {
-  const wrapper = `((code) => {
-    function init() {
-      const styleElement = document.createElement('style');
-      styleElement.textContent = code;
-      document.head.append(styleElement);
-    }
-    document.addEventListener('DOMContentLoaded', init);
-  })`
+  // const wrapper = `((code) => {
+  //   function init() {
+  //     const styleElement = document.createElement('style');
+  //     styleElement.textContent = code;
+  //     document.head.append(styleElement);
+  //   }
+  //   document.addEventListener('DOMContentLoaded', init);
+  // })`
 
-  try {
-    const compiledWrapper = runInThisContext(wrapper, {
-      filename: url,
-      lineOffset: 1,
-      displayErrors: true
-    })
-
-    return compiledWrapper.call(this, code)
-  } catch (error) {
-    // TODO(samuelmaddock): Insert stylesheet directly into document, see chromium script_injection.cc
-    console.error(`Error inserting content script stylesheet ${url}`)
-    console.error(error)
-  }
+  // try {
+  //   const compiledWrapper = runInThisContext(wrapper, {
+  //     filename: url,
+  //     lineOffset: 1,
+  //     displayErrors: true
+  //   })
+  //   return compiledWrapper.call(this, code)
+  // } catch (error) {
+  //   // TODO(samuelmaddock): Insert stylesheet directly into document, see chromium script_injection.cc
+  //   console.error(`Error inserting content script stylesheet ${url}`)
+  //   console.error(error)
+  // }
 }
 
 const runAllStylesheet = function (css: Array<Electron.InjectionBase>) {
