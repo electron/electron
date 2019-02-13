@@ -384,7 +384,7 @@ system default and override the value of `getEffectiveAppearance`.
 
 Returns `Boolean` - whether or not this device has the ability to use Touch ID.
 
-**NOTE:** This API will return `false` for systems older than macOS Sierra 10.12.2, due to restrictions on the underlying macOS API.
+**NOTE:** This API will return `false` on systems older than macOS Sierra 10.12.2.
 
 ### `systemPreferences.promptTouchID(reason)` _macOS_
 
