@@ -321,7 +321,6 @@ struct Converter<Browser::LoginItemSettings> {
       return false;
 
     dict.Get("openAtLogin", &(out->open_at_login));
-    dict.Get("openAsHidden", &(out->open_as_hidden));
     dict.Get("path", &(out->path));
     dict.Get("args", &(out->args));
     return true;
@@ -331,10 +330,6 @@ struct Converter<Browser::LoginItemSettings> {
                                    Browser::LoginItemSettings val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("openAtLogin", val.open_at_login);
-    dict.Set("openAsHidden", val.open_as_hidden);
-    dict.Set("restoreState", val.restore_state);
-    dict.Set("wasOpenedAtLogin", val.opened_at_login);
-    dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
     return dict.GetHandle();
   }
 };

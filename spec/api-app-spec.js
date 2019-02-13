@@ -536,7 +536,7 @@ describe('app module', () => {
     ]
 
     before(function () {
-      if (process.platform === 'linux' || process.mas) this.skip()
+      if (process.platform !== 'win32') this.skip()
     })
 
     beforeEach(() => {
@@ -551,25 +551,7 @@ describe('app module', () => {
 
     it('sets and returns the app as a login item', done => {
       app.setLoginItemSettings({ openAtLogin: true })
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
-      done()
-    })
-
-    it('adds a login item that loads in hidden mode', done => {
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
+      expect(app.getLoginItemSettings()).to.deep.equal({ openAtLogin: true })
       done()
     })
 
@@ -581,21 +563,6 @@ describe('app module', () => {
 
       app.setLoginItemSettings({ openAtLogin: false })
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
-    })
-
-    it('correctly sets and unsets the LoginItem as hidden', function () {
-      if (process.platform !== 'darwin') this.skip()
-
-      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
-      expect(app.getLoginItemSettings().openAsHidden).to.be.false()
-
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
-      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
-      expect(app.getLoginItemSettings().openAsHidden).to.be.true()
-
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false })
-      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
-      expect(app.getLoginItemSettings().openAsHidden).to.be.false()
     })
 
     it('allows you to pass a custom executable and arguments', function () {

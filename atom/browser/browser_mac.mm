@@ -206,89 +206,13 @@ bool Browser::UpdateUserActivityState(const std::string& type,
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-#if defined(MAS_BUILD)
   settings.open_at_login = platform_util::GetLoginItemEnabled();
-#else
-  settings.open_at_login =
-      base::mac::CheckLoginItemStatus(&settings.open_as_hidden);
-  settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
-  settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
-  settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
-#endif
   return settings;
 }
 
-// copied from GetLoginItemForApp in base/mac/mac_util.mm
-LSSharedFileListItemRef GetLoginItemForApp() {
-  base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
-  if (!login_items.get()) {
-    LOG(ERROR) << "Couldn't get a Login Items list.";
-    return NULL;
-  }
-  base::scoped_nsobject<NSArray> login_items_array(
-      base::mac::CFToNSCast(LSSharedFileListCopySnapshot(login_items, NULL)));
-  NSURL* url = [NSURL fileURLWithPath:[base::mac::MainBundle() bundlePath]];
-  for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
-    LSSharedFileListItemRef item =
-        reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-    CFURLRef item_url_ref = NULL;
-    if (LSSharedFileListItemResolve(item, 0, &item_url_ref, NULL) == noErr &&
-        item_url_ref) {
-      base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
-      if (CFEqual(item_url, url)) {
-        CFRetain(item);
-        return item;
-      }
-    }
-  }
-  return NULL;
-}
-
-void RemoveFromLoginItems() {
-  base::ScopedCFTypeRef<LSSharedFileListRef> list(
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
-  if (!list) {
-    LOG(ERROR) << "Unable to access shared file list";
-    return;
-  }
-
-  if (GetLoginItemForApp() != NULL) {
-    base::scoped_nsobject<NSArray> login_items_array(
-        base::mac::CFToNSCast(LSSharedFileListCopySnapshot(list, NULL)));
-
-    if (!login_items_array) {
-      LOG(ERROR) << "No items in list of auto-loaded apps";
-      return;
-    }
-
-    for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
-      LSSharedFileListItemRef item =
-          reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-      CFURLRef url_ref = NULL;
-      if (LSSharedFileListItemResolve(item, 0, &url_ref, NULL) == noErr &&
-          item) {
-        base::ScopedCFTypeRef<CFURLRef> url(url_ref);
-        if ([[base::mac::CFToNSCast(url.get()) path]
-                hasPrefix:[[NSBundle mainBundle] bundlePath]])
-          LSSharedFileListItemRemove(list, item);
-      }
-    }
-  }
-}
-
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-#if defined(MAS_BUILD)
-  if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
+  if (!platform_util::SetLoginItemEnabled(settings.open_at_login))
     LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
-  }
-#else
-  if (settings.open_at_login)
-    base::mac::AddToLoginItems(settings.open_as_hidden);
-  else {
-    RemoveFromLoginItems();
-  }
-#endif
 }
 
 std::string Browser::GetExecutableFileVersion() const {
