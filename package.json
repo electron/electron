@@ -58,7 +58,7 @@
     "lint:js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts",
-    "gn-typescript-definitions": "npm run create-typescript-definitions && cp electron.d.ts",
+    "gn-typescript-definitions": "npm run create-typescript-definitions && node spec/ts-smoke/runner.js && cp electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
     "precommit": "lint-staged",
     "prepack": "check-for-leaks",
