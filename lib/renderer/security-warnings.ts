@@ -72,7 +72,7 @@ const isUnsafeEvalEnabled = function () {
         return false
       }
       return true
-    }).toString()})()`, undefined, resolve)
+    }).toString()})()`, false, resolve)
   })
 }
 
