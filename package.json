@@ -15,7 +15,7 @@
     "dotenv-safe": "^4.0.4",
     "dugite": "^1.45.0",
     "electron-docs-linter": "^2.4.0",
-    "electron-typescript-definitions": "^6.0.0",
+    "electron-typescript-definitions": "^7.0.0",
     "eslint": "^5.13.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-mocha": "^5.2.0",
