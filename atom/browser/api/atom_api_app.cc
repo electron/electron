@@ -1259,6 +1259,46 @@ bool App::MoveToApplicationsFolder(mate::Arguments* args) {
 bool App::IsInApplicationsFolder() {
   return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
 }
+
+int DockBounce(const std::string& type) {
+  int request_id = -1;
+  if (type == "critical")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
+  else if (type == "informational")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
+  return request_id;
+}
+
+void DockSetMenu(atom::api::Menu* menu) {
+  Browser::Get()->DockSetMenu(menu->model());
+}
+
+v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
+  if (dock_.IsEmpty()) {
+    // Initialize the Dock API, the methods are bound to "dock" which exists
+    // for the lifetime of "app"
+    auto browser = base::Unretained(Browser::Get());
+    mate::Dictionary dock_obj = mate::Dictionary::CreateEmpty(isolate);
+    dock_obj.SetMethod("bounce", &DockBounce);
+    dock_obj.SetMethod("cancelBounce",
+                       base::Bind(&Browser::DockCancelBounce, browser));
+    dock_obj.SetMethod("downloadFinished",
+                       base::Bind(&Browser::DockDownloadFinished, browser));
+    dock_obj.SetMethod("setBadge",
+                       base::Bind(&Browser::DockSetBadgeText, browser));
+    dock_obj.SetMethod("getBadge",
+                       base::Bind(&Browser::DockGetBadgeText, browser));
+    dock_obj.SetMethod("hide", base::Bind(&Browser::DockHide, browser));
+    dock_obj.SetMethod("show", base::Bind(&Browser::DockShow, browser));
+    dock_obj.SetMethod("isVisible",
+                       base::Bind(&Browser::DockIsVisible, browser));
+    dock_obj.SetMethod("setMenu", &DockSetMenu);
+    dock_obj.SetMethod("setIcon", base::Bind(&Browser::DockSetIcon, browser));
+
+    dock_.Reset(isolate, dock_obj.GetHandle());
+  }
+  return v8::Local<v8::Value>::New(isolate, dock_);
+}
 #endif
 
 // static
@@ -1358,6 +1398,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
+#if defined(OS_MACOSX)
+      .SetProperty("dock", &App::GetDockAPI)
+#endif
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
@@ -1366,21 +1409,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
 }  // namespace atom
 
 namespace {
-
-#if defined(OS_MACOSX)
-int DockBounce(const std::string& type) {
-  int request_id = -1;
-  if (type == "critical")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
-  else if (type == "informational")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
-  return request_id;
-}
-
-void DockSetMenu(atom::api::Menu* menu) {
-  Browser::Get()->DockSetMenu(menu->model());
-}
-#endif
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -1392,23 +1420,6 @@ void Initialize(v8::Local<v8::Object> exports,
                       ->GetFunction(context)
                       .ToLocalChecked());
   dict.Set("app", atom::api::App::Create(isolate));
-#if defined(OS_MACOSX)
-  auto browser = base::Unretained(Browser::Get());
-  dict.SetMethod("dockBounce", &DockBounce);
-  dict.SetMethod("dockCancelBounce",
-                 base::Bind(&Browser::DockCancelBounce, browser));
-  dict.SetMethod("dockDownloadFinished",
-                 base::Bind(&Browser::DockDownloadFinished, browser));
-  dict.SetMethod("dockSetBadgeText",
-                 base::Bind(&Browser::DockSetBadgeText, browser));
-  dict.SetMethod("dockGetBadgeText",
-                 base::Bind(&Browser::DockGetBadgeText, browser));
-  dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
-  dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
-  dict.SetMethod("dockIsVisible", base::Bind(&Browser::DockIsVisible, browser));
-  dict.SetMethod("dockSetMenu", &DockSetMenu);
-  dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
-#endif
 }
 
 }  // namespace

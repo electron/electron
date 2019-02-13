@@ -1,6 +1,6 @@
 filenames = {
   js_sources = [
-    "lib/browser/api/app.js",
+    "lib/browser/api/app.ts",
     "lib/browser/api/auto-updater.js",
     "lib/browser/api/auto-updater/auto-updater-native.js",
     "lib/browser/api/auto-updater/auto-updater-win.js",
@@ -47,7 +47,7 @@ filenames = {
     "lib/browser/objects-registry.js",
     "lib/browser/rpc-server.js",
     "lib/common/api/clipboard.js",
-    "lib/common/api/deprecate.js",
+    "lib/common/api/deprecate.ts",
     "lib/common/api/deprecations.js",
     "lib/common/api/is-promise.js",
     "lib/common/api/exports/electron.js",
