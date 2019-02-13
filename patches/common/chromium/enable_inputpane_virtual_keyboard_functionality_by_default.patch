@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Mon, 11 Jun 2018 19:26:48 +0000
+Subject: Enable InputPane virtual keyboard functionality by default.
+
+Flip feature flag on. New functionality is used for Windows 10 RS4 and
+later.
+
+BUG=817501
+
+Change-Id: I3c45ac35f925a3b72f2ff50d5f8fdad4895b3cfd
+Reviewed-on: https://chromium-review.googlesource.com/946928
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#566102}
+
+diff --git a/ui/base/ui_base_features.cc b/ui/base/ui_base_features.cc
+index a2431e836940c4a1fc7fc95f128a2e2d5aab1b02..80add9507320a8e0dfb42f024095870faa7b3e3c 100644
+--- a/ui/base/ui_base_features.cc
++++ b/ui/base/ui_base_features.cc
+@@ -97,7 +97,7 @@ const base::Feature kUiCompositorScrollWithLayers = {
+ #if defined(OS_WIN)
+ // Enables InputPane API for controlling on screen keyboard.
+ const base::Feature kInputPaneOnScreenKeyboard = {
+-    "InputPaneOnScreenKeyboard", base::FEATURE_DISABLED_BY_DEFAULT};
++    "InputPaneOnScreenKeyboard", base::FEATURE_ENABLED_BY_DEFAULT};
+ 
+ // Enables using WM_POINTER instead of WM_TOUCH for touch events.
+ const base::Feature kPointerEventsForTouch = {"PointerEventsForTouch",
