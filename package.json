@@ -78,7 +78,10 @@
       "@electron/internal/(.+)": "./lib/$1"
     },
     "appliesTo": {
-      "includeExtensions": [".js", ".ts"]
+      "includeExtensions": [
+        ".js",
+        ".ts"
+      ]
     }
   },
   "lint-staged": {
