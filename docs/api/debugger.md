@@ -60,6 +60,20 @@ Detaches the debugger from the `webContents`.
 
 Send given command to the debugging target.
 
+**[Deprecated Soon](promisification.md)**
+
+#### `debugger.sendCommand(method[, commandParams])`
+
+* `method` String - Method name, should be one of the methods defined by the
+   [remote debugging protocol][rdp].
+* `commandParams` Object (optional) - JSON object with request parameters.
+
+Returns `Promise<any>` - A promise that resolves with the response defined by
+the 'returns' attribute of the command description in the remote debugging protocol
+or is rejected indicating the failure of the command.
+
+Send given command to the debugging target.
+
 ### Instance Events
 
 #### Event: 'detach'
