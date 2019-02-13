@@ -17,6 +17,19 @@ win.setMenu(null)
 win.removeMenu()
 ```
 
+## `contentTracing.getTraceBufferUsage()`
+
+```js
+// Deprecated
+contentTracing.getTraceBufferUsage((percentage, value) => {
+  // do something
+})
+// Replace with
+contentTracing.getTraceBufferUsage().then(infoObject => {
+  // infoObject has percentage and value fields
+})
+```
+
 ## `electron.screen` in renderer process
 
 ```js
