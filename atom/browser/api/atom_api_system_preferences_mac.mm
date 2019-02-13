@@ -443,12 +443,16 @@ std::string SystemPreferences::GetSystemColor(const std::string& color,
   }
 }
 
-bool SystemPreferences::IsTouchIDAvailable() {
+bool SystemPreferences::CanPromptTouchID() {
   if (@available(macOS 10.12.2, *)) {
     base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-    return [context
-        canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                    error:nil];
+    if (![context
+            canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                        error:nil])
+      return false;
+    if (@available(macOS 10.13.2, *))
+      return [context biometryType] == LABiometryTypeTouchID;
+    return true;
   }
   return false;
 }

@@ -380,11 +380,11 @@ You can use the `setAppLevelAppearance` API to set this value.
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
 
-### `systemPreferences.isTouchIDAvailable()` _macOS_
+### `systemPreferences.canPromptTouchID()` _macOS_
 
 Returns `Boolean` - whether or not this device has the ability to use Touch ID.
 
-**NOTE:** This API is only available on macOS Sierra 10.12.2 or newer.
+**NOTE:** This API will return `false` for systems older than macOS Sierra 10.12.2, due to restrictions on the underlying macOS API.
 
 ### `systemPreferences.promptTouchID(reason)` _macOS_
 
