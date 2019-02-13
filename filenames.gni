@@ -69,7 +69,7 @@ filenames = {
     "lib/renderer/inspector.js",
     "lib/renderer/ipc-renderer-internal-utils.js",
     "lib/renderer/ipc-renderer-internal.js",
-    "lib/renderer/remote.js",
+    "lib/renderer/remote.ts",
     "lib/renderer/security-warnings.js",
     "lib/renderer/web-frame-init.js",
     "lib/renderer/window-setup.js",

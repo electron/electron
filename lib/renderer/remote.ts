@@ -1,8 +1,6 @@
-'use strict'
+import { remote, Remote } from 'electron'
 
-const { remote } = require('electron')
-
-exports.getRemote = function (name) {
+export function getRemote (name: keyof Remote) {
   if (!remote) {
     throw new Error(`${name} requires remote, which is not enabled`)
   }
