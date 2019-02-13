@@ -26,3 +26,8 @@ declare namespace NodeJS {
     activateUvLoop(): void;
   }
 }
+
+declare interface Window {
+  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean
+  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean
+}

@@ -1,13 +1,6 @@
 import { webFrame } from 'electron'
 import { invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
-declare global {
-  interface Window {
-    ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean
-    ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean
-  }
-}
-
 let shouldLog: boolean | null = null
 
 /**
@@ -276,7 +269,6 @@ const getWebPreferences = function () {
     return invokeSync('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
   } catch (error) {
     console.warn(`getLastWebPreferences() failed: ${error}`)
-    return undefined
   }
 }
 
