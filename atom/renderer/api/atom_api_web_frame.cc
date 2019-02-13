@@ -399,6 +399,26 @@ void SetIsolatedWorldHumanReadableName(v8::Local<v8::Value> window,
       world_id, blink::WebString::FromUTF8(name));
 }
 
+void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
+                          int world_id,
+                          const mate::Dictionary& options,
+                          mate::Arguments* args) {
+  std::string origin, csp, name;
+  options.Get("securityOrigin", &origin);
+  options.Get("csp", &csp);
+  options.Get("name", &name);
+
+  if (!csp.empty() && origin.empty()) {
+    args->ThrowError(
+        "If csp is specified, securityOrigin should also be specified");
+    return;
+  }
+
+  SetIsolatedWorldSecurityOrigin(window, world_id, origin);
+  SetIsolatedWorldContentSecurityPolicy(window, world_id, csp);
+  SetIsolatedWorldHumanReadableName(window, world_id, name);
+}
+
 blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
   blink::WebCache::ResourceTypeStats stats;
   blink::WebCache::GetResourceTypeStats(&stats);
@@ -530,12 +550,13 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("executeJavaScript", &ExecuteJavaScript);
   dict.SetMethod("executeJavaScriptInIsolatedWorld",
                  &ExecuteJavaScriptInIsolatedWorld);
-  dict.SetMethod("setIsolatedWorldSecurityOrigin",
+  dict.SetMethod("_setIsolatedWorldSecurityOrigin",
                  &SetIsolatedWorldSecurityOrigin);
-  dict.SetMethod("setIsolatedWorldContentSecurityPolicy",
+  dict.SetMethod("_setIsolatedWorldContentSecurityPolicy",
                  &SetIsolatedWorldContentSecurityPolicy);
-  dict.SetMethod("setIsolatedWorldHumanReadableName",
+  dict.SetMethod("_setIsolatedWorldHumanReadableName",
                  &SetIsolatedWorldHumanReadableName);
+  dict.SetMethod("setIsolatedWorldInfo", &SetIsolatedWorldInfo);
   dict.SetMethod("getResourceUsage", &GetResourceUsage);
   dict.SetMethod("clearCache", &ClearCache);
   dict.SetMethod("_findFrameByRoutingId", &FindFrameByRoutingId);
