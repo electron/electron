@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "atom/common/promise_util.h"
 #include "components/download/public/common/download_item.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/save_page_type.h"
@@ -28,10 +29,8 @@ namespace api {
 class SavePageHandler : public content::DownloadManager::Observer,
                         public download::DownloadItem::Observer {
  public:
-  using SavePageCallback = base::Callback<void(v8::Local<v8::Value>)>;
-
   SavePageHandler(content::WebContents* web_contents,
-                  const SavePageCallback& callback);
+                  scoped_refptr<atom::util::Promise> promise);
   ~SavePageHandler() override;
 
   bool Handle(const base::FilePath& full_path,
@@ -48,7 +47,7 @@ class SavePageHandler : public content::DownloadManager::Observer,
   void OnDownloadUpdated(download::DownloadItem* item) override;
 
   content::WebContents* web_contents_;  // weak
-  SavePageCallback callback_;
+  scoped_refptr<atom::util::Promise> promise_;
 };
 
 }  // namespace api

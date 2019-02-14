@@ -1311,11 +1311,17 @@ std::string WebContents::GetUserAgent() {
   return web_contents()->GetUserAgentOverride();
 }
 
-bool WebContents::SavePage(const base::FilePath& full_file_path,
-                           const content::SavePageType& save_type,
-                           const SavePageHandler::SavePageCallback& callback) {
-  auto* handler = new SavePageHandler(web_contents(), callback);
-  return handler->Handle(full_file_path, save_type);
+v8::Local<v8::Promise> WebContents::SavePage(
+    const base::FilePath& full_file_path,
+    const content::SavePageType& save_type) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  auto* handler = new SavePageHandler(web_contents(), promise);
+
+  const bool saveStarted = handler->Handle(full_file_path, save_type);
+  if (!saveStarted)
+    promise->RejectWithErrorMessage("Failed to save the page");
+
+  return promise->GetHandle();
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
