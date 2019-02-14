@@ -1430,40 +1430,6 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
-  auto* context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  struct WrappedCallback {
-    base::Callback<void(bool)> callback_;
-    explicit WrappedCallback(const base::Callback<void(bool)>& callback)
-        : callback_(callback) {}
-    void Run(content::ServiceWorkerCapability capability) {
-      callback_.Run(capability !=
-                    content::ServiceWorkerCapability::NO_SERVICE_WORKER);
-      delete this;
-    }
-  };
-
-  auto* wrapped_callback = new WrappedCallback(callback);
-
-  context->CheckHasServiceWorker(
-      web_contents()->GetLastCommittedURL(), GURL::EmptyGURL(),
-      base::BindOnce(&WrappedCallback::Run,
-                     base::Unretained(wrapped_callback)));
-}
-
-void WebContents::UnregisterServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto* context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
-                                   callback);
-}
-
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   DCHECK(web_preferences);
@@ -2170,9 +2136,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("_isRemoteModuleEnabled", &WebContents::IsRemoteModuleEnabled)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
-      .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
-      .SetMethod("unregisterServiceWorker",
-                 &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
 #if BUILDFLAG(ENABLE_PRINTING)
       .SetMethod("_print", &WebContents::Print)

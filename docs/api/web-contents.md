@@ -1156,23 +1156,6 @@ that stores data of the snapshot. Omitting `rect` will capture the whole visible
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 
-#### `contents.hasServiceWorker(callback)`
-
-* `callback` Function
-  * `hasWorker` Boolean
-
-Checks if any ServiceWorker is registered and returns a boolean as
-response to `callback`.
-
-#### `contents.unregisterServiceWorker(callback)`
-
-* `callback` Function
-  * `success` Boolean
-
-Unregisters any ServiceWorker if present and returns a boolean as
-response to `callback` when the JS promise is fulfilled or false
-when the JS promise is rejected.
-
 #### `contents.getPrinters()`
 
 Get the system printer list.
