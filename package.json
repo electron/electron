@@ -76,6 +76,9 @@
   "aliasify": {
     "replacements": {
       "@electron/internal/(.+)": "./lib/$1"
+    },
+    "appliesTo": {
+      "includeExtensions": [".js", ".ts"]
     }
   },
   "lint-staged": {
