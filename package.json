@@ -28,6 +28,7 @@
     "nugget": "^2.0.1",
     "octicons": "^7.3.0",
     "plist": "^3.0.1",
+    "pre-flight": "^1.1.0",
     "remark-cli": "^4.0.0",
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
     "request": "^2.88.0",
@@ -59,6 +60,7 @@
     "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts && node spec/ts-smoke/runner.js",
     "gn-typescript-definitions": "npm run create-typescript-definitions && cp electron.d.ts",
+    "pre-flight": "pre-flight",
     "preinstall": "node -e 'process.exit(0)'",
     "precommit": "lint-staged",
     "prepack": "check-for-leaks",
@@ -78,7 +80,10 @@
       "@electron/internal/(.+)": "./lib/$1"
     },
     "appliesTo": {
-      "includeExtensions": [".js", ".ts"]
+      "includeExtensions": [
+        ".js",
+        ".ts"
+      ]
     }
   },
   "lint-staged": {
