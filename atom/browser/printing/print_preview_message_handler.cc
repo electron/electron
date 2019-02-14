@@ -173,7 +173,9 @@ void PrintPreviewMessageHandler::RunPrintToPDFCallback(
     print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
   } else {
     v8::Local<v8::String> error_message =
-        v8::String::NewFromUtf8(isolate, "Failed to generate PDF");
+        v8::String::NewFromUtf8(isolate, "Failed to generate PDF",
+                                v8::NewStringType::kNormal)
+            .ToLocalChecked();
     print_to_pdf_callback_map_[request_id].Run(
         v8::Exception::Error(error_message), v8::Null(isolate));
   }

@@ -57,7 +57,9 @@ void SavePageHandler::OnDownloadUpdated(download::DownloadItem* item) {
       callback_.Run(v8::Null(isolate));
     } else {
       v8::Local<v8::String> error_message =
-          v8::String::NewFromUtf8(isolate, "Fail to save page");
+          v8::String::NewFromUtf8(isolate, "Fail to save page",
+                                  v8::NewStringType::kNormal)
+              .ToLocalChecked();
       callback_.Run(v8::Exception::Error(error_message));
     }
     Destroy(item);
