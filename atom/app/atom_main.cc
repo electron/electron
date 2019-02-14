@@ -43,9 +43,9 @@
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
 
-#if defined(HELPER_EXECUTABLE)
+#if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 #include "sandbox/mac/seatbelt_exec.h"  // nogncheck
-#endif                                  // defined(HELPER_EXECUTABLE)
+#endif
 
 namespace {
 
@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
   }
 #endif
 
-#if defined(HELPER_EXECUTABLE)
+#if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
   uint32_t exec_path_size = 0;
   int rv = _NSGetExecutablePath(NULL, &exec_path_size);
   if (rv != -1) {
@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
       abort();
     }
   }
-#endif
+#endif  // defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 
   return AtomMain(argc, argv);
 }
