@@ -690,6 +690,7 @@ if (is_mac) {
     libs = [
       "AVFoundation.framework",
       "Carbon.framework",
+      "LocalAuthentication.framework",
       "QuartzCore.framework",
       "Quartz.framework",
       "Security.framework",

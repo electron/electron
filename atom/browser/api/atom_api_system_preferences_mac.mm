@@ -8,14 +8,19 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Cocoa/Cocoa.h>
+#import <LocalAuthentication/LocalAuthentication.h>
+#import <Security/Security.h>
 
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/mac/sdk_forward_declarations.h"
+#include "base/sequenced_task_runner.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/mac/url_conversions.h"
@@ -436,6 +441,72 @@ std::string SystemPreferences::GetSystemColor(const std::string& color,
         "This api is not available on MacOS version 10.9 or lower.");
     return "";
   }
+}
+
+bool SystemPreferences::CanPromptTouchID() {
+  if (@available(macOS 10.12.2, *)) {
+    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+    if (![context
+            canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                        error:nil])
+      return false;
+    if (@available(macOS 10.13.2, *))
+      return [context biometryType] == LABiometryTypeTouchID;
+    return true;
+  }
+  return false;
+}
+
+void OnTouchIDCompleted(scoped_refptr<util::Promise> promise) {
+  promise->Resolve();
+}
+
+void OnTouchIDFailed(scoped_refptr<util::Promise> promise,
+                     const std::string& reason) {
+  promise->RejectWithErrorMessage(reason);
+}
+
+v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
+    v8::Isolate* isolate,
+    const std::string& reason) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  if (@available(macOS 10.12.2, *)) {
+    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+    base::ScopedCFTypeRef<SecAccessControlRef> access_control =
+        base::ScopedCFTypeRef<SecAccessControlRef>(
+            SecAccessControlCreateWithFlags(
+                kCFAllocatorDefault,
+                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                kSecAccessControlPrivateKeyUsage |
+                    kSecAccessControlUserPresence,
+                nullptr));
+
+    scoped_refptr<base::SequencedTaskRunner> runner =
+        base::SequencedTaskRunnerHandle::Get();
+
+    [context
+        evaluateAccessControl:access_control
+                    operation:LAAccessControlOperationUseKeySign
+              localizedReason:[NSString stringWithUTF8String:reason.c_str()]
+                        reply:^(BOOL success, NSError* error) {
+                          if (!success) {
+                            runner->PostTask(
+                                FROM_HERE,
+                                base::BindOnce(
+                                    &OnTouchIDFailed, promise,
+                                    std::string([error.localizedDescription
+                                                     UTF8String])));
+                          } else {
+                            runner->PostTask(
+                                FROM_HERE,
+                                base::BindOnce(&OnTouchIDCompleted, promise));
+                          }
+                        }];
+  } else {
+    promise->RejectWithErrorMessage(
+        "This API is not available on macOS versions older than 10.12.2");
+  }
+  return promise->GetHandle();
 }
 
 // static
