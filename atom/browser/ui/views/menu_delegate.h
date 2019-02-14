@@ -50,7 +50,6 @@ class MenuDelegate : public views::MenuDelegate {
   bool IsCommandEnabled(int id) const override;
   bool IsCommandVisible(int id) const override;
   bool IsItemChecked(int id) const override;
-  void SelectionChanged(views::MenuItemView* menu) override;
   void WillShowMenu(views::MenuItemView* menu) override;
   void WillHideMenu(views::MenuItemView* menu) override;
   void OnMenuClosed(views::MenuItemView* menu) override;

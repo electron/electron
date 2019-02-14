@@ -101,7 +101,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
-  void EnsureSurfaceSynchronizedForLayoutTest() override;
+  void EnsureSurfaceSynchronizedForWebTest() override;
   gfx::Rect GetViewBounds(void) const override;
   gfx::Size GetVisibleViewportSize() const override;
   void SetInsets(const gfx::Insets&) override;
@@ -343,7 +343,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   // Latest capture sequence number which is incremented when the caller
   // requests surfaces be synchronized via
-  // EnsureSurfaceSynchronizedForLayoutTest().
+  // EnsureSurfaceSynchronizedForWebTest().
   uint32_t latest_capture_sequence_number_ = 0u;
 
   SkColor background_color_ = SkColor();

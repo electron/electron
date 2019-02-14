@@ -22,6 +22,8 @@ std::string GetOverriddenApplicationVersion();
 
 std::string GetApplicationName();
 std::string GetApplicationVersion();
+// Returns the user agent of Electron.
+std::string GetApplicationUserAgent();
 
 #if defined(OS_WIN)
 PCWSTR GetRawAppUserModelID();

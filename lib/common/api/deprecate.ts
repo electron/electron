@@ -1,8 +1,6 @@
-'use strict'
+let deprecationHandler: ElectronInternal.DeprecationHandler | null = null
 
-let deprecationHandler = null
-
-function warnOnce (oldName, newName) {
+function warnOnce (oldName: string, newName?: string) {
   let warned = false
   const msg = newName
     ? `'${oldName}' is deprecated and will be removed. Please use '${newName}' instead.`
@@ -15,7 +13,7 @@ function warnOnce (oldName, newName) {
   }
 }
 
-const deprecate = {
+const deprecate: ElectronInternal.DeprecationUtil = {
   setHandler: (handler) => { deprecationHandler = handler },
   getHandler: () => deprecationHandler,
   warn: (oldName, newName) => {
@@ -37,7 +35,7 @@ const deprecate = {
 
   function: (fn, newName) => {
     const warn = warnOnce(fn.name, newName)
-    return function () {
+    return function (this: any) {
       warn()
       fn.apply(this, arguments)
     }
@@ -47,7 +45,7 @@ const deprecate = {
     const warn = newName.startsWith('-') /* internal event */
       ? warnOnce(`${oldName} event`)
       : warnOnce(`${oldName} event`, `${newName} event`)
-    return emitter.on(newName, function (...args) {
+    return emitter.on(newName, function (this: NodeJS.EventEmitter, ...args) {
       if (this.listenerCount(oldName) !== 0) {
         warn()
         this.emit(oldName, ...args)
@@ -77,14 +75,14 @@ const deprecate = {
     })
   },
 
-  promisify: (fn) => {
+  promisify: <T extends (...args: any[]) => any>(fn: T): T => {
     const fnName = fn.name || 'function'
     const oldName = `${fnName} with callbacks`
     const newName = `${fnName} with Promises`
     const warn = warnOnce(oldName, newName)
 
-    return function (...params) {
-      let cb
+    return function (this: any, ...params: any[]) {
+      let cb: Function | undefined
       if (params.length > 0 && typeof params[params.length - 1] === 'function') {
         cb = params.pop()
       }
@@ -92,26 +90,26 @@ const deprecate = {
       if (!cb) return promise
       if (process.enablePromiseAPIs) warn()
       return promise
-        .then(res => {
+        .then((res: any) => {
           process.nextTick(() => {
-            cb.length === 2 ? cb(null, res) : cb(res)
+            cb!.length === 2 ? cb!(null, res) : cb!(res)
           })
-        }, err => {
+        }, (err: Error) => {
           process.nextTick(() => {
-            cb.length === 2 ? cb(err) : cb()
+            cb!.length === 2 ? cb!(err) : cb!()
           })
         })
-    }
+    } as T
   },
 
-  promisifyMultiArg: (fn) => {
+  promisifyMultiArg: <T extends (...args: any[]) => any>(fn: T): T => {
     const fnName = fn.name || 'function'
     const oldName = `${fnName} with callbacks`
     const newName = `${fnName} with Promises`
     const warn = warnOnce(oldName, newName)
 
-    return function (...params) {
-      let cb
+    return function (this: any, ...params) {
+      let cb: Function | undefined
       if (params.length > 0 && typeof params[params.length - 1] === 'function') {
         cb = params.pop()
       }
@@ -119,15 +117,15 @@ const deprecate = {
       if (!cb) return promise
       if (process.enablePromiseAPIs) warn()
       return promise
-        .then(res => {
+        .then((res: any) => {
           process.nextTick(() => {
             // eslint-disable-next-line standard/no-callback-literal
-            cb.length > 2 ? cb(null, ...res) : cb(...res)
+            cb!.length > 2 ? cb!(null, ...res) : cb!(...res)
           })
-        }, err => {
-          process.nextTick(() => cb(err))
+        }, (err: Error) => {
+          process.nextTick(() => cb!(err))
         })
-    }
+    } as T
   },
 
   renameProperty: (o, oldName, newName) => {
@@ -137,7 +135,7 @@ const deprecate = {
     // inject it and warn about it
     if ((oldName in o) && !(newName in o)) {
       warn()
-      o[newName] = o[oldName]
+      o[newName] = (o as any)[oldName]
     }
 
     // wrap the deprecated property in an accessor to warn
@@ -155,4 +153,4 @@ const deprecate = {
   }
 }
 
-module.exports = deprecate
+export default deprecate

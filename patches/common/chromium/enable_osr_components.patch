@@ -6,7 +6,7 @@ Subject: enable_osr_components.patch
 Add MouseWheelPhaseHandler for OSR.
 
 diff --git a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
-index 305095fc420e1732bdf089dfeee7672f69d85167..f5ca4eda4a663b9297ce69e6a455d7554f1fbe5c 100644
+index fc252b6ceffd92e85f545f848bb8bde4e518cbd9..b0dfd847ec03ca7843d2c1c217b172213bed097c 100644
 --- a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
 +++ b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
 @@ -7,6 +7,7 @@

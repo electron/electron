@@ -54,10 +54,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
       tracing_controller);
 
   v8::V8::InitializePlatform(platform_);
-  gin::IsolateHolder::Initialize(
-      gin::IsolateHolder::kNonStrictMode, gin::IsolateHolder::kStableV8Extras,
-      gin::ArrayBufferAllocator::SharedInstance(),
-      nullptr /* external_reference_table */, false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 gin::ArrayBufferAllocator::SharedInstance(),
+                                 nullptr /* external_reference_table */,
+                                 false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);

@@ -5,7 +5,5 @@
 
   "src/electron/patches/common/ffmpeg": "src/third_party/ffmpeg",
 
-  "src/electron/patches/common/swiftshader": "src/third_party/swiftshader",
-
   "src/electron/patches/common/v8":  "src/v8"
 }

@@ -6,7 +6,7 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index a2b40d82674eec5c20f705ace36cf590d46b307a..98b93a08b9a0bdbbd68925e94bf4247666b69cc4 100644
+index fe2e10627f42c8355fd176ed24b54cfab916a72a..7b48b68de04c2cbfc4380e6e38c9ac07dbc7784a 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
 @@ -26,6 +26,7 @@ group("gtk") {
@@ -16,4 +16,4 @@ index a2b40d82674eec5c20f705ace36cf590d46b307a..98b93a08b9a0bdbbd68925e94bf42476
 +    "//electron:*",
      "//examples:peerconnection_client",
      "//gpu/gles2_conform_support:gles2_conform_test_windowless",
-     "//remoting/host",
+     "//remoting/host/linux",
