@@ -1,5 +1,6 @@
 import * as ipcRenderer from '@electron/internal/renderer/ipc-renderer-internal'
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { stringify } from 'querystring'
 
 window.onload = function () {
   // Use menu API to show context menu.
@@ -45,7 +46,7 @@ const createMenu = function (x: number, y: number, items: any[]) {
 }
 
 const showFileChooserDialog = function (callback: (blob: Blob) => void) {
-  ipcRendererUtils.invoke('ELECTRON_INSPECTOR_SELECT_FILE').then(([path, data]) => {
+  ipcRendererUtils.invoke<[ string, any ]>('ELECTRON_INSPECTOR_SELECT_FILE').then(([path, data]) => {
     if (path && data) {
       callback(dataToHtml5FileObject(path, data))
     }
