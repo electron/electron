@@ -88,10 +88,6 @@ bool MenuDelegate::IsItemChecked(int id) const {
   return adapter_->IsItemChecked(id);
 }
 
-void MenuDelegate::SelectionChanged(views::MenuItemView* menu) {
-  adapter_->SelectionChanged(menu);
-}
-
 void MenuDelegate::WillShowMenu(views::MenuItemView* menu) {
   adapter_->WillShowMenu(menu);
 }

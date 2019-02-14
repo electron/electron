@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yang Guo <yangguo@chromium.org>
+Date: Wed, 6 Feb 2019 15:40:15 +0100
+Subject: Expose protected v8::Platform::SystemClockTimeMillis
+
+This allows the embedder to use a shared library build
+even if they use this method.
+
+R=ulan@chromium.org
+
+Change-Id: I613a6e5eb82b494128fb95dc89a0b73639ac5ca2
+Reviewed-on: https://chromium-review.googlesource.com/c/1456042
+Reviewed-by: Ulan Degenbaev <ulan@chromium.org>
+Commit-Queue: Yang Guo <yangguo@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#59455}
+
+diff --git a/include/v8-platform.h b/include/v8-platform.h
+index fc008979f69210d5e627ea735146f66c36703f43..ece562f4338f5489ae6c457afc4fde4034abf21a 100644
+--- a/include/v8-platform.h
++++ b/include/v8-platform.h
+@@ -430,7 +430,7 @@ class Platform {
+    * since epoch. Useful for implementing |CurrentClockTimeMillis| if
+    * nothing special needed.
+    */
+-  static double SystemClockTimeMillis();
++  V8_EXPORT static double SystemClockTimeMillis();
+ };
+ 
+ }  // namespace v8

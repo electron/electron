@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 6 Feb 2019 16:39:34 +0530
+Subject: DISALLOW_IMPLICIT_CONSTRUCTORS for MacroAssembler
+
+When BUILDING_V8_SHARED in release builds __declspec(dllexport)
+causes generation of implicit constructors in the forwarding class
+while its deleted in TurboAssemblerBase, which leads to compilation
+errors like:
+
+In file included from gen/v8/v8_base_jumbo_6.cc:41:
+In file included from .\../../v8/src/interface-descriptors.cc:7:
+In file included from ../../v8\src/macro-assembler.h:40:
+../../v8\src/x64/macro-assembler-x64.h(92,9):  error: call to deleted constructor of 'v8::internal::TurboAssemblerBase'
+      : TurboAssemblerBase(std::forward<Args>(args)...) {}
+        ^                  ~~~~~~~~~~~~~~~~~~~~~~~~
+../../v8\src/x64/macro-assembler-x64.h(536,25):  note: in instantiation of function template specialization 'v8::internal::TurboAssembler::TurboAssembler<v8::internal::TurboAssembler>' requested here
+class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+                        ^
+../../v8\src/turbo-assembler.h(127,34):  note: 'TurboAssemblerBase' has been explicitly marked deleted here
+  DISALLOW_IMPLICIT_CONSTRUCTORS(TurboAssemblerBase);
+                                 ^
+1 error generated.
+
+The original changes were made in https://chromium-review.googlesource.com/c/v8/v8/+/1414913
+
+R=mstarzinger@chromium.org,jgruber@chromium.org,clemensh@chromium.org
+
+Bug: NONE
+Change-Id: I87a5a678b8bae13b3adc6f1c6ac0b9313ed18d85
+Reviewed-on: https://chromium-review.googlesource.com/c/1454676
+Commit-Queue: Clemens Hammacher <clemensh@chromium.org>
+Reviewed-by: Clemens Hammacher <clemensh@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#59427}
+
+diff --git a/AUTHORS b/AUTHORS
+index 57c8890f29728856f09461d03666bbff73966bca..7adf005528b280581133eb43a2b6fcd3e98198d1 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -68,6 +68,7 @@ Colin Ihrig <cjihrig@gmail.com>
+ Daniel Andersson <kodandersson@gmail.com>
+ Daniel Bevenius <daniel.bevenius@gmail.com>
+ Daniel James <dnljms@gmail.com>
++Deepak Mohan <hop2deep@gmail.com>
+ Deon Dior <diaoyuanjie@gmail.com>
+ Dominic Farolini <domfarolino@gmail.com>
+ Douglas Crosher <dtc-v8@scieneer.com>
+diff --git a/src/arm/macro-assembler-arm.h b/src/arm/macro-assembler-arm.h
+index 9b67a683e849d306bb8c085f525102a1b9ac3854..29fa10cfeac9cdfb140024c8301465ca76278f4c 100644
+--- a/src/arm/macro-assembler-arm.h
++++ b/src/arm/macro-assembler-arm.h
+@@ -825,6 +825,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // Needs access to SafepointRegisterStackIndex for compiled frame
+   // traversal.
+   friend class StandardFrame;
++
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ // -----------------------------------------------------------------------------
+diff --git a/src/arm64/macro-assembler-arm64.h b/src/arm64/macro-assembler-arm64.h
+index 9327fce64064dad168b120901423ab2e7d8ecbcb..ba1885a2484e6922352078e849f531fa49c9d71d 100644
+--- a/src/arm64/macro-assembler-arm64.h
++++ b/src/arm64/macro-assembler-arm64.h
+@@ -1994,6 +1994,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // branch isntructions with a range of +-128MB. If that becomes too little
+   // (!), the mechanism can be extended to generate special veneers for really
+   // far targets.
++
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ 
+diff --git a/src/ia32/macro-assembler-ia32.h b/src/ia32/macro-assembler-ia32.h
+index 6839a1ac5b1533e179f6cb13f9b76dc4aaf42329..d26152663aa2900ea1c81ea27bbb2a1953e8b76a 100644
+--- a/src/ia32/macro-assembler-ia32.h
++++ b/src/ia32/macro-assembler-ia32.h
+@@ -695,6 +695,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // Needs access to SafepointRegisterStackIndex for compiled frame
+   // traversal.
+   friend class StandardFrame;
++
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ // -----------------------------------------------------------------------------
+diff --git a/src/mips/macro-assembler-mips.h b/src/mips/macro-assembler-mips.h
+index a833eeb032715f68574da9557740792a42b0a331..303fbb76b21eed23041460f6c83e48b3fe2c1396 100644
+--- a/src/mips/macro-assembler-mips.h
++++ b/src/mips/macro-assembler-mips.h
+@@ -1148,6 +1148,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // Needs access to SafepointRegisterStackIndex for compiled frame
+   // traversal.
+   friend class StandardFrame;
++
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ template <typename Func>
+diff --git a/src/mips64/macro-assembler-mips64.h b/src/mips64/macro-assembler-mips64.h
+index 40c2d49ca5356e2c3b5ec597a09d625602506faf..2e6991c1ba4a6b73ed62d50f25f09347baf9d9ef 100644
+--- a/src/mips64/macro-assembler-mips64.h
++++ b/src/mips64/macro-assembler-mips64.h
+@@ -1218,6 +1218,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // Needs access to SafepointRegisterStackIndex for compiled frame
+   // traversal.
+   friend class StandardFrame;
++
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ template <typename Func>
+diff --git a/src/x64/macro-assembler-x64.h b/src/x64/macro-assembler-x64.h
+index 97292b98fa4cda503b20757b91b52c1eb8b5473a..cfd040a5c3f77b5788062bfa77bae53e14a0470d 100644
+--- a/src/x64/macro-assembler-x64.h
++++ b/src/x64/macro-assembler-x64.h
+@@ -899,6 +899,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+   // Needs access to SafepointRegisterStackIndex for compiled frame
+   // traversal.
+   friend class StandardFrame;
++
++  DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
+ };
+ 
+ // -----------------------------------------------------------------------------

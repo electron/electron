@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 322315fb109b6260fcc9a243c910e789ee0a666c..27b9b8a1ea25559eb2fa45023085ddde6da3b719 100644
+index f3523d2a05c3f93215c6a78e81e015c4b965b758..39ff4f17822b4552218cb3a11c478eb22f0ada17 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -288,6 +288,10 @@ const int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -37,7 +37,7 @@ index 322315fb109b6260fcc9a243c910e789ee0a666c..27b9b8a1ea25559eb2fa45023085ddde
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -941,6 +946,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
+@@ -940,6 +945,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
        hwnd());
  }
  
@@ -49,7 +49,7 @@ index 322315fb109b6260fcc9a243c910e789ee0a666c..27b9b8a1ea25559eb2fa45023085ddde
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index c0f8d689ffdfaa52ef28de0b5344739f27f57eb1..5a376f06e2bcca0875f30ea37cc9a1feaf521ad5 100644
+index 10c2fcd1742974d373f68d3fa13f2a0bb8ce2c76..533f80fd1a8f97e6153c610d6fab2f594590ffe3 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -182,6 +182,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
@@ -62,10 +62,10 @@ index c0f8d689ffdfaa52ef28de0b5344739f27f57eb1..5a376f06e2bcca0875f30ea37cc9a1fe
    HICON GetDefaultWindowIcon() const override;
    HICON GetSmallWindowIcon() const override;
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 690bc7aedd2893a017c13decc847b7ab9a203ccf..529f08d6321bbc91767a60b6be2fae6efdd585c2 100644
+index a3c4e34bd26891e1bb98bc47038700da7e5a6b94..a919147ef1d46fe562ac74cdf515ae2d3ff8e2c4 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -45,6 +45,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // True if the widget associated with this window has a non-client view.
    virtual bool HasNonClientView() const = 0;
  

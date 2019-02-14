@@ -76,6 +76,7 @@
 #include "base/rand_util.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/single_thread_task_runner.h"
+#include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
@@ -114,7 +115,7 @@ const char kACKToken[] = "ACK";
 const char kShutdownToken[] = "SHUTDOWN";
 const char kTokenDelimiter = '\0';
 const int kMaxMessageLength = 32 * 1024;
-const int kMaxACKMessageLength = arraysize(kShutdownToken) - 1;
+const int kMaxACKMessageLength = base::size(kShutdownToken) - 1;
 
 const char kLockDelimiter = '-';
 
@@ -225,9 +226,9 @@ ssize_t ReadFromSocket(int fd,
 // Set up a sockaddr appropriate for messaging.
 void SetupSockAddr(const std::string& path, struct sockaddr_un* addr) {
   addr->sun_family = AF_UNIX;
-  CHECK(path.length() < arraysize(addr->sun_path))
+  CHECK(path.length() < base::size(addr->sun_path))
       << "Socket path too long: " << path;
-  base::strlcpy(addr->sun_path, path.c_str(), arraysize(addr->sun_path));
+  base::strlcpy(addr->sun_path, path.c_str(), base::size(addr->sun_path));
 }
 
 // Set up a socket appropriate for messaging.
@@ -604,13 +605,13 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
 
   if (parent_->notification_callback_.Run(argv, base::FilePath(current_dir))) {
     // Send back "ACK" message to prevent the client process from starting up.
-    reader->FinishWithACK(kACKToken, arraysize(kACKToken) - 1);
+    reader->FinishWithACK(kACKToken, base::size(kACKToken) - 1);
   } else {
     LOG(WARNING) << "Not handling interprocess notification as browser"
                     " is shutting down";
     // Send back "SHUTDOWN" message, so that the client process can start up
     // without killing this process.
-    reader->FinishWithACK(kShutdownToken, arraysize(kShutdownToken) - 1);
+    reader->FinishWithACK(kShutdownToken, base::size(kShutdownToken) - 1);
     return;
   }
 }
@@ -654,7 +655,7 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
   }
 
   // Validate the message.  The shortest message is kStartToken\0x\0x
-  const size_t kMinMessageLength = arraysize(kStartToken) + 4;
+  const size_t kMinMessageLength = base::size(kStartToken) + 4;
   if (bytes_read_ < kMinMessageLength) {
     buf_[bytes_read_] = 0;
     LOG(ERROR) << "Invalid socket message (wrong length):" << buf_;
@@ -857,10 +858,10 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
   }
 
   buf[len] = '\0';
-  if (strncmp(buf, kShutdownToken, arraysize(kShutdownToken) - 1) == 0) {
+  if (strncmp(buf, kShutdownToken, base::size(kShutdownToken) - 1) == 0) {
     // The other process is shutting down, it's safe to start a new process.
     return PROCESS_NONE;
-  } else if (strncmp(buf, kACKToken, arraysize(kACKToken) - 1) == 0) {
+  } else if (strncmp(buf, kACKToken, base::size(kACKToken) - 1) == 0) {
 #if defined(TOOLKIT_VIEWS) && defined(OS_LINUX) && !defined(OS_CHROMEOS)
     // Likely NULL in unit tests.
     views::LinuxUI* linux_ui = views::LinuxUI::instance();

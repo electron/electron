@@ -6,17 +6,13 @@
 
 namespace mate {
 
-Promise::Promise()
-    : isolate_(NULL) {
-}
+Promise::Promise() : isolate_(NULL) {}
 
-Promise::Promise(v8::Isolate* isolate)
-    : isolate_(isolate) {
+Promise::Promise(v8::Isolate* isolate) : isolate_(isolate) {
   resolver_ = v8::Promise::Resolver::New(isolate);
 }
 
-Promise::~Promise() {
-}
+Promise::~Promise() {}
 
 Promise Promise::Create(v8::Isolate* isolate) {
   return Promise(isolate);
@@ -28,7 +24,10 @@ Promise Promise::Create() {
 
 void Promise::RejectWithErrorMessage(const std::string& string) {
   v8::Local<v8::String> error_message =
-      v8::String::NewFromUtf8(isolate(), string.c_str());
+      v8::String::NewFromUtf8(isolate(), string.c_str(),
+                              v8::NewStringType::kNormal,
+                              static_cast<int>(string.size()))
+          .ToLocalChecked();
   v8::Local<v8::Value> error = v8::Exception::Error(error_message);
   resolver_->Reject(mate::ConvertToV8(isolate(), error));
 }
@@ -38,7 +37,7 @@ v8::Local<v8::Object> Promise::GetHandle() const {
 }
 
 v8::Local<v8::Value> Converter<Promise>::ToV8(v8::Isolate* isolate,
-                                                  Promise val) {
+                                              Promise val) {
   return val.GetHandle();
 }
 

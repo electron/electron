@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/common/native_mate_converters/callback.h"
+#include "base/stl_util.h"
 #include "content/public/browser/browser_thread.h"
 
 #include "native_mate/dictionary.h"
@@ -151,7 +152,7 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
   v8::Local<v8::Function> bind_func =
       v8::Local<v8::Function>::Cast(bind.ToLocalChecked());
   v8::Local<v8::Value> converted[] = {func, arg1, arg2};
-  return bind_func->Call(context, func, arraysize(converted), converted)
+  return bind_func->Call(context, func, base::size(converted), converted)
       .ToLocalChecked();
 }
 

@@ -8,10 +8,10 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index be1724e19eeb0186dc20dad48e0d604ff87918e5..3dea6a89eb12dc6be157c39787358cd86810da16 100644
+index bd62ed07876ad4a2a7c6e8309843281719dbefb6..13e67994997caf175ba1b30ba8070718a697588d 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
-@@ -619,6 +619,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+@@ -673,6 +673,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
      return false;
    }
  
@@ -22,7 +22,7 @@ index be1724e19eeb0186dc20dad48e0d604ff87918e5..3dea6a89eb12dc6be157c39787358cd8
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index f564df8841d1eaea29d4f09c679263ec97552e3b..809e140c4f6004aa95997df6fb6b76e2f8e23f95 100644
+index e474d899fbcebfbaf4cb2ec0b63cc963292ee39a..8446076e169efb64569fb2e463cb5ebf5e1e6ee9 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -58,6 +58,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
@@ -37,10 +37,10 @@ index f564df8841d1eaea29d4f09c679263ec97552e3b..809e140c4f6004aa95997df6fb6b76e2
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index af64896d0567870672bf4e2f45f7d76e1df68844..4ce6d14bd654e967e8cd5de43157167b98c162fc 100644
+index 2cc843982a697dbd693ca1d5fda3a8ab68c96f73..3ebe17d34cdcfb02acacd3c32f5dbb87594c010f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -235,6 +235,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -237,6 +237,9 @@ class CONTENT_EXPORT ContentBrowserClient {
        content::RenderFrameHost* rfh,
        content::SiteInstance* pending_site_instance){};
  
