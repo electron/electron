@@ -210,6 +210,8 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(mate::Arguments* args);
   bool IsInApplicationsFolder();
+  v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
+  v8::Global<v8::Value> dock_;
 #endif
 #if defined(MAS_BUILD)
   base::Callback<void()> StartAccessingSecurityScopedResource(

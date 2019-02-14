@@ -26,4 +26,23 @@ declare namespace Electron {
     cause: SerializedError,
     __ELECTRON_SERIALIZED_ERROR__: true
   }
+
+  const deprecate: ElectronInternal.DeprecationUtil;
+}
+
+declare namespace ElectronInternal {
+  type DeprecationHandler = (message: string) => void;
+  interface DeprecationUtil {
+    setHandler(handler: DeprecationHandler): void;
+    getHandler(): DeprecationHandler | null;
+    warn(oldName: string, newName: string): void;
+    log(message: string): void;
+    function(fn: Function, newName: string): Function;
+    event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
+    removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;
+    renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
+
+    promisify<T extends (...args: any[]) => any>(fn: T): T;
+    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T): T;
+  }
 }

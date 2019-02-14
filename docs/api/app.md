@@ -1307,6 +1307,10 @@ Returns `Boolean` - Whether the dock icon is visible.
 
 Sets the application's [dock menu][dock-menu].
 
+### `app.dock.getMenu()` _macOS_
+
+Returns `Menu | null` - The application's [dock menu][dock-menu].
+
 ### `app.dock.setIcon(image)` _macOS_
 
 * `image` ([NativeImage](native-image.md) | String)

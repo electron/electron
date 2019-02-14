@@ -22,6 +22,8 @@ declare namespace NodeJS {
     atomBinding(name: string): any;
     atomBinding(name: 'features'): FeaturesBinding;
     atomBinding(name: 'v8_util'): V8UtilBinding;
+    atomBinding(name: 'app'): { app: Electron.App, App: Function };
+    atomBinding(name: 'command_line'): Electron.CommandLine;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
   }
