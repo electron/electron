@@ -10,14 +10,14 @@ source_set("manifests") {
 
   deps = [
     "//printing/buildflags",
-    "//services/proxy_resolver:proxy_resolver_manifest",
+    "//services/proxy_resolver/public/cpp:manifest",
   ]
 
   if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor:pdf_compositor_manifest" ]
+    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
   }
 
   if (enable_print_preview) {
-    deps += [ "//chrome/services/printing:manifest" ]
+    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
   }
 }
