@@ -113,8 +113,8 @@ app.on('ready', () => {
   mainWindow.loadURL('https://github.com')
 
   mainWindow.webContents.on('did-finish-load', function () {
-    mainWindow.webContents.savePage('/tmp/test.html', 'HTMLComplete', function (error) {
-      if (!error) { console.log('Save page successfully') }
+    mainWindow.webContents.savePage('/tmp/test.html', 'HTMLComplete').then(() => {
+      console.log('Page saved successfully')
     })
   })
 
