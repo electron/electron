@@ -35,6 +35,7 @@ class AtomMainDelegate : public content::ContentMainDelegate {
 #if defined(OS_MACOSX)
   bool ShouldSendMachPort(const std::string& process_type) override;
   bool DelaySandboxInitialization(const std::string& process_type) override;
+  std::string GetSystemPreferredLanguage();
 #endif
   bool ShouldLockSchemeRegistry() override;
   bool ShouldCreateFeatureList() override;

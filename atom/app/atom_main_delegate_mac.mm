@@ -61,6 +61,11 @@ void AtomMainDelegate::SetUpBundleOverrides() {
   base::mac::SetBaseBundleID(base_bundle_id.c_str());
 }
 
+std::string AtomMainDelegate::GetSystemPreferredLanguage() {
+  return base::SysNSStringToUTF8(
+      [[NSLocale preferredLanguages] objectAtIndex:0]);
+}
+
 void RegisterAtomCrApp() {
   // Force the NSApplication subclass to be used.
   [AtomApplication sharedApplication];

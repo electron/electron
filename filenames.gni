@@ -188,6 +188,8 @@ filenames = {
     "atom/browser/api/atom_api_web_contents.h",
     "atom/browser/api/atom_api_web_contents_impl.cc",
     "atom/browser/api/atom_api_web_contents_mac.mm",
+    "atom/browser/api/atom_api_web_contents_linux.cc",
+    "atom/browser/api/atom_api_web_contents_win.cc",
     "atom/browser/api/atom_api_web_contents_view.cc",
     "atom/browser/api/atom_api_web_contents_view.h",
     "atom/browser/api/atom_api_web_request.cc",

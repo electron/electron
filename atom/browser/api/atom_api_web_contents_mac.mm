@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/common/renderer_preferences.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -25,6 +27,11 @@ bool WebContents::IsFocused() const {
   }
 
   return view->HasFocus();
+}
+
+void WebContents::SetAcceptLanguages(content::RendererPreferences* prefs) {
+  prefs->accept_languages = base::SysNSStringToUTF8(
+      [[NSLocale preferredLanguages] componentsJoinedByString:@","]);
 }
 
 }  // namespace api

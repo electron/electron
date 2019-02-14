@@ -405,7 +405,7 @@ void WebContents::InitWithSessionAndOptions(
   managed_web_contents()->GetView()->SetDelegate(this);
 
   auto* prefs = web_contents()->GetMutableRendererPrefs();
-  prefs->accept_languages = g_browser_process->GetApplicationLocale();
+  SetAcceptLanguages(prefs);
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.

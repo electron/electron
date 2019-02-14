@@ -200,10 +200,11 @@ describe('chromium feature', () => {
   })
 
   describe('navigator.languages', (done) => {
-    it('should return the system locale only', () => {
+    it('should return the system locales', () => {
       const appLocale = app.getLocale()
-      assert.strictEqual(navigator.languages.length, 1)
-      assert.strictEqual(navigator.languages[0], appLocale)
+      expect(navigator.languages.length).greaterThan(0)
+      // compare only the language not the region as appLocale provides that
+      expect(navigator.languages[0].split('-')[0]).equal(appLocale.split('-')[0])
     })
   })
 
