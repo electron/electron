@@ -1,4 +1,4 @@
-From 790e1e19af133252e95e3a4de8c8e7a3a011bf02 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 20 Sep 2018 17:50:48 -0700
 Subject: disable_extensions_gn.patch
@@ -6,7 +6,7 @@ Subject: disable_extensions_gn.patch
 Fix build files generation when chrome extensions are disabled.
 
 diff --git a/chrome/browser/apps/app_shim/BUILD.gn b/chrome/browser/apps/app_shim/BUILD.gn
-index f8a6d1868788..350c3572ec54 100644
+index f8a6d1868788d0a984e70b23b6522cf9b74827da..350c3572ec54d85c2195555877d27486a1300273 100644
 --- a/chrome/browser/apps/app_shim/BUILD.gn
 +++ b/chrome/browser/apps/app_shim/BUILD.gn
 @@ -1,6 +1,7 @@
@@ -46,7 +46,7 @@ index f8a6d1868788..350c3572ec54 100644
 +  }
  }
 diff --git a/chrome/browser/ui/BUILD.gn b/chrome/browser/ui/BUILD.gn
-index 1b14d628a63b..00401612c191 100644
+index 1b14d628a63b90532bf25251d0bec6c3f1c7a723..00401612c191836043eb0343d3ee3d42acbd5ea4 100644
 --- a/chrome/browser/ui/BUILD.gn
 +++ b/chrome/browser/ui/BUILD.gn
 @@ -2570,7 +2570,10 @@ split_static_library("ui") {

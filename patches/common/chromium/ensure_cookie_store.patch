@@ -15,7 +15,7 @@ index 55df34044af7bafb55521738a6581410877494c0..56da4a1012a6bcf7a500c0e600a08776
 +++ b/chrome/browser/io_thread.cc
 @@ -360,6 +360,11 @@ void IOThread::Init() {
  #endif
-
+ 
    ConstructSystemRequestContext();
 +
 +  // Prevent DCHECK failures when a NetworkContext is created with an encrypted
@@ -23,7 +23,7 @@ index 55df34044af7bafb55521738a6581410877494c0..56da4a1012a6bcf7a500c0e600a08776
 +  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
 +    content::GetNetworkServiceImpl()->set_os_crypt_is_configured();
  }
-
+ 
  void IOThread::CleanUp() {
 diff --git a/chrome/browser/profiles/off_the_record_profile_io_data.cc b/chrome/browser/profiles/off_the_record_profile_io_data.cc
 index ebb7e95151156209aae7234de0e17ef9241335a7..de61d90917a40d0d64bb7c15daad0fd2c1147247 100644
@@ -32,7 +32,7 @@ index ebb7e95151156209aae7234de0e17ef9241335a7..de61d90917a40d0d64bb7c15daad0fd2
 @@ -215,14 +215,6 @@ void OffTheRecordProfileIOData::InitializeInternal(
        std::make_unique<net::ChannelIDService>(
            new net::DefaultChannelIDStore(nullptr)));
-
+ 
 -  using content::CookieStoreConfig;
 -  std::unique_ptr<net::CookieStore> cookie_store(CreateCookieStore(
 -      CookieStoreConfig(base::FilePath(), false, false, nullptr)));
@@ -51,7 +51,7 @@ index 6dd54b7d045f38195c3858699dbd4ac5ad877277..c4038dc1e9cd5c13e946919ef5747357
 @@ -450,49 +450,6 @@ void ProfileImplIOData::InitializeInternal(
    IOThread* const io_thread = profile_params->io_thread;
    IOThread::Globals* const io_thread_globals = io_thread->globals();
-
+ 
 -  // This check is needed because with the network service the cookies are used
 -  // in a different process. See the bottom of
 -  // ProfileNetworkContextService::SetUpProfileIODataMainContext.
@@ -96,7 +96,7 @@ index 6dd54b7d045f38195c3858699dbd4ac5ad877277..c4038dc1e9cd5c13e946919ef5747357
 -  }
 -
    AddProtocolHandlersToBuilder(builder, protocol_handlers);
-
+ 
    // Install the Offline Page Interceptor.
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
 index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8448255b8 100644
@@ -120,12 +120,12 @@ index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8
 -      &session_cleanup_cookie_store, &session_cleanup_channel_id_store);
 +  url_request_context_owner_ = MakeURLRequestContext();
    url_request_context_ = url_request_context_owner_.url_request_context.get();
-
+ 
    network_service_->RegisterNetworkContext(this);
 @@ -323,10 +321,6 @@ NetworkContext::NetworkContext(
    binding_.set_connection_error_handler(base::BindOnce(
        &NetworkContext::OnConnectionError, base::Unretained(this)));
-
+ 
 -  cookie_manager_ = std::make_unique<CookieManager>(
 -      url_request_context_->cookie_store(), session_cleanup_cookie_store,
 -      session_cleanup_channel_id_store,
@@ -135,7 +135,7 @@ index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8
    resource_scheduler_ =
 @@ -348,9 +342,6 @@ NetworkContext::NetworkContext(
    url_request_context_ = url_request_context_owner_.url_request_context.get();
-
+ 
    network_service_->RegisterNetworkContext(this);
 -  cookie_manager_ = std::make_unique<CookieManager>(
 -      url_request_context_->cookie_store(), nullptr, nullptr,
@@ -146,7 +146,7 @@ index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8
 @@ -819,6 +810,61 @@ URLRequestContextOwner NetworkContext::ApplyContextParamsToBuilder(
          network_service_->network_quality_estimator());
    }
-
+ 
 +  scoped_refptr<network::SessionCleanupCookieStore>
 +      session_cleanup_cookie_store;
 +  scoped_refptr<SessionCleanupChannelIDStore> session_cleanup_channel_id_store;
@@ -208,7 +208,7 @@ index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8
 @@ -1065,6 +1111,12 @@ URLRequestContextOwner NetworkContext::ApplyContextParamsToBuilder(
  #endif
    }
-
+ 
 +  cookie_manager_ = std::make_unique<CookieManager>(
 +      result.url_request_context->cookie_store(),
 +      std::move(session_cleanup_cookie_store),
@@ -217,11 +217,11 @@ index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8
 +
    return result;
  }
-
+ 
 @@ -1098,71 +1150,11 @@ void NetworkContext::OnConnectionError() {
      std::move(on_connection_close_callback_).Run(this);
  }
-
+ 
 -URLRequestContextOwner NetworkContext::MakeURLRequestContext(
 -    SessionCleanupCookieStore** session_cleanup_cookie_store,
 -    SessionCleanupChannelIDStore** session_cleanup_channel_id_store) {
@@ -229,7 +229,7 @@ index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8
    URLRequestContextBuilderMojo builder;
    const base::CommandLine* command_line =
        base::CommandLine::ForCurrentProcess();
-
+ 
 -  // The cookie configuration is in this method, which is only used by the
 -  // network process, and not ApplyContextParamsToBuilder which is used by the
 -  // browser as well. This is because this code path doesn't handle encryption
@@ -305,7 +305,7 @@ index 83459ab0f23ea0190bae410921391ca9d11c5aa9..4b25717b4be3a21249d177f0c7caca61
  #include "services/network/public/mojom/network_context.mojom.h"
 @@ -51,6 +50,7 @@ class TreeStateTracker;
  }  // namespace certificate_transparency
-
+ 
  namespace network {
 +class CookieManager;
  class ExpectCTReporter;
@@ -314,14 +314,14 @@ index 83459ab0f23ea0190bae410921391ca9d11c5aa9..4b25717b4be3a21249d177f0c7caca61
 @@ -233,9 +233,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    // On connection errors the NetworkContext destroys itself.
    void OnConnectionError();
-
+ 
 -  URLRequestContextOwner MakeURLRequestContext(
 -      SessionCleanupCookieStore** session_cleanup_cookie_store,
 -      SessionCleanupChannelIDStore** session_cleanup_channel_id_store);
 +  URLRequestContextOwner MakeURLRequestContext();
-
+ 
    NetworkService* const network_service_;
-
+ 
 diff --git a/services/network/network_context_unittest.cc b/services/network/network_context_unittest.cc
 index c756789a39f3d265c536a69d899512e816708344..88cdcc0b5433087c15edad4e6a977bb2a127f834 100644
 --- a/services/network/network_context_unittest.cc
@@ -341,7 +341,7 @@ index c4df8eceaad173b580c8fa91aca6cfdced5f571b..a91a9f4b5866c11ae76e2d173a92579f
 @@ -169,6 +169,10 @@ NetworkService::~NetworkService() {
    DCHECK(network_contexts_.empty());
  }
-
+ 
 +void NetworkService::set_os_crypt_is_configured() {
 +  os_crypt_config_set_ = true;
 +}
@@ -362,9 +362,9 @@ index 839a5da98be9adaa836a3881f5a42fde069c860c..a686fd84e0cf61219289d6f5ee9c700e
 --- a/services/network/network_service.h
 +++ b/services/network/network_service.h
 @@ -62,6 +62,11 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkService
-
+ 
    ~NetworkService() override;
-
+ 
 +  // Call to inform the NetworkService that OSCrypt::SetConfig() has already
 +  // been invoked, so OSCrypt::SetConfig() does not need to be called before
 +  // encrypted storage can be used.

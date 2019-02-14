@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Tue, 27 Nov 2018 04:32:18 +0530
-Subject: [Mac] Fix form control rendering on 10.14 Mojave.
+Subject: Fix form control rendering on 10.14 Mojave.
 
 Backports https://crrev.com/c/1106298/ and https://crrev.com/c/1130163/
 with changes required for v1 sandbox on macOS.
@@ -56,7 +56,7 @@ diff --git a/services/service_manager/sandbox/mac/sandbox_mac.mm b/services/serv
 index d69fcc0d4c5c2471163280c03a9fd9366e05031d..cdd7b7f6723162d6875c4d11379837708bdde79d 100644
 --- a/services/service_manager/sandbox/mac/sandbox_mac.mm
 +++ b/services/service_manager/sandbox/mac/sandbox_mac.mm
-@@ -81,6 +81,21 @@
+@@ -81,6 +81,21 @@ static_assert(arraysize(kDefaultSandboxTypeToResourceIDMapping) ==
                    size_t(SANDBOX_TYPE_AFTER_LAST_TYPE),
                "sandbox type to resource id mapping incorrect");
  
@@ -78,7 +78,7 @@ index d69fcc0d4c5c2471163280c03a9fd9366e05031d..cdd7b7f6723162d6875c4d1137983770
  }  // namespace
  
  // Static variable declarations.
-@@ -242,6 +257,9 @@
+@@ -242,6 +257,9 @@ bool SandboxMac::Enable(SandboxType sandbox_type) {
    if (!compiler.InsertBooleanParam(kSandboxMacOS1013, macos_1013))
      return false;
  
