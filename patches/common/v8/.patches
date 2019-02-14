@@ -7,4 +7,3 @@ build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
 deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
-expose_protected_v8_platform_systemclocktimemillis.patch
