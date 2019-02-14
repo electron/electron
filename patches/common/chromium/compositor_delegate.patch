@@ -5,39 +5,40 @@ Subject: compositor_delegate.patch
 
 
 diff --git a/content/browser/compositor/gpu_process_transport_factory.cc b/content/browser/compositor/gpu_process_transport_factory.cc
-index 5aeda7bd9caf6b5b9e2a95293e4409dc7f9a6d2d..d15e1462babe97b5d68014f4d67236653046aa5f 100644
+index bc1934e2c7b40595b0c06d9beace5f4a569e7751..a354265c235bc8c81f3e5ab5b703bf6c7af06187 100644
 --- a/content/browser/compositor/gpu_process_transport_factory.cc
 +++ b/content/browser/compositor/gpu_process_transport_factory.cc
-@@ -485,10 +485,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
-         // surfaces as they are not following the correct mode.
-         DisableGpuCompositing(compositor.get());
-       }
+@@ -451,11 +451,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
+       // surfaces as they are not following the correct mode.
+       DisableGpuCompositing(compositor.get());
+     }
 +
-+      std::unique_ptr<viz::SoftwareOutputDevice> output_device;
-+      if (compositor->delegate()) {
-+        output_device = compositor->delegate()->CreateSoftwareOutputDevice(
-+            compositor.get());
-+      }
-+      if (!output_device) {
-+        output_device = CreateSoftwareOutputDevice(compositor->widget(),
-+                                                   compositor->task_runner());
-+      }
++    std::unique_ptr<viz::SoftwareOutputDevice> output_device;
++    if (compositor->delegate()) {
++      output_device =
++          compositor->delegate()->CreateSoftwareOutputDevice(compositor.get());
++    }
++    if (!output_device) {
++      output_device = CreateSoftwareOutputDevice(compositor->widget(),
++                                                 compositor->task_runner());
++    }
 +
-       display_output_surface =
-           std::make_unique<SoftwareBrowserCompositorOutputSurface>(
--              CreateSoftwareOutputDevice(compositor->widget(),
--                                         compositor->task_runner()),
-+              std::move(output_device),
-               std::move(vsync_callback));
-     } else {
-       DCHECK(context_provider);
+     display_output_surface =
+         std::make_unique<SoftwareBrowserCompositorOutputSurface>(
+-            CreateSoftwareOutputDevice(compositor->widget(),
+-                                       compositor->task_runner()),
+-            std::move(vsync_callback));
++            std::move(output_device), std::move(vsync_callback));
+   } else {
+     DCHECK(context_provider);
+     const auto& capabilities = context_provider->ContextCapabilities();
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 313431f82ee7e181dad2c48dd27950129afbb223..b8c2632e49b7b96adbb06a03678961823f0790f6 100644
+index 29784c677f4be6e4fd7cfb298ab3554d22e1beaa..07b61abe7ce666b5eb6448ef795f838ddb805947 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -25,6 +25,7 @@
  #include "components/viz/common/surfaces/frame_sink_id.h"
- #include "components/viz/common/surfaces/local_surface_id.h"
+ #include "components/viz/common/surfaces/local_surface_id_allocation.h"
  #include "components/viz/host/host_frame_sink_client.h"
 +#include "components/viz/service/display/software_output_device.h"
  #include "third_party/skia/include/core/SkColor.h"
@@ -59,7 +60,7 @@ index 313431f82ee7e181dad2c48dd27950129afbb223..b8c2632e49b7b96adbb06a0367896182
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -232,6 +242,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -235,6 +245,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -69,7 +70,7 @@ index 313431f82ee7e181dad2c48dd27950129afbb223..b8c2632e49b7b96adbb06a0367896182
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -442,6 +455,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -458,6 +471,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    ui::ContextFactory* context_factory_;
    ui::ContextFactoryPrivate* context_factory_private_;
  

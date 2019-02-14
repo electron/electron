@@ -38,7 +38,7 @@ index d38fa48b8b890d90f2911995a2a51c249005c827..5fe68c71fe101a307ef565013a91b109
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index d1e716429cd96588c2df06d7c55ed6053d190f64..e1f41179b1cb3f9c68900ad0f0b0dbad6e989746 100644
+index d5278b6183dcc9f52d179deea44c1421d63d80d0..2779bdb9caf44797fd99ce54b2c04a0078090e66 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -135,6 +135,7 @@ NSDictionary* attributeToMethodNameMap = nil;
@@ -181,7 +181,7 @@ index d1e716429cd96588c2df06d7c55ed6053d190f64..e1f41179b1cb3f9c68900ad0f0b0dbad
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 242a86ddd00517adc5e09310a25739ee34b3d23c..aa95e8ba159e5e185f0814d13d8743f3e5be9b67 100644
+index ab88c41570171c5105218a4f2dc38f07caf7e1d8..a030824642277cb11ae7da874d33797c506e94ad 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -463,6 +463,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
@@ -233,7 +233,7 @@ index b7142c2871faf4a0ba8be79266e9515d81585bdd..3d80c332e9af280a166612f6be54b6f7
  
  // You are about to read a pretty disgusting hack. In a static initializer,
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 6299846975301964c4066dff1a7eec40778e8d7f..c9c64e9ea8af9c02099695db38c27871e4e19852 100644
+index fe0b73b51492ca08cbebf3aec74ea0a7caf44aef..fb8b362097f18d947219af36f84b9bea7d4eccf1 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -36,6 +36,7 @@
@@ -277,10 +277,10 @@ index 6299846975301964c4066dff1a7eec40778e8d7f..c9c64e9ea8af9c02099695db38c27871
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 982904023e2538bbb3039e0014542248b6f589ca..f909eeb8ac8f876897dbbd233d6fd17636607974 100644
+index fa3a7b08b0ae4f09ff2aeffffc93e65181f4994b..64cf5f96e7c85e2d8969c11ccd27ba6d3154fe91 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -186,6 +186,12 @@ source_set("audio") {
+@@ -184,6 +184,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]
@@ -307,7 +307,7 @@ index a1091960873dad8bb1b0129d20a552bf8a51739f..50bb186d1474fd4c90723ac97ac93b1d
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 31c564faeee2c082d23e2a99753f9fee592b6212..4d032d65820ebf4f3ce4d8acb84d2354b4ab8789 100644
+index 061a011b5f3c681d417c856611dd8240fc96e709..c724ab5355464721b07dfa4d6f2a4014638d0536 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -244,6 +244,7 @@ class DnsConfigServicePosix::Watcher {

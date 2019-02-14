@@ -7,10 +7,10 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance.
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905cccde218 100644
+index 11643f592deea8ae4a399ab650420d525fc4d13c..2058c5a4a1e0622c94f12e6aa2000c0e14b287a7 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -1978,6 +1978,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2002,6 +2002,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
@@ -27,7 +27,7 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2010,6 +2020,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2034,6 +2044,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -79,7 +79,7 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2021,23 +2076,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2045,23 +2100,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -108,10 +108,10 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 9d00218ae972b34073c84f2de78dee934962c3d8..e474d899fbcebfbaf4cb2ec0b63cc963292ee39a 100644
+index 0d81568785aa06d5c15a02f569f13aa06178af50..925cc7dbe126ebb4eded12de34b93cb1a35ee8c4 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -48,6 +48,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+@@ -51,6 +51,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
@@ -129,10 +129,10 @@ index 9d00218ae972b34073c84f2de78dee934962c3d8..e474d899fbcebfbaf4cb2ec0b63cc963
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 09aca495389e48a8dbc1ea45b8bb636aa13d2486..2cc843982a697dbd693ca1d5fda3a8ab68c96f73 100644
+index 5cdf8a997c12fe5bb9685f92f98b0f90c756b469..63496fd120aeb0168787cf33deecb5e53bb96f32 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -206,8 +206,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -210,8 +210,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:

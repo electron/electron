@@ -36,10 +36,10 @@ index 8e02a8a95eb07516162eacdf5b361231d3a02975..3497b85428a52c6019cfb5d30229071f
    virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 727d1f564dc943026a4b10ab2584f9269bb2ae4a..66789680d51e74e533bfb9c6c99e5b9e0844b1d9 100644
+index a68d5d774489fe95968046001b8540d74f36dc97..ca1077801ae18862618964a9675a4101b9c3a393 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -20,6 +20,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
+@@ -21,6 +21,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
  
  DesktopMediaListBase::~DesktopMediaListBase() {}
  
@@ -51,7 +51,7 @@ index 727d1f564dc943026a4b10ab2584f9269bb2ae4a..66789680d51e74e533bfb9c6c99e5b9e
  void DesktopMediaListBase::SetUpdatePeriod(base::TimeDelta period) {
    DCHECK(!observer_);
    update_period_ = period;
-@@ -33,10 +38,7 @@ void DesktopMediaListBase::SetViewDialogWindowId(DesktopMediaID dialog_id) {
+@@ -34,10 +39,7 @@ void DesktopMediaListBase::SetViewDialogWindowId(DesktopMediaID dialog_id) {
    view_dialog_id_ = dialog_id;
  }
  
@@ -63,7 +63,7 @@ index 727d1f564dc943026a4b10ab2584f9269bb2ae4a..66789680d51e74e533bfb9c6c99e5b9e
    Refresh();
  }
  
-@@ -51,6 +53,11 @@ const DesktopMediaList::Source& DesktopMediaListBase::GetSource(
+@@ -52,6 +54,11 @@ const DesktopMediaList::Source& DesktopMediaListBase::GetSource(
    return sources_[index];
  }
  
@@ -75,7 +75,7 @@ index 727d1f564dc943026a4b10ab2584f9269bb2ae4a..66789680d51e74e533bfb9c6c99e5b9e
  DesktopMediaID::Type DesktopMediaListBase::GetMediaListType() const {
    return type_;
  }
-@@ -62,6 +69,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
+@@ -63,6 +70,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
  
  void DesktopMediaListBase::UpdateSourcesList(
      const std::vector<SourceDescription>& new_sources) {
@@ -88,7 +88,7 @@ index 727d1f564dc943026a4b10ab2584f9269bb2ae4a..66789680d51e74e533bfb9c6c99e5b9e
    typedef std::set<DesktopMediaID> SourceSet;
    SourceSet new_source_set;
    for (size_t i = 0; i < new_sources.size(); ++i) {
-@@ -134,6 +147,8 @@ void DesktopMediaListBase::UpdateSourceThumbnail(DesktopMediaID id,
+@@ -135,6 +148,8 @@ void DesktopMediaListBase::UpdateSourceThumbnail(DesktopMediaID id,
  }
  
  void DesktopMediaListBase::ScheduleNextRefresh() {
@@ -133,11 +133,11 @@ index 47401abc984e6fe26c7f4c5399aa565c687060b0..ca6a527ffac877c27aac94337ec5a7b5
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 7288cface09dee8b42eeb20e03c96cb825740e1b..440377eda5bb5bafea5cddaa40203fd8834f410a 100644
+index d9fd23d0a6cd8789d6324400e08950084acfcd6c..af9b3887b5b809104fcc695cbf5e60ba9c8ab489 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -6,14 +6,15 @@
- 
+@@ -7,14 +7,15 @@
+ #include "base/bind.h"
  #include "base/hash.h"
  #include "base/single_thread_task_runner.h"
 +#include "base/strings/string_number_conversions.h"

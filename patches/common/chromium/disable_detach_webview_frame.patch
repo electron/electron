@@ -12,10 +12,10 @@ this patch was introduced in Chrome 66.
 Update(zcbenz): The bug is still in Chrome 72.
 
 diff --git a/content/browser/frame_host/render_frame_proxy_host.cc b/content/browser/frame_host/render_frame_proxy_host.cc
-index a5e18f465f79416c05fd3ab630b40b079a7a7cbc..d6f4717ee2122b86611d6149d5d1a9105d1baff1 100644
+index 6f2d79f8d0cb14ddddd6911fd84f1e4b241e9808..d4f190f8e8ca8ed7b2cb4d5d591ddac06eb743ff 100644
 --- a/content/browser/frame_host/render_frame_proxy_host.cc
 +++ b/content/browser/frame_host/render_frame_proxy_host.cc
-@@ -263,6 +263,12 @@ void RenderFrameProxyHost::SetDestructionCallback(
+@@ -270,6 +270,12 @@ void RenderFrameProxyHost::SetDestructionCallback(
  
  void RenderFrameProxyHost::OnDetach() {
    if (frame_tree_node_->render_manager()->ForInnerDelegate()) {

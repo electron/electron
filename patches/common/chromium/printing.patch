@@ -9,7 +9,7 @@ majority of changes originally come from these PRs:
   * https://github.com/electron/electron/pull/8596
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 961e1560aa914942c01372c354059d6d6b72c50f..aa51b2b2b0e1950f7a660d48bda5e61ecea8951c 100644
+index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..d124a4558affaf244ea82ab37f823db6e345d499 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -283,7 +283,7 @@ index 1802034a6e15a6ad8b0d9591cfb79ba5873dc982..a827091facdb4f6b1d74ce826c3492ce
  // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
  IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index d51abda693de7fc701928e29fe35154169f41651..051958321c9b95d5951f76ee822dd67a17d18324 100644
+index 56e2dd5faf2b8db0b1dc9da41b310600d9298267..ea0e7243e09ef8664d61a73033e55b11ea5cdba1 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -1109,7 +1109,9 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {

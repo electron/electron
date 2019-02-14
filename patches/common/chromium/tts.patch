@@ -10,7 +10,7 @@ Subject: tts.patch
   destruction from content layer.
 
 diff --git a/chrome/browser/speech/tts_controller_delegate_impl.cc b/chrome/browser/speech/tts_controller_delegate_impl.cc
-index dbfed8996b92c8e1208f3455c56447e35f9e9e43..ab85a77adf20b600cd7e400f105ade7b16d53e86 100644
+index 0390cfe18859a4b7086b275b62121199473434fb..b9adf92701546ea8f8fa8258d987fa0c7051def4 100644
 --- a/chrome/browser/speech/tts_controller_delegate_impl.cc
 +++ b/chrome/browser/speech/tts_controller_delegate_impl.cc
 @@ -213,6 +213,7 @@ void TtsControllerDelegateImpl::UpdateUtteranceDefaultsFromPrefs(
@@ -30,7 +30,7 @@ index dbfed8996b92c8e1208f3455c56447e35f9e9e43..ab85a77adf20b600cd7e400f105ade7b
  }
  
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
-index b1ccc84efa99a616d9b196f741dfa57018ae1fd2..f0d9b2ec8b765ffb7e4a3460b2627a2009db500f 100644
+index 404cdf05dab2262b001a4088666b27da175b65ac..d1cb67ef188b093cb75f37ac1258c2841c171d00 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
 +++ b/chrome/browser/speech/tts_message_filter.cc
 @@ -10,8 +10,11 @@
@@ -118,7 +118,7 @@ index b1ccc84efa99a616d9b196f741dfa57018ae1fd2..f0d9b2ec8b765ffb7e4a3460b2627a20
    }
  }
  
-@@ -210,10 +235,8 @@ void TtsMessageFilter::Cleanup() {
+@@ -215,10 +240,8 @@ void TtsMessageFilter::Cleanup() {
    content::TtsController::GetInstance()->RemoveUtteranceEventDelegate(this);
  }
  
@@ -133,7 +133,7 @@ index b1ccc84efa99a616d9b196f741dfa57018ae1fd2..f0d9b2ec8b765ffb7e4a3460b2627a20
 +  browser_context_shutdown_notifier_.reset();
  }
 diff --git a/chrome/browser/speech/tts_message_filter.h b/chrome/browser/speech/tts_message_filter.h
-index 37c62a4d004ccc8e26f36bbc7244c1a0c6c18ecd..3075b45945911cb3019e8a1eb7896d8e33193598 100644
+index ffb607fbb275b0a75dba592f2f5f5afb881214e2..99780e56674af749a231f0e85b89e6a6ed3743d6 100644
 --- a/chrome/browser/speech/tts_message_filter.h
 +++ b/chrome/browser/speech/tts_message_filter.h
 @@ -8,6 +8,7 @@
@@ -152,7 +152,7 @@ index 37c62a4d004ccc8e26f36bbc7244c1a0c6c18ecd..3075b45945911cb3019e8a1eb7896d8e
                           public content::UtteranceEventDelegate,
                           public content::VoicesChangedDelegate {
   public:
-@@ -63,15 +63,13 @@ class TtsMessageFilter : public content::BrowserMessageFilter,
+@@ -64,15 +64,13 @@ class TtsMessageFilter : public content::BrowserMessageFilter,
    // about to be deleted.
    bool Valid();
  

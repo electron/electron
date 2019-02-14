@@ -61,10 +61,10 @@ index 83cedb4c9e1323259afd041e571240cd971e1241..3686ae2fab5f400cf119a54aea547a72
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d771509ccccee 100644
+index 9d249be9345202f1022f550f73cb8bdd1b327c56..e63ca22a2ebe3f380f6d06ac4f1b1eb8e5ff7e53 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-@@ -7,9 +7,11 @@
+@@ -8,9 +8,11 @@
  #include "base/task/post_task.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
@@ -76,7 +76,7 @@ index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d7715
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_ppapi_host.h"
  #include "content/public/browser/browser_task_traits.h"
-@@ -42,6 +44,7 @@ using content::ServiceManagerConnection;
+@@ -43,6 +45,7 @@ using content::ServiceManagerConnection;
  
  namespace {
  
@@ -84,7 +84,7 @@ index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d7715
  // Get the CookieSettings on the UI thread for the given render process ID.
  scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
      int render_process_id) {
-@@ -55,6 +58,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
+@@ -56,6 +59,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
    }
    return NULL;
  }
@@ -92,7 +92,7 @@ index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d7715
  
  void PepperBindConnectorRequest(
      service_manager::mojom::ConnectorRequest connector_request) {
-@@ -72,7 +76,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
+@@ -73,7 +77,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
                                                 PP_Instance instance,
                                                 PP_Resource resource)
      : ResourceHost(host->GetPpapiHost(), instance, resource),
@@ -102,7 +102,7 @@ index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d7715
        delay_timer_(FROM_HERE, base::TimeDelta::FromSeconds(45), this,
                     &PepperFlashBrowserHost::OnDelayTimerFired),
        weak_factory_(this) {
-@@ -124,6 +130,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
+@@ -125,6 +131,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
  
  int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
      ppapi::host::HostMessageContext* context) {
@@ -110,7 +110,7 @@ index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d7715
    // Getting the Flash LSO settings requires using the CookieSettings which
    // belong to the profile which lives on the UI thread. We lazily initialize
    // |cookie_settings_| by grabbing the reference from the UI thread and then
-@@ -144,9 +151,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
+@@ -145,9 +152,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
                     context->MakeReplyMessageContext(), document_url,
                     plugin_url));
    }
@@ -123,7 +123,7 @@ index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d7715
  void PepperFlashBrowserHost::GetLocalDataRestrictions(
      ppapi::host::ReplyMessageContext reply_context,
      const GURL& document_url,
-@@ -175,6 +184,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
+@@ -176,6 +185,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
              PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
                  static_cast<int32_t>(restrictions)));
  }
