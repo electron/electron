@@ -578,22 +578,21 @@ const views::Widget* NativeWindow::GetWidget() const {
 }
 
 // static
-const void* const NativeWindowRelay::kNativeWindowRelayUserDataKey =
-    &NativeWindowRelay::kNativeWindowRelayUserDataKey;
-
-// static
 void NativeWindowRelay::CreateForWebContents(
     content::WebContents* web_contents,
     base::WeakPtr<NativeWindow> window) {
   DCHECK(web_contents);
-  DCHECK(!web_contents->GetUserData(kNativeWindowRelayUserDataKey));
-  web_contents->SetUserData(kNativeWindowRelayUserDataKey,
-                            base::WrapUnique(new NativeWindowRelay(window)));
+  if (!web_contents->GetUserData(UserDataKey())) {
+    web_contents->SetUserData(UserDataKey(),
+                              base::WrapUnique(new NativeWindowRelay(window)));
+  }
 }
 
 NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
     : native_window_(window) {}
 
 NativeWindowRelay::~NativeWindowRelay() = default;
+
+WEB_CONTENTS_USER_DATA_KEY_IMPL(NativeWindowRelay)
 
 }  // namespace atom

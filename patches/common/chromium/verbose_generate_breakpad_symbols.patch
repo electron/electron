@@ -7,10 +7,10 @@ Temporarily add additional debugging statements to
 generate_breakpad_symbols.py to determine why it is hanging.
 
 diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
-index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014c0e512b5 100755
+index 58558b6cd1e3af826a7066c035e1ad589eff4cb5..d9f697749847caf59d78f5643d2efaf7815e050d 100755
 --- a/components/crash/content/tools/generate_breakpad_symbols.py
 +++ b/components/crash/content/tools/generate_breakpad_symbols.py
-@@ -59,7 +59,10 @@ def Resolve(path, exe_path, loader_path, rpaths):
+@@ -60,7 +60,10 @@ def Resolve(path, exe_path, loader_path, rpaths):
    return path
  
  
@@ -19,21 +19,21 @@ index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014
 +  if options.verbose:
 +    print "GetSharedLibraryDependencies for %s" % binary
 +
-   """Return absolute paths to all shared library dependecies of the binary.
+   """Return absolute paths to all shared library dependencies of the binary.
  
    This implementation assumes that we're running on a Linux system."""
-@@ -73,6 +76,9 @@ def GetSharedLibraryDependenciesLinux(binary):
+@@ -74,6 +77,9 @@ def GetSharedLibraryDependenciesLinux(binary):
      m = lib_re.match(line)
      if m:
-       result.append(m.group(1))
+       result.append(os.path.abspath(m.group(1)))
 +  if options.verbose:
 +    print "Done GetSharedLibraryDependencies for %s" % binary
 +    print result
    return result
  
  
-@@ -167,7 +173,7 @@ def GetSharedLibraryDependencies(options, binary, exe_path):
-   """Return absolute paths to all shared library dependecies of the binary."""
+@@ -168,7 +174,7 @@ def GetSharedLibraryDependencies(options, binary, exe_path):
+   """Return absolute paths to all shared library dependencies of the binary."""
    deps = []
    if sys.platform.startswith('linux'):
 -    deps = GetSharedLibraryDependenciesLinux(binary)
@@ -41,7 +41,7 @@ index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014
    elif sys.platform == 'darwin':
      deps = GetSharedLibraryDependenciesMac(binary, exe_path)
    else:
-@@ -204,7 +210,8 @@ def GetBinaryInfoFromHeaderInfo(header_info):
+@@ -228,7 +234,8 @@ def GetBinaryInfoFromHeaderInfo(header_info):
  
  def GenerateSymbols(options, binaries):
    """Dumps the symbols of binary and places them in the given directory."""
@@ -51,7 +51,7 @@ index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014
    queue = Queue.Queue()
    print_lock = threading.Lock()
  
-@@ -224,8 +231,15 @@ def GenerateSymbols(options, binaries):
+@@ -248,8 +255,15 @@ def GenerateSymbols(options, binaries):
            reason = "Could not locate dump_syms executable."
            break
  
@@ -67,7 +67,7 @@ index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014
          if not binary_info:
            should_dump_syms = False
            reason = "Could not obtain binary information."
-@@ -242,8 +256,14 @@ def GenerateSymbols(options, binaries):
+@@ -266,8 +280,14 @@ def GenerateSymbols(options, binaries):
          # See if there is a symbol file already found next to the binary
          potential_symbol_files = glob.glob('%s.breakpad*' % binary)
          for potential_symbol_file in potential_symbol_files:

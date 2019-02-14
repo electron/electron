@@ -1488,9 +1488,10 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       })
+      const zoomEventPromise = emittedOnce(ipcMain, 'webview-parent-zoom-level')
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
 
-      const [, zoomFactor, zoomLevel] = await emittedOnce(ipcMain, 'webview-parent-zoom-level')
+      const [, zoomFactor, zoomLevel] = await zoomEventPromise
       expect(zoomFactor).to.equal(1.2)
       expect(zoomLevel).to.equal(1)
     })

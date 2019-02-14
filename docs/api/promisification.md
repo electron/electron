@@ -9,7 +9,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 ### Candidate Functions
 
 - [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
-- [contentTracing.getTraceBufferUsage(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getTraceBufferUsage)
 - [dialog.showOpenDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showOpenDialog)
 - [dialog.showSaveDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showSaveDialog)
 - [dialog.showMessageBox([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showMessageBox)
@@ -27,7 +26,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ses.clearAuthCache(options[, callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearAuthCache)
 - [contents.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#executeJavaScript)
 - [contents.print([options], [callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#print)
-- [contents.savePage(fullPath, saveType, callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#savePage)
 - [webFrame.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-frame.md#executeJavaScript)
 - [webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-frame.md#executeJavaScriptInIsolatedWorld)
 - [webviewTag.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#executeJavaScript)
@@ -37,9 +35,11 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
 - [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
 - [contents.printToPDF(options, callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#printToPDF)
+- [contents.savePage(fullPath, saveType, callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#savePage)
 - [contentTracing.getCategories(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getCategories)
 - [contentTracing.startRecording(options, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#startRecording)
 - [contentTracing.stopRecording(resultFilePath, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#stopRecording)
+- [contentTracing.getTraceBufferUsage(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getTraceBufferUsage)
 - [cookies.flushStore(callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#flushStore)
 - [cookies.get(filter, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#get)
 - [cookies.remove(url, name, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#remove)

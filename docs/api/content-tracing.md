@@ -122,9 +122,19 @@ temporary file.
 ### `contentTracing.getTraceBufferUsage(callback)`
 
 * `callback` Function
-  * `value` Number
-  * `percentage` Number
+  * Object
+    * `value` Number
+    * `percentage` Number
 
 Get the maximum usage across processes of trace buffer as a percentage of the
 full state. When the TraceBufferUsage value is determined the `callback` is
 called.
+
+**[Deprecated Soon](promisification.md)**
+
+### `contentTracing.getTraceBufferUsage()`
+
+Returns `Promise<Object>` - Resolves with an object containing the `value` and `percentage` of trace buffer maximum usage
+
+Get the maximum usage across processes of trace buffer as a percentage of the
+full state.

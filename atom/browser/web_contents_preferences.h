@@ -82,6 +82,8 @@ class WebContentsPreferences
   base::Value preference_ = base::Value(base::Value::Type::DICTIONARY);
   base::Value last_preference_ = base::Value(base::Value::Type::DICTIONARY);
 
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
+
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
 

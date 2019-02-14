@@ -5,7 +5,7 @@ Subject: browser_compositor_mac.patch
 
 
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
-index da7e3391774e14550f7adf5956ca44b8b880662e..8b399558ad2469f6452e1793e8834d5c4f93adeb 100644
+index 454c4cfd5a73bda737ec4570101517718518e1d8..9fa3b7ca2eb07f470ba5595f5da6013956b14491 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.h
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.h
 @@ -60,6 +60,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
@@ -26,10 +26,10 @@ index da7e3391774e14550f7adf5956ca44b8b880662e..8b399558ad2469f6452e1793e8834d5c
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
    void OnDidNotProduceFrame(const viz::BeginFrameAck& ack);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 21d3b34cc13f3471dcef456ec92ad7c1c4a012f4..cffbf04e781cff2d10283c7ef2093959f25e432b 100644
+index 0817b4eca4f4e6f7f5d250589c1e4dbcc068237c..dcc2340e59771e8d73de7e97fa2371d8bec7b149 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -79,6 +79,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
+@@ -79,6 +79,12 @@
    DCHECK_EQ(1u, num_erased);
  }
  

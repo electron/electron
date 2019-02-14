@@ -195,4 +195,6 @@ void PrintPreviewMessageHandler::RejectPromise(int request_id) {
   promise->RejectWithErrorMessage("Failed to generate PDF");
 }
 
+WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintPreviewMessageHandler)
+
 }  // namespace atom

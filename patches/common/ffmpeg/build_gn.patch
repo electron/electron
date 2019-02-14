@@ -8,10 +8,10 @@ when "is_component_build" is true, but we want to set even if it's false,
 because we are making a dylib which will be distributed inside a bundle.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 494d33fc041c05acc6698e1bfe26cc3f8820bb6b..947deba96107c931582007ce89917f8896923a6f 100755
+index fd79bc4eaba90ab5e8c6df9942dbfaeeebabbc73..1e1859d5aa1567da8a768c870d8a477b052f50ec 100755
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -390,6 +390,10 @@ if (is_component_ffmpeg) {
+@@ -397,6 +397,10 @@ if (is_component_ffmpeg) {
      # So we can append below and assume they're defined.
      ldflags = []
  

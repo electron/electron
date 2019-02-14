@@ -40,7 +40,7 @@ void BeforeStartInUI(base::WeakPtr<URLRequestBufferJob> job,
   if (args->GetNext(&value)) {
     V8ValueConverter converter;
     v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
-    request_options.reset(converter.FromV8Value(value, context));
+    request_options = converter.FromV8Value(value, context);
   }
 
   if (request_options) {

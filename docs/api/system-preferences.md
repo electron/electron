@@ -380,6 +380,32 @@ You can use the `setAppLevelAppearance` API to set this value.
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
 
+### `systemPreferences.canPromptTouchID()` _macOS_
+
+Returns `Boolean` - whether or not this device has the ability to use Touch ID.
+
+**NOTE:** This API will return `false` on macOS systems older than Sierra 10.12.2.
+
+### `systemPreferences.promptTouchID(reason)` _macOS_
+
+* `reason` String - The reason you are asking for Touch ID authentication
+
+Returns `Promise<void>` - resolves if the user has successfully authenticated with Touch ID.
+
+```javascript
+const { systemPreferences } = require('electron')
+
+systemPreferences.promptTouchID('To get consent for a Security-Gated Thing').then(success => {
+  console.log('You have successfully authenticated with Touch ID!')
+}).catch(err => {
+  console.log(err)
+})
+```
+
+This API itself will not protect your user data; rather, it is a mechanism to allow you to do so. Native apps will need to set [Access Control Constants](https://developer.apple.com/documentation/security/secaccesscontrolcreateflags?language=objc) like [`kSecAccessControlUserPresence`](https://developer.apple.com/documentation/security/secaccesscontrolcreateflags/ksecaccesscontroluserpresence?language=objc) on the their keychain entry so that reading it would auto-prompt for Touch ID biometric consent. This could be done with [`node-keytar`](https://github.com/atom/node-keytar), such that one would store an encryption key with `node-keytar` and only fetch it if `promptTouchID()` resolves.
+
+**NOTE:** This API will return a rejected Promise on macOS systems older than Sierra 10.12.2.
+
 ### `systemPreferences.isTrustedAccessibilityClient(prompt)` _macOS_
 
 * `prompt` Boolean - whether or not the user will be informed via prompt if the current process is untrusted.

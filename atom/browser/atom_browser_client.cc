@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 
+#include "atom/app/manifests.h"
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -32,6 +33,7 @@
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/application_info.h"
 #include "atom/common/options_switches.h"
 #include "atom/common/platform_util.h"
 #include "base/command_line.h"
@@ -47,6 +49,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -117,15 +120,14 @@ namespace {
 bool g_suppress_renderer_process_restart = false;
 
 bool IsSameWebSite(content::BrowserContext* browser_context,
-                   const GURL& src_url,
+                   content::SiteInstance* site_instance,
                    const GURL& dest_url) {
-  return content::SiteInstance::IsSameWebSite(browser_context, src_url,
-                                              dest_url) ||
-         // `IsSameWebSite` doesn't seem to work for some URIs such as `file:`,
-         // handle these scenarios by comparing only the site as defined by
-         // `GetSiteForURL`.
-         content::SiteInstance::GetSiteForURL(browser_context, dest_url) ==
-             src_url;
+  return site_instance->IsSameSiteWithURL(dest_url) ||
+         // `IsSameSiteWithURL` doesn't seem to work for some URIs such as
+         // `file:`, handle these scenarios by comparing only the site as
+         // defined by `GetSiteForURL`.
+         (content::SiteInstance::GetSiteForURL(browser_context, dest_url) ==
+          site_instance->GetSiteURL());
 }
 
 AtomBrowserClient* g_browser_client = nullptr;
@@ -224,8 +226,7 @@ bool AtomBrowserClient::ShouldForceNewSiteInstance(
   }
 
   // Create new a SiteInstance if navigating to a different site.
-  auto src_url = current_instance->GetSiteURL();
-  return !IsSameWebSite(browser_context, src_url, url);
+  return !IsSameWebSite(browser_context, current_instance, url);
 }
 
 bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
@@ -236,13 +237,12 @@ bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
     bool has_response_started) const {
   bool navigation_was_redirected = false;
   if (has_response_started) {
-    navigation_was_redirected = !IsSameWebSite(
-        browser_context, current_instance->GetSiteURL(), dest_url);
+    navigation_was_redirected =
+        !IsSameWebSite(browser_context, current_instance, dest_url);
   } else {
     navigation_was_redirected =
         speculative_instance &&
-        !IsSameWebSite(browser_context, speculative_instance->GetSiteURL(),
-                       dest_url);
+        !IsSameWebSite(browser_context, speculative_instance, dest_url);
   }
 
   return navigation_was_redirected;
@@ -306,7 +306,7 @@ content::SiteInstance* AtomBrowserClient::GetSiteInstanceFromAffinity(
     auto iter = site_per_affinities_.find(affinity);
     GURL dest_site = content::SiteInstance::GetSiteForURL(browser_context, url);
     if (iter != site_per_affinities_.end() &&
-        IsSameWebSite(browser_context, iter->second->GetSiteURL(), dest_site)) {
+        IsSameWebSite(browser_context, iter->second, dest_site)) {
       return iter->second;
     }
   }
@@ -478,7 +478,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       switches::kServiceWorkerSchemes};
   command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                  kCommonSwitchNames,
-                                 arraysize(kCommonSwitchNames));
+                                 base::size(kCommonSwitchNames));
 
 #if defined(OS_WIN)
   // Append --app-user-model-id.
@@ -596,7 +596,7 @@ bool AtomBrowserClient::CanCreateWindow(
     content::RenderFrameHost* opener,
     const GURL& opener_url,
     const GURL& opener_top_level_frame_url,
-    const GURL& source_origin,
+    const url::Origin& source_origin,
     content::mojom::WindowContainerType container_type,
     const GURL& target_url,
     const content::Referrer& referrer,
@@ -715,20 +715,17 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
 #endif
 }
 
-std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
-    base::StringPiece name) {
-  ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
-  int id = -1;
-  if (name == content::mojom::kBrowserServiceName)
-    id = IDR_ELECTRON_CONTENT_BROWSER_MANIFEST_OVERLAY;
-  else if (name == content::mojom::kPackagedServicesServiceName)
-    id = IDR_ELECTRON_CONTENT_PACKAGED_SERVICES_MANIFEST_OVERLAY;
+base::Optional<service_manager::Manifest>
+AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
+  if (name == content::mojom::kBrowserServiceName) {
+    return GetElectronContentBrowserOverlayManifest();
+  } else if (name == content::mojom::kPackagedServicesServiceName) {
+    service_manager::Manifest overlay;
+    overlay.packaged_services = GetElectronPackagedServicesOverlayManifest();
+    return overlay;
+  }
 
-  if (id == -1)
-    return nullptr;
-
-  base::StringPiece manifest_contents = rb.GetRawDataResource(id);
-  return base::JSONReader::Read(manifest_contents);
+  return base::nullopt;
 }
 
 net::NetLog* AtomBrowserClient::GetNetLog() {
@@ -895,6 +892,14 @@ bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(render_process_id);
   return it != process_preferences_.end() && !it->second.web_security;
+}
+
+std::string AtomBrowserClient::GetProduct() const {
+  return "Chrome/" CHROME_VERSION_STRING;
+}
+
+std::string AtomBrowserClient::GetUserAgent() const {
+  return GetApplicationUserAgent();
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {

@@ -103,7 +103,7 @@ bool DownloadItem::IsPaused() const {
 }
 
 void DownloadItem::Resume() {
-  download_item_->Resume();
+  download_item_->Resume(true /* user_gesture */);
 }
 
 bool DownloadItem::CanResume() const {

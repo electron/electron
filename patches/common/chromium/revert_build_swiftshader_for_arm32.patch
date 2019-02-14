@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 6 Feb 2019 06:36:32 +0530
+Subject: Revert "Build swiftshader for ARM32."
+
+This reverts commit e7caa7ca82fc015675aea8cecf178c83a94ab3a7.
+
+diff --git a/ui/gl/BUILD.gn b/ui/gl/BUILD.gn
+index 77750dc5e9f24347bba17811da7d86c9ef28e99c..07fb1573d21cf84dfd295927104fb82a254664a8 100644
+--- a/ui/gl/BUILD.gn
++++ b/ui/gl/BUILD.gn
+@@ -15,8 +15,8 @@ declare_args() {
+   enable_swiftshader = (is_win || is_linux || (is_mac && use_egl) ||
+                         is_chromeos || is_fuchsia) &&
+                        (target_cpu == "x86" || target_cpu == "x64" ||
+-                        target_cpu == "arm" || target_cpu == "arm64" ||
+-                        target_cpu == "mipsel" || target_cpu == "mips64el")
++                        target_cpu == "arm64" || target_cpu == "mipsel" ||
++                        target_cpu == "mips64el")
+ 
+   # Whether service side logging (actual calls into the GL driver) is enabled
+   # or not.

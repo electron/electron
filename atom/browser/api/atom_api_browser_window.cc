@@ -18,6 +18,7 @@
 #include "atom/common/options_switches.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "gin/converter.h"
@@ -130,7 +131,7 @@ void BrowserWindow::RenderViewCreated(
       render_view_host->GetProcess()->GetID(),
       render_view_host->GetRoutingID());
   if (impl)
-    impl->SetBackgroundOpaque(false);
+    impl->owner_delegate()->SetBackgroundOpaque(false);
 }
 
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
@@ -349,7 +350,8 @@ void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
         render_view_host->GetProcess()->GetID(),
         render_view_host->GetRoutingID());
     if (impl)
-      impl->SetBackgroundOpaque(type.empty() ? !window_->transparent() : false);
+      impl->owner_delegate()->SetBackgroundOpaque(
+          type.empty() ? !window_->transparent() : false);
   }
 
   TopLevelWindow::SetVibrancy(isolate, value);

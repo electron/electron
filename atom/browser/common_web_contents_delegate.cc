@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
@@ -23,7 +24,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
-#include "chrome/browser/ui/browser_dialogs.h"
+#include "chrome/browser/ui/color_chooser.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -183,7 +184,8 @@ void CommonWebContentsDelegate::InitWithWebContents(
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintPreviewMessageHandler::CreateForWebContents(web_contents);
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
-  printing::CreateCompositeClientIfNeeded(web_contents);
+  printing::CreateCompositeClientIfNeeded(web_contents,
+                                          browser_context->GetUserAgent());
 #endif
 
   // Determien whether the WebContents is offscreen.
@@ -213,8 +215,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
                                             owner_window->GetWeakPtr());
   } else {
     owner_window_ = nullptr;
-    web_contents->RemoveUserData(
-        NativeWindowRelay::kNativeWindowRelayUserDataKey);
+    web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());
   }
 #if BUILDFLAG(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
@@ -274,6 +275,7 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   load_url_params.should_replace_current_entry =
       params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.initiator_origin = params.initiator_origin;
   load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);

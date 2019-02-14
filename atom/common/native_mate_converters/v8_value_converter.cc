@@ -146,7 +146,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Value(
   return handle_scope.Escape(ToV8ValueImpl(context->GetIsolate(), value));
 }
 
-base::Value* V8ValueConverter::FromV8Value(
+std::unique_ptr<base::Value> V8ValueConverter::FromV8Value(
     v8::Local<v8::Value> val,
     v8::Local<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
@@ -180,7 +180,8 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
     case base::Value::Type::STRING: {
       std::string val = value->GetString();
       return v8::String::NewFromUtf8(isolate, val.c_str(),
-                                     v8::String::kNormalString, val.length());
+                                     v8::NewStringType::kNormal, val.length())
+          .ToLocalChecked();
     }
 
     case base::Value::Type::LIST:
@@ -288,38 +289,38 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   return v8::Uint8Array::New(array_buffer, 0, length);
 }
 
-base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
-                                               v8::Local<v8::Value> val,
-                                               v8::Isolate* isolate) const {
+std::unique_ptr<base::Value> V8ValueConverter::FromV8ValueImpl(
+    FromV8ValueState* state,
+    v8::Local<v8::Value> val,
+    v8::Isolate* isolate) const {
   FromV8ValueState::Level state_level(state);
   if (state->HasReachedMaxRecursionDepth())
     return nullptr;
 
   if (val->IsExternal())
-    return std::make_unique<base::Value>().release();
+    return std::make_unique<base::Value>();
 
   if (val->IsNull())
-    return std::make_unique<base::Value>().release();
+    return std::make_unique<base::Value>();
 
   auto context = isolate->GetCurrentContext();
 
   if (val->IsBoolean())
-    return new base::Value(val->ToBoolean(context).ToLocalChecked()->Value());
+    return std::make_unique<base::Value>(val->ToBoolean(isolate)->Value());
 
   if (val->IsInt32())
-    return new base::Value(val->ToInt32(context).ToLocalChecked()->Value());
+    return std::make_unique<base::Value>(val.As<v8::Int32>()->Value());
 
   if (val->IsNumber()) {
-    double val_as_double = val->ToNumber(context).ToLocalChecked()->Value();
+    double val_as_double = val.As<v8::Number>()->Value();
     if (!std::isfinite(val_as_double))
       return nullptr;
-    return new base::Value(val_as_double);
+    return std::make_unique<base::Value>(val_as_double);
   }
 
   if (val->IsString()) {
-    v8::String::Utf8Value utf8(isolate,
-                               val->ToString(context).ToLocalChecked());
-    return new base::Value(std::string(*utf8, utf8.length()));
+    v8::String::Utf8Value utf8(isolate, val);
+    return std::make_unique<base::Value>(std::string(*utf8, utf8.length()));
   }
 
   if (val->IsUndefined())
@@ -329,15 +330,16 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   if (val->IsDate()) {
     v8::Date* date = v8::Date::Cast(*val);
     v8::Local<v8::Value> toISOString =
-        date->Get(v8::String::NewFromUtf8(isolate, "toISOString"));
+        date->Get(v8::String::NewFromUtf8(isolate, "toISOString",
+                                          v8::NewStringType::kNormal)
+                      .ToLocalChecked());
     if (toISOString->IsFunction()) {
       v8::Local<v8::Value> result = toISOString.As<v8::Function>()
                                         ->Call(context, val, 0, nullptr)
                                         .ToLocalChecked();
       if (!result.IsEmpty()) {
-        v8::String::Utf8Value utf8(isolate,
-                                   result->ToString(context).ToLocalChecked());
-        return new base::Value(std::string(*utf8, utf8.length()));
+        v8::String::Utf8Value utf8(isolate, result);
+        return std::make_unique<base::Value>(std::string(*utf8, utf8.length()));
       }
     }
   }
@@ -345,10 +347,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   if (val->IsRegExp()) {
     if (!reg_exp_allowed_)
       // JSON.stringify converts to an object.
-      return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
-                          isolate);
-    return new base::Value(*v8::String::Utf8Value(
-        isolate, val->ToString(context).ToLocalChecked()));
+      return FromV8Object(val.As<v8::Object>(), state, isolate);
+    return std::make_unique<base::Value>(*v8::String::Utf8Value(isolate, val));
   }
 
   // v8::Value doesn't have a ToArray() method for some reason.
@@ -359,8 +359,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
     if (!function_allowed_)
       // JSON.stringify refuses to convert function(){}.
       return nullptr;
-    return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
-                        isolate);
+    return FromV8Object(val.As<v8::Object>(), state, isolate);
   }
 
   if (node::Buffer::HasInstance(val)) {
@@ -368,20 +367,20 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   }
 
   if (val->IsObject()) {
-    return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
-                        isolate);
+    return FromV8Object(val.As<v8::Object>(), state, isolate);
   }
 
   LOG(ERROR) << "Unexpected v8 value type encountered.";
   return nullptr;
 }
 
-base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
-                                           FromV8ValueState* state,
-                                           v8::Isolate* isolate) const {
+std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
+    v8::Local<v8::Array> val,
+    FromV8ValueState* state,
+    v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
-    return std::make_unique<base::Value>().release();
+    return std::make_unique<base::Value>();
 
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
@@ -390,45 +389,54 @@ base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
       val->CreationContext() != isolate->GetCurrentContext())
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
-  auto* result = new base::ListValue();
+  std::unique_ptr<base::ListValue> result(new base::ListValue());
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {
     v8::TryCatch try_catch(isolate);
-    v8::Local<v8::Value> child_v8 = val->Get(i);
-    if (try_catch.HasCaught()) {
+    v8::Local<v8::Value> child_v8;
+    v8::MaybeLocal<v8::Value> maybe_child =
+        val->Get(isolate->GetCurrentContext(), i);
+    if (try_catch.HasCaught() || !maybe_child.ToLocal(&child_v8)) {
       LOG(ERROR) << "Getter for index " << i << " threw an exception.";
       child_v8 = v8::Null(isolate);
     }
 
-    if (!val->HasRealIndexedProperty(i))
+    if (!val->HasRealIndexedProperty(isolate->GetCurrentContext(), i)
+             .FromMaybe(false)) {
+      result->Append(std::make_unique<base::Value>());
       continue;
+    }
 
-    base::Value* child = FromV8ValueImpl(state, child_v8, isolate);
+    std::unique_ptr<base::Value> child =
+        FromV8ValueImpl(state, child_v8, isolate);
     if (child)
-      result->Append(std::unique_ptr<base::Value>(child));
+      result->Append(std::move(child));
     else
       // JSON.stringify puts null in places where values don't serialize, for
       // example undefined and functions. Emulate that behavior.
       result->Append(std::make_unique<base::Value>());
   }
-  return result;
+  return std::move(result);
 }
 
-base::Value* V8ValueConverter::FromNodeBuffer(v8::Local<v8::Value> value,
-                                              FromV8ValueState* state,
-                                              v8::Isolate* isolate) const {
-  return new base::Value(std::vector<char>(
+std::unique_ptr<base::Value> V8ValueConverter::FromNodeBuffer(
+    v8::Local<v8::Value> value,
+    FromV8ValueState* state,
+    v8::Isolate* isolate) const {
+  std::vector<char> buffer(
       node::Buffer::Data(value),
-      node::Buffer::Data(value) + node::Buffer::Length(value)));
+      node::Buffer::Data(value) + node::Buffer::Length(value));
+  return std::make_unique<base::Value>(std::move(buffer));
 }
 
-base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
-                                            FromV8ValueState* state,
-                                            v8::Isolate* isolate) const {
+std::unique_ptr<base::Value> V8ValueConverter::FromV8Object(
+    v8::Local<v8::Object> val,
+    FromV8ValueState* state,
+    v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
-    return std::make_unique<base::Value>().release();
+    return std::make_unique<base::Value>();
 
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
@@ -438,10 +446,15 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
   auto result = std::make_unique<base::DictionaryValue>();
-  v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
+  v8::Local<v8::Array> property_names;
+  if (!val->GetOwnPropertyNames(isolate->GetCurrentContext())
+           .ToLocal(&property_names)) {
+    return std::move(result);
+  }
 
   for (uint32_t i = 0; i < property_names->Length(); ++i) {
-    v8::Local<v8::Value> key(property_names->Get(i));
+    v8::Local<v8::Value> key =
+        property_names->Get(isolate->GetCurrentContext(), i).ToLocalChecked();
 
     // Extend this test to cover more types as necessary and if sensible.
     if (!key->IsString() && !key->IsNumber()) {
@@ -451,21 +464,21 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
       continue;
     }
 
-    v8::String::Utf8Value name_utf8(
-        isolate, key->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+    v8::String::Utf8Value name_utf8(isolate, key);
 
     v8::TryCatch try_catch(isolate);
-    v8::Local<v8::Value> child_v8 = val->Get(key);
-
-    if (try_catch.HasCaught()) {
+    v8::Local<v8::Value> child_v8;
+    v8::MaybeLocal<v8::Value> maybe_child =
+        val->Get(isolate->GetCurrentContext(), key);
+    if (try_catch.HasCaught() || !maybe_child.ToLocal(&child_v8)) {
       LOG(ERROR) << "Getter for property " << *name_utf8
                  << " threw an exception.";
       child_v8 = v8::Null(isolate);
     }
 
-    std::unique_ptr<base::Value> child(
-        FromV8ValueImpl(state, child_v8, isolate));
-    if (!child.get())
+    std::unique_ptr<base::Value> child =
+        FromV8ValueImpl(state, child_v8, isolate);
+    if (!child)
       // JSON.stringify skips properties whose values don't serialize, for
       // example undefined and functions. Emulate that behavior.
       continue;
@@ -497,7 +510,7 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
                                     std::move(child));
   }
 
-  return result.release();
+  return std::move(result);
 }
 
 }  // namespace atom

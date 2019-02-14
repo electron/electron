@@ -23,6 +23,7 @@
 #include "content/browser/renderer_host/cursor_manager.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -286,6 +287,8 @@ class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
     return view_->render_widget_host()->CollectSurfaceIdsForEviction();
   }
 
+  bool ShouldShowStaleContentOnEviction() override { return false; }
+
   void OnBeginFrame(base::TimeTicks frame_time) override {}
   void InvalidateLocalSurfaceIdOnEviction() override {}
 
@@ -349,12 +352,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       content::ImageTransportFactory::GetInstance();
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
-  compositor_.reset(
-      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-                         content::GetContextFactory(), context_factory_private,
-                         base::ThreadTaskRunnerHandle::Get(),
-                         features::IsSurfaceSynchronizationEnabled(),
-                         false /* enable_pixel_canvas */));
+  compositor_.reset(new ui::Compositor(
+      context_factory_private->AllocateFrameSinkId(),
+      content::GetContextFactory(), context_factory_private,
+      base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */));
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 #endif
@@ -511,7 +512,7 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
-void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForLayoutTest() {
+void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
   ++latest_capture_sequence_number_;
   SynchronizeVisualProperties();
 }
@@ -528,9 +529,9 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   // We short-cut here to show a sensible color before that happens.
   UpdateBackgroundColorFromRenderer(color);
 
-  if (render_widget_host_) {
-    render_widget_host_->SetBackgroundOpaque(SkColorGetA(color) ==
-                                             SK_AlphaOPAQUE);
+  if (render_widget_host_ && render_widget_host_->owner_delegate()) {
+    render_widget_host_->owner_delegate()->SetBackgroundOpaque(
+        SkColorGetA(color) == SK_AlphaOPAQUE);
   }
 }
 
@@ -1080,7 +1081,11 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
 
   blink::WebMouseWheelEvent mouse_wheel_event(event);
 
-  mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded();
+  bool should_route_event =
+      render_widget_host_->delegate() &&
+      render_widget_host_->delegate()->GetInputEventRouter();
+  mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded(
+      should_route_event);
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
       mouse_wheel_event, false);
 
