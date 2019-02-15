@@ -90,3 +90,4 @@ sqlite_upgrade_from_3_24_to_3_26.patch
 sqlite_update_api_3_26.patch
 tts.patch
 do_not_allow_impl_side_invalidations_until_frame_sink_is_fully_active.patch
+enable_inputpane_virtual_keyboard_functionality_by_default.patch
