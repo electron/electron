@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/common/api/locker.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
 
@@ -44,6 +45,17 @@ class Promise : public base::RefCounted<Promise> {
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
+  }
+
+  v8::MaybeLocal<v8::Promise> Then(base::Closure cb) {
+    v8::HandleScope handle_scope(isolate());
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    v8::Local<v8::Value> value = mate::ConvertToV8(isolate(), cb);
+    v8::Local<v8::Function> handler = v8::Local<v8::Function>::Cast(value);
+
+    return GetHandle()->Then(GetContext(), handler);
   }
 
   // Promise resolution is a microtask
