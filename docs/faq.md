@@ -184,7 +184,7 @@ new BrowserWindow({backgroundColor: '#fff'});
 
 The effect is visible only on (some?) LCD screens. Even if you dont see a difference, some of your users may. It is best to always set the background this way, unless you have reasons not to do so.
 
-Notice that just setting the background in the CSS has not the desired effect.
+Notice that just setting the background in the CSS does not have the desired effect.
 
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
