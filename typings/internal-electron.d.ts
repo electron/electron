@@ -27,6 +27,10 @@ declare namespace Electron {
     __ELECTRON_SERIALIZED_ERROR__: true
   }
 
+  interface IpcRendererInternal extends Electron.IpcRenderer {
+    sendToAll(webContentsId: number, channel: string, ...args: any[]): void
+  }
+
   const deprecate: ElectronInternal.DeprecationUtil;
 }
 

@@ -172,12 +172,12 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  ipcRenderer: Electron.IpcRenderer, guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
+  ipcRendererInternal: Electron.IpcRendererInternal, guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
   if (guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
-      ipcRenderer.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE')
+      ipcRendererInternal.sendSync('ELECTRON_BROWSER_WINDOW_CLOSE')
     }
   }
 
@@ -187,16 +187,16 @@ export const windowSetup = (
       if (url != null && url !== '') {
         url = resolveURL(url)
       }
-      const guestId = ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, toString(frameName), toString(features))
+      const guestId = ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, toString(frameName), toString(features))
       if (guestId != null) {
-        return getOrCreateProxy(ipcRenderer, guestId)
+        return getOrCreateProxy(ipcRendererInternal, guestId)
       } else {
         return null
       }
     }
 
     if (openerId != null) {
-      window.opener = getOrCreateProxy(ipcRenderer, openerId)
+      window.opener = getOrCreateProxy(ipcRendererInternal, openerId)
     }
   }
 
@@ -205,7 +205,7 @@ export const windowSetup = (
     throw new Error('prompt() is and will not be supported.')
   }
 
-  ipcRenderer.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
+  ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
     _event: Electron.Event, sourceId: number, message: any, sourceOrigin: string
   ) {
     // Manually dispatch event instead of using postMessage because we also need to
@@ -219,26 +219,26 @@ export const windowSetup = (
 
     event.data = message
     event.origin = sourceOrigin
-    event.source = getOrCreateProxy(ipcRenderer, sourceId)
+    event.source = getOrCreateProxy(ipcRendererInternal, sourceId)
 
     window.dispatchEvent(event as MessageEvent)
   })
 
   window.history.back = function () {
-    ipcRenderer.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
+    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
   }
 
   window.history.forward = function () {
-    ipcRenderer.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
+    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
   }
 
   window.history.go = function (offset: number) {
-    ipcRenderer.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
+    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
   }
 
   defineProperty(window.history, 'length', {
     get: function () {
-      return ipcRenderer.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
+      return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
     }
   })
 
@@ -253,7 +253,7 @@ export const windowSetup = (
     let cachedVisibilityState = isHiddenPage ? 'hidden' : 'visible'
 
     // Subscribe to visibilityState changes.
-    ipcRenderer.on('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', function (_event: Electron.Event, visibilityState: VisibilityState) {
+    ipcRendererInternal.on('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', function (_event: Electron.Event, visibilityState: VisibilityState) {
       if (cachedVisibilityState !== visibilityState) {
         cachedVisibilityState = visibilityState
         document.dispatchEvent(new Event('visibilitychange'))

@@ -1,4 +1,4 @@
-import * as ipcRenderer from '@electron/internal/renderer/ipc-renderer-internal'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import * as errorUtils from '@electron/internal/common/error-utils'
 
 let nextId = 0
@@ -6,7 +6,7 @@ let nextId = 0
 export function invoke<T> (command: string, ...args: any[]) {
   return new Promise<T>((resolve, reject) => {
     const requestId = ++nextId
-    ipcRenderer.once(`${command}_RESPONSE_${requestId}`, (
+    ipcRendererInternal.once(`${command}_RESPONSE_${requestId}`, (
       _event: Electron.Event, error: Electron.SerializedError, result: any
     ) => {
       if (error) {
@@ -15,12 +15,12 @@ export function invoke<T> (command: string, ...args: any[]) {
         resolve(result)
       }
     })
-    ipcRenderer.send(command, requestId, ...args)
+    ipcRendererInternal.send(command, requestId, ...args)
   })
 }
 
 export function invokeSync<T> (command: string, ...args: any[]): T {
-  const [ error, result ] = ipcRenderer.sendSync(command, ...args)
+  const [ error, result ] = ipcRendererInternal.sendSync(command, ...args)
 
   if (error) {
     throw errorUtils.deserialize(error)
