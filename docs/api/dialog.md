@@ -171,7 +171,7 @@ It returns the index of the clicked button.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
-If a `callback` is passed, the dialog will not block the process. The API call
+If the `callback` and `browserWindow` arguments are passed, the dialog will not block the process. The API call
 will be asynchronous and the result will be passed via `callback(response)`.
 
 ### `dialog.showErrorBox(title, content)`
