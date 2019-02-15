@@ -10,7 +10,6 @@ const qs = require('querystring')
 const http = require('http')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
-const { resolveGetters } = require('./assert-helpers')
 const { ipcRenderer, remote } = require('electron')
 const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, webContents } = remote
 
@@ -1923,14 +1922,30 @@ describe('BrowserWindow module', () => {
 
       it('validates process APIs access in sandboxed renderer', (done) => {
         ipcMain.once('answer', function (event, test) {
-          assert.strictEqual(test.arch, remote.process.arch)
-          assert.strictEqual(test.platform, remote.process.platform)
-          assert.deepStrictEqual(...resolveGetters(test.env, remote.process.env))
-          assert.strictEqual(test.execPath, remote.process.helperExecPath)
-          assert.strictEqual(test.sandboxed, true)
-          assert.strictEqual(test.type, 'renderer')
-          assert.strictEqual(test.version, remote.process.version)
-          assert.deepStrictEqual(test.versions, remote.process.versions)
+          expect(test.hasCrash).to.be.true()
+          expect(test.hasHang).to.be.true()
+          expect(test.heapStatistics).to.be.an('object')
+          expect(test.processMemoryInfo).to.be.an('object')
+          expect(test.systemVersion).to.be.a('string')
+          expect(test.cpuUsage).to.be.an('object')
+          expect(test.ioCounters).to.be.an('object')
+          expect(test.arch).to.equal(remote.process.arch)
+          expect(test.platform).to.equal(remote.process.platform)
+          expect(test.env).to.deep.equal(remote.process.env)
+          expect(test.execPath).to.equal(remote.process.helperExecPath)
+          expect(test.sandboxed).to.be.true()
+          expect(test.type).to.equal('renderer')
+          expect(test.version).to.equal(remote.process.version)
+          expect(test.versions).to.deep.equal(remote.process.versions)
+
+          if (process.platform === 'linux' && test.osSandbox) {
+            expect(test.creationTime).to.be.null()
+            expect(test.systemMemoryInfo).to.be.null()
+          } else {
+            expect(test.creationTime).to.be.a('number')
+            expect(test.systemMemoryInfo).to.be.an('object')
+          }
+
           done()
         })
         remote.process.env.sandboxmain = 'foo'
@@ -1941,6 +1956,9 @@ describe('BrowserWindow module', () => {
             sandbox: true,
             preload
           }
+        })
+        w.webContents.once('preload-error', (event, preloadPath, error) => {
+          done(error)
         })
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
       })
