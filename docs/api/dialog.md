@@ -55,7 +55,7 @@ The `dialog` module has the following methods:
   * `filePaths` String[] - An array of file paths chosen by the user
   * `bookmarks` String[] _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
 
-Returns `String[]`, an array of file paths chosen by the user,
+Returns `String[] | undefined`, an array of file paths chosen by the user,
 if the callback is provided it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
@@ -106,8 +106,8 @@ shown.
   * `filename` String
   * `bookmark` String _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
 
-Returns `String`, the path of the file chosen by the user,
-if a callback is provided it returns `undefined`.
+Returns `String | undefined`, the path of the file chosen by the user,
+if a callback is provided or the dialog is cancelled it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
