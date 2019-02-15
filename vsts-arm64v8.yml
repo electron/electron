@@ -8,5 +8,7 @@ jobs:
   container: arm64v8-test-container
   displayName: Test Arm64 on Arm64 hardware
   timeoutInMinutes: 30
+  env:
+    RUN_NATIVE_MKSNAPSHOT: true
   steps:
   - template: vsts-arm-test-steps.yml
