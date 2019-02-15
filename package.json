@@ -108,7 +108,7 @@
     ],
     "docs/api/*.md": [
       "node script/gen-filenames.js",
-      "git add"
+      "git add filenames.auto.gni"
     ]
   }
 }
