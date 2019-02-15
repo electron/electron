@@ -30,7 +30,10 @@ v8::Maybe<bool> Promise::RejectWithErrorMessage(const std::string& string) {
       v8::Local<v8::Context>::New(isolate(), GetContext()));
 
   v8::Local<v8::String> error_message =
-      v8::String::NewFromUtf8(isolate(), string.c_str());
+      v8::String::NewFromUtf8(isolate(), string.c_str(),
+                              v8::NewStringType::kNormal,
+                              static_cast<int>(string.size()))
+          .ToLocalChecked();
   v8::Local<v8::Value> error = v8::Exception::Error(error_message);
   return Reject(error);
 }

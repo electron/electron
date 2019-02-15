@@ -5,10 +5,10 @@ Subject: net_url_request_job.patch
 
 
 diff --git a/net/url_request/url_request_job.h b/net/url_request/url_request_job.h
-index c75471c5dce778b2338290ae1fdfff5ebbc16f7b..df79df6d765d4957e2489e8ee6ddc1e77f07efc7 100644
+index f08e6e890ebc6b7f745b3dfab6415cc9bdce050f..c05a3b2ec3020dff845dbb79737a95bd17a2766f 100644
 --- a/net/url_request/url_request_job.h
 +++ b/net/url_request/url_request_job.h
-@@ -293,6 +293,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
+@@ -294,6 +294,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
    void OnCallToDelegate(NetLogEventType type);
    void OnCallToDelegateComplete();
  

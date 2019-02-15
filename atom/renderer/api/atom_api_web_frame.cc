@@ -22,6 +22,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/blink/public/platform/web_cache.h"
+#include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_element.h"
@@ -377,46 +378,27 @@ void ExecuteJavaScriptInIsolatedWorld(
       scriptExecutionType, callback.release());
 }
 
-void SetIsolatedWorldSecurityOrigin(v8::Local<v8::Value> window,
-                                    int world_id,
-                                    const std::string& origin_url) {
-  GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldSecurityOrigin(
-      world_id, blink::WebSecurityOrigin::CreateFromString(
-                    blink::WebString::FromUTF8(origin_url)));
-}
-
-void SetIsolatedWorldContentSecurityPolicy(v8::Local<v8::Value> window,
-                                           int world_id,
-                                           const std::string& security_policy) {
-  GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldContentSecurityPolicy(
-      world_id, blink::WebString::FromUTF8(security_policy));
-}
-
-void SetIsolatedWorldHumanReadableName(v8::Local<v8::Value> window,
-                                       int world_id,
-                                       const std::string& name) {
-  GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldHumanReadableName(
-      world_id, blink::WebString::FromUTF8(name));
-}
-
 void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
                           int world_id,
                           const mate::Dictionary& options,
                           mate::Arguments* args) {
-  std::string origin, csp, name;
-  options.Get("securityOrigin", &origin);
-  options.Get("csp", &csp);
+  std::string origin_url, security_policy, name;
+  options.Get("securityOrigin", &origin_url);
+  options.Get("csp", &security_policy);
   options.Get("name", &name);
 
-  if (!csp.empty() && origin.empty()) {
+  if (!security_policy.empty() && origin_url.empty()) {
     args->ThrowError(
         "If csp is specified, securityOrigin should also be specified");
     return;
   }
 
-  SetIsolatedWorldSecurityOrigin(window, world_id, origin);
-  SetIsolatedWorldContentSecurityPolicy(window, world_id, csp);
-  SetIsolatedWorldHumanReadableName(window, world_id, name);
+  blink::WebIsolatedWorldInfo info;
+  info.security_origin = blink::WebSecurityOrigin::CreateFromString(
+      blink::WebString::FromUTF8(origin_url));
+  info.content_security_policy = blink::WebString::FromUTF8(security_policy);
+  info.human_readable_name = blink::WebString::FromUTF8(name);
+  GetRenderFrame(window)->GetWebFrame()->SetIsolatedWorldInfo(world_id, info);
 }
 
 blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
@@ -550,12 +532,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("executeJavaScript", &ExecuteJavaScript);
   dict.SetMethod("executeJavaScriptInIsolatedWorld",
                  &ExecuteJavaScriptInIsolatedWorld);
-  dict.SetMethod("_setIsolatedWorldSecurityOrigin",
-                 &SetIsolatedWorldSecurityOrigin);
-  dict.SetMethod("_setIsolatedWorldContentSecurityPolicy",
-                 &SetIsolatedWorldContentSecurityPolicy);
-  dict.SetMethod("_setIsolatedWorldHumanReadableName",
-                 &SetIsolatedWorldHumanReadableName);
   dict.SetMethod("setIsolatedWorldInfo", &SetIsolatedWorldInfo);
   dict.SetMethod("getResourceUsage", &GetResourceUsage);
   dict.SetMethod("clearCache", &ClearCache);

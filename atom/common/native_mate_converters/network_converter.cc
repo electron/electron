@@ -27,12 +27,12 @@ Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
   for (const auto& element : *(val->elements())) {
     auto post_data_dict = std::make_unique<base::DictionaryValue>();
     auto type = element.type();
-    if (type == network::DataElement::TYPE_BYTES) {
+    if (type == network::mojom::DataElementType::kBytes) {
       auto bytes = std::make_unique<base::Value>(std::vector<char>(
           element.bytes(), element.bytes() + (element.length())));
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
-    } else if (type == network::DataElement::TYPE_FILE) {
+    } else if (type == network::mojom::DataElementType::kFile) {
       post_data_dict->SetString("type", "file");
       post_data_dict->SetKey("filePath",
                              base::Value(element.path().AsUTF8Unsafe()));
@@ -40,7 +40,7 @@ Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
       post_data_dict->SetInteger("length", static_cast<int>(element.length()));
       post_data_dict->SetDouble(
           "modificationTime", element.expected_modification_time().ToDoubleT());
-    } else if (type == network::DataElement::TYPE_BLOB) {
+    } else if (type == network::mojom::DataElementType::kBlob) {
       post_data_dict->SetString("type", "blob");
       post_data_dict->SetString("blobUUID", element.blob_uuid());
     }

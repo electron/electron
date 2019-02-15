@@ -29,7 +29,6 @@
 #undef DISALLOW_COPY_AND_ASSIGN
 #undef NO_RETURN
 #undef LIKELY
-#undef arraysize
 #undef debug_string    // This is defined in macOS SDK in AssertMacros.h.
 #undef require_string  // This is defined in macOS SDK in AssertMacros.h.
 #include "env-inl.h"

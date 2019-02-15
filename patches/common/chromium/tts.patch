@@ -10,17 +10,18 @@ Subject: tts.patch
   destruction from content layer.
 
 diff --git a/chrome/browser/speech/tts_controller_delegate_impl.cc b/chrome/browser/speech/tts_controller_delegate_impl.cc
-index 9e071512872c1e9350b29e499a28e3033fa1b95f..905cd40368b029ed546af2fb37b42e6cd8cc1d8e 100644
+index dbfed8996b92c8e1208f3455c56447e35f9e9e43..ab85a77adf20b600cd7e400f105ade7b16d53e86 100644
 --- a/chrome/browser/speech/tts_controller_delegate_impl.cc
 +++ b/chrome/browser/speech/tts_controller_delegate_impl.cc
-@@ -533,12 +533,14 @@ const PrefService* TtsControllerDelegateImpl::GetPrefService(
-     const content::Utterance* utterance) {
+@@ -213,6 +213,7 @@ void TtsControllerDelegateImpl::UpdateUtteranceDefaultsFromPrefs(
+ const PrefService* TtsControllerDelegateImpl::GetPrefService(
+     const content::TtsUtterance* utterance) {
    const PrefService* prefs = nullptr;
-   // The utterance->browser_context() is null in tests.
 +#if 0
-   if (utterance->browser_context()) {
+   // The utterance->GetBrowserContext() is null in tests.
+   if (utterance->GetBrowserContext()) {
      const Profile* profile =
-         Profile::FromBrowserContext(utterance->browser_context());
+@@ -220,6 +221,7 @@ const PrefService* TtsControllerDelegateImpl::GetPrefService(
      if (profile)
        prefs = profile->GetPrefs();
    }
@@ -29,7 +30,7 @@ index 9e071512872c1e9350b29e499a28e3033fa1b95f..905cd40368b029ed546af2fb37b42e6c
  }
  
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
-index 7ff9a9219beffc015ae8a96303595ee529715819..d2394892c2a0d2b4f88407cd412af143cf40881d 100644
+index b1ccc84efa99a616d9b196f741dfa57018ae1fd2..f0d9b2ec8b765ffb7e4a3460b2627a2009db500f 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
 +++ b/chrome/browser/speech/tts_message_filter.cc
 @@ -10,8 +10,11 @@
@@ -117,7 +118,7 @@ index 7ff9a9219beffc015ae8a96303595ee529715819..d2394892c2a0d2b4f88407cd412af143
    }
  }
  
-@@ -211,10 +236,8 @@ void TtsMessageFilter::Cleanup() {
+@@ -210,10 +235,8 @@ void TtsMessageFilter::Cleanup() {
    content::TtsController::GetInstance()->RemoveUtteranceEventDelegate(this);
  }
  
@@ -132,7 +133,7 @@ index 7ff9a9219beffc015ae8a96303595ee529715819..d2394892c2a0d2b4f88407cd412af143
 +  browser_context_shutdown_notifier_.reset();
  }
 diff --git a/chrome/browser/speech/tts_message_filter.h b/chrome/browser/speech/tts_message_filter.h
-index 2fbbc4b4f2a79eac6b686894f2b6463abe404e50..e02c1af7e002a70df5fa925ba758c7c2379ffac5 100644
+index 37c62a4d004ccc8e26f36bbc7244c1a0c6c18ecd..3075b45945911cb3019e8a1eb7896d8e33193598 100644
 --- a/chrome/browser/speech/tts_message_filter.h
 +++ b/chrome/browser/speech/tts_message_filter.h
 @@ -8,6 +8,7 @@

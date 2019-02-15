@@ -13,6 +13,7 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/time/time.h"
@@ -414,7 +415,7 @@ DWORD CrashService::AsyncSendDump(void* context) {
   const DWORD kSleepSchedule[] = {24 * kOneHour, 8 * kOneHour,    4 * kOneHour,
                                   kOneHour,      15 * kOneMinute, 0};
 
-  int retry_round = arraysize(kSleepSchedule) - 1;
+  int retry_round = base::size(kSleepSchedule) - 1;
 
   do {
     ::Sleep(kSleepSchedule[retry_round]);

@@ -109,30 +109,21 @@ static_library("chrome") {
         "//chrome/browser/ui/views/color_chooser_win.cc",
       ]
     }
+
+    if (is_linux) {
+      sources += [ "//chrome/browser/media/webrtc/window_icon_util_x11.cc" ]
+    }
   }
 
   if (enable_tts) {
     sources += [
       "//chrome/browser/speech/tts_controller_delegate_impl.cc",
       "//chrome/browser/speech/tts_controller_delegate_impl.h",
-      "//chrome/browser/speech/tts_mac.mm",
       "//chrome/browser/speech/tts_message_filter.cc",
       "//chrome/browser/speech/tts_message_filter.h",
-      "//chrome/browser/speech/tts_platform.h ",
-      "//chrome/browser/speech/tts_platform_impl.cc",
-      "//chrome/browser/speech/tts_platform_impl.h",
-      "//chrome/browser/speech/tts_win.cc",
       "//chrome/renderer/tts_dispatcher.cc",
       "//chrome/renderer/tts_dispatcher.h",
     ]
-
-    if (is_linux) {
-      sources += [
-        "//chrome/browser/media/webrtc/window_icon_util_x11.cc",
-        "//chrome/browser/speech/tts_linux.cc",
-      ]
-      deps += [ "//third_party/speech-dispatcher" ]
-    }
   }
 
   if (enable_widevine) {

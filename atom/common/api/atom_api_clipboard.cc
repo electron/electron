@@ -10,6 +10,7 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixmap.h"
+#include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 
 #include "atom/common/node_includes.h"
@@ -36,13 +37,15 @@ std::vector<base::string16> Clipboard::AvailableFormats(mate::Arguments* args) {
 
 bool Clipboard::Has(const std::string& format_string, mate::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
+  ui::ClipboardFormatType format(
+      ui::ClipboardFormatType::GetType(format_string));
   return clipboard->IsFormatAvailable(format, GetClipboardType(args));
 }
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
+  ui::ClipboardFormatType format(
+      ui::ClipboardFormatType::GetType(format_string));
 
   std::string data;
   clipboard->ReadData(format, &data);
@@ -66,7 +69,7 @@ void Clipboard::WriteBuffer(const std::string& format,
 
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteData(
-      ui::Clipboard::GetFormatType(format).Serialize(),
+      ui::ClipboardFormatType::GetType(format).Serialize(),
       std::string(node::Buffer::Data(buffer), node::Buffer::Length(buffer)));
 }
 
@@ -98,11 +101,11 @@ base::string16 Clipboard::ReadText(mate::Arguments* args) {
   base::string16 data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardType(args);
-  if (clipboard->IsFormatAvailable(ui::Clipboard::GetPlainTextWFormatType(),
+  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::GetPlainTextWType(),
                                    type)) {
     clipboard->ReadText(type, &data);
   } else if (clipboard->IsFormatAvailable(
-                 ui::Clipboard::GetPlainTextFormatType(), type)) {
+                 ui::ClipboardFormatType::GetPlainTextType(), type)) {
     std::string result;
     clipboard->ReadAsciiText(type, &result);
     data = base::ASCIIToUTF16(result);

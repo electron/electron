@@ -277,7 +277,8 @@ struct Converter<std::map<std::string, T>> {
 
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> dict = val->ToObject(context).ToLocalChecked();
-    v8::Local<v8::Array> keys = dict->GetOwnPropertyNames();
+    v8::Local<v8::Array> keys =
+        dict->GetOwnPropertyNames(context).ToLocalChecked();
     for (uint32_t i = 0; i < keys->Length(); ++i) {
       v8::Local<v8::Value> key = keys->Get(i);
       T value;

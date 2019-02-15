@@ -167,20 +167,11 @@ NSString* AtomBundleMover::ContainingDiskImageDevice(NSString* bundlePath) {
   NSData* data =
       [[[hdiutil standardOutput] fileHandleForReading] readDataToEndOfFile];
 
-  NSDictionary* info = nil;
-  if (floor(NSAppKitVersionNumber) > NSAppKitVersionNumber10_5) {
-    info = [NSPropertyListSerialization
-        propertyListWithData:data
-                     options:NSPropertyListImmutable
-                      format:NULL
-                       error:NULL];
-  } else {
-    info = [NSPropertyListSerialization
-        propertyListFromData:data
-            mutabilityOption:NSPropertyListImmutable
-                      format:NULL
-            errorDescription:NULL];
-  }
+  NSDictionary* info =
+      [NSPropertyListSerialization propertyListWithData:data
+                                                options:NSPropertyListImmutable
+                                                 format:NULL
+                                                  error:NULL];
 
   if (![info isKindOfClass:[NSDictionary class]])
     return nil;
