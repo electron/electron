@@ -20,7 +20,7 @@ Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5
 | Tue, 2019-Apr-09 | 5.0.0-beta.x ||
 | Tue, 2019-Apr-16 | none | quiet period - stable prep |
 | Tue, 2019-Apr-23 | 5.0.0 |✨stable ✨|
-Includes: Chromium M72 and Node v12.0
+Includes: Chromium M73 and Node v12.0
 
 ## 6.0.0 Release Schedule
 TBD
