@@ -71,6 +71,7 @@ auto_filenames = {
     "docs/api/structures/custom-scheme.md",
     "docs/api/structures/desktop-capturer-source.md",
     "docs/api/structures/display.md",
+    "docs/api/structures/event.md",
     "docs/api/structures/file-filter.md",
     "docs/api/structures/gpu-feature-status.md",
     "docs/api/structures/io-counters.md",
