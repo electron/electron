@@ -19,7 +19,7 @@
 // - document.hidden
 // - document.visibilityState
 
-const { defineProperty, defineProperties } = Object
+import * as ipcMessages from '@electron/internal/common/ipc-messages'
 
 // Helper function to resolve relative url.
 const a = window.document.createElement('a')
@@ -85,7 +85,7 @@ class LocationProxy {
           (guestURL as any)[propertyKey] = newVal
 
           return this.ipcRenderer.sendSync(
-            'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC',
+            ipcMessages.guestWindowManager.webContentsMethodSync,
             this.guestId, 'loadURL', guestURL.toString())
         }
       }
@@ -106,7 +106,7 @@ class LocationProxy {
   }
 
   private getGuestURL (): URL | null {
-    const urlString = this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'getURL')
+    const urlString = this.ipcRenderer.sendSync(ipcMessages.guestWindowManager.webContentsMethodSync, this.guestId, 'getURL')
     try {
       return new URL(urlString)
     } catch (e) {
@@ -132,7 +132,7 @@ class BrowserWindowProxy {
   }
   public set location (url: string | any) {
     url = resolveURL(url)
-    this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'loadURL', url)
+    this.ipcRenderer.sendSync(ipcMessages.guestWindowManager.webContentsMethodSync, this.guestId, 'loadURL', url)
   }
 
   constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
@@ -147,27 +147,27 @@ class BrowserWindowProxy {
   }
 
   public close () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', this.guestId)
+    this.ipcRenderer.send(ipcMessages.guestWindowManager.windowClose, this.guestId)
   }
 
   public focus () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'focus')
+    this.ipcRenderer.send(ipcMessages.guestWindowManager.windowMethod, this.guestId, 'focus')
   }
 
   public blur () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'blur')
+    this.ipcRenderer.send(ipcMessages.guestWindowManager.windowMethod, this.guestId, 'blur')
   }
 
   public print () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'print')
+    this.ipcRenderer.send(ipcMessages.guestWindowManager.webContentsMethod, this.guestId, 'print')
   }
 
   public postMessage (message: any, targetOrigin: any) {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
+    this.ipcRenderer.send(ipcMessages.guestWindowManager.webContentsPostMessage, this.guestId, message, toString(targetOrigin), window.location.origin)
   }
 
   public eval (...args: any[]) {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'executeJavaScript', ...args)
+    this.ipcRenderer.send(ipcMessages.guestWindowManager.webContentsMethod, this.guestId, 'executeJavaScript', ...args)
   }
 }
 
@@ -187,7 +187,7 @@ export const windowSetup = (
       if (url != null && url !== '') {
         url = resolveURL(url)
       }
-      const guestId = ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, toString(frameName), toString(features))
+      const guestId = ipcRendererInternal.sendSync(ipcMessages.guestWindowManager.windowOpen, url, toString(frameName), toString(features))
       if (guestId != null) {
         return getOrCreateProxy(ipcRendererInternal, guestId)
       } else {
@@ -225,20 +225,20 @@ export const windowSetup = (
   })
 
   window.history.back = function () {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK')
+    ipcRendererInternal.send(ipcMessages.navigationController.goBack)
   }
 
   window.history.forward = function () {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD')
+    ipcRendererInternal.send(ipcMessages.navigationController.goForward)
   }
 
   window.history.go = function (offset: number) {
-    ipcRendererInternal.send('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', +offset)
+    ipcRendererInternal.send(ipcMessages.navigationController.goToOffset, +offset)
   }
 
-  defineProperty(window.history, 'length', {
+  Object.defineProperty(window.history, 'length', {
     get: function () {
-      return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
+      return ipcRendererInternal.sendSync(ipcMessages.navigationController.length)
     }
   })
 
@@ -261,13 +261,13 @@ export const windowSetup = (
     })
 
     // Make document.hidden and document.visibilityState return the correct value.
-    defineProperty(document, 'hidden', {
+    Object.defineProperty(document, 'hidden', {
       get: function () {
         return cachedVisibilityState !== 'visible'
       }
     })
 
-    defineProperty(document, 'visibilityState', {
+    Object.defineProperty(document, 'visibilityState', {
       get: function () {
         return cachedVisibilityState
       }
