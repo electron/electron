@@ -70,7 +70,7 @@ filenames = {
     "lib/renderer/ipc-renderer-internal-utils.ts",
     "lib/renderer/ipc-renderer-internal.ts",
     "lib/renderer/remote.ts",
-    "lib/renderer/security-warnings.js",
+    "lib/renderer/security-warnings.ts",
     "lib/renderer/web-frame-init.js",
     "lib/renderer/window-setup.ts",
     "lib/renderer/web-view/guest-view-internal.js",
