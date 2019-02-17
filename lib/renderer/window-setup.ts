@@ -172,7 +172,7 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  ipcRendererInternal: Electron.IpcRendererInternal, guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
+  ipcRendererInternal: ElectronInternal.IpcRendererInternal, guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
   if (guestInstanceId == null) {
     // Override default window.close.

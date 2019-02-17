@@ -48,7 +48,7 @@ The `crashReporter` module has the following methods:
   * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
-  * `extra` Object (optional) - An object you can define that will be sent along with the
+  * `extra` Record<string, string> (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
     supported and the property names and values must be less than 64 characters long.
   * `crashesDirectory` String (optional) - Directory to store the crashreports temporarily (only used when the crash reporter is started via `process.crashReporter.start`).
@@ -93,7 +93,7 @@ them will get reported without `companyName`, `productName` or any of the `extra
 
 ### `crashReporter.getLastCrashReport()`
 
-Returns [`CrashReport`](structures/crash-report.md):
+Returns [`CrashReport | null`](structures/crash-report.md):
 
 Returns the date and ID of the last crash report. If no crash reports have been
 sent or the crash reporter has not been started, `null` is returned.
@@ -137,7 +137,7 @@ Remove a extra parameter from the current set of parameters so that it will not 
 
 ### `crashReporter.getParameters()`
 
-See all of the current parameters being passed to the crash reporter.
+Returns `Record<string, string>` - Gets all of the current parameters being passed to the crash reporter.
 
 ## Crash Report Payload
 

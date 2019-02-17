@@ -1,3 +1,6 @@
+// declare type ErrorCallback<T> = ((error: Error | string, result: undefined) => void) | ((error: null, result: T) => void);
+declare type ErrorCallback<T> = (error: Error | string | null, value?: T) => void;
+
 declare namespace NodeJS {
   interface FeaturesBinding {
     isDesktopCapturerEnabled(): boolean;
@@ -22,8 +25,11 @@ declare namespace NodeJS {
     atomBinding(name: string): any;
     atomBinding(name: 'features'): FeaturesBinding;
     atomBinding(name: 'v8_util'): V8UtilBinding;
+
     atomBinding(name: 'app'): { app: Electron.App, App: Function };
+    atomBinding(name: 'auto_updater'): { autoUpdater: Electron.AutoUpdater, AutoUpdater: Function }
     atomBinding(name: 'command_line'): Electron.CommandLine;
+
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
@@ -33,6 +39,10 @@ declare namespace NodeJS {
     // Additional events
     once(event: 'document-start', listener: () => any): this;
     once(event: 'document-end', listener: () => any): this;
+    /**
+     * The absolute path to the helper executable
+     */
+    helperExecPath: string;
   }
 }
 

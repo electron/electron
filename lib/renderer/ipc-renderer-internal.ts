@@ -2,7 +2,7 @@ const binding = process.atomBinding('ipc')
 const v8Util = process.atomBinding('v8_util')
 
 // Created by init.js.
-export const ipcRendererInternal: Electron.IpcRendererInternal = v8Util.getHiddenValue(global, 'ipc-internal')
+export const ipcRendererInternal: ElectronInternal.IpcRendererInternal = v8Util.getHiddenValue(global, 'ipc-internal')
 const internal = true
 
 ipcRendererInternal.send = function (channel, ...args) {

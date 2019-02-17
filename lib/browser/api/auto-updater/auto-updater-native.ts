@@ -1,10 +1,8 @@
-'use strict'
-
-const EventEmitter = require('events').EventEmitter
+import { EventEmitter } from 'events'
 const { autoUpdater, AutoUpdater } = process.atomBinding('auto_updater')
 
 // AutoUpdater is an EventEmitter.
 Object.setPrototypeOf(AutoUpdater.prototype, EventEmitter.prototype)
-EventEmitter.call(autoUpdater)
+EventEmitter.call(autoUpdater as any)
 
-module.exports = autoUpdater
+export default autoUpdater

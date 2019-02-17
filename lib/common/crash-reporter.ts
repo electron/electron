@@ -1,20 +1,30 @@
-'use strict'
-
 const binding = process.atomBinding('crash_reporter')
 
-class CrashReporter {
+export type CrashReporterInitOptions = {
+  productName?: string
+  submitURL?: string
+}
+
+export type CrashReporterInitResult = {
+  productName: string
+  crashesDirectory: string
+  crashServicePid?: number
+  appVersion: string
+}
+
+export abstract class CrashReporter {
+  private productName: string | null = null
+  private crashesDirectory: string | null = null
+  private crashServicePid: number | undefined = undefined
+
   contructor () {
     this.productName = null
     this.crashesDirectory = null
   }
 
-  init (options) {
-    throw new Error('Not implemented')
-  }
+  abstract init(options: CrashReporterInitOptions): CrashReporterInitResult
 
-  start (options) {
-    if (options == null) options = {}
-
+  start (options: Electron.CrashReporterStartOptions) {
     let {
       productName,
       companyName,
@@ -67,7 +77,7 @@ class CrashReporter {
     return (reports.length > 0) ? reports[0] : null
   }
 
-  getUploadedReports () {
+  getUploadedReports (): Electron.CrashReport[] {
     return binding.getUploadedReports(this.getCrashesDirectory())
   }
 
@@ -87,7 +97,7 @@ class CrashReporter {
     }
   }
 
-  setUploadToServer (uploadToServer) {
+  setUploadToServer (uploadToServer: boolean) {
     if (process.type === 'browser') {
       return binding.setUploadToServer(uploadToServer)
     } else {
@@ -95,17 +105,15 @@ class CrashReporter {
     }
   }
 
-  addExtraParameter (key, value) {
+  addExtraParameter (key: string, value: string) {
     binding.addExtraParameter(key, value)
   }
 
-  removeExtraParameter (key) {
+  removeExtraParameter (key: string) {
     binding.removeExtraParameter(key)
   }
 
-  getParameters (key, value) {
+  getParameters () {
     return binding.getParameters()
   }
 }
-
-module.exports = CrashReporter

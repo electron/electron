@@ -1,10 +1,11 @@
-'use strict'
+import { app } from 'electron'
+import { EventEmitter } from 'events'
+import * as squirrelUpdate from '@electron/internal/browser/api/auto-updater/squirrel-update-win'
 
-const { app } = require('electron')
-const { EventEmitter } = require('events')
-const squirrelUpdate = require('@electron/internal/browser/api/auto-updater/squirrel-update-win')
+class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
+  private updateAvailable = false
+  private updateURL = ''
 
-class AutoUpdater extends EventEmitter {
   quitAndInstall () {
     if (!this.updateAvailable) {
       return this.emitError('No update available, can\'t quit and install')
@@ -17,8 +18,8 @@ class AutoUpdater extends EventEmitter {
     return this.updateURL
   }
 
-  setFeedURL (options) {
-    let updateURL
+  setFeedURL (options: Electron.FeedURLOptions) {
+    let updateURL: string
     if (typeof options === 'object') {
       if (typeof options.url === 'string') {
         updateURL = options.url
@@ -66,9 +67,13 @@ class AutoUpdater extends EventEmitter {
 
   // Private: Emit both error object and message, this is to keep compatibility
   // with Old APIs.
-  emitError (message) {
-    this.emit('error', new Error(message), message)
+  emitError (message: Error | string) {
+    if (message instanceof Error) {
+      this.emit('error', message, message.message)
+    } else {
+      this.emit('error', new Error(message), message)
+    }
   }
 }
 
-module.exports = new AutoUpdater()
+export default new AutoUpdater()

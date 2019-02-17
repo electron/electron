@@ -78,6 +78,10 @@ declare namespace ElectronInternal {
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
+
+  interface IpcRendererInternal extends Electron.IpcRenderer {
+    sendToAll(webContentsId: number, channel: string, ...args: any[]): void
+  }
 }
 
 declare namespace Chrome {

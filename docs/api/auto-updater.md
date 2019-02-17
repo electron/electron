@@ -109,7 +109,7 @@ Sets the `url` and initialize the auto updater.
 
 ### `autoUpdater.getFeedURL()`
 
-Returns `String` - The current update feed URL.
+Returns `String` - The current update feed URL.  This is an empty string when no feed URL has been set.
 
 ### `autoUpdater.checkForUpdates()`
 

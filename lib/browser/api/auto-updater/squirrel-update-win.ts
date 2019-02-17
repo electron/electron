@@ -1,8 +1,6 @@
-'use strict'
-
-const fs = require('fs')
-const path = require('path')
-const spawn = require('child_process').spawn
+import * as fs from 'fs'
+import * as path from 'path'
+import { spawn, ChildProcess } from 'child_process'
 
 // i.e. my-app/app-0.1.13/
 const appFolder = path.dirname(process.execPath)
@@ -10,15 +8,15 @@ const appFolder = path.dirname(process.execPath)
 // i.e. my-app/Update.exe
 const updateExe = path.resolve(appFolder, '..', 'Update.exe')
 const exeName = path.basename(process.execPath)
-let spawnedArgs = []
-let spawnedProcess
+let spawnedArgs: string[] = []
+let spawnedProcess: ChildProcess | undefined
 
-const isSameArgs = (args) => args.length === spawnedArgs.length && args.every((e, i) => e === spawnedArgs[i])
+const isSameArgs = (args: string[]) => args.length === spawnedArgs.length && args.every((e, i) => e === spawnedArgs[i])
 
 // Spawn a command and invoke the callback when it completes with an error
 // and the output from standard out.
-const spawnUpdate = function (args, detached, callback) {
-  let error, errorEmitted, stderr, stdout
+const spawnUpdate = function (args: string[], detached: boolean, callback: ErrorCallback<string>) {
+  let error: Error, errorEmitted: boolean, stderr: string, stdout: string
 
   try {
     // Ensure we don't spawn multiple squirrel processes
@@ -79,20 +77,25 @@ const spawnUpdate = function (args, detached, callback) {
 }
 
 // Start an instance of the installed app.
-exports.processStart = function () {
+export const processStart = () => {
   return spawnUpdate(['--processStartAndWait', exeName], true, function () {})
 }
 
+type SquirrelUpdateInfo = {
+  version: string;
+  releaseNotes: string;
+}
+
 // Download the releases specified by the URL and write new results to stdout.
-exports.checkForUpdate = function (updateURL, callback) {
-  return spawnUpdate(['--checkForUpdate', updateURL], false, function (error, stdout) {
-    let ref, ref1, update
+export const checkForUpdate = (updateURL: string, callback: ErrorCallback<SquirrelUpdateInfo>) => {
+  return spawnUpdate(['--checkForUpdate', updateURL], false, (error, stdout) => {
+    let ref, ref1, update: SquirrelUpdateInfo
     if (error != null) {
       return callback(error)
     }
     try {
       // Last line of output is the JSON details about the releases
-      const json = stdout.trim().split('\n').pop()
+      const json = stdout!.trim().split('\n').pop()!
       update = (ref = JSON.parse(json)) != null ? (ref1 = ref.releasesToApply) != null ? typeof ref1.pop === 'function' ? ref1.pop() : void 0 : void 0 : void 0
     } catch {
       // Disabled for backwards compatibility:
@@ -104,14 +107,14 @@ exports.checkForUpdate = function (updateURL, callback) {
 }
 
 // Update the application to the latest remote version specified by URL.
-exports.update = function (updateURL, callback) {
+export const update = function (updateURL: string, callback: ErrorCallback<string>) {
   return spawnUpdate(['--update', updateURL], false, callback)
 }
 
 // Is the Update.exe installed with the current application?
-exports.supported = function () {
+export const supported = function () {
   try {
-    fs.accessSync(updateExe, fs.R_OK)
+    fs.accessSync(updateExe, fs.constants.R_OK)
     return true
   } catch {
     return false
