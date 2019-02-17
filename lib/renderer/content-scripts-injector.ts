@@ -1,11 +1,9 @@
-'use strict'
-
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
-const { runInThisContext } = require('vm')
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
+import { runInThisContext } from 'vm'
 
 // Check whether pattern matches.
 // https://developer.chrome.com/extensions/match_patterns
-const matchesPattern = function (pattern) {
+const matchesPattern = function (pattern: string) {
   if (pattern === '<all_urls>') return true
   const regexp = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`)
   const url = `${location.protocol}//${location.host}${location.pathname}`
@@ -13,8 +11,8 @@ const matchesPattern = function (pattern) {
 }
 
 // Run the code with chrome API integrated.
-const runContentScript = function (extensionId, url, code) {
-  const context = {}
+const runContentScript = function (this: any, extensionId: string, url: string, code: string) {
+  const context: { chrome?: any } = {}
   require('@electron/internal/renderer/chrome-api').injectTo(extensionId, false, context)
   const wrapper = `((chrome) => {\n  ${code}\n  })`
   const compiledWrapper = runInThisContext(wrapper, {
@@ -25,13 +23,13 @@ const runContentScript = function (extensionId, url, code) {
   return compiledWrapper.call(this, context.chrome)
 }
 
-const runAllContentScript = function (scripts, extensionId) {
+const runAllContentScript = function (scripts: Array<Electron.InjectionBase>, extensionId: string) {
   for (const { url, code } of scripts) {
     runContentScript.call(window, extensionId, url, code)
   }
 }
 
-const runStylesheet = function (url, code) {
+const runStylesheet = function (this: any, url: string, code: string) {
   const wrapper = `((code) => {
     function init() {
       const styleElement = document.createElement('style');
@@ -40,15 +38,17 @@ const runStylesheet = function (url, code) {
     }
     document.addEventListener('DOMContentLoaded', init);
   })`
+
   const compiledWrapper = runInThisContext(wrapper, {
     filename: url,
     lineOffset: 1,
     displayErrors: true
   })
+
   return compiledWrapper.call(this, code)
 }
 
-const runAllStylesheet = function (css) {
+const runAllStylesheet = function (css: Array<Electron.InjectionBase>) {
   for (const { url, code } of css) {
     runStylesheet.call(window, url, code)
   }
@@ -56,7 +56,7 @@ const runAllStylesheet = function (css) {
 
 // Run injected scripts.
 // https://developer.chrome.com/extensions/content_scripts
-const injectContentScript = function (extensionId, script) {
+const injectContentScript = function (extensionId: string, script: Electron.ContentScript) {
   if (!script.matches.some(matchesPattern)) return
 
   if (script.js) {
@@ -83,7 +83,14 @@ const injectContentScript = function (extensionId, script) {
 }
 
 // Handle the request of chrome.tabs.executeJavaScript.
-ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (event, senderWebContentsId, requestId, extensionId, url, code) {
+ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
+  event: Electron.Event,
+  senderWebContentsId: number,
+  requestId: number,
+  extensionId: string,
+  url: string,
+  code: string
+) {
   const result = runContentScript.call(window, extensionId, url, code)
   ipcRendererInternal.sendToAll(senderWebContentsId, `CHROME_TABS_EXECUTESCRIPT_RESULT_${requestId}`, result)
 })

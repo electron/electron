@@ -27,6 +27,25 @@ declare namespace Electron {
     __ELECTRON_SERIALIZED_ERROR__: true
   }
 
+  interface InjectionBase {
+    url: string;
+    code: string
+  }
+
+  interface ContentScript {
+    js: Array<InjectionBase>;
+    css: Array<InjectionBase>;
+    runAt: string;
+    matches: {
+      some: (input: (pattern: string) => boolean | RegExpMatchArray | null) => boolean;
+    }
+  }
+
+  interface RendererProcessPreference {
+    contentScripts: Array<ContentScript>
+    extensionId: string;
+  }
+
   interface IpcRendererInternal extends Electron.IpcRenderer {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
