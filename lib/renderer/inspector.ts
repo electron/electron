@@ -45,7 +45,7 @@ const createMenu = function (x: number, y: number, items: any[]) {
   invoke('ELECTRON_INSPECTOR_CONTEXT_MENU', items, isEditMenu)
 }
 
-const showFileChooserDialog = function (callback: (blob: Blob) => void) {
+const showFileChooserDialog = function (callback: (blob: File) => void) {
   invoke<[ string, any ]>('ELECTRON_INSPECTOR_SELECT_FILE').then(([path, data]) => {
     if (path && data) {
       callback(dataToHtml5FileObject(path, data))
