@@ -1,5 +1,5 @@
 import { webFrame, WebFrame } from 'electron'
-import * as ipcRenderer from '@electron/internal/renderer/ipc-renderer-internal'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import * as errorUtils from '@electron/internal/common/error-utils'
 
 // All keys of WebFrame that extend Function
@@ -10,7 +10,7 @@ type WebFrameMethod = {
 
 export const webFrameInit = () => {
   // Call webFrame method
-  ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (
+  ipcRendererInternal.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (
     _event: Electron.Event, method: keyof WebFrameMethod, args: any[]
   ) => {
     // The TypeScript compiler cannot handle the sheer number of
@@ -19,7 +19,7 @@ export const webFrameInit = () => {
     (webFrame[method] as any)(...args)
   })
 
-  ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', (
+  ipcRendererInternal.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', (
     event: Electron.Event, requestId: number, method: keyof WebFrameMethod, args: any[]
   ) => {
     new Promise(resolve =>
