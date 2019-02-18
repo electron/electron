@@ -27,14 +27,10 @@ const matchesPattern = function (pattern: string) {
 
 // Run the code with chrome API integrated.
 const runContentScript = function (this: any, extensionId: string, url: string, code: string) {
-  // TODO(samuelmaddock): how should we inject chrome API into isolated world?
-  // const context = {}
-  // require('@electron/internal/renderer/chrome-api').injectTo(extensionId, false, context)
   const sources = [
-    {
-      code,
-      url
-    }
+    // initialize Chrome API in isolated world
+    { code: `typeof __init === 'function' && __init('${extensionId}')` },
+    { code, url }
   ]
 
   // Assign unique world ID to each extension
