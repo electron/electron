@@ -73,6 +73,8 @@ void AtomBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
   process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
+  process->SetMethod("getSystemVersion",
+                     &base::SysInfo::OperatingSystemVersion);
   process->SetMethod("getIOCounters", &GetIOCounters);
   process->SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
                                                base::Unretained(metrics)));
