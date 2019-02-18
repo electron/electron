@@ -54,9 +54,7 @@ const showFileChooserDialog = function (callback: (blob: File) => void) {
 }
 
 const dataToHtml5FileObject = function (path: string, data: any) {
-  const blob = new Blob([data])
-  blob.name = path
-  return blob
+  return new File([data], path)
 }
 
 const createFileSelectorElement = function (this: any, callback: () => void) {

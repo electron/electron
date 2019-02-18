@@ -36,8 +36,9 @@ declare namespace NodeJS {
   }
 }
 
-declare interface Blob {
-  name?: string;
+declare interface Blob extends File {
+  readonly lastModified: number;
+  readonly name: string;
 }
 
 declare interface Window {
