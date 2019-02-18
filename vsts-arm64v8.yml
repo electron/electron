@@ -2,6 +2,8 @@ resources:
   containers:
   - container: arm64v8-test-container
     image: electronbuilds/arm64v8:0.0.4
+    env:
+      RUN_NATIVE_MKSNAPSHOT: true
 
 jobs:
 - job: Test_Arm64
