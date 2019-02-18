@@ -65,7 +65,7 @@ filenames = {
     "lib/renderer/callbacks-registry.js",
     "lib/renderer/chrome-api.js",
     "lib/renderer/content-scripts-injector.ts",
-    "lib/renderer/init.js",
+    "lib/renderer/init.ts",
     "lib/renderer/inspector.js",
     "lib/renderer/ipc-renderer-internal-utils.ts",
     "lib/renderer/ipc-renderer-internal.ts",

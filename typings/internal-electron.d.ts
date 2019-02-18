@@ -79,3 +79,7 @@ declare namespace ElectronInternal {
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
 }
+
+interface Global extends NodeJS.Global {
+  require: NodeRequire;
+}
