@@ -288,7 +288,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
 
   // TODO(samuelmaddock): inject content script bundle
   node::per_process::native_module_loader.CompileAndCall(
-      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
+      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
 

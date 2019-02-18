@@ -137,6 +137,26 @@ npm_action("atom_browserify_isolated") {
   ]
 }
 
+npm_action("atom_browserify_content_script") {
+  script = "browserify"
+
+  inputs = [
+    "lib/content_script/init.js",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/content_script_bundle.js",
+  ]
+
+  args = [
+    "lib/content_script/init.js",
+    "-t",
+    "aliasify",
+    "-o",
+    rebase_path(outputs[0]),
+  ]
+}
+
 copy("atom_js2c_copy") {
   sources = [
     "lib/common/asar.js",
@@ -149,12 +169,14 @@ copy("atom_js2c_copy") {
 
 action("atom_js2c") {
   deps = [
+    ":atom_browserify_content_script",
     ":atom_browserify_isolated",
     ":atom_browserify_sandbox",
     ":atom_js2c_copy",
   ]
 
   browserify_sources = [
+    "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/preload_bundle.js",
   ]
