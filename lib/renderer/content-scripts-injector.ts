@@ -2,13 +2,13 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 import { runInThisContext } from 'vm'
 import { webFrame } from 'electron'
 
-// https://cs.chromium.org/chromium/src/content/public/common/isolated_world_ids.h?q=ISOLATED_WORLD&sq=package:chromium&l=13&dr=CSs
 const IsolatedWorldIDs = {
-  // Lowest isolated world ID
-  ISOLATED_WORLD_ID_EXTENSIONS: 10
+  // atom_render_frame_observer.h
+  ISOLATED_WORLD_EXTENSIONS: 1000
 }
 
-let isolatedWorldIds = IsolatedWorldIDs.ISOLATED_WORLD_ID_EXTENSIONS
+let isolatedWorldIds = IsolatedWorldIDs.ISOLATED_WORLD_EXTENSIONS
+const extensionWorldId = {}
 
 // https://cs.chromium.org/chromium/src/extensions/renderer/script_injection.cc?type=cs&sq=package:chromium&g=0&l=52
 const getIsolatedWorldIdForInstance = () => {
@@ -27,31 +27,25 @@ const matchesPattern = function (pattern: string) {
 
 // Run the code with chrome API integrated.
 const runContentScript = function (this: any, extensionId: string, url: string, code: string) {
+  // TODO(samuelmaddock): how should we inject chrome API into isolated world?
   // const context = {}
   // require('@electron/internal/renderer/chrome-api').injectTo(extensionId, false, context)
-  const wrapper = `((chrome) => {\n  ${code}\n  })`
-  // try {
-  //   const compiledWrapper = runInThisContext(wrapper, {
-  //     filename: url,
-  //     lineOffset: 1,
-  //     displayErrors: true
-  //   })
-  //   return compiledWrapper.call(this, context.chrome)
-  // } catch (error) {
-  //   // TODO(samuelmaddock): Run scripts in isolated world, see chromium script_injection.cc
-  //   console.error(`Error running content script JavaScript for '${extensionId}'`)
-  //   console.error(error)
-  // }
   const sources = [
     {
-      code: wrapper,
+      code,
       url
     }
   ]
 
-  const worldId = getIsolatedWorldIdForInstance()
-  webFrame.setIsolatedWorldHumanReadableName(worldId, extensionId)
+  // Assign unique world ID to each extension
+  const worldId = extensionWorldId[extensionId] ||
+    (extensionWorldId[extensionId] = getIsolatedWorldIdForInstance())
+
+  webFrame.setIsolatedWorldHumanReadableName(worldId, `${extensionId} [${worldId}]`)
+
+  // TODO(samuelmaddock): read `content_security_policy` from extension manifest
   // webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
+
   webFrame.executeJavaScriptInIsolatedWorld(worldId, sources)
 }
 

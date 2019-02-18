@@ -33,6 +33,9 @@ class AtomRendererClient : public RendererClientBase {
                                 content::RenderFrame* render_frame) override;
   void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
                                content::RenderFrame* render_frame) override;
+  void SetupExtensionWorldOverrides(
+      v8::Handle<v8::Context> context,
+      content::RenderFrame* render_frame) override;
 
  private:
   // content::ContentRendererClient:

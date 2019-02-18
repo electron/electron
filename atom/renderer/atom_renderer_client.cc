@@ -210,6 +210,12 @@ void AtomRendererClient::SetupMainWorldOverrides(
       &isolated_bundle_args, nullptr);
 }
 
+void AtomRendererClient::SetupExtensionWorldOverrides(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  // TODO(samuelmaddock): inject script
+}
+
 node::Environment* AtomRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
   if (injected_frames_.find(render_frame) == injected_frames_.end())

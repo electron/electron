@@ -113,6 +113,11 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
     CreateIsolatedWorldContext();
     renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
+
+  if (world_id >= World::ISOLATED_WORLD_EXTENSIONS) {
+    LOG(INFO) << "Init extension world id=" << world_id;
+    renderer_client_->SetupExtensionWorldOverrides(context, render_frame_);
+  }
 }
 
 void AtomRenderFrameObserver::DraggableRegionsChanged() {

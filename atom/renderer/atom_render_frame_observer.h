@@ -21,9 +21,15 @@ namespace atom {
 
 enum World {
   MAIN_WORLD = 0,
+
   // Use a high number far away from 0 to not collide with any other world
   // IDs created internally by Chrome.
-  ISOLATED_WORLD = 999
+  ISOLATED_WORLD = 999,
+
+  // Numbers for isolated worlds for extensions are set in
+  // lib/renderer/content-script-injector.js, and are greater than or equal to
+  // this number.
+  ISOLATED_WORLD_EXTENSIONS = 1000,
 };
 
 // Helper class to forward the messages to the client.
