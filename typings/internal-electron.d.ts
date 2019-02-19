@@ -79,3 +79,27 @@ declare namespace ElectronInternal {
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
 }
+
+declare namespace Chrome {
+  namespace Tabs {
+    // https://developer.chrome.com/extensions/tabs#method-executeScript
+    interface ExecuteScriptDetails {
+      code?: string;
+      file?: string;
+      allFrames?: boolean;
+      frameId?: number;
+      matchAboutBlank?: boolean;
+      runAt?: 'document-start' | 'document-end' | 'document_idle';
+      cssOrigin: 'author' | 'user';
+    }
+
+    type ExecuteScriptCallback = (result: Array<any>) => void;
+
+    // https://developer.chrome.com/extensions/tabs#method-sendMessage
+    interface SendMessageDetails {
+      frameId?: number;
+    }
+
+    type SendMessageCallback = (result: any) => void;
+  }
+}
