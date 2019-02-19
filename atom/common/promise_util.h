@@ -47,7 +47,8 @@ class Promise : public base::RefCounted<Promise> {
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
-  v8::MaybeLocal<v8::Promise> Then(base::Closure cb) {
+  template <typename ReturnType, typename... ArgTypes>
+  v8::MaybeLocal<v8::Promise> Then(base::Callback<ReturnType(ArgTypes...)> cb) {
     v8::HandleScope handle_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
