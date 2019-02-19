@@ -364,7 +364,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
       to strip away the `preload` script and to validate or alter the
       `<webview>`'s initial settings.
-    * `additionalArguments` String[] (optional) - A list of strings that will be appended
+    * `additionalArguments` String\[] (optional) - A list of strings that will be appended
       to `process.argv` in the renderer process of this app.  Useful for passing small
       bits of data down to renderer process preload scripts.
     * `safeDialogs` Boolean (optional) - Whether to enable browser style
