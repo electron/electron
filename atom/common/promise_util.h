@@ -8,7 +8,10 @@
 #include <string>
 
 #include "atom/common/api/locker.h"
-#include "content/public/browser/browser_thread.h"
+#include "base/bind.h"
+#include "base/callback.h"
+#include "base/memory/ref_counted.h"
+#include "base/traits_bag.h"
 #include "native_mate/converter.h"
 
 namespace atom {
@@ -17,6 +20,11 @@ namespace util {
 
 class Promise : public base::RefCounted<Promise> {
  public:
+  enum ResolutionState {
+    kResolve,
+    kReject,
+  };
+
   explicit Promise(v8::Isolate* isolate);
 
   v8::Isolate* isolate() const { return isolate_; }
@@ -24,7 +32,7 @@ class Promise : public base::RefCounted<Promise> {
     return v8::Local<v8::Context>::New(isolate_, context_);
   }
 
-  virtual v8::Local<v8::Promise> GetHandle() const;
+  v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {
     v8::HandleScope handle_scope(isolate());
@@ -77,18 +85,62 @@ class Promise : public base::RefCounted<Promise> {
  protected:
   virtual ~Promise();
   friend class base::RefCounted<Promise>;
-  v8::Isolate* isolate_;
-  v8::Global<v8::Context> context_;
 
  private:
   v8::Local<v8::Promise::Resolver> GetInner() const {
     return resolver_.Get(isolate());
   }
 
+  v8::Isolate* isolate_;
+  v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
 
   DISALLOW_COPY_AND_ASSIGN(Promise);
 };
+
+class PromiseTraits {
+ public:
+  struct ValidTraits {
+    ValidTraits(Promise::ResolutionState);
+  };
+
+  template <typename... Args>
+  constexpr PromiseTraits(Args... args)
+      : resolution_state_(
+            base::trait_helpers::GetEnum<Promise::ResolutionState>(args...)) {}
+
+  constexpr PromiseTraits(const PromiseTraits& other) = default;
+  PromiseTraits& operator=(const PromiseTraits& other) = default;
+
+  constexpr Promise::ResolutionState resolution_state() const {
+    return resolution_state_;
+  }
+
+ private:
+  Promise::ResolutionState resolution_state_;
+};
+
+class AdaptCallbackForPromiseHelper final {
+ public:
+  explicit AdaptCallbackForPromiseHelper(scoped_refptr<Promise> promise);
+  ~AdaptCallbackForPromiseHelper();
+
+  void Run(const PromiseTraits& traits) {
+    if (traits.resolution_state() == Promise::kResolve) {
+      promise_->Resolve();
+    } else if (traits.resolution_state() == Promise::kReject) {
+      promise_->Reject();
+    }
+  }
+
+ private:
+  scoped_refptr<Promise> promise_;
+
+  DISALLOW_COPY_AND_ASSIGN(AdaptCallbackForPromiseHelper);
+};
+
+base::OnceCallback<void(const PromiseTraits&)> AdaptCallbackForPromise(
+    scoped_refptr<Promise> promise);
 
 }  // namespace util
 

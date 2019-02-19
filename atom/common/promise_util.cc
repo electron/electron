@@ -42,6 +42,19 @@ v8::Local<v8::Promise> Promise::GetHandle() const {
   return GetInner()->GetPromise();
 }
 
+AdaptCallbackForPromiseHelper::AdaptCallbackForPromiseHelper(
+    scoped_refptr<Promise> promise)
+    : promise_(std::move(promise)) {}
+
+AdaptCallbackForPromiseHelper::~AdaptCallbackForPromiseHelper() = default;
+
+base::OnceCallback<void(const PromiseTraits&)> AdaptCallbackForPromise(
+    scoped_refptr<Promise> promise) {
+  using Helper = AdaptCallbackForPromiseHelper;
+  return base::BindOnce(&Helper::Run,
+                        std::make_unique<Helper>(std::move(promise)));
+}
+
 }  // namespace util
 
 }  // namespace atom
