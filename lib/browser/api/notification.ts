@@ -1,10 +1,8 @@
-'use strict'
-
-const { EventEmitter } = require('events')
+import { EventEmitter } from 'events'
 const { Notification, isSupported } = process.atomBinding('notification')
 
 Object.setPrototypeOf(Notification.prototype, EventEmitter.prototype)
 
 Notification.isSupported = isSupported
 
-module.exports = Notification
+export default Notification

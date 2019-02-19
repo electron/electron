@@ -1679,6 +1679,12 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
+#### `contents.equal(otherContents)`
+
+* `otherContents` WebContents
+
+Returns `Boolean` - Whether the current webContents is the exact same webContents that is provided as `otherWebcontents`
+
 ### Instance Properties
 
 #### `contents.id`

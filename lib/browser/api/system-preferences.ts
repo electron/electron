@@ -1,10 +1,8 @@
-'use strict'
-
-const { EventEmitter } = require('events')
+import { EventEmitter } from 'events'
 const { systemPreferences, SystemPreferences } = process.atomBinding('system_preferences')
 
 // SystemPreferences is an EventEmitter.
 Object.setPrototypeOf(SystemPreferences.prototype, EventEmitter.prototype)
-EventEmitter.call(systemPreferences)
+EventEmitter.call(systemPreferences as any)
 
-module.exports = systemPreferences
+export default systemPreferences
