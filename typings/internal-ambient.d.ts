@@ -36,11 +36,6 @@ declare namespace NodeJS {
   }
 }
 
-declare interface Blob extends File {
-  readonly lastModified: number;
-  readonly name: string;
-}
-
 declare interface Window {
   ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
   ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
