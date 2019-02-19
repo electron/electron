@@ -34,7 +34,7 @@ webFrameInit()
 const { hasSwitch, getSwitchValue } = process.atomBinding('command_line')
 
 const parseOption = function (
-  name: string, defaultValue: any, converter: (value: any) => any = value => value
+  name: string, defaultValue: T, converter: (value: string) => T = value => value
 ) {
   return hasSwitch(name) ? converter(getSwitchValue(name)) : defaultValue
 }
