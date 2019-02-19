@@ -45,7 +45,7 @@ The following methods are available on instances of `WebRequest`:
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -72,7 +72,7 @@ The `callback` has to be called with an `response` object.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -98,7 +98,7 @@ The `callback` has to be called with an `response` object.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -117,7 +117,7 @@ response are visible by the time this listener is fired.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -147,7 +147,7 @@ The `callback` has to be called with an `response` object.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -170,7 +170,7 @@ and response headers are available.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -193,7 +193,7 @@ redirect is about to occur.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -215,7 +215,7 @@ completed.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
