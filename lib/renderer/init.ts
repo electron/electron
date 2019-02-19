@@ -33,10 +33,12 @@ webFrameInit()
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process.atomBinding('command_line')
 
-const parseOption = function (
-  name: string, defaultValue: T, converter: (value: string) => T = value => value
+const parseOption = function<T> (
+  name: string, defaultValue: T, converter: (value: any) => T | any = value => value
 ) {
-  return hasSwitch(name) ? converter(getSwitchValue(name)) : defaultValue
+  return hasSwitch(name)
+    ? converter(getSwitchValue(name))
+    : defaultValue
 }
 
 const contextIsolation = hasSwitch('context-isolation')
