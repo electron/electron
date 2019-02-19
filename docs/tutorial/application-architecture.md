@@ -73,7 +73,7 @@ const win = new BrowserWindow()
 Since communication between the processes is possible, a renderer process
 can call upon the main process to perform tasks. Electron comes with a
 module called `remote` that exposes APIs usually only available on the
-main process. In order to create a `BrowserWindow` from a renderer process,
+renderer process. In order to create a `BrowserWindow` from a renderer process,
 we'd use the remote as a middle-man:
 
 ```javascript
