@@ -785,6 +785,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 namespace {
 
 using atom::api::Cookies;
+using atom::api::NetLog;
 using atom::api::Protocol;
 using atom::api::Session;
 
@@ -811,6 +812,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "Cookies",
       Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set(
+      "NetLog",
+      NetLog::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.Set(
       "Protocol",
       Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
