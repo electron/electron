@@ -7,7 +7,7 @@ export function invoke<T> (command: string, ...args: any[]) {
   return new Promise<T>((resolve, reject) => {
     const requestId = ++nextId
     ipcRendererInternal.once(`${command}_RESPONSE_${requestId}`, (
-      _event: Electron.Event, error: Electron.SerializedError, result: any
+      _event, error: Electron.SerializedError, result: any
     ) => {
       if (error) {
         reject(errorUtils.deserialize(error))

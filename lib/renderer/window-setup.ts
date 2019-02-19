@@ -206,7 +206,7 @@ export const windowSetup = (
   }
 
   ipcRendererInternal.on('ELECTRON_GUEST_WINDOW_POSTMESSAGE', function (
-    _event: Electron.Event, sourceId: number, message: any, sourceOrigin: string
+    _event, sourceId: number, message: any, sourceOrigin: string
   ) {
     // Manually dispatch event instead of using postMessage because we also need to
     // set event.source.
@@ -253,7 +253,7 @@ export const windowSetup = (
     let cachedVisibilityState = isHiddenPage ? 'hidden' : 'visible'
 
     // Subscribe to visibilityState changes.
-    ipcRendererInternal.on('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', function (_event: Electron.Event, visibilityState: VisibilityState) {
+    ipcRendererInternal.on('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', function (_event, visibilityState: VisibilityState) {
       if (cachedVisibilityState !== visibilityState) {
         cachedVisibilityState = visibilityState
         document.dispatchEvent(new Event('visibilitychange'))

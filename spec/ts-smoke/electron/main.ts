@@ -515,17 +515,17 @@ globalShortcut.unregisterAll()
 // ipcMain
 // https://github.com/atom/electron/blob/master/docs/api/ipc-main-process.md
 
-ipcMain.on('asynchronous-message', (event: Electron.Event, arg: any) => {
+ipcMain.on('asynchronous-message', (event, arg: any) => {
   console.log(arg) // prints "ping"
   event.sender.send('asynchronous-reply', 'pong')
 })
 
-ipcMain.on('synchronous-message', (event: Electron.Event, arg: any) => {
+ipcMain.on('synchronous-message', (event, arg: any) => {
   console.log(arg) // prints "ping"
   event.returnValue = 'pong'
 })
 
-ipcMain.on('synchronous-message', (event: Event, arg: any) => {
+ipcMain.on('synchronous-message', (event, arg: any) => {
   console.log("event isn't namespaced and refers to the correct type.")
   event.returnValue = 'pong'
 })

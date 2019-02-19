@@ -3,7 +3,7 @@ import * as errorUtils from '@electron/internal/common/error-utils'
 
 type IPCHandler = (...args: any[]) => any
 
-const callHandler = async function (handler: IPCHandler, event: Electron.Event, args: any[], reply: (args: any[]) => void) {
+const callHandler = async function (handler: IPCHandler, event: ElectronInternal.IpcMainInternalEvent, args: any[], reply: (args: any[]) => void) {
   try {
     const result = await handler(event, ...args)
     reply([null, result])

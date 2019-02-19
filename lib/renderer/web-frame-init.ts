@@ -11,7 +11,7 @@ type WebFrameMethod = {
 export const webFrameInit = () => {
   // Call webFrame method
   ipcRendererInternal.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (
-    _event: Electron.Event, method: keyof WebFrameMethod, args: any[]
+    _event, method: keyof WebFrameMethod, args: any[]
   ) => {
     // The TypeScript compiler cannot handle the sheer number of
     // call signatures here and simply gives up. Incorrect invocations
@@ -20,7 +20,7 @@ export const webFrameInit = () => {
   })
 
   ipcRendererInternal.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', (
-    event: Electron.Event, requestId: number, method: keyof WebFrameMethod, args: any[]
+    event, requestId: number, method: keyof WebFrameMethod, args: any[]
   ) => {
     new Promise(resolve =>
       // The TypeScript compiler cannot handle the sheer number of
