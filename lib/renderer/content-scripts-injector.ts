@@ -84,7 +84,7 @@ const injectContentScript = function (extensionId: string, script: Electron.Cont
 
 // Handle the request of chrome.tabs.executeJavaScript.
 ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
-  event: Electron.Event,
+  event,
   senderWebContentsId: number,
   requestId: number,
   extensionId: string,

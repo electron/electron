@@ -58,6 +58,8 @@ The `ipcMain` module has the following method to listen for events:
 
 * `channel` String
 * `listener` Function
+  * `event` IpcMainEvent
+  * `...args` any[]
 
 Listens to `channel`, when a new message arrives `listener` would be called with
 `listener(event, args...)`.
@@ -66,6 +68,8 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 * `channel` String
 * `listener` Function
+  * `event` IpcMainEvent
+  * `...args` any[]
 
 Adds a one time `listener` function for the event. This `listener` is invoked
 only the next time a message is sent to `channel`, after which it is removed.
@@ -86,27 +90,5 @@ Removes listeners of the specified `channel`.
 
 ## Event object
 
-The `event` object passed to the `callback` has the following methods:
-
-### `event.frameId`
-
-An `Integer` representing the ID of the renderer frame that sent this message.
-
-### `event.returnValue`
-
-Set this to the value to be returned in a synchronous message.
-
-### `event.sender`
-
-Returns the `webContents` that sent the message, you can call
-`event.sender.send` to reply to the asynchronous message, see
-[webContents.send][web-contents-send] for more information.
-
-[web-contents-send]: web-contents.md#contentssendchannel-arg1-arg2-
-
-### `event.reply`
-
-A function that will send an IPC message to the renderer frane that sent
-the original message that you are currently handling.  You should use this
-method to "reply" to the sent message in order to guaruntee the reply will go
-to the correct process and frame.
+The documentation for the `event` object passed to the `callback` can be found
+in the [`ipc-main-event`](structures/ipc-main-event.md) structure docs.

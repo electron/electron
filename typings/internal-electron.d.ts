@@ -68,4 +68,14 @@ declare namespace ElectronInternal {
     promisify<T extends (...args: any[]) => any>(fn: T): T;
     promisifyMultiArg<T extends (...args: any[]) => any>(fn: T): T;
   }
+
+  // Internal IPC has _replyInternal and NO reply method
+  interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
+    _replyInternal(...args: any[]): void;
+  }
+
+  interface IpcMainInternal extends Electron.EventEmitter {
+    on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
+    once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
+  }
 }
