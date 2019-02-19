@@ -36,7 +36,16 @@ declare namespace NodeJS {
   }
 }
 
+declare module NodeJS  {
+  interface Global {
+    require: NodeRequire;
+    module: NodeModule;
+    __filename: string;
+    __dirname: string;
+  }
+}
+
 declare interface Window {
-  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean
-  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean
+  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
+  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
 }

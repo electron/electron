@@ -103,3 +103,10 @@ declare namespace Chrome {
     type SendMessageCallback = (result: any) => void;
   }
 }
+
+interface Global extends NodeJS.Global {
+  require: NodeRequire;
+  module: NodeModule;
+  __filename: string;
+  __dirname: string;
+}
