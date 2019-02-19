@@ -34,10 +34,14 @@ webFrameInit()
 const { hasSwitch, getSwitchValue } = process.atomBinding('command_line')
 
 const parseOption = function<T> (
-  name: string, defaultValue: T, converter: (value: any) => T | any = value => value
+  name: string, defaultValue: T, converter?: (value: string) => T
 ) {
   return hasSwitch(name)
-    ? converter(getSwitchValue(name))
+    ? (
+      converter
+        ? converter(getSwitchValue(name))
+        : getSwitchValue(name)
+    )
     : defaultValue
 }
 
@@ -49,7 +53,7 @@ const isBackgroundPage = hasSwitch('background-page')
 const usesNativeWindowOpen = hasSwitch('native-window-open')
 
 const preloadScript = parseOption('preload', null)
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter))
+const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[]
 const appPath = parseOption('app-path', null)
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value))
 const openerId = parseOption('opener-id', null, value => parseInt(value))
