@@ -1313,7 +1313,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
   auto browser = base::Unretained(Browser::Get());
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
-      .SetMethod("exit", base::Bind(&Browser::Exit, browser))
+      .SetMethod("reallyBrutallyExit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
