@@ -1,7 +1,6 @@
-'use strict'
+import { EventEmitter } from 'events'
+import * as path from 'path'
 
-const { EventEmitter } = require('events')
-const path = require('path')
 const Module = require('module')
 
 // We modified the original process.argv to let node.js load the
@@ -34,8 +33,16 @@ webFrameInit()
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process.atomBinding('command_line')
 
-const parseOption = function (name, defaultValue, converter = value => value) {
-  return hasSwitch(name) ? converter(getSwitchValue(name)) : defaultValue
+const parseOption = function<T> (
+  name: string, defaultValue: T, converter?: (value: string) => T
+) {
+  return hasSwitch(name)
+    ? (
+      converter
+        ? converter(getSwitchValue(name))
+        : getSwitchValue(name)
+    )
+    : defaultValue
 }
 
 const contextIsolation = hasSwitch('context-isolation')
@@ -46,7 +53,7 @@ const isBackgroundPage = hasSwitch('background-page')
 const usesNativeWindowOpen = hasSwitch('native-window-open')
 
 const preloadScript = parseOption('preload', null)
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter))
+const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[]
 const appPath = parseOption('app-path', null)
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value))
 const openerId = parseOption('opener-id', null, value => parseInt(value))
@@ -132,9 +139,12 @@ if (nodeIntegration) {
   }
 
   // Redirect window.onerror to uncaughtException.
-  window.onerror = function (message, filename, lineno, colno, error) {
+  window.onerror = function (_message, _filename, _lineno, _colno, error) {
     if (global.process.listeners('uncaughtException').length > 0) {
-      global.process.emit('uncaughtException', error)
+      // We do not want to add `uncaughtException` to our definitions
+      // because we don't want anyone else (anywhere) to throw that kind
+      // of error.
+      global.process.emit('uncaughtException' as any, error as any)
       return true
     } else {
       return false

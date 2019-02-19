@@ -60,7 +60,26 @@ describe('netLog module', () => {
     }
   })
 
-  it('should begin and end logging to file when .startLogging() and .stopLogging() is called', done => {
+  it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
+    expect(netLog.currentlyLogging).to.be.false()
+    expect(netLog.currentlyLoggingPath).to.equal('')
+
+    netLog.startLogging(dumpFileDynamic)
+
+    expect(netLog.currentlyLogging).to.be.true()
+    expect(netLog.currentlyLoggingPath).to.equal(dumpFileDynamic)
+
+    const path = await netLog.stopLogging()
+
+    expect(netLog.currentlyLogging).to.be.false()
+    expect(netLog.currentlyLoggingPath).to.equal('')
+
+    expect(path).to.equal(dumpFileDynamic)
+    expect(fs.existsSync(dumpFileDynamic)).to.be.true()
+  })
+
+  // TODO(miniak): remove when promisification is complete
+  it('should begin and end logging to file when .startLogging() and .stopLogging() is called (callback)', done => {
     expect(netLog.currentlyLogging).to.be.false()
     expect(netLog.currentlyLoggingPath).to.equal('')
 
@@ -80,7 +99,20 @@ describe('netLog module', () => {
     })
   })
 
-  it('should silence when .stopLogging() is called without calling .startLogging()', done => {
+  it('should silence when .stopLogging() is called without calling .startLogging()', async () => {
+    expect(netLog.currentlyLogging).to.be.false()
+    expect(netLog.currentlyLoggingPath).to.equal('')
+
+    const path = await netLog.stopLogging()
+
+    expect(netLog.currentlyLogging).to.be.false()
+    expect(netLog.currentlyLoggingPath).to.equal('')
+
+    expect(path).to.equal('')
+  })
+
+  // TODO(miniak): remove when promisification is complete
+  it('should silence when .stopLogging() is called without calling .startLogging() (callback)', done => {
     expect(netLog.currentlyLogging).to.be.false()
     expect(netLog.currentlyLoggingPath).to.equal('')
 
