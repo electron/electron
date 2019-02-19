@@ -1,6 +1,5 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import { invoke, invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-utils'
-import { stringify } from 'querystring'
 
 window.onload = function () {
   // Use menu API to show context menu.
@@ -24,7 +23,7 @@ function completeURL (project: string, path: string) {
   return invokeSync('ELECTRON_INSPECTOR_CONFIRM', message, title) as boolean
 }
 
-ipcRendererInternal.on('ELECTRON_INSPECTOR_CONTEXT_MENU_CLICK', function (_event: Electron.EditFlags, id: number) {
+ipcRendererInternal.on('ELECTRON_INSPECTOR_CONTEXT_MENU_CLICK', function (_event: Electron.Event, id: number) {
   window.DevToolsAPI!.contextMenuItemSelected(id)
 })
 
