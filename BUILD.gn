@@ -139,9 +139,14 @@ npm_action("atom_browserify_isolated") {
 
 npm_action("atom_browserify_content_script") {
   script = "browserify"
+  deps = [
+    ":build_electron_definitions",
+  ]
 
   inputs = [
     "lib/content_script/init.js",
+    "tsconfig.electron.json",
+    "tsconfig.json",
   ]
 
   outputs = [
@@ -152,6 +157,12 @@ npm_action("atom_browserify_content_script") {
     "lib/content_script/init.js",
     "-t",
     "aliasify",
+    "-p",
+    "[",
+    "tsify",
+    "-p",
+    "tsconfig.electron.json",
+    "]",
     "-o",
     rebase_path(outputs[0]),
   ]

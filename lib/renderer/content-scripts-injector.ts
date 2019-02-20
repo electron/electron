@@ -3,12 +3,15 @@ import { runInThisContext } from 'vm'
 import { webFrame } from 'electron'
 
 const IsolatedWorldIDs = {
-  // atom_render_frame_observer.h
-  ISOLATED_WORLD_EXTENSIONS: 1000
+  /**
+   * Start of extension isolated world IDs, as defined in
+   * atom_render_frame_observer.h
+   */
+  ISOLATED_WORLD_EXTENSIONS: 1 << 20
 }
 
 let isolatedWorldIds = IsolatedWorldIDs.ISOLATED_WORLD_EXTENSIONS
-const extensionWorldId = {}
+const extensionWorldId: {[key: string]: number | undefined} = {}
 
 // https://cs.chromium.org/chromium/src/extensions/renderer/script_injection.cc?type=cs&sq=package:chromium&g=0&l=52
 const getIsolatedWorldIdForInstance = () => {
@@ -37,10 +40,11 @@ const runContentScript = function (this: any, extensionId: string, url: string, 
   const worldId = extensionWorldId[extensionId] ||
     (extensionWorldId[extensionId] = getIsolatedWorldIdForInstance())
 
-  webFrame.setIsolatedWorldHumanReadableName(worldId, `${extensionId} [${worldId}]`)
-
-  // TODO(samuelmaddock): read `content_security_policy` from extension manifest
-  // webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
+  webFrame.setIsolatedWorldInfo(worldId, {
+    name: `${extensionId} [${worldId}]`
+    // TODO(samuelmaddock): read `content_security_policy` from extension manifest
+    // csp: manifest.content_security_policy,
+  })
 
   webFrame.executeJavaScriptInIsolatedWorld(worldId, sources)
 }
