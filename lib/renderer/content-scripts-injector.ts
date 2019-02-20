@@ -56,27 +56,7 @@ const runAllContentScript = function (scripts: Array<Electron.InjectionBase>, ex
 }
 
 const runStylesheet = function (this: any, url: string, code: string) {
-  // const wrapper = `((code) => {
-  //   function init() {
-  //     const styleElement = document.createElement('style');
-  //     styleElement.textContent = code;
-  //     document.head.append(styleElement);
-  //   }
-  //   document.addEventListener('DOMContentLoaded', init);
-  // })`
-
-  // try {
-  //   const compiledWrapper = runInThisContext(wrapper, {
-  //     filename: url,
-  //     lineOffset: 1,
-  //     displayErrors: true
-  //   })
-  //   return compiledWrapper.call(this, code)
-  // } catch (error) {
-  //   // TODO(samuelmaddock): Insert stylesheet directly into document, see chromium script_injection.cc
-  //   console.error(`Error inserting content script stylesheet ${url}`)
-  //   console.error(error)
-  // }
+  webFrame.insertCSS(code)
 }
 
 const runAllStylesheet = function (css: Array<Electron.InjectionBase>) {
