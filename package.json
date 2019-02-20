@@ -22,6 +22,7 @@
     "eslint-plugin-typescript": "^0.14.0",
     "folder-hash": "^2.1.1",
     "husky": "^0.14.3",
+    "klaw": "^3.0.0",
     "lint": "^1.1.2",
     "lint-staged": "^8.1.0",
     "minimist": "^1.2.0",
