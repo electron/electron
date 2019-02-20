@@ -22,9 +22,9 @@
 
 namespace {
 
-void OnGetFilePathToCompletedLog(scoped_refptr<atom::util::Promise> promise,
+void OnGetFilePathToCompletedLog(const atom::util::CopyablePromise& promise,
                                  const base::FilePath& file_path) {
-  promise->Resolve(file_path);
+  promise.GetPromise().Resolve(file_path);
 }
 
 }  // namespace
@@ -97,16 +97,17 @@ std::string NetLog::GetCurrentlyLoggingPath() const {
 }
 
 v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (IsCurrentlyLogging()) {
-    stop_callback_queue_.emplace_back(promise);
+    stop_callback_queue_.emplace_back(std::move(promise));
     net_log_writer_->StopNetLog(nullptr);
   } else {
-    promise->Resolve(base::FilePath());
+    promise.Resolve(base::FilePath());
   }
 
-  return promise->GetHandle();
+  return handle;
 }
 
 void NetLog::OnNewState(const base::DictionaryValue& state) {
@@ -117,8 +118,10 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
 
   if (GetLoggingState() == "NOT_LOGGING") {
     for (auto& promise : stop_callback_queue_) {
-      net_log_writer_->GetFilePathToCompletedLog(
-          base::Bind(&OnGetFilePathToCompletedLog, promise));
+      // TODO(zcbenz): Remove the use of CopyablePromise when the
+      // GetFilePathToCompletedLog API accepts OnceCallback.
+      net_log_writer_->GetFilePathToCompletedLog(base::Bind(
+          &OnGetFilePathToCompletedLog, util::CopyablePromise(promise)));
     }
     stop_callback_queue_.clear();
   }

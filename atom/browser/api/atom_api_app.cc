@@ -533,12 +533,11 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(scoped_refptr<util::Promise> promise,
-                         gfx::Image* icon) {
+void OnIconDataAvailable(util::Promise promise, gfx::Image* icon) {
   if (icon && !icon->IsEmpty()) {
-    promise->Resolve(*icon);
+    promise.Resolve(*icon);
   } else {
-    promise->RejectWithErrorMessage("Failed to get file icon.");
+    promise.RejectWithErrorMessage("Failed to get file icon.");
   }
 }
 
@@ -1126,7 +1125,8 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         mate::Arguments* args) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
   IconLoader::IconSize icon_size;
@@ -1143,13 +1143,14 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
-    promise->Resolve(*icon);
+    promise.Resolve(*icon);
   } else {
-    icon_manager->LoadIcon(normalized_path, icon_size,
-                           base::Bind(&OnIconDataAvailable, promise),
-                           &cancelable_task_tracker_);
+    icon_manager->LoadIcon(
+        normalized_path, icon_size,
+        base::BindOnce(&OnIconDataAvailable, std::move(promise)),
+        &cancelable_task_tracker_);
   }
-  return promise->GetHandle();
+  return handle;
 }
 
 std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
@@ -1198,30 +1199,30 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
-    promise->RejectWithErrorMessage(
+    promise.RejectWithErrorMessage(
         "Invalid info type. Use 'basic' or 'complete'");
-    return promise->GetHandle();
+    return handle;
   }
   std::string reason;
   if (!gpu_data_manager->GpuAccessAllowed(&reason)) {
-    promise->RejectWithErrorMessage("GPU access not allowed. Reason: " +
-                                    reason);
-    return promise->GetHandle();
+    promise.RejectWithErrorMessage("GPU access not allowed. Reason: " + reason);
+    return handle;
   }
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
 #if defined(OS_WIN) || defined(OS_MACOSX)
-    info_mgr->FetchCompleteInfo(promise);
+    info_mgr->FetchCompleteInfo(std::move(promise));
 #else
-    info_mgr->FetchBasicInfo(promise);
+    info_mgr->FetchBasicInfo(std::move(promise));
 #endif
   } else /* (info_type == "basic") */ {
-    info_mgr->FetchBasicInfo(promise);
+    info_mgr->FetchBasicInfo(std::move(promise));
   }
-  return promise->GetHandle();
+  return handle;
 }
 
 static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {

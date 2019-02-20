@@ -75,7 +75,7 @@ class Arguments {
   }
 
   template<typename T>
-  void Return(T val) {
+  void Return(const T& val) {
     info_->GetReturnValue().Set(ConvertToV8(isolate_, val));
   }
 

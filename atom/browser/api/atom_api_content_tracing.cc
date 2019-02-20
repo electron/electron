@@ -66,74 +66,73 @@ scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
       result_file_path, base::Bind(callback, result_file_path));
 }
 
-void OnRecordingStopped(scoped_refptr<atom::util::Promise> promise,
+void OnRecordingStopped(const atom::util::CopyablePromise& promise,
                         const base::FilePath& path) {
-  promise->Resolve(path);
+  promise.GetPromise().Resolve(path);
 }
 
 v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
                                      const base::FilePath& path) {
-  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  TracingController::GetInstance()->StopTracing(
-      GetTraceDataEndpoint(path, base::Bind(&OnRecordingStopped, promise)));
-
-  return promise->GetHandle();
+  // TODO(zcbenz): Remove the use of CopyablePromise when the
+  // CreateFileEndpoint API accepts OnceCallback.
+  TracingController::GetInstance()->StopTracing(GetTraceDataEndpoint(
+      path,
+      base::Bind(&OnRecordingStopped, atom::util::CopyablePromise(promise))));
+  return handle;
 }
 
-void OnCategoriesAvailable(scoped_refptr<atom::util::Promise> promise,
+void OnCategoriesAvailable(atom::util::Promise promise,
                            const std::set<std::string>& categories) {
-  promise->Resolve(categories);
+  promise.Resolve(categories);
 }
 
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
-  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
-  bool success = TracingController::GetInstance()->GetCategories(
-      base::BindOnce(&OnCategoriesAvailable, promise));
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (!success)
-    promise->RejectWithErrorMessage("Could not get categories.");
-
-  return promise->GetHandle();
+  // Note: This method always succeeds.
+  TracingController::GetInstance()->GetCategories(
+      base::BindOnce(&OnCategoriesAvailable, std::move(promise)));
+  return handle;
 }
 
-void OnTracingStarted(scoped_refptr<atom::util::Promise> promise) {
-  promise->Resolve();
+void OnTracingStarted(atom::util::Promise promise) {
+  promise.Resolve();
 }
 
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
-  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  bool success = TracingController::GetInstance()->StartTracing(
-      trace_config, base::BindOnce(&OnTracingStarted, promise));
-
-  if (!success)
-    promise->RejectWithErrorMessage("Could not start tracing");
-
-  return promise->GetHandle();
+  // Note: This method always succeeds.
+  TracingController::GetInstance()->StartTracing(
+      trace_config, base::BindOnce(&OnTracingStarted, std::move(promise)));
+  return handle;
 }
 
-void OnTraceBufferUsageAvailable(scoped_refptr<atom::util::Promise> promise,
+void OnTraceBufferUsageAvailable(atom::util::Promise promise,
                                  float percent_full,
                                  size_t approximate_count) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise->isolate());
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
-  promise->Resolve(dict.GetHandle());
+  promise.Resolve(dict.GetHandle());
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
-  scoped_refptr<atom::util::Promise> promise = new atom::util::Promise(isolate);
-  bool success = TracingController::GetInstance()->GetTraceBufferUsage(
-      base::BindOnce(&OnTraceBufferUsageAvailable, promise));
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (!success)
-    promise->RejectWithErrorMessage("Could not get trace buffer usage.");
-
-  return promise->GetHandle();
+  // Note: This method always succeeds.
+  TracingController::GetInstance()->GetTraceBufferUsage(
+      base::BindOnce(&OnTraceBufferUsageAvailable, std::move(promise)));
+  return handle;
 }
 
 void Initialize(v8::Local<v8::Object> exports,

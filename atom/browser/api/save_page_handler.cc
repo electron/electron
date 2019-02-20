@@ -5,6 +5,7 @@
 #include "atom/browser/api/save_page_handler.h"
 
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_browser_context.h"
 #include "base/callback.h"
@@ -16,8 +17,8 @@ namespace atom {
 namespace api {
 
 SavePageHandler::SavePageHandler(content::WebContents* web_contents,
-                                 scoped_refptr<atom::util::Promise> promise)
-    : web_contents_(web_contents), promise_(promise) {}
+                                 util::Promise promise)
+    : web_contents_(web_contents), promise_(std::move(promise)) {}
 
 SavePageHandler::~SavePageHandler() {}
 
@@ -43,17 +44,19 @@ bool SavePageHandler::Handle(const base::FilePath& full_path,
   download_manager->RemoveObserver(this);
   // If initialization fails which means fail to create |DownloadItem|, we need
   // to delete the |SavePageHandler| instance to avoid memory-leak.
-  if (!result)
+  if (!result) {
+    promise_.RejectWithErrorMessage("Failed to save the page");
     delete this;
+  }
   return result;
 }
 
 void SavePageHandler::OnDownloadUpdated(download::DownloadItem* item) {
   if (item->IsDone()) {
     if (item->GetState() == download::DownloadItem::COMPLETE)
-      promise_->Resolve();
+      promise_.Resolve();
     else
-      promise_->RejectWithErrorMessage("Failed to save the page.");
+      promise_.RejectWithErrorMessage("Failed to save the page.");
     Destroy(item);
   }
 }

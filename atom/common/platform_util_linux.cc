@@ -92,9 +92,9 @@ bool OpenExternal(const GURL& url, const OpenExternalOptions& options) {
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
-                  const OpenExternalCallback& callback) {
+                  OpenExternalCallback callback) {
   // TODO(gabriel): Implement async open if callback is specified
-  callback.Run(OpenExternal(url, options) ? "" : "Failed to open");
+  std::move(callback).Run(OpenExternal(url, options) ? "" : "Failed to open");
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

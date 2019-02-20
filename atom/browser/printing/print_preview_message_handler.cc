@@ -143,10 +143,10 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
 
 void PrintPreviewMessageHandler::PrintToPDF(
     const base::DictionaryValue& options,
-    scoped_refptr<atom::util::Promise> promise) {
+    atom::util::Promise promise) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
-  promise_map_[request_id] = std::move(promise);
+  promise_map_.emplace(request_id, std::move(promise));
 
   auto* focused_frame = web_contents()->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
@@ -155,12 +155,11 @@ void PrintPreviewMessageHandler::PrintToPDF(
   rfh->Send(new PrintMsg_PrintPreview(rfh->GetRoutingID(), options));
 }
 
-scoped_refptr<atom::util::Promise> PrintPreviewMessageHandler::GetPromise(
-    int request_id) {
+util::Promise PrintPreviewMessageHandler::GetPromise(int request_id) {
   auto it = promise_map_.find(request_id);
   DCHECK(it != promise_map_.end());
 
-  auto promise = it->second;
+  util::Promise promise = std::move(it->second);
   promise_map_.erase(it);
 
   return promise;
@@ -171,13 +170,13 @@ void PrintPreviewMessageHandler::ResolvePromise(
     scoped_refptr<base::RefCountedMemory> data_bytes) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  auto promise = GetPromise(request_id);
+  util::Promise promise = GetPromise(request_id);
 
-  v8::Isolate* isolate = promise->isolate();
+  v8::Isolate* isolate = promise.isolate();
   mate::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, promise->GetContext()));
+      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
 
   v8::Local<v8::Value> buffer =
       node::Buffer::Copy(isolate,
@@ -185,14 +184,14 @@ void PrintPreviewMessageHandler::ResolvePromise(
                          data_bytes->size())
           .ToLocalChecked();
 
-  promise->Resolve(buffer);
+  promise.Resolve(buffer);
 }
 
 void PrintPreviewMessageHandler::RejectPromise(int request_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  auto promise = GetPromise(request_id);
-  promise->RejectWithErrorMessage("Failed to generate PDF");
+  util::Promise promise = GetPromise(request_id);
+  promise.RejectWithErrorMessage("Failed to generate PDF");
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintPreviewMessageHandler)

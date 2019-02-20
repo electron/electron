@@ -11,16 +11,20 @@ namespace atom {
 
 namespace util {
 
-Promise::Promise(v8::Isolate* isolate) {
-  auto context = isolate->GetCurrentContext();
-  auto resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
-  isolate_ = isolate;
+Promise::Promise(v8::Isolate* isolate)
+    : Promise(isolate,
+              v8::Promise::Resolver::New(isolate->GetCurrentContext())
+                  .ToLocalChecked()) {}
 
-  context_.Reset(isolate, context);
-  resolver_.Reset(isolate, resolver);
-}
+Promise::Promise(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle)
+    : isolate_(isolate),
+      context_(isolate, isolate->GetCurrentContext()),
+      resolver_(isolate, handle) {}
 
 Promise::~Promise() = default;
+
+Promise::Promise(Promise&&) = default;
+Promise& Promise::operator=(Promise&&) = default;
 
 v8::Maybe<bool> Promise::RejectWithErrorMessage(const std::string& string) {
   v8::HandleScope handle_scope(isolate());
@@ -42,16 +46,28 @@ v8::Local<v8::Promise> Promise::GetHandle() const {
   return GetInner()->GetPromise();
 }
 
+CopyablePromise::CopyablePromise(const Promise& promise)
+    : isolate_(promise.isolate()), handle_(isolate_, promise.GetInner()) {}
+
+CopyablePromise::CopyablePromise(const CopyablePromise&) = default;
+
+CopyablePromise::~CopyablePromise() = default;
+
+Promise CopyablePromise::GetPromise() const {
+  return Promise(isolate_,
+                 v8::Local<v8::Promise::Resolver>::New(isolate_, handle_));
+}
+
 }  // namespace util
 
 }  // namespace atom
 
 namespace mate {
 
-v8::Local<v8::Value> mate::Converter<atom::util::Promise*>::ToV8(
+v8::Local<v8::Value> mate::Converter<atom::util::Promise>::ToV8(
     v8::Isolate*,
-    atom::util::Promise* val) {
-  return val->GetHandle();
+    const atom::util::Promise& val) {
+  return val.GetHandle();
 }
 
 }  // namespace mate
