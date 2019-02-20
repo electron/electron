@@ -96,7 +96,7 @@ const injectContentScript = function (extensionId: string, script: Electron.Cont
 
 // Handle the request of chrome.tabs.executeJavaScript.
 ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
-  event,
+  event: Electron.Event,
   senderWebContentsId: number,
   requestId: number,
   extensionId: string,
@@ -107,7 +107,7 @@ ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
   ipcRendererInternal.sendToAll(senderWebContentsId, `CHROME_TABS_EXECUTESCRIPT_RESULT_${requestId}`, result)
 })
 
-module.exports = (getRenderProcessPreferences) => {
+module.exports = (getRenderProcessPreferences: typeof process.getRenderProcessPreferences) => {
   // Read the renderer process preferences.
   const preferences = getRenderProcessPreferences()
   if (preferences) {
