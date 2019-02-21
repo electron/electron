@@ -97,10 +97,10 @@ void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 void DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
     content::DevToolsAgentHostClient* client,
-    std::unique_ptr<base::DictionaryValue> command,
+    const std::string& method,
     const std::string& message,
     NotHandledCallback callback) {
-  std::move(callback).Run(std::move(command), message);
+  std::move(callback).Run(message);
 }
 
 scoped_refptr<content::DevToolsAgentHost>
