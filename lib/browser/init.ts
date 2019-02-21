@@ -107,13 +107,14 @@ require('@electron/internal/browser/guest-window-manager')
 let packagePath = null
 let packageJson = null
 const searchPaths = ['app', 'app.asar', 'default_app.asar']
+
 if (process.resourcesPath) {
   for (packagePath of searchPaths) {
     try {
       packagePath = path.join(process.resourcesPath, packagePath)
       packageJson = require(path.join(packagePath, 'package.json'))
       break
-    } catch (error) {
+    } catch {
       continue
     }
   }

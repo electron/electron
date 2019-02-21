@@ -68,7 +68,7 @@ const isUnsafeEvalEnabled = function () {
     webFrame.executeJavaScript(`(${(() => {
       try {
         new Function('') // eslint-disable-line no-new,no-new-func
-      } catch (err) {
+      } catch {
         return false
       }
       return true

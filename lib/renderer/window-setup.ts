@@ -19,7 +19,7 @@
 // - document.hidden
 // - document.visibilityState
 
-const { defineProperty, defineProperties } = Object
+const { defineProperty } = Object
 
 // Helper function to resolve relative url.
 const a = window.document.createElement('a')
