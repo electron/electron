@@ -174,6 +174,16 @@ $ ./out/Debug/electron.exe
 $ ./out/Debug/electron
 ```
 
+### Packaging
+
+To strip the debugging and symbol information and package electron 
+as a distributable zip file:
+
+```sh
+electron/script/strip-binaries.py -d out/Release
+ninja -C out/Release electron:electron_dist_zip
+```
+
 ### Cross-compiling
 
 To compile for a platform that isn't the same as the one you're building on,
