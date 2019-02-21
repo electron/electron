@@ -24,6 +24,7 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/network_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -50,12 +51,6 @@
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
-
-// clang-format off
-// This header should be declared at the end to avoid
-// redefinition errors.
-#include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
-// clang-format on
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/jump_list.h"

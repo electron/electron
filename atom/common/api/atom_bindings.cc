@@ -17,6 +17,8 @@
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
+#include "atom/common/promise_util.h"
 #include "base/logging.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
@@ -27,10 +29,6 @@
 #include "native_mate/dictionary.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
-
-// Must be the last in the includes list, otherwise the definition of chromium
-// macros conflicts with node macros.
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

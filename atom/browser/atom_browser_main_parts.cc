@@ -27,6 +27,7 @@
 #include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -88,9 +89,6 @@
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
-
-// Must be included after all other headers.
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

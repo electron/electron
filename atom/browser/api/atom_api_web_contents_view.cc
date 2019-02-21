@@ -8,14 +8,13 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "atom/common/api/constructor.h"
+#include "atom/common/node_includes.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "native_mate/dictionary.h"
 
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/delayed_native_view_host.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace {
 

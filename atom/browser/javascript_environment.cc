@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/browser/microtasks_runner.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task/task_scheduler/initialization_util.h"
@@ -14,8 +15,6 @@
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
-
-#include "atom/common/node_includes.h"
 #include "tracing/trace_event.h"
 
 namespace atom {

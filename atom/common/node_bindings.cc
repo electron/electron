@@ -14,6 +14,7 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -27,8 +28,6 @@
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 #define ELECTRON_BUILTIN_MODULES(V)          \
   V(atom_browser_app)                        \

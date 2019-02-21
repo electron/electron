@@ -8,9 +8,8 @@
 
 #include "atom/browser/api/atom_api_view.h"
 #include "atom/common/api/constructor.h"
-#include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace mate {
 

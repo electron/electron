@@ -15,6 +15,7 @@
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
@@ -24,8 +25,6 @@
 #include "gin/converter.h"
 #include "native_mate/dictionary.h"
 #include "ui/gl/gpu_switching_manager.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

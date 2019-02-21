@@ -11,6 +11,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/web_worker_observer.h"
@@ -19,8 +20,6 @@
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-
-#include "atom/common/node_includes.h"
 #include "third_party/electron_node/src/node_native_module.h"
 
 namespace atom {

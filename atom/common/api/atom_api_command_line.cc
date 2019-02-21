@@ -4,14 +4,13 @@
 
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_util.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "services/network/public/cpp/network_switches.h"
-
-#include "atom/common/node_includes.h"
 
 namespace {
 

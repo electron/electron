@@ -10,6 +10,7 @@
 #include "atom/browser/net/system_network_context_manager.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
@@ -17,8 +18,6 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"
-
-#include "atom/common/node_includes.h"
 
 namespace {
 

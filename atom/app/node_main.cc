@@ -15,6 +15,7 @@
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/task/task_scheduler/task_scheduler.h"
@@ -23,8 +24,6 @@
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

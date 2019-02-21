@@ -45,6 +45,7 @@
 #include "atom/common/native_mate_converters/network_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
@@ -105,8 +106,6 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 

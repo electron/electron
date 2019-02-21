@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
@@ -37,8 +38,6 @@
 #include "base/win/scoped_gdi_object.h"
 #include "ui/gfx/icon_util.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

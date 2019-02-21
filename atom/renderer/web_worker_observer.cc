@@ -8,10 +8,9 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/lazy_instance.h"
 #include "base/threading/thread_local.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

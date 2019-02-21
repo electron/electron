@@ -11,6 +11,7 @@
 
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -24,8 +25,6 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 #include "storage/browser/blob/upload_blob_element_reader.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 

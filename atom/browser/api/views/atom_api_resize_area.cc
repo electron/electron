@@ -5,9 +5,8 @@
 #include "atom/browser/api/views/atom_api_resize_area.h"
 
 #include "atom/common/api/constructor.h"
-#include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace atom {
 
