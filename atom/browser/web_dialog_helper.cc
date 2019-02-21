@@ -23,6 +23,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "net/base/mime_util.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
