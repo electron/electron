@@ -74,20 +74,29 @@ const char kTitleFormat[] = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
-void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
-  dict->SetInteger("x", bounds.x());
-  dict->SetInteger("y", bounds.y());
-  dict->SetInteger("width", bounds.width());
-  dict->SetInteger("height", bounds.height());
+base::Value RectToDictionary(const gfx::Rect& bounds) {
+  base::Value dict(base::Value::Type::DICTIONARY);
+  dict.SetKey("x", base::Value(bounds.x()));
+  dict.SetKey("y", base::Value(bounds.y()));
+  dict.SetKey("width", base::Value(bounds.width()));
+  dict.SetKey("height", base::Value(bounds.height()));
+  return dict;
 }
 
-void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
-  int x = 0, y = 0, width = 800, height = 600;
-  dict.GetInteger("x", &x);
-  dict.GetInteger("y", &y);
-  dict.GetInteger("width", &width);
-  dict.GetInteger("height", &height);
-  *bounds = gfx::Rect(x, y, width, height);
+gfx::Rect DictionaryToRect(const base::Value* dict) {
+  const base::Value* found = dict->FindKey("x");
+  int x = found ? found->GetInt() : 0;
+
+  found = dict->FindKey("y");
+  int y = found ? found->GetInt() : 0;
+
+  found = dict->FindKey("width");
+  int width = found ? found->GetInt() : 800;
+
+  found = dict->FindKey("height");
+  int height = found ? found->GetInt() : 600;
+
+  return gfx::Rect(x, y, width, height);
 }
 
 bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
@@ -199,9 +208,8 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  std::unique_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
-  RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
-  registry->RegisterDictionaryPref(kDevToolsBoundsPref, std::move(bounds_dict));
+  registry->RegisterDictionaryPref(kDevToolsBoundsPref,
+                                   RectToDictionary(gfx::Rect(0, 0, 800, 600)));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
@@ -218,9 +226,9 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       is_guest_(is_guest),
       view_(CreateInspectableContentsView(this)),
       weak_factory_(this) {
-  auto* bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
-  if (bounds_dict) {
-    DictionaryToRect(*bounds_dict, &devtools_bounds_);
+  const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
+  if (bounds_dict->is_dict()) {
+    devtools_bounds_ = DictionaryToRect(bounds_dict);
     // Sometimes the devtools window is out of screen or has too small size.
     if (devtools_bounds_.height() < 100 || devtools_bounds_.width() < 100) {
       devtools_bounds_.set_height(600);
@@ -410,9 +418,7 @@ gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
 }
 
 void InspectableWebContentsImpl::SaveDevToolsBounds(const gfx::Rect& bounds) {
-  base::DictionaryValue bounds_dict;
-  RectToDictionary(bounds, &bounds_dict);
-  pref_service_->Set(kDevToolsBoundsPref, bounds_dict);
+  pref_service_->Set(kDevToolsBoundsPref, RectToDictionary(bounds));
   devtools_bounds_ = bounds;
 }
 
