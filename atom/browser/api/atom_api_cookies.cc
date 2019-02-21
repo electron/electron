@@ -139,7 +139,8 @@ inline net::CookieStore* GetCookieStore(
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
                    util::Promise promise,
-                   const net::CookieList& list) {
+                   const net::CookieList& list,
+                   const net::CookieStatusList& excluded_list) {
   net::CookieList result;
   for (const auto& cookie : list) {
     if (MatchesCookie(filter.get(), cookie))
