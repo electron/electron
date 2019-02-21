@@ -31,8 +31,7 @@ class PrintPreviewMessageHandler
  public:
   ~PrintPreviewMessageHandler() override;
 
-  void PrintToPDF(const base::DictionaryValue& options,
-                  scoped_refptr<atom::util::Promise> promise);
+  void PrintToPDF(const base::DictionaryValue& options, util::Promise promise);
 
  protected:
   // content::WebContentsObserver implementation.
@@ -56,13 +55,13 @@ class PrintPreviewMessageHandler
   void OnPrintPreviewCancelled(int document_cookie,
                                const PrintHostMsg_PreviewIds& ids);
 
-  scoped_refptr<atom::util::Promise> GetPromise(int request_id);
+  util::Promise GetPromise(int request_id);
 
   void ResolvePromise(int request_id,
                       scoped_refptr<base::RefCountedMemory> data_bytes);
   void RejectPromise(int request_id);
 
-  using PromiseMap = std::map<int, scoped_refptr<atom::util::Promise>>;
+  using PromiseMap = std::map<int, atom::util::Promise>;
   PromiseMap promise_map_;
 
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;

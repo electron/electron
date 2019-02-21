@@ -457,19 +457,20 @@ bool SystemPreferences::CanPromptTouchID() {
   return false;
 }
 
-void OnTouchIDCompleted(scoped_refptr<util::Promise> promise) {
-  promise->Resolve();
+void OnTouchIDCompleted(util::Promise promise) {
+  promise.Resolve();
 }
 
-void OnTouchIDFailed(scoped_refptr<util::Promise> promise,
-                     const std::string& reason) {
-  promise->RejectWithErrorMessage(reason);
+void OnTouchIDFailed(util::Promise promise, const std::string& reason) {
+  promise.RejectWithErrorMessage(reason);
 }
 
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     v8::Isolate* isolate,
     const std::string& reason) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   if (@available(macOS 10.12.2, *)) {
     base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
     base::ScopedCFTypeRef<SecAccessControlRef> access_control =
@@ -484,6 +485,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     scoped_refptr<base::SequencedTaskRunner> runner =
         base::SequencedTaskRunnerHandle::Get();
 
+    __block util::Promise p = std::move(promise);
     [context
         evaluateAccessControl:access_control
                     operation:LAAccessControlOperationUseKeySign
@@ -493,20 +495,20 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    &OnTouchIDFailed, promise,
+                                    &OnTouchIDFailed, std::move(p),
                                     std::string([error.localizedDescription
                                                      UTF8String])));
                           } else {
-                            runner->PostTask(
-                                FROM_HERE,
-                                base::BindOnce(&OnTouchIDCompleted, promise));
+                            runner->PostTask(FROM_HERE,
+                                             base::BindOnce(&OnTouchIDCompleted,
+                                                            std::move(p)));
                           }
                         }];
   } else {
-    promise->RejectWithErrorMessage(
+    promise.RejectWithErrorMessage(
         "This API is not available on macOS versions older than 10.12.2");
   }
-  return promise->GetHandle();
+  return handle;
 }
 
 // static
@@ -625,25 +627,27 @@ std::string SystemPreferences::GetMediaAccessStatus(
 v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
     v8::Isolate* isolate,
     const std::string& media_type) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
+      __block util::Promise p = std::move(promise);
       [AVCaptureDevice requestAccessForMediaType:type
                                completionHandler:^(BOOL granted) {
                                  dispatch_async(dispatch_get_main_queue(), ^{
-                                   promise->Resolve(!!granted);
+                                   p.Resolve(!!granted);
                                  });
                                }];
     } else {
       // access always allowed pre-10.14 Mojave
-      promise->Resolve(true);
+      promise.Resolve(true);
     }
   } else {
-    promise->RejectWithErrorMessage("Invalid media type");
+    promise.RejectWithErrorMessage("Invalid media type");
   }
 
-  return promise->GetHandle();
+  return handle;
 }
 
 void SystemPreferences::RemoveUserDefault(const std::string& name) {

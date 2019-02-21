@@ -47,7 +47,7 @@ class NetLog : public mate::TrackableObject<NetLog>,
  private:
   AtomBrowserContext* browser_context_;
   net_log::NetExportFileWriter* net_log_writer_;
-  std::list<scoped_refptr<atom::util::Promise>> stop_callback_queue_;
+  std::list<atom::util::Promise> stop_callback_queue_;
   std::unique_ptr<base::DictionaryValue> net_log_state_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);

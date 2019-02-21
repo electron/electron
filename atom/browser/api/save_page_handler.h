@@ -30,7 +30,7 @@ class SavePageHandler : public content::DownloadManager::Observer,
                         public download::DownloadItem::Observer {
  public:
   SavePageHandler(content::WebContents* web_contents,
-                  scoped_refptr<atom::util::Promise> promise);
+                  atom::util::Promise promise);
   ~SavePageHandler() override;
 
   bool Handle(const base::FilePath& full_path,
@@ -47,7 +47,7 @@ class SavePageHandler : public content::DownloadManager::Observer,
   void OnDownloadUpdated(download::DownloadItem* item) override;
 
   content::WebContents* web_contents_;  // weak
-  scoped_refptr<atom::util::Promise> promise_;
+  atom::util::Promise promise_;
 };
 
 }  // namespace api

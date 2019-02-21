@@ -342,7 +342,9 @@ bool Browser::DockIsVisible() {
 }
 
 v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
   if (active) {
@@ -354,6 +356,7 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
       [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
       break;
     }
+    __block util::Promise p = std::move(promise);
     dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
     dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
@@ -361,14 +364,14 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
       dispatch_after(one_ms, dispatch_get_main_queue(), ^{
         [[NSRunningApplication currentApplication]
             activateWithOptions:NSApplicationActivateIgnoringOtherApps];
-        promise->Resolve();
+        p.Resolve();
       });
     });
   } else {
     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
-    promise->Resolve();
+    promise.Resolve();
   }
-  return promise->GetHandle();
+  return handle;
 }
 
 void Browser::DockSetMenu(AtomMenuModel* model) {

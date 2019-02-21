@@ -106,19 +106,19 @@ bool OpenExternal(const GURL& url, const OpenExternalOptions& options) {
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
-                  const OpenExternalCallback& callback) {
+                  OpenExternalCallback callback) {
   NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
-    callback.Run("Invalid URL");
+    std::move(callback).Run("Invalid URL");
     return;
   }
 
-  __block OpenExternalCallback c = callback;
+  __block OpenExternalCallback c = std::move(callback);
   dispatch_async(
       dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         __block std::string error = OpenURL(ns_url, options.activate);
         dispatch_async(dispatch_get_main_queue(), ^{
-          c.Run(error);
+          std::move(c).Run(error);
         });
       });
 }
