@@ -9,6 +9,7 @@
 
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "native_mate/converter.h"
@@ -146,16 +147,21 @@ void SpellCheckClient::SpellCheckText() {
 
   SpellCheckScope scope(*this);
   base::string16 word;
+  size_t word_start;
+  size_t word_length;
   std::vector<base::string16> words;
   auto& word_map = pending_request_param_->wordmap();
   blink::WebTextCheckingResult result;
   for (;;) {  // Run until end of text
     const auto status =
-        text_iterator_.GetNextWord(&word, &result.location, &result.length);
+        text_iterator_.GetNextWord(&word, &word_start, &word_length);
     if (status == SpellcheckWordIterator::IS_END_OF_TEXT)
       break;
     if (status == SpellcheckWordIterator::IS_SKIPPABLE)
       continue;
+
+    result.location = base::checked_cast<int>(word_start);
+    result.length = base::checked_cast<int>(word_length);
 
     // If the given word is a concatenated word of two or more valid words
     // (e.g. "hello:hello"), we should treat it as a valid word.
@@ -233,8 +239,8 @@ bool SpellCheckClient::IsContraction(
   contraction_iterator_.SetText(contraction.c_str(), contraction.length());
 
   base::string16 word;
-  int word_start;
-  int word_length;
+  size_t word_start;
+  size_t word_length;
   for (auto status =
            contraction_iterator_.GetNextWord(&word, &word_start, &word_length);
        status != SpellcheckWordIterator::IS_END_OF_TEXT;
