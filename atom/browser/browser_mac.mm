@@ -15,6 +15,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
@@ -114,16 +115,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
 
-  CFStringRef bundle =
-      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
-  NSString* bundleId =
-      static_cast<NSString*>(base::mac::CFTypeRefToNSObjectAutorelease(bundle));
+  base::ScopedCFTypeRef<CFStringRef> bundleId(
+      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns)));
+
   if (!bundleId)
     return false;
 
   // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
-  NSComparisonResult result = [bundleId caseInsensitiveCompare:identifier];
+  NSComparisonResult result =
+      [base::mac::CFToNSCast(bundleId) caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
 }
 
