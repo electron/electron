@@ -4,3 +4,5 @@
 | 3.x | 66.0.3359.181 | 10.2.0 | 6.6.346.32 | 64 |
 | 4.x | 69.0.3497.106 | 10.11.0 | 6.9.427.24-electron.0 | 69 |
 | 5.x | 73.0.3683.27 | 12.0.0 | 7.3.492.10-electron.0 | 68 |
+
+Full version information available in JSON format [here](http://atom.io/download/electron/index.json).
