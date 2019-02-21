@@ -341,9 +341,8 @@ bool Browser::DockIsVisible() {
           NSApplicationActivationPolicyRegular);
 }
 
-v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
+util::Promise Browser::DockShow(v8::Isolate* isolate) {
   util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
@@ -371,7 +370,7 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
     promise.Resolve();
   }
-  return handle;
+  return promise;
 }
 
 void Browser::DockSetMenu(AtomMenuModel* model) {

@@ -128,19 +128,18 @@ void Debugger::Detach() {
   AgentHostClosed(agent_host_.get());
 }
 
-v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
+util::Promise Debugger::SendCommand(mate::Arguments* args) {
   atom::util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {
     promise.RejectWithErrorMessage("No target available");
-    return handle;
+    return promise;
   }
 
   std::string method;
   if (!args->GetNext(&method)) {
     promise.RejectWithErrorMessage("Invalid method");
-    return handle;
+    return promise;
   }
 
   base::DictionaryValue command_params;
@@ -159,7 +158,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
   base::JSONWriter::Write(request, &json_args);
   agent_host_->DispatchProtocolMessage(this, json_args);
 
-  return handle;
+  return promise;
 }
 
 void Debugger::ClearPendingRequests() {

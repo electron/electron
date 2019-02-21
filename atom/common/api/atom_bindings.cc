@@ -230,15 +230,13 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 }
 
 // static
-v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
-    v8::Isolate* isolate) {
+util::Promise AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
   util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (mate::Locker::IsBrowserProcess() && !Browser::Get()->is_ready()) {
     promise.RejectWithErrorMessage(
         "Memory Info is available only after app ready");
-    return handle;
+    return promise;
   }
 
   v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
@@ -247,7 +245,7 @@ v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
           base::GetCurrentProcId(), std::vector<std::string>(),
           base::BindOnce(&AtomBindings::DidReceiveMemoryDump,
                          std::move(context), std::move(promise)));
-  return handle;
+  return promise;
 }
 
 // static

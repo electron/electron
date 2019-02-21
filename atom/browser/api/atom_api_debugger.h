@@ -59,7 +59,7 @@ class Debugger : public mate::TrackableObject<Debugger>,
   void Attach(mate::Arguments* args);
   bool IsAttached();
   void Detach();
-  v8::Local<v8::Promise> SendCommand(mate::Arguments* args);
+  util::Promise SendCommand(mate::Arguments* args);
   void ClearPendingRequests();
 
   content::WebContents* web_contents_;  // Weak Reference.

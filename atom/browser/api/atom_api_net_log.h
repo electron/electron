@@ -35,7 +35,7 @@ class NetLog : public mate::TrackableObject<NetLog>,
   std::string GetLoggingState() const;
   bool IsCurrentlyLogging() const;
   std::string GetCurrentlyLoggingPath() const;
-  v8::Local<v8::Promise> StopLogging(mate::Arguments* args);
+  util::Promise StopLogging(mate::Arguments* args);
 
  protected:
   explicit NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context);

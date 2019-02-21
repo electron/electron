@@ -134,7 +134,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       const std::string& scheme);
 
   // Whether the protocol has handler registered.
-  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
+  util::Promise IsProtocolHandled(const std::string& scheme);
 
   // Replace the protocol handler with a new one.
   template <typename RequestJob>

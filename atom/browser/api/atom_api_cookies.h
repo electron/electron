@@ -47,10 +47,10 @@ class Cookies : public mate::TrackableObject<Cookies> {
   Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Cookies() override;
 
-  v8::Local<v8::Promise> Get(const base::DictionaryValue& filter);
-  v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
-  v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
-  v8::Local<v8::Promise> FlushStore();
+  util::Promise Get(const base::DictionaryValue& filter);
+  util::Promise Set(const base::DictionaryValue& details);
+  util::Promise Remove(const GURL& url, const std::string& name);
+  util::Promise FlushStore();
 
   // CookieChangeNotifier subscription:
   void OnCookieChanged(const CookieDetails*);

@@ -70,4 +70,10 @@ v8::Local<v8::Value> mate::Converter<atom::util::Promise>::ToV8(
   return val.GetHandle();
 }
 
+v8::Local<v8::Value> mate::Converter<atom::util::CopyablePromise>::ToV8(
+    v8::Isolate* isolate,
+    const atom::util::CopyablePromise& val) {
+  return mate::ConvertToV8(isolate, val.GetPromise());
+}
+
 }  // namespace mate

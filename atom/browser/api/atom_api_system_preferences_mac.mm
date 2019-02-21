@@ -465,11 +465,9 @@ void OnTouchIDFailed(util::Promise promise, const std::string& reason) {
   promise.RejectWithErrorMessage(reason);
 }
 
-v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
-    v8::Isolate* isolate,
-    const std::string& reason) {
+util::Promise SystemPreferences::PromptTouchID(v8::Isolate* isolate,
+                                               const std::string& reason) {
   util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (@available(macOS 10.12.2, *)) {
     base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
@@ -508,7 +506,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     promise.RejectWithErrorMessage(
         "This API is not available on macOS versions older than 10.12.2");
   }
-  return handle;
+  return promise;
 }
 
 // static
@@ -624,11 +622,10 @@ std::string SystemPreferences::GetMediaAccessStatus(
   }
 }
 
-v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
+util::Promise SystemPreferences::AskForMediaAccess(
     v8::Isolate* isolate,
     const std::string& media_type) {
   util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
@@ -647,7 +644,7 @@ v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
     promise.RejectWithErrorMessage("Invalid media type");
   }
 
-  return handle;
+  return promise;
 }
 
 void SystemPreferences::RemoveUserDefault(const std::string& name) {

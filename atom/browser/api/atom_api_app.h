@@ -198,13 +198,11 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
-  v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
-                                     mate::Arguments* args);
+  util::Promise GetFileIcon(const base::FilePath& path, mate::Arguments* args);
 
   std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
-  v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
-                                    const std::string& info_type);
+  util::Promise GetGPUInfo(v8::Isolate* isolate, const std::string& info_type);
   void EnableSandbox(mate::Arguments* args);
 
 #if defined(OS_MACOSX)

@@ -96,8 +96,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   std::string GetSystemColor(const std::string& color, mate::Arguments* args);
 
   bool CanPromptTouchID();
-  v8::Local<v8::Promise> PromptTouchID(v8::Isolate* isolate,
-                                       const std::string& reason);
+  util::Promise PromptTouchID(v8::Isolate* isolate, const std::string& reason);
 
   static bool IsTrustedAccessibilityClient(bool prompt);
 
@@ -105,8 +104,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   // are running tests on a Mojave machine
   std::string GetMediaAccessStatus(const std::string& media_type,
                                    mate::Arguments* args);
-  v8::Local<v8::Promise> AskForMediaAccess(v8::Isolate* isolate,
-                                           const std::string& media_type);
+  util::Promise AskForMediaAccess(v8::Isolate* isolate,
+                                  const std::string& media_type);
 
   // TODO(MarshallOfSound): Write tests for these methods once we
   // are running tests on a Mojave machine

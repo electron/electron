@@ -181,9 +181,8 @@ void PromiseCallback(util::Promise promise, bool handled) {
   promise.Resolve(handled);
 }
 
-v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
+util::Promise Protocol::IsProtocolHandled(const std::string& scheme) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
   auto* getter = static_cast<URLRequestContextGetter*>(
       browser_context_->GetRequestContext());
 
@@ -192,7 +191,7 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
       base::BindOnce(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
       base::BindOnce(&PromiseCallback, std::move(promise)));
 
-  return handle;
+  return promise;
 }
 
 void Protocol::UninterceptProtocol(const std::string& scheme,

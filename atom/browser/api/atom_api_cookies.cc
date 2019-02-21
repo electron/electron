@@ -296,9 +296,8 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 Cookies::~Cookies() {}
 
-v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
+util::Promise Cookies::Get(const base::DictionaryValue& filter) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto copy = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(filter.Clone()));
@@ -308,13 +307,11 @@ v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
       base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), std::move(copy),
                      std::move(promise)));
 
-  return handle;
+  return promise;
 }
 
-v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
-                                       const std::string& name) {
+util::Promise Cookies::Remove(const GURL& url, const std::string& name) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* getter = browser_context_->GetRequestContext();
   base::PostTaskWithTraits(
@@ -322,12 +319,11 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
       base::BindOnce(RemoveCookieOnIO, base::RetainedRef(getter), url, name,
                      std::move(promise)));
 
-  return handle;
+  return promise;
 }
 
-v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
+util::Promise Cookies::Set(const base::DictionaryValue& details) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto copy = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(details.Clone()));
@@ -337,12 +333,11 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
       base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
                      std::move(promise)));
 
-  return handle;
+  return promise;
 }
 
-v8::Local<v8::Promise> Cookies::FlushStore() {
+util::Promise Cookies::FlushStore() {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* getter = browser_context_->GetRequestContext();
   base::PostTaskWithTraits(
@@ -350,7 +345,7 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
       base::BindOnce(FlushCookieStoreOnIOThread, base::RetainedRef(getter),
                      std::move(promise)));
 
-  return handle;
+  return promise;
 }
 
 void Cookies::OnCookieChanged(const CookieDetails* details) {

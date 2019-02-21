@@ -152,6 +152,12 @@ struct Converter<atom::util::Promise> {
   //                    Promise* out);
 };
 
+template <>
+struct Converter<atom::util::CopyablePromise> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const atom::util::CopyablePromise& val);
+};
+
 }  // namespace mate
 
 #endif  // ATOM_COMMON_PROMISE_UTIL_H_

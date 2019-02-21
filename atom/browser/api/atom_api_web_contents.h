@@ -149,8 +149,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
-  v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
-                                  const content::SavePageType& save_type);
+  util::Promise SavePage(const base::FilePath& full_file_path,
+                         const content::SavePageType& save_type);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
@@ -173,7 +173,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(const base::DictionaryValue& settings);
+  util::Promise PrintToPDF(const base::DictionaryValue& settings);
 #endif
 
   // DevTools workspace api.
@@ -232,7 +232,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
-  v8::Local<v8::Promise> CapturePage(mate::Arguments* args);
+  util::Promise CapturePage(mate::Arguments* args);
 
   // Methods for creating <webview>.
   bool IsGuest() const;

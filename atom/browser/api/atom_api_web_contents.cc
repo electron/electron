@@ -1298,15 +1298,13 @@ std::string WebContents::GetUserAgent() {
   return web_contents()->GetUserAgentOverride();
 }
 
-v8::Local<v8::Promise> WebContents::SavePage(
-    const base::FilePath& full_file_path,
-    const content::SavePageType& save_type) {
+util::Promise WebContents::SavePage(const base::FilePath& full_file_path,
+                                    const content::SavePageType& save_type) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> ret = promise.GetHandle();
 
   auto* handler = new SavePageHandler(web_contents(), std::move(promise));
   handler->Handle(full_file_path, save_type);
-  return ret;
+  return promise;
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
@@ -1501,13 +1499,11 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   return printers;
 }
 
-v8::Local<v8::Promise> WebContents::PrintToPDF(
-    const base::DictionaryValue& settings) {
+util::Promise WebContents::PrintToPDF(const base::DictionaryValue& settings) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(settings, std::move(promise));
-  return handle;
+  return promise;
 }
 #endif
 
@@ -1776,10 +1772,9 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
-v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
+util::Promise WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
   args->GetNext(&rect);
@@ -1787,7 +1782,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
     promise.Resolve(gfx::Image());
-    return handle;
+    return promise;
   }
 
   // Capture full page if user doesn't specify a |rect|.
@@ -1807,7 +1802,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
                         base::BindOnce(&OnCapturePageDone, std::move(promise)));
-  return handle;
+  return promise;
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {

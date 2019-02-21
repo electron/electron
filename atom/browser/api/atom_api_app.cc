@@ -1123,10 +1123,9 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 }
 #endif  // defined(OS_WIN)
 
-v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
-                                        mate::Arguments* args) {
+util::Promise App::GetFileIcon(const base::FilePath& path,
+                               mate::Arguments* args) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
   IconLoader::IconSize icon_size;
@@ -1150,7 +1149,7 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
         base::BindOnce(&OnIconDataAvailable, std::move(promise)),
         &cancelable_task_tracker_);
   }
-  return handle;
+  return promise;
 }
 
 std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
@@ -1196,20 +1195,19 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
-v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
-                                       const std::string& info_type) {
+util::Promise App::GetGPUInfo(v8::Isolate* isolate,
+                              const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
   util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(
         "Invalid info type. Use 'basic' or 'complete'");
-    return handle;
+    return promise;
   }
   std::string reason;
   if (!gpu_data_manager->GpuAccessAllowed(&reason)) {
     promise.RejectWithErrorMessage("GPU access not allowed. Reason: " + reason);
-    return handle;
+    return promise;
   }
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
@@ -1222,7 +1220,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
   } else /* (info_type == "basic") */ {
     info_mgr->FetchBasicInfo(std::move(promise));
   }
-  return handle;
+  return promise;
 }
 
 static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {

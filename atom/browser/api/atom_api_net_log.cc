@@ -96,9 +96,8 @@ std::string NetLog::GetCurrentlyLoggingPath() const {
   return std::string();
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
+util::Promise NetLog::StopLogging(mate::Arguments* args) {
   util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (IsCurrentlyLogging()) {
     stop_callback_queue_.emplace_back(std::move(promise));
@@ -107,7 +106,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
     promise.Resolve(base::FilePath());
   }
 
-  return handle;
+  return promise;
 }
 
 void NetLog::OnNewState(const base::DictionaryValue& state) {
