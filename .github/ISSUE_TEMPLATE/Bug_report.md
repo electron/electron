@@ -5,11 +5,11 @@ about: Create a report to help us improve Electron
 ---
 
 * **Electron Version:**
-<!-- (output of `node_modules/.bin/electron --version`) e.g. 4.0.3 -->
+  * <!-- (output of `node_modules/.bin/electron --version`) e.g. 4.0.3 -->
 * **Operating System:**
-<!-- (Platform and Version) e.g. macOS 10.13.6 / Windows 10 (1803) / Ubuntu 18.04 x64 -->
+  * <!-- (Platform and Version) e.g. macOS 10.13.6 / Windows 10 (1803) / Ubuntu 18.04 x64 -->
 * **Last Known Working Electron version:**:
-<!-- (if applicable) e.g. 3.1.0 -->
+  * <!-- (if applicable) e.g. 3.1.0 -->
 
 ### Expected Behavior
 <!-- A clear and concise description of what you expected to happen. -->
