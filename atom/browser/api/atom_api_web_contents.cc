@@ -97,7 +97,7 @@
 #endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
-#include "content/public/common/renderer_preferences.h"
+#include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/gfx/font_render_params.h"
 #endif
 
