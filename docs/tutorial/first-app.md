@@ -208,13 +208,13 @@ Clone and run the code in this tutorial by using the
 
 ```sh
 # Clone the repository
-$ git clone https://github.com/electron/electron-quick-start
+git clone https://github.com/electron/electron-quick-start
 # Go into the repository
-$ cd electron-quick-start
+cd electron-quick-start
 # Install dependencies
-$ npm install
+npm install
 # Run the app
-$ npm start
+npm start
 ```
 
 For a list of boilerplates and tools to kick-start your development process,
