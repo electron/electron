@@ -14,7 +14,7 @@ about: Create a report to help us improve Electron
 ### Expected Behavior
 <!-- A clear and concise description of what you expected to happen. -->
 
-### Actual behavior
+### Actual Behavior
 <!-- A clear and concise description of what actually happened. -->
 
 ### To Reproduce
