@@ -7,6 +7,7 @@ const net = require('net')
 const fs = require('fs')
 const path = require('path')
 const cp = require('child_process')
+const split = require('split')
 const { ipcRenderer, remote } = require('electron')
 const { emittedOnce } = require('./events-helpers')
 const { closeWindow } = require('./window-helpers')
@@ -233,8 +234,9 @@ describe('app module', () => {
       const firstExited = emittedOnce(first, 'exit')
 
       // Wait for the first app to boot.
-      const data1 = await emittedOnce(first.stdout, 'data')
-      const data2Promise = emittedOnce(first.stdout, 'data')
+      const firstStdoutLines = first.stdout.pipe(split())
+      const data1 = await emittedOnce(firstStdoutLines, 'data')
+      const data2Promise = emittedOnce(firstStdoutLines, 'data')
 
       const secondInstanceArgs = [remote.process.execPath, appPath, '--some-switch', 'some-arg']
       const second = ChildProcess.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1))
