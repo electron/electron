@@ -284,6 +284,7 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 
 int AtomBrowserMainParts::PreEarlyInitialization() {
   InitializeFeatureList();
+  field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
   OverrideAppLogsPath();
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());

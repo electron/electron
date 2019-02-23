@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/metrics/field_trial.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
@@ -126,6 +127,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<NodeEnvironment> node_env_;
   std::unique_ptr<NodeDebugger> node_debugger_;
   std::unique_ptr<IconManager> icon_manager_;
+  std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
   base::RepeatingTimer gc_timer_;
 
