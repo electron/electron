@@ -142,8 +142,9 @@ describe('debugger module', () => {
       w.webContents.loadURL('about:blank')
       w.webContents.debugger.attach()
 
+      const opened = emittedOnce(w.webContents, 'devtools-opened')
       w.webContents.openDevTools()
-      await emittedOnce(w.webContents, 'devtools-opened')
+      await opened
 
       const params = { 'expression': '4+2' }
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params)
