@@ -34,8 +34,8 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
-#include "content/browser/gpu/compositor_util.h"
-#include "content/browser/gpu/gpu_data_manager_impl.h"
+#include "content/browser/gpu/compositor_util.h"        // nogncheck
+#include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/child_process_data.h"

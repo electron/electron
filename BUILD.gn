@@ -326,6 +326,7 @@ static_library("electron_lib") {
 
   deps = [
     ":atom_js2c",
+    ":resources",
     "buildflags",
     "chromium_src:chrome",
     "manifests",
@@ -333,6 +334,7 @@ static_library("electron_lib") {
     "//base",
     "//base:base_static",
     "//base:i18n",
+    "//base/allocator:buildflags",
     "//chrome/app/resources:platform_locale_settings",
     "//components/certificate_transparency",
     "//components/net_log",
@@ -345,6 +347,9 @@ static_library("electron_lib") {
     "//content/public/browser",
     "//content/public/child",
     "//content/public/common:service_names",
+    "//content/public/renderer",
+    "//content/public/utility",
+    "//device/bluetooth",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",
@@ -354,6 +359,7 @@ static_library("electron_lib") {
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
+    "//printing/buildflags",
     "//services/audio/public/mojom:constants",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
@@ -369,8 +375,11 @@ static_library("electron_lib") {
     "//third_party/widevine/cdm:headers",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
+    "//ui/native_theme",
+    "//ui/shell_dialogs:shell_dialogs",
     "//ui/views",
     "//v8",
+    "//v8:v8_libplatform",
   ]
 
   include_dirs = [
@@ -435,6 +444,7 @@ static_library("electron_lib") {
       "atom/browser/fake_location_provider.cc",
       "atom/browser/fake_location_provider.h",
     ]
+    deps += [ "//services/device/public/cpp/geolocation" ]
   }
 
   if (is_mac) {

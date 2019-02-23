@@ -11,7 +11,7 @@
 
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/promise_util.h"
-#include "content/browser/gpu/gpu_data_manager_impl.h"
+#include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 

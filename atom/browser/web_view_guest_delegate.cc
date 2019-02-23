@@ -8,7 +8,7 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "content/browser/web_contents/web_contents_impl.h"
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"

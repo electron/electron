@@ -35,7 +35,7 @@
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
-#include "net/dns/mapped_host_resolver.h"
+#include "net/dns/mapped_host_resolver.h"  // nogncheck
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_auth_scheme.h"

@@ -49,14 +49,15 @@ static_library("chrome") {
     "//extensions/browser/app_window/size_constraints.h",
   ]
   public_deps = [
-    "//content/public/browser",
-  ]
-  deps = [
     "//chrome/common",
-    "//components/feature_engagement:buildflags",
+    "//chrome/common:version_header",
     "//components/keyed_service/content",
     "//components/proxy_config",
     "//components/security_state/content",
+    "//content/public/browser",
+  ]
+  deps = [
+    "//components/feature_engagement:buildflags",
   ]
 
   if (is_linux) {
@@ -85,6 +86,7 @@ static_library("chrome") {
       "//chrome/browser/platform_util.cc",
       "//chrome/browser/platform_util.h",
       "//chrome/browser/ui/browser_dialogs.h",
+      "//chrome/browser/ui/color_chooser.h",
     ]
 
     if (use_aura) {
@@ -156,14 +158,16 @@ static_library("chrome") {
       "//chrome/browser/printing/printing_message_filter.cc",
       "//chrome/browser/printing/printing_message_filter.h",
     ]
-    deps += [
+    public_deps += [
       "//chrome/services/printing:lib",
       "//components/printing/browser",
-      "//components/printing/common",
       "//components/printing/renderer",
-      "//components/services/pdf_compositor",
       "//components/services/pdf_compositor/public/cpp:factory",
       "//components/services/pdf_compositor/public/interfaces",
+    ]
+    deps += [
+      "//components/printing/common",
+      "//components/services/pdf_compositor",
       "//printing",
     ]
 

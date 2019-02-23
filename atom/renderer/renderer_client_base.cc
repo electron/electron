@@ -33,7 +33,7 @@
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_security_policy.h"
 #include "third_party/blink/public/web/web_view.h"
-#include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
+#include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 
 #if defined(OS_MACOSX)
 #include "base/strings/sys_string_conversions.h"

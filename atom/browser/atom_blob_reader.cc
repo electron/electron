@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "base/task/post_task.h"
-#include "content/browser/blob_storage/chrome_blob_storage_context.h"
+#include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/io_buffer.h"
