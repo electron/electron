@@ -104,8 +104,7 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
                                             NSUserActivityDelegate> {
  @private
   BOOL handlingSendEvent_;
-  base::scoped_nsobject<NSUserActivity> currentActivity_
-      API_AVAILABLE(macosx(10.10));
+  base::scoped_nsobject<NSUserActivity> currentActivity_;
   NSCondition* handoffLock_;
   BOOL updateReceived_;
   base::Callback<bool()> shouldShutdown_;
@@ -121,7 +120,7 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
-- (NSUserActivity*)getCurrentActivity API_AVAILABLE(macosx(10.10));
+- (NSUserActivity*)getCurrentActivity;
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL;

@@ -23,7 +23,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 @synthesize enableLargerThanScreen;
 @synthesize disableAutoHideCursor;
 @synthesize disableKeyOrMainWindow;
-@synthesize windowButtonsOffset;
 @synthesize vibrantView;
 
 - (id)initWithShell:(atom::NativeWindowMac*)shell
@@ -128,78 +127,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (BOOL)canBecomeKeyWindow {
   return !self.disableKeyOrMainWindow;
-}
-
-- (void)enableWindowButtonsOffset {
-  auto closeButton = [self standardWindowButton:NSWindowCloseButton];
-  auto miniaturizeButton =
-      [self standardWindowButton:NSWindowMiniaturizeButton];
-  auto zoomButton = [self standardWindowButton:NSWindowZoomButton];
-
-  [closeButton setPostsFrameChangedNotifications:YES];
-  [miniaturizeButton setPostsFrameChangedNotifications:YES];
-  [zoomButton setPostsFrameChangedNotifications:YES];
-
-  windowButtonsInterButtonSpacing_ =
-      NSMinX([miniaturizeButton frame]) - NSMaxX([closeButton frame]);
-
-  auto center = [NSNotificationCenter defaultCenter];
-
-  [center addObserver:self
-             selector:@selector(adjustCloseButton:)
-                 name:NSViewFrameDidChangeNotification
-               object:closeButton];
-
-  [center addObserver:self
-             selector:@selector(adjustMiniaturizeButton:)
-                 name:NSViewFrameDidChangeNotification
-               object:miniaturizeButton];
-
-  [center addObserver:self
-             selector:@selector(adjustZoomButton:)
-                 name:NSViewFrameDidChangeNotification
-               object:zoomButton];
-}
-
-- (void)adjustCloseButton:(NSNotification*)notification {
-  [self adjustButton:[notification object] ofKind:NSWindowCloseButton];
-}
-
-- (void)adjustMiniaturizeButton:(NSNotification*)notification {
-  [self adjustButton:[notification object] ofKind:NSWindowMiniaturizeButton];
-}
-
-- (void)adjustZoomButton:(NSNotification*)notification {
-  [self adjustButton:[notification object] ofKind:NSWindowZoomButton];
-}
-
-- (void)adjustButton:(NSButton*)button ofKind:(NSWindowButton)kind {
-  NSRect buttonFrame = [button frame];
-  NSRect frameViewBounds = [[self frameView] bounds];
-  NSPoint offset = self.windowButtonsOffset;
-
-  buttonFrame.origin = NSMakePoint(
-      offset.x, (NSHeight(frameViewBounds) - NSHeight(buttonFrame) - offset.y));
-
-  switch (kind) {
-    case NSWindowZoomButton:
-      buttonFrame.origin.x += NSWidth(
-          [[self standardWindowButton:NSWindowMiniaturizeButton] frame]);
-      buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
-      FALLTHROUGH;
-    case NSWindowMiniaturizeButton:
-      buttonFrame.origin.x +=
-          NSWidth([[self standardWindowButton:NSWindowCloseButton] frame]);
-      buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
-      FALLTHROUGH;
-    default:
-      break;
-  }
-
-  BOOL didPost = [button postsBoundsChangedNotifications];
-  [button setPostsFrameChangedNotifications:NO];
-  [button setFrame:buttonFrame];
-  [button setPostsFrameChangedNotifications:didPost];
 }
 
 - (NSView*)frameView {

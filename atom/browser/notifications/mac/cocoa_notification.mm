@@ -72,24 +72,18 @@ void CocoaNotification::Show(const NotificationOptions& options) {
         // All of the rest are appended to the list of additional actions
         NSString* actionIdentifier =
             [NSString stringWithFormat:@"%@Action%d", identifier, i];
-        if (@available(macOS 10.10, *)) {
-          NSUserNotificationAction* notificationAction =
-              [NSUserNotificationAction
-                  actionWithIdentifier:actionIdentifier
-                                 title:base::SysUTF16ToNSString(action.text)];
-          [additionalActions addObject:notificationAction];
-          additional_action_indices_.insert(
-              std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
-        }
+        NSUserNotificationAction* notificationAction = [NSUserNotificationAction
+            actionWithIdentifier:actionIdentifier
+                           title:base::SysUTF16ToNSString(action.text)];
+        [additionalActions addObject:notificationAction];
+        additional_action_indices_.insert(
+            std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
       }
     }
     i++;
   }
-  if ([additionalActions count] > 0 &&
-      [notification_ respondsToSelector:@selector(setAdditionalActions:)]) {
-    if (@available(macOS 10.10, *)) {
-      [notification_ setAdditionalActions:additionalActions];
-    }
+  if ([additionalActions count] > 0) {
+    [notification_ setAdditionalActions:additionalActions];
   }
 
   if (options.has_reply) {
