@@ -272,7 +272,8 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
 
 void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
+    content::RenderFrame* render_frame,
+    int world_id) {
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
@@ -280,13 +281,14 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
 
   std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
       process.GetHandle(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
+      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
+      v8::Integer::New(isolate, world_id)};
 
-  // TODO(samuelmaddock): inject content script bundle
   node::per_process::native_module_loader.CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);

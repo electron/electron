@@ -116,7 +116,8 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
 
   if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
       world_id <= World::ISOLATED_WORLD_EXTENSIONS_END) {
-    renderer_client_->SetupExtensionWorldOverrides(context, render_frame_);
+    renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
+                                                   world_id);
   }
 }
 

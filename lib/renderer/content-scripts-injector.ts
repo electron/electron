@@ -1,6 +1,7 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
-import { runInThisContext } from 'vm'
 import { webFrame } from 'electron'
+
+const v8Util = process.atomBinding('v8_util')
 
 const IsolatedWorldIDs = {
   /**
@@ -30,15 +31,12 @@ const matchesPattern = function (pattern: string) {
 
 // Run the code with chrome API integrated.
 const runContentScript = function (this: any, extensionId: string, url: string, code: string) {
-  const sources = [
-    // initialize Chrome API in isolated world
-    { code: `typeof __init === 'function' && __init('${extensionId}')` },
-    { code, url }
-  ]
-
   // Assign unique world ID to each extension
   const worldId = extensionWorldId[extensionId] ||
     (extensionWorldId[extensionId] = getIsolatedWorldIdForInstance())
+
+  // store extension ID for content script to read in isolated world
+  v8Util.setHiddenValue(global, `extension-${worldId}`, extensionId)
 
   webFrame.setIsolatedWorldInfo(worldId, {
     name: `${extensionId} [${worldId}]`
@@ -46,6 +44,7 @@ const runContentScript = function (this: any, extensionId: string, url: string, 
     // csp: manifest.content_security_policy,
   })
 
+  const sources = [{ code, url }]
   webFrame.executeJavaScriptInIsolatedWorld(worldId, sources)
 }
 
