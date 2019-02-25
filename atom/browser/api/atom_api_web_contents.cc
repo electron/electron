@@ -243,8 +243,6 @@ namespace {
 // Called when CapturePage is done.
 void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
-  // TODO(nitsakh) Remove hack once fixed in chromium
-  const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
