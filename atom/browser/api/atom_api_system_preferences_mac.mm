@@ -554,25 +554,27 @@ std::string SystemPreferences::GetMediaAccessStatus(
 v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
     v8::Isolate* isolate,
     const std::string& media_type) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
+      __block util::Promise p = std::move(promise);
       [AVCaptureDevice requestAccessForMediaType:type
                                completionHandler:^(BOOL granted) {
                                  dispatch_async(dispatch_get_main_queue(), ^{
-                                   promise->Resolve(!!granted);
+                                   p.Resolve(!!granted);
                                  });
                                }];
     } else {
       // access always allowed pre-10.14 Mojave
-      promise->Resolve(true);
+      promise.Resolve(true);
     }
   } else {
-    promise->RejectWithErrorMessage("Invalid media type");
+    promise.RejectWithErrorMessage("Invalid media type");
   }
 
-  return promise->GetHandle();
+  return handle;
 }
 
 void SystemPreferences::RemoveUserDefault(const std::string& name) {
