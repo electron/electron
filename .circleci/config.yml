@@ -515,7 +515,7 @@ steps-lint: &steps-lint
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
           buildtools_revision="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep buildtools_revision -A1 | tr -d '\n' | cut -d\' -f4)"
 
-          git clone https://chromium.googlesource.com/chromium/buildtools "buildtools"
+          git clone https://chromium.googlesource.com/chromium/src/buildtools "buildtools"
           (cd "buildtools" && git checkout "$buildtools_revision")
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
 
