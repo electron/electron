@@ -87,10 +87,10 @@ index e961678e73fa6e4555bdc764d77ecab8bbc1bc9c..889cc359a3ddbf914457271af76b4b58
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
-index cb39a60c51127a3bc9f1601b76bb14ec06db834f..f6f6b2501093aceeed24c1a5405acf237d99cdb9 100644
+index 0d9cd73bbb34e1eee0bb2bbfed46e026779997e7..0e6e147b5068dd82a3dc00952f22676db4278195 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
-@@ -301,6 +301,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -298,6 +298,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

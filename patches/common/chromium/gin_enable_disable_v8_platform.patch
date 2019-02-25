@@ -36,7 +36,7 @@ index 413e6c5bcc74cd01730c5d4dc66eb92aaf7df8de..6c5d101fef97e880bee20d2f76e4b339
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 0407c6b08571043c0a42ef454d5bc33aa9f8aed1..eb1ab3aa60c8b821f273134d39e1d474249d632c 100644
+index c8baaa5e75582dd60072b5626388950893e70f2b..2ed448852721468124f550e4dc74a8bceeec15ce 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -204,12 +204,14 @@ enum LoadV8FileResult {
