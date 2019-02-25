@@ -410,37 +410,31 @@ std::string SystemPreferences::GetAccentColor() {
 
 std::string SystemPreferences::GetSystemColor(const std::string& color,
                                               mate::Arguments* args) {
-  if (@available(macOS 10.10, *)) {
-    NSColor* sysColor;
-    if (color == "blue") {
-      sysColor = [NSColor systemBlueColor];
-    } else if (color == "brown") {
-      sysColor = [NSColor systemBrownColor];
-    } else if (color == "gray") {
-      sysColor = [NSColor systemGrayColor];
-    } else if (color == "green") {
-      sysColor = [NSColor systemGreenColor];
-    } else if (color == "orange") {
-      sysColor = [NSColor systemOrangeColor];
-    } else if (color == "pink") {
-      sysColor = [NSColor systemPinkColor];
-    } else if (color == "purple") {
-      sysColor = [NSColor systemPurpleColor];
-    } else if (color == "red") {
-      sysColor = [NSColor systemRedColor];
-    } else if (color == "yellow") {
-      sysColor = [NSColor systemYellowColor];
-    } else {
-      args->ThrowError("Unknown system color: " + color);
-      return "";
-    }
-
-    return ToRGBHex(sysColor);
+  NSColor* sysColor = nil;
+  if (color == "blue") {
+    sysColor = [NSColor systemBlueColor];
+  } else if (color == "brown") {
+    sysColor = [NSColor systemBrownColor];
+  } else if (color == "gray") {
+    sysColor = [NSColor systemGrayColor];
+  } else if (color == "green") {
+    sysColor = [NSColor systemGreenColor];
+  } else if (color == "orange") {
+    sysColor = [NSColor systemOrangeColor];
+  } else if (color == "pink") {
+    sysColor = [NSColor systemPinkColor];
+  } else if (color == "purple") {
+    sysColor = [NSColor systemPurpleColor];
+  } else if (color == "red") {
+    sysColor = [NSColor systemRedColor];
+  } else if (color == "yellow") {
+    sysColor = [NSColor systemYellowColor];
   } else {
-    args->ThrowError(
-        "This api is not available on MacOS version 10.9 or lower.");
+    args->ThrowError("Unknown system color: " + color);
     return "";
   }
+
+  return ToRGBHex(sysColor);
 }
 
 bool SystemPreferences::CanPromptTouchID() {
@@ -542,23 +536,18 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "keyboard-focus-indicator") {
     sysColor = [NSColor keyboardFocusIndicatorColor];
   } else if (color == "label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor labelColor];
+    sysColor = [NSColor labelColor];
   } else if (color == "link") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor linkColor];
+    sysColor = [NSColor linkColor];
   } else if (color == "placeholder-text") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor placeholderTextColor];
+    sysColor = [NSColor placeholderTextColor];
   } else if (color == "quaternary-label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor quaternaryLabelColor];
+    sysColor = [NSColor quaternaryLabelColor];
   } else if (color == "scrubber-textured-background") {
     if (@available(macOS 10.12.2, *))
       sysColor = [NSColor scrubberTexturedBackgroundColor];
   } else if (color == "secondary-label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor secondaryLabelColor];
+    sysColor = [NSColor secondaryLabelColor];
   } else if (color == "selected-content-background") {
     if (@available(macOS 10.14, *))
       sysColor = [NSColor selectedContentBackgroundColor];
@@ -578,8 +567,7 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "shadow") {
     sysColor = [NSColor shadowColor];
   } else if (color == "tertiary-label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor tertiaryLabelColor];
+    sysColor = [NSColor tertiaryLabelColor];
   } else if (color == "text-background") {
     sysColor = [NSColor textBackgroundColor];
   } else if (color == "text") {
