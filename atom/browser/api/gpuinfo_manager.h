@@ -25,8 +25,8 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   GPUInfoManager();
   ~GPUInfoManager() override;
   bool NeedsCompleteGpuInfoCollection() const;
-  void FetchCompleteInfo(scoped_refptr<util::Promise> promise);
-  void FetchBasicInfo(scoped_refptr<util::Promise> promise);
+  void FetchCompleteInfo(util::Promise promise);
+  void FetchBasicInfo(util::Promise promise);
   void OnGpuInfoUpdate() override;
 
  private:
@@ -34,12 +34,12 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
       gpu::GPUInfo gpu_info) const;
 
   // These should be posted to the task queue
-  void CompleteInfoFetcher(scoped_refptr<util::Promise> promise);
+  void CompleteInfoFetcher(util::Promise promise);
   void ProcessCompleteInfo();
 
   // This set maintains all the promises that should be fulfilled
   // once we have the complete information data
-  std::vector<scoped_refptr<util::Promise>> complete_info_promise_set_;
+  std::vector<util::Promise> complete_info_promise_set_;
   content::GpuDataManager* gpu_data_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(GPUInfoManager);

@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/gpuinfo_manager.h"
+
+#include <utility>
+
 #include "atom/browser/api/gpu_info_enumerator.h"
 #include "base/memory/singleton.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -42,8 +45,8 @@ void GPUInfoManager::ProcessCompleteInfo() {
   const auto result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
   // We have received the complete information, resolve all promises that
   // were waiting for this info.
-  for (const auto& promise : complete_info_promise_set_) {
-    promise->Resolve(*result);
+  for (auto& promise : complete_info_promise_set_) {
+    promise.Resolve(*result);
   }
   complete_info_promise_set_.clear();
 }
@@ -58,8 +61,8 @@ void GPUInfoManager::OnGpuInfoUpdate() {
 }
 
 // Should be posted to the task runner
-void GPUInfoManager::CompleteInfoFetcher(scoped_refptr<util::Promise> promise) {
-  complete_info_promise_set_.push_back(promise);
+void GPUInfoManager::CompleteInfoFetcher(util::Promise promise) {
+  complete_info_promise_set_.emplace_back(std::move(promise));
 
   if (NeedsCompleteGpuInfoCollection()) {
     gpu_data_manager_->RequestCompleteGpuInfoIfNeeded();
@@ -68,18 +71,18 @@ void GPUInfoManager::CompleteInfoFetcher(scoped_refptr<util::Promise> promise) {
   }
 }
 
-void GPUInfoManager::FetchCompleteInfo(scoped_refptr<util::Promise> promise) {
+void GPUInfoManager::FetchCompleteInfo(util::Promise promise) {
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::CompleteInfoFetcher,
-                                base::Unretained(this), promise));
+                                base::Unretained(this), std::move(promise)));
 }
 
 // This fetches the info synchronously, so no need to post to the task queue.
 // There cannot be multiple promises as they are resolved synchronously.
-void GPUInfoManager::FetchBasicInfo(scoped_refptr<util::Promise> promise) {
+void GPUInfoManager::FetchBasicInfo(util::Promise promise) {
   gpu::GPUInfo gpu_info;
   CollectBasicGraphicsInfo(&gpu_info);
-  promise->Resolve(*EnumerateGPUInfo(gpu_info));
+  promise.Resolve(*EnumerateGPUInfo(gpu_info));
 }
 
 std::unique_ptr<base::DictionaryValue> GPUInfoManager::EnumerateGPUInfo(

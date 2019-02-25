@@ -65,21 +65,21 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     if (it == pending_requests_.end())
       return;
 
-    scoped_refptr<atom::util::Promise> promise = it->second;
+    atom::util::Promise promise = std::move(it->second);
     pending_requests_.erase(it);
 
     base::DictionaryValue* error = nullptr;
     if (dict->GetDictionary("error", &error)) {
       std::string message;
       error->GetString("message", &message);
-      promise->RejectWithErrorMessage(message);
+      promise.RejectWithErrorMessage(message);
     } else {
       base::DictionaryValue* result_body = nullptr;
       base::DictionaryValue result;
       if (dict->GetDictionary("result", &result_body)) {
         result.Swap(result_body);
       }
-      promise->Resolve(result);
+      promise.Resolve(result);
     }
   }
 }
@@ -129,17 +129,18 @@ void Debugger::Detach() {
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  atom::util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {
-    promise->RejectWithErrorMessage("No target available");
-    return promise->GetHandle();
+    promise.RejectWithErrorMessage("No target available");
+    return handle;
   }
 
   std::string method;
   if (!args->GetNext(&method)) {
-    promise->RejectWithErrorMessage("Invalid method");
-    return promise->GetHandle();
+    promise.RejectWithErrorMessage("Invalid method");
+    return handle;
   }
 
   base::DictionaryValue command_params;
@@ -147,7 +148,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
 
   base::DictionaryValue request;
   int request_id = ++previous_request_id_;
-  pending_requests_[request_id] = promise;
+  pending_requests_.emplace(request_id, std::move(promise));
   request.SetInteger("id", request_id);
   request.SetString("method", method);
   if (!command_params.empty())
@@ -158,12 +159,12 @@ v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
   base::JSONWriter::Write(request, &json_args);
   agent_host_->DispatchProtocolMessage(this, json_args);
 
-  return promise->GetHandle();
+  return handle;
 }
 
 void Debugger::ClearPendingRequests() {
-  for (const auto& it : pending_requests_)
-    it.second->RejectWithErrorMessage("target closed while handling command");
+  for (auto& it : pending_requests_)
+    it.second.RejectWithErrorMessage("target closed while handling command");
 }
 
 // static

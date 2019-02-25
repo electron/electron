@@ -165,14 +165,14 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     observer.OnFinishLaunching(launch_info);
 }
 
-util::Promise* Browser::WhenReady(v8::Isolate* isolate) {
+const util::Promise& Browser::WhenReady(v8::Isolate* isolate) {
   if (!ready_promise_) {
-    ready_promise_ = new util::Promise(isolate);
+    ready_promise_.reset(new util::Promise(isolate));
     if (is_ready()) {
       ready_promise_->Resolve();
     }
   }
-  return ready_promise_;
+  return *ready_promise_;
 }
 
 void Browser::OnAccessibilitySupportChanged() {

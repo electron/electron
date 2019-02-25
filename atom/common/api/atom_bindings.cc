@@ -17,7 +17,6 @@
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/promise_util.h"
 #include "base/logging.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
@@ -231,30 +230,31 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 // static
 v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (mate::Locker::IsBrowserProcess() && !Browser::Get()->is_ready()) {
-    promise->RejectWithErrorMessage(
+    promise.RejectWithErrorMessage(
         "Memory Info is available only after app ready");
-    return promise->GetHandle();
+    return handle;
   }
 
   v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
-      ->RequestGlobalDumpForPid(base::GetCurrentProcId(),
-                                std::vector<std::string>(),
-                                base::Bind(&AtomBindings::DidReceiveMemoryDump,
-                                           std::move(context), promise));
-  return promise->GetHandle();
+      ->RequestGlobalDumpForPid(
+          base::GetCurrentProcId(), std::vector<std::string>(),
+          base::BindOnce(&AtomBindings::DidReceiveMemoryDump,
+                         std::move(context), std::move(promise)));
+  return handle;
 }
 
 // static
 void AtomBindings::DidReceiveMemoryDump(
-    const v8::Global<v8::Context>& context,
-    scoped_refptr<util::Promise> promise,
+    v8::Global<v8::Context> context,
+    util::Promise promise,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
-  v8::Isolate* isolate = promise->isolate();
+  v8::Isolate* isolate = promise.isolate();
   mate::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::MicrotasksScope script_scope(isolate,
@@ -263,7 +263,7 @@ void AtomBindings::DidReceiveMemoryDump(
       v8::Local<v8::Context>::New(isolate, context));
 
   if (!success) {
-    promise->RejectWithErrorMessage("Failed to create memory dump");
+    promise.RejectWithErrorMessage("Failed to create memory dump");
     return;
   }
 
@@ -278,13 +278,13 @@ void AtomBindings::DidReceiveMemoryDump(
 #endif
       dict.Set("private", osdump.private_footprint_kb);
       dict.Set("shared", osdump.shared_footprint_kb);
-      promise->Resolve(dict.GetHandle());
+      promise.Resolve(dict.GetHandle());
       resolved = true;
       break;
     }
   }
   if (!resolved) {
-    promise->RejectWithErrorMessage(
+    promise.RejectWithErrorMessage(
         R"(Failed to find current process memory details in memory dump)");
   }
 }

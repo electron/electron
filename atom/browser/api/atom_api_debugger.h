@@ -54,7 +54,7 @@ class Debugger : public mate::TrackableObject<Debugger>,
                               content::RenderFrameHost* new_rfh) override;
 
  private:
-  using PendingRequestMap = std::map<int, scoped_refptr<atom::util::Promise>>;
+  using PendingRequestMap = std::map<int, atom::util::Promise>;
 
   void Attach(mate::Arguments* args);
   bool IsAttached();
