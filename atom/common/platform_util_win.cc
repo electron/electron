@@ -23,6 +23,7 @@
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/scoped_blocking_call.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
@@ -232,6 +233,7 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
 namespace platform_util {
 
 bool ShowItemInFolder(const base::FilePath& full_path) {
+  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
     return false;
@@ -297,6 +299,7 @@ bool OpenItem(const base::FilePath& full_path) {
 
 bool OpenExternal(const base::string16& url,
                   const OpenExternalOptions& options) {
+  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
