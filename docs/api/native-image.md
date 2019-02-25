@@ -143,7 +143,7 @@ console.log(image)
 * `options` Object (optional)
   * `width` Integer (optional) - Required for bitmap buffers.
   * `height` Integer (optional) - Required for bitmap buffers.
-  * `scaleFactor` Double (optional) - Defaults to `1.0`.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `NativeImage`
 
@@ -169,18 +169,18 @@ given image name. See [`NSImageName`](https://developer.apple.com/documentation/
 for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules
-* `hsl_shift[0]` (hue): The absolute hue value for the image - `0` and `1` map
-     to `0` and `360` on the hue color wheel (red).
+* `hsl_shift[0]` (hue): The absolute hue value for the image - 0 and 1 map
+     to 0 and 360 on the hue color wheel (red).
 * `hsl_shift[1]` (saturation): A saturation shift for the image, with the
     following key values:
-    `0` = remove all color.
-    `0.5` = leave unchanged.
-    `1` = fully saturate the image.
+    0 = remove all color.
+    0.5 = leave unchanged.
+    1 = fully saturate the image.
 * `hsl_shift[2]` (lightness): A lightness shift for the image, with the
     following key values:
-    `0` = remove all lightness (make all pixels black).
-    `0.5` = leave unchanged.
-    `1` = full lightness (make all pixels white).
+    0 = remove all lightness (make all pixels black).
+    0.5 = leave unchanged.
+    1 = full lightness (make all pixels white).
 
 This means that `[-1, 0, 1]` will make the image completely white and
 `[-1, 1, 0]` will make the image completely black.
@@ -198,20 +198,20 @@ The following methods are available on instances of the `NativeImage` class:
 #### `image.toPNG([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to `1.0`.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded data.
 
 #### `image.toJPEG(quality)`
 
-* `quality` Integer (**required**) - Between `0` – `100`.
+* `quality` Integer (**required**) - Between 0 – 100.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 #### `image.toBitmap([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to `1.0`.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
@@ -219,14 +219,14 @@ data.
 #### `image.toDataURL([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to `1.0`.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `String` - The data URL of the image.
 
 #### `image.getBitmap([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to `1.0`.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
 
@@ -292,9 +292,9 @@ Returns `Float` - The image's aspect ratio.
 
 * `options` Object
   * `scaleFactor` Double - The scale factor to add the image representation for.
-  * `width` Integer (optional) - Defaults to `0`. Required if a bitmap buffer
+  * `width` Integer (optional) - Defaults to 0. Required if a bitmap buffer
     is specified as `buffer`.
-  * `height` Integer (optional) - Defaults to `0`. Required if a bitmap buffer
+  * `height` Integer (optional) - Defaults to 0. Required if a bitmap buffer
     is specified as `buffer`.
   * `buffer` Buffer (optional) - The buffer containing the raw image data.
   * `dataURL` String (optional) - The data URL containing either a base 64
