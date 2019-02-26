@@ -20,7 +20,7 @@ export function invoke<T> (command: string, ...args: any[]) {
 }
 
 export function invokeSync<T> (command: string, ...args: any[]): T {
-  const [ error, result ] = ipcRendererInternal.sendSync(command, ...args)
+  const [ error, result ] = ipcRendererInternal.sendSync(command, null, ...args)
 
   if (error) {
     throw errorUtils.deserialize(error)

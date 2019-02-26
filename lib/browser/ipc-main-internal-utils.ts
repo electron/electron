@@ -15,15 +15,11 @@ const callHandler = async function (handler: IPCHandler, event: ElectronInternal
 export const handle = function <T extends IPCHandler> (channel: string, handler: T) {
   ipcMainInternal.on(channel, (event, requestId, ...args) => {
     callHandler(handler, event, args, responseArgs => {
-      event._replyInternal(`${channel}_RESPONSE_${requestId}`, ...responseArgs)
-    })
-  })
-}
-
-export const handleSync = function <T extends IPCHandler> (channel: string, handler: T) {
-  ipcMainInternal.on(channel, (event, ...args) => {
-    callHandler(handler, event, args, responseArgs => {
-      event.returnValue = responseArgs
+      if (requestId) {
+        event._replyInternal(`${channel}_RESPONSE_${requestId}`, ...responseArgs)
+      } else {
+        event.returnValue = responseArgs
+      }
     })
   })
 }
