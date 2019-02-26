@@ -69,12 +69,12 @@ namespace platform_util {
 // TODO(estade): It would be nice to be able to select the file in the file
 // manager, but that probably requires extending xdg-open. For now just
 // show the folder.
-bool ShowItemInFolder(const base::FilePath& full_path) {
+void ShowItemInFolder(const base::FilePath& full_path) {
   base::FilePath dir = full_path.DirName();
   if (!base::DirectoryExists(dir))
-    return false;
+    return;
 
-  return XDGOpen(dir.value(), false);
+  XDGOpen(dir.value(), false);
 }
 
 bool OpenItem(const base::FilePath& full_path) {

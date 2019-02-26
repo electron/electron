@@ -232,28 +232,29 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
 
 namespace platform_util {
 
-bool ShowItemInFolder(const base::FilePath& full_path) {
+void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
   base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
-    return false;
+    return;
 
   base::FilePath dir = full_path.DirName().AsEndingWithSeparator();
   // ParseDisplayName will fail if the directory is "C:", it must be "C:\\".
   if (dir.empty())
-    return false;
+    return;
 
   Microsoft::WRL::ComPtr<IShellFolder> desktop;
   HRESULT hr = SHGetDesktopFolder(desktop.GetAddressOf());
   if (FAILED(hr))
-    return false;
+    return;
 
   base::win::ScopedCoMem<ITEMIDLIST> dir_item;
   hr = desktop->ParseDisplayName(NULL, NULL,
                                  const_cast<wchar_t*>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
   if (FAILED(hr)) {
-    return ui::win::OpenFolderViaShell(dir);
+    ui::win::OpenFolderViaShell(dir);
+    return;
   }
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
@@ -261,33 +262,33 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
       NULL, NULL, const_cast<wchar_t*>(full_path.value().c_str()), NULL,
       &file_item, NULL);
   if (FAILED(hr)) {
-    return ui::win::OpenFolderViaShell(dir);
+    ui::win::OpenFolderViaShell(dir);
+    return;
   }
 
   const ITEMIDLIST* highlight[] = {file_item};
-
   hr = SHOpenFolderAndSelectItems(dir_item, base::size(highlight), highlight,
                                   NULL);
-  if (!FAILED(hr))
-    return true;
-
-  // On some systems, the above call mysteriously fails with "file not
-  // found" even though the file is there.  In these cases, ShellExecute()
-  // seems to work as a fallback (although it won't select the file).
-  if (hr == ERROR_FILE_NOT_FOUND) {
-    return ui::win::OpenFolderViaShell(dir);
-  } else {
-    LPTSTR message = NULL;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                  0, hr, 0, reinterpret_cast<LPTSTR>(&message), 0, NULL);
-    LOG(WARNING) << " " << __FUNCTION__ << "(): Can't open full_path = \""
-                 << full_path.value() << "\""
-                 << " hr = " << hr << " " << reinterpret_cast<LPTSTR>(&message);
-    if (message)
-      LocalFree(message);
-
-    return ui::win::OpenFolderViaShell(dir);
+  if (FAILED(hr)) {
+    // On some systems, the above call mysteriously fails with "file not
+    // found" even though the file is there.  In these cases, ShellExecute()
+    // seems to work as a fallback (although it won't select the file).
+    if (hr == ERROR_FILE_NOT_FOUND) {
+      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+    } else {
+      LOG(WARNING) << " " << __func__ << "(): Can't open full_path = \""
+                   << full_path.value() << "\""
+                   << " hr = " << logging::SystemErrorCodeToString(hr);
+      ui::win::OpenFolderViaShell(dir);
+    }
   }
+}
+
+void ShowItemInFolder(const base::FilePath& full_path) {
+  base::CreateCOMSTATaskRunnerWithTraits(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      ->PostTask(FROM_HERE,
+                 base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
 }
 
 bool OpenItem(const base::FilePath& full_path) {
@@ -299,7 +300,6 @@ bool OpenItem(const base::FilePath& full_path) {
 
 bool OpenExternal(const base::string16& url,
                   const OpenExternalOptions& options) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.

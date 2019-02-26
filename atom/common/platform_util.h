@@ -23,7 +23,7 @@ typedef base::OnceCallback<void(const std::string&)> OpenExternalCallback;
 
 // Show the given file in a file manager. If possible, select the file.
 // Must be called from the UI thread.
-bool ShowItemInFolder(const base::FilePath& full_path);
+void ShowItemInFolder(const base::FilePath& full_path);
 
 // Open the given file in the desktop's default manner.
 // Must be called from the UI thread.

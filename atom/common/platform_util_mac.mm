@@ -62,7 +62,7 @@ NSString* GetLoginHelperBundleIdentifier() {
 
 namespace platform_util {
 
-bool ShowItemInFolder(const base::FilePath& path) {
+void ShowItemInFolder(const base::FilePath& path) {
   // The API only takes absolute path.
   base::FilePath full_path =
       path.IsAbsolute() ? path : base::MakeAbsoluteFilePath(path);
@@ -72,9 +72,7 @@ bool ShowItemInFolder(const base::FilePath& path) {
   if (!path_string || ![[NSWorkspace sharedWorkspace] selectFile:path_string
                                         inFileViewerRootedAtPath:@""]) {
     LOG(WARNING) << "NSWorkspace failed to select file " << full_path.value();
-    return false;
   }
-  return true;
 }
 
 bool OpenItem(const base::FilePath& full_path) {
