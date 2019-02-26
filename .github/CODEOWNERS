@@ -6,16 +6,9 @@
 # Everything that falls through the cracks:
 * @electron/reviewers
 
-# filename patterns
-*browser_view* @electron/browserview
-*notification* @electron/notifications
-*pdf* @electron/printing
-*printing* @electron/printing
-*updater* @electron/updater
-
 # directories
-/.github/ @electron/electrocats
-/default_app/ @electron/docs
-/docs/ @electron/docs
+/.github/ @electron/wg-admin
+/default_app/ @electron/wg-docs-tools
+/docs/ @electron/wg-docs-tools
 /docs-translations/ @electron/i18n
-/npm/ @electron/electrocats
+/npm/ @electron/wg-releases
