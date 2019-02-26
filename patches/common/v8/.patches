@@ -1,7 +1,6 @@
 deps_backport_detailed_line_info_for_cpu_profiler.patch
 add_realloc.patch
 build_gn.patch
-array_buffer.patch
 expose_mksnapshot.patch
 build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
