@@ -176,11 +176,13 @@ $ ./out/Debug/electron
 
 ### Packaging
 
-To strip the debugging and symbol information and package electron 
-as a distributable zip file:
-
+On linux, first strip the debugging and symbol information:
 ```sh
 electron/script/strip-binaries.py -d out/Release
+```
+
+To package the electron build as a distributable zip file:
+```sh
 ninja -C out/Release electron:electron_dist_zip
 ```
 
