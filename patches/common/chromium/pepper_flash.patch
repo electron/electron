@@ -179,7 +179,7 @@ index 154120ce5156d77dd302b85cb17e2f14fb69cc2d..5152fd847c012fc2f40017687db426fa
  
    DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-index 1644f1233e2ae3142f7c9b450b0af97ae7325abc..bac25204c3afa7b87ed9e2861f96b5168b3e8aa6 100644
+index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0363853e1 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 @@ -20,6 +20,7 @@

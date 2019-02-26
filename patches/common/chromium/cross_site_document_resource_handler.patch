@@ -8,7 +8,7 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index bd62ed07876ad4a2a7c6e8309843281719dbefb6..13e67994997caf175ba1b30ba8070718a697588d 100644
+index f86a9167ac1ec5e7b082e474eb4b5f217d06df92..47df32ecb078a8f18e474f5c38faf2c7bdab30a1 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
 @@ -673,6 +673,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
@@ -22,7 +22,7 @@ index bd62ed07876ad4a2a7c6e8309843281719dbefb6..13e67994997caf175ba1b30ba8070718
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 925cc7dbe126ebb4eded12de34b93cb1a35ee8c4..4ade8f40c24409dfaf822d5ba1fcc3493eccaacd 100644
+index fb1f74b71c9e51c5d8c12adfff586bb57a7b6407..07afb123e6d2bdad4d1e15fdc7fe24bf267ce2f6 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -61,6 +61,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
@@ -37,7 +37,7 @@ index 925cc7dbe126ebb4eded12de34b93cb1a35ee8c4..4ade8f40c24409dfaf822d5ba1fcc349
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 63496fd120aeb0168787cf33deecb5e53bb96f32..fd6628c4d2c1e1abb4fbf6cfec0c06d9ad3ceb81 100644
+index 08089579500c860880b9c1bd32816095ca05ed27..e2ab0b2c7819bb437b50d25909ef915373b21de7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -241,6 +241,9 @@ class CONTENT_EXPORT ContentBrowserClient {

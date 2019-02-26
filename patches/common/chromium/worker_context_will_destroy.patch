@@ -5,7 +5,7 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 0bca8dc6a55ef6035aa680bff406390c61babb68..15f4eaba8f4a751018ebc41a6d198fcb669a0774 100644
+index fd33e51221676c6315aec8db4aa469d4805dab8a..af15512b6d26bf79413e34a590d664a56d78828d 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -379,6 +379,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -62,10 +62,10 @@ index d7ac7d96ad5c3e20075948c329a6d5ede0ae7a38..66881ba9b2511ef39e58c983907ec189
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index b7d47b3b7df0948ee98ae75c7ea3997da48a43ff..6ce656df9602d3d88c6f4e451cbb5eee830a0e23 100644
+index e55b99843fa42056197875b883a944f6de4ad79d..eb1508065eee7235816e2d6047220291007324e4 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -556,6 +556,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -559,6 +559,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
        SetExitCode(ExitCode::kGracefullyTerminated);
    }
  

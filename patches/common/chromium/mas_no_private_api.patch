@@ -38,10 +38,10 @@ index d38fa48b8b890d90f2911995a2a51c249005c827..5fe68c71fe101a307ef565013a91b109
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index d5278b6183dcc9f52d179deea44c1421d63d80d0..2779bdb9caf44797fd99ce54b2c04a0078090e66 100644
+index aa15efe9a195a0b46cf95125dd9259b6df21377e..375ab8bed85a3d8966053bee2111c04132be61fb 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -135,6 +135,7 @@ NSDictionary* attributeToMethodNameMap = nil;
+@@ -140,6 +140,7 @@ NSDictionary* attributeToMethodNameMap = nil;
  // VoiceOver uses -1 to mean "no limit" for AXResultsLimit.
  const int kAXResultsLimitNoLimit = -1;
  
@@ -49,7 +49,7 @@ index d5278b6183dcc9f52d179deea44c1421d63d80d0..2779bdb9caf44797fd99ce54b2c04a00
  extern "C" {
  
  // The following are private accessibility APIs required for cursor navigation
-@@ -341,6 +342,7 @@ NSAttributedString* GetAttributedTextForTextMarkerRange(
+@@ -344,6 +345,7 @@ NSAttributedString* GetAttributedTextForTextMarkerRange(
    AddMisspelledTextAttributes(text_only_objects, attributed_text);
    return [attributed_text attributedSubstringFromRange:range];
  }
@@ -60,6 +60,7 @@ index d5278b6183dcc9f52d179deea44c1421d63d80d0..2779bdb9caf44797fd99ce54b2c04a00
 @@ -595,7 +597,9 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
        {NSAccessibilityDOMIdentifierAttribute, @"domIdentifier"},
        {NSAccessibilityEditableAncestorAttribute, @"editableAncestor"},
+       {NSAccessibilityElementBusyAttribute, @"elementBusy"},
        {NSAccessibilityEnabledAttribute, @"enabled"},
 +#ifndef MAS_BUILD
        {NSAccessibilityEndTextMarkerAttribute, @"endTextMarker"},
@@ -85,7 +86,7 @@ index d5278b6183dcc9f52d179deea44c1421d63d80d0..2779bdb9caf44797fd99ce54b2c04a00
        {NSAccessibilitySizeAttribute, @"size"},
        {NSAccessibilitySortDirectionAttribute, @"sortDirection"},
        {NSAccessibilitySubroleAttribute, @"subrole"},
-@@ -1052,6 +1060,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -1143,6 +1151,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
                                    ax::mojom::Restriction::kDisabled];
  }
  
@@ -181,7 +182,7 @@ index d5278b6183dcc9f52d179deea44c1421d63d80d0..2779bdb9caf44797fd99ce54b2c04a00
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index ab88c41570171c5105218a4f2dc38f07caf7e1d8..a030824642277cb11ae7da874d33797c506e94ad 100644
+index 7fe7130abd6a4844dd503b9cee198c8204cb0985..3e6b0ad576d3aa9951f84f6ce4175d84ffd67036 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -463,6 +463,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
@@ -201,7 +202,7 @@ index ab88c41570171c5105218a4f2dc38f07caf7e1d8..a030824642277cb11ae7da874d33797c
    }
  
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index b7142c2871faf4a0ba8be79266e9515d81585bdd..3d80c332e9af280a166612f6be54b6f767d729a1 100644
+index d6e9a7064687abfcf5fa874ee0a454806586db04..7c7db44d8d66ca1f9ad570abf552b6454cc0eac0 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -23,9 +23,11 @@
@@ -211,7 +212,7 @@ index b7142c2871faf4a0ba8be79266e9515d81585bdd..3d80c332e9af280a166612f6be54b6f7
 +#ifndef MAS_BUILD
  extern "C" {
  CGError CGSSetDenyWindowServerConnections(bool);
- };
+ }
 +#endif
  
  namespace content {
@@ -347,7 +348,7 @@ index e524aa7b851022abed1edac39e18d8d92e5349b4..718d3f963da5c1a15a1bdb0e6043f89b
  }
  
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index dfba0bded9e34be276ed111cbab44210a95b9875..876f96999f53b4666508f783a33cea245d1bc03e 100644
+index e0c31170acd13c9997c6b1d04c6de1420feaf422..0e561f97b33380bfbe52e64c2c4a6988095e8074 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
 @@ -64,7 +64,11 @@ void Seatbelt::FreeError(char* errorbuf) {

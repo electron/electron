@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 24b06a7a2123d1295e16db5e97a470b17421d155..0e03c97d94ef4db1a6b7b4539683e7ebd6d25a56 100644
+index 3d4741bff391e2596730665c98986e5cc0773a4c..024651b9ec3b90d38607cffe7b73d8d53901fa52 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3621,6 +3621,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3631,6 +3631,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,10 +32,10 @@ index f660470b2c612f89a3ad9f0ada4ab13710705b57..45c38198e8fcc44d71ef9440e38d301f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 07dafe9d761951084b5a3201d48c715066e80b62..0d81568785aa06d5c15a02f569f13aa06178af50 100644
+index 2426808759bfa7e0eabb2e9de6925bf59902055a..09a2a50fdbd76d24d547bf5e22f9a0a93bd9a126 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -497,6 +497,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -501,6 +501,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -45,7 +45,7 @@ index 07dafe9d761951084b5a3201d48c715066e80b62..0d81568785aa06d5c15a02f569f13aa0
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6999eb057f737d07d43e2e6be58c2488fc13b593..5cdf8a997c12fe5bb9685f92f98b0f90c756b469 100644
+index 8b47fdebe3efb1022a4602422dbffd39f983cfcc..a70f357b97da1a24b02e9a7b29504c63b2c780fb 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -175,6 +175,7 @@ class RenderFrameHost;
@@ -56,7 +56,7 @@ index 6999eb057f737d07d43e2e6be58c2488fc13b593..5cdf8a997c12fe5bb9685f92f98b0f90
  class SerialDelegate;
  class ServiceManagerConnection;
  class SiteInstance;
-@@ -771,6 +772,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -775,6 +776,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -66,7 +66,7 @@ index 6999eb057f737d07d43e2e6be58c2488fc13b593..5cdf8a997c12fe5bb9685f92f98b0f90
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index e961678e73fa6e4555bdc764d77ecab8bbc1bc9c..889cc359a3ddbf914457271af76b4b58aef4e593 100644
+index bccdec835985e74b450a220969e5db744a812466..422601a02d5891c9f443869059885ce798c75384 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -76,6 +76,7 @@
@@ -77,7 +77,7 @@ index e961678e73fa6e4555bdc764d77ecab8bbc1bc9c..889cc359a3ddbf914457271af76b4b58
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/stream/media_stream_device_observer.h"
  #include "content/renderer/media/video_capture_impl_manager.h"
-@@ -1345,6 +1346,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1346,6 +1347,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

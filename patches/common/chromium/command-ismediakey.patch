@@ -80,10 +80,10 @@ index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e487
    ui::Accelerator accelerator(
        ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index b48fa8e63867021bdd77bf585a0e02c366980d91..bae9e24e7bcf7615be243bcb5629cc5981a31b06 100644
+index fe6aa25cc8cc372ef450e5d6658a52a2b87eabcb..e960d601062b644c0b25b657e128e06584c45b54 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -31,6 +31,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -96,7 +96,7 @@ index b48fa8e63867021bdd77bf585a0e02c366980d91..bae9e24e7bcf7615be243bcb5629cc59
    }
    return VKEY_UNKNOWN;
  }
-@@ -190,7 +196,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
+@@ -191,7 +197,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

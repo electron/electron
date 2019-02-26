@@ -166,7 +166,7 @@ index a2569836d04ff968e690215f56f6de3b6d884874..6ddec22641b74d5484c2e0d4f62e5d71
    bool printing_succeeded_;
  
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index df6cdee86c1bc34eef013f7d36deb77a8dfa7ecb..2692f831de4699b68a5b79982d440c318e40da69 100644
+index a864d0b52c7c00689508454bcdcab9f018c9ac0a..0baf39c25bbcfa3c4987c0be60992315f33631b0 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -22,6 +22,7 @@
@@ -283,7 +283,7 @@ index 1802034a6e15a6ad8b0d9591cfb79ba5873dc982..a827091facdb4f6b1d74ce826c3492ce
  // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
  IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 56e2dd5faf2b8db0b1dc9da41b310600d9298267..ea0e7243e09ef8664d61a73033e55b11ea5cdba1 100644
+index 560a6e4d12c90958c3dbe858c446e50f8ff0d020..7c4be124adeaf0535191da9ff339e9bf33b378a0 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -1109,7 +1109,9 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
@@ -438,10 +438,10 @@ index 56e2dd5faf2b8db0b1dc9da41b310600d9298267..ea0e7243e09ef8664d61a73033e55b11
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 34690801675c8b049d195e37f4fa400c6b30a644..2587534c550612809a4235f4ff92cc6fa962765c 100644
+index c4effb05d16cd67acf3d8140d25eb33fb4814dc3..0660062708438a2de7132b1a39dcbac85f8b8cbf 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -192,7 +192,9 @@ class PrintRenderFrameHelper
+@@ -193,7 +193,9 @@ class PrintRenderFrameHelper
    bool OnMessageReceived(const IPC::Message& message) override;
  
    // Message handlers ---------------------------------------------------------
@@ -452,7 +452,7 @@ index 34690801675c8b049d195e37f4fa400c6b30a644..2587534c550612809a4235f4ff92cc6f
    void OnPrintForSystemDialog();
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void OnInitiatePrintPreview(bool has_selection);
-@@ -243,7 +245,10 @@ class PrintRenderFrameHelper
+@@ -244,7 +246,10 @@ class PrintRenderFrameHelper
    // WARNING: |this| may be gone after this method returns.
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
@@ -464,7 +464,7 @@ index 34690801675c8b049d195e37f4fa400c6b30a644..2587534c550612809a4235f4ff92cc6f
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
-@@ -252,12 +257,14 @@ class PrintRenderFrameHelper
+@@ -253,12 +258,14 @@ class PrintRenderFrameHelper
  
    // Initialize print page settings with default settings.
    // Used only for native printing workflow.
