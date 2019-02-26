@@ -521,7 +521,7 @@ void NativeWindowMac::Focus(bool focus) {
     return;
 
   if (focus) {
-    [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+    [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
     [window_ makeKeyAndOrderFront:nil];
   } else {
     [window_ orderBack:nil];
