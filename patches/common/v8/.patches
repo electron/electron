@@ -2,13 +2,10 @@ deps_backport_detailed_line_info_for_cpu_profiler.patch
 add_realloc.patch
 build_gn.patch
 array_buffer.patch
-ostreams.patch
-export_platform.patch
-dcheck.patch
-disable-warning-win.patch
 expose_mksnapshot.patch
 build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
-reland_don_t_use_v8_initializers_code_in_v8_base.patch
 deps_provide_more_v8_backwards_compatibility.patch
-deps_cherry-pick_88f8fe1_from_upstream_v8.patch
+dcheck.patch
+disallow_implicit_constructors_for_macroassembler.patch
+expose_protected_v8_platform_systemclocktimemillis.patch

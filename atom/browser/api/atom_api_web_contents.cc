@@ -240,28 +240,12 @@ namespace api {
 
 namespace {
 
-content::ServiceWorkerContext* GetServiceWorkerContext(
-    content::WebContents* web_contents) {
-  auto* context = web_contents->GetBrowserContext();
-  auto* site_instance = web_contents->GetSiteInstance();
-  if (!context || !site_instance)
-    return nullptr;
-
-  auto* storage_partition =
-      content::BrowserContext::GetStoragePartition(context, site_instance);
-  if (!storage_partition)
-    return nullptr;
-
-  return storage_partition->GetServiceWorkerContext();
-}
-
 // Called when CapturePage is done.
-void OnCapturePageDone(scoped_refptr<util::Promise> promise,
-                       const SkBitmap& bitmap) {
+void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   // TODO(nitsakh) Remove hack once fixed in chromium
   const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
-  promise->Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 }  // namespace
@@ -601,7 +585,7 @@ void WebContents::SetContentsBounds(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
   HideAutofillPopup();
 #endif
   if (managed_web_contents())
@@ -727,7 +711,7 @@ void WebContents::FindReply(content::WebContents* web_contents,
 bool WebContents::CheckMediaAccessPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& security_origin,
-    content::MediaStreamType type) {
+    blink::MediaStreamType type) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto* permission_helper =
@@ -1014,8 +998,7 @@ void WebContents::DevToolsOpened() {
 
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = managed_web_contents()->GetDevToolsWebContents();
-  bool has_window =
-      devtools->GetUserData(NativeWindowRelay::kNativeWindowRelayUserDataKey);
+  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
   if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
 
@@ -1030,7 +1013,7 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
 void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
                                     const gfx::RectF& bounds,
                                     const std::vector<base::string16>& values,
@@ -1078,7 +1061,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
                                     FrameDispatchHelper::OnGetZoomLevel)
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
 #endif
@@ -1142,7 +1125,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     return;
   }
 
-  const auto* render_process_host = render_view_host->GetProcess();
+  auto* render_process_host = render_view_host->GetProcess();
   if (!render_process_host) {
     return;
   }
@@ -1315,11 +1298,15 @@ std::string WebContents::GetUserAgent() {
   return web_contents()->GetUserAgentOverride();
 }
 
-bool WebContents::SavePage(const base::FilePath& full_file_path,
-                           const content::SavePageType& save_type,
-                           const SavePageHandler::SavePageCallback& callback) {
-  auto* handler = new SavePageHandler(web_contents(), callback);
-  return handler->Handle(full_file_path, save_type);
+v8::Local<v8::Promise> WebContents::SavePage(
+    const base::FilePath& full_file_path,
+    const content::SavePageType& save_type) {
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> ret = promise.GetHandle();
+
+  auto* handler = new SavePageHandler(web_contents(), std::move(promise));
+  handler->Handle(full_file_path, save_type);
+  return ret;
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
@@ -1450,41 +1437,6 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-void OnServiceWorkerCheckDone(scoped_refptr<util::Promise> promise,
-                              content::ServiceWorkerCapability capability) {
-  promise->Resolve(capability !=
-                   content::ServiceWorkerCapability::NO_SERVICE_WORKER);
-}
-
-v8::Local<v8::Promise> WebContents::HasServiceWorker() {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
-  auto* context = GetServiceWorkerContext(web_contents());
-  if (!context) {
-    promise->RejectWithErrorMessage("Unable to get ServiceWorker context.");
-    return promise->GetHandle();
-  }
-
-  GURL url = web_contents()->GetLastCommittedURL();
-  if (!url.is_valid()) {
-    promise->RejectWithErrorMessage("URL invalid or not yet loaded.");
-    return promise->GetHandle();
-  }
-
-  context->CheckHasServiceWorker(
-      url, url, base::BindOnce(&OnServiceWorkerCheckDone, promise));
-
-  return promise->GetHandle();
-}
-
-void WebContents::UnregisterServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto* context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
-                                   callback);
-}
-
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   DCHECK(web_preferences);
@@ -1506,7 +1458,7 @@ bool WebContents::IsCurrentlyAudible() {
 
 #if BUILDFLAG(ENABLE_PRINTING)
 void WebContents::Print(mate::Arguments* args) {
-  bool silent, print_background = false;
+  bool silent = false, print_background = false;
   base::string16 device_name;
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
@@ -1549,11 +1501,13 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   return printers;
 }
 
-void WebContents::PrintToPDF(
-    const base::DictionaryValue& settings,
-    const PrintPreviewMessageHandler::PrintToPDFCallback& callback) {
+v8::Local<v8::Promise> WebContents::PrintToPDF(
+    const base::DictionaryValue& settings) {
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(settings, callback);
+      ->PrintToPDF(settings, std::move(promise));
+  return handle;
 }
 #endif
 
@@ -1824,15 +1778,16 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
 v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
   args->GetNext(&rect);
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    promise->Resolve(gfx::Image());
-    return promise->GetHandle();
+    promise.Resolve(gfx::Image());
+    return handle;
   }
 
   // Capture full page if user doesn't specify a |rect|.
@@ -1851,8 +1806,8 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::BindOnce(&OnCapturePageDone, promise));
-  return promise->GetHandle();
+                        base::BindOnce(&OnCapturePageDone, std::move(promise)));
+  return handle;
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
@@ -2009,6 +1964,9 @@ v8::Local<v8::Value> WebContents::GetLastWebPreferences(
 }
 
 bool WebContents::IsRemoteModuleEnabled() const {
+  if (web_contents()->GetVisibleURL().SchemeIs("chrome-devtools")) {
+    return false;
+  }
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
     return web_preferences->IsRemoteModuleEnabled();
   }
@@ -2191,9 +2149,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("_isRemoteModuleEnabled", &WebContents::IsRemoteModuleEnabled)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
-      .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
-      .SetMethod("unregisterServiceWorker",
-                 &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("inspectSharedWorker", &WebContents::InspectSharedWorker)
 #if BUILDFLAG(ENABLE_PRINTING)

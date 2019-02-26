@@ -62,13 +62,13 @@ Therefore, to collect crash reports from them, use `process.crashReporter.start`
 along with an additional one called `crashesDirectory` that should point to a directory to store the crash
 reports temporarily. You can test this out by calling `process.crash()` to crash the child process.
 
-**Note:** To collect crash reports from child process in Windows, you need to add this extra code as well.
-This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName`
-and `crashesDirectory` with appropriate values.
-
 **Note:** If you need send additional/updated `extra` parameters after your
 first call `start` you can call `addExtraParameter` on macOS or call `start`
 again with the new/updated `extra` parameters on Linux and Windows.
+
+**Note:** To collect crash reports from child process in Windows, you need to add this extra code as well.
+This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName`
+and `crashesDirectory` with appropriate values.
 
 ```js
 const args = [

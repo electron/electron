@@ -21,6 +21,7 @@
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
+#include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_draggable_region.h"
@@ -131,16 +132,14 @@ void AtomRenderFrameObserver::OnDestruct() {
 
 void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
   auto* frame = render_frame_->GetWebFrame();
-
+  blink::WebIsolatedWorldInfo info;
   // This maps to the name shown in the context combo box in the Console tab
   // of the dev tools.
-  frame->SetIsolatedWorldHumanReadableName(
-      World::ISOLATED_WORLD,
-      blink::WebString::FromUTF8("Electron Isolated Context"));
-
+  info.human_readable_name =
+      blink::WebString::FromUTF8("Electron Isolated Context");
   // Setup document's origin policy in isolated world
-  frame->SetIsolatedWorldSecurityOrigin(
-      World::ISOLATED_WORLD, frame->GetDocument().GetSecurityOrigin());
+  info.security_origin = frame->GetDocument().GetSecurityOrigin();
+  frame->SetIsolatedWorldInfo(World::ISOLATED_WORLD, info);
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");

@@ -38,6 +38,12 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
   } else if (str == "plus") {
     *shifted = true;
     return ui::VKEY_OEM_PLUS;
+  } else if (str == "capslock") {
+    return ui::VKEY_CAPITAL;
+  } else if (str == "numlock") {
+    return ui::VKEY_NUMLOCK;
+  } else if (str == "scrolllock") {
+    return ui::VKEY_SCROLL;
   } else if (str == "tab") {
     return ui::VKEY_TAB;
   } else if (str == "num0") {

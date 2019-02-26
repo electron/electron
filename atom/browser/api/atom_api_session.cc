@@ -61,7 +61,6 @@
 
 #include "atom/common/node_includes.h"
 
-using atom::api::Cookies;
 using content::BrowserThread;
 using content::StoragePartition;
 
@@ -785,6 +784,9 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Cookies;
+using atom::api::NetLog;
+using atom::api::Protocol;
 using atom::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,
@@ -810,6 +812,12 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "Cookies",
       Cookies::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set(
+      "NetLog",
+      NetLog::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set(
+      "Protocol",
+      Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

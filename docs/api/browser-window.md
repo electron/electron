@@ -377,8 +377,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       file or link onto the page causes a navigation. Default is `false`.
     * `autoplayPolicy` String (optional) - Autoplay policy to apply to
       content in the window, can be `no-user-gesture-required`,
-      `user-gesture-required`, `user-gesture-required-for-cross-origin`,
-      `document-user-activation-required`. Defaults to
+      `user-gesture-required`, `document-user-activation-required`. Defaults to
       `no-user-gesture-required`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
@@ -1089,7 +1088,7 @@ can not be focused on.
 
 Returns `Boolean` - Whether the window is always on top of other windows.
 
-#### `win.moveTop()` _macOS_ _Windows_
+#### `win.moveTop()`
 
 Moves window to top(z-order) regardless of focus
 

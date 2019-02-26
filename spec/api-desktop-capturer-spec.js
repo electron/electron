@@ -4,6 +4,7 @@ const chaiAsPromised = require('chai-as-promised')
 const { desktopCapturer, ipcRenderer, remote } = require('electron')
 const { screen } = remote
 const features = process.atomBinding('features')
+const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -104,5 +105,21 @@ describe('desktopCapturer', () => {
       const sources = await desktopCapturer.getSources({ types: ['screen'] })
       expect(sources).to.be.empty()
     })
+  })
+
+  it('disabling thumbnail should return empty images', async () => {
+    const { BrowserWindow } = remote
+    const w = new BrowserWindow({ show: false, width: 200, height: 200 })
+    const wShown = emittedOnce(w, 'show')
+    w.show()
+    await wShown
+
+    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'], thumbnailSize: { width: 0, height: 0 } })
+    w.destroy()
+    expect(sources).to.be.an('array').that.is.not.empty()
+    for (const { thumbnail: thumbnailImage } of sources) {
+      expect(thumbnailImage).to.be.a('NativeImage')
+      expect(thumbnailImage.isEmpty()).to.be.true()
+    }
   })
 })

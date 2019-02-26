@@ -18,7 +18,7 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "electron/buildflags/buildflags.h"
 
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
 #include "atom/browser/ui/autofill_popup.h"
 #endif
 
@@ -105,7 +105,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       const content::NativeWebKeyboardEvent& event) override;
 
   // Autofill related events.
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
   void ShowAutofillPopup(content::RenderFrameHost* frame_host,
                          content::RenderFrameHost* embedder_frame_host,
                          bool offscreen,
@@ -175,7 +175,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   bool native_fullscreen_ = false;
 
   // UI related helper classes.
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
   std::unique_ptr<AutofillPopup> autofill_popup_;
 #endif
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;

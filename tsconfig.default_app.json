@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "default_app"
+  },
+  "include": [
+    "default_app",
+    "typings"
+  ]
+}

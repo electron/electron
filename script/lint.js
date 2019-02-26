@@ -29,7 +29,10 @@ const BLACKLIST = new Set([
   ['atom', 'common', 'common_message_generator.cc'],
   ['atom', 'common', 'common_message_generator.h'],
   ['atom', 'common', 'node_includes.h'],
-  ['spec', 'static', 'jquery-2.0.3.min.js']
+  ['spec', 'static', 'jquery-2.0.3.min.js'],
+  ['spec', 'ts-smoke', 'electron', 'main.ts'],
+  ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
+  ['spec', 'ts-smoke', 'runner.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 function spawnAndCheckExitCode (cmd, args, opts) {
@@ -75,10 +78,10 @@ const LINTERS = [ {
   key: 'javascript',
   roots: ['lib', 'spec', 'script', 'default_app'],
   ignoreRoots: ['spec/node_modules'],
-  test: filename => filename.endsWith('.js'),
+  test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
-    const args = [ '--cache', ...filenames ]
+    const args = [ '--cache', '--ext', '.js,.ts', ...filenames ]
     if (opts.fix) args.unshift('--fix')
     spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT })
   }

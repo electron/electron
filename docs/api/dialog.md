@@ -55,7 +55,7 @@ The `dialog` module has the following methods:
   * `filePaths` String[] (optional) - An array of file paths chosen by the user. If the dialog is cancelled this will be `undefined`.
   * `bookmarks` String[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
 
-Returns `String[]`, an array of file paths chosen by the user,
+Returns `String[] | undefined`, an array of file paths chosen by the user,
 if the callback is provided it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
@@ -106,8 +106,8 @@ shown.
   * `filename` String (optional) If the dialog is cancelled this will be `undefined`.
   * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
 
-Returns `String`, the path of the file chosen by the user,
-if a callback is provided it returns `undefined`.
+Returns `String | undefined`, the path of the file chosen by the user,
+if a callback is provided or the dialog is cancelled it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -116,6 +116,9 @@ The `filters` specifies an array of file types that can be displayed, see
 
 If a `callback` is passed, the API call will be asynchronous and the result
 will be passed via `callback(filename)`.
+
+**Note:** On macOS, using the `callback` is recommended to avoid issues when
+expanding and collapsing the dialog.
 
 ### `dialog.showMessageBox([browserWindow, ]options[, callback])`
 

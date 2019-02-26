@@ -59,6 +59,12 @@ describe('process module', () => {
     })
   })
 
+  describe('process.getSystemVersion()', () => {
+    it('returns a string', () => {
+      expect(process.getSystemVersion()).to.be.a('string')
+    })
+  })
+
   describe('process.getHeapStatistics()', () => {
     it('returns heap statistics object', () => {
       const heapStats = process.getHeapStatistics()

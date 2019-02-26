@@ -19,11 +19,6 @@ const circleCIJobs = [
   'osx-publish'
 ]
 
-const vstsJobs = [
-  'electron-release-mas-x64',
-  'electron-release-osx-x64'
-]
-
 const vstsArmJobs = [
   'electron-arm-testing',
   'electron-arm64-testing'
@@ -138,9 +133,8 @@ function buildCircleCI (targetBranch, options) {
 async function buildVSTS (targetBranch, options) {
   if (options.armTest) {
     assert(vstsArmJobs.includes(options.job), `Unknown VSTS CI arm test job name: ${options.job}. Valid values are: ${vstsArmJobs}.`)
-  } else if (options.job) {
-    assert(vstsJobs.includes(options.job), `Unknown VSTS CI job name: ${options.job}. Valid values are: ${vstsJobs}.`)
   }
+
   console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
   const environmentVariables = {
     ELECTRON_RELEASE: 1
@@ -167,12 +161,7 @@ async function buildVSTS (targetBranch, options) {
   const vstsResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log('Error calling VSTS to get build definitions:', err)
   })
-  let buildsToRun = []
-  if (options.job) {
-    buildsToRun = vstsResponse.value.filter(build => build.name === options.job)
-  } else {
-    buildsToRun = vstsResponse.value.filter(build => vstsJobs.includes(build.name))
-  }
+  const buildsToRun = vstsResponse.value.filter(build => build.name === options.job)
   buildsToRun.forEach((build) => callVSTSBuild(build, targetBranch, environmentVariables))
 }
 

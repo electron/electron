@@ -11,6 +11,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/application_info.h"
 #include "atom/common/platform_util.h"
+#include "atom/common/promise_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
@@ -27,7 +28,7 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
 }
 
 void Browser::Focus() {
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:NO];
 }
 
 void Browser::Hide() {
@@ -147,13 +148,9 @@ void Browser::SetUserActivity(const std::string& type,
 }
 
 std::string Browser::GetCurrentActivityType() {
-  if (@available(macOS 10.10, *)) {
-    NSUserActivity* userActivity =
-        [[AtomApplication sharedApplication] getCurrentActivity];
-    return base::SysNSStringToUTF8(userActivity.activityType);
-  } else {
-    return std::string();
-  }
+  NSUserActivity* userActivity =
+      [[AtomApplication sharedApplication] getCurrentActivity];
+  return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
 void Browser::InvalidateCurrentActivity() {
@@ -231,9 +228,10 @@ LSSharedFileListItemRef GetLoginItemForApp() {
   for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
     LSSharedFileListItemRef item =
         reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-    CFURLRef item_url_ref = NULL;
-    if (LSSharedFileListItemResolve(item, 0, &item_url_ref, NULL) == noErr &&
-        item_url_ref) {
+    base::ScopedCFTypeRef<CFErrorRef> error;
+    CFURLRef item_url_ref =
+        LSSharedFileListItemCopyResolvedURL(item, 0, error.InitializeInto());
+    if (!error && item_url_ref) {
       base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
       if (CFEqual(item_url, url)) {
         CFRetain(item);
@@ -264,9 +262,10 @@ void RemoveFromLoginItems() {
     for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
       LSSharedFileListItemRef item =
           reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-      CFURLRef url_ref = NULL;
-      if (LSSharedFileListItemResolve(item, 0, &url_ref, NULL) == noErr &&
-          item) {
+      base::ScopedCFTypeRef<CFErrorRef> error;
+      CFURLRef url_ref =
+          LSSharedFileListItemCopyResolvedURL(item, 0, error.InitializeInto());
+      if (!error && url_ref) {
         base::ScopedCFTypeRef<CFURLRef> url(url_ref);
         if ([[base::mac::CFToNSCast(url.get()) path]
                 hasPrefix:[[NSBundle mainBundle] bundlePath]])
@@ -338,7 +337,10 @@ bool Browser::DockIsVisible() {
           NSApplicationActivationPolicyRegular);
 }
 
-void Browser::DockShow() {
+v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
   if (active) {
@@ -350,6 +352,7 @@ void Browser::DockShow() {
       [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
       break;
     }
+    __block util::Promise p = std::move(promise);
     dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
     dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
@@ -357,11 +360,14 @@ void Browser::DockShow() {
       dispatch_after(one_ms, dispatch_get_main_queue(), ^{
         [[NSRunningApplication currentApplication]
             activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+        p.Resolve();
       });
     });
   } else {
     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+    promise.Resolve();
   }
+  return handle;
 }
 
 void Browser::DockSetMenu(AtomMenuModel* model) {

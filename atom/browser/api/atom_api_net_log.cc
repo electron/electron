@@ -20,6 +20,15 @@
 
 #include "atom/common/node_includes.h"
 
+namespace {
+
+void OnGetFilePathToCompletedLog(const atom::util::CopyablePromise& promise,
+                                 const base::FilePath& file_path) {
+  promise.GetPromise().Resolve(file_path);
+}
+
+}  // namespace
+
 namespace atom {
 
 namespace api {
@@ -87,19 +96,18 @@ std::string NetLog::GetCurrentlyLoggingPath() const {
   return std::string();
 }
 
-void NetLog::StopLogging(mate::Arguments* args) {
-  net_log::NetExportFileWriter::FilePathCallback callback;
-  if (!args->GetNext(&callback)) {
-    args->ThrowError("Invalid callback function");
-    return;
-  }
+v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (IsCurrentlyLogging()) {
-    stop_callback_queue_.emplace_back(callback);
+    stop_callback_queue_.emplace_back(std::move(promise));
     net_log_writer_->StopNetLog(nullptr);
   } else {
-    callback.Run(base::FilePath());
+    promise.Resolve(base::FilePath());
   }
+
+  return handle;
 }
 
 void NetLog::OnNewState(const base::DictionaryValue& state) {
@@ -109,9 +117,11 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
     return;
 
   if (GetLoggingState() == "NOT_LOGGING") {
-    for (auto& callback : stop_callback_queue_) {
-      if (!callback.is_null())
-        net_log_writer_->GetFilePathToCompletedLog(callback);
+    for (auto& promise : stop_callback_queue_) {
+      // TODO(zcbenz): Remove the use of CopyablePromise when the
+      // GetFilePathToCompletedLog API accepts OnceCallback.
+      net_log_writer_->GetFilePathToCompletedLog(base::Bind(
+          &OnGetFilePathToCompletedLog, util::CopyablePromise(promise)));
     }
     stop_callback_queue_.clear();
   }

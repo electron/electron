@@ -79,6 +79,7 @@ v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
   obj.Set("ctrlKey", static_cast<bool>(flags & ui::EF_CONTROL_DOWN));
   obj.Set("altKey", static_cast<bool>(flags & ui::EF_ALT_DOWN));
   obj.Set("metaKey", static_cast<bool>(flags & ui::EF_COMMAND_DOWN));
+  obj.Set("triggeredByAccelerator", static_cast<bool>(flags));
   return obj.GetHandle();
 }
 

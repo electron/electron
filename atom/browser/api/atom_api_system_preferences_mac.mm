@@ -8,14 +8,19 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Cocoa/Cocoa.h>
+#import <LocalAuthentication/LocalAuthentication.h>
+#import <Security/Security.h>
 
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/mac/sdk_forward_declarations.h"
+#include "base/sequenced_task_runner.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/mac/url_conversions.h"
@@ -405,37 +410,99 @@ std::string SystemPreferences::GetAccentColor() {
 
 std::string SystemPreferences::GetSystemColor(const std::string& color,
                                               mate::Arguments* args) {
-  if (@available(macOS 10.10, *)) {
-    NSColor* sysColor;
-    if (color == "blue") {
-      sysColor = [NSColor systemBlueColor];
-    } else if (color == "brown") {
-      sysColor = [NSColor systemBrownColor];
-    } else if (color == "gray") {
-      sysColor = [NSColor systemGrayColor];
-    } else if (color == "green") {
-      sysColor = [NSColor systemGreenColor];
-    } else if (color == "orange") {
-      sysColor = [NSColor systemOrangeColor];
-    } else if (color == "pink") {
-      sysColor = [NSColor systemPinkColor];
-    } else if (color == "purple") {
-      sysColor = [NSColor systemPurpleColor];
-    } else if (color == "red") {
-      sysColor = [NSColor systemRedColor];
-    } else if (color == "yellow") {
-      sysColor = [NSColor systemYellowColor];
-    } else {
-      args->ThrowError("Unknown system color: " + color);
-      return "";
-    }
-
-    return ToRGBHex(sysColor);
+  NSColor* sysColor = nil;
+  if (color == "blue") {
+    sysColor = [NSColor systemBlueColor];
+  } else if (color == "brown") {
+    sysColor = [NSColor systemBrownColor];
+  } else if (color == "gray") {
+    sysColor = [NSColor systemGrayColor];
+  } else if (color == "green") {
+    sysColor = [NSColor systemGreenColor];
+  } else if (color == "orange") {
+    sysColor = [NSColor systemOrangeColor];
+  } else if (color == "pink") {
+    sysColor = [NSColor systemPinkColor];
+  } else if (color == "purple") {
+    sysColor = [NSColor systemPurpleColor];
+  } else if (color == "red") {
+    sysColor = [NSColor systemRedColor];
+  } else if (color == "yellow") {
+    sysColor = [NSColor systemYellowColor];
   } else {
-    args->ThrowError(
-        "This api is not available on MacOS version 10.9 or lower.");
+    args->ThrowError("Unknown system color: " + color);
     return "";
   }
+
+  return ToRGBHex(sysColor);
+}
+
+bool SystemPreferences::CanPromptTouchID() {
+  if (@available(macOS 10.12.2, *)) {
+    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+    if (![context
+            canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                        error:nil])
+      return false;
+    if (@available(macOS 10.13.2, *))
+      return [context biometryType] == LABiometryTypeTouchID;
+    return true;
+  }
+  return false;
+}
+
+void OnTouchIDCompleted(util::Promise promise) {
+  promise.Resolve();
+}
+
+void OnTouchIDFailed(util::Promise promise, const std::string& reason) {
+  promise.RejectWithErrorMessage(reason);
+}
+
+v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
+    v8::Isolate* isolate,
+    const std::string& reason) {
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (@available(macOS 10.12.2, *)) {
+    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+    base::ScopedCFTypeRef<SecAccessControlRef> access_control =
+        base::ScopedCFTypeRef<SecAccessControlRef>(
+            SecAccessControlCreateWithFlags(
+                kCFAllocatorDefault,
+                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                kSecAccessControlPrivateKeyUsage |
+                    kSecAccessControlUserPresence,
+                nullptr));
+
+    scoped_refptr<base::SequencedTaskRunner> runner =
+        base::SequencedTaskRunnerHandle::Get();
+
+    __block util::Promise p = std::move(promise);
+    [context
+        evaluateAccessControl:access_control
+                    operation:LAAccessControlOperationUseKeySign
+              localizedReason:[NSString stringWithUTF8String:reason.c_str()]
+                        reply:^(BOOL success, NSError* error) {
+                          if (!success) {
+                            runner->PostTask(
+                                FROM_HERE,
+                                base::BindOnce(
+                                    &OnTouchIDFailed, std::move(p),
+                                    std::string([error.localizedDescription
+                                                     UTF8String])));
+                          } else {
+                            runner->PostTask(FROM_HERE,
+                                             base::BindOnce(&OnTouchIDCompleted,
+                                                            std::move(p)));
+                          }
+                        }];
+  } else {
+    promise.RejectWithErrorMessage(
+        "This API is not available on macOS versions older than 10.12.2");
+  }
+  return handle;
 }
 
 // static
@@ -469,23 +536,18 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "keyboard-focus-indicator") {
     sysColor = [NSColor keyboardFocusIndicatorColor];
   } else if (color == "label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor labelColor];
+    sysColor = [NSColor labelColor];
   } else if (color == "link") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor linkColor];
+    sysColor = [NSColor linkColor];
   } else if (color == "placeholder-text") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor placeholderTextColor];
+    sysColor = [NSColor placeholderTextColor];
   } else if (color == "quaternary-label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor quaternaryLabelColor];
+    sysColor = [NSColor quaternaryLabelColor];
   } else if (color == "scrubber-textured-background") {
     if (@available(macOS 10.12.2, *))
       sysColor = [NSColor scrubberTexturedBackgroundColor];
   } else if (color == "secondary-label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor secondaryLabelColor];
+    sysColor = [NSColor secondaryLabelColor];
   } else if (color == "selected-content-background") {
     if (@available(macOS 10.14, *))
       sysColor = [NSColor selectedContentBackgroundColor];
@@ -505,8 +567,7 @@ std::string SystemPreferences::GetColor(const std::string& color,
   } else if (color == "shadow") {
     sysColor = [NSColor shadowColor];
   } else if (color == "tertiary-label") {
-    if (@available(macOS 10.10, *))
-      sysColor = [NSColor tertiaryLabelColor];
+    sysColor = [NSColor tertiaryLabelColor];
   } else if (color == "text-background") {
     sysColor = [NSColor textBackgroundColor];
   } else if (color == "text") {
@@ -554,25 +615,27 @@ std::string SystemPreferences::GetMediaAccessStatus(
 v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
     v8::Isolate* isolate,
     const std::string& media_type) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
+      __block util::Promise p = std::move(promise);
       [AVCaptureDevice requestAccessForMediaType:type
                                completionHandler:^(BOOL granted) {
                                  dispatch_async(dispatch_get_main_queue(), ^{
-                                   promise->Resolve(!!granted);
+                                   p.Resolve(!!granted);
                                  });
                                }];
     } else {
       // access always allowed pre-10.14 Mojave
-      promise->Resolve(true);
+      promise.Resolve(true);
     }
   } else {
-    promise->RejectWithErrorMessage("Invalid media type");
+    promise.RejectWithErrorMessage("Invalid media type");
   }
 
-  return promise->GetHandle();
+  return handle;
 }
 
 void SystemPreferences::RemoveUserDefault(const std::string& name) {

@@ -141,7 +141,7 @@ class App : public AtomBrowserClient::Delegate,
   bool CanCreateWindow(content::RenderFrameHost* opener,
                        const GURL& opener_url,
                        const GURL& opener_top_level_frame_url,
-                       const GURL& source_origin,
+                       const url::Origin& source_origin,
                        content::mojom::WindowContainerType container_type,
                        const GURL& target_url,
                        const content::Referrer& referrer,
@@ -210,6 +210,8 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(mate::Arguments* args);
   bool IsInApplicationsFolder();
+  v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
+  v8::Global<v8::Value> dock_;
 #endif
 #if defined(MAS_BUILD)
   base::Callback<void()> StartAccessingSecurityScopedResource(

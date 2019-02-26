@@ -1110,17 +1110,85 @@ describe('app module', () => {
     })
   })
 
-  describe('dock.setMenu', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
+  const dockDescribe = process.platform === 'darwin' ? describe : describe.skip
+  dockDescribe('dock APIs', () => {
+    describe('dock.setMenu', () => {
+      it('can be retrieved via dock.getMenu', () => {
+        expect(app.dock.getMenu()).to.equal(null)
+        const menu = new Menu()
+        app.dock.setMenu(menu)
+        expect(app.dock.getMenu()).to.equal(menu)
+      })
+
+      it('keeps references to the menu', () => {
+        app.dock.setMenu(new Menu())
+        const v8Util = process.atomBinding('v8_util')
+        v8Util.requestGarbageCollectionForTesting()
+      })
     })
 
-    it('keeps references to the menu', () => {
-      app.dock.setMenu(new Menu())
-      const v8Util = process.atomBinding('v8_util')
-      v8Util.requestGarbageCollectionForTesting()
+    describe('dock.bounce', () => {
+      it('should return -1 for unknown bounce type', () => {
+        expect(app.dock.bounce('bad type')).to.equal(-1)
+      })
+
+      it('should return a positive number for informational type', () => {
+        const appHasFocus = !!BrowserWindow.getFocusedWindow()
+        if (!appHasFocus) {
+          expect(app.dock.bounce('informational')).to.be.at.least(0)
+        }
+      })
+
+      it('should return a positive number for critical type', () => {
+        const appHasFocus = !!BrowserWindow.getFocusedWindow()
+        if (!appHasFocus) {
+          expect(app.dock.bounce('critical')).to.be.at.least(0)
+        }
+      })
+    })
+
+    describe('dock.cancelBounce', () => {
+      it('should not throw', () => {
+        app.dock.cancelBounce(app.dock.bounce('critical'))
+      })
+    })
+
+    describe('dock.setBadge', () => {
+      after(() => {
+        app.dock.setBadge('')
+      })
+
+      it('should not throw', () => {
+        app.dock.setBadge('1')
+      })
+
+      it('should be retrievable via getBadge', () => {
+        app.dock.setBadge('test')
+        expect(app.dock.getBadge()).to.equal('test')
+      })
+    })
+
+    describe('dock.show', () => {
+      it('should not throw', () => {
+        return app.dock.show().then(() => {
+          expect(app.dock.isVisible()).to.equal(true)
+        })
+      })
+
+      it('returns a Promise', () => {
+        expect(app.dock.show()).to.be.a('promise')
+      })
+
+      it('eventually fulfills', () => {
+        expect(app.dock.show()).to.be.eventually.fulfilled()
+      })
+    })
+
+    describe('dock.hide', () => {
+      it('should not throw', () => {
+        app.dock.hide()
+        expect(app.dock.isVisible()).to.equal(false)
+      })
     })
   })
 
@@ -1131,7 +1199,7 @@ describe('app module', () => {
 
     it('becomes fulfilled if the app is already ready', () => {
       expect(app.isReady()).to.be.true()
-      return expect(app.whenReady()).to.be.eventually.fulfilled
+      expect(app.whenReady()).to.be.eventually.fulfilled()
     })
   })
 

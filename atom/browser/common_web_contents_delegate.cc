@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
@@ -23,7 +24,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
-#include "chrome/browser/ui/browser_dialogs.h"
+#include "chrome/browser/ui/color_chooser.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -183,7 +184,8 @@ void CommonWebContentsDelegate::InitWithWebContents(
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintPreviewMessageHandler::CreateForWebContents(web_contents);
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
-  printing::CreateCompositeClientIfNeeded(web_contents);
+  printing::CreateCompositeClientIfNeeded(web_contents,
+                                          browser_context->GetUserAgent());
 #endif
 
   // Determien whether the WebContents is offscreen.
@@ -206,15 +208,14 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     NativeWindow* owner_window) {
   if (owner_window) {
     owner_window_ = owner_window->GetWeakPtr();
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
     autofill_popup_.reset(new AutofillPopup());
 #endif
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
   } else {
     owner_window_ = nullptr;
-    web_contents->RemoveUserData(
-        NativeWindowRelay::kNativeWindowRelayUserDataKey);
+    web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());
   }
 #if BUILDFLAG(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
@@ -274,6 +275,7 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   load_url_params.should_replace_current_entry =
       params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.initiator_origin = params.initiator_origin;
   load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);
@@ -617,6 +619,26 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   owner_window_->SetFullScreen(enter_fullscreen);
   html_fullscreen_ = enter_fullscreen;
   native_fullscreen_ = false;
+}
+
+void CommonWebContentsDelegate::ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    content::RenderFrameHost* embedder_frame_host,
+    bool offscreen,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  if (!owner_window())
+    return;
+
+  autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
+                              owner_window()->content_view(), bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+
+void CommonWebContentsDelegate::HideAutofillPopup() {
+  if (autofill_popup_)
+    autofill_popup_->Hide();
 }
 
 }  // namespace atom

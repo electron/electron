@@ -149,9 +149,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
-  bool SavePage(const base::FilePath& full_file_path,
-                const content::SavePageType& save_type,
-                const SavePageHandler::SavePageCallback& callback);
+  v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
+                                  const content::SavePageType& save_type);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
@@ -162,8 +161,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void InspectElement(int x, int y);
   void InspectSharedWorker();
   void InspectServiceWorker();
-  v8::Local<v8::Promise> HasServiceWorker();
-  void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
@@ -176,9 +173,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
-  void PrintToPDF(
-      const base::DictionaryValue& settings,
-      const PrintPreviewMessageHandler::PrintToPDFCallback& callback);
+  v8::Local<v8::Promise> PrintToPDF(const base::DictionaryValue& settings);
 #endif
 
   // DevTools workspace api.
@@ -392,7 +387,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  bool final_update) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
                                   const GURL& security_origin,
-                                  content::MediaStreamType type) override;
+                                  blink::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,

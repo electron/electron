@@ -725,6 +725,11 @@ your app's `info.plist`, which can not be modified at runtime. You can however
 change the file with a simple text editor or script during build time.
 Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
+**Note:** In a Windows Store environment (when packaged as an `appx`) this API
+will return `true` for all calls but the registry key it sets won't be accessible
+by other applications.  In order to register your Windows Store application
+as a default protocol handler you must [declare the protocol in your manifest](https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
+
 The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
 
 ### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
@@ -1188,22 +1193,25 @@ Start accessing a security scoped resource. With this method Electron applicatio
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
-* `switch` String - A command-line switch
+* `switch` String - A command-line switch, without the leading `--`
 * `value` String (optional) - A value for the given switch
 
 Append a switch (with optional `value`) to Chromium's command line.
 
-**Note:** This will not affect `process.argv`, and is mainly used by developers
-to control some low-level Chromium behaviors.
+**Note:** This will not affect `process.argv`. The intended usage of this function is to
+control Chromium's behavior.
 
 ### `app.commandLine.appendArgument(value)`
 
 * `value` String - The argument to append to the command line
 
 Append an argument to Chromium's command line. The argument will be quoted
-correctly.
+correctly. Switches will precede arguments regardless of appending order.
 
-**Note:** This will not affect `process.argv`.
+If you're appending an argument like `--switch=value`, consider using `appendSwitch('switch', 'value')` instead.
+
+**Note:** This will not affect `process.argv`. The intended usage of this function is to
+control Chromium's behavior.
 
 ### `app.commandLine.hasSwitch(switch)`
 
@@ -1217,7 +1225,7 @@ Returns `Boolean` - Whether the command-line switch is present.
 
 Returns `String` - The command-line switch value.
 
-**Note:** When the switch is not present, it returns empty string.
+**Note:** When the switch is not present or has no value, it returns empty string.
 
 ### `app.enableSandbox()` _Experimental_ _macOS_ _Windows_
 
@@ -1287,19 +1295,21 @@ Hides the dock icon.
 
 ### `app.dock.show()` _macOS_
 
-Shows the dock icon.
+Returns `Promise<void>` - Resolves when the dock icon is shown.
 
 ### `app.dock.isVisible()` _macOS_
 
 Returns `Boolean` - Whether the dock icon is visible.
-The `app.dock.show()` call is asynchronous so this method might not
-return true immediately after that call.
 
 ### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
 
 Sets the application's [dock menu][dock-menu].
+
+### `app.dock.getMenu()` _macOS_
+
+Returns `Menu | null` - The application's [dock menu][dock-menu].
 
 ### `app.dock.setIcon(image)` _macOS_
 

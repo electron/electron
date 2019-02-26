@@ -113,9 +113,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
   virtual void SetResizable(bool resizable) = 0;
-#if defined(OS_WIN) || defined(OS_MACOSX)
   virtual void MoveTop() = 0;
-#endif
   virtual bool IsResizable() = 0;
   virtual void SetMovable(bool movable) = 0;
   virtual bool IsMovable() = 0;
@@ -362,14 +360,14 @@ class NativeWindow : public base::SupportsUserData,
 class NativeWindowRelay
     : public content::WebContentsUserData<NativeWindowRelay> {
  public:
-  static const void* const kNativeWindowRelayUserDataKey;
-
   static void CreateForWebContents(content::WebContents*,
                                    base::WeakPtr<NativeWindow>);
 
   ~NativeWindowRelay() override;
 
   NativeWindow* GetNativeWindow() const { return native_window_.get(); }
+
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
 
  private:
   friend class content::WebContentsUserData<NativeWindow>;

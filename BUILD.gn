@@ -2,7 +2,6 @@ import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
-import("//services/service_manager/public/service_manifest.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -11,8 +10,10 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
 import("build/asar.gni")
 import("build/npm.gni")
+import("build/tsc.gni")
 import("buildflags/buildflags.gni")
 import("electron_paks.gni")
+import("filenames.auto.gni")
 import("filenames.gni")
 
 if (is_mac) {
@@ -53,8 +54,26 @@ config("branding") {
   ]
 }
 
+# We geneate the definitions twice here, once in //electron/electron.d.ts
+# and once in $target_gen_dir
+# The one in $target_gen_dir is used for the actual TSC build later one
+# and the one in //electron/electron.d.ts is used by your IDE (vscode)
+# for typescript prompting
+npm_action("build_electron_definitions") {
+  script = "gn-typescript-definitions"
+  args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
+  inputs = auto_filenames.api_docs + [ "package-lock.json" ]
+
+  outputs = [
+    "$target_gen_dir/tsc/typings/electron.d.ts",
+  ]
+}
+
 npm_action("atom_browserify_sandbox") {
   script = "browserify"
+  deps = [
+    ":build_electron_definitions",
+  ]
 
   inputs = [
     # FIXME(zcbenz): The dependencies of these files are not listed here, so
@@ -62,6 +81,8 @@ npm_action("atom_browserify_sandbox") {
     # Use a script to generate all dependencies and put them here.
     "lib/sandboxed_renderer/init.js",
     "lib/sandboxed_renderer/api/exports/electron.js",
+    "tsconfig.electron.json",
+    "tsconfig.json",
   ]
 
   outputs = [
@@ -74,6 +95,12 @@ npm_action("atom_browserify_sandbox") {
     "./lib/sandboxed_renderer/api/exports/electron.js:electron",
     "-t",
     "aliasify",
+    "-p",
+    "[",
+    "tsify",
+    "-p",
+    "tsconfig.electron.json",
+    "]",
     "-o",
     rebase_path(outputs[0]),
   ]
@@ -81,9 +108,14 @@ npm_action("atom_browserify_sandbox") {
 
 npm_action("atom_browserify_isolated") {
   script = "browserify"
+  deps = [
+    ":build_electron_definitions",
+  ]
 
   inputs = [
     "lib/isolated_renderer/init.js",
+    "tsconfig.electron.json",
+    "tsconfig.json",
   ]
 
   outputs = [
@@ -94,6 +126,12 @@ npm_action("atom_browserify_isolated") {
     "lib/isolated_renderer/init.js",
     "-t",
     "aliasify",
+    "-p",
+    "[",
+    "tsify",
+    "-p",
+    "tsconfig.electron.json",
+    "]",
     "-o",
     rebase_path(outputs[0]),
   ]
@@ -137,7 +175,15 @@ action("atom_js2c") {
          rebase_path(sources, root_build_dir)
 }
 
-asar("js2asar") {
+target_gen_electron_js = "$target_gen_dir/js/electron"
+target_gen_default_app_js = "$target_gen_dir/js/default_app"
+
+typescript_build("lib_js") {
+  deps = [
+    ":build_electron_definitions",
+  ]
+  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
+
   sources = filenames.js_sources
   if (enable_desktop_capturer) {
     sources += [
@@ -156,18 +202,65 @@ asar("js2asar") {
       "lib/browser/api/views/text-field.js",
     ]
   }
+
+  output_gen_dir = target_gen_electron_js
+  output_dir_name = "lib"
+  tsconfig = "tsconfig.electron.json"
+}
+
+asar("electron_asar") {
+  deps = [
+    ":lib_js",
+  ]
+
+  root = "$target_gen_electron_js/electron/lib"
+  sources = get_target_outputs(":lib_js")
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]
-  root = "lib"
 }
 
-asar("app2asar") {
-  sources = filenames.default_app_sources
+typescript_build("default_app_js") {
+  deps = [
+    ":build_electron_definitions",
+  ]
+  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
+
+  sources = filenames.default_app_ts_sources
+
+  output_gen_dir = target_gen_default_app_js
+  output_dir_name = "default_app"
+  tsconfig = "tsconfig.default_app.json"
+}
+
+copy("default_app_static") {
+  sources = filenames.default_app_static_sources
+  outputs = [
+    "$target_gen_default_app_js/{{source}}",
+  ]
+}
+
+copy("default_app_octicon_deps") {
+  sources = filenames.default_app_octicon_sources
+  outputs = [
+    "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}",
+  ]
+}
+
+asar("default_app_asar") {
+  deps = [
+    ":default_app_js",
+    ":default_app_octicon_deps",
+    ":default_app_static",
+  ]
+
+  root = "$target_gen_default_app_js/electron/default_app"
+  sources = get_target_outputs(":default_app_js") +
+            get_target_outputs(":default_app_static") +
+            get_target_outputs(":default_app_octicon_deps")
   outputs = [
     "$root_out_dir/resources/default_app.asar",
   ]
-  root = "default_app"
 }
 
 grit("resources") {
@@ -187,7 +280,6 @@ grit("resources") {
 
   deps = [
     ":copy_shell_devtools_discovery_page",
-    ":electron_content_manifest_overlays",
   ]
 
   output_dir = "$target_gen_dir"
@@ -236,6 +328,7 @@ static_library("electron_lib") {
     ":atom_js2c",
     "buildflags",
     "chromium_src:chrome",
+    "manifests",
     "native_mate",
     "//base",
     "//base:base_static",
@@ -261,8 +354,10 @@ static_library("electron_lib") {
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
+    "//services/audio/public/mojom:constants",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
+    "//services/video_capture/public/mojom:constants",
     "//services/viz/privileged/interfaces/compositing",
     "//skia",
     "//third_party/blink/public:blink",
@@ -323,8 +418,6 @@ static_library("electron_lib") {
       "*_views.cc",
       "*_views.h",
       "*\bviews/*",
-      "*/autofill_popup.cc",
-      "*/autofill_popup.h",
     ]
   }
 
@@ -348,6 +441,10 @@ static_library("electron_lib") {
     deps += [
       "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
+    ]
+    sources += [
+      "atom/browser/ui/views/autofill_popup_view.cc",
+      "atom/browser/ui/views/autofill_popup_view.h",
     ]
     include_dirs += [
       # NOTE(nornagon): other chromium files use the full path to include
@@ -592,6 +689,7 @@ if (is_mac) {
     libs = [
       "AVFoundation.framework",
       "Carbon.framework",
+      "LocalAuthentication.framework",
       "QuartzCore.framework",
       "Quartz.framework",
       "Security.framework",
@@ -618,8 +716,10 @@ if (is_mac) {
     output_name = electron_helper_name
     deps = [
       ":electron_framework+link",
-      "//sandbox/mac:seatbelt",
     ]
+    if (!is_mas_build) {
+      deps += [ "//sandbox/mac:seatbelt" ]
+    }
     defines = [ "HELPER_EXECUTABLE" ]
     sources = filenames.app_sources
     include_dirs = [ "." ]
@@ -712,9 +812,9 @@ if (is_mac) {
 
   bundle_data("electron_app_resources") {
     public_deps = [
-      ":app2asar",
+      ":default_app_asar",
       ":electron_app_strings_bundle_data",
-      ":js2asar",
+      ":electron_asar",
     ]
     sources = [
       "$root_out_dir/resources/default_app.asar",
@@ -760,10 +860,10 @@ if (is_mac) {
     sources = filenames.app_sources
     include_dirs = [ "." ]
     deps = [
-      ":app2asar",
+      ":default_app_asar",
       ":electron_app_manifest",
+      ":electron_asar",
       ":electron_lib",
-      ":js2asar",
       ":packed_resources",
       "//content:sandbox_helper_win",
       "//ui/strings",
@@ -953,27 +1053,4 @@ group("electron") {
   public_deps = [
     ":electron_app",
   ]
-}
-
-group("electron_content_manifest_overlays") {
-  deps = [
-    ":electron_content_browser_manifest_overlay",
-    ":electron_content_packaged_services_manifest_overlay",
-  ]
-}
-
-service_manifest("electron_content_packaged_services_manifest_overlay") {
-  source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
-  packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
-
-  if (enable_basic_printing) {
-    packaged_services += [
-      "//chrome/services/printing:manifest",
-      "//components/services/pdf_compositor:pdf_compositor_manifest",
-    ]
-  }
-}
-
-service_manifest("electron_content_browser_manifest_overlay") {
-  source = "//electron/manifests/electron_content_browser_manifest_overlay.json"
 }

@@ -82,9 +82,35 @@ describe('deprecations', () => {
     expect(msg).to.include(prop)
   })
 
+  it('warns exactly once when a function is deprecated with no replacement', () => {
+    let msg
+    deprecations.setHandler(m => { msg = m })
+
+    function oldFn () { return 'hello' }
+    const deprecatedFn = deprecate.function(oldFn)
+    deprecatedFn()
+
+    expect(msg).to.be.a('string')
+    expect(msg).to.include('oldFn')
+  })
+
+  it('warns exactly once when a function is deprecated with a replacement', () => {
+    let msg
+    deprecations.setHandler(m => { msg = m })
+
+    function oldFn () { return 'hello' }
+    function newFn () { return 'goodbye' }
+    const deprecatedFn = deprecate.function(oldFn, newFn)
+    deprecatedFn()
+
+    expect(msg).to.be.a('string')
+    expect(msg).to.include('oldFn')
+    expect(msg).to.include('newFn')
+  })
+
   it('warns only once per item', () => {
     const messages = []
-    deprecations.setHandler(message => { messages.push(message) })
+    deprecations.setHandler(message => messages.push(message))
 
     const key = 'foo'
     const val = 'bar'
@@ -125,7 +151,7 @@ describe('deprecations', () => {
 
     const enableCallbackWarnings = () => {
       warnings = []
-      deprecations.setHandler(warning => { warnings.push(warning) })
+      deprecations.setHandler(warning => warnings.push(warning))
       process.enablePromiseAPIs = true
     }
 
@@ -133,7 +159,7 @@ describe('deprecations', () => {
       deprecations.setHandler(null)
       process.throwDeprecation = true
 
-      promiseFunc = param => new Promise((resolve, reject) => { resolve(param) })
+      promiseFunc = param => new Promise((resolve, reject) => resolve(param))
     })
 
     it('acts as a pass-through for promise-based invocations', async () => {
@@ -143,6 +169,24 @@ describe('deprecations', () => {
       const actual = await promiseFunc(expected)
       expect(actual).to.equal(expected)
       expect(warnings).to.have.lengthOf(0)
+    })
+
+    it('only calls back an error if the callback is called with (err, data)', (done) => {
+      enableCallbackWarnings()
+      let erringPromiseFunc = () => new Promise((resolve, reject) => {
+        reject(new Error('fail'))
+      })
+      erringPromiseFunc = deprecate.promisify(erringPromiseFunc)
+
+      erringPromiseFunc((err, data) => {
+        expect(data).to.be.an('undefined')
+        expect(err).to.be.an.instanceOf(Error).with.property('message', 'fail')
+        erringPromiseFunc(data => {
+          expect(data).to.not.be.an.instanceOf(Error)
+          expect(data).to.be.an('undefined')
+          done()
+        })
+      })
     })
 
     it('warns exactly once for callback-based invocations', (done) => {

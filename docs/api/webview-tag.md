@@ -8,6 +8,12 @@ including rendering, navigation, and event routing. We currently recommend to no
 use the `webview` tag and to consider alternatives, like `iframe`, Electron's `BrowserView`,
 or an architecture that avoids embedded content altogether.
 
+## Enabling
+
+By default the `webview` tag is disabled in Electron >= 5.  You need to enable the tag by
+setting the `webviewTag` webPreferences option when constructing your `BrowserWindow`. For
+more information see the [BrowserWindow constructor docs](browser-window.md).
+
 ## Overview
 
 > Display external web content in an isolated frame and process.
@@ -101,19 +107,6 @@ Assigning `src` its own value will reload the current page.
 
 The `src` attribute can also accept data URLs, such as
 `data:text/plain,Hello, world!`.
-
-### `autosize`
-
-```html
-<webview src="https://www.github.com/" autosize minwidth="576" minheight="432"></webview>
-```
-
-When this attribute is present the `webview` container will automatically resize
-within the bounds specified by the attributes `minwidth`, `minheight`,
-`maxwidth`, and `maxheight`. These constraints do not impact the `webview`
-unless `autosize` is enabled. When `autosize` is enabled, the `webview`
-container size cannot be less than the minimum values or greater than the
-maximum.
 
 ### `nodeintegration`
 
@@ -541,6 +534,24 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `data` Buffer
 
 Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, callback)`.
+
+**[Deprecated Soon](promisification.md)**
+
+### `<webview>.printToPDF(options)`
+
+* `options` Object
+  * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
+    default margin, 1 for no margin, and 2 for minimum margin.
+  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
+    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
+    and `width` in microns.
+  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
+  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
+  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
+
+* Returns `Promise<Buffer>` - Resolves with the generated PDF data.
+
+Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options)`.
 
 ### `<webview>.capturePage([rect, ]callback)`
 

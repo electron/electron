@@ -3,6 +3,26 @@ template("npm_action") {
          "Need script name to run (must be defined in package.json)")
   assert(defined(invoker.args), "Need script argumets")
 
+  action("npm_pre_flight_" + target_name) {
+    inputs = [
+      "package.json",
+      "package-lock.json",
+    ]
+    script = "//electron/build/npm-run.py"
+
+    outputs = [
+      "$target_gen_dir/npm_pre_stamps/" + target_name + ".stamp",
+    ]
+
+    args = [
+      "--silent",
+      "pre-flight",
+      "--",
+      "--stamp",
+      rebase_path(outputs[0]),
+    ]
+  }
+
   action(target_name) {
     forward_variables_from(invoker,
                            [
@@ -12,6 +32,11 @@ template("npm_action") {
                              "inputs",
                              "outputs",
                            ])
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ ":npm_pre_flight_" + target_name ]
+
     script = "//electron/build/npm-run.py"
     args = [
              "--silent",

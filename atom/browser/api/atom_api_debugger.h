@@ -9,6 +9,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
@@ -32,9 +33,6 @@ class Debugger : public mate::TrackableObject<Debugger>,
                  public content::DevToolsAgentHostClient,
                  public content::WebContentsObserver {
  public:
-  using SendCommandCallback =
-      base::Callback<void(const base::Value&, const base::Value&)>;
-
   static mate::Handle<Debugger> Create(v8::Isolate* isolate,
                                        content::WebContents* web_contents);
 
@@ -56,12 +54,12 @@ class Debugger : public mate::TrackableObject<Debugger>,
                               content::RenderFrameHost* new_rfh) override;
 
  private:
-  using PendingRequestMap = std::map<int, SendCommandCallback>;
+  using PendingRequestMap = std::map<int, atom::util::Promise>;
 
   void Attach(mate::Arguments* args);
   bool IsAttached();
   void Detach();
-  void SendCommand(mate::Arguments* args);
+  v8::Local<v8::Promise> SendCommand(mate::Arguments* args);
   void ClearPendingRequests();
 
   content::WebContents* web_contents_;  // Weak Reference.

@@ -267,8 +267,8 @@ void AtomURLRequest::DoCancel() {
 void AtomURLRequest::DoFollowRedirect() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (request_ && request_->is_redirecting() && redirect_policy_ == "manual") {
-    request_->FollowDeferredRedirect(
-        base::nullopt /* modified_request_headers */);
+    request_->FollowDeferredRedirect(base::nullopt /* removed_headers */,
+                                     base::nullopt /* modified_headers */);
   }
 }
 

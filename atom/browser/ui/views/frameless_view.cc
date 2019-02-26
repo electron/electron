@@ -82,8 +82,7 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   return HTCLIENT;
 }
 
-void FramelessView::GetWindowMask(const gfx::Size& size,
-                                  gfx::Path* window_mask) {}
+void FramelessView::GetWindowMask(const gfx::Size& size, SkPath* window_mask) {}
 
 void FramelessView::ResetWindowControls() {}
 

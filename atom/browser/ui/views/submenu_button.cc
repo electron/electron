@@ -37,7 +37,7 @@ SubmenuButton::SubmenuButton(const base::string16& title,
 
   SetInkDropMode(InkDropMode::ON);
   set_ink_drop_base_color(
-      color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
+      color_utils::BlendTowardMaxContrast(background_color_, 0x61));
 }
 
 SubmenuButton::~SubmenuButton() {}

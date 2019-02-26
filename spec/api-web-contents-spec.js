@@ -228,28 +228,6 @@ describe('webContents module', () => {
     })
   })
 
-  describe('ServiceWorker APIs', () => {
-    it('can successfully check for presence of a ServiceWorker', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html'))
-      const hasSW = await w.webContents.hasServiceWorker()
-      expect(hasSW).to.be.true()
-    })
-
-    it('throws properly for invalid url', async () => {
-      const promise = w.webContents.hasServiceWorker()
-      return expect(promise).to.be.eventually.rejectedWith(Error, 'URL invalid or not yet loaded.')
-    })
-
-    it('can successfully check for presence of a ServiceWorker (callback)', (done) => {
-      w.loadFile(path.join(fixtures, 'api', 'service-worker', 'service-worker.html')).then(() => {
-        w.webContents.hasServiceWorker(hasSW => {
-          expect(hasSW).to.be.true()
-          done()
-        })
-      })
-    })
-  })
-
   describe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
       const webContents = remote.getCurrentWebContents()
@@ -1290,7 +1268,22 @@ describe('webContents module', () => {
       }
     })
 
-    it('can print to PDF', (done) => {
+    it('can print to PDF', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      await w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+      const data = await w.webContents.printToPDF({})
+      assert.strictEqual(data instanceof Buffer, true)
+      assert.notStrictEqual(data.length, 0)
+    })
+
+    // TODO(miniak): remove when promisification is complete
+    it('can print to PDF (callback)', (done) => {
       w.destroy()
       w = new BrowserWindow({
         show: false,

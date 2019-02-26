@@ -112,6 +112,8 @@ class WebContentsZoomController
 
   content::HostZoomMap* host_zoom_map_;
 
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
+
   DISALLOW_COPY_AND_ASSIGN(WebContentsZoomController);
 };
 

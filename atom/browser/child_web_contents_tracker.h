@@ -18,10 +18,11 @@ struct ChildWebContentsTracker
   GURL url;
   std::string frame_name;
 
-  explicit ChildWebContentsTracker(content::WebContents* web_contents) {}
-
  private:
+  explicit ChildWebContentsTracker(content::WebContents* web_contents);
   friend class content::WebContentsUserData<ChildWebContentsTracker>;
+
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
 
   DISALLOW_COPY_AND_ASSIGN(ChildWebContentsTracker);
 };

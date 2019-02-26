@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2017",
+    "lib": [
+      "es2017",
+      "dom",
+      "dom.iterable"
+    ],
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "strict": true,
+    "baseUrl": ".",
+    "allowJs": true,
+    "outDir": "ts-gen",
+    "paths": {
+      "@electron/internal/*": ["lib/*"]
+    }
+  },
+  "exclude": [
+    "electron.d.ts"
+  ],
+}

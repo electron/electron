@@ -533,12 +533,11 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(scoped_refptr<util::Promise> promise,
-                         gfx::Image* icon) {
+void OnIconDataAvailable(util::Promise promise, gfx::Image* icon) {
   if (icon && !icon->IsEmpty()) {
-    promise->Resolve(*icon);
+    promise.Resolve(*icon);
   } else {
-    promise->RejectWithErrorMessage("Failed to get file icon.");
+    promise.RejectWithErrorMessage("Failed to get file icon.");
   }
 }
 
@@ -690,7 +689,7 @@ bool App::CanCreateWindow(
     content::RenderFrameHost* opener,
     const GURL& opener_url,
     const GURL& opener_top_level_frame_url,
-    const GURL& source_origin,
+    const url::Origin& source_origin,
     content::mojom::WindowContainerType container_type,
     const GURL& target_url,
     const content::Referrer& referrer,
@@ -1126,7 +1125,8 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         mate::Arguments* args) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
   IconLoader::IconSize icon_size;
@@ -1143,13 +1143,14 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
-    promise->Resolve(*icon);
+    promise.Resolve(*icon);
   } else {
-    icon_manager->LoadIcon(normalized_path, icon_size,
-                           base::Bind(&OnIconDataAvailable, promise),
-                           &cancelable_task_tracker_);
+    icon_manager->LoadIcon(
+        normalized_path, icon_size,
+        base::BindOnce(&OnIconDataAvailable, std::move(promise)),
+        &cancelable_task_tracker_);
   }
-  return promise->GetHandle();
+  return handle;
 }
 
 std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
@@ -1198,30 +1199,30 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
-    promise->RejectWithErrorMessage(
+    promise.RejectWithErrorMessage(
         "Invalid info type. Use 'basic' or 'complete'");
-    return promise->GetHandle();
+    return handle;
   }
   std::string reason;
   if (!gpu_data_manager->GpuAccessAllowed(&reason)) {
-    promise->RejectWithErrorMessage("GPU access not allowed. Reason: " +
-                                    reason);
-    return promise->GetHandle();
+    promise.RejectWithErrorMessage("GPU access not allowed. Reason: " + reason);
+    return handle;
   }
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
 #if defined(OS_WIN) || defined(OS_MACOSX)
-    info_mgr->FetchCompleteInfo(promise);
+    info_mgr->FetchCompleteInfo(std::move(promise));
 #else
-    info_mgr->FetchBasicInfo(promise);
+    info_mgr->FetchBasicInfo(std::move(promise));
 #endif
   } else /* (info_type == "basic") */ {
-    info_mgr->FetchBasicInfo(promise);
+    info_mgr->FetchBasicInfo(std::move(promise));
   }
-  return promise->GetHandle();
+  return handle;
 }
 
 static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
@@ -1258,6 +1259,46 @@ bool App::MoveToApplicationsFolder(mate::Arguments* args) {
 
 bool App::IsInApplicationsFolder() {
   return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
+}
+
+int DockBounce(const std::string& type) {
+  int request_id = -1;
+  if (type == "critical")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
+  else if (type == "informational")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
+  return request_id;
+}
+
+void DockSetMenu(atom::api::Menu* menu) {
+  Browser::Get()->DockSetMenu(menu->model());
+}
+
+v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
+  if (dock_.IsEmpty()) {
+    // Initialize the Dock API, the methods are bound to "dock" which exists
+    // for the lifetime of "app"
+    auto browser = base::Unretained(Browser::Get());
+    mate::Dictionary dock_obj = mate::Dictionary::CreateEmpty(isolate);
+    dock_obj.SetMethod("bounce", &DockBounce);
+    dock_obj.SetMethod("cancelBounce",
+                       base::Bind(&Browser::DockCancelBounce, browser));
+    dock_obj.SetMethod("downloadFinished",
+                       base::Bind(&Browser::DockDownloadFinished, browser));
+    dock_obj.SetMethod("setBadge",
+                       base::Bind(&Browser::DockSetBadgeText, browser));
+    dock_obj.SetMethod("getBadge",
+                       base::Bind(&Browser::DockGetBadgeText, browser));
+    dock_obj.SetMethod("hide", base::Bind(&Browser::DockHide, browser));
+    dock_obj.SetMethod("show", base::Bind(&Browser::DockShow, browser));
+    dock_obj.SetMethod("isVisible",
+                       base::Bind(&Browser::DockIsVisible, browser));
+    dock_obj.SetMethod("setMenu", &DockSetMenu);
+    dock_obj.SetMethod("setIcon", base::Bind(&Browser::DockSetIcon, browser));
+
+    dock_.Reset(isolate, dock_obj.GetHandle());
+  }
+  return v8::Local<v8::Value>::New(isolate, dock_);
 }
 #endif
 
@@ -1358,6 +1399,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
+#if defined(OS_MACOSX)
+      .SetProperty("dock", &App::GetDockAPI)
+#endif
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
@@ -1366,21 +1410,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
 }  // namespace atom
 
 namespace {
-
-#if defined(OS_MACOSX)
-int DockBounce(const std::string& type) {
-  int request_id = -1;
-  if (type == "critical")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
-  else if (type == "informational")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
-  return request_id;
-}
-
-void DockSetMenu(atom::api::Menu* menu) {
-  Browser::Get()->DockSetMenu(menu->model());
-}
-#endif
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -1392,23 +1421,6 @@ void Initialize(v8::Local<v8::Object> exports,
                       ->GetFunction(context)
                       .ToLocalChecked());
   dict.Set("app", atom::api::App::Create(isolate));
-#if defined(OS_MACOSX)
-  auto browser = base::Unretained(Browser::Get());
-  dict.SetMethod("dockBounce", &DockBounce);
-  dict.SetMethod("dockCancelBounce",
-                 base::Bind(&Browser::DockCancelBounce, browser));
-  dict.SetMethod("dockDownloadFinished",
-                 base::Bind(&Browser::DockDownloadFinished, browser));
-  dict.SetMethod("dockSetBadgeText",
-                 base::Bind(&Browser::DockSetBadgeText, browser));
-  dict.SetMethod("dockGetBadgeText",
-                 base::Bind(&Browser::DockGetBadgeText, browser));
-  dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
-  dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
-  dict.SetMethod("dockIsVisible", base::Bind(&Browser::DockIsVisible, browser));
-  dict.SetMethod("dockSetMenu", &DockSetMenu);
-  dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
-#endif
 }
 
 }  // namespace

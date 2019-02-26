@@ -315,11 +315,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   }
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
-  if (@available(macOS 10.10, *)) {
-    if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
-        (!useStandardWindow || transparent() || !has_frame())) {
-      styleMask = NSWindowStyleMaskFullSizeContentView;
-    }
+  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
+      (!useStandardWindow || transparent() || !has_frame())) {
+    styleMask = NSWindowStyleMaskFullSizeContentView;
   }
   if (minimizable) {
     styleMask |= NSMiniaturizableWindowMask;
@@ -378,11 +376,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     [window_ setDisableKeyOrMainWindow:YES];
 
   if (transparent() || !has_frame()) {
-    if (@available(macOS 10.10, *)) {
-      // Don't show title bar.
-      [window_ setTitlebarAppearsTransparent:YES];
-      [window_ setTitleVisibility:NSWindowTitleHidden];
-    }
+    // Don't show title bar.
+    [window_ setTitlebarAppearsTransparent:YES];
+    [window_ setTitleVisibility:NSWindowTitleHidden];
     // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
   }
@@ -401,22 +397,15 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   // Hide the title bar background
   if (title_bar_style_ != NORMAL) {
-    if (@available(macOS 10.10, *)) {
-      [window_ setTitlebarAppearsTransparent:YES];
-    }
+    [window_ setTitlebarAppearsTransparent:YES];
   }
 
   // Hide the title bar.
   if (title_bar_style_ == HIDDEN_INSET) {
-    if (@available(macOS 10.10, *)) {
-      base::scoped_nsobject<NSToolbar> toolbar(
-          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
-      [toolbar setShowsBaselineSeparator:NO];
-      [window_ setToolbar:toolbar];
-    } else {
-      [window_ enableWindowButtonsOffset];
-      [window_ setWindowButtonsOffset:NSMakePoint(12, 10)];
-    }
+    base::scoped_nsobject<NSToolbar> toolbar(
+        [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+    [toolbar setShowsBaselineSeparator:NO];
+    [window_ setToolbar:toolbar];
   }
 
   // Resize to content bounds.
@@ -532,7 +521,7 @@ void NativeWindowMac::Focus(bool focus) {
     return;
 
   if (focus) {
-    [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+    [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
     [window_ makeKeyAndOrderFront:nil];
   } else {
     [window_ orderBack:nil];
@@ -874,17 +863,11 @@ void NativeWindowMac::Invalidate() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
-  // For macOS <= 10.9, the setTitleVisibility API is not available, we have
-  // to avoid calling setTitle for frameless window.
-  if (!base::mac::IsAtLeastOS10_10() && (transparent() || !has_frame()))
-    return;
-
   [window_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
 std::string NativeWindowMac::GetTitle() {
   return base::SysNSStringToUTF8([window_ title]);
-  ;
 }
 
 void NativeWindowMac::FlashFrame(bool flash) {
@@ -1131,17 +1114,23 @@ void NativeWindowMac::SetProgressBar(double progress,
                                      const NativeWindow::ProgressState state) {
   NSDockTile* dock_tile = [NSApp dockTile];
 
+  // Sometimes macOS would install a default contentView for dock, we must
+  // verify whether NSProgressIndicator has been installed.
+  bool first_time = !dock_tile.contentView ||
+                    [[dock_tile.contentView subviews] count] == 0 ||
+                    ![[[dock_tile.contentView subviews] lastObject]
+                        isKindOfClass:[NSProgressIndicator class]];
+
   // For the first time API invoked, we need to create a ContentView in
   // DockTile.
-  if (dock_tile.contentView == nullptr) {
-    NSImageView* image_view = [[NSImageView alloc] init];
+  if (first_time) {
+    NSImageView* image_view = [[[NSImageView alloc] init] autorelease];
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];
-  }
 
-  if ([[dock_tile.contentView subviews] count] == 0) {
-    NSProgressIndicator* progress_indicator = [[AtomProgressBar alloc]
-        initWithFrame:NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0)];
+    NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
+    NSProgressIndicator* progress_indicator =
+        [[[AtomProgressBar alloc] initWithFrame:frame] autorelease];
     [progress_indicator setStyle:NSProgressIndicatorBarStyle];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
@@ -1152,7 +1141,7 @@ void NativeWindowMac::SetProgressBar(double progress,
   }
 
   NSProgressIndicator* progress_indicator = static_cast<NSProgressIndicator*>(
-      [[[dock_tile contentView] subviews] objectAtIndex:0]);
+      [[[dock_tile contentView] subviews] lastObject]);
   if (progress < 0) {
     [progress_indicator setHidden:YES];
   } else if (progress > 1) {
@@ -1240,84 +1229,81 @@ bool NativeWindowMac::SetWindowButtonVisibility(bool visible) {
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  if (@available(macOS 10.10, *)) {
-    NSView* vibrant_view = [window_ vibrantView];
+  NSView* vibrant_view = [window_ vibrantView];
 
-    if (type.empty()) {
-      if (background_color_before_vibrancy_) {
-        [window_ setBackgroundColor:background_color_before_vibrancy_];
-        [window_ setTitlebarAppearsTransparent:transparency_before_vibrancy_];
-      }
-      if (vibrant_view == nil)
-        return;
-
-      [vibrant_view removeFromSuperview];
-      [window_ setVibrantView:nil];
-
+  if (type.empty()) {
+    if (background_color_before_vibrancy_) {
+      [window_ setBackgroundColor:background_color_before_vibrancy_];
+      [window_ setTitlebarAppearsTransparent:transparency_before_vibrancy_];
+    }
+    if (vibrant_view == nil)
       return;
-    }
 
-    background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
-    transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
+    [vibrant_view removeFromSuperview];
+    [window_ setVibrantView:nil];
 
-    if (title_bar_style_ != NORMAL) {
-      [window_ setTitlebarAppearsTransparent:YES];
-      [window_ setBackgroundColor:[NSColor clearColor]];
-    }
-
-    NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
-    if (effect_view == nil) {
-      effect_view = [[[NSVisualEffectView alloc]
-          initWithFrame:[[window_ contentView] bounds]] autorelease];
-      [window_ setVibrantView:(NSView*)effect_view];
-
-      [effect_view
-          setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-      [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-      [effect_view setState:NSVisualEffectStateActive];
-      [[window_ contentView] addSubview:effect_view
-                             positioned:NSWindowBelow
-                             relativeTo:nil];
-    }
-
-    NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
-
-    if (type == "appearance-based") {
-      vibrancyType = NSVisualEffectMaterialAppearanceBased;
-    } else if (type == "light") {
-      vibrancyType = NSVisualEffectMaterialLight;
-    } else if (type == "dark") {
-      vibrancyType = NSVisualEffectMaterialDark;
-    } else if (type == "titlebar") {
-      vibrancyType = NSVisualEffectMaterialTitlebar;
-    }
-
-    if (@available(macOS 10.11, *)) {
-      // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
-      // they are available in the minimum SDK version
-      if (type == "selection") {
-        // NSVisualEffectMaterialSelection
-        vibrancyType = static_cast<NSVisualEffectMaterial>(4);
-      } else if (type == "menu") {
-        // NSVisualEffectMaterialMenu
-        vibrancyType = static_cast<NSVisualEffectMaterial>(5);
-      } else if (type == "popover") {
-        // NSVisualEffectMaterialPopover
-        vibrancyType = static_cast<NSVisualEffectMaterial>(6);
-      } else if (type == "sidebar") {
-        // NSVisualEffectMaterialSidebar
-        vibrancyType = static_cast<NSVisualEffectMaterial>(7);
-      } else if (type == "medium-light") {
-        // NSVisualEffectMaterialMediumLight
-        vibrancyType = static_cast<NSVisualEffectMaterial>(8);
-      } else if (type == "ultra-dark") {
-        // NSVisualEffectMaterialUltraDark
-        vibrancyType = static_cast<NSVisualEffectMaterial>(9);
-      }
-    }
-
-    [effect_view setMaterial:vibrancyType];
+    return;
   }
+
+  background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
+  transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
+
+  if (title_bar_style_ != NORMAL) {
+    [window_ setTitlebarAppearsTransparent:YES];
+    [window_ setBackgroundColor:[NSColor clearColor]];
+  }
+
+  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
+  if (effect_view == nil) {
+    effect_view = [[[NSVisualEffectView alloc]
+        initWithFrame:[[window_ contentView] bounds]] autorelease];
+    [window_ setVibrantView:(NSView*)effect_view];
+
+    [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    [effect_view setState:NSVisualEffectStateActive];
+    [[window_ contentView] addSubview:effect_view
+                           positioned:NSWindowBelow
+                           relativeTo:nil];
+  }
+
+  NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
+
+  if (type == "appearance-based") {
+    vibrancyType = NSVisualEffectMaterialAppearanceBased;
+  } else if (type == "light") {
+    vibrancyType = NSVisualEffectMaterialLight;
+  } else if (type == "dark") {
+    vibrancyType = NSVisualEffectMaterialDark;
+  } else if (type == "titlebar") {
+    vibrancyType = NSVisualEffectMaterialTitlebar;
+  }
+
+  if (@available(macOS 10.11, *)) {
+    // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
+    // they are available in the minimum SDK version
+    if (type == "selection") {
+      // NSVisualEffectMaterialSelection
+      vibrancyType = static_cast<NSVisualEffectMaterial>(4);
+    } else if (type == "menu") {
+      // NSVisualEffectMaterialMenu
+      vibrancyType = static_cast<NSVisualEffectMaterial>(5);
+    } else if (type == "popover") {
+      // NSVisualEffectMaterialPopover
+      vibrancyType = static_cast<NSVisualEffectMaterial>(6);
+    } else if (type == "sidebar") {
+      // NSVisualEffectMaterialSidebar
+      vibrancyType = static_cast<NSVisualEffectMaterial>(7);
+    } else if (type == "medium-light") {
+      // NSVisualEffectMaterialMediumLight
+      vibrancyType = static_cast<NSVisualEffectMaterial>(8);
+    } else if (type == "ultra-dark") {
+      // NSVisualEffectMaterialUltraDark
+      vibrancyType = static_cast<NSVisualEffectMaterial>(9);
+    }
+  }
+
+  [effect_view setMaterial:vibrancyType];
 }
 
 void NativeWindowMac::SetTouchBar(
@@ -1460,11 +1446,6 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
     [parent->GetNativeWindow().GetNativeNSWindow()
         addChildWindow:window_
                ordered:NSWindowAbove];
-}
-
-void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
-  auto view = [window_ standardWindowButton:button];
-  [view.superview addSubview:view positioned:NSWindowAbove relativeTo:nil];
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {

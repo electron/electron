@@ -85,6 +85,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::SiteInstance* pending_site_instance) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
+  void AdjustUtilityServiceProcessCommandLine(
+      const service_manager::Identity& identity,
+      base::CommandLine* command_line) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
   content::QuotaPermissionContext* CreateQuotaPermissionContext() override;
@@ -109,7 +112,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   bool CanCreateWindow(content::RenderFrameHost* opener,
                        const GURL& opener_url,
                        const GURL& opener_top_level_frame_url,
-                       const GURL& source_origin,
+                       const url::Origin& source_origin,
                        content::mojom::WindowContainerType container_type,
                        const GURL& target_url,
                        const content::Referrer& referrer,
@@ -135,7 +138,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
   void RegisterOutOfProcessServices(OutOfProcessServiceMap* services) override;
-  std::unique_ptr<base::Value> GetServiceManifestOverlay(
+  base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
   net::NetLog* GetNetLog() override;
   content::MediaObserver* GetMediaObserver() override;
@@ -150,6 +153,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
   bool ShouldBypassCORB(int render_process_id) const override;
+  std::string GetProduct() const override;
+  std::string GetUserAgent() const override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

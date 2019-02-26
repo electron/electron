@@ -10,6 +10,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/values.h"
 #include "components/net_log/net_export_file_writer.h"
@@ -34,7 +35,7 @@ class NetLog : public mate::TrackableObject<NetLog>,
   std::string GetLoggingState() const;
   bool IsCurrentlyLogging() const;
   std::string GetCurrentlyLoggingPath() const;
-  void StopLogging(mate::Arguments* args);
+  v8::Local<v8::Promise> StopLogging(mate::Arguments* args);
 
  protected:
   explicit NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -46,8 +47,7 @@ class NetLog : public mate::TrackableObject<NetLog>,
  private:
   AtomBrowserContext* browser_context_;
   net_log::NetExportFileWriter* net_log_writer_;
-  std::list<net_log::NetExportFileWriter::FilePathCallback>
-      stop_callback_queue_;
+  std::list<atom::util::Promise> stop_callback_queue_;
   std::unique_ptr<base::DictionaryValue> net_log_state_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);

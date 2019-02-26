@@ -21,6 +21,37 @@ describe('Menu module', () => {
       expect(menu.items[0].extra).to.equal('field')
     })
 
+    it('should be able to accept only MenuItems', () => {
+      const menu = Menu.buildFromTemplate([
+        new MenuItem({ label: 'one' }),
+        new MenuItem({ label: 'two' })
+      ])
+      expect(menu.items[0].label).to.equal('one')
+      expect(menu.items[1].label).to.equal('two')
+    })
+
+    it('should be able to accept only MenuItems in a submenu', () => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'one',
+          submenu: [
+            new MenuItem({ label: 'two' })
+          ]
+        }
+      ])
+      expect(menu.items[0].label).to.equal('one')
+      expect(menu.items[0].submenu.items[0].label).to.equal('two')
+    })
+
+    it('should be able to accept MenuItems and plain objects', () => {
+      const menu = Menu.buildFromTemplate([
+        new MenuItem({ label: 'one' }),
+        { label: 'two' }
+      ])
+      expect(menu.items[0].label).to.equal('one')
+      expect(menu.items[1].label).to.equal('two')
+    })
+
     it('does not modify the specified template', () => {
       const template = [{ label: 'text', submenu: [{ label: 'sub' }] }]
       const result = ipcRenderer.sendSync('eval', `const template = [{label: 'text', submenu: [{label: 'sub'}]}]\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
@@ -86,6 +117,21 @@ describe('Menu module', () => {
               afterGroupContaining: ['1']
             }
           ]
+
+          expect(sortMenuItems(items)).to.deep.equal(expected)
+        })
+
+        it('does a simple sort with MenuItems', () => {
+          const firstItem = new MenuItem({ id: '1', label: 'one' })
+          const secondItem = new MenuItem({
+            label: 'two',
+            id: '2',
+            afterGroupContaining: ['1']
+          })
+          const sep = new MenuItem({ type: 'separator' })
+
+          const items = [ secondItem, sep, firstItem ]
+          const expected = [ firstItem, sep, secondItem ]
 
           expect(sortMenuItems(items)).to.deep.equal(expected)
         })
@@ -563,6 +609,34 @@ describe('Menu module', () => {
             label: 'one',
             before: ['2']
           }
+        ])
+
+        expect(menu.items[0].label).to.equal('one')
+        expect(menu.items[1].label).to.equal('two')
+        expect(menu.items[2].label).to.equal('three')
+        expect(menu.items[3].label).to.equal('four')
+        expect(menu.items[4].label).to.equal('five')
+      })
+
+      it('should continue inserting MenuItems at next index when no specifier is present', () => {
+        const menu = Menu.buildFromTemplate([
+          new MenuItem({
+            id: '2',
+            label: 'two'
+          }), new MenuItem({
+            id: '3',
+            label: 'three'
+          }), new MenuItem({
+            id: '4',
+            label: 'four'
+          }), new MenuItem({
+            id: '5',
+            label: 'five'
+          }), new MenuItem({
+            id: '1',
+            label: 'one',
+            before: ['2']
+          })
         ])
 
         expect(menu.items[0].label).to.equal('one')

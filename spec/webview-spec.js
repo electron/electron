@@ -12,6 +12,7 @@ const { emittedOnce, waitForEvent } = require('./events-helpers')
 const { expect } = chai
 chai.use(dirtyChai)
 
+const features = process.atomBinding('features')
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
@@ -1233,6 +1234,38 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('<webview>.printToPDF()', () => {
+    before(function () {
+      if (!features.isPrintingEnabled()) {
+        this.skip()
+      }
+    })
+
+    it('can print to PDF', async () => {
+      const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E'
+      await loadWebView(webview, { src })
+
+      const data = await webview.printToPDF({})
+      assert.strictEqual(data instanceof Buffer, true)
+      assert.notStrictEqual(data.length, 0)
+    })
+
+    // TODO(miniak): remove when promisification is complete
+    it('can print to PDF (callback)', (done) => {
+      webview.addEventListener('did-finish-load', () => {
+        webview.printToPDF({}, function (error, data) {
+          assert.strictEqual(error, null)
+          assert.strictEqual(data instanceof Buffer, true)
+          assert.notStrictEqual(data.length, 0)
+          done()
+        })
+      })
+
+      webview.src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E'
+      document.body.appendChild(webview)
+    })
+  })
+
   // FIXME(deepak1556): Ch69 follow up.
   xdescribe('document.visibilityState/hidden', () => {
     afterEach(() => {
@@ -1455,9 +1488,10 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       })
+      const zoomEventPromise = emittedOnce(ipcMain, 'webview-parent-zoom-level')
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
 
-      const [, zoomFactor, zoomLevel] = await emittedOnce(ipcMain, 'webview-parent-zoom-level')
+      const [, zoomFactor, zoomLevel] = await zoomEventPromise
       expect(zoomFactor).to.equal(1.2)
       expect(zoomLevel).to.equal(1)
     })

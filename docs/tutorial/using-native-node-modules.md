@@ -99,6 +99,34 @@ the loading executable instead of looking for `node.dll` in the library search
 path (which would turn up nothing). As such, on Electron 4.x and higher,
 `'win_delay_load_hook': 'true'` is required to load native modules.
 
+
+If you get an error like `Module did not self-register`, or `The specified
+procedure could not be found`, it may mean that the module you're trying to use
+did not correctly include the delay-load hook.  If the module is built with
+node-gyp, ensure that the `win_delay_load_hook` variable is set to `true` in
+the `binding.gyp` file, and isn't getting overridden anywhere.  If the module
+is built with another system, you'll need to ensure that you build with a
+delay-load hook installed in the main `.node` file. Your `link.exe` invocation
+should look like this:
+
+```text
+ link.exe /OUT:"foo.node" "...\node.lib" delayimp.lib /DELAYLOAD:node.exe /DLL
+     "my_addon.obj" "win_delay_load_hook.obj"
+```
+
+In particular, it's important that:
+
+- you link against `node.lib` from _Electron_ and not Node. If you link against
+  the wrong `node.lib` you will get load-time errors when you require the
+  module in Electron.
+- you include the flag `/DELAYLOAD:node.exe`. If the `node.exe` link is not
+  delayed, then the delay-load hook won't get a chance to fire and the node
+  symbols won't be correctly resolved.
+- `win_delay_load_hook.obj` is linked directly into the final DLL. If the hook
+  is set up in a dependent DLL, it won't fire at the right time.
+
+See [node-gyp](https://github.com/nodejs/node-gyp/blob/e2401e1395bef1d3c8acec268b42dc5fb71c4a38/src/win_delay_load_hook.cc) for an example delay-load hook if you're implementing your own.
+
 ## Modules that rely on `prebuild`
 
 [`prebuild`](https://github.com/mafintosh/prebuild) provides a way to

@@ -58,6 +58,9 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Plus`
 * `Space`
 * `Tab`
+* `Capslock`
+* `Numlock`
+* `Scrolllock`
 * `Backspace`
 * `Delete`
 * `Insert`

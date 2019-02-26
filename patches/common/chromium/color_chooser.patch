@@ -3,79 +3,13 @@ From: Heilig Benedek <benecene@gmail.com>
 Date: Thu, 18 Oct 2018 17:08:13 -0700
 Subject: color_chooser.patch
 
-Removes a couple of stuff from the chromium implementation of ColorChooser
-to decouple it from dependencies.
+Disables a DCHECK that crashes the ColorChooser on Windows,
+that DCHECK most likely is an artifact that remained in chromium from a
+long time ago (last update of that part of the code was around 2012-2013,
+and this is purely UI, I don't think they have automated tests for it).
 
-Most of the stuff removed is actually related to other dialog types that
-we don't currently support, but chrome/browser/ui/browser_dialogs.h has
-a function for them to create them. Also disables a DCHECK that crashes
-the ColorChooser on Windows, that DCHECK most likely is an artifact that
-remained in chromium from a long time ago (last update of that part of the
-code was around 2012-2013, and this is purely UI, I don't think they have
-automated tests for it).
-
-diff --git a/chrome/browser/ui/browser_dialogs.h b/chrome/browser/ui/browser_dialogs.h
-index 415ca1dcaf946fc576ddad660ea507981fd81458..2a5352b358a8f337e61af1143fe0a84628985eab 100644
---- a/chrome/browser/ui/browser_dialogs.h
-+++ b/chrome/browser/ui/browser_dialogs.h
-@@ -4,7 +4,7 @@
- 
- #ifndef CHROME_BROWSER_UI_BROWSER_DIALOGS_H_
- #define CHROME_BROWSER_UI_BROWSER_DIALOGS_H_
--
-+#if 0
- #include <string>
- #include <utility>
- #include <vector>
-@@ -17,6 +17,7 @@
- #include "chrome/browser/ui/bookmarks/bookmark_editor.h"
- #include "content/public/browser/content_browser_client.h"
- #include "content/public/browser/resource_request_info.h"
-+#endif
- #include "third_party/skia/include/core/SkColor.h"
- #include "ui/gfx/native_widget_types.h"
- 
-@@ -66,7 +67,7 @@ struct SelectedFileInfo;
- }
- 
- namespace chrome {
--
-+#if 0
- // Shows or hides the Task Manager. |browser| can be NULL when called from Ash.
- // Returns a pointer to the underlying TableModel, which can be ignored, or used
- // for testing.
-@@ -138,10 +139,11 @@ void ShowPWAInstallDialog(content::WebContents* web_contents,
- // user interaction.
- void SetAutoAcceptPWAInstallDialogForTesting(bool auto_accept);
- 
-+#endif
- // Shows a color chooser that reports to the given WebContents.
- content::ColorChooser* ShowColorChooser(content::WebContents* web_contents,
-                                         SkColor initial_color);
--
-+#if 0
- #if defined(OS_MACOSX)
- 
- // Bridging methods that show/hide the toolkit-views based Task Manager on Mac.
-@@ -313,13 +315,13 @@ void ShowChromeCleanerRebootPrompt(
-     safe_browsing::ChromeCleanerRebootDialogController* dialog_controller);
- 
- #endif  // OS_WIN
--
-+#endif
- }  // namespace chrome
--
-+#if 0
- void ShowFolderUploadConfirmationDialog(
-     const base::FilePath& path,
-     base::OnceCallback<void(const std::vector<ui::SelectedFileInfo>&)> callback,
-     std::vector<ui::SelectedFileInfo> selected_files,
-     content::WebContents* web_contents);
--
-+#endif
- #endif  // CHROME_BROWSER_UI_BROWSER_DIALOGS_H_
 diff --git a/chrome/browser/ui/views/color_chooser_win.cc b/chrome/browser/ui/views/color_chooser_win.cc
-index 06381ef0e5ca34d141363213a846e5a9baa5fd8a..acb3a6e9e6476d9d2e3f445237246e6ae32e1764 100644
+index 434842ba0f81206a43fb26874930bf7309782890..93b4152003eaea05f0e16cd049687fbcbc672fb0 100644
 --- a/chrome/browser/ui/views/color_chooser_win.cc
 +++ b/chrome/browser/ui/views/color_chooser_win.cc
 @@ -91,7 +91,7 @@ void ColorChooserWin::OnColorChooserDialogClosed() {

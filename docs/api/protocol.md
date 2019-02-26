@@ -75,6 +75,25 @@ By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB, co
 are disabled for non standard schemes. So in general if you want to register a
 custom protocol to replace the `http` protocol, you have to register it as a standard scheme.
 
+`protocol.registerSchemesAsPriviliged` can be used to replicate the functionality of the previous `protocol.registerStandardSchemes`, `webFrame.registerURLSchemeAs*` and `protocol.registerServiceWorkerSchemes` functions that existed prior to Electron 5.0.0, for example:
+
+**before (<= v4.x)**
+```javascript
+// Main
+protocol.registerStandardSchemes(['scheme1', 'scheme2'], { secure: true })
+// Renderer
+webFrame.registerURLSchemeAsPrivileged('scheme1', { secure: true })
+webFrame.registerURLSchemeAsPrivileged('scheme2', { secure: true })
+```
+
+**after (>= v5.x)**
+```javascript
+protocol.registerSchemesAsPriviliged([
+  { scheme: 'scheme1', privileges: { standard: true, secure: true } },
+  { scheme: 'scheme2', privileges: { standard: true, secure: true } }
+])
+```
+
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String

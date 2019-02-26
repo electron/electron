@@ -23,18 +23,6 @@ const fixTypes = new Set(['fix'])
 const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci'])
 const knownTypes = new Set([...breakTypes.keys(), ...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()])
 
-const semanticMap = new Map()
-for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-map.csv'), 'utf8').split('\n')) {
-  if (!line) {
-    continue
-  }
-  const bits = line.split(',')
-  if (bits.length !== 2) {
-    continue
-  }
-  semanticMap.set(bits[0], bits[1])
-}
-
 const runGit = async (dir, args) => {
   const response = await GitProcess.exec(args, dir)
   if (response.exitCode !== 0) {
@@ -65,11 +53,10 @@ const setPullRequest = (commit, owner, repo, number) => {
 
 const getNoteFromClerk = async (number, owner, repo) => {
   const comments = await getComments(number, owner, repo)
-  if (!comments && !comments.data) {
-    return
-  }
+  if (!comments || !comments.data) return
 
   const CLERK_LOGIN = 'release-clerk[bot]'
+  const CLERK_NO_NOTES = '**No Release Notes**'
   const PERSIST_LEAD = '**Release Notes Persisted**\n\n'
   const QUOTE_LEAD = '> '
 
@@ -77,18 +64,19 @@ const getNoteFromClerk = async (number, owner, repo) => {
     if (comment.user.login !== CLERK_LOGIN) {
       continue
     }
-    if (!comment.body.startsWith(PERSIST_LEAD)) {
-      continue
+    if (comment.body === CLERK_NO_NOTES) {
+      return NO_NOTES
     }
-    const note = comment.body
-      .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
-      .split('\r?\n') // break into lines
-      .map(line => line.trim())
-      .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
-      .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
-      .join(' ') // join the note lines
-      .trim()
-    return note
+    if (comment.body.startsWith(PERSIST_LEAD)) {
+      return comment.body
+        .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
+        .split('\r?\n') // break into lines
+        .map(line => line.trim())
+        .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
+        .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
+        .join(' ') // join the note lines
+        .trim()
+    }
   }
 }
 
@@ -533,10 +521,13 @@ const getNotes = async (fromRef, toRef, newVersion) => {
       }
 
       // try to pull a release note from the pull comment
-      const prParsed = {}
-      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, prParsed)
-      commit.note = commit.note || prParsed.note
-      commit.type = commit.type || prParsed.type
+      const prParsed = parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo)
+      if (!commit.note) {
+        commit.note = prParsed.note
+      }
+      if (!commit.type || prParsed.type === 'breaking-change') {
+        commit.type = prParsed.type
+      }
       prSubject = prSubject || prParsed.subject
 
       pr = prParsed.pr && (prParsed.pr.number !== pr.number) ? prParsed.pr : null

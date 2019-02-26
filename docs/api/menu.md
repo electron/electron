@@ -52,15 +52,14 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-* `template` MenuItemConstructorOptions[]
+* `template` (MenuItemConstructorOptions | MenuItem)[]
 
 Returns `Menu`
 
 Generally, the `template` is an array of `options` for constructing a
 [MenuItem](menu-item.md). The usage can be referenced above.
 
-You can also attach other fields to the element of the `template` and they
-will become properties of the constructed menu items.
+You can also attach other fields to the element of the `template` and they will become properties of the constructed menu items.
 
 ### Instance Methods
 
@@ -108,7 +107,7 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 ### Instance Events
 
-Objects created with `new Menu` emit the following events:
+Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit the following events:
 
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
@@ -139,11 +138,6 @@ A `MenuItem[]` array containing the menu's items.
 
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
 can have a submenu.
-
-### Instance Events
-
-Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit
-the following events:
 
 ## Examples
 
