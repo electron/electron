@@ -42,6 +42,8 @@ const char kPdfPluginSrc[] = "src";
 
 const char kPdfViewerUIOrigin[] = "chrome://pdf-viewer/";
 const char kPdfViewerUIHost[] = "pdf-viewer";
+
+const char kPdfExtensionId[] = "mhjfbmdgcfjbbpaeojofohoefgiehjai";
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron

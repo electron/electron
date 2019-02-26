@@ -32,6 +32,7 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "pdf/pdf.h"
 #include "shell/common/atom_constants.h"
+#include "pdf/pdf_ppapi.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 namespace electron {

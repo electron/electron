@@ -115,15 +115,6 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.ReloadLocaleResources(locale);
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
                              ui::SCALE_FACTOR_NONE);
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  NOTIMPLEMENTED()
-      << "Hi, whoever's fixing PDF support! Thanks! The pdf "
-         "viewer resources haven't been ported over to the GN build yet, so "
-         "you'll probably need to change this bit of code.";
-  bundle.AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
-      ui::GetSupportedScaleFactors()[0]);
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 AtomMainDelegate::AtomMainDelegate() {}

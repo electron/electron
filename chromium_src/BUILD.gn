@@ -182,4 +182,13 @@ static_library("chrome") {
       ]
     }
   }
+
+  if (enable_pdf_viewer) {
+    sources += [
+      "//content/public/browser/web_contents.h",
+      "//content/public/browser/web_ui.h",
+      "//extensions/shell/browser/shell_display_info_provider.cc",
+      "//extensions/shell/browser/shell_display_info_provider.h",
+    ]
+  }
 }

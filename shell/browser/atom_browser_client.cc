@@ -119,6 +119,12 @@
 #include "content/public/common/child_process_host.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"
+#include "content/public/common/url_loader_throttle.h"
+#include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
 using content::BrowserThread;
 
 namespace electron {
@@ -357,6 +363,11 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 
 #if BUILDFLAG(ENABLE_TTS)
   host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
+      process_id, host->GetBrowserContext()));
 #endif
 
   ProcessPreferences prefs;
@@ -1035,5 +1046,20 @@ bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
 }
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+std::vector<std::unique_ptr<content::URLLoaderThrottle>>
+AtomBrowserClient::CreateURLLoaderThrottles(
+    const network::ResourceRequest& request,
+    content::ResourceContext* resource_context,
+    const base::RepeatingCallback<content::WebContents*()>& wc_getter,
+    content::NavigationUIData* navigation_ui_data,
+    int frame_tree_node_id) {
+  std::vector<std::unique_ptr<content::URLLoaderThrottle>> result;
+  result.push_back(std::make_unique<PluginResponseInterceptorURLLoaderThrottle>(
+      request.resource_type, frame_tree_node_id));
+  return result;
+}
+#endif
 
 }  // namespace electron

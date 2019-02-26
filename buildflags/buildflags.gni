@@ -12,7 +12,7 @@ declare_args() {
 
   enable_view_api = false
 
-  enable_pdf_viewer = false
+  enable_pdf_viewer = true
 
   enable_tts = true
 

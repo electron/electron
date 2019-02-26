@@ -241,8 +241,9 @@ void RendererClientBase::RenderFrameCreated(
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
-  blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
-      GURL(kPdfViewerUIOrigin), "file", "", true);
+  blink::WebSecurityPolicy::AddOriginAccessAllowListEntry(
+      GURL(kPdfViewerUIOrigin), "file", "", true,
+      network::mojom::CorsOriginAccessMatchPriority::kDefaultPriority);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   content::RenderView* render_view = render_frame->GetRenderView();

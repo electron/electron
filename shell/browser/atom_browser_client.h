@@ -14,7 +14,12 @@
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "content/public/common/url_loader_throttle.h"
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 namespace content {
 class QuotaPermissionContext;
@@ -65,6 +70,15 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::vector<std::unique_ptr<content::URLLoaderThrottle>>
+  CreateURLLoaderThrottles(
+      const network::ResourceRequest& request,
+      content::ResourceContext* resource_context,
+      const base::RepeatingCallback<content::WebContents*()>& wc_getter,
+      content::NavigationUIData* navigation_ui_data,
+      int frame_tree_node_id) override;
+#endif
 
   void SetCanUseCustomSiteInstance(bool should_disable);
   bool CanUseCustomSiteInstance() override;
