@@ -3,14 +3,18 @@
 # https://help.github.com/articles/about-codeowners
 # https://git-scm.com/docs/gitignore
 
-# Everything that falls through the cracks:
-* @electron/reviewers
+# Most stuff in here is owned by the Community & Safety WG...
+/.github/* @electron/wg-community
 
+# ...except the Admin WG maintains this file.
+/.github/CODEOWNERS @electron/wg-admin
+
+# Upgrades WG
 /patches/ @electron/wg-upgrades
 
-# directories
-/.github/ @electron/wg-admin
+# Docs & Tooling WG
 /default_app/ @electron/wg-docs-tools
 /docs/ @electron/wg-docs-tools
-/docs-translations/ @electron/i18n
+
+# Releases WG
 /npm/ @electron/wg-releases
