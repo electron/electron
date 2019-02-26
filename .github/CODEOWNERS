@@ -6,6 +6,8 @@
 # Everything that falls through the cracks:
 * @electron/reviewers
 
+/patches/ @electron/wg-upgrades
+
 # directories
 /.github/ @electron/wg-admin
 /default_app/ @electron/wg-docs-tools
