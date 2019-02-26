@@ -943,6 +943,12 @@ Returns `String` - The user agent for this web page.
 
 Injects CSS into the current web page.
 
+```js
+contents.on('did-finish-load', function () {
+  contents.insertCSS('html, body { background-color: #f00; }')
+})
+```
+
 #### `contents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
