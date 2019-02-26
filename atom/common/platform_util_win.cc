@@ -28,6 +28,7 @@
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/windows_version.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
 
@@ -228,10 +229,6 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
   return S_OK;
 }
 
-}  // namespace
-
-namespace platform_util {
-
 void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
   base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
   base::win::ScopedCOMInitializer com_initializer;
@@ -283,6 +280,10 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     }
   }
 }
+
+}  // namespace
+
+namespace platform_util {
 
 void ShowItemInFolder(const base::FilePath& full_path) {
   base::CreateCOMSTATaskRunnerWithTraits(
