@@ -44,7 +44,7 @@ effort are always very welcome.
 
 It is important to remember that the security of your Electron application is
 the result of the overall security of the framework foundation
-(*Libchromiumcontent*, *Node.js*), Electron itself, all NPM dependencies and
+(*Chromium*, *Node.js*), Electron itself, all NPM dependencies and
 your code. As such, it is your responsibility to follow a few important best
 practices:
 
