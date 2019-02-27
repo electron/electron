@@ -101,7 +101,7 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   FillRequestDetails(details, request);
   details->SetInteger("id", request->identifier());
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
-  const auto* info = content::ResourceRequestInfo::ForRequest(request);
+  auto* info = content::ResourceRequestInfo::ForRequest(request);
   if (info) {
     details->SetString("resourceType",
                        ResourceTypeToString(info->GetResourceType()));

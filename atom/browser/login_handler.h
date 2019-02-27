@@ -26,7 +26,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
                const net::AuthChallengeInfo& auth_info,
                net::NetworkDelegate::AuthCallback callback,
                net::AuthCredentials* credentials,
-               const content::ResourceRequestInfo* resource_request_info);
+               content::ResourceRequestInfo* resource_request_info);
 
   // The auth is cancelled, must be called on UI thread.
   void CancelAuth();

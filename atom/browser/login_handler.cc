@@ -20,12 +20,11 @@ using content::BrowserThread;
 
 namespace atom {
 
-LoginHandler::LoginHandler(
-    net::URLRequest* request,
-    const net::AuthChallengeInfo& auth_info,
-    net::NetworkDelegate::AuthCallback callback,
-    net::AuthCredentials* credentials,
-    const content::ResourceRequestInfo* resource_request_info)
+LoginHandler::LoginHandler(net::URLRequest* request,
+                           const net::AuthChallengeInfo& auth_info,
+                           net::NetworkDelegate::AuthCallback callback,
+                           net::AuthCredentials* credentials,
+                           content::ResourceRequestInfo* resource_request_info)
     : credentials_(credentials),
       auth_info_(&auth_info),
       auth_callback_(std::move(callback)),
