@@ -451,7 +451,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     settings.parent_window = owner_window();
     settings.force_detached = offscreen_;
     settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-    if (!file_dialog::ShowOpenDialog(settings, &paths))
+    if (!file_dialog::ShowOpenDialogSync(settings, &paths))
       return;
 
     path = paths[0];

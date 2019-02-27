@@ -23,7 +23,67 @@ console.log(dialog)
 
 The `dialog` module has the following methods:
 
-### `dialog.showOpenDialog([browserWindow, ]options[, callback])`
+### `dialog.showOpenDialogSync([browserWindow, ]options)`
+
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
+* `options` Object
+  * `title` String (optional)
+  * `defaultPath` String (optional)
+  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
+    left empty the default label will be used.
+  * `filters` [FileFilter[]](structures/file-filter.md) (optional)
+  * `properties` String[] (optional) - Contains which features the dialog should
+    use. The following values are supported:
+    * `openFile` - Allow files to be selected.
+    * `openDirectory` - Allow directories to be selected.
+    * `multiSelections` - Allow multiple paths to be selected.
+    * `showHiddenFiles` - Show hidden files in dialog.
+    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
+    * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
+      in the dialog does not exist. This does not actually create the file at
+      the path but allows non-existent paths to be returned that should be
+      created by the application.
+    * `noResolveAliases` _macOS_ - Disable the automatic alias (symlink) path
+      resolution. Selected aliases will now return the alias path instead of
+      their target path.
+    * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
+      as a directory instead of a file.
+  * `message` String (optional) _macOS_ - Message to display above input
+    boxes.
+  * `securityScopedBookmarks` Boolean (optional) _masOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
+
+The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
+
+The `filters` specifies an array of file types that can be displayed or
+selected when you want to limit the user to a specific type. For example:
+
+```javascript
+{
+  filters: [
+    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
+    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
+    { name: 'Custom File Type', extensions: ['as'] },
+    { name: 'All Files', extensions: ['*'] }
+  ]
+}
+```
+
+The `extensions` array should contain extensions without wildcards or dots (e.g.
+`'png'` is good but `'.png'` and `'*.png'` are bad). To show all files, use the
+`'*'` wildcard (no other wildcard is supported).
+
+**Note:** On Windows and Linux an open dialog can not be both a file selector
+and a directory selector, so if you set `properties` to
+`['openFile', 'openDirectory']` on these platforms, a directory selector will be
+shown.
+
+```js
+dialog.showOpenDialogSync(mainWindow, {
+  properties: ['openFile', 'openDirectory']
+})
+```
+
+### `dialog.showOpenDialog([browserWindow, ]options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -52,11 +112,12 @@ The `dialog` module has the following methods:
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _masOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
 * `callback` Function (optional)
-  * `filePaths` String[] (optional) - An array of file paths chosen by the user. If the dialog is cancelled this will be `undefined`.
-  * `bookmarks` String[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
 
-Returns `String[] | undefined`, an array of file paths chosen by the user,
-if the callback is provided it returns `undefined`.
+Returns `Promise<Object>` - Resolve wih an object containing the following:
+
+* `canceled` - Boolean - whether or not the dialog was canceled. 
+* `filePaths` String[] (optional) - An array of file paths chosen by the user. If the dialog is cancelled this will be `undefined`.
+* `bookmarks` String[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -78,13 +139,21 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 `'png'` is good but `'.png'` and `'*.png'` are bad). To show all files, use the
 `'*'` wildcard (no other wildcard is supported).
 
-If a `callback` is passed, the API call will be asynchronous and the result
-will be passed via `callback(filenames)`.
-
 **Note:** On Windows and Linux an open dialog can not be both a file selector
 and a directory selector, so if you set `properties` to
 `['openFile', 'openDirectory']` on these platforms, a directory selector will be
 shown.
+
+```js
+dialog.showOpenDialog(mainWindow, {
+  properties: ['openFile', 'openDirectory']
+}).then(result => {
+  console.log(result.canceled)
+  console.log(result.filePaths)
+}).catch(err => {
+  console.log(err)
+})
+```
 
 ### `dialog.showSaveDialog([browserWindow, ]options[, callback])`
 
@@ -201,9 +270,9 @@ attached to the parent window, making it modal.
 
 On Windows the options are more limited, due to the Win32 APIs used:
 
- - The `message` argument is not used, as the OS provides its own confirmation
+* The `message` argument is not used, as the OS provides its own confirmation
    dialog.
- - The `browserWindow` argument is ignored since it is not possible to make
+* The `browserWindow` argument is ignored since it is not possible to make
    this confirmation dialog modal.
 
 ## Sheets
