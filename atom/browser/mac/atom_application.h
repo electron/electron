@@ -29,6 +29,13 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
   AVAuthorizationStatusAuthorizedMac = 3,
 };
 
+@interface NSMenuItem (HighSierraSDK)
+@property(atomic, readwrite)
+    BOOL allowsKeyEquivalentWhenHidden API_AVAILABLE(macosx(10.13));
+- (void)setAllowsKeyEquivalentWhenHidden:(BOOL)arg1
+    API_AVAILABLE(macosx(10.13));
+@end
+
 @interface AVCaptureDevice (MojaveSDK)
 + (void)requestAccessForMediaType:(AVMediaType)mediaType
                 completionHandler:(void (^)(BOOL granted))handler
