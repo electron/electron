@@ -40,6 +40,7 @@ void Menu::AfterInit(v8::Isolate* isolate) {
   delegate.Get("isCommandIdChecked", &is_checked_);
   delegate.Get("isCommandIdEnabled", &is_enabled_);
   delegate.Get("isCommandIdVisible", &is_visible_);
+  delegate.Get("shouldCommandIdWorkWhenHidden", &works_when_hidden_);
   delegate.Get("getAcceleratorForCommandId", &get_accelerator_);
   delegate.Get("shouldRegisterAcceleratorForCommandId",
                &should_register_accelerator_);
@@ -63,6 +64,12 @@ bool Menu::IsCommandIdVisible(int command_id) const {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   return is_visible_.Run(GetWrapper(), command_id);
+}
+
+bool Menu::ShouldCommandIdWorkWhenHidden(int command_id) const {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  return works_when_hidden_.Run(GetWrapper(), command_id);
 }
 
 bool Menu::GetAcceleratorForCommandIdWithParams(
@@ -181,6 +188,10 @@ bool Menu::IsVisibleAt(int index) const {
   return model_->IsVisibleAt(index);
 }
 
+bool Menu::WorksWhenHiddenAt(int index) const {
+  return model_->WorksWhenHiddenAt(index);
+}
+
 void Menu::OnMenuWillClose() {
   Emit("menu-will-close");
 }
@@ -212,6 +223,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
+      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt);
