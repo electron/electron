@@ -23,10 +23,13 @@
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
+#include "base/threading/scoped_blocking_call.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/windows_version.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
 
@@ -227,31 +230,29 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
   return S_OK;
 }
 
-}  // namespace
-
-namespace platform_util {
-
-bool ShowItemInFolder(const base::FilePath& full_path) {
+void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
+  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
-    return false;
+    return;
 
   base::FilePath dir = full_path.DirName().AsEndingWithSeparator();
   // ParseDisplayName will fail if the directory is "C:", it must be "C:\\".
   if (dir.empty())
-    return false;
+    return;
 
   Microsoft::WRL::ComPtr<IShellFolder> desktop;
   HRESULT hr = SHGetDesktopFolder(desktop.GetAddressOf());
   if (FAILED(hr))
-    return false;
+    return;
 
   base::win::ScopedCoMem<ITEMIDLIST> dir_item;
   hr = desktop->ParseDisplayName(NULL, NULL,
                                  const_cast<wchar_t*>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
   if (FAILED(hr)) {
-    return ui::win::OpenFolderViaShell(dir);
+    ui::win::OpenFolderViaShell(dir);
+    return;
   }
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
@@ -259,33 +260,37 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
       NULL, NULL, const_cast<wchar_t*>(full_path.value().c_str()), NULL,
       &file_item, NULL);
   if (FAILED(hr)) {
-    return ui::win::OpenFolderViaShell(dir);
+    ui::win::OpenFolderViaShell(dir);
+    return;
   }
 
   const ITEMIDLIST* highlight[] = {file_item};
-
   hr = SHOpenFolderAndSelectItems(dir_item, base::size(highlight), highlight,
                                   NULL);
-  if (!FAILED(hr))
-    return true;
-
-  // On some systems, the above call mysteriously fails with "file not
-  // found" even though the file is there.  In these cases, ShellExecute()
-  // seems to work as a fallback (although it won't select the file).
-  if (hr == ERROR_FILE_NOT_FOUND) {
-    return ui::win::OpenFolderViaShell(dir);
-  } else {
-    LPTSTR message = NULL;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                  0, hr, 0, reinterpret_cast<LPTSTR>(&message), 0, NULL);
-    LOG(WARNING) << " " << __FUNCTION__ << "(): Can't open full_path = \""
-                 << full_path.value() << "\""
-                 << " hr = " << hr << " " << reinterpret_cast<LPTSTR>(&message);
-    if (message)
-      LocalFree(message);
-
-    return ui::win::OpenFolderViaShell(dir);
+  if (FAILED(hr)) {
+    // On some systems, the above call mysteriously fails with "file not
+    // found" even though the file is there.  In these cases, ShellExecute()
+    // seems to work as a fallback (although it won't select the file).
+    if (hr == ERROR_FILE_NOT_FOUND) {
+      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+    } else {
+      LOG(WARNING) << " " << __func__ << "(): Can't open full_path = \""
+                   << full_path.value() << "\""
+                   << " hr = " << logging::SystemErrorCodeToString(hr);
+      ui::win::OpenFolderViaShell(dir);
+    }
   }
+}
+
+}  // namespace
+
+namespace platform_util {
+
+void ShowItemInFolder(const base::FilePath& full_path) {
+  base::CreateCOMSTATaskRunnerWithTraits(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      ->PostTask(FROM_HERE,
+                 base::BindOnce(&ShowItemInFolderOnWorkerThread, full_path));
 }
 
 bool OpenItem(const base::FilePath& full_path) {

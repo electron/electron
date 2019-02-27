@@ -22,8 +22,6 @@ The `shell` module has the following methods:
 
 * `fullPath` String
 
-Returns `Boolean` - Whether the item was successfully shown.
-
 Show the given file in a file manager. If possible, select the file.
 
 ### `shell.openItem(fullPath)`
