@@ -22,7 +22,8 @@ $ code electron-quick-start
       "windows": {
         "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron.cmd"
       },
-      "args" : ["."]
+      "args" : ["."],
+      "outputCapture": "std"
     }
   ]
 }
