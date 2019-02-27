@@ -26,11 +26,8 @@ namespace {
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef ref = nil;
-  if (@available(macOS 10.10, *)) {
-    ref = LSCopyDefaultApplicationURLForURL(base::mac::NSToCFCast(ns_url),
-                                            kLSRolesAll, nullptr);
-  }
+  CFURLRef ref = LSCopyDefaultApplicationURLForURL(
+      base::mac::NSToCFCast(ns_url), kLSRolesAll, nullptr);
 
   // If no application could be found, NULL is returned and outError
   // (if not NULL) is populated with kLSApplicationNotFoundErr.
