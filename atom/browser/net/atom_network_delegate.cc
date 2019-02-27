@@ -149,9 +149,8 @@ void ToDictionary(base::DictionaryValue* details, const GURL& location) {
 }
 
 void ToDictionary(base::DictionaryValue* details,
-                  const net::HostPortPair& host_port) {
-  if (host_port.host().empty())
-    details->SetString("ip", host_port.host());
+                  const net::IPEndPoint& remote_endpoint) {
+  details->SetString("ip", remote_endpoint.ToStringWithoutPort());
 }
 
 void ToDictionary(base::DictionaryValue* details, bool from_cache) {
@@ -328,9 +327,9 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
   if (!base::ContainsKey(simple_listeners_, kOnBeforeRedirect))
     return;
 
-  HandleSimpleEvent(kOnBeforeRedirect, request, new_location,
-                    request->response_headers(), request->GetSocketAddress(),
-                    request->was_cached());
+  HandleSimpleEvent(
+      kOnBeforeRedirect, request, new_location, request->response_headers(),
+      request->GetResponseRemoteEndpoint(), request->was_cached());
 }
 
 void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request,
