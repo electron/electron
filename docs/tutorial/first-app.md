@@ -175,6 +175,9 @@ app.on('activate', () => {
 // code. You can also put them in separate files and require them here.
 ```
 
+The `render.js` is executed in the render process of index.html.
+All of the Node.js APIs are available in this process.
+
 Finally the `index.html` is the web page you want to show:
 
 ```html
@@ -186,9 +189,15 @@ Finally the `index.html` is the web page you want to show:
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using node <script>document.write(process.versions.node)</script>,
-    Chrome <script>document.write(process.versions.chrome)</script>,
+    <!-- All of the Node.js APIs are available in this renderer process. -->
+    We are using Node.js <script>document.write(process.versions.node)</script>,
+    Chromium <script>document.write(process.versions.chrome)</script>,
     and Electron <script>document.write(process.versions.electron)</script>.
+
+    <script>
+      // You can also require other files to run in this process
+      require('./render.js')
+    </script>
   </body>
 </html>
 ```
