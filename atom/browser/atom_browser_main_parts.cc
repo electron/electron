@@ -45,6 +45,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
+#include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/material_design/material_design_controller.h"
@@ -209,7 +210,8 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   // Can be reenabled when our site instance policy is aligned with chromium
   // when node integration is enabled.
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name;
+      std::string(",") + features::kSpareRendererForSitePerProcess.name +
+      std::string(",") + network::features::kNetworkService.name;
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
