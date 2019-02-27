@@ -128,6 +128,7 @@ describe('powerMonitor', () => {
       powerMonitor = require('electron').remote.powerMonitor
     })
 
+    // TODO(nitsakh): Remove in 7.0
     describe('powerMonitor.querySystemIdleState', () => {
       it('notify current system idle state', done => {
         // this function is not mocked out, so we can test the result's
@@ -155,12 +156,45 @@ describe('powerMonitor', () => {
       })
     })
 
+    // TODO(nitsakh): Remove in 7.0
     describe('powerMonitor.querySystemIdleTime', () => {
       it('notify current system idle time', done => {
         powerMonitor.querySystemIdleTime(idleTime => {
           expect(idleTime).to.be.at.least(0)
           done()
         })
+      })
+    })
+
+    describe('powerMonitor.getSystemIdleState', () => {
+      it('gets current system idle state', () => {
+        // this function is not mocked out, so we can test the result's
+        // form and type but not its value.
+        const idleState = powerMonitor.getSystemIdleState(1)
+        expect(idleState).to.be.a('string')
+        const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
+        expect(validIdleStates).to.include(idleState)
+      })
+
+      it('does not accept non positive integer threshold', () => {
+        expect(() => {
+          powerMonitor.getSystemIdleState(-1)
+        }).to.throw(/must be greater than 0/)
+
+        expect(() => {
+          powerMonitor.getSystemIdleState(NaN)
+        }).to.throw(/conversion failure/)
+
+        expect(() => {
+          powerMonitor.getSystemIdleState('a')
+        }).to.throw(/conversion failure/)
+      })
+    })
+
+    describe('powerMonitor.getSystemIdleTime', () => {
+      it('notify current system idle time', () => {
+        const idleTime = powerMonitor.getSystemIdleTime()
+        expect(idleTime).to.be.at.least(0)
       })
     })
   })

@@ -84,8 +84,8 @@ void PowerMonitor::OnResume() {
   Emit("resume");
 }
 
-ui::IdleState PowerMonitor::QuerySystemIdleState(v8::Isolate* isolate,
-                                                 int idle_threshold) {
+ui::IdleState PowerMonitor::GetSystemIdleState(v8::Isolate* isolate,
+                                               int idle_threshold) {
   if (idle_threshold > 0) {
     return ui::CalculateIdleState(idle_threshold);
   } else {
@@ -95,7 +95,7 @@ ui::IdleState PowerMonitor::QuerySystemIdleState(v8::Isolate* isolate,
   }
 }
 
-int PowerMonitor::QuerySystemIdleTime() {
+int PowerMonitor::GetSystemIdleTime() {
   return ui::CalculateIdleTime();
 }
 
@@ -122,8 +122,8 @@ void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
       .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
 #endif
-      .SetMethod("_querySystemIdleState", &PowerMonitor::QuerySystemIdleState)
-      .SetMethod("_querySystemIdleTime", &PowerMonitor::QuerySystemIdleTime);
+      .SetMethod("getSystemIdleState", &PowerMonitor::GetSystemIdleState)
+      .SetMethod("getSystemIdleTime", &PowerMonitor::GetSystemIdleTime);
 }
 
 }  // namespace api

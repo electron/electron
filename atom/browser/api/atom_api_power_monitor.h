@@ -46,8 +46,8 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   void OnResume() override;
 
  private:
-  ui::IdleState QuerySystemIdleState(v8::Isolate* isolate, int idle_threshold);
-  int QuerySystemIdleTime();
+  ui::IdleState GetSystemIdleState(v8::Isolate* isolate, int idle_threshold);
+  int GetSystemIdleTime();
 
 #if defined(OS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
