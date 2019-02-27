@@ -8,8 +8,8 @@ const { closeWindow } = require('./window-helpers')
 const { BrowserWindow } = remote
 
 describe('renderer nodeIntegrationInSubFrames', () => {
-  const generateTests = (sandboxEnabled) => {
-    describe(`with sandbox ${sandboxEnabled ? 'enabled' : 'disabled'}`, () => {
+  const generateTests = (description, webPreferences) => {
+    describe(description, () => {
       let w
 
       beforeEach(async () => {
@@ -19,15 +19,17 @@ describe('renderer nodeIntegrationInSubFrames', () => {
           width: 400,
           height: 400,
           webPreferences: {
-            sandbox: sandboxEnabled,
             preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
-            nodeIntegrationInSubFrames: true
+            nodeIntegrationInSubFrames: true,
+            ...webPreferences
           }
         })
       })
 
       afterEach(() => {
-        return closeWindow(w).then(() => { w = null })
+        return closeWindow(w).then(() => {
+          w = null
+        })
       })
 
       it('should load preload scripts in top level iframes', async () => {
@@ -74,15 +76,38 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
         const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-with-frame-container.html'))
-        const [,, event3] = await detailsPromise
+        const [, , event3] = await detailsPromise
         const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
         event3[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event3[0].frameId)
       })
+
+      if (webPreferences.contextIsolation) {
+        it('should not expose globals in main world', async () => {
+          const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+          w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container.html'))
+          const details = await detailsPromise
+          const senders = details.map(event => event[0].sender)
+          await new Promise((resolve) => {
+            let resultCount = 0
+            senders.forEach(sender => {
+              sender.webContents.executeJavaScript('window.isolatedGlobal', result => {
+                expect(result).to.be.null()
+                resultCount++
+                if (resultCount === senders.length) {
+                  resolve()
+                }
+              })
+            })
+          })
+        })
+      }
     })
   }
 
-  generateTests(false)
-  generateTests(true)
+  generateTests('without sandbox', {})
+  generateTests('with sandbox', { sandbox: true })
+  generateTests('with contextIsolation', { contextIsolation: true })
+  generateTests('with contextIsolation + sandbox', { contextIsolation: true, sandbox: true })
 })
