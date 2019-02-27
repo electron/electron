@@ -214,13 +214,13 @@ void FlushCookieStoreOnIOThread(
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                    std::unique_ptr<base::DictionaryValue> details,
                    util::Promise promise) {
-  std::string url, name, value, domain, path;
+  std::string url_string, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
   double creation_date;
   double expiration_date;
   double last_access_date;
-  details->GetString("url", &url);
+  details->GetString("url", &url_string);
   details->GetString("name", &name);
   details->GetString("value", &value);
   details->GetString("domain", &domain);
@@ -249,9 +249,10 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                            : base::Time::FromDoubleT(last_access_date);
   }
 
+  GURL url(url_string);
   std::unique_ptr<net::CanonicalCookie> canonical_cookie(
       net::CanonicalCookie::CreateSanitizedCookie(
-          GURL(url), name, value, domain, path, creation_time, expiration_time,
+          url, name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
   auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
@@ -259,7 +260,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
     std::move(completion_callback).Run(false);
     return;
   }
-  if (url.empty()) {
+  if (url.is_empty()) {
     std::move(completion_callback).Run(false);
     return;
   }
@@ -268,7 +269,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
     return;
   }
   GetCookieStore(getter)->SetCanonicalCookieAsync(
-      std::move(canonical_cookie), secure, http_only,
+      std::move(canonical_cookie), url.scheme(), http_only,
       std::move(completion_callback));
 }
 
