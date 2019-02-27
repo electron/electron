@@ -37,12 +37,12 @@ index fb1f74b71c9e51c5d8c12adfff586bb57a7b6407..07afb123e6d2bdad4d1e15fdc7fe24bf
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 08089579500c860880b9c1bd32816095ca05ed27..e2ab0b2c7819bb437b50d25909ef915373b21de7 100644
+index a4f8b7ee7563e2390ef34ebce94b7c0a7967ad4d..8f4ee8f612311b8ff4c07ba1fbef8e3258fc9fb8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -241,6 +241,9 @@ class CONTENT_EXPORT ContentBrowserClient {
        content::RenderFrameHost* rfh,
-       content::SiteInstance* pending_site_instance){};
+       content::SiteInstance* pending_site_instance) {}
  
 +  // Electron: Allows bypassing CORB checks for a renderer process.
 +  virtual bool ShouldBypassCORB(int render_process_id) const;

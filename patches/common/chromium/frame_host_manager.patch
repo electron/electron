@@ -129,7 +129,7 @@ index 09a2a50fdbd76d24d547bf5e22f9a0a93bd9a126..fb1f74b71c9e51c5d8c12adfff586bb5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a70f357b97da1a24b02e9a7b29504c63b2c780fb..08089579500c860880b9c1bd32816095ca05ed27 100644
+index a70f357b97da1a24b02e9a7b29504c63b2c780fb..a4f8b7ee7563e2390ef34ebce94b7c0a7967ad4d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -210,8 +210,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
@@ -165,7 +165,7 @@ index a70f357b97da1a24b02e9a7b29504c63b2c780fb..08089579500c860880b9c1bd32816095
 +  // Electron: Registers a pending site instance during a navigation.
 +  virtual void RegisterPendingSiteInstance(
 +      content::RenderFrameHost* rfh,
-+      content::SiteInstance* pending_site_instance){};
++      content::SiteInstance* pending_site_instance) {}
 +
    // Allows the embedder to set any number of custom BrowserMainParts
    // implementations for the browser startup code. See comments in
