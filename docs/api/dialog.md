@@ -155,7 +155,7 @@ dialog.showOpenDialog(mainWindow, {
 })
 ```
 
-### `dialog.showSaveDialog([browserWindow, ]options[, callback])`
+### `dialog.showSaveDialog([browserWindow, ]options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
@@ -171,22 +171,42 @@ dialog.showOpenDialog(mainWindow, {
   * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
-* `callback` Function (optional)
-  * `filename` String (optional) If the dialog is cancelled this will be `undefined`.
-  * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
-
-Returns `String | undefined`, the path of the file chosen by the user,
-if a callback is provided or the dialog is cancelled it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
 The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
 
-If a `callback` is passed, the API call will be asynchronous and the result
-will be passed via `callback(filename)`.
+### `dialog.showSaveDialog([browserWindow, ]options)`
 
-**Note:** On macOS, using the `callback` is recommended to avoid issues when
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
+* `options` Object
+  * `title` String (optional)
+  * `defaultPath` String (optional) - Absolute directory path, absolute file
+    path, or file name to use by default.
+  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
+    left empty the default label will be used.
+  * `filters` [FileFilter[]](structures/file-filter.md) (optional)
+  * `message` String (optional) _macOS_ - Message to display above text fields.
+  * `nameFieldLabel` String (optional) _macOS_ - Custom label for the text
+    displayed in front of the filename text field.
+  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
+    defaults to `true`.
+  * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
+
+Returns `Promise<Object>` - Resolve wih an object containing the following:
+  * `canceled` Boolean - whether or not the dialog was canceled.
+  * `filename` String (optional) If the dialog is canceled this will be `undefined`.
+  * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
+
+Returns `String | undefined`, the path of the file chosen by the user; if the dialog is cancelled it returns `undefined`.
+
+The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
+
+The `filters` specifies an array of file types that can be displayed, see
+`dialog.showOpenDialog` for an example.
+
+**Note:** On macOS, using the asynchronous version is recommended to avoid issues when
 expanding and collapsing the dialog.
 
 ### `dialog.showMessageBox([browserWindow, ]options[, callback])`

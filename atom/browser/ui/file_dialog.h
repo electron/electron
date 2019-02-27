@@ -36,16 +36,6 @@ enum FileDialogProperty {
   FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY = 1 << 7,
 };
 
-#if defined(MAS_BUILD)
-typedef base::Callback<void(bool result,
-                            const base::FilePath& path,
-                            const std::string& bookmarkData)>
-    SaveDialogCallback;
-#else
-typedef base::Callback<void(bool result, const base::FilePath& path)>
-    SaveDialogCallback;
-#endif
-
 struct DialogSettings {
   atom::NativeWindow* parent_window = nullptr;
   std::string title;
@@ -70,10 +60,10 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void ShowOpenDialog(const DialogSettings& settings,
                     atom::util::Promise promise);
 
-bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path);
+bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    const SaveDialogCallback& callback);
+                    atom::util::Promise promise);
 
 }  // namespace file_dialog
 

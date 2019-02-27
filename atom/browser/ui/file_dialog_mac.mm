@@ -346,7 +346,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   }
 }
 
-bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
+bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   DCHECK(path);
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
@@ -363,50 +363,59 @@ bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
 void SaveDialogCompletion(int chosen,
                           NSSavePanel* dialog,
                           bool security_scoped_bookmarks,
-                          const SaveDialogCallback& callback) {
+                          atom::util::Promise promise) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
+    dict.Set("canceled", true);
 #if defined(MAS_BUILD)
-    callback.Run(false, base::FilePath(), "");
+    dict.Set("filename", std::vector<base::FilePath>());
+    dict.Set("bookmark", "");
 #else
-    callback.Run(false, base::FilePath());
+    dict.Set("filename", base::FilePath());
 #endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
+    dict.Set("filename", base::FilePath(path));
+    dict.Set("canceled", false);
 #if defined(MAS_BUILD)
     std::string bookmark;
     if (security_scoped_bookmarks) {
       bookmark = GetBookmarkDataFromNSURL([dialog URL]);
+      dict.Set("bookmark", bookmark);
     }
-    callback.Run(true, base::FilePath(path), bookmark);
-#else
-    callback.Run(true, base::FilePath(path));
 #endif
   }
+  promise.Resolve(dict.GetHandle());
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    const SaveDialogCallback& c) {
+                    atom::util::Promise promise) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
   [dialog setCanSelectHiddenExtension:YES];
 
-  __block SaveDialogCallback callback = c;
+  // Capture the value of the security_scoped_bookmarks settings flag
+  // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
+
+  __block atom::util::Promise p = std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
     [dialog beginWithCompletionHandler:^(NSInteger chosen) {
-      SaveDialogCompletion(chosen, dialog, security_scoped_bookmarks, callback);
+      SaveDialogCompletion(chosen, dialog, security_scoped_bookmarks,
+                           std::move(p));
     }];
   } else {
     NSWindow* window =
         settings.parent_window->GetNativeWindow().GetNativeNSWindow();
-    [dialog beginSheetModalForWindow:window
-                   completionHandler:^(NSInteger chosen) {
-                     SaveDialogCompletion(chosen, dialog,
-                                          security_scoped_bookmarks, callback);
-                   }];
+    [dialog
+        beginSheetModalForWindow:window
+               completionHandler:^(NSInteger chosen) {
+                 SaveDialogCompletion(chosen, dialog, security_scoped_bookmarks,
+                                      std::move(p));
+               }];
   }
 }
 
