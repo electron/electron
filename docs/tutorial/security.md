@@ -699,12 +699,13 @@ leveraged to execute arbitrary commands.
 ### How?
 
 ```js
-<!-- Bad -->
-const {shell} = require('electron') 
+//  Bad
+const { shell } = require('electron')
 shell.openExternal(USER_CONTROLLED_DATA_HERE)
-
-<!-- Good -->
-const {shell} = require('electron') 
+```
+```js
+//  Good
+const { shell } = require('electron')
 shell.openExternal('https://example.com/index.html')
 ```
 
