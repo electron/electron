@@ -142,7 +142,7 @@ describe('session module', () => {
         error = e
       }
       expect(error).is.an('Error')
-      expect(error).to.have.property('message').which.equals('Setting cookie failed')
+      expect(error).to.have.property('message').which.equals('Failed to get cookie domain')
     })
 
     it('should overwrite previous cookies', async () => {
