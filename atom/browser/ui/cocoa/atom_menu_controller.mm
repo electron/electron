@@ -5,6 +5,7 @@
 
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
 
+#include "atom/browser/mac/atom_application.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
