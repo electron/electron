@@ -5,6 +5,7 @@
 
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
 
+#include "atom/browser/mac/atom_application.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
@@ -291,6 +292,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       [item setKeyEquivalentModifierMask:modifier_mask];
     }
 
+    if (@available(macOS 10.13, *)) {
+      [(id)item
+          setAllowsKeyEquivalentWhenHidden:(model->WorksWhenHiddenAt(index))];
+    }
+
     // Set menu item's role.
     [item setTarget:self];
     if (!role.empty()) {
@@ -307,8 +313,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 }
 
 // Called before the menu is to be displayed to update the state (enabled,
-// radio, etc) of each item in the menu. Also will update the title if
-// the item is marked as "dynamic".
+// radio, etc) of each item in the menu.
 - (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item {
   SEL action = [item action];
   if (action != @selector(itemSelected:))
