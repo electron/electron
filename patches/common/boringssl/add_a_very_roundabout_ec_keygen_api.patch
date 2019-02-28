@@ -1,0 +1,397 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Benjamin <davidben@google.com>
+Date: Fri, 25 Jan 2019 16:36:28 -0600
+Subject: Add a very roundabout EC keygen API.
+
+OpenSSL's EVP-level EC API involves a separate "paramgen" operation,
+which is ultimately just a roundabout way to go from a NID to an
+EC_GROUP. But Node uses this, and it's the pattern used within OpenSSL
+these days, so this appears to be the official upstream recommendation.
+
+Also add a #define for OPENSSL_EC_EXPLICIT_CURVE, because Node uses it,
+but fail attempts to use it. Explicit curve encodings are forbidden by
+RFC 5480 and generally a bad idea. (Parsing such keys back into OpenSSL
+will cause it to lose the optimized path.)
+
+Change-Id: I5e97080e77cf90fc149f6cf6f2cc4900f573fc64
+Reviewed-on: https://boringssl-review.googlesource.com/c/34565
+Commit-Queue: David Benjamin <davidben@google.com>
+Commit-Queue: Adam Langley <agl@google.com>
+Reviewed-by: Adam Langley <agl@google.com>
+
+diff --git a/crypto/evp/evp_ctx.c b/crypto/evp/evp_ctx.c
+index 3599f77838731147c4812e85fb8f6145835c77af..daa1954b5e1c2d377660eb6bb36769b84fa39ac5 100644
+--- a/crypto/evp/evp_ctx.c
++++ b/crypto/evp/evp_ctx.c
+@@ -415,7 +415,7 @@ int EVP_PKEY_keygen_init(EVP_PKEY_CTX *ctx) {
+   return 1;
+ }
+ 
+-int EVP_PKEY_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey) {
++int EVP_PKEY_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY **out_pkey) {
+   if (!ctx || !ctx->pmeth || !ctx->pmeth->keygen) {
+     OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+     return 0;
+@@ -425,21 +425,60 @@ int EVP_PKEY_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey) {
+     return 0;
+   }
+ 
+-  if (!ppkey) {
++  if (!out_pkey) {
+     return 0;
+   }
+ 
+-  if (!*ppkey) {
+-    *ppkey = EVP_PKEY_new();
+-    if (!*ppkey) {
++  if (!*out_pkey) {
++    *out_pkey = EVP_PKEY_new();
++    if (!*out_pkey) {
+       OPENSSL_PUT_ERROR(EVP, ERR_LIB_EVP);
+       return 0;
+     }
+   }
+ 
+-  if (!ctx->pmeth->keygen(ctx, *ppkey)) {
+-    EVP_PKEY_free(*ppkey);
+-    *ppkey = NULL;
++  if (!ctx->pmeth->keygen(ctx, *out_pkey)) {
++    EVP_PKEY_free(*out_pkey);
++    *out_pkey = NULL;
++    return 0;
++  }
++  return 1;
++}
++
++int EVP_PKEY_paramgen_init(EVP_PKEY_CTX *ctx) {
++  if (!ctx || !ctx->pmeth || !ctx->pmeth->paramgen) {
++    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
++    return 0;
++  }
++  ctx->operation = EVP_PKEY_OP_PARAMGEN;
++  return 1;
++}
++
++int EVP_PKEY_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY **out_pkey) {
++  if (!ctx || !ctx->pmeth || !ctx->pmeth->paramgen) {
++    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
++    return 0;
++  }
++  if (ctx->operation != EVP_PKEY_OP_PARAMGEN) {
++    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATON_NOT_INITIALIZED);
++    return 0;
++  }
++
++  if (!out_pkey) {
++    return 0;
++  }
++
++  if (!*out_pkey) {
++    *out_pkey = EVP_PKEY_new();
++    if (!*out_pkey) {
++      OPENSSL_PUT_ERROR(EVP, ERR_LIB_EVP);
++      return 0;
++    }
++  }
++
++  if (!ctx->pmeth->paramgen(ctx, *out_pkey)) {
++    EVP_PKEY_free(*out_pkey);
++    *out_pkey = NULL;
+     return 0;
+   }
+   return 1;
+diff --git a/crypto/evp/evp_extra_test.cc b/crypto/evp/evp_extra_test.cc
+index f12650ef11f15a4bcd2c4e3a1bc08fb7e3e07abc..1f6a61d35034bae1581277389d779b9f5404fe92 100644
+--- a/crypto/evp/evp_extra_test.cc
++++ b/crypto/evp/evp_extra_test.cc
+@@ -638,3 +638,60 @@ TEST(EVPExtraTest, Ed25519) {
+   EXPECT_FALSE(EVP_DigestVerifyFinal(ctx.get(), nullptr, 0));
+   ERR_clear_error();
+ }
++
++static void ExpectECGroupOnly(const EVP_PKEY *pkey, int nid) {
++  EC_KEY *ec = EVP_PKEY_get0_EC_KEY(pkey);
++  ASSERT_TRUE(ec);
++  const EC_GROUP *group = EC_KEY_get0_group(ec);
++  ASSERT_TRUE(group);
++  EXPECT_EQ(nid, EC_GROUP_get_curve_name(group));
++  EXPECT_FALSE(EC_KEY_get0_public_key(ec));
++  EXPECT_FALSE(EC_KEY_get0_private_key(ec));
++}
++
++static void ExpectECGroupAndKey(const EVP_PKEY *pkey, int nid) {
++  EC_KEY *ec = EVP_PKEY_get0_EC_KEY(pkey);
++  ASSERT_TRUE(ec);
++  const EC_GROUP *group = EC_KEY_get0_group(ec);
++  ASSERT_TRUE(group);
++  EXPECT_EQ(nid, EC_GROUP_get_curve_name(group));
++  EXPECT_TRUE(EC_KEY_get0_public_key(ec));
++  EXPECT_TRUE(EC_KEY_get0_private_key(ec));
++}
++
++TEST(EVPExtraTest, ECKeygen) {
++  // |EVP_PKEY_paramgen| may be used as an extremely roundabout way to get an
++  // |EC_GROUP|.
++  bssl::UniquePtr<EVP_PKEY_CTX> ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr));
++  ASSERT_TRUE(ctx);
++  ASSERT_TRUE(EVP_PKEY_paramgen_init(ctx.get()));
++  ASSERT_TRUE(
++      EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx.get(), NID_X9_62_prime256v1));
++  EVP_PKEY *raw = nullptr;
++  ASSERT_TRUE(EVP_PKEY_paramgen(ctx.get(), &raw));
++  bssl::UniquePtr<EVP_PKEY> pkey(raw);
++  raw = nullptr;
++  ExpectECGroupOnly(pkey.get(), NID_X9_62_prime256v1);
++
++  // That resulting |EVP_PKEY| may be used as a template for key generation.
++  ctx.reset(EVP_PKEY_CTX_new(pkey.get(), nullptr));
++  ASSERT_TRUE(ctx);
++  ASSERT_TRUE(EVP_PKEY_keygen_init(ctx.get()));
++  raw = nullptr;
++  ASSERT_TRUE(EVP_PKEY_keygen(ctx.get(), &raw));
++  pkey.reset(raw);
++  raw = nullptr;
++  ExpectECGroupAndKey(pkey.get(), NID_X9_62_prime256v1);
++
++  // |EVP_PKEY_paramgen| may also be skipped.
++  ctx.reset(EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr));
++  ASSERT_TRUE(ctx);
++  ASSERT_TRUE(EVP_PKEY_keygen_init(ctx.get()));
++  ASSERT_TRUE(
++      EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx.get(), NID_X9_62_prime256v1));
++  raw = nullptr;
++  ASSERT_TRUE(EVP_PKEY_keygen(ctx.get(), &raw));
++  pkey.reset(raw);
++  raw = nullptr;
++  ExpectECGroupAndKey(pkey.get(), NID_X9_62_prime256v1);
++}
+diff --git a/crypto/evp/internal.h b/crypto/evp/internal.h
+index 4aefa3526235b499fe85f55fae4b0ab38ca44dbe..43847ea16655dac1061cbb9f4c9a4d18fc03e777 100644
+--- a/crypto/evp/internal.h
++++ b/crypto/evp/internal.h
+@@ -119,6 +119,7 @@ struct evp_pkey_asn1_method_st {
+ #define EVP_PKEY_OP_ENCRYPT (1 << 6)
+ #define EVP_PKEY_OP_DECRYPT (1 << 7)
+ #define EVP_PKEY_OP_DERIVE (1 << 8)
++#define EVP_PKEY_OP_PARAMGEN (1 << 9)
+ 
+ #define EVP_PKEY_OP_TYPE_SIG \
+   (EVP_PKEY_OP_SIGN | EVP_PKEY_OP_VERIFY | EVP_PKEY_OP_VERIFYRECOVER)
+@@ -128,7 +129,7 @@ struct evp_pkey_asn1_method_st {
+ #define EVP_PKEY_OP_TYPE_NOGEN \
+   (EVP_PKEY_OP_SIG | EVP_PKEY_OP_CRYPT | EVP_PKEY_OP_DERIVE)
+ 
+-#define EVP_PKEY_OP_TYPE_GEN EVP_PKEY_OP_KEYGEN
++#define EVP_PKEY_OP_TYPE_GEN (EVP_PKEY_OP_KEYGEN | EVP_PKEY_OP_PARAMGEN)
+ 
+ // EVP_PKEY_CTX_ctrl performs |cmd| on |ctx|. The |keytype| and |optype|
+ // arguments can be -1 to specify that any type and operation are acceptable,
+@@ -171,6 +172,7 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_ctrl(EVP_PKEY_CTX *ctx, int keytype, int optype,
+ #define EVP_PKEY_CTRL_GET_RSA_MGF1_MD (EVP_PKEY_ALG_CTRL + 10)
+ #define EVP_PKEY_CTRL_RSA_OAEP_LABEL (EVP_PKEY_ALG_CTRL + 11)
+ #define EVP_PKEY_CTRL_GET_RSA_OAEP_LABEL (EVP_PKEY_ALG_CTRL + 12)
++#define EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID (EVP_PKEY_ALG_CTRL + 13)
+ 
+ struct evp_pkey_ctx_st {
+   // Method associated with this operation
+@@ -219,6 +221,8 @@ struct evp_pkey_method_st {
+ 
+   int (*derive)(EVP_PKEY_CTX *ctx, uint8_t *key, size_t *keylen);
+ 
++  int (*paramgen)(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey);
++
+   int (*ctrl)(EVP_PKEY_CTX *ctx, int type, int p1, void *p2);
+ } /* EVP_PKEY_METHOD */;
+ 
+diff --git a/crypto/evp/p_ec.c b/crypto/evp/p_ec.c
+index d311d22091150b0f8fd381ba0b1c2b305c0e2f06..9c325ae0cf6683e1bff366e8cf6ed17b6132ca1d 100644
+--- a/crypto/evp/p_ec.c
++++ b/crypto/evp/p_ec.c
+@@ -76,6 +76,7 @@
+ typedef struct {
+   // message digest
+   const EVP_MD *md;
++  EC_GROUP *gen_group;
+ } EC_PKEY_CTX;
+ 
+ 
+@@ -111,6 +112,7 @@ static void pkey_ec_cleanup(EVP_PKEY_CTX *ctx) {
+     return;
+   }
+ 
++  EC_GROUP_free(dctx->gen_group);
+   OPENSSL_free(dctx);
+ }
+ 
+@@ -199,6 +201,16 @@ static int pkey_ec_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2) {
+       // Default behaviour is OK
+       return 1;
+ 
++    case EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID: {
++      EC_GROUP *group = EC_GROUP_new_by_curve_name(p1);
++      if (group == NULL) {
++        return 0;
++      }
++      EC_GROUP_free(dctx->gen_group);
++      dctx->gen_group = group;
++      return 1;
++    }
++
+     default:
+       OPENSSL_PUT_ERROR(EVP, EVP_R_COMMAND_NOT_SUPPORTED);
+       return 0;
+@@ -206,14 +218,35 @@ static int pkey_ec_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2) {
+ }
+ 
+ static int pkey_ec_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey) {
+-  if (ctx->pkey == NULL) {
++  EC_PKEY_CTX *dctx = ctx->data;
++  const EC_GROUP *group = dctx->gen_group;
++  if (group == NULL) {
++    if (ctx->pkey == NULL) {
++      OPENSSL_PUT_ERROR(EVP, EVP_R_NO_PARAMETERS_SET);
++      return 0;
++    }
++    group = EC_KEY_get0_group(ctx->pkey->pkey.ec);
++  }
++  EC_KEY *ec = EC_KEY_new();
++  if (ec == NULL ||
++      !EC_KEY_set_group(ec, group) ||
++      !EC_KEY_generate_key(ec)) {
++    EC_KEY_free(ec);
++    return 0;
++  }
++  EVP_PKEY_assign_EC_KEY(pkey, ec);
++  return 1;
++}
++
++static int pkey_ec_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey) {
++  EC_PKEY_CTX *dctx = ctx->data;
++  if (dctx->gen_group == NULL) {
+     OPENSSL_PUT_ERROR(EVP, EVP_R_NO_PARAMETERS_SET);
+     return 0;
+   }
+   EC_KEY *ec = EC_KEY_new();
+   if (ec == NULL ||
+-      !EC_KEY_set_group(ec, EC_KEY_get0_group(ctx->pkey->pkey.ec)) ||
+-      !EC_KEY_generate_key(ec)) {
++      !EC_KEY_set_group(ec, dctx->gen_group)) {
+     EC_KEY_free(ec);
+     return 0;
+   }
+@@ -235,5 +268,20 @@ const EVP_PKEY_METHOD ec_pkey_meth = {
+     NULL /* encrypt */,
+     NULL /* decrypt */,
+     pkey_ec_derive,
++    pkey_ec_paramgen,
+     pkey_ec_ctrl,
+ };
++
++int EVP_PKEY_CTX_set_ec_paramgen_curve_nid(EVP_PKEY_CTX *ctx, int nid) {
++  return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_EC, EVP_PKEY_OP_TYPE_GEN,
++                           EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, NULL);
++}
++
++int EVP_PKEY_CTX_set_ec_param_enc(EVP_PKEY_CTX *ctx, int encoding) {
++  // BoringSSL only supports named curve syntax.
++  if (encoding != OPENSSL_EC_NAMED_CURVE) {
++    OPENSSL_PUT_ERROR(EVP, EVP_R_INVALID_PARAMETERS);
++    return 0;
++  }
++  return 1;
++}
+diff --git a/crypto/evp/p_ed25519.c b/crypto/evp/p_ed25519.c
+index 554a379c7501dae26b6047e65c061523c0372f08..062ea458819d0dca3e86d5c4d41abac9bb319a9b 100644
+--- a/crypto/evp/p_ed25519.c
++++ b/crypto/evp/p_ed25519.c
+@@ -67,5 +67,6 @@ const EVP_PKEY_METHOD ed25519_pkey_meth = {
+     NULL /* encrypt */,
+     NULL /* decrypt */,
+     NULL /* derive */,
++    NULL /* paramgen */,
+     NULL /* ctrl */,
+ };
+diff --git a/crypto/evp/p_rsa.c b/crypto/evp/p_rsa.c
+index cfc6bea1e29d6b1d9ff1cd7337d07010e51af203..eb59901e3c7fe85e89219d5698ce04325b984a2a 100644
+--- a/crypto/evp/p_rsa.c
++++ b/crypto/evp/p_rsa.c
+@@ -553,7 +553,8 @@ const EVP_PKEY_METHOD rsa_pkey_meth = {
+     pkey_rsa_verify_recover,
+     pkey_rsa_encrypt,
+     pkey_rsa_decrypt,
+-    0 /* derive */,
++    NULL /* derive */,
++    NULL /* paramgen */,
+     pkey_rsa_ctrl,
+ };
+ 
+diff --git a/include/openssl/ec.h b/include/openssl/ec.h
+index 16dadf27a7b31da6ecacd573759d0da7b4ce1372..fcecb62252a97ae5ea703ac16760863de8702316 100644
+--- a/include/openssl/ec.h
++++ b/include/openssl/ec.h
+@@ -325,6 +325,7 @@ OPENSSL_EXPORT int EC_GROUP_get_order(const EC_GROUP *group, BIGNUM *order,
+ OPENSSL_EXPORT void EC_GROUP_set_asn1_flag(EC_GROUP *group, int flag);
+ 
+ #define OPENSSL_EC_NAMED_CURVE 0
++#define OPENSSL_EC_EXPLICIT_CURVE 1
+ 
+ typedef struct ec_method_st EC_METHOD;
+ 
+diff --git a/include/openssl/evp.h b/include/openssl/evp.h
+index cbe93d80f480d2816aaccbb7df02d80e9c1db678..c4469841fd482527bf2ee5c8af1fafccb665af4c 100644
+--- a/include/openssl/evp.h
++++ b/include/openssl/evp.h
+@@ -646,9 +646,23 @@ OPENSSL_EXPORT int EVP_PKEY_derive(EVP_PKEY_CTX *ctx, uint8_t *key,
+ OPENSSL_EXPORT int EVP_PKEY_keygen_init(EVP_PKEY_CTX *ctx);
+ 
+ // EVP_PKEY_keygen performs a key generation operation using the values from
+-// |ctx| and sets |*ppkey| to a fresh |EVP_PKEY| containing the resulting key.
++// |ctx|. If |*out_pkey| is non-NULL, it overwrites |*out_pkey| with the
++// resulting key. Otherwise, it sets |*out_pkey| to a newly-allocated |EVP_PKEY|
++// containing the result. It returns one on success or zero on error.
++OPENSSL_EXPORT int EVP_PKEY_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY **out_pkey);
++
++// EVP_PKEY_paramgen_init initialises an |EVP_PKEY_CTX| for a parameter
++// generation operation. It should be called before |EVP_PKEY_paramgen|.
++//
+ // It returns one on success or zero on error.
+-OPENSSL_EXPORT int EVP_PKEY_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey);
++OPENSSL_EXPORT int EVP_PKEY_paramgen_init(EVP_PKEY_CTX *ctx);
++
++// EVP_PKEY_paramgen performs a parameter generation using the values from
++// |ctx|. If |*out_pkey| is non-NULL, it overwrites |*out_pkey| with the
++// resulting parameters, but no key. Otherwise, it sets |*out_pkey| to a
++// newly-allocated |EVP_PKEY| containing the result. It returns one on success
++// or zero on error.
++OPENSSL_EXPORT int EVP_PKEY_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY **out_pkey);
+ 
+ 
+ // Generic control functions.
+@@ -746,6 +760,15 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_get0_rsa_oaep_label(EVP_PKEY_CTX *ctx,
+                                                     const uint8_t **out_label);
+ 
+ 
++// EC specific control functions.
++
++// EVP_PKEY_CTX_set_ec_paramgen_curve_nid sets the curve used for
++// |EVP_PKEY_keygen| or |EVP_PKEY_paramgen| operations to |nid|. It returns one
++// on success and zero on error.
++OPENSSL_EXPORT int EVP_PKEY_CTX_set_ec_paramgen_curve_nid(EVP_PKEY_CTX *ctx,
++                                                          int nid);
++
++
+ // Deprecated functions.
+ 
+ // EVP_PKEY_DH is defined for compatibility, but it is impossible to create an
+@@ -846,6 +869,11 @@ OPENSSL_EXPORT DH *EVP_PKEY_get0_DH(const EVP_PKEY *pkey);
+ // EVP_PKEY_get1_DH returns NULL.
+ OPENSSL_EXPORT DH *EVP_PKEY_get1_DH(const EVP_PKEY *pkey);
+ 
++// EVP_PKEY_CTX_set_ec_param_enc returns one if |encoding| is
++// |OPENSSL_EC_NAMED_CURVE| or zero with an error otherwise.
++OPENSSL_EXPORT int EVP_PKEY_CTX_set_ec_param_enc(EVP_PKEY_CTX *ctx,
++                                                 int encoding);
++
+ 
+ // Preprocessor compatibility section (hidden).
+ //

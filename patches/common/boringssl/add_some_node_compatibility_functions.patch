@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Benjamin <davidben@google.com>
+Date: Fri, 25 Jan 2019 04:44:22 +0000
+Subject: Add some Node compatibility functions.
+
+This doesn't cover all the functions used by Node, but it's the easy
+bits. (EVP_PKEY_paramgen will be done separately as its a non-trivial
+bit of machinery.)
+
+Change-Id: I6501e99f9239ffcdcc57b961ebe85d0ad3965549
+Reviewed-on: https://boringssl-review.googlesource.com/c/34544
+Reviewed-by: Adam Langley <agl@google.com>
+Commit-Queue: Adam Langley <agl@google.com>
+
+diff --git a/crypto/bn_extra/convert.c b/crypto/bn_extra/convert.c
+index 9a1a69e3360bceaa673da8747b487a56049d10f3..6e930fc69f795f0cb2b2d0cb85d4fa2118c98fc9 100644
+--- a/crypto/bn_extra/convert.c
++++ b/crypto/bn_extra/convert.c
+@@ -460,3 +460,11 @@ BIGNUM *BN_mpi2bn(const uint8_t *in, size_t len, BIGNUM *out) {
+   }
+   return out;
+ }
++
++int BN_bn2binpad(const BIGNUM *in, uint8_t *out, int len) {
++  if (len < 0 ||
++      !BN_bn2bin_padded(out, (size_t)len, in)) {
++    return -1;
++  }
++  return len;
++}
+diff --git a/crypto/evp/evp_asn1.c b/crypto/evp/evp_asn1.c
+index 383e2f9b8136827cdc4d1072b181afefa8fee4d2..d56b93b03891acfcc6a892459f232503b698c04a 100644
+--- a/crypto/evp/evp_asn1.c
++++ b/crypto/evp/evp_asn1.c
+@@ -344,3 +344,44 @@ int i2d_PublicKey(const EVP_PKEY *key, uint8_t **outp) {
+       return -1;
+   }
+ }
++
++EVP_PKEY *d2i_PublicKey(int type, EVP_PKEY **out, const uint8_t **inp,
++                        long len) {
++  EVP_PKEY *ret = EVP_PKEY_new();
++  if (ret == NULL) {
++    return NULL;
++  }
++
++  CBS cbs;
++  CBS_init(&cbs, *inp, len < 0 ? 0 : (size_t)len);
++  switch (type) {
++    case EVP_PKEY_RSA: {
++      RSA *rsa = RSA_parse_public_key(&cbs);
++      if (rsa == NULL || !EVP_PKEY_assign_RSA(ret, rsa)) {
++        RSA_free(rsa);
++        goto err;
++      }
++      break;
++    }
++
++    // Unlike OpenSSL, we do not support EC keys with this API. The raw EC
++    // public key serialization requires knowing the group. In OpenSSL, calling
++    // this function with |EVP_PKEY_EC| and setting |out| to NULL does not work.
++    // It requires |*out| to include a partially-initiazed |EVP_PKEY| to extract
++    // the group.
++    default:
++      OPENSSL_PUT_ERROR(EVP, EVP_R_UNSUPPORTED_PUBLIC_KEY_TYPE);
++      goto err;
++  }
++
++  *inp = CBS_data(&cbs);
++  if (out != NULL) {
++    EVP_PKEY_free(*out);
++    *out = ret;
++  }
++  return ret;
++
++err:
++  EVP_PKEY_free(ret);
++  return NULL;
++}
+diff --git a/crypto/fipsmodule/ec/ec.c b/crypto/fipsmodule/ec/ec.c
+index 90b9d71f61f8d6d7ddf838c47a59729748d0d0f2..4ea5529bf45566bb454f21ca96637b88de6d4de9 100644
+--- a/crypto/fipsmodule/ec/ec.c
++++ b/crypto/fipsmodule/ec/ec.c
+@@ -660,6 +660,22 @@ const char *EC_curve_nid2nist(int nid) {
+   return NULL;
+ }
+ 
++int EC_curve_nist2nid(const char *name) {
++  if (strcmp(name, "P-224") == 0) {
++    return NID_secp224r1;
++  }
++  if (strcmp(name, "P-256") == 0) {
++    return NID_X9_62_prime256v1;
++  }
++  if (strcmp(name, "P-384") == 0) {
++    return NID_secp384r1;
++  }
++  if (strcmp(name, "P-521") == 0) {
++    return NID_secp521r1;
++  }
++  return NID_undef;
++}
++
+ EC_POINT *EC_POINT_new(const EC_GROUP *group) {
+   if (group == NULL) {
+     OPENSSL_PUT_ERROR(EC, ERR_R_PASSED_NULL_PARAMETER);
+diff --git a/include/openssl/bn.h b/include/openssl/bn.h
+index c198f4df3ca7622e19b4e901213e84253fad0f29..b6b7e9abff979ebba04691a88cbc778cc62609c5 100644
+--- a/include/openssl/bn.h
++++ b/include/openssl/bn.h
+@@ -932,6 +932,12 @@ OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_new(void);
+ OPENSSL_EXPORT int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod,
+                                    BN_CTX *ctx);
+ 
++// BN_bn2binpad behaves like |BN_bn2bin_padded|, but it returns |len| on success
++// and -1 on error.
++//
++// Use |BN_bn2bin_padded| instead. It is |size_t|-clean.
++OPENSSL_EXPORT int BN_bn2binpad(const BIGNUM *in, uint8_t *out, int len);
++
+ 
+ // Private functions
+ 
+diff --git a/include/openssl/ec.h b/include/openssl/ec.h
+index c65a1a7519fd80b681d1cf899792ee46aaa8bad6..16dadf27a7b31da6ecacd573759d0da7b4ce1372 100644
+--- a/include/openssl/ec.h
++++ b/include/openssl/ec.h
+@@ -162,6 +162,11 @@ OPENSSL_EXPORT unsigned EC_GROUP_get_degree(const EC_GROUP *group);
+ // for |NID_X9_62_prime256v1|.
+ OPENSSL_EXPORT const char *EC_curve_nid2nist(int nid);
+ 
++// EC_curve_nist2nid returns the NID of the elliptic curve specified by the NIST
++// name |name|, or |NID_undef| if |name| is not a recognized name. For example,
++// it returns |NID_X9_62_prime256v1| for "P-256".
++OPENSSL_EXPORT int EC_curve_nist2nid(const char *name);
++
+ 
+ // Points on elliptic curves.
+ 
+diff --git a/include/openssl/evp.h b/include/openssl/evp.h
+index 1d7192daf542ce227135a74914891b0ae39c9bb3..cbe93d80f480d2816aaccbb7df02d80e9c1db678 100644
+--- a/include/openssl/evp.h
++++ b/include/openssl/evp.h
+@@ -826,6 +826,20 @@ OPENSSL_EXPORT EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **out,
+ OPENSSL_EXPORT EVP_PKEY *d2i_AutoPrivateKey(EVP_PKEY **out, const uint8_t **inp,
+                                             long len);
+ 
++// d2i_PublicKey parse a public key from |len| bytes at |*inp| in a type-
++// specific format specified by |type|. If |out| is not NULL then, on exit, a
++// pointer to the result is in |*out|. Note that, even if |*out| is already non-
++// NULL on entry, it will not be written to. Rather, a fresh |EVP_PKEY| is
++// allocated and the previous one is freed. On successful exit, |*inp| is
++// advanced past the decoded key. It returns the result or NULL on error.
++//
++// RSA keys are parsed as a DER-encoded RSAPublicKey (RFC 3447) structure.
++// Parsing EC keys is not supported by this function.
++//
++// Use |RSA_parse_public_key| instead.
++OPENSSL_EXPORT EVP_PKEY *d2i_PublicKey(int type, EVP_PKEY **out,
++                                       const uint8_t **inp, long len);
++
+ // EVP_PKEY_get0_DH returns NULL.
+ OPENSSL_EXPORT DH *EVP_PKEY_get0_DH(const EVP_PKEY *pkey);
+ 
+diff --git a/include/openssl/mem.h b/include/openssl/mem.h
+index 9f9c00dd547a3f3b55c2af5c1d40a56c0feb83bd..4e1c2ca64dd4225d08cc6ab3c1379baac075d1c6 100644
+--- a/include/openssl/mem.h
++++ b/include/openssl/mem.h
+@@ -136,6 +136,10 @@ OPENSSL_EXPORT int BIO_vsnprintf(char *buf, size_t n, const char *format,
+ #define CRYPTO_realloc OPENSSL_realloc
+ #define CRYPTO_free OPENSSL_free
+ 
++// OPENSSL_clear_free calls |OPENSSL_free|. BoringSSL automatically clears all
++// allocations on free, but we define |OPENSSL_clear_free| for compatibility.
++#define OPENSSL_clear_free(ptr, len) OPENSSL_free(ptr)
++
+ 
+ #if defined(__cplusplus)
+ }  // extern C
