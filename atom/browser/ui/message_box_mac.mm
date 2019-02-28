@@ -13,43 +13,6 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
 
-@interface ModalDelegate : NSObject {
- @private
-  atom::MessageBoxCallback callback_;
-  NSAlert* alert_;
-  bool callEndModal_;
-}
-- (id)initWithCallback:(const atom::MessageBoxCallback&)callback
-              andAlert:(NSAlert*)alert
-          callEndModal:(bool)flag;
-@end
-
-@implementation ModalDelegate
-
-- (id)initWithCallback:(const atom::MessageBoxCallback&)callback
-              andAlert:(NSAlert*)alert
-          callEndModal:(bool)flag {
-  if ((self = [super init])) {
-    callback_ = callback;
-    alert_ = alert;
-    callEndModal_ = flag;
-  }
-  return self;
-}
-
-- (void)alertDidEnd:(NSAlert*)alert
-         returnCode:(NSInteger)returnCode
-        contextInfo:(void*)contextInfo {
-  callback_.Run(returnCode, alert.suppressionButton.state == NSOnState);
-  [alert_ release];
-  [self release];
-
-  if (callEndModal_)
-    [NSApp stopModal];
-}
-
-@end
-
 namespace atom {
 
 namespace {
@@ -125,10 +88,6 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   return alert;
 }
 
-void SetReturnCode(int* ret_code, int result, bool checkbox_checked) {
-  *ret_code = result;
-}
-
 }  // namespace
 
 int ShowMessageBox(NativeWindow* parent_window,
@@ -150,20 +109,14 @@ int ShowMessageBox(NativeWindow* parent_window,
   if (!parent_window)
     return [[alert autorelease] runModal];
 
-  int ret_code = -1;
-  ModalDelegate* delegate = [[ModalDelegate alloc]
-      initWithCallback:base::Bind(&SetReturnCode, &ret_code)
-              andAlert:alert
-          callEndModal:true];
+  __block int ret_code = -1;
 
   NSWindow* window = parent_window->GetNativeWindow().GetNativeNSWindow();
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   [alert beginSheetModalForWindow:window
-                    modalDelegate:delegate
-                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                      contextInfo:nil];
-#pragma clang diagnostic pop
+                completionHandler:^(NSModalResponse response) {
+                  ret_code = response;
+                  [NSApp stopModal];
+                }];
 
   [NSApp runModalForWindow:window];
   return ret_code;
@@ -192,21 +145,17 @@ void ShowMessageBox(NativeWindow* parent_window,
     int ret = [[alert autorelease] runModal];
     callback.Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
-    ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
-                                                             andAlert:alert
-                                                         callEndModal:false];
-
     NSWindow* window =
         parent_window ? parent_window->GetNativeWindow().GetNativeNSWindow()
                       : nil;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    [alert
-        beginSheetModalForWindow:window
-                   modalDelegate:delegate
-                  didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                     contextInfo:nil];
-#pragma clang diagnostic pop
+    // Duplicate the callback object here since c is a reference and gcd would
+    // only store the pointer, by duplication we can force gcd to store a copy.
+    __block MessageBoxCallback callback_ = callback;
+    [alert beginSheetModalForWindow:window
+                  completionHandler:^(NSModalResponse response) {
+                    callback_.Run(response,
+                                  alert.suppressionButton.state == NSOnState);
+                  }];
   }
 }
 
