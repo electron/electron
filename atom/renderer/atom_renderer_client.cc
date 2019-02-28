@@ -182,8 +182,11 @@ void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
   }
 }
 
-void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
-    v8::Local<v8::Context> context) {
+void AtomRendererClient::WillDestroyServiceWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context,
+    int64_t service_worker_version_id,
+    const GURL& service_worker_scope,
+    const GURL& script_url) {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);

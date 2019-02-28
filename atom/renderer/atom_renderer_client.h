@@ -48,8 +48,11 @@ class AtomRendererClient : public RendererClientBase {
                   bool is_server_redirect) override;
   void DidInitializeWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
-  void WillDestroyWorkerContextOnWorkerThread(
-      v8::Local<v8::Context> context) override;
+  void WillDestroyServiceWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context,
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
 
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
 
