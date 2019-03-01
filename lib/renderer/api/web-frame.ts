@@ -1,27 +1,25 @@
-'use strict'
+import { EventEmitter } from 'events'
+import { deprecate } from 'electron'
 
-const { EventEmitter } = require('events')
 const binding = process.atomBinding('web_frame')
-const { deprecate } = require('electron')
 
 class WebFrame extends EventEmitter {
-  constructor (context) {
+  constructor (public context: Window) {
     super()
 
-    this.context = context
     // Lots of webview would subscribe to webFrame's events.
     this.setMaxListeners(0)
   }
 
-  findFrameByRoutingId (...args) {
+  findFrameByRoutingId (...args: Array<any>) {
     return getWebFrame(binding._findFrameByRoutingId(this.context, ...args))
   }
 
-  getFrameForSelector (...args) {
+  getFrameForSelector (...args: Array<any>) {
     return getWebFrame(binding._getFrameForSelector(this.context, ...args))
   }
 
-  findFrameByName (...args) {
+  findFrameByName (...args: Array<any>) {
     return getWebFrame(binding._findFrameByName(this.context, ...args))
   }
 
@@ -51,12 +49,12 @@ class WebFrame extends EventEmitter {
 
   // Deprecations
   // TODO(nitsakh): Remove in 6.0
-  setIsolatedWorldSecurityOrigin (worldId, securityOrigin) {
+  setIsolatedWorldSecurityOrigin (worldId: number, securityOrigin: string) {
     deprecate.warn('webFrame.setIsolatedWorldSecurityOrigin', 'webFrame.setIsolatedWorldInfo')
     binding.setIsolatedWorldInfo(this.context, worldId, { securityOrigin })
   }
 
-  setIsolatedWorldContentSecurityPolicy (worldId, csp) {
+  setIsolatedWorldContentSecurityPolicy (worldId: number, csp: string) {
     deprecate.warn('webFrame.setIsolatedWorldContentSecurityPolicy', 'webFrame.setIsolatedWorldInfo')
     binding.setIsolatedWorldInfo(this.context, worldId, {
       securityOrigin: window.location.origin,
@@ -64,7 +62,7 @@ class WebFrame extends EventEmitter {
     })
   }
 
-  setIsolatedWorldHumanReadableName (worldId, name) {
+  setIsolatedWorldHumanReadableName (worldId: number, name: string) {
     deprecate.warn('webFrame.setIsolatedWorldHumanReadableName', 'webFrame.setIsolatedWorldInfo')
     binding.setIsolatedWorldInfo(this.context, worldId, { name })
   }
@@ -72,8 +70,10 @@ class WebFrame extends EventEmitter {
 
 // Populate the methods.
 for (const name in binding) {
-  if (!name.startsWith('_')) { // some methods are manully populated above
-    WebFrame.prototype[name] = function (...args) {
+  if (!name.startsWith('_')) { // some methods are manually populated above
+    // TODO(felixrieseberg): Once we can type web_frame natives, we could
+    // use a neat `keyof` here
+    (WebFrame as any).prototype[name] = function (...args: Array<any>) {
       return binding[name](this.context, ...args)
     }
   }
@@ -81,8 +81,10 @@ for (const name in binding) {
 
 // Helper to return WebFrame or null depending on context.
 // TODO(zcbenz): Consider returning same WebFrame for the same frame.
-function getWebFrame (context) {
+function getWebFrame (context: Window) {
   return context ? new WebFrame(context) : null
 }
 
-module.exports = new WebFrame(window)
+const _webFrame = new WebFrame(window)
+
+export default _webFrame

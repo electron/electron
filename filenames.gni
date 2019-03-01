@@ -84,7 +84,7 @@ filenames = {
     "lib/renderer/api/ipc-renderer.js",
     "lib/renderer/api/module-list.js",
     "lib/renderer/api/remote.js",
-    "lib/renderer/api/web-frame.js",
+    "lib/renderer/api/web-frame.ts",
     "lib/renderer/extensions/event.js",
     "lib/renderer/extensions/i18n.js",
     "lib/renderer/extensions/storage.js",
