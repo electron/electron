@@ -237,6 +237,7 @@ step-gn-check: &step-gn-check
     command: |
       cd src
       gn check out/Default //electron:electron_lib
+      gn check out/Default //electron:electron_app
 
 step-electron-build: &step-electron-build
   run:
