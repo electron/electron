@@ -263,6 +263,7 @@ jobs:
       TARGET_ARCH: x64
       RUN_TESTS: true
       INSTALL_MACOS_NODE: true
+    resource_class: large
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -272,6 +273,7 @@ jobs:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
       INSTALL_MACOS_NODE: true
+    resource_class: large
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -282,6 +284,7 @@ jobs:
       MAS_BUILD: 1
       RUN_TESTS: true
       INSTALL_MACOS_NODE: true
+    resource_class: large
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -292,6 +295,7 @@ jobs:
       MAS_BUILD: 1
       RUN_RELEASE_BUILD: true
       INSTALL_MACOS_NODE: true
+    resource_class: large
     macos:
       xcode: "8.3.3"
     <<: *build-steps
