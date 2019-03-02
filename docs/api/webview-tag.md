@@ -664,9 +664,9 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 Shows pop-up dictionary that searches the selected word on the page.
 
-### `<webview>.getWebContents()`
+### `<webview>.getWebContents()` _(Deprecated)_
 
-Returns [`WebContents`](web-contents.md) - The web contents associated with
+Returns [`WebContents`](web-contents.md) - The WebContents associated with
 this `webview`.
 
 It depends on the [`remote`](remote.md) module,

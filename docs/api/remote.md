@@ -188,7 +188,13 @@ consequences.
 
 ### `remote.getCurrentWebContents()`
 
-Returns [`WebContents`](web-contents.md) - The web contents of this web page.
+Returns [`WebContents`](web-contents.md) - The WebContents of this web page.
+
+### `remote.getGuestWebContents(guestInstanceId)`
+
+* `guestInstanceId` Number
+
+Returns [`WebContents`](web-contents.md) - The guest WebContents from guestInstanceId.
 
 ### `remote.getGlobal(name)`
 

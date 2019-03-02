@@ -6,9 +6,10 @@
   <body>
     <webview nodeintegration src="./a.html"></webview>
     <script>
+        const { remote } = require('electron')
         var wv = document.querySelector('webview')
         wv.addEventListener('dom-ready', () => {
-          const webContents = wv.getWebContents()
+          const webContents = remote.getGuestWebContents(wv.getWebContentsId())
           webContents.on('devtools-opened', function () {
             var showPanelIntevalId = setInterval(function () {
               if (webContents.devToolsWebContents) {

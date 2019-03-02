@@ -5,7 +5,6 @@ import {
   webFrame,
   clipboard,
   crashReporter,
-  nativeImage,
   screen,
   shell
 } from 'electron'
@@ -256,9 +255,10 @@ webview.send('ping')
 webview.capturePage((image) => { console.log(image) })
 
 {
+  const contents = remote.getGuestWebContents(webview.getWebContentsId())
   const opened: boolean = webview.isDevToolsOpened()
   const focused: boolean = webview.isDevToolsFocused()
-  const focused2: boolean = webview.getWebContents().isFocused()
+  const focused2: boolean = contents.isFocused()
 }
 
 // In guest page.

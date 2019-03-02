@@ -46,6 +46,10 @@ describe('<webview> tag', function () {
     return webview
   }
 
+  const getWebViewContents = function () {
+    return remote.getGuestWebContents(webview.getWebContentsId())
+  }
+
   const startLoadingWebViewAndWaitForMessage = async (webview, attributes = {}) => {
     loadWebView(webview, attributes) // Don't wait for load to be finished.
     const event = await waitForEvent(webview, 'console-message')
@@ -780,13 +784,14 @@ describe('<webview> tag', function () {
 
       loadWebView(webview, { src: 'about:blank' })
       await waitForEvent(webview, 'dom-ready')
-      webview.getWebContents().setDevToolsWebContents(webview2.getWebContents())
-      webview.getWebContents().openDevTools()
+      const contents = getWebViewContents()
+      const devtools = remote.getGuestWebContents(webview2.getWebContentsId())
+      contents.setDevToolsWebContents(devtools)
+      contents.openDevTools()
 
       await waitForDomReady
 
       // Its WebContents should be a DevTools.
-      const devtools = webview2.getWebContents()
       assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
 
       const name = await devtools.executeJavaScript('InspectorFrontendHost.constructor.name')
@@ -1239,13 +1244,13 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('<webview>.getWebContents filtering', () => {
+  describe('remote.getGuestWebContents filtering', () => {
     it('can return custom value', async () => {
       const src = 'about:blank'
       await loadWebView(webview, { src })
 
       ipcRenderer.send('handle-next-remote-get-guest-web-contents', 'Hello World!')
-      expect(webview.getWebContents()).to.be.equal('Hello World!')
+      expect(getWebViewContents()).to.be.equal('Hello World!')
     })
 
     it('throws when no returnValue set', async () => {
@@ -1253,7 +1258,7 @@ describe('<webview> tag', function () {
       await loadWebView(webview, { src })
 
       ipcRenderer.send('handle-next-remote-get-guest-web-contents')
-      expect(() => webview.getWebContents()).to.throw('Blocked remote.getGuestForWebContents()')
+      expect(() => getWebViewContents()).to.throw('Blocked remote.getGuestForWebContents()')
     })
   })
 
