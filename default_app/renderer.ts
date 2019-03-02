@@ -27,7 +27,7 @@ function initialize () {
   }
 
   document.querySelector<HTMLAnchorElement>('.electron-version')!.innerText = `Electron v${process.versions.electron}`
-  document.querySelector<HTMLAnchorElement>('.chrome-version')!.innerText =`<a href="https://www.chromium.org/v${process.versions.chrome}">Chromium v${process.versions.chrome}</a>``
+  document.querySelector<HTMLAnchorElement>('.chrome-version')!.innerText =`<a href="https://www.chromium.org/v${process.versions.chrome}">Chromium v${process.versions.chrome}</a>`
   document.querySelector<HTMLAnchorElement>('.node-version')!.innerText = `<a href="https://nodejs.org/docs/v${process.versions.node}">Node v${process.versions.node}</a>`
   document.querySelector<HTMLAnchorElement>('.v8-version')!.innerText = `v8 v${process.versions.v8}`
   document.querySelector<HTMLAnchorElement>('.command-example')!.innerText = `${electronPath} path-to-app`
