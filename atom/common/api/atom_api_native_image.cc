@@ -659,19 +659,27 @@ bool Converter<mate::Handle<atom::api::NativeImage>>::FromV8(
 
 namespace {
 
+using atom::api::NativeImage;
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
-  dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
-  dict.SetMethod("createFromBitmap", &atom::api::NativeImage::CreateFromBitmap);
-  dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
-  dict.SetMethod("createFromDataURL",
-                 &atom::api::NativeImage::CreateFromDataURL);
-  dict.SetMethod("createFromNamedImage",
-                 &atom::api::NativeImage::CreateFromNamedImage);
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("NativeImage", NativeImage::GetConstructor(isolate)
+                              ->GetFunction(context)
+                              .ToLocalChecked());
+  mate::Dictionary native_image = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("nativeImage", native_image);
+
+  native_image.SetMethod("createEmpty", &NativeImage::CreateEmpty);
+  native_image.SetMethod("createFromPath", &NativeImage::CreateFromPath);
+  native_image.SetMethod("createFromBitmap", &NativeImage::CreateFromBitmap);
+  native_image.SetMethod("createFromBuffer", &NativeImage::CreateFromBuffer);
+  native_image.SetMethod("createFromDataURL", &NativeImage::CreateFromDataURL);
+  native_image.SetMethod("createFromNamedImage",
+                         &NativeImage::CreateFromNamedImage);
 }
 
 }  // namespace
