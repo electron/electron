@@ -119,7 +119,9 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
 }
 
 void MenuBar::OnBeforeExecuteCommand() {
-  RemovePaneFocus();
+  if (GetPaneFocusTraversable() != nullptr) {
+    RemovePaneFocus();
+  }
   window_->RestoreFocus();
 }
 
