@@ -616,7 +616,17 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
     return;
   }
 
-  owner_window_->SetFullScreen(enter_fullscreen);
+  // Set fullscreen on window if allowed.
+  auto* web_preferences = WebContentsPreferences::From(GetWebContents());
+  bool html_fullscreenable =
+      web_preferences ? !web_preferences->IsEnabled(
+                            options::kDisableHtmlFullscreenWindowResize)
+                      : true;
+
+  if (html_fullscreenable) {
+    owner_window_->SetFullScreen(enter_fullscreen);
+  }
+
   html_fullscreen_ = enter_fullscreen;
   native_fullscreen_ = false;
 }

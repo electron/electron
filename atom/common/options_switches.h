@@ -76,6 +76,7 @@ extern const char kWebSecurity[];
 extern const char kAllowRunningInsecureContent[];
 extern const char kOffscreen[];
 extern const char kNodeIntegrationInSubFrames[];
+extern const char kDisableHtmlFullscreenWindowResize[];
 
 }  // namespace options
 
@@ -111,6 +112,7 @@ extern const char kNativeWindowOpen[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
 extern const char kNodeIntegrationInSubFrames[];
+extern const char kDisableHtmlFullscreenWindowResize[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];

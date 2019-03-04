@@ -361,6 +361,14 @@ win.webContents.on('before-input-event', (event, input) => {
 })
 ```
 
+#### Event: 'enter-html-full-screen'
+
+Emitted when the window enters a full-screen state triggered by HTML API.
+
+#### Event: 'leave-html-full-screen'
+
+Emitted when the window leaves a full-screen state triggered by HTML API.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
