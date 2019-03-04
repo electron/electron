@@ -190,7 +190,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       save_callback_.Run(true, GetFileName());
     else
       save_callback_.Run(false, base::FilePath());
-  } else if (!open_promise_->is_null()) {
+  } else if (open_promise_) {
     mate::Dictionary dict =
         mate::Dictionary::CreateEmpty(open_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
@@ -282,7 +282,7 @@ void ShowOpenDialog(const DialogSettings& settings,
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
   FileChooserDialog* open_dialog = new FileChooserDialog(action, settings);
   open_dialog->SetupProperties(settings.properties);
-  open_dialog->RunOpenAsynchronous(promise);
+  open_dialog->RunOpenAsynchronous(std::move(promise));
 }
 
 bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
