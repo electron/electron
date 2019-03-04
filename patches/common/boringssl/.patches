@@ -2,3 +2,4 @@ implement_ssl_get_tlsext_status_type.patch
 expose_ripemd160.patch
 expose_aes-cfb.patch
 sync_sorted_ciphers.patch
+handle_pub_key_null_in_ec_key_set_public_key.patch
