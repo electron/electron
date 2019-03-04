@@ -475,6 +475,13 @@ describe('node feature', () => {
       expect(dh.getPrime()).to.be.an.instanceof(Buffer)
       expect(dh.getGenerator()).to.be.an.instanceof(Buffer)
     })
+
+    it('should not crash when creating an ECDH cipher', () => {
+      const crypto = require('crypto')
+      const dh = crypto.createECDH('prime256v1')
+      dh.generateKeys()
+      dh.setPrivateKey(dh.getPrivateKey())
+    })
   })
 
   it('includes the electron version in process.versions', () => {
