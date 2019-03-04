@@ -475,20 +475,17 @@ describe('node feature', () => {
 
     it('should not crash when getting an ECDH key', () => {
       const ecdh = require('crypto').createECDH('prime256v1')
-      expect(ecdh.getPrivateKey()).to.be.a(Buffer)
+      expect(ecdh.generateKeys()).to.be.an.instanceof(Buffer)
+      expect(ecdh.getPrivateKey()).to.be.an.instanceof(Buffer)
     })
 
-    it('should not crash when generating DH keys', () => {
+    it('should not crash when generating DH keys or fetching DH fields', () => {
       const dh = require('crypto').createDiffieHellman('modp15')
-      expect(dh.generateKeys()).to.be.a(Buffer)
-    })
-
-    it('should not crash when fetching DH parameters', () => {
-      const dh = require('crypto').createDiffieHellman('modp15')
-      expect(dh.getPrime()).to.be.a(Buffer)
-      expect(dh.getGenerator()).to.be.a(Buffer)
-      expect(dh.getPublicKey()).to.be.a(Buffer)
-      expect(dh.getPrivateKey()).to.be.a(Buffer)
+      expect(dh.generateKeys()).to.be.an.instanceof(Buffer)
+      expect(dh.getPublicKey()).to.be.an.instanceof(Buffer)
+      expect(dh.getPrivateKey()).to.be.an.instanceof(Buffer)
+      expect(dh.getPrime()).to.be.an.instanceof(Buffer)
+      expect(dh.getGenerator()).to.be.an.instanceof(Buffer)
     })
   })
 
