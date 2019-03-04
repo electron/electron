@@ -109,3 +109,7 @@ $ git config --system core.longpaths true
 ### error: use of undeclared identifier 'DefaultDelegateCheckMode'
 
 This can happen during build, when Debugging Tools for Windows has been installed with Windows Driver Kit. Uninstall Windows Driver Kit and install Debugging Tools with steps described above.
+
+### ImportError: No module named win32file
+
+Make sure you have installed `pywin32` with `pip install pywin32`.
