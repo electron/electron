@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Mon, 4 Mar 2019 10:59:35 -0800
+Subject: handle pub_key == null in EC_KEY_set_public_key
+
+
+diff --git a/crypto/fipsmodule/ec/ec_key.c b/crypto/fipsmodule/ec/ec_key.c
+index 4bc12a073650f66f5ae8ba2beabb9a6fb2b21878..7e86ccb0d76c66f32fc05c7093c870d5da7b9994 100644
+--- a/crypto/fipsmodule/ec/ec_key.c
++++ b/crypto/fipsmodule/ec/ec_key.c
+@@ -267,7 +267,7 @@ int EC_KEY_set_public_key(EC_KEY *key, const EC_POINT *pub_key) {
+     return 0;
+   }
+ 
+-  if (EC_GROUP_cmp(key->group, pub_key->group, NULL) != 0) {
++  if (pub_key != NULL && EC_GROUP_cmp(key->group, pub_key->group, NULL) != 0) {
+     OPENSSL_PUT_ERROR(EC, EC_R_GROUP_MISMATCH);
+     return 0;
+   }
