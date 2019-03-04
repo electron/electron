@@ -552,6 +552,11 @@ std::vector<int> TopLevelWindow::GetPosition() {
   result[1] = pos.y();
   return result;
 }
+void TopLevelWindow::MoveAbove(const std::string& sourceId,
+                               mate::Arguments* args) {
+  if (!window_->MoveAbove(sourceId))
+    args->ThrowError("Invalid media source id");
+}
 
 void TopLevelWindow::MoveTop() {
   window_->MoveTop();
@@ -1081,6 +1086,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMaximumSize", &TopLevelWindow::SetMaximumSize)
       .SetMethod("getMaximumSize", &TopLevelWindow::GetMaximumSize)
       .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
+      .SetMethod("moveAbove", &TopLevelWindow::MoveAbove)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
       .SetMethod("_setResizable", &TopLevelWindow::SetResizable)
       .SetMethod("_isResizable", &TopLevelWindow::IsResizable)

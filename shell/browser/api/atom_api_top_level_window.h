@@ -127,6 +127,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
+  void MoveAbove(const std::string& sourceId, mate::Arguments* args);
   void MoveTop();
   bool IsMovable();
   void SetMinimizable(bool minimizable);

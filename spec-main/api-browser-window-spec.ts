@@ -653,6 +653,48 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
+      it('should throw an exception if wrong formatting', async () => {
+        const fakeSourceIds = [
+          'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
+        ]
+        fakeSourceIds.forEach((sourceId) => {
+          expect(() => {
+            w.moveAbove(sourceId)
+          }).to.throw(/Invalid media source id/)
+        })
+      })
+      it('should throw an exception if wrong type', async () => {
+        const fakeSourceIds = [null as any, 123 as any]
+        fakeSourceIds.forEach((sourceId) => {
+          expect(() => {
+            w.moveAbove(sourceId)
+          }).to.throw(/Error processing argument at index 0 */)
+        })
+      })
+      it('should throw an exception if invalid window', async () => {
+        // It is very unlikely that these window id exist.
+        const fakeSourceIds = ['window:99999999:0', 'window:123456:1',
+          'window:123456:9']
+        fakeSourceIds.forEach((sourceId) => {
+          expect(() => {
+            w.moveAbove(sourceId)
+          }).to.throw(/Invalid media source id/)
+        })
+      })
+      it('should not throw an exception', async () => {
+        const w2 = new BrowserWindow({ show: false, title: 'window2' })
+        const w2Shown = emittedOnce(w2, 'show')
+        w2.show()
+        await w2Shown
+
+        expect(() => {
+          w.moveAbove(w2.getMediaSourceId())
+        }).to.not.throw()
+
+        await closeWindow(w2, { assertNotWindows: false })
+      })
+    })
   })
 
   describe('sizing', () => {

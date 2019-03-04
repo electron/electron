@@ -17,6 +17,7 @@
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/desktop_media_id.h"
 #include "native_mate/dictionary.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
@@ -645,6 +646,31 @@ void NativeWindowViews::SetResizable(bool resizable) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
   resizable_ = resizable;
+}
+
+bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
+  const content::DesktopMediaID id = content::DesktopMediaID::Parse(sourceId);
+  if (id.type != content::DesktopMediaID::TYPE_WINDOW)
+    return false;
+
+#if defined(OS_WIN)
+  const HWND otherWindow = reinterpret_cast<HWND>(id.id);
+  if (!::IsWindow(otherWindow))
+    return false;
+
+  gfx::Point pos = GetPosition();
+  gfx::Size size = GetSize();
+  ::SetWindowPos(GetAcceleratedWidget(), otherWindow, pos.x(), pos.y(),
+                 size.width(), size.height(),
+                 SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+#elif defined(USE_X11)
+  if (!IsWindowValid(id.id))
+    return false;
+
+  electron::MoveWindowAbove(GetAcceleratedWidget(), id.id);
+#endif
+
+  return true;
 }
 
 void NativeWindowViews::MoveTop() {

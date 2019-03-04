@@ -1194,6 +1194,14 @@ can not be focused on.
 
 Returns `Boolean` - Whether the window is always on top of other windows.
 
+#### `win.moveAbove(mediaSourceId)`
+
+* `mediaSourceId` String - Window id in the format of DesktopCapturerSource's id. For example "window:1869:0".
+
+Moves window above the source window in the sense of z-order. If the
+`mediaSourceId` is not of type window or if the window does not exist then
+this method throws an error.
+
 #### `win.moveTop()`
 
 Moves window to top(z-order) regardless of focus

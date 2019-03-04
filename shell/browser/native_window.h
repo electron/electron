@@ -112,6 +112,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
   virtual void SetResizable(bool resizable) = 0;
+  virtual bool MoveAbove(const std::string& sourceId) = 0;
   virtual void MoveTop() = 0;
   virtual bool IsResizable() = 0;
   virtual void SetMovable(bool movable) = 0;

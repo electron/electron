@@ -91,7 +91,10 @@ describe('desktopCapturer', () => {
     w.show()
     await wShown
 
-    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'], thumbnailSize: { width: 0, height: 0 } })
+    const sources = await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 0, height: 0 }
+    })
     w.destroy()
     expect(sources).to.be.an('array').that.is.not.empty()
     for (const { thumbnail: thumbnailImage } of sources) {
@@ -111,7 +114,10 @@ describe('desktopCapturer', () => {
     await wFocused
 
     const mediaSourceId = w.getMediaSourceId()
-    const sources = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 0, height: 0 } })
+    const sources = await desktopCapturer.getSources({
+      types: ['window'],
+      thumbnailSize: { width: 0, height: 0 }
+    })
     w.destroy()
 
     // TODO(julien.isorce): investigate why |sources| is empty on the linux
@@ -127,5 +133,98 @@ describe('desktopCapturer', () => {
       return source.id === mediaSourceId
     })
     expect(mediaSourceId).to.equal(foundSource.id)
+  })
+
+  it('moveAbove should move the window at the requested place', async () => {
+    // DesktopCapturer.getSources() is guaranteed to return in the correct
+    // z-order from foreground to background.
+    const MAX_WIN = 4
+    const { BrowserWindow } = remote
+    const mainWindow = remote.getCurrentWindow()
+    const wList = [mainWindow]
+    try {
+      // Add MAX_WIN-1 more window so we have MAX_WIN in total.
+      for (let i = 0; i < MAX_WIN - 1; i++) {
+        const w = new BrowserWindow({ show: true, width: 100, height: 100 })
+        wList.push(w)
+      }
+      expect(wList.length).to.equal(MAX_WIN)
+
+      // Show and focus all the windows.
+      wList.forEach(async (w) => {
+        const wFocused = emittedOnce(w, 'focus')
+        w.focus()
+        await wFocused
+      })
+      // At this point our windows should be showing from bottom to top.
+
+      // DesktopCapturer.getSources() returns sources sorted from foreground to
+      // background, i.e. top to bottom.
+      let sources = await desktopCapturer.getSources({
+        types: ['window'],
+        thumbnailSize: { width: 0, height: 0 }
+      })
+
+      // TODO(julien.isorce): investigate why |sources| is empty on the linux
+      // bots while it is not on my workstation, as expected, with and without
+      // the --ci parameter.
+      if (process.platform === 'linux' && sources.length === 0) {
+        wList.forEach((w) => {
+          if (w !== mainWindow) {
+            w.destroy()
+          }
+        })
+        it.skip('desktopCapturer.getSources returned an empty source list')
+        return
+      }
+
+      expect(sources).to.be.an('array').that.is.not.empty()
+      expect(sources.length).to.gte(MAX_WIN)
+
+      // Only keep our windows, they must be in the MAX_WIN first windows.
+      sources.splice(MAX_WIN, sources.length - MAX_WIN)
+      expect(sources.length).to.equal(MAX_WIN)
+      expect(sources.length).to.equal(wList.length)
+
+      // Check that the sources and wList are sorted in the reverse order.
+      const wListReversed = wList.slice(0).reverse()
+      const canGoFurther = sources.every(
+        (source, index) => source.id === wListReversed[index].getMediaSourceId())
+      if (!canGoFurther) {
+        // Skip remaining checks because either focus or window placement are
+        // not reliable in the running test environment. So there is no point
+        // to go further to test moveAbove as requirements are not met.
+        return
+      }
+
+      // Do the real work, i.e. move each window above the next one so that
+      // wList is sorted from foreground to background.
+      wList.forEach(async (w, index) => {
+        if (index < (wList.length - 1)) {
+          const wNext = wList[index + 1]
+          w.moveAbove(wNext.getMediaSourceId())
+        }
+      })
+
+      sources = await desktopCapturer.getSources({
+        types: ['window'],
+        thumbnailSize: { width: 0, height: 0 }
+      })
+      // Only keep our windows again.
+      sources.splice(MAX_WIN, sources.length - MAX_WIN)
+      expect(sources.length).to.equal(MAX_WIN)
+      expect(sources.length).to.equal(wList.length)
+
+      // Check that the sources and wList are sorted in the same order.
+      sources.forEach((source, index) => {
+        expect(source.id).to.equal(wList[index].getMediaSourceId())
+      })
+    } finally {
+      wList.forEach((w) => {
+        if (w !== mainWindow) {
+          w.destroy()
+        }
+      })
+    }
   })
 })
