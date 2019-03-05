@@ -31,7 +31,7 @@ index 511000dc7855938ceab31694149ddf9e2125e0e4..9dbcc9fe41786555f0fb16ac47c71ee8
 --- a/chrome/browser/ui/cocoa/color_chooser_mac.h
 +++ b/chrome/browser/ui/cocoa/color_chooser_mac.h
 @@ -15,7 +15,7 @@ class ColorChooserMac;
-
+ 
  // A Listener class to act as a event target for NSColorPanel and send
  // the results to the C++ class, ColorChooserMac.
 -@interface ColorPanelCocoa : NSObject<NSWindowDelegate> {
@@ -40,21 +40,21 @@ index 511000dc7855938ceab31694149ddf9e2125e0e4..9dbcc9fe41786555f0fb16ac47c71ee8
    // We don't call DidChooseColor if the change wasn't caused by the user
    // interacting with the panel.
 @@ -26,6 +26,8 @@ class ColorChooserMac;
-
+ 
  - (id)initWithChooser:(ColorChooserMac*)chooser;
-
+ 
 +- (void)windowWillClose:(NSNotification*)notification;
 +
  // Called from NSColorPanel.
  - (void)didChooseColor:(NSColorPanel*)panel;
-
+ 
 @@ -45,7 +47,7 @@ class ColorChooserMac : public content::ColorChooser {
-
+ 
    // Called from ColorPanelCocoa.
    void DidChooseColorInColorPanel(SkColor color);
 -  void DidCloseColorPabel();
 +  void DidCloseColorPanel();
-
+ 
    // Set the color programmatically.
    void SetSelectedColor(SkColor color) override;
 diff --git a/chrome/browser/ui/cocoa/color_chooser_mac.mm b/chrome/browser/ui/cocoa/color_chooser_mac.mm
@@ -64,12 +64,12 @@ index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d
 @@ -39,16 +39,18 @@ void ColorChooserMac::DidChooseColorInColorPanel(SkColor color) {
      web_contents_->DidChooseColorInColorChooser(color);
  }
-
+ 
 -void ColorChooserMac::DidCloseColorPabel() {
 +void ColorChooserMac::DidCloseColorPanel() {
    End();
  }
-
+ 
  void ColorChooserMac::End() {
 -  panel_.reset();
 -  DCHECK(current_color_chooser_ == this);
@@ -83,7 +83,7 @@ index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d
        web_contents_->DidEndColorChooser();
 +  }
  }
-
+ 
  void ColorChooserMac::SetSelectedColor(SkColor color) {
 @@ -67,9 +69,14 @@ void ColorChooserMac::SetSelectedColor(SkColor color) {
      chooser_ = chooser;
@@ -113,7 +113,7 @@ index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d
      [panel setTarget:nil];
      [panel setAction:nullptr];
    }
-
+ 
 +  [[NSNotificationCenter defaultCenter]
 +      removeObserver:self
 +                name:NSWindowWillCloseNotification
@@ -121,13 +121,13 @@ index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d
 +
    [super dealloc];
  }
-
+ 
  - (void)windowWillClose:(NSNotification*)notification {
 -  chooser_->DidCloseColorPabel();
 +  chooser_->DidCloseColorPanel();
    nonUserChange_ = NO;
  }
-
+ 
 diff --git a/chrome/browser/ui/cocoa/color_panel_cocoa_unittest.mm b/chrome/browser/ui/cocoa/color_panel_cocoa_unittest.mm
 index 83185ceb9bbd29bf38fce7f72c23f3a5b15ba6c8..823365fdfc0bceceeed6f5edc00b3462715a4751 100644
 --- a/chrome/browser/ui/cocoa/color_panel_cocoa_unittest.mm
@@ -135,7 +135,7 @@ index 83185ceb9bbd29bf38fce7f72c23f3a5b15ba6c8..823365fdfc0bceceeed6f5edc00b3462
 @@ -28,28 +28,6 @@ class ColorPanelCocoaTest : public CocoaTest {
    }
  };
-
+ 
 -TEST_F(ColorPanelCocoaTest, ClearTargetAndDelegateOnEnd) {
 -  NSColorPanel* nscolor_panel = [NSColorPanel sharedColorPanel];
 -  @autoreleasepool {
@@ -162,12 +162,12 @@ index 83185ceb9bbd29bf38fce7f72c23f3a5b15ba6c8..823365fdfc0bceceeed6f5edc00b3462
    NSColorPanel* nscolor_panel = [NSColorPanel sharedColorPanel];
    @autoreleasepool {
 @@ -61,19 +39,12 @@ TEST_F(ColorPanelCocoaTest, ClearTargetOnEnd) {
-
+ 
      // Confirm the NSColorPanel's configuration by the ColorChooserMac's
      // ColorPanelCocoa.
 -    EXPECT_TRUE([nscolor_panel delegate]);
      EXPECT_TRUE([nscolor_panel __target]);
-
+ 
 -    // Clear the delegate and release the ColorPanelCocoa.
 -    [nscolor_panel setDelegate:nil];
 -
@@ -181,3 +181,4 @@ index 83185ceb9bbd29bf38fce7f72c23f3a5b15ba6c8..823365fdfc0bceceeed6f5edc00b3462
 +  // Confirm the ColorPanelCocoa is no longer the NSColorPanel's target
    EXPECT_EQ([nscolor_panel __target], nil);
  }
+ 

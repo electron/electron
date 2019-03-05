@@ -24,7 +24,7 @@ index c26be855120fcef78ce995d09fb3965f796746a9..1f568a2657250c5f21ab01da88950eed
 @@ -24,12 +24,14 @@ using content::BrowserThread;
  // static
  COLORREF ColorChooserDialog::g_custom_colors[16];
-
+ 
 -ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener,
 -                                       SkColor initial_color,
 -                                       gfx::NativeWindow owning_window)
@@ -37,7 +37,7 @@ index c26be855120fcef78ce995d09fb3965f796746a9..1f568a2657250c5f21ab01da88950eed
 +void ColorChooserDialog::Open(SkColor initial_color,
 +                              gfx::NativeWindow owning_window) {
    HWND owning_hwnd = views::HWNDForNativeWindow(owning_window);
-
+ 
    std::unique_ptr<RunState> run_state = BeginRun(owning_hwnd);
 diff --git a/chrome/browser/ui/views/color_chooser_dialog.h b/chrome/browser/ui/views/color_chooser_dialog.h
 index 838e22dcd1a707714a098320d5bf8174fa60a2ea..b2558ce2a226ccde0f20de9712bf33051b21799c 100644
@@ -53,7 +53,7 @@ index 838e22dcd1a707714a098320d5bf8174fa60a2ea..b2558ce2a226ccde0f20de9712bf3305
 +  explicit ColorChooserDialog(views::ColorChooserListener* listener);
 +
 +  void Open(SkColor initial_color, gfx::NativeWindow owning_window);
-
+ 
    // BaseShellDialog:
    bool IsRunning(gfx::NativeWindow owning_window) const override;
 diff --git a/chrome/browser/ui/views/color_chooser_win.cc b/chrome/browser/ui/views/color_chooser_win.cc
@@ -70,7 +70,7 @@ index 434842ba0f81206a43fb26874930bf7309782890..ffc58eec78dc36e21c2c04aa0b0cd909
 +  color_chooser_dialog_ = new ColorChooserDialog(this);
 +  color_chooser_dialog_->Open(initial_color, owning_window);
  }
-
+ 
  ColorChooserWin::~ColorChooserWin() {
 @@ -90,11 +89,11 @@ void ColorChooserWin::OnColorChooserDialogClosed() {
    if (color_chooser_dialog_.get()) {
@@ -86,5 +86,5 @@ index 434842ba0f81206a43fb26874930bf7309782890..ffc58eec78dc36e21c2c04aa0b0cd909
 -  if (web_contents_)
 -    web_contents_->DidEndColorChooser();
  }
-
+ 
  namespace chrome {
