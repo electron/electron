@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 5 Mar 2019 11:12:55 -0800
+Subject: fix: build on arm
+
+backports https://chromium-review.googlesource.com/c/chromium/src/+/1496448
+
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+index 55394a791a54a2650fa2e1ed4d4e293b940d8fa2..68ce32a136ccc5130e3544b67dfb4af5c8b47a56 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+@@ -34,12 +34,14 @@
+ #if !defined(OS_NACL_NONSFI)
+ #include <sys/ioctl.h>
+ #include <sys/ptrace.h>
+-#if !defined(PTRACE_GET_THREAD_AREA) && defined(OS_LINUX) && \
+-    !defined(OS_CHROMEOS)
++#if defined(OS_LINUX) && !defined(OS_CHROMEOS) && !defined(__arm__) && \
++    !defined(__aarch64__) && !defined(PTRACE_GET_THREAD_AREA)
+ // Also include asm/ptrace-abi.h since ptrace.h in older libc (for instance
+ // the one in Ubuntu 16.04 LTS) is missing PTRACE_GET_THREAD_AREA.
++// asm/ptrace-abi.h doesn't exist on arm32 and PTRACE_GET_THREAD_AREA isn't
++// defined on aarch64, so don't try to include this on those platforms.
+ #include <asm/ptrace-abi.h>
+-#endif  // !PTRACE_GET_THREAD_AREA && OS_LINUX && !OS_CHROMEOS
++#endif
+ #endif  // !OS_NACL_NONSFI
+ 
+ #if defined(OS_ANDROID)
