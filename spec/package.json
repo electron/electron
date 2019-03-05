@@ -32,6 +32,6 @@
     "yargs": "^12.0.5"
   },
   "optionalDependencies": {
-    "robotjs": "^0.5.1"
+    "robotjs": "github:nornagon/robotjs#node-12"
   }
 }
