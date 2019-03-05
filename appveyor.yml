@@ -79,6 +79,8 @@ build_script:
         appveyor PushArtifact out/Default/symbols.zip
       }
 test_script:
+  # Workaround for https://github.com/appveyor/ci/issues/2420
+  - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
   - ps: >-
       if ((-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
         $env:RUN_TESTS="true"
