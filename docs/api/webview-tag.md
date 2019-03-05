@@ -119,6 +119,17 @@ integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
 
+### `nodeintegrationinsubframes`
+
+```html
+<webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
+```
+
+Experimental option for enabling NodeJS support in sub-frames such as iframes
+inside the `webview`. All your preloads will load for every iframe, you can
+use `process.isMainFrame` to determine if you are in the main frame or not.
+This option is disabled by default in the guest page.
+
 ### `enableremotemodule`
 
 ```html
