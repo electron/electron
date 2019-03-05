@@ -4,9 +4,9 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
-#include "content/browser/frame_host/frame_tree.h"
-#include "content/browser/frame_host/frame_tree_node.h"
-#include "content/browser/web_contents/web_contents_impl.h"
+#include "content/browser/frame_host/frame_tree.h"           // nogncheck
+#include "content/browser/frame_host/frame_tree_node.h"      // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/guest_mode.h"
 
 #if BUILDFLAG(ENABLE_OSR)

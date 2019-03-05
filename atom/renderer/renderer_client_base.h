@@ -15,7 +15,7 @@
 #include "widevine_cdm_version.h"  // NOLINT(build/include)
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
-#include "chrome/renderer/media/chrome_key_systems_provider.h"
+#include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
 namespace atom {

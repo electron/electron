@@ -231,6 +231,14 @@ step-gn-gen-default: &step-gn-gen-default
       cd src
       gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
 
+step-gn-check: &step-gn-check
+  run:
+    name: GN check
+    command: |
+      cd src
+      gn check out/Default //electron:electron_lib
+      gn check out/Default //electron:electron_app
+
 step-electron-build: &step-electron-build
   run:
     name: Electron build
@@ -568,6 +576,15 @@ steps-checkout: &steps-checkout
           - depot_tools
           - src
 
+steps-electron-gn-check: &steps-electron-gn-check
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+    - *step-gn-gen-default
+    - *step-gn-check
+
 steps-electron-build: &steps-electron-build
   steps:
     - attach_workspace:
@@ -857,6 +874,13 @@ jobs:
       <<: *env-enable-sccache
     <<: *steps-electron-build
 
+  linux-x64-debug-gn-check:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-debug-build
+    <<: *steps-electron-gn-check
+
   linux-x64-testing:
     <<: *machine-linux-2xlarge
     environment:
@@ -864,6 +888,13 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
+
+  linux-x64-testing-gn-check:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
 
   linux-x64-chromedriver:
     <<: *machine-linux-medium
@@ -1005,6 +1036,14 @@ jobs:
       <<: *env-enable-sccache
     <<: *steps-electron-build
 
+  linux-arm64-debug-gn-check:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-arm64
+      <<: *env-debug-build
+    <<: *steps-electron-gn-check
+
   linux-arm64-testing:
     <<: *machine-linux-2xlarge
     environment:
@@ -1014,6 +1053,14 @@ jobs:
       <<: *env-enable-sccache
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
+
+  linux-arm64-testing-gn-check:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-arm64
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
 
   linux-arm64-chromedriver:
     <<: *machine-linux-medium
@@ -1062,6 +1109,20 @@ jobs:
       <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
 
+  osx-debug-gn-check:
+    <<: *machine-mac
+    environment:
+      <<: *env-machine-mac
+      <<: *env-debug-build
+    <<: *steps-electron-gn-check
+
+  osx-testing-gn-check:
+    <<: *machine-mac
+    environment:
+      <<: *env-machine-mac
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
+
   osx-chromedriver:
     <<: *machine-mac
     environment:
@@ -1095,6 +1156,22 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
+
+  mas-debug-gn-check:
+    <<: *machine-mac
+    environment:
+      <<: *env-machine-mac
+      <<: *env-mas
+      <<: *env-debug-build
+    <<: *steps-electron-gn-check
+
+  mas-testing-gn-check:
+    <<: *machine-mac
+    environment:
+      <<: *env-machine-mac
+      <<: *env-mas
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
 
   mas-chromedriver:
     <<: *machine-mac
@@ -1353,7 +1430,13 @@ workflows:
       - linux-x64-debug:
           requires:
             - linux-checkout
+      - linux-x64-debug-gn-check:
+          requires:
+            - linux-checkout
       - linux-x64-testing:
+          requires:
+            - linux-checkout
+      - linux-x64-testing-gn-check:
           requires:
             - linux-checkout
       - linux-x64-testing-tests:
@@ -1380,7 +1463,13 @@ workflows:
       - linux-arm64-debug:
           requires:
             - linux-checkout
+      - linux-arm64-debug-gn-check:
+          requires:
+            - linux-checkout
       - linux-arm64-testing:
+          requires:
+            - linux-checkout
+      - linux-arm64-testing-gn-check:
           requires:
             - linux-checkout
 
@@ -1391,11 +1480,25 @@ workflows:
           requires:
             - mac-checkout
 
+      - osx-debug-gn-check:
+          requires:
+            - mac-checkout
+      - osx-testing-gn-check:
+          requires:
+            - mac-checkout
+
       - osx-testing-tests:
           requires:
             - osx-testing
 
       - mas-testing:
+          requires:
+            - mac-checkout
+
+      - mas-debug-gn-check:
+          requires:
+            - mac-checkout
+      - mas-testing-gn-check:
           requires:
             - mac-checkout
 

@@ -326,13 +326,13 @@ static_library("electron_lib") {
 
   deps = [
     ":atom_js2c",
+    ":resources",
     "buildflags",
     "chromium_src:chrome",
     "manifests",
     "native_mate",
-    "//base",
     "//base:base_static",
-    "//base:i18n",
+    "//base/allocator:buildflags",
     "//chrome/app/resources:platform_locale_settings",
     "//components/certificate_transparency",
     "//components/net_log",
@@ -341,10 +341,12 @@ static_library("electron_lib") {
     "//components/spellcheck/renderer",
     "//components/viz/host",
     "//components/viz/service",
-    "//content/public/app:both",
     "//content/public/browser",
     "//content/public/child",
     "//content/public/common:service_names",
+    "//content/public/renderer",
+    "//content/public/utility",
+    "//device/bluetooth",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",
@@ -354,6 +356,7 @@ static_library("electron_lib") {
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
+    "//printing/buildflags",
     "//services/audio/public/mojom:constants",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
@@ -369,8 +372,17 @@ static_library("electron_lib") {
     "//third_party/widevine/cdm:headers",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
+    "//ui/native_theme",
+    "//ui/shell_dialogs",
     "//ui/views",
     "//v8",
+    "//v8:v8_libplatform",
+  ]
+
+  public_deps = [
+    "//base",
+    "//base:i18n",
+    "//content/public/app:both",
   ]
 
   include_dirs = [
@@ -435,6 +447,7 @@ static_library("electron_lib") {
       "atom/browser/fake_location_provider.cc",
       "atom/browser/fake_location_provider.h",
     ]
+    deps += [ "//services/device/public/cpp/geolocation" ]
   }
 
   if (is_mac) {
@@ -485,9 +498,6 @@ static_library("electron_lib") {
       "//device/bluetooth",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
-      "//ui/native_theme",
-      "//ui/views/controls/webview",
-      "//ui/wm",
     ]
     configs += [ ":gio_unix" ]
     defines += [
@@ -499,9 +509,20 @@ static_library("electron_lib") {
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
+    deps += [
+      "//third_party/breakpad:breakpad_handler",
+      "//third_party/breakpad:breakpad_sender",
+      "//ui/native_theme:native_theme_browser",
+      "//ui/wm/public",
+    ]
+    public_deps += [ "//sandbox/win:sandbox" ]
   }
   if (is_linux || is_win) {
-    deps += [ "//third_party/breakpad:client" ]
+    deps += [
+      "//third_party/breakpad:client",
+      "//ui/views/controls/webview",
+      "//ui/wm",
+    ]
     include_dirs += [ "//third_party/breakpad" ]
   }
 
@@ -866,6 +887,7 @@ if (is_mac) {
       ":electron_lib",
       ":packed_resources",
       "//content:sandbox_helper_win",
+      "//electron/buildflags",
       "//ui/strings",
     ]
 
@@ -894,17 +916,7 @@ if (is_mac) {
         # TODO: we should be generating our .rc files more like how chrome does
         "atom/browser/resources/win/atom.ico",
         "atom/browser/resources/win/atom.rc",
-        "atom/browser/resources/win/resources.h",
-      ]
-
-      deps += [
-        "//third_party/breakpad:breakpad_handler",
-        "//third_party/breakpad:breakpad_sender",
-        "//ui/native_theme:native_theme_browser",
-        "//ui/shell_dialogs",
-        "//ui/views/controls/webview",
-        "//ui/wm",
-        "//ui/wm/public",
+        "atom/browser/resources/win/resource.h",
       ]
 
       libs = [

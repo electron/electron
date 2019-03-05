@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "content/browser/loader/layered_resource_handler.h"
+#include "content/browser/loader/layered_resource_handler.h"  // nogncheck
 #include "services/network/public/cpp/resource_response.h"
 
 namespace atom {

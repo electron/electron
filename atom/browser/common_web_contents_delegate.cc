@@ -24,13 +24,12 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
-#include "chrome/browser/ui/color_chooser.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
-#include "content/browser/renderer_host/render_widget_host_view_base.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/file_select_listener.h"
@@ -41,6 +40,10 @@
 #include "content/public/browser/security_style_explanations.h"
 #include "printing/buildflags/buildflags.h"
 #include "storage/browser/fileapi/isolated_context.h"
+
+#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
+#include "chrome/browser/ui/color_chooser.h"
+#endif
 
 #if BUILDFLAG(ENABLE_OSR)
 #include "atom/browser/osr/osr_web_contents_view.h"
