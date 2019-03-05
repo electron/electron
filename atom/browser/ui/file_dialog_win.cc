@@ -106,7 +106,7 @@ void OnSaveDialogDone(atom::util::Promise promise,
                       const base::FilePath path) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
-  dict.Set("filename", path);
+  dict.Set("filePath", path);
   promise.Resolve(dict.GetHandle());
 }
 

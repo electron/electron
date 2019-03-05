@@ -189,10 +189,10 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
         mate::Dictionary::CreateEmpty(save_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
-      dict.Set("filename", GetFileName());
+      dict.Set("filePath", GetFileName());
     } else {
       dict.Set("canceled", true);
-      dict.Set("filename", base::FilePath());
+      dict.Set("filePath", base::FilePath());
     }
     save_promise_->Resolve(dict.GetHandle());
   } else if (open_promise_) {

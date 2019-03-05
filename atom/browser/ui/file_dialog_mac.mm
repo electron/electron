@@ -367,13 +367,13 @@ void SaveDialogCompletion(int chosen,
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
-    dict.Set("filename", base::FilePath());
+    dict.Set("filePath", base::FilePath());
 #if defined(MAS_BUILD)
     dict.Set("bookmark", "");
 #endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
-    dict.Set("filename", base::FilePath(path));
+    dict.Set("filePath", base::FilePath(path));
     dict.Set("canceled", false);
 #if defined(MAS_BUILD)
     std::string bookmark;
