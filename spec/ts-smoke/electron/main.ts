@@ -479,7 +479,7 @@ contentTracing.startRecording(options, function () {
 // https://github.com/atom/electron/blob/master/docs/api/dialog.md
 
 // variant without browserWindow
-let openDialogResult: string[] = dialog.showOpenDialog({
+dialog.showOpenDialogSync({
   title: 'Testing showOpenDialog',
   defaultPath: '/var/log/syslog',
   filters: [{ name: '', extensions: [''] }],
@@ -487,11 +487,13 @@ let openDialogResult: string[] = dialog.showOpenDialog({
 })
 
 // variant with browserWindow
-openDialogResult = dialog.showOpenDialog(win3, {
+dialog.showOpenDialog(win3, {
   title: 'Testing showOpenDialog',
   defaultPath: '/var/log/syslog',
   filters: [{ name: '', extensions: [''] }],
   properties: ['openFile', 'openDirectory', 'multiSelections']
+}).then(ret => {
+  console.log(ret)
 })
 
 // global-shortcut

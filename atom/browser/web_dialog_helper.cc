@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
@@ -46,8 +47,12 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    atom::util::Promise promise(isolate);
+
+    file_dialog::ShowOpenDialog(settings, std::move(promise));
     auto callback = base::Bind(&FileSelectHelper::OnOpenDialogDone, this);
-    file_dialog::ShowOpenDialog(settings, callback);
+    ignore_result(promise.Then(callback));
   }
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
