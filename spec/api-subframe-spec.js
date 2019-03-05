@@ -83,26 +83,28 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         expect(details[1]).to.equal(event3[0].frameId)
       })
 
-      if (webPreferences.contextIsolation) {
-        it('should not expose globals in main world', async () => {
-          const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
-          w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container.html'))
-          const details = await detailsPromise
-          const senders = details.map(event => event[0].sender)
-          await new Promise((resolve) => {
-            let resultCount = 0
-            senders.forEach(sender => {
-              sender.webContents.executeJavaScript('window.isolatedGlobal', result => {
+      it('should not expose globals in main world', async () => {
+        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container.html'))
+        const details = await detailsPromise
+        const senders = details.map(event => event[0].sender)
+        await new Promise((resolve) => {
+          let resultCount = 0
+          senders.forEach(sender => {
+            sender.webContents.executeJavaScript('window.isolatedGlobal', result => {
+              if (webPreferences.contextIsolation) {
                 expect(result).to.be.null()
-                resultCount++
-                if (resultCount === senders.length) {
-                  resolve()
-                }
-              })
+              } else {
+                expect(result).to.equal(true)
+              }
+              resultCount++
+              if (resultCount === senders.length) {
+                resolve()
+              }
             })
           })
         })
-      }
+      })
     })
   }
 
