@@ -101,13 +101,23 @@ void RunOpenDialogInNewThread(const RunState& run_state,
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
+void OnSaveDialogDone(atom::util::Promise promise,
+                      bool canceled,
+                      const base::FilePath path) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+  dict.Set("canceled", canceled);
+  dict.Set("filePath", path);
+  promise.Resolve(dict.GetHandle());
+}
+
 void RunSaveDialogInNewThread(const RunState& run_state,
                               const DialogSettings& settings,
-                              const SaveDialogCallback& callback) {
+                              atom::util::Promise promise) {
   base::FilePath path;
-  bool result = ShowSaveDialog(settings, &path);
-  run_state.ui_task_runner->PostTask(FROM_HERE,
-                                     base::Bind(callback, result, path));
+  bool result = ShowSaveDialogSync(settings, &path);
+  run_state.ui_task_runner->PostTask(
+      FROM_HERE,
+      base::BindOnce(&OnSaveDialogDone, std::move(promise), result, path));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
@@ -275,7 +285,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   }
 }
 
-bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
+bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   ATL::CComPtr<IFileSaveDialog> file_save_dialog;
   HRESULT hr = file_save_dialog.CoCreateInstance(CLSID_FileSaveDialog);
   if (FAILED(hr))
@@ -306,16 +316,18 @@ bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    const SaveDialogCallback& callback) {
+                    atom::util::Promise promise) {
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
-    callback.Run(false, base::FilePath());
-    return;
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+    dict.Set("canceled", false);
+    dict.Set("filePath", base::FilePath());
+    promise.Resolve(dict.GetHandle());
+  } else {
+    run_state.dialog_thread->task_runner()->PostTask(
+        FROM_HERE, base::BindOnce(&RunSaveDialogInNewThread, run_state,
+                                  settings, std::move(promise)));
   }
-
-  run_state.dialog_thread->task_runner()->PostTask(
-      FROM_HERE,
-      base::Bind(&RunSaveDialogInNewThread, run_state, settings, callback));
 }
 
 }  // namespace file_dialog

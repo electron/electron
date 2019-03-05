@@ -382,7 +382,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(const std::string& url,
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    if (!file_dialog::ShowSaveDialog(settings, &path)) {
+    if (!file_dialog::ShowSaveDialogSync(settings, &path)) {
       base::Value url_value(url);
       web_contents_->CallClientFunction("DevToolsAPI.canceledSaveURL",
                                         &url_value, nullptr, nullptr);
