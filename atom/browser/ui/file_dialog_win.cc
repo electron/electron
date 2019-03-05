@@ -321,7 +321,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   if (!CreateDialogThread(&run_state)) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", false);
-    dict.Set("filename", base::FilePath());
+    dict.Set("filePath", base::FilePath());
     promise.Resolve(dict.GetHandle());
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
