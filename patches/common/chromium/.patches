@@ -61,7 +61,6 @@ content_browser_main_loop.patch
 dump_syms.patch
 command-ismediakey.patch
 tts.patch
-color_chooser.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
 cross_site_document_resource_handler.patch
@@ -71,3 +70,5 @@ disable_color_correct_rendering.patch
 disable_time_ticks_dcheck.patch
 revert_build_swiftshader_for_arm32.patch
 fix_backup_includes_for_ptrace_get_thread_area_on_arm_arm64.patch
+color_chooser_mac.patch
+color_chooser_win.patch
