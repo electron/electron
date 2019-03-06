@@ -59,24 +59,14 @@ config("branding") {
 # The one in $target_gen_dir is used for the actual TSC build later one
 # and the one in //electron/electron.d.ts is used by your IDE (vscode)
 # for typescript prompting
-if (is_win) {
-  npm_action("build_electron_definitions") {
-    script = "gn-typescript-definitions-win"
-    args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-    inputs = auto_filenames.api_docs + [ "package-lock.json" ]
-    outputs = [
-      "$target_gen_dir/tsc/typings/electron.d.ts",
-    ]
-  }
-} else {
-  npm_action("build_electron_definitions") {
-    script = "gn-typescript-definitions"
-    args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-    inputs = auto_filenames.api_docs + [ "package-lock.json" ]
-    outputs = [
-      "$target_gen_dir/tsc/typings/electron.d.ts",
-    ]
-  }
+npm_action("build_electron_definitions") {
+  script = "gn-typescript-definitions"
+  args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
+  inputs = auto_filenames.api_docs + [ "package-lock.json" ]
+
+  outputs = [
+    "$target_gen_dir/tsc/typings/electron.d.ts",
+  ]
 }
 
 npm_action("atom_browserify_sandbox") {
