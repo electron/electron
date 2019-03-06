@@ -53,6 +53,12 @@
 #include "node_options.h"
 #include "node_platform.h"
 
+// Alternative to NODE_MODULE_CONTEXT_AWARE_X.
+// Allows to explicitly register builtin modules instead of using
+// __attribute__((constructor)).
+#define NODE_LINKED_MODULE_CONTEXT_AWARE(modname, regfunc) \
+  NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
+
 #pragma pop_macro("ASSERT")
 #pragma pop_macro("CHECK")
 #pragma pop_macro("CHECK_EQ")

@@ -1,4 +1,4 @@
-export function atomBindingSetup (binding: typeof process['binding'], processType: typeof process['type']): typeof process['atomBinding'] {
+export function atomBindingSetup (binding: typeof process['_linkedBinding'], processType: typeof process['type']): typeof process['atomBinding'] {
   return function atomBinding (name: string) {
     try {
       return binding(`atom_${processType}_${name}`)
