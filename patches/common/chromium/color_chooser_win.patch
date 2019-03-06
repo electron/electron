@@ -1,7 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Benedek Heilig <benecene@gmail.com>
 Date: Thu, 21 Feb 2019 17:16:33 +0000
-Subject: Backports an upstream fix I made to the color chooser dialog on
+Subject: fix some DCHECKs on Windows when using color chooser dialog
+
+Backports an upstream fix I made to the color chooser dialog on
 Windows. This can be removed once that fix lands in a chromium version we
 use. Below is the original commit message:
 
