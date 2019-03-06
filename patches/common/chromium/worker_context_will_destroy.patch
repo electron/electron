@@ -5,10 +5,10 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index fd33e51221676c6315aec8db4aa469d4805dab8a..af15512b6d26bf79413e34a590d664a56d78828d 100644
+index 3b5c53a10c8d6aa2e173a7e7788e8955c7299d4f..614f5f8296c13f127cb081d1b05c908a52c92daf 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -379,6 +379,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -384,6 +384,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  

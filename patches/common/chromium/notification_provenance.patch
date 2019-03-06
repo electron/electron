@@ -6,7 +6,7 @@ Subject: pass RenderProcessHost through to PlatformNotificationService
 this is so Electron can identify which renderer a notification came from
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index f49963aad901c4f1f32be4995613355f5a6d2e14..eb2e8b6fcc5b00c3a74c88d79db9d20653cdd2f2 100644
+index 7c6b38b94d714ec2a878ce3cf0448028fbf7c19b..f26dd52579544ad030b603a16ef0ff03ecebb42a 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -50,9 +50,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -31,7 +31,7 @@ index f49963aad901c4f1f32be4995613355f5a6d2e14..eb2e8b6fcc5b00c3a74c88d79db9d206
  }
  
 diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
-index 9b927ba78d006b599b7dc6776e50a76d581c9e9e..ab16372bcc7a1a4c8ddc1c56edd46b6d78393ae1 100644
+index 088637b68b1fb40fb8a32bb72781b425077e668a..ec2cce6b644e6cc8fd899a761fb55d9a01b65f98 100644
 --- a/content/browser/notifications/blink_notification_service_impl.h
 +++ b/content/browser/notifications/blink_notification_service_impl.h
 @@ -36,6 +36,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
@@ -42,7 +42,7 @@ index 9b927ba78d006b599b7dc6776e50a76d581c9e9e..ab16372bcc7a1a4c8ddc1c56edd46b6d
        const url::Origin& origin,
        mojo::InterfaceRequest<blink::mojom::NotificationService> request);
    ~BlinkNotificationServiceImpl() override;
-@@ -97,6 +98,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
+@@ -99,6 +100,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
    // The notification context that owns this service instance.
    PlatformNotificationContextImpl* notification_context_;
  
@@ -51,7 +51,7 @@ index 9b927ba78d006b599b7dc6776e50a76d581c9e9e..ab16372bcc7a1a4c8ddc1c56edd46b6d
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 5bb02dcf4011d23de6b8b70050555555aa31d669..6cf025c744d988389452b31a2ba18bf6ed69357c 100644
+index 759e317999ec4f37f185310724374c655c2f24fe..874f6d1fb6d2bddc0e6711080adfadc3f7156b0e 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -127,7 +127,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {

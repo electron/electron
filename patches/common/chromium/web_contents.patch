@@ -5,10 +5,10 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 69498d1369aa2722fafaeecdebd27edf2d00e34b..55a43dc6dd9d0d046693902dd25cd771dcc56a79 100644
+index 09c35a2bfe0c9d347e3b06d32d839aef50ef3f41..eca683e0529784699425a6432b96dff76fc20f1d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2049,6 +2049,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2047,6 +2047,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -21,7 +21,7 @@ index 69498d1369aa2722fafaeecdebd27edf2d00e34b..55a43dc6dd9d0d046693902dd25cd771
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2064,6 +2070,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2062,6 +2068,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }
@@ -30,7 +30,7 @@ index 69498d1369aa2722fafaeecdebd27edf2d00e34b..55a43dc6dd9d0d046693902dd25cd771
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index 5de4d7cf8a7a812ad3f6383cd60acbd39135924d..dca9ec76b44be34124a12f453d3c6ecbb1509b9f 100644
+index 9d91d225fd9f3eeef7d9beec126e6cc6a58a76d7..8a443514dfbdab37f951bc7c54cf1989a2b01a16 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -69,19 +69,26 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -90,7 +90,7 @@ index 5de4d7cf8a7a812ad3f6383cd60acbd39135924d..dca9ec76b44be34124a12f453d3c6ecb
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForChildWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 87031ac3aaaabaf587ed261238163d6b4d1d8b33..90ccb0ea171e9fccb3a11f5f928fdb3f0929de8f 100644
+index 2fe0a25aed9f2fbcf6a7d308fa4deefb7c051f79..cce64cb2b376ee3445eed94b1399a6efb19c0d79 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -75,9 +75,12 @@ class BrowserPluginGuestDelegate;

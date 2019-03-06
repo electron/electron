@@ -166,20 +166,20 @@ index a2569836d04ff968e690215f56f6de3b6d884874..6ddec22641b74d5484c2e0d4f62e5d71
    bool printing_succeeded_;
  
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index a864d0b52c7c00689508454bcdcab9f018c9ac0a..0baf39c25bbcfa3c4987c0be60992315f33631b0 100644
+index 3f6007d5c09ee9fdab534356d38d1e06e4573794..5ebb5e5255fefd2e8e611144a0745e92e069ea62 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -22,6 +22,7 @@
+ #include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
  #include "components/printing/browser/print_manager_utils.h"
  #include "components/printing/common/print_messages.h"
- #include "content/public/browser/browser_task_traits.h"
 +#include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
- #include "content/public/common/child_process_host.h"
-@@ -82,20 +83,23 @@ PrintViewManager* GetPrintViewManager(int render_process_id,
- 
- }  // namespace
+@@ -95,20 +96,23 @@ void PrintingMessageFilter::SetTestUpdatePrintSettingsReply(
+   test_params = print_params;
+ }
  
 -PrintingMessageFilter::PrintingMessageFilter(int render_process_id,
 -                                             Profile* profile)
@@ -204,7 +204,7 @@ index a864d0b52c7c00689508454bcdcab9f018c9ac0a..0baf39c25bbcfa3c4987c0be60992315
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -131,11 +135,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -144,11 +148,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
    scoped_refptr<PrinterQuery> printer_query;
@@ -218,7 +218,7 @@ index a864d0b52c7c00689508454bcdcab9f018c9ac0a..0baf39c25bbcfa3c4987c0be60992315
    printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query.get()) {
      printer_query =
-@@ -221,11 +227,13 @@ void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
+@@ -234,11 +240,13 @@ void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
    scoped_refptr<PrinterQuery> printer_query;
@@ -232,7 +232,7 @@ index a864d0b52c7c00689508454bcdcab9f018c9ac0a..0baf39c25bbcfa3c4987c0be60992315
    printer_query = queue_->PopPrinterQuery(document_cookie);
    if (!printer_query.get()) {
      printer_query = queue_->CreatePrinterQuery(
-@@ -284,7 +292,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -302,7 +310,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
@@ -242,11 +242,11 @@ index a864d0b52c7c00689508454bcdcab9f018c9ac0a..0baf39c25bbcfa3c4987c0be60992315
  #endif
  
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index c4d586e62f14c3002993a2dbc7e478027d8f9b02..85d5fc55e93bea0080cd03316f29856bcaf27b59 100644
+index 4607c9af91bb604bb4753eb54c2013e58698ff30..58cbf62a1bc1e18327e987cd55524848d2eca05e 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
-@@ -23,6 +23,10 @@ struct PrintHostMsg_PreviewIds;
- struct PrintHostMsg_ScriptedPrint_Params;
+@@ -24,6 +24,10 @@ struct PrintHostMsg_ScriptedPrint_Params;
+ struct PrintMsg_Print_Params;
  class Profile;
  
 +namespace content {
@@ -256,10 +256,10 @@ index c4d586e62f14c3002993a2dbc7e478027d8f9b02..85d5fc55e93bea0080cd03316f29856b
  namespace printing {
  
  class PrintQueriesQueue;
-@@ -32,7 +36,8 @@ class PrinterQuery;
- // renderer process on the IPC thread.
- class PrintingMessageFilter : public content::BrowserMessageFilter {
-  public:
+@@ -37,7 +41,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
+   static void SetTestUpdatePrintSettingsReply(
+       const PrintMsg_Print_Params& print_params);
+ 
 -  PrintingMessageFilter(int render_process_id, Profile* profile);
 +  PrintingMessageFilter(int render_process_id,
 +                        content::BrowserContext* browser_context);

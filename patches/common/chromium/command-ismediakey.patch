@@ -18,7 +18,7 @@ diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/
 index befe726af9c10b1563a7fc0bb77cc55f65943d5c..46c6fe08bab8471007f78d3ef227e5195bfdf0e1 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
 +++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-@@ -21,6 +21,26 @@ using extensions::GlobalShortcutListenerMac;
+@@ -21,6 +21,26 @@
  
  namespace extensions {
  
@@ -96,7 +96,7 @@ index fe6aa25cc8cc372ef450e5d6658a52a2b87eabcb..e960d601062b644c0b25b657e128e065
    }
    return VKEY_UNKNOWN;
  }
-@@ -191,7 +197,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
+@@ -191,7 +197,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

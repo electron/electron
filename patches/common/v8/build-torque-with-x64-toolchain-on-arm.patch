@@ -6,7 +6,7 @@ Subject: build-torque-with-x64-toolchain-on-arm.patch
 torque binary has to be run during the build.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index f544888a6ee6f41e873b956c941a8d1ed3963128..4a36ec8d550688a258aea35dbc05666ba8ee7f82 100644
+index 5b3e0831c2657f4fa07adaa1de5fda6d2360c2ec..344a7fb5c5e54295fc7fd4f61780bdcf40bd6bd4 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -178,7 +178,9 @@ declare_args() {
@@ -20,7 +20,7 @@ index f544888a6ee6f41e873b956c941a8d1ed3963128..4a36ec8d550688a258aea35dbc05666b
    v8_generator_toolchain = "//build/toolchain/linux:clang_x64"
  }
  
-@@ -3497,7 +3499,7 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3539,7 +3541,7 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
    }
  }
  

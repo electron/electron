@@ -10,7 +10,7 @@ Subject: tts.patch
   destruction from content layer.
 
 diff --git a/chrome/browser/speech/tts_controller_delegate_impl.cc b/chrome/browser/speech/tts_controller_delegate_impl.cc
-index 0390cfe18859a4b7086b275b62121199473434fb..b9adf92701546ea8f8fa8258d987fa0c7051def4 100644
+index 019a4103fc230dc4653c80bb0fbd6bda18a05b79..3c6e3936efd7c73b84e8b19c080f2633ed8b6e48 100644
 --- a/chrome/browser/speech/tts_controller_delegate_impl.cc
 +++ b/chrome/browser/speech/tts_controller_delegate_impl.cc
 @@ -213,6 +213,7 @@ void TtsControllerDelegateImpl::UpdateUtteranceDefaultsFromPrefs(
