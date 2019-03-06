@@ -115,7 +115,8 @@ def make_zip(zip_file_path, files, dirs):
     files += dirs
     execute(['zip', '-r', '-y', zip_file_path] + files)
   else:
-    zip_file = zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED)
+    zip_file = zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED,
+                               allowZip64=True)
     for filename in files:
       zip_file.write(filename, filename)
     for dirname in dirs:
@@ -258,3 +259,14 @@ def get_buildtools_executable(name):
   if sys.platform == 'win32':
     path += '.exe'
   return path
+
+def get_objcopy_path(target_cpu):
+  if PLATFORM != 'linux':
+    raise Exception(
+      "get_objcopy_path: unexpected platform '{0}'".format(PLATFORM))
+
+  if target_cpu != 'x64':
+      raise Exception(
+      "get_objcopy_path: unexpected target cpu '{0}'".format(target_cpu))
+  return os.path.join(SRC_DIR, 'third_party', 'binutils', 'Linux_x64',
+                        'Release', 'bin', 'objcopy')
