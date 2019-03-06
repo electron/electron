@@ -235,6 +235,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     case WM_SIZING: {
       bool prevent_default = false;
+      HandleSizingEvent(w_param, l_param);
       NotifyWindowWillResize(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
                              &prevent_default);
       if (prevent_default) {
@@ -296,6 +297,53 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     }
     default:
       return false;
+  }
+}
+
+void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
+  double aspect_ratio = GetAspectRatio();
+  // aspect_ratio width/height
+  if (aspect_ratio == 0) {
+    return;
+  }
+  RECT* window_rect;
+  window_rect = (RECT*)l_param;
+  int width = window_rect->right - window_rect->left;
+  int height = window_rect->bottom - window_rect->top;
+
+  double result_width = 0;
+  double result_height = 0;
+
+  switch ((UINT)w_param) {
+    case WMSZ_LEFT:
+    case WMSZ_RIGHT:
+      result_width = width;
+      result_height = (double)width / aspect_ratio;
+      break;
+    case WMSZ_TOP:
+    case WMSZ_BOTTOM:
+      result_width = (double)height * aspect_ratio;
+      result_height = height;
+      break;
+    case WMSZ_TOPLEFT:
+    case WMSZ_TOPRIGHT:
+    case WMSZ_BOTTOMLEFT:
+    case WMSZ_BOTTOMRIGHT:
+      result_width = (double)height * aspect_ratio;
+      result_height = height;
+      break;
+    default:
+      break;
+  }
+  gfx::Size ratio_fit_size(result_width, result_height);
+  gfx::Size min_fit_size = GetMinimumSize();
+  if (min_fit_size.width() >= result_width ||
+      min_fit_size.height() >= result_height) {
+    return;
+  } else {
+    // SetSize(ratio_fit_size, false);
+    window_rect->right = window_rect->left + result_width;
+    window_rect->bottom = window_rect->top + result_height;
   }
 }
 
