@@ -66,7 +66,9 @@ declare namespace ElectronInternal {
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
 
     promisify<T extends (...args: any[]) => any>(fn: T): T;
-    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, convertPromiseValue: (v: any) => any): T;
+
+    // convertPromiseValue: Temporarily disabled until it's used
+    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, /*convertPromiseValue: (v: any) => any*/): T;
   }
 
   // Internal IPC has _replyInternal and NO reply method

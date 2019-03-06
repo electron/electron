@@ -102,7 +102,8 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     } as T
   },
 
-  promisifyMultiArg: <T extends (...args: any[]) => any>(fn: T, convertPromiseValue: (v: any) => any): T => {
+  // convertPromiseValue: Temporarily disabled until it's used
+  promisifyMultiArg: <T extends (...args: any[]) => any>(fn: T /* convertPromiseValue: (v: any) => any */): T => {
     const fnName = fn.name || 'function'
     const oldName = `${fnName} with callbacks`
     const newName = `${fnName} with Promises`
