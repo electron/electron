@@ -1,7 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Benedek Heilig <benecene@gmail.com>
 Date: Thu, 21 Feb 2019 17:04:30 +0000
-Subject: Backports an upstream fix I made to the color chooser dialog on macos.
+Subject: fix a crash when using color chooser on macos
+
+Backports an upstream fix I made to the color chooser dialog on macos.
 This can be removed once that fix lands in a chromium version we use.
 Below is the original commit message:
 
