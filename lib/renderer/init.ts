@@ -93,7 +93,8 @@ switch (window.location.protocol) {
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
-  require('@electron/internal/renderer/web-view/web-view-init')(contextIsolation, webviewTag, guestInstanceId)
+  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init')
+  webViewInit(contextIsolation, webviewTag, guestInstanceId)
 }
 
 // Pass the arguments to isolatedWorld.

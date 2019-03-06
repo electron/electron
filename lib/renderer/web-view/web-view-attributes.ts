@@ -1,14 +1,12 @@
-'use strict'
-
-const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils')
-const { WebViewImpl } = require('@electron/internal/renderer/web-view/web-view-impl')
-const webViewConstants = require('@electron/internal/renderer/web-view/web-view-constants')
+import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl'
+import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
 
 // Helper function to resolve url set in attribute.
 const a = document.createElement('a')
 
-const resolveURL = function (url) {
-  if (url === '') return ''
+const resolveURL = function (url?: string | null) {
+  if (!url) return ''
   a.href = url
   return a.href
 }
@@ -16,33 +14,35 @@ const resolveURL = function (url) {
 // Attribute objects.
 // Default implementation of a WebView attribute.
 class WebViewAttribute {
-  constructor (name, webViewImpl) {
+  public value: any;
+  public ignoreMutation = false;
+
+  constructor (public name: string, public webViewImpl: WebViewImpl) {
     this.name = name
-    this.value = webViewImpl.webviewNode[name] || ''
+    this.value = (webViewImpl.webviewNode as Record<string, any>)[name] || ''
     this.webViewImpl = webViewImpl
-    this.ignoreMutation = false
     this.defineProperty()
   }
 
   // Retrieves and returns the attribute's value.
-  getValue () {
+  public getValue () {
     return this.webViewImpl.webviewNode.getAttribute(this.name) || this.value
   }
 
   // Sets the attribute's value.
-  setValue (value) {
+  public setValue (value: any) {
     this.webViewImpl.webviewNode.setAttribute(this.name, value || '')
   }
 
   // Changes the attribute's value without triggering its mutation handler.
-  setValueIgnoreMutation (value) {
+  public setValueIgnoreMutation (value: any) {
     this.ignoreMutation = true
     this.setValue(value)
     this.ignoreMutation = false
   }
 
   // Defines this attribute as a property on the webview node.
-  defineProperty () {
+  public defineProperty () {
     return Object.defineProperty(this.webViewImpl.webviewNode, this.name, {
       get: () => {
         return this.getValue()
@@ -55,7 +55,7 @@ class WebViewAttribute {
   }
 
   // Called when the attribute's value changes.
-  handleMutation () {}
+  public handleMutation (..._args: Array<any>): any {}
 }
 
 // An attribute that is treated as a Boolean.
@@ -64,7 +64,7 @@ class BooleanAttribute extends WebViewAttribute {
     return this.webViewImpl.webviewNode.hasAttribute(this.name)
   }
 
-  setValue (value) {
+  setValue (value: boolean) {
     if (value) {
       this.webViewImpl.webviewNode.setAttribute(this.name, '')
     } else {
@@ -75,35 +75,38 @@ class BooleanAttribute extends WebViewAttribute {
 
 // Attribute representing the state of the storage partition.
 class PartitionAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_PARTITION, webViewImpl)
-    this.validPartitionId = true
+  public validPartitionId = true
+
+  constructor (public webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, webViewImpl)
   }
 
-  handleMutation (oldValue, newValue) {
+  public handleMutation (oldValue: any, newValue: any) {
     newValue = newValue || ''
 
     // The partition cannot change if the webview has already navigated.
     if (!this.webViewImpl.beforeFirstNavigation) {
-      console.error(webViewConstants.ERROR_MSG_ALREADY_NAVIGATED)
+      console.error(WEB_VIEW_CONSTANTS.ERROR_MSG_ALREADY_NAVIGATED)
       this.setValueIgnoreMutation(oldValue)
       return
     }
     if (newValue === 'persist:') {
       this.validPartitionId = false
-      console.error(webViewConstants.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE)
+      console.error(WEB_VIEW_CONSTANTS.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE)
     }
   }
 }
 
 // Attribute that handles the location and navigation of the webview.
 class SrcAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_SRC, webViewImpl)
+  public observer!: MutationObserver;
+
+  constructor (public webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC, webViewImpl)
     this.setupMutationObserver()
   }
 
-  getValue () {
+  public getValue () {
     if (this.webViewImpl.webviewNode.hasAttribute(this.name)) {
       return resolveURL(this.webViewImpl.webviewNode.getAttribute(this.name))
     } else {
@@ -111,7 +114,7 @@ class SrcAttribute extends WebViewAttribute {
     }
   }
 
-  setValueIgnoreMutation (value) {
+  public setValueIgnoreMutation (value: any) {
     super.setValueIgnoreMutation(value)
 
     // takeRecords() is needed to clear queued up src mutations. Without it, it
@@ -121,7 +124,7 @@ class SrcAttribute extends WebViewAttribute {
     this.observer.takeRecords()
   }
 
-  handleMutation (oldValue, newValue) {
+  public handleMutation (oldValue: any, newValue: any) {
     // Once we have navigated, we don't allow clearing the src attribute.
     // Once <webview> enters a navigated state, it cannot return to a
     // placeholder state.
@@ -139,7 +142,7 @@ class SrcAttribute extends WebViewAttribute {
   // attribute without any changes to its value. This is useful in the case
   // where the webview guest has crashed and navigating to the same address
   // spawns off a new process.
-  setupMutationObserver () {
+  public setupMutationObserver () {
     this.observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         const { oldValue } = mutation
@@ -150,16 +153,18 @@ class SrcAttribute extends WebViewAttribute {
         this.handleMutation(oldValue, newValue)
       }
     })
+
     const params = {
       attributes: true,
       attributeOldValue: true,
       attributeFilter: [this.name]
     }
+
     this.observer.observe(this.webViewImpl.webviewNode, params)
   }
 
-  parse () {
-    if (!this.webViewImpl.elementAttached || !this.webViewImpl.attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId || !this.getValue()) {
+  public parse () {
+    if (!this.webViewImpl.elementAttached || !this.webViewImpl.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION].validPartitionId || !this.getValue()) {
       return
     }
     if (this.webViewImpl.guestInstanceId == null) {
@@ -171,12 +176,14 @@ class SrcAttribute extends WebViewAttribute {
     }
 
     // Navigate to |this.src|.
-    const opts = {}
-    const httpreferrer = this.webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
+    const opts: Record<string, string> = {}
+
+    const httpreferrer = this.webViewImpl.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER].getValue()
     if (httpreferrer) {
       opts.httpReferrer = httpreferrer
     }
-    const useragent = this.webViewImpl.attributes[webViewConstants.ATTRIBUTE_USERAGENT].getValue()
+
+    const useragent = this.webViewImpl.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT].getValue()
     if (useragent) {
       opts.userAgent = useragent
     }
@@ -191,69 +198,72 @@ class SrcAttribute extends WebViewAttribute {
 
 // Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER, webViewImpl)
   }
 }
 
 // Attribute specifies user agent
 class UserAgentAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT, webViewImpl)
   }
 }
 
 // Attribute that set preload script.
 class PreloadAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD, webViewImpl)
   }
 
-  getValue () {
+  public getValue () {
     if (!this.webViewImpl.webviewNode.hasAttribute(this.name)) {
       return this.value
     }
+
     let preload = resolveURL(this.webViewImpl.webviewNode.getAttribute(this.name))
     const protocol = preload.substr(0, 5)
+
     if (protocol !== 'file:') {
-      console.error(webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE)
+      console.error(WEB_VIEW_CONSTANTS.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE)
       preload = ''
     }
+
     return preload
   }
 }
 
 // Attribute that specifies the blink features to be enabled.
 class BlinkFeaturesAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_BLINKFEATURES, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES, webViewImpl)
   }
 }
 
 // Attribute that specifies the blink features to be disabled.
 class DisableBlinkFeaturesAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_DISABLEBLINKFEATURES, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES, webViewImpl)
   }
 }
 
 // Attribute that specifies the web preferences to be enabled.
 class WebPreferencesAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_WEBPREFERENCES, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES, webViewImpl)
   }
 }
 
 class EnableRemoteModuleAttribute extends WebViewAttribute {
-  constructor (webViewImpl) {
-    super(webViewConstants.ATTRIBUTE_ENABLEREMOTEMODULE, webViewImpl)
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE, webViewImpl)
   }
 
-  getValue () {
+  public getValue () {
     return this.webViewImpl.webviewNode.getAttribute(this.name) !== 'false'
   }
 
-  setValue (value) {
+  public setValue (value: any) {
     this.webViewImpl.webviewNode.setAttribute(this.name, value ? 'true' : 'false')
   }
 }
@@ -261,17 +271,17 @@ class EnableRemoteModuleAttribute extends WebViewAttribute {
 // Sets up all of the webview attributes.
 WebViewImpl.prototype.setupWebViewAttributes = function () {
   this.attributes = {}
-  this.attributes[webViewConstants.ATTRIBUTE_PARTITION] = new PartitionAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_SRC] = new SrcAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER] = new HttpReferrerAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_USERAGENT] = new UserAgentAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
-  this.attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
-  this.attributes[webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY, this)
-  this.attributes[webViewConstants.ATTRIBUTE_ALLOWPOPUPS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_ALLOWPOPUPS, this)
-  this.attributes[webViewConstants.ATTRIBUTE_ENABLEREMOTEMODULE] = new EnableRemoteModuleAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_BLINKFEATURES] = new BlinkFeaturesAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_DISABLEBLINKFEATURES] = new DisableBlinkFeaturesAttribute(this)
-  this.attributes[webViewConstants.ATTRIBUTE_WEBPREFERENCES] = new WebPreferencesAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION] = new PartitionAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC] = new SrcAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER] = new HttpReferrerAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT] = new UserAgentAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE] = new EnableRemoteModuleAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES] = new BlinkFeaturesAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES] = new DisableBlinkFeaturesAttribute(this)
+  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES] = new WebPreferencesAttribute(this)
 }

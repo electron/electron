@@ -1,5 +1,3 @@
-'use strict'
-
 // When using context isolation, the WebViewElement and the custom element
 // methods have to be defined in the main world to be able to be registered.
 //
@@ -10,27 +8,30 @@
 // which runs in browserify environment instead of Node environment, all native
 // modules must be passed from outside, all included files must be plain JS.
 
-const webViewConstants = require('@electron/internal/renderer/web-view/web-view-constants')
+import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
+import { WebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl'
 
 // Return a WebViewElement class that is defined in this context.
-const defineWebViewElement = (v8Util, webViewImpl) => {
+const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
   const { guestViewInternal, WebViewImpl } = webViewImpl
   return class WebViewElement extends HTMLElement {
+    public internalInstanceId?: number;
+
     static get observedAttributes () {
       return [
-        webViewConstants.ATTRIBUTE_PARTITION,
-        webViewConstants.ATTRIBUTE_SRC,
-        webViewConstants.ATTRIBUTE_HTTPREFERRER,
-        webViewConstants.ATTRIBUTE_USERAGENT,
-        webViewConstants.ATTRIBUTE_NODEINTEGRATION,
-        webViewConstants.ATTRIBUTE_PLUGINS,
-        webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY,
-        webViewConstants.ATTRIBUTE_ALLOWPOPUPS,
-        webViewConstants.ATTRIBUTE_ENABLEREMOTEMODULE,
-        webViewConstants.ATTRIBUTE_PRELOAD,
-        webViewConstants.ATTRIBUTE_BLINKFEATURES,
-        webViewConstants.ATTRIBUTE_DISABLEBLINKFEATURES,
-        webViewConstants.ATTRIBUTE_WEBPREFERENCES
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES,
+        WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES
       ]
     }
 
@@ -40,26 +41,26 @@ const defineWebViewElement = (v8Util, webViewImpl) => {
     }
 
     connectedCallback () {
-      const internal = v8Util.getHiddenValue(this, 'internal')
+      const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
       if (!internal) {
         return
       }
       if (!internal.elementAttached) {
         guestViewInternal.registerEvents(internal, internal.viewInstanceId)
         internal.elementAttached = true
-        internal.attributes[webViewConstants.ATTRIBUTE_SRC].parse()
+        internal.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC].parse()
       }
     }
 
-    attributeChangedCallback (name, oldValue, newValue) {
-      const internal = v8Util.getHiddenValue(this, 'internal')
+    attributeChangedCallback (name: string, oldValue: any, newValue: any) {
+      const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
       if (internal) {
         internal.handleWebviewAttributeMutation(name, oldValue, newValue)
       }
     }
 
     disconnectedCallback () {
-      const internal = v8Util.getHiddenValue(this, 'internal')
+      const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
       if (!internal) {
         return
       }
@@ -72,15 +73,18 @@ const defineWebViewElement = (v8Util, webViewImpl) => {
 }
 
 // Register <webview> custom element.
-const registerWebViewElement = (v8Util, webViewImpl) => {
-  const WebViewElement = defineWebViewElement(v8Util, webViewImpl)
+const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
+  // I wish eslint wasn't so stupid, but it is
+  // eslint-disable-next-line
+  const WebViewElement = defineWebViewElement(v8Util, webViewImpl) as unknown as typeof ElectronInternal.WebViewElement
 
   webViewImpl.setupMethods(WebViewElement)
 
   // The customElements.define has to be called in a special scope.
-  webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
-    window.customElements.define('webview', WebViewElement)
-    window.WebView = WebViewElement
+  const webFrame = webViewImpl.webFrame as ElectronInternal.WebFrameInternal
+  webFrame.allowGuestViewElementDefinition(window, () => {
+    window.customElements.define('webview', WebViewElement);
+    (window as any).WebView = WebViewElement
 
     // Delete the callbacks so developers cannot call them and produce unexpected
     // behavior.
@@ -90,21 +94,24 @@ const registerWebViewElement = (v8Util, webViewImpl) => {
 
     // Now that |observedAttributes| has been retrieved, we can hide it from
     // user code as well.
-    delete WebViewElement.observedAttributes
+    // TypeScript is concerned that we're deleting a read-only attribute
+    delete (WebViewElement as any).observedAttributes
   })
 }
 
 // Prepare to register the <webview> element.
-const setupWebView = (v8Util, webViewImpl) => {
+export const setupWebView = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
   const useCapture = true
-  window.addEventListener('readystatechange', function listener (event) {
+  const listener = (event: Event) => {
     if (document.readyState === 'loading') {
       return
     }
+
     webViewImpl.setupAttributes()
     registerWebViewElement(v8Util, webViewImpl)
-    window.removeEventListener(event.type, listener, useCapture)
-  }, useCapture)
-}
 
-module.exports = { setupWebView }
+    window.removeEventListener(event.type, listener, useCapture)
+  }
+
+  window.addEventListener('readystatechange', listener, useCapture)
+}
