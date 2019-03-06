@@ -103,6 +103,7 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-linux-armv7l.zip`,
     `electron-${version}-linux-ia32-symbols.zip`,
     `electron-${version}-linux-ia32.zip`,
+    `electron-${version}-linux-x64-debug.zip`,
     `electron-${version}-linux-x64-symbols.zip`,
     `electron-${version}-linux-x64.zip`,
     `electron-${version}-mas-x64-dsym.zip`,

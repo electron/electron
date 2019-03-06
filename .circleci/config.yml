@@ -278,9 +278,18 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
     command: |
-      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" != "Darwin" ]; then
+      if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" == "Linux" ]; then
+        if [ x"$TARGET_ARCH" == x ]; then
+          target_cpu=x64
+        elif [ "$TARGET_ARCH" == "ia32" ]; then
+          target_cpu=x86
+        else
+          target_cpu="$TARGET_ARCH"
+        fi
         cd src
-        electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug
+        electron/script/strip-binaries.py --target-cpu="$target_cpu"
+        electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
       fi
 
 step-electron-dist-build: &step-electron-dist-build
