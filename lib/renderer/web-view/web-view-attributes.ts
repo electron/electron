@@ -11,9 +11,13 @@ const resolveURL = function (url?: string | null) {
   return a.href
 }
 
+interface MutationHandler {
+  handleMutation (_oldValue: any, _newValue: any): any;
+}
+
 // Attribute objects.
 // Default implementation of a WebView attribute.
-class WebViewAttribute {
+class WebViewAttribute implements MutationHandler {
   public value: any;
   public ignoreMutation = false;
 
@@ -55,7 +59,7 @@ class WebViewAttribute {
   }
 
   // Called when the attribute's value changes.
-  public handleMutation (..._args: Array<any>): any {}
+  public handleMutation: MutationHandler['handleMutation'] = () => undefined as any
 }
 
 // An attribute that is treated as a Boolean.
@@ -81,7 +85,7 @@ class PartitionAttribute extends WebViewAttribute {
     super(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, webViewImpl)
   }
 
-  public handleMutation (oldValue: any, newValue: any) {
+  public handleMutation = (oldValue: any, newValue: any) => {
     newValue = newValue || ''
 
     // The partition cannot change if the webview has already navigated.
@@ -124,7 +128,7 @@ class SrcAttribute extends WebViewAttribute {
     this.observer.takeRecords()
   }
 
-  public handleMutation (oldValue: any, newValue: any) {
+  public handleMutation = (oldValue: any, newValue: any) => {
     // Once we have navigated, we don't allow clearing the src attribute.
     // Once <webview> enters a navigated state, it cannot return to a
     // placeholder state.

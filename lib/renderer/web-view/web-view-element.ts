@@ -9,7 +9,7 @@
 // modules must be passed from outside, all included files must be plain JS.
 
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
-import { WebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl'
+import { WebViewImpl as IWebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl'
 
 // Return a WebViewElement class that is defined in this context.
 const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
@@ -41,7 +41,7 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
     }
 
     connectedCallback () {
-      const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
+      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal')
       if (!internal) {
         return
       }
@@ -53,14 +53,14 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
     }
 
     attributeChangedCallback (name: string, oldValue: any, newValue: any) {
-      const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
+      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal')
       if (internal) {
         internal.handleWebviewAttributeMutation(name, oldValue, newValue)
       }
     }
 
     disconnectedCallback () {
-      const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
+      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal')
       if (!internal) {
         return
       }
