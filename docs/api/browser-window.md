@@ -379,6 +379,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       content in the window, can be `no-user-gesture-required`,
       `user-gesture-required`, `document-user-activation-required`. Defaults to
       `no-user-gesture-required`.
+    * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
+      prevent the window from resizing when entering HTML Fullscreen. Default
+      is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

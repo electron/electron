@@ -122,6 +122,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kNodeIntegration, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInSubFrames, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
+  SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
@@ -370,6 +371,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   if (IsEnabled(options::kNodeIntegrationInSubFrames))
     command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
+
+  if (IsEnabled(options::kDisableHtmlFullscreenWindowResize))
+    command_line->AppendSwitch(switches::kDisableHtmlFullscreenWindowResize);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
