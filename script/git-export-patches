@@ -16,7 +16,7 @@ def guess_base_commit(repo):
     'describe',
     '--tags',
   ]
-  return subprocess.check_output(args).split('-')[0:2]
+  return subprocess.check_output(args).rsplit('-', 2)[0:2]
 
 
 def format_patch(repo, since):
@@ -92,7 +92,8 @@ def remove_patch_filename(patch):
 def main(argv):
   parser = argparse.ArgumentParser()
   parser.add_argument("-o", "--output",
-      help="directory into which exported patches will be written")
+      help="directory into which exported patches will be written",
+      required=True)
   parser.add_argument("patch_range",
       nargs='?',
       help="range of patches to export. Defaults to all commits since the "
