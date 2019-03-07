@@ -16,7 +16,7 @@ def guess_base_commit(repo):
     'describe',
     '--tags',
   ]
-  return subprocess.check_output(args).split('-')[0:2]
+  return subprocess.check_output(args).rsplit('-', 2)[0:2]
 
 
 def format_patch(repo, since):
