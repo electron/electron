@@ -472,6 +472,21 @@ describe('node feature', () => {
       const iv = Buffer.from('fedcba9876543210', 'hex')
       require('crypto').createCipheriv('des-ede-cbc', key, iv)
     })
+
+    it('should not crash when getting an ECDH key', () => {
+      const ecdh = require('crypto').createECDH('prime256v1')
+      expect(ecdh.generateKeys()).to.be.an.instanceof(Buffer)
+      expect(ecdh.getPrivateKey()).to.be.an.instanceof(Buffer)
+    })
+
+    it('should not crash when generating DH keys or fetching DH fields', () => {
+      const dh = require('crypto').createDiffieHellman('modp15')
+      expect(dh.generateKeys()).to.be.an.instanceof(Buffer)
+      expect(dh.getPublicKey()).to.be.an.instanceof(Buffer)
+      expect(dh.getPrivateKey()).to.be.an.instanceof(Buffer)
+      expect(dh.getPrime()).to.be.an.instanceof(Buffer)
+      expect(dh.getGenerator()).to.be.an.instanceof(Buffer)
+    })
   })
 
   it('includes the electron version in process.versions', () => {
