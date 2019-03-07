@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Benedek Heilig <benecene@gmail.com>
+Date: Thu, 21 Feb 2019 17:16:33 +0000
+Subject: fix some DCHECKs on Windows when using color chooser dialog
+
+Backports an upstream fix I made to the color chooser dialog on
+Windows. This can be removed once that fix lands in a chromium version we
+use. Below is the original commit message:
+
+Fix DCHECKs being triggered while using color chooser dialog on Windows
+
+This fixes two DHCECKs being triggered on Windows when using the
+dialog in a debug build. The main source of these triggered DCHECKs was
+that when the user closes the dialog, OnColorChooserDialog is called,
+which calls WebContentsImpl::DidEndColorChooser, which calls End on the
+dialog, which calls OnColorChooserDialog again. This also happened on
+macos. The other DCHECK was the receiver->HasAtLeastOneRef() one,
+because ColorChooserDialog had a PostTask in it's constructor.
+
+Change-Id: I45ec32083a5850e006034073bc29d7ec4bb63189
+
+diff --git a/chrome/browser/ui/views/color_chooser_dialog.cc b/chrome/browser/ui/views/color_chooser_dialog.cc
+index c26be855120fcef78ce995d09fb3965f796746a9..1f568a2657250c5f21ab01da88950eedc6d4e177 100644
+--- a/chrome/browser/ui/views/color_chooser_dialog.cc
++++ b/chrome/browser/ui/views/color_chooser_dialog.cc
+@@ -24,12 +24,14 @@ using content::BrowserThread;
+ // static
+ COLORREF ColorChooserDialog::g_custom_colors[16];
+ 
+-ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener,
+-                                       SkColor initial_color,
+-                                       gfx::NativeWindow owning_window)
++ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener)
+     : listener_(listener) {
+   DCHECK(listener_);
+   CopyCustomColors(g_custom_colors, custom_colors_);
++}
++
++void ColorChooserDialog::Open(SkColor initial_color,
++                              gfx::NativeWindow owning_window) {
+   HWND owning_hwnd = views::HWNDForNativeWindow(owning_window);
+ 
+   std::unique_ptr<RunState> run_state = BeginRun(owning_hwnd);
+diff --git a/chrome/browser/ui/views/color_chooser_dialog.h b/chrome/browser/ui/views/color_chooser_dialog.h
+index 838e22dcd1a707714a098320d5bf8174fa60a2ea..b2558ce2a226ccde0f20de9712bf33051b21799c 100644
+--- a/chrome/browser/ui/views/color_chooser_dialog.h
++++ b/chrome/browser/ui/views/color_chooser_dialog.h
+@@ -23,9 +23,9 @@ class ColorChooserDialog
+       public ui::BaseShellDialog,
+       public ui::BaseShellDialogImpl {
+  public:
+-  ColorChooserDialog(views::ColorChooserListener* listener,
+-                     SkColor initial_color,
+-                     gfx::NativeWindow owning_window);
++  explicit ColorChooserDialog(views::ColorChooserListener* listener);
++
++  void Open(SkColor initial_color, gfx::NativeWindow owning_window);
+ 
+   // BaseShellDialog:
+   bool IsRunning(gfx::NativeWindow owning_window) const override;
+diff --git a/chrome/browser/ui/views/color_chooser_win.cc b/chrome/browser/ui/views/color_chooser_win.cc
+index 434842ba0f81206a43fb26874930bf7309782890..ffc58eec78dc36e21c2c04aa0b0cd9097541d2f0 100644
+--- a/chrome/browser/ui/views/color_chooser_win.cc
++++ b/chrome/browser/ui/views/color_chooser_win.cc
+@@ -61,9 +61,8 @@ ColorChooserWin::ColorChooserWin(content::WebContents* web_contents,
+                                      ->GetWidget()
+                                      ->GetView()
+                                      ->GetNativeView());
+-  color_chooser_dialog_ = new ColorChooserDialog(this,
+-                                                 initial_color,
+-                                                 owning_window);
++  color_chooser_dialog_ = new ColorChooserDialog(this);
++  color_chooser_dialog_->Open(initial_color, owning_window);
+ }
+ 
+ ColorChooserWin::~ColorChooserWin() {
+@@ -90,11 +89,11 @@ void ColorChooserWin::OnColorChooserDialogClosed() {
+   if (color_chooser_dialog_.get()) {
+     color_chooser_dialog_->ListenerDestroyed();
+     color_chooser_dialog_ = NULL;
++    DCHECK(current_color_chooser_ == this);
++    current_color_chooser_ = NULL;
++    if (web_contents_)
++      web_contents_->DidEndColorChooser();
+   }
+-  DCHECK(current_color_chooser_ == this);
+-  current_color_chooser_ = NULL;
+-  if (web_contents_)
+-    web_contents_->DidEndColorChooser();
+ }
+ 
+ namespace chrome {
