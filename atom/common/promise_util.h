@@ -172,9 +172,8 @@ class CopyablePromise {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
-          base::Bind([](const CopyablePromise& promise,
-                        T result) { promise.GetPromise().Resolve(result); },
-                     promise, result));
+          base::BindOnce(Promise::ResolvePromise, promise.GetPromise(),
+                         std::move(result)));
     } else {
       promise.GetPromise().Resolve(result);
     }
@@ -182,12 +181,9 @@ class CopyablePromise {
 
   static void ResolveEmptyCopyablePromise(const CopyablePromise& promise) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                               base::Bind(
-                                   [](const CopyablePromise& promise) {
-                                     promise.GetPromise().Resolve();
-                                   },
-                                   promise));
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(Promise::ResolveEmptyPromise, promise.GetPromise()));
     } else {
       promise.GetPromise().Resolve();
     }
@@ -198,11 +194,8 @@ class CopyablePromise {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(
-              [](const CopyablePromise& promise, std::string errmsg) {
-                promise.GetPromise().RejectWithErrorMessage(errmsg);
-              },
-              promise, errmsg));
+          base::BindOnce(Promise::RejectPromise, promise.GetPromise(),
+                         std::move(errmsg)));
     } else {
       promise.GetPromise().RejectWithErrorMessage(errmsg);
     }
