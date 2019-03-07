@@ -5,7 +5,7 @@ build_script:
     echo "Build worker image $env:APPVEYOR_BUILD_WORKER_IMAGE"
 
     &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-    
+
     if($env:SKIP_GYP_BUILD -eq "true") {
       Write-warning "Skipping debug build for older branch"; Exit-AppveyorBuild
     } elseif(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
@@ -43,20 +43,11 @@ test_script:
     if (Test-Path Env:\ELECTRON_RELEASE) {
       Write-Output "Skipping tests for release build"
     } else {
+      $env:RUN_TESTS="true"
       Write-Output "Running tests for debug build"
-      python script\test.py --ci --rebuild_native_modules
-      if ($LASTEXITCODE -ne '0') {
-        throw "Tests failed with exit code $LASTEXITCODE"
-      } else {
-        Write-Output "Tests succeeded."
-      }
-      python script\verify-ffmpeg.py
-      if ($LASTEXITCODE -ne '0') {
-        throw "Verify ffmpeg failed with exit code $LASTEXITCODE"
-      } else {
-        "Verify ffmpeg succeeded."
-      }
     }
+- if "%RUN_TESTS%"=="true" ( echo Running test suite & python script\test.py --ci --rebuild_native_modules)
+- if "%RUN_TESTS%"=="true" ( echo Running verify ffmpeg & python script\verify-ffmpeg.py)
 artifacts:
 - path: test-results.xml
   name: test-results.xml
