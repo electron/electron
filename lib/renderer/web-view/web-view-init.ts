@@ -1,9 +1,8 @@
-'use strict'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
 const v8Util = process.atomBinding('v8_util')
 
-function handleFocusBlur (guestInstanceId) {
+function handleFocusBlur (guestInstanceId: number) {
   // Note that while Chromium content APIs have observer for focus/blur, they
   // unfortunately do not work for webview.
 
@@ -16,15 +15,17 @@ function handleFocusBlur (guestInstanceId) {
   })
 }
 
-module.exports = function (contextIsolation, webviewTag, guestInstanceId) {
+export function webViewInit (
+  contextIsolation: boolean, webviewTag: ElectronInternal.WebViewElement, guestInstanceId: number
+) {
   // Don't allow recursive `<webview>`.
   if (webviewTag && guestInstanceId == null) {
-    const webViewImpl = require('@electron/internal/renderer/web-view/web-view-impl')
+    const { webViewImplModule } = require('@electron/internal/renderer/web-view/web-view-impl')
     if (contextIsolation) {
-      v8Util.setHiddenValue(window, 'web-view-impl', webViewImpl)
+      v8Util.setHiddenValue(window, 'web-view-impl', webViewImplModule)
     } else {
       const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element')
-      setupWebView(v8Util, webViewImpl)
+      setupWebView(v8Util, webViewImplModule)
     }
   }
 
