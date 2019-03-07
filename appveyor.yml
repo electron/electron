@@ -46,7 +46,7 @@ test_script:
       $env:RUN_TESTS="true"
       Write-Output "Running tests for debug build"
     }
-- if "%RUN_TESTS%"=="true" ( echo Running test suite & python script\test.py --ci --rebuild_native_modules -v)
+- if "%RUN_TESTS%"=="true" ( echo Running test suite & python script\test.py --ci --rebuild_native_modules)
 - if "%RUN_TESTS%"=="true" ( echo Running verify ffmpeg & python script\verify-ffmpeg.py)
 artifacts:
 - path: test-results.xml
