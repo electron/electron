@@ -6,9 +6,12 @@
 #define ATOM_COMMON_PROMISE_UTIL_H_
 
 #include <string>
+#include <utility>
 
 #include "atom/common/api/locker.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
 
@@ -37,6 +40,45 @@ class Promise {
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> GetContext() {
     return v8::Local<v8::Context>::New(isolate_, context_);
+  }
+
+  // helpers for promise resolution and rejection
+
+  template <typename T>
+  static void ResolvePromise(Promise promise, T result) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(
+              [](Promise promise, T result) { promise.Resolve(result); },
+              std::move(promise), result));
+    } else {
+      promise.Resolve(result);
+    }
+  }
+
+  static void ResolveEmptyPromise(Promise promise) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce([](Promise promise) { promise.Resolve(); },
+                         std::move(promise)));
+    } else {
+      promise.Resolve();
+    }
+  }
+
+  static void RejectPromise(Promise promise, std::string errmsg) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                               base::BindOnce(
+                                   [](Promise promise, std::string errmsg) {
+                                     promise.RejectWithErrorMessage(errmsg);
+                                   },
+                                   std::move(promise), errmsg));
+    } else {
+      promise.RejectWithErrorMessage(errmsg);
+    }
   }
 
   v8::Local<v8::Promise> GetHandle() const;
@@ -124,6 +166,47 @@ class CopyablePromise {
   explicit CopyablePromise(const Promise& promise);
   CopyablePromise(const CopyablePromise&);
   ~CopyablePromise();
+
+  template <typename T>
+  static void ResolveCopyablePromise(const CopyablePromise& promise, T result) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::Bind([](const CopyablePromise& promise,
+                        T result) { promise.GetPromise().Resolve(result); },
+                     promise, result));
+    } else {
+      promise.GetPromise().Resolve(result);
+    }
+  }
+
+  static void ResolveEmptyCopyablePromise(const CopyablePromise& promise) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                               base::Bind(
+                                   [](const CopyablePromise& promise) {
+                                     promise.GetPromise().Resolve();
+                                   },
+                                   promise));
+    } else {
+      promise.GetPromise().Resolve();
+    }
+  }
+
+  static void RejectCopyablePromise(const CopyablePromise& promise,
+                                    std::string errmsg) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(
+              [](const CopyablePromise& promise, std::string errmsg) {
+                promise.GetPromise().RejectWithErrorMessage(errmsg);
+              },
+              promise, errmsg));
+    } else {
+      promise.GetPromise().RejectWithErrorMessage(errmsg);
+    }
+  }
 
   Promise GetPromise() const;
 
