@@ -51,7 +51,7 @@ class Promise {
           FROM_HERE, {content::BrowserThread::UI},
           base::BindOnce(
               [](Promise promise, T result) { promise.Resolve(result); },
-              std::move(promise), result));
+              std::move(promise), std::move(result)));
     } else {
       promise.Resolve(result);
     }
@@ -75,7 +75,7 @@ class Promise {
                                    [](Promise promise, std::string errmsg) {
                                      promise.RejectWithErrorMessage(errmsg);
                                    },
-                                   std::move(promise), errmsg));
+                                   std::move(promise), std::move(errmsg)));
     } else {
       promise.RejectWithErrorMessage(errmsg);
     }
