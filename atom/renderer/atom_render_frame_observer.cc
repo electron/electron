@@ -12,6 +12,8 @@
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
@@ -96,9 +98,18 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  if (renderer_client_->isolated_world() && IsMainWorld(world_id) &&
-      // Only the top window's main frame has isolated world.
-      render_frame_->IsMainFrame() && !render_frame_->GetWebFrame()->Opener()) {
+  bool use_context_isolation = renderer_client_->isolated_world();
+  bool is_main_world = IsMainWorld(world_id);
+  bool is_main_frame = render_frame_->IsMainFrame();
+  bool is_not_opened = !render_frame_->GetWebFrame()->Opener();
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  bool should_create_isolated_context =
+      use_context_isolation && is_main_world &&
+      (is_main_frame || allow_node_in_sub_frames) && is_not_opened;
+
+  if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
     renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
@@ -155,7 +166,11 @@ bool AtomRenderFrameObserver::IsIsolatedWorld(int world_id) {
 }
 
 bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  if (renderer_client_->isolated_world() && render_frame_->IsMainFrame())
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  if (renderer_client_->isolated_world() &&
+      (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
     return IsIsolatedWorld(world_id);
   else
     return IsMainWorld(world_id);
