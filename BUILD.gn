@@ -358,6 +358,7 @@ static_library("electron_lib") {
     "//ppapi/shared_impl",
     "//printing/buildflags",
     "//services/audio/public/mojom:constants",
+    "//services/device/public/cpp/geolocation",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
     "//services/video_capture/public/mojom:constants",
@@ -447,7 +448,6 @@ static_library("electron_lib") {
       "atom/browser/fake_location_provider.cc",
       "atom/browser/fake_location_provider.h",
     ]
-    deps += [ "//services/device/public/cpp/geolocation" ]
   }
 
   if (is_mac) {
