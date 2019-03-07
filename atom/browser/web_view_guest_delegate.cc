@@ -42,7 +42,7 @@ void WebViewGuestDelegate::AttachToIframe(
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
-  guest_web_contents->AttachToOuterWebContentsFrame(
+  embedder_web_contents_->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
       embedder_frame);
 
