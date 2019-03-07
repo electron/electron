@@ -3124,9 +3124,11 @@ describe('BrowserWindow module', () => {
   })
 
   describe('window.getNativeWindowHandle()', () => {
-    if (!nativeModulesEnabled) {
-      this.skip()
-    }
+    before(function () {
+      if (!nativeModulesEnabled) {
+        this.skip()
+      }
+    })
 
     it('returns valid handle', () => {
       // The module's source code is hosted at
