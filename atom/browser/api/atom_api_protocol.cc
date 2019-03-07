@@ -177,10 +177,6 @@ bool IsProtocolHandledInIO(
   return is_handled;
 }
 
-void PromiseCallback(util::Promise promise, bool handled) {
-  promise.Resolve(handled);
-}
-
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
   util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -190,7 +186,7 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
   base::PostTaskWithTraitsAndReplyWithResult(
       FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
-      base::BindOnce(&PromiseCallback, std::move(promise)));
+      base::BindOnce(util::Promise::ResolvePromise<bool>, std::move(promise)));
 
   return handle;
 }

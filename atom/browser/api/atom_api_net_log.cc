@@ -19,15 +19,6 @@
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"
 
-namespace {
-
-void OnGetFilePathToCompletedLog(const atom::util::CopyablePromise& promise,
-                                 const base::FilePath& file_path) {
-  promise.GetPromise().Resolve(file_path);
-}
-
-}  // namespace
-
 namespace atom {
 
 namespace api {
@@ -120,7 +111,8 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
       // TODO(zcbenz): Remove the use of CopyablePromise when the
       // GetFilePathToCompletedLog API accepts OnceCallback.
       net_log_writer_->GetFilePathToCompletedLog(base::Bind(
-          &OnGetFilePathToCompletedLog, util::CopyablePromise(promise)));
+          util::CopyablePromise::ResolveCopyablePromise<const base::FilePath&>,
+          util::CopyablePromise(promise)));
     }
     stop_callback_queue_.clear();
   }
