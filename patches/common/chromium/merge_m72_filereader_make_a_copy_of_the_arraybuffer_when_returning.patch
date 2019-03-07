@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Will Harris <wfh@chromium.org>
+Date: Thu, 28 Feb 2019 19:39:57 +0000
+Subject: Merge M72: FileReader: Make a copy of the ArrayBuffer when returning
+ partial results.
+
+This is to avoid accidentally ending up with multiple references to the
+same underlying ArrayBuffer. The extra performance overhead of this is
+minimal as usage of partial results is very rare anyway (as can be seen
+on https://www.chromestatus.com/metrics/feature/timeline/popularity/2158).
+
+(cherry picked from commit ba9748e78ec7e9c0d594e7edf7b2c07ea2a90449)
+
+Bug: 936448
+Change-Id: Icd1081adc1c889829fe7fa4af9cf4440097e8854
+Reviewed-on: https://chromium-review.googlesource.com/c/1492873
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#636251}
+Reviewed-on: https://chromium-review.googlesource.com/c/1495209
+Reviewed-by: Will Harris <wfh@chromium.org>
+Cr-Commit-Position: refs/branch-heads/3626@{#881}
+Cr-Branched-From: d897fb137fbaaa9355c0c93124cc048824eb1e65-refs/heads/master@{#612437}
+
+diff --git a/third_party/blink/renderer/core/fileapi/file_reader_loader.cc b/third_party/blink/renderer/core/fileapi/file_reader_loader.cc
+index 88fa2d46436ce843aed816221f2bbe59acfd7d28..5d31361c28f38d7a37e49f1d3a8a2d2308409d19 100644
+--- a/third_party/blink/renderer/core/fileapi/file_reader_loader.cc
++++ b/third_party/blink/renderer/core/fileapi/file_reader_loader.cc
+@@ -135,14 +135,16 @@ DOMArrayBuffer* FileReaderLoader::ArrayBufferResult() {
+   if (!raw_data_ || error_code_)
+     return nullptr;
+ 
+-  DOMArrayBuffer* result = DOMArrayBuffer::Create(raw_data_->ToArrayBuffer());
+-  if (finished_loading_) {
+-    array_buffer_result_ = result;
+-    AdjustReportedMemoryUsageToV8(
+-        -1 * static_cast<int64_t>(raw_data_->ByteLength()));
+-    raw_data_.reset();
++  if (!finished_loading_) {
++    return DOMArrayBuffer::Create(
++        ArrayBuffer::Create(raw_data_->Data(), raw_data_->ByteLength()));
+   }
+-  return result;
++
++  array_buffer_result_ = DOMArrayBuffer::Create(raw_data_->ToArrayBuffer());
++  AdjustReportedMemoryUsageToV8(-1 *
++                                static_cast<int64_t>(raw_data_->ByteLength()));
++  raw_data_.reset();
++  return array_buffer_result_;
+ }
+ 
+ String FileReaderLoader::StringResult() {
