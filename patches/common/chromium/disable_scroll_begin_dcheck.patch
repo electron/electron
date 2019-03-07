@@ -1,4 +1,4 @@
-From 56f1078f33969f1d3c097b398a10d251ea774add Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:27 -0700
 Subject: disable_scroll_begin_dcheck.patch
@@ -8,7 +8,7 @@ these assertions. I grouped them together since they are all related to the
 ScrollBegin event.
 
 diff --git a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
-index 702915772e4f..71fb66a7401c 100644
+index 702915772e4f150b473d3092d5d3a217d0a14602..71fb66a7401c3d46156dbfa7bc443d7e0b6192e1 100644
 --- a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
 +++ b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
 @@ -295,7 +295,7 @@ void MouseWheelEventQueue::SendScrollEnd(WebGestureEvent update_event,
@@ -21,7 +21,7 @@ index 702915772e4f..71fb66a7401c 100644
    WebGestureEvent scroll_begin(gesture_update);
    scroll_begin.SetType(WebInputEvent::kGestureScrollBegin);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 28879dc5e9bb..222b5d7e91ec 100644
+index 28879dc5e9bb3f391513da6a7ad829244b39799d..222b5d7e91ec07c3a471299a0d33e2c901b582fd 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1321,8 +1321,8 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(

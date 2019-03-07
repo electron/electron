@@ -64,6 +64,35 @@ const setPullRequest = (commit, owner, repo, number) => {
   }
 }
 
+const getNoteFromClerk = async (number, owner, repo) => {
+  const comments = await getComments(number, owner, repo)
+  if (!comments || !comments.data) return
+
+  const CLERK_LOGIN = 'release-clerk[bot]'
+  const CLERK_NO_NOTES = '**No Release Notes**'
+  const PERSIST_LEAD = '**Release Notes Persisted**\n\n'
+  const QUOTE_LEAD = '> '
+
+  for (const comment of comments.data.reverse()) {
+    if (comment.user.login !== CLERK_LOGIN) {
+      continue
+    }
+    if (comment.body === CLERK_NO_NOTES) {
+      return NO_NOTES
+    }
+    if (comment.body.startsWith(PERSIST_LEAD)) {
+      return comment.body
+        .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
+        .split('\r?\n') // break into lines
+        .map(line => line.trim())
+        .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
+        .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
+        .join(' ') // join the note lines
+        .trim()
+    }
+  }
+}
+
 // copied from https://github.com/electron/clerk/blob/master/src/index.ts#L4-L13
 const OMIT_FROM_RELEASE_NOTES_KEYS = [
   'no-notes',
@@ -82,10 +111,12 @@ const getNoteFromBody = body => {
   }
 
   const NOTE_PREFIX = 'Notes: '
+  const NOTE_HEADER = '#### Release Notes'
 
   let note = body
     .split(/\r?\n\r?\n/) // split into paragraphs
     .map(paragraph => paragraph.trim())
+    .map(paragraph => paragraph.startsWith(NOTE_HEADER) ? paragraph.slice(NOTE_HEADER.length).trim() : paragraph)
     .find(paragraph => paragraph.startsWith(NOTE_PREFIX))
 
   if (note) {
@@ -186,9 +217,9 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
   // https://www.conventionalcommits.org/en
   if (commitMessage
-    .split(/\r?\n\r?\n/) // split into paragraphs
-    .map(paragraph => paragraph.trim())
-    .some(paragraph => paragraph.startsWith('BREAKING CHANGE'))) {
+    .split(/\r?\n/) // split into lines
+    .map(line => line.trim())
+    .some(line => line.startsWith('BREAKING CHANGE'))) {
     commit.type = 'breaking-change'
   }
 
@@ -285,6 +316,22 @@ const getPullRequest = async (number, owner, repo) => {
   return checkCache(name, async () => {
     try {
       return await github.pullRequests.get({ number, owner, repo })
+    } catch (error) {
+      // Silently eat 404s.
+      // We can get a bad pull number if someone manually lists
+      // an issue number in PR number notation, e.g. 'fix: foo (#123)'
+      if (error.code !== 404) {
+        throw error
+      }
+    }
+  })
+}
+
+const getComments = async (number, owner, repo) => {
+  const name = `${owner}-${repo}-pull-${number}-comments`
+  return checkCache(name, async () => {
+    try {
+      return await github.issues.getComments({ number, owner, repo, per_page: 100 })
     } catch (error) {
       // Silently eat 404s.
       // We can get a bad pull number if someone manually lists
@@ -394,6 +441,28 @@ const getDependencyCommits = async (pool, from, to) => {
     : getDependencyCommitsGN(pool, from, to)
 }
 
+// Changes are interesting if they make a change relative to a previous
+// release in the same series. For example if you fix a Y.0.0 bug, that
+// should be included in the Y.0.1 notes even if it's also tropped back
+// to X.0.1.
+//
+// The phrase 'previous release' is important: if this is the first
+// prerelease or first stable release in a series, we omit previous
+// branches' changes. Otherwise we will have an overwhelmingly long
+// list of mostly-irrelevant changes.
+const shouldIncludeMultibranchChanges = (version) => {
+  let show = true
+
+  if (semver.valid(version)) {
+    const prerelease = semver.prerelease(version)
+    show = prerelease
+      ? parseInt(prerelease.pop()) > 1
+      : semver.patch(version) > 0
+  }
+
+  return show
+}
+
 /***
 ****  Main
 ***/
@@ -446,8 +515,19 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // scrape PRs for release note 'Notes:' comments
   for (const commit of pool.commits) {
     let pr = commit.pr
+
     let prSubject
     while (pr && !commit.note) {
+      const note = await getNoteFromClerk(pr.number, pr.owner, pr.repo)
+      if (note) {
+        commit.note = note
+      }
+
+      // if we already have all the data we need, stop scraping the PRs
+      if (commit.note && commit.type && prSubject) {
+        break
+      }
+
       const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
       if (!prData || !prData.data) {
         break
@@ -473,9 +553,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     .filter(commit => commit.note !== NO_NOTES)
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
-  // if this is a stable release,
-  // remove notes for changes that already landed in a previous major/minor series
-  if (semver.valid(newVersion) && !semver.prerelease(newVersion)) {
+  if (!shouldIncludeMultibranchChanges(newVersion)) {
     // load all the prDatas
     await Promise.all(
       pool.commits.map(commit => new Promise(async (resolve) => {

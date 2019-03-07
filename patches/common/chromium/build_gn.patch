@@ -27,7 +27,7 @@ index fcc00ee0e49f101cb1b10629747c4c4fa521776d..3232a0360e94e78621f7f672e3de4bdc
  
  if (is_win) {
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 959a59231746..48f1285c4657 100644
+index 959a592317462abb07eefbf03853e1610034c5f3..48f1285c465797bfba37cf2a86cfe21d78c533e6 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
 @@ -634,12 +634,12 @@ config("compiler") {

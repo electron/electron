@@ -1,5 +1,11 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Dill <andy@discordapp.com>
+Date: Wed, 23 Jan 2019 10:33:55 -0800
+Subject: move text-to-speech out of chromium_src
+
+
 diff --git a/chrome/browser/speech/tts_controller_impl.cc b/chrome/browser/speech/tts_controller_impl.cc
-index 2ca56c3a247e..f58e33b3c019 100644
+index 2ca56c3a247e674ee15b0a0ee30e6c2941aa93d3..f58e33b3c0198e4333f98cd1928c8f6d9be45738 100644
 --- a/chrome/browser/speech/tts_controller_impl.cc
 +++ b/chrome/browser/speech/tts_controller_impl.cc
 @@ -624,12 +624,14 @@ const PrefService* TtsControllerImpl::GetPrefService(
@@ -16,9 +22,9 @@ index 2ca56c3a247e..f58e33b3c019 100644
 +#endif
    return prefs;
  }
-
+ 
 diff --git a/chrome/browser/speech/tts_mac.mm b/chrome/browser/speech/tts_mac.mm
-index 74996d854df3..d3bf665c2963 100644
+index 74996d854df318de0e01873f27f6662bf4998cf8..d3bf665c2963560a2bf35afaca56ec5b57d0890b 100644
 --- a/chrome/browser/speech/tts_mac.mm
 +++ b/chrome/browser/speech/tts_mac.mm
 @@ -11,7 +11,6 @@
@@ -26,11 +32,11 @@ index 74996d854df3..d3bf665c2963 100644
  #include "chrome/browser/speech/tts_controller.h"
  #include "chrome/browser/speech/tts_platform.h"
 -#include "extensions/browser/extension_function.h"
-
+ 
  #import <Cocoa/Cocoa.h>
-
+ 
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
-index 013c7a9c60f9..73a244a726e3 100644
+index 013c7a9c60f95475d63701c4f6848cb00dac19d9..73a244a726e3e1a1b5b52ca0e8e3b209aaf432ff 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
 +++ b/chrome/browser/speech/tts_message_filter.cc
 @@ -9,14 +9,40 @@
@@ -45,9 +51,9 @@ index 013c7a9c60f9..73a244a726e3 100644
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/notification_service.h"
  #include "content/public/browser/render_process_host.h"
-
+ 
  using content::BrowserThread;
-
+ 
 +namespace {
 +
 +class TtsMessageFilterShutdownNotifierFactory
@@ -77,7 +83,7 @@ index 013c7a9c60f9..73a244a726e3 100644
 @@ -24,28 +50,27 @@ TtsMessageFilter::TtsMessageFilter(content::BrowserContext* browser_context)
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
    TtsController::GetInstance()->AddVoicesChangedDelegate(this);
-
+ 
 -  // TODO(dmazzoni): make it so that we can listen for a BrowserContext
 -  // being destroyed rather than a Profile.  http://crbug.com/444668
 -  Profile* profile = Profile::FromBrowserContext(browser_context);
@@ -89,12 +95,12 @@ index 013c7a9c60f9..73a244a726e3 100644
 +          ->Get(browser_context)
 +          ->Subscribe(base::Bind(&TtsMessageFilter::BrowserContextDestroyed,
 +                                 base::RetainedRef(this)));
-
+ 
    // Balanced in OnChannelClosingInUIThread() to keep the ref-count be non-zero
    // until all pointers to this class are invalidated.
    AddRef();
  }
-
+ 
 -void TtsMessageFilter::OverrideThreadForMessage(
 -    const IPC::Message& message, BrowserThread::ID* thread) {
 +void TtsMessageFilter::OverrideThreadForMessage(const IPC::Message& message,
@@ -116,11 +122,11 @@ index 013c7a9c60f9..73a244a726e3 100644
 +      break;
    }
  }
-
+ 
 @@ -207,10 +232,8 @@ void TtsMessageFilter::Cleanup() {
    TtsController::GetInstance()->RemoveUtteranceEventDelegate(this);
  }
-
+ 
 -void TtsMessageFilter::Observe(
 -    int type,
 -    const content::NotificationSource& source,
@@ -132,7 +138,7 @@ index 013c7a9c60f9..73a244a726e3 100644
 +  browser_context_shutdown_notifier_.reset();
  }
 diff --git a/chrome/browser/speech/tts_message_filter.h b/chrome/browser/speech/tts_message_filter.h
-index cc9e2806b5c3..d21fb42f1aca 100644
+index cc9e2806b5c3942472785bf3a3a32e23d859971d..d21fb42f1aca2906b8d8968bd1a46721fbc55edb 100644
 --- a/chrome/browser/speech/tts_message_filter.h
 +++ b/chrome/browser/speech/tts_message_filter.h
 @@ -9,10 +9,9 @@
@@ -144,11 +150,11 @@ index cc9e2806b5c3..d21fb42f1aca 100644
  #include "content/public/browser/browser_thread.h"
 -#include "content/public/browser/notification_observer.h"
 -#include "content/public/browser/notification_registrar.h"
-
+ 
  namespace content {
  class BrowserContext;
 @@ -22,7 +21,6 @@ struct TtsUtteranceRequest;
-
+ 
  class TtsMessageFilter
      : public content::BrowserMessageFilter,
 -      public content::NotificationObserver,
@@ -158,19 +164,19 @@ index cc9e2806b5c3..d21fb42f1aca 100644
 @@ -64,15 +62,13 @@ class TtsMessageFilter
    // about to be deleted.
    bool Valid();
-
+ 
 -  // content::NotificationObserver implementation.
 -  void Observe(int type,
 -               const content::NotificationSource& source,
 -               const content::NotificationDetails& details) override;
 +  void BrowserContextDestroyed();
-
+ 
 +  std::unique_ptr<KeyedServiceShutdownNotifier::Subscription>
 +      browser_context_shutdown_notifier_;
    content::BrowserContext* browser_context_;
    mutable base::Lock mutex_;
    mutable bool valid_;
 -  content::NotificationRegistrar notification_registrar_;
-
+ 
    DISALLOW_COPY_AND_ASSIGN(TtsMessageFilter);
  };

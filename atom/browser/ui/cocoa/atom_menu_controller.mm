@@ -15,6 +15,7 @@
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
+#include "ui/strings/grit/ui_strings.h"
 
 using content::BrowserThread;
 
@@ -55,6 +56,29 @@ Role kRolesMap[] = {
     {@selector(moveTabToNewWindow:), "movetabtonewwindow"},
     {@selector(clearRecentDocuments:), "clearrecentdocuments"},
 };
+
+// Called when adding a submenu to the menu and checks if the submenu, via its
+// |model|, has visible child items.
+bool MenuHasVisibleItems(const atom::AtomMenuModel* model) {
+  int count = model->GetItemCount();
+  for (int index = 0; index < count; index++) {
+    if (model->IsVisibleAt(index))
+      return true;
+  }
+  return false;
+}
+
+// Called when an empty submenu is created. This inserts a menu item labeled
+// "(empty)" into the submenu. Matches Windows behavior.
+NSMenu* MakeEmptySubmenu() {
+  base::scoped_nsobject<NSMenu> submenu([[NSMenu alloc] initWithTitle:@""]);
+  NSString* empty_menu_title =
+      l10n_util::GetNSString(IDS_APP_MENU_EMPTY_SUBMENU);
+
+  [submenu addItemWithTitle:empty_menu_title action:NULL keyEquivalent:@""];
+  [[submenu itemAtIndex:0] setEnabled:NO];
+  return submenu.autorelease();
+}
 
 }  // namespace
 
@@ -218,13 +242,21 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[NSMenu alloc] initWithTitle:label];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
-  } else if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
+  } else if (type == atom::AtomMenuModel::TYPE_SUBMENU &&
+             model->IsVisibleAt(index)) {
+    // We need to specifically check that the submenu top-level item has been
+    // enabled as it's not validated by validateUserInterfaceItem
+    if (!model->IsEnabledAt(index))
+      [item setEnabled:NO];
+
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
     atom::AtomMenuModel* submenuModel =
         static_cast<atom::AtomMenuModel*>(model->GetSubmenuModelAt(index));
-    NSMenu* submenu = [self menuFromModel:submenuModel];
+    NSMenu* submenu = MenuHasVisibleItems(submenuModel)
+                          ? [self menuFromModel:submenuModel]
+                          : MakeEmptySubmenu();
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 

@@ -359,26 +359,62 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
-    it('should emit remote-require event when remote.require() is invoked', (done) => {
-      app.once('remote-require', (event, webContents, moduleName) => {
-        expect(webContents).to.equal(w.webContents)
-        expect(moduleName).to.equal('test')
-        done()
-      })
+    it('should emit remote-require event when remote.require() is invoked', async () => {
       w = new BrowserWindow({ show: false })
-      w.loadURL('about:blank')
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-require')
       w.webContents.executeJavaScript(`require('electron').remote.require('test')`)
+
+      const [, webContents, moduleName] = await promise
+      expect(webContents).to.equal(w.webContents)
+      expect(moduleName).to.equal('test')
     })
 
-    it('should emit remote-get-global event when remote.getGlobal() is invoked', (done) => {
-      app.once('remote-get-global', (event, webContents, globalName) => {
-        expect(webContents).to.equal(w.webContents)
-        expect(globalName).to.equal('test')
-        done()
-      })
+    it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
       w = new BrowserWindow({ show: false })
-      w.loadURL('about:blank')
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-global')
       w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`)
+
+      const [, webContents, globalName] = await promise
+      expect(webContents).to.equal(w.webContents)
+      expect(globalName).to.equal('test')
+    })
+
+    it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
+      w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-builtin')
+      w.webContents.executeJavaScript(`require('electron').remote.app`)
+
+      const [, webContents, moduleName] = await promise
+      expect(webContents).to.equal(w.webContents)
+      expect(moduleName).to.equal('app')
+    })
+
+    it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
+      w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-current-window')
+      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWindow()`)
+
+      const [, webContents] = await promise
+      expect(webContents).to.equal(w.webContents)
+    })
+
+    it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
+      w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'remote-get-current-web-contents')
+      w.webContents.executeJavaScript(`require('electron').remote.getCurrentWebContents()`)
+
+      const [, webContents] = await promise
+      expect(webContents).to.equal(w.webContents)
     })
   })
 
@@ -432,9 +468,6 @@ describe('app module', () => {
   })
 
   describe('app.get/setLoginItemSettings API', function () {
-    // allow up to three retries to account for flaky mas results
-    this.retries(3)
-
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
@@ -442,7 +475,7 @@ describe('app module', () => {
     ]
 
     before(function () {
-      if (process.platform === 'linux') this.skip()
+      if (process.platform === 'linux' || process.mas) this.skip()
     })
 
     beforeEach(() => {
@@ -457,34 +490,26 @@ describe('app module', () => {
 
     it('sets and returns the app as a login item', done => {
       app.setLoginItemSettings({ openAtLogin: true })
-      // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 250 : 0
-      setTimeout(() => {
-        expect(app.getLoginItemSettings()).to.deep.equal({
-          openAtLogin: true,
-          openAsHidden: false,
-          wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
-          restoreState: false
-        })
-        done()
-      }, delay)
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+      done()
     })
 
     it('adds a login item that loads in hidden mode', done => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
-      // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 250 : 0
-      setTimeout(() => {
-        expect(app.getLoginItemSettings()).to.deep.equal({
-          openAtLogin: true,
-          openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
-          wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
-          restoreState: false
-        })
-        done()
-      }, delay)
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+      done()
     })
 
     it('correctly sets and unsets the LoginItem', function () {
@@ -498,7 +523,7 @@ describe('app module', () => {
     })
 
     it('correctly sets and unsets the LoginItem as hidden', function () {
-      if (process.platform !== 'darwin' || process.mas) this.skip()
+      if (process.platform !== 'darwin') this.skip()
 
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
       expect(app.getLoginItemSettings().openAsHidden).to.be.false()

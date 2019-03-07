@@ -685,6 +685,48 @@ Emitted when `remote.getGlobal()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the global from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
+#### Event: 'remote-get-builtin'
+
+Returns:
+
+* `event` Event
+* `moduleName` String
+
+Emitted when `remote.getBuiltin()` is called in the renderer process.
+Calling `event.preventDefault()` will prevent the module from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
+#### Event: 'remote-get-current-window'
+
+Returns:
+
+* `event` Event
+
+Emitted when `remote.getCurrentWindow()` is called in the renderer process.
+Calling `event.preventDefault()` will prevent the object from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
+#### Event: 'remote-get-current-web-contents'
+
+Returns:
+
+* `event` Event
+
+Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
+Calling `event.preventDefault()` will prevent the object from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
+#### Event: 'remote-get-guest-web-contents'
+
+Returns:
+
+* `event` Event
+* `guestWebContents` [WebContents](web-contents.md)
+
+Emitted when `<webview>.getWebContents()` is called in the renderer process.
+Calling `event.preventDefault()` will prevent the object from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
@@ -1539,6 +1581,10 @@ Takes a V8 heap snapshot and saves it to `filePath`.
 
 Controls whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
+
+#### `contents.getType()`
+
+Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
 ### Instance Properties
 

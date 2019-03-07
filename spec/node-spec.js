@@ -420,6 +420,40 @@ describe('node feature', () => {
     })
   })
 
+  describe('crypto', () => {
+    it('should list the ripemd160 hash in getHashes', () => {
+      expect(require('crypto').getHashes()).to.include('ripemd160')
+    })
+
+    it('should be able to create a ripemd160 hash and use it', () => {
+      const hash = require('crypto').createHash('ripemd160')
+      hash.update('electron-ripemd160')
+      expect(hash.digest('hex')).to.equal('fa7fec13c624009ab126ebb99eda6525583395fe')
+    })
+
+    it('should list aes-{128,256}-cfb in getCiphers', () => {
+      expect(require('crypto').getCiphers()).to.include.members(['aes-128-cfb', 'aes-256-cfb'])
+    })
+
+    it('should be able to create an aes-128-cfb cipher', () => {
+      require('crypto').createCipheriv('aes-128-cfb', '0123456789abcdef', '0123456789abcdef')
+    })
+
+    it('should be able to create an aes-256-cfb cipher', () => {
+      require('crypto').createCipheriv('aes-256-cfb', '0123456789abcdef0123456789abcdef', '0123456789abcdef')
+    })
+
+    it('should list des-ede-cbc in getCiphers', () => {
+      expect(require('crypto').getCiphers()).to.include('des-ede-cbc')
+    })
+
+    it('should be able to create an des-ede-cbc cipher', () => {
+      const key = Buffer.from('0123456789abcdeff1e0d3c2b5a49786', 'hex')
+      const iv = Buffer.from('fedcba9876543210', 'hex')
+      require('crypto').createCipheriv('des-ede-cbc', key, iv)
+    })
+  })
+
   it('includes the electron version in process.versions', () => {
     expect(process.versions)
       .to.have.own.property('electron')

@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
-Date: Mon Nov 26 09:32:14 2018 +0900
+Date: Mon, 26 Nov 2018 09:32:14 +0900
 Subject: fix_trackpad_scrolling.patch
 
 Backport https://chromium-review.googlesource.com/c/chromium/src/+/1299342.
@@ -9,7 +9,7 @@ This patch fixes https://github.com/electron/electron/issues/8960, and can be
 removed after upgraded to Chrome 72.
 
 diff --git a/gpu/ipc/service/child_window_win.cc b/gpu/ipc/service/child_window_win.cc
-index d531234..3cce23e 100644
+index d531234e480e8b67582f69105de9ec42d857d840..3cce23ef71563a8106b35dcbdf561acd33c22625 100644
 --- a/gpu/ipc/service/child_window_win.cc
 +++ b/gpu/ipc/service/child_window_win.cc
 @@ -9,7 +9,6 @@
@@ -20,7 +20,7 @@ index d531234..3cce23e 100644
  #include "base/win/scoped_hdc.h"
  #include "base/win/wrapped_window_proc.h"
  #include "gpu/ipc/common/gpu_messages.h"
-@@ -21,49 +20,11 @@
+@@ -21,48 +20,10 @@
  
  namespace gpu {
  
@@ -38,7 +38,7 @@ index d531234..3cce23e 100644
  
  ATOM g_window_class;
  
- // This runs on the window owner thread.
+-// This runs on the window owner thread.
 -LRESULT CALLBACK IntermediateWindowProc(HWND window,
 -                                        UINT message,
 -                                        WPARAM w_param,
@@ -66,10 +66,9 @@ index d531234..3cce23e 100644
 -  }
 -}
 -
--// This runs on the window owner thread.
+ // This runs on the window owner thread.
  void InitializeWindowClass() {
    if (g_window_class)
-     return;
 @@ -71,9 +32,9 @@ void InitializeWindowClass() {
    WNDCLASSEX intermediate_class;
    base::win::InitializeWindowClass(
@@ -189,7 +188,7 @@ index d531234..3cce23e 100644
  
  }  // namespace gpu
 diff --git a/gpu/ipc/service/child_window_win.h b/gpu/ipc/service/child_window_win.h
-index c11202b..2b29fc6 100644
+index c11202b12da8fc540a78c3b13f731fc33d2d63b3..2b29fc641a810d2b521fa14e40da5bffb42ad722 100644
 --- a/gpu/ipc/service/child_window_win.h
 +++ b/gpu/ipc/service/child_window_win.h
 @@ -7,14 +7,13 @@
@@ -227,7 +226,7 @@ index c11202b..2b29fc6 100644
    HWND parent_window_;
    HWND window_;
 diff --git a/gpu/ipc/service/direct_composition_surface_win.cc b/gpu/ipc/service/direct_composition_surface_win.cc
-index e6ac830..2fc7cd93 100644
+index e6ac8301cffe14cc55445a89d2013b61739d7e1f..2fc7cd93d82acf377391fa727d3fdfbb31d304f6 100644
 --- a/gpu/ipc/service/direct_composition_surface_win.cc
 +++ b/gpu/ipc/service/direct_composition_surface_win.cc
 @@ -1541,8 +1541,6 @@ gfx::SwapResult DirectCompositionSurfaceWin::SwapBuffers(

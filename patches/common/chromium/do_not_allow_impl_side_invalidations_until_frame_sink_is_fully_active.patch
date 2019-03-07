@@ -1,0 +1,128 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Fri, 18 Jan 2019 03:51:46 +0000
+Subject: Do not allow impl side invalidations until frame sink is fully active
+
+Impl side invalidations can fill up the pipeline blocking main thread
+commit, but draw is blocked for the first commit and activation after
+a new frame sink is created causing a hang in BeginMainFrame.
+
+In the repro, |has_pending_tree_| and |active_tree_needs_first_draw_|
+are both true while |layer_tree_frame_sink_state_| is
+WAITING_FOR_COMMIT.  This means the first invalidation activated and the
+second one created a pending tree, but draw is blocked because the frame
+sink hasn't produced first commit and activation.  It's also possible
+that only one invalidation would trigger this bug because the main
+thread commit won't be able to activate and draw would be blocked again.
+
+With this change, impl side invalidations are blocked until the first
+commit and activation for a frame sink have gone through.
+
+Reproduced using an internal test page (b/122271331) and verified that
+it's fixed.  Also verified that included test fails before this change.
+
+Hopefully this fixes all instances of this long standing hang.
+
+Bug: 622080
+Change-Id: I4b6835e0487f1e48244f41805e63897c9661e674
+Reviewed-on: https://chromium-review.googlesource.com/c/1419132
+Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Khushal <khushalsagar@chromium.org>
+Reviewed-by: Khushal <khushalsagar@chromium.org>
+Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#623998}
+
+diff --git a/cc/scheduler/scheduler_state_machine.cc b/cc/scheduler/scheduler_state_machine.cc
+index a81baa256eab487995faae4f7242266f4c922190..588aa6b6cac770656384cef86b56d5445644dd48 100644
+--- a/cc/scheduler/scheduler_state_machine.cc
++++ b/cc/scheduler/scheduler_state_machine.cc
+@@ -712,8 +712,12 @@ bool SchedulerStateMachine::CouldCreatePendingTree() const {
+   if (begin_frame_source_paused_)
+     return false;
+ 
+-  // Don't create a pending tree till a frame sink is initialized.
+-  if (!HasInitializedLayerTreeFrameSink())
++  // Don't create a pending tree till a frame sink is fully initialized.  Check
++  // for the ACTIVE state explicitly instead of calling
++  // HasInitializedLayerTreeFrameSink() because that only checks if frame sink
++  // has been recreated, but doesn't check if we're waiting for first commit or
++  // activation.
++  if (layer_tree_frame_sink_state_ != LayerTreeFrameSinkState::ACTIVE)
+     return false;
+ 
+   return true;
+diff --git a/cc/scheduler/scheduler_state_machine_unittest.cc b/cc/scheduler/scheduler_state_machine_unittest.cc
+index aa742f8a8a2bf98a5d3a810d4164a44772719530..26d3adafda6236aebbfe8686c38bfa4181e9e470 100644
+--- a/cc/scheduler/scheduler_state_machine_unittest.cc
++++ b/cc/scheduler/scheduler_state_machine_unittest.cc
+@@ -2310,24 +2310,63 @@ TEST(SchedulerStateMachineTest,
+       SchedulerStateMachine::Action::PERFORM_IMPL_SIDE_INVALIDATION);
+ }
+ 
+-TEST(SchedulerStateMachineTest,
+-     NoImplSideInvalidationWithoutLayerTreeFrameSink) {
++TEST(SchedulerStateMachineTest, NoImplSideInvalidationUntilFrameSinkActive) {
+   SchedulerSettings settings;
+   StateMachine state(settings);
+-  SET_UP_STATE(state);
++  SET_UP_STATE(state)
++
++  // Prefer impl side invalidation over begin main frame.
++  state.set_should_defer_invalidation_for_fast_main_frame(false);
+ 
+-  // Impl-side invalidations should not be triggered till the frame sink is
+-  // initialized.
+   state.DidLoseLayerTreeFrameSink();
++
++  // Create new frame sink but don't commit or activate yet.
+   EXPECT_ACTION_UPDATE_STATE(
+       SchedulerStateMachine::Action::BEGIN_LAYER_TREE_FRAME_SINK_CREATION);
+-  EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::NONE);
+ 
+-  // No impl-side invalidations should be performed during frame sink creation.
++  state.DidCreateAndInitializeLayerTreeFrameSink();
++  state.SetNeedsBeginMainFrame();
++
+   bool needs_first_draw_on_activation = true;
+   state.SetNeedsImplSideInvalidation(needs_first_draw_on_activation);
++
++  state.IssueNextBeginImplFrame();
++  EXPECT_ACTION_UPDATE_STATE(
++      SchedulerStateMachine::Action::SEND_BEGIN_MAIN_FRAME);
++  // No impl side invalidation because we're still waiting for first commit.
++  EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::NONE);
++
++  state.NotifyBeginMainFrameStarted();
++  state.NotifyReadyToCommit();
++  EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::COMMIT);
++
++  state.OnBeginImplFrameDeadline();
++  state.OnBeginImplFrameIdle();
++  EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::NONE);
++
++  state.SetNeedsImplSideInvalidation(needs_first_draw_on_activation);
++
+   state.IssueNextBeginImplFrame();
++  // No impl side invalidation because we're still waiting for first activation.
+   EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::NONE);
++
++  state.NotifyReadyToActivate();
++  EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::ACTIVATE_SYNC_TREE);
++
++  state.OnBeginImplFrameDeadline();
++  EXPECT_ACTION_UPDATE_STATE(SchedulerStateMachine::Action::DRAW_IF_POSSIBLE);
++  state.OnBeginImplFrameIdle();
++
++  state.SetNeedsBeginMainFrame();
++  state.SetNeedsImplSideInvalidation(needs_first_draw_on_activation);
++
++  state.IssueNextBeginImplFrame();
++  EXPECT_ACTION_UPDATE_STATE(
++      SchedulerStateMachine::Action::SEND_BEGIN_MAIN_FRAME);
++  // Impl side invalidation only after receiving first commit and activation for
++  // new frame sink.
++  EXPECT_ACTION_UPDATE_STATE(
++      SchedulerStateMachine::Action::PERFORM_IMPL_SIDE_INVALIDATION);
+ }
+ 
+ TEST(SchedulerStateMachineTest, ImplSideInvalidationWhenPendingTreeExists) {

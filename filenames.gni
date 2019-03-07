@@ -559,7 +559,6 @@ filenames = {
     "atom/renderer/api/atom_api_spell_check_client.cc",
     "atom/renderer/api/atom_api_spell_check_client.h",
     "atom/renderer/api/atom_api_web_frame.cc",
-    "atom/renderer/api/atom_api_web_frame.h",
     "atom/renderer/atom_autofill_agent.cc",
     "atom/renderer/atom_autofill_agent.h",
     "atom/renderer/atom_render_frame_observer.cc",
