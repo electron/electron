@@ -5,7 +5,7 @@ build_script:
     echo "Build worker image $env:APPVEYOR_BUILD_WORKER_IMAGE"
 
     &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-    
+
     if($env:SKIP_GYP_BUILD -eq "true") {
       Write-warning "Skipping debug build for older branch"; Exit-AppveyorBuild
     } elseif(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
@@ -44,7 +44,7 @@ test_script:
       Write-Output "Skipping tests for release build"
     } else {
       Write-Output "Running tests for debug build"
-      python script\test.py --ci --rebuild_native_modules
+      python script\test.py --ci --rebuild_native_modules -v
       if ($LASTEXITCODE -ne '0') {
         throw "Tests failed with exit code $LASTEXITCODE"
       } else {
