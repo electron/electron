@@ -6,6 +6,8 @@
   "devDependencies": {
     "@octokit/rest": "^16.3.2",
     "@types/node": "^10.12.21",
+    "@typescript-eslint/eslint-plugin": "^1.4.2",
+    "@typescript-eslint/parser": "^1.4.2",
     "aliasify": "^2.1.0",
     "asar": "^1.0.0",
     "browserify": "^16.2.3",
@@ -40,8 +42,7 @@
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
     "tsify": "^4.0.1",
-    "typescript": "~3.1.1",
-    "typescript-eslint-parser": "^21.0.0"
+    "typescript": "~3.3.3333"
   },
   "private": true,
   "scripts": {
