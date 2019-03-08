@@ -220,11 +220,14 @@ void OnSetCookie(util::Promise promise,
       break;
   }
   if (errmsg.empty()) {
-    RunCallbackInUI(
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
         base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
   } else {
-    RunCallbackInUI(
-        base::BindOnce(util::Promise::RejectPromise, std::move(promise), errmsg));
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
+        base::BindOnce(util::Promise::RejectPromise, std::move(promise),
+                       std::move(errmsg)));
   }
 }
 
