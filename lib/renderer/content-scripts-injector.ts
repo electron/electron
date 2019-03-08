@@ -15,12 +15,18 @@ const runContentScript = function (this: any, extensionId: string, url: string, 
   const context: { chrome?: any } = {}
   require('@electron/internal/renderer/chrome-api').injectTo(extensionId, false, context)
   const wrapper = `((chrome) => {\n  ${code}\n  })`
-  const compiledWrapper = runInThisContext(wrapper, {
-    filename: url,
-    lineOffset: 1,
-    displayErrors: true
-  })
-  return compiledWrapper.call(this, context.chrome)
+  try {
+    const compiledWrapper = runInThisContext(wrapper, {
+      filename: url,
+      lineOffset: 1,
+      displayErrors: true
+    })
+    return compiledWrapper.call(this, context.chrome)
+  } catch (error) {
+    // TODO(samuelmaddock): Run scripts in isolated world, see chromium script_injection.cc
+    console.error(`Error running content script JavaScript for '${extensionId}'`)
+    console.error(error)
+  }
 }
 
 const runAllContentScript = function (scripts: Array<Electron.InjectionBase>, extensionId: string) {
@@ -39,13 +45,19 @@ const runStylesheet = function (this: any, url: string, code: string) {
     document.addEventListener('DOMContentLoaded', init);
   })`
 
-  const compiledWrapper = runInThisContext(wrapper, {
-    filename: url,
-    lineOffset: 1,
-    displayErrors: true
-  })
+  try {
+    const compiledWrapper = runInThisContext(wrapper, {
+      filename: url,
+      lineOffset: 1,
+      displayErrors: true
+    })
 
-  return compiledWrapper.call(this, code)
+    return compiledWrapper.call(this, code)
+  } catch (error) {
+    // TODO(samuelmaddock): Insert stylesheet directly into document, see chromium script_injection.cc
+    console.error(`Error inserting content script stylesheet ${url}`)
+    console.error(error)
+  }
 }
 
 const runAllStylesheet = function (css: Array<Electron.InjectionBase>) {
@@ -84,7 +96,7 @@ const injectContentScript = function (extensionId: string, script: Electron.Cont
 
 // Handle the request of chrome.tabs.executeJavaScript.
 ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
-  event,
+  event: Electron.Event,
   senderWebContentsId: number,
   requestId: number,
   extensionId: string,
@@ -95,13 +107,15 @@ ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
   ipcRendererInternal.sendToAll(senderWebContentsId, `CHROME_TABS_EXECUTESCRIPT_RESULT_${requestId}`, result)
 })
 
-// Read the renderer process preferences.
-const preferences = process.getRenderProcessPreferences()
-if (preferences) {
-  for (const pref of preferences) {
-    if (pref.contentScripts) {
-      for (const script of pref.contentScripts) {
-        injectContentScript(pref.extensionId, script)
+module.exports = (getRenderProcessPreferences: typeof process.getRenderProcessPreferences) => {
+  // Read the renderer process preferences.
+  const preferences = getRenderProcessPreferences()
+  if (preferences) {
+    for (const pref of preferences) {
+      if (pref.contentScripts) {
+        for (const script of pref.contentScripts) {
+          injectContentScript(pref.extensionId, script)
+        }
       }
     }
   }
