@@ -328,11 +328,6 @@ void AllowNTLMCredentialsForDomainsInIO(
   }
 }
 
-void OnClearStorageDataDone(const base::Closure& callback) {
-  if (!callback.is_null())
-    callback.Run();
-}
-
 void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::FilePath& path,
                         const std::vector<GURL>& url_chain,
@@ -429,12 +424,13 @@ void Session::DoCacheAction(const net::CompletionCallback& callback) {
                      action, callback));
 }
 
-void Session::ClearStorageData(mate::Arguments* args) {
-  // clearStorageData([options, callback])
+v8::Local<v8::Promise> Session::ClearStorageData(mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   ClearStorageDataOptions options;
-  base::Closure callback;
   args->GetNext(&options);
-  args->GetNext(&callback);
 
   auto* storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
@@ -443,9 +439,13 @@ void Session::ClearStorageData(mate::Arguments* args) {
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
     MediaDeviceIDSalt::Reset(browser_context()->prefs());
   }
-  storage_partition->ClearData(options.storage_types, options.quota_types,
-                               options.origin, base::Time(), base::Time::Max(),
-                               base::Bind(&OnClearStorageDataDone, callback));
+
+  storage_partition->ClearData(
+      options.storage_types, options.quota_types, options.origin, base::Time(),
+      base::Time::Max(),
+      base::Bind(util::CopyablePromise::ResolveEmptyCopyablePromise,
+                 util::CopyablePromise(promise)));
+  return handle;
 }
 
 void Session::FlushStorageData() {

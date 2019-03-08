@@ -184,7 +184,7 @@ describe('chromium feature', () => {
             done()
           }).catch((error) => done(error))
         } else {
-          ses.clearStorageData(options, () => {
+          ses.clearStorageData(options).then(() => {
             w.webContents.reload()
           })
         }
@@ -225,7 +225,7 @@ describe('chromium feature', () => {
           assert.strictEqual(message, 'Hello from serviceWorker!')
           session.fromPartition('sw-file-scheme-spec').clearStorageData({
             storages: ['serviceworkers']
-          }, () => done())
+          }).then(() => done())
         }
       })
       w.webContents.on('crashed', () => done(new Error('WebContents crashed.')))
@@ -264,8 +264,8 @@ describe('chromium feature', () => {
           assert.strictEqual(message, 'Hello from serviceWorker!')
           customSession.clearStorageData({
             storages: ['serviceworkers']
-          }, () => {
-            customSession.protocol.uninterceptProtocol('file', (error) => done(error))
+          }).then(() => {
+            customSession.protocol.uninterceptProtocol('file', error => done(error))
           })
         }
       })
