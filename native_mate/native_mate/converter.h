@@ -114,6 +114,12 @@ struct Converter<double> {
 };
 
 template <>
+struct Converter<long> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, long val);
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, long* out);
+};
+
+template <>
 struct Converter<const char*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val);
 };

@@ -139,6 +139,17 @@ bool Converter<double>::FromV8(Isolate* isolate,
   return true;
 }
 
+Local<Value> Converter<long>::ToV8(Isolate* isolate, long val) {
+  return ToV8(isolate, (long long)val);
+}
+
+bool Converter<long>::FromV8(Isolate* isolate, Local<Value> val, long* out) {
+  if (!val->IsNumber())
+    return false;
+  *out = static_cast<long>(val.As<Number>()->Value());
+  return true;
+}
+
 Local<Value> Converter<const char*>::ToV8(Isolate* isolate, const char* val) {
   return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
       .ToLocalChecked();
