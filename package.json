@@ -5,6 +5,7 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@octokit/rest": "^16.3.2",
+    "@types/chrome": "0.0.81",
     "@types/node": "^10.12.21",
     "@typescript-eslint/eslint-plugin": "^1.4.2",
     "@typescript-eslint/parser": "^1.4.2",

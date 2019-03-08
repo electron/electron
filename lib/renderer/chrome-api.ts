@@ -5,8 +5,30 @@ import * as url from 'url'
 // Todo: Import once extensions have been turned into TypeScript
 const Event = require('@electron/internal/renderer/extensions/event')
 
+const ProxyTabProperty = <G extends keyof Electron.WebContents>(getMethod: G, mapGet?: (val: any) => any) => (target: Tab, propertyKey: keyof chrome.tabs.Tab) => {
+  Object.defineProperty(target, propertyKey, {
+    get: function (this: Tab): any {
+      const val = ipcRendererUtils.invokeSync('CHROME_TABS_PROPERTY_GET', this.id, getMethod)
+      return mapGet ? mapGet(val) : val
+    },
+    configurable: false,
+    enumerable: true
+  })
+}
+
 class Tab {
   public id: number
+  public index = 0
+  public highlighted = false
+  @ProxyTabProperty('isFocused') public active!: boolean
+  public pinned = false
+  @ProxyTabProperty('isCurrentlyAudible') public audible!: boolean
+  @ProxyTabProperty('isDestroyed') public discarded!: boolean
+  public autoDiscardable = false
+  @ProxyTabProperty('getURL') public url!: string
+  @ProxyTabProperty('getTitle') public title!: string
+  @ProxyTabProperty('isLoadingMainFrame', (loading: boolean) => loading ? 'loading' : 'complete') public status!: string
+  public incognito = false
 
   constructor (tabId: number) {
     this.id = tabId
@@ -173,6 +195,16 @@ export function injectTo (extensionId: string, isBackgroundPage: boolean, contex
   }
 
   chrome.tabs = {
+    query (
+      info: chrome.tabs.QueryInfo,
+      tabCallback: (tabs: Tab[]) => void
+    ) {
+      ipcRendererUtils.invoke<{
+        id: number;
+      }[]>('CHROME_TABS_QUERY', info).then((tabInfoArr) => {
+        tabCallback(tabInfoArr.map(tabInfo => new Tab(tabInfo.id)))
+      }).catch(() => tabCallback([]))
+    },
     // https://developer.chrome.com/extensions/tabs#method-executeScript
     executeScript (
       tabId: number,
