@@ -313,7 +313,7 @@ void ClearHostResolverCacheInIO(
 void ClearAuthCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const ClearAuthCacheOptions& options,
-    const base::Closure& callback) {
+    util::Promise promise) {
   auto* request_context = context_getter->GetURLRequestContext();
   auto* network_session =
       request_context->http_transaction_factory()->GetSession();
@@ -333,8 +333,9 @@ void ClearAuthCacheInIO(
     }
     network_session->CloseAllConnections();
   }
-  if (!callback.is_null())
-    RunCallbackInUI(callback);
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::UI},
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
 }
 
 void AllowNTLMCredentialsForDomainsInIO(
@@ -625,20 +626,23 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
   return handle;
 }
 
-void Session::ClearAuthCache(mate::Arguments* args) {
+v8::Local<v8::Promise> Session::ClearAuthCache(mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   ClearAuthCacheOptions options;
   if (!args->GetNext(&options)) {
-    args->ThrowError("Must specify options object");
-    return;
+    promise.RejectWithErrorMessage("Must specify options object");
+    return handle;
   }
-  base::Closure callback;
-  args->GetNext(&callback);
 
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&ClearAuthCacheInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
-                     options, callback));
+                     options, std::move(promise)));
+  return handle;
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
