@@ -235,7 +235,9 @@ describe('app module', () => {
 
       // Wait for the first app to boot.
       const firstStdoutLines = first.stdout.pipe(split())
-      const data1 = await emittedOnce(firstStdoutLines, 'data')
+      while ((await emittedOnce(firstStdoutLines, 'data')).toString() !== 'started') {
+        // wait.
+      }
       const data2Promise = emittedOnce(firstStdoutLines, 'data')
 
       const secondInstanceArgs = [remote.process.execPath, appPath, '--some-switch', 'some-arg']
@@ -246,8 +248,11 @@ describe('app module', () => {
       expect(code1).to.equal(0)
       const data2 = (await data2Promise).toString('ascii')
       const secondInstanceArgsReceived = JSON.parse(data2.toString('ascii'))
-      expect(secondInstanceArgsReceived).to.eql(secondInstanceArgs,
-        `expected ${JSON.stringify(secondInstanceArgs)} but got ${data2.toString('ascii')}`)
+      const expected = process.platform === 'win32'
+        ? [remote.process.execPath, '--some-switch', '--disable-setuid-sandbox', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes("original-process-start-time")), appPath, 'some-arg']
+        : secondInstanceArgs
+      expect(secondInstanceArgsReceived).to.eql(expected,
+        `expected ${JSON.stringify(expected)} but got ${data2.toString('ascii')}`)
     })
   })
 
