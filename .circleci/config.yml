@@ -1018,6 +1018,7 @@ jobs:
   linux-x64-testing.asan:
     <<: *machine-linux-2xlarge
     environment:
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-asan
@@ -1052,6 +1053,7 @@ jobs:
   linux-x64-release.asan:
     <<: *machine-linux-2xlarge
     environment:
+      <<: *env-linux-2xlarge
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
@@ -1110,6 +1112,7 @@ jobs:
   linux-ia32-release.asan:
     <<: *machine-linux-2xlarge
     environment:
+      <<: *env-linux-2xlarge
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1407,6 +1410,7 @@ jobs:
   linux-x64-testing.asan-tests:
     <<: *machine-linux-medium
     environment:
+      <<: *env-linux-medium
       <<: *env-asan
     <<: *steps-tests
 
@@ -1421,6 +1425,7 @@ jobs:
   linux-x64-release.asan-tests:
     <<: *machine-linux-medium
     environment:
+      <<: *env-linux-medium
       <<: *env-asan
     <<: *steps-tests
 
@@ -1470,6 +1475,7 @@ jobs:
   linux-ia32-release.asan-tests:
     <<: *machine-linux-medium
     environment:
+      <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-asan
     <<: *steps-tests
