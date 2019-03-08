@@ -1,0 +1,19 @@
+{
+  "name": "content-script-test",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["all_frames-enabled.css"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "css": ["all_frames-disabled.css"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "manifest_version": 2
+}

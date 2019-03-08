@@ -69,6 +69,7 @@ const runAllStylesheet = function (css: Array<Electron.InjectionBase>) {
 // Run injected scripts.
 // https://developer.chrome.com/extensions/content_scripts
 const injectContentScript = function (extensionId: string, script: Electron.ContentScript) {
+  if (!process.isMainFrame && !script.allFrames) return
   if (!script.matches.some(matchesPattern)) return
 
   if (script.js) {

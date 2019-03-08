@@ -39,6 +39,11 @@ declare namespace Electron {
     matches: {
       some: (input: (pattern: string) => boolean | RegExpMatchArray | null) => boolean;
     }
+    /**
+     * Whether to match all frames, or only the top one.
+     * https://developer.chrome.com/extensions/content_scripts#frames
+     */
+    allFrames: boolean
   }
 
   interface RendererProcessPreference {
