@@ -18,7 +18,7 @@ declare namespace NodeJS {
     /**
      * DO NOT USE DIRECTLY, USE process.atomBinding
      */
-    binding(name: string): any;
+    _linkedBinding(name: string): any;
     atomBinding(name: string): any;
     atomBinding(name: 'features'): FeaturesBinding;
     atomBinding(name: 'v8_util'): V8UtilBinding;
