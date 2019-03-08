@@ -106,7 +106,7 @@ Callback is invoked with the session's current cache size.
 
 Clears the session’s HTTP cache.
 
-#### `ses.clearStorageData([options, callback])`
+#### `ses.clearStorageData([options,] callback)`
 
 * `options` Object (optional)
   * `origin` String (optional) - Should follow `window.location.origin`’s representation
@@ -118,7 +118,22 @@ Clears the session’s HTTP cache.
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - Called when operation is done.
 
-Clears the data of web storages.
+Clears the storage data for the current session.
+
+**[Deprecated Soon](promisification.md)**
+
+#### `ses.clearStorageData([options])`
+
+* `options` Object (optional)
+  * `origin` String (optional) - Should follow `window.location.origin`’s representation
+    `scheme://host:port`.
+  * `storages` String[] (optional) - The types of storages to clear, can contain:
+    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `shadercache`, `websql`, `serviceworkers`, `cachestorage`.
+  * `quotas` String[] (optional) - The types of quotas to clear, can contain:
+    `temporary`, `persistent`, `syncable`.
+
+Returns `Promise<void>` - resolves when the storage data has been cleared.
 
 #### `ses.flushStorageData()`
 
