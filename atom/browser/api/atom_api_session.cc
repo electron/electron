@@ -210,17 +210,6 @@ const char kPersistPrefix[] = "persist:";
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 
-// Runs the callback in UI thread.
-void RunCallbackInUI(const base::Callback<void()>& callback) {
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, callback);
-}
-
-template <typename... T>
-void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
-                           base::BindOnce(callback, result...));
-}
-
 void ResolveOrRejectPromiseInUI(atom::util::Promise promise, int net_error) {
   if (net_error != net::OK) {
     std::string err_msg = net::ErrorToString(net_error);
