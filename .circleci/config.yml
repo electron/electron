@@ -389,14 +389,14 @@ step-ffmpeg-unzip: &step-ffmpeg-unzip
     name: Unzip ffmpeg.zip
     command: |
       cd src/out/ffmpeg
-      unzip -o ffmpeg.zip
+      unzip -:o ffmpeg.zip
 
 step-mksnapshot-unzip: &step-mksnapshot-unzip
   run:
     name: Unzip mksnapshot.zip
     command: |
       cd src/out/Default
-      unzip -o mksnapshot.zip
+      unzip -:o mksnapshot.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
   run:
