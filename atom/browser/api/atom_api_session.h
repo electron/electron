@@ -62,13 +62,12 @@ class Session : public mate::TrackableObject<Session>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods.
-  void ResolveProxy(const GURL& url,
-                    const ResolveProxyHelper::ResolveProxyCallback& callback);
+  v8::Local<v8::Promise> ResolveProxy(mate::Arguments* args);
   template <CacheAction action>
   void DoCacheAction(const net::CompletionCallback& callback);
   v8::Local<v8::Promise> ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
-  void SetProxy(const mate::Dictionary& options, const base::Closure& callback);
+  v8::Local<v8::Promise> SetProxy(mate::Arguments* args);
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();
