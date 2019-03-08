@@ -136,26 +136,6 @@ inline net::CookieStore* GetCookieStore(
   return getter->GetURLRequestContext()->cookie_store();
 }
 
-void ResolvePromiseWithCookies(util::Promise promise,
-                               const net::CookieList& cookie_list) {
-  promise.Resolve(cookie_list);
-}
-
-void ResolvePromise(util::Promise promise) {
-  promise.Resolve();
-}
-
-// Resolve |promise| in UI thread.
-void ResolvePromiseInUI(util::Promise promise) {
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
-                           base::BindOnce(ResolvePromise, std::move(promise)));
-}
-
-// Run |callback| on UI thread.
-void RunCallbackInUI(base::OnceClosure callback) {
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, std::move(callback));
-}
-
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
                    util::Promise promise,
@@ -168,7 +148,8 @@ void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
 
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(ResolvePromiseWithCookies, std::move(promise), result));
+      base::BindOnce(util::Promise::ResolvePromise<net::CookieList>,
+                     std::move(promise), std::move(result)));
 }
 
 // Receives cookies matching |filter| in IO thread.
@@ -195,23 +176,22 @@ void RemoveCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const std::string& name,
                       util::Promise promise) {
   GetCookieStore(getter)->DeleteCookieAsync(
-      url, name, base::BindOnce(ResolvePromiseInUI, std::move(promise)));
-}
-
-// Resolves/rejects the |promise| in UI thread.
-void SettlePromiseInUI(util::Promise promise, const std::string& errmsg) {
-  if (errmsg.empty()) {
-    promise.Resolve();
-  } else {
-    promise.RejectWithErrorMessage(errmsg);
-  }
+      url, name,
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
 }
 
 // Callback of SetCookie.
 void OnSetCookie(util::Promise promise, bool success) {
-  const std::string errmsg = success ? "" : "Setting cookie failed";
-  RunCallbackInUI(
-      base::BindOnce(SettlePromiseInUI, std::move(promise), errmsg));
+  if (success) {
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
+        base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
+  } else {
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
+        base::BindOnce(util::Promise::RejectPromise, std::move(promise),
+                       "Setting cookie failed"));
+  }
 }
 
 // Flushes cookie store in IO thread.
@@ -219,7 +199,7 @@ void FlushCookieStoreOnIOThread(
     scoped_refptr<net::URLRequestContextGetter> getter,
     util::Promise promise) {
   GetCookieStore(getter)->FlushStore(
-      base::BindOnce(ResolvePromiseInUI, std::move(promise)));
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
 }
 
 // Sets cookie with |details| in IO thread.
