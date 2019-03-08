@@ -249,7 +249,7 @@ describe('app module', () => {
       const data2 = (await data2Promise).toString('ascii')
       const secondInstanceArgsReceived = JSON.parse(data2.toString('ascii'))
       const expected = process.platform === 'win32'
-        ? [remote.process.execPath, '--some-switch', '--disable-setuid-sandbox', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes('original-process-start-time')), appPath, 'some-arg']
+        ? [remote.process.execPath, '--some-switch', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes('original-process-start-time')), appPath, 'some-arg']
         : secondInstanceArgs
       expect(secondInstanceArgsReceived).to.eql(expected,
         `expected ${JSON.stringify(expected)} but got ${data2.toString('ascii')}`)
