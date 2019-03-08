@@ -97,12 +97,28 @@ The following methods are available on instances of `Session`:
 
 * `callback` Function
   * `size` Integer - Cache size used in bytes.
+  * `error` Integer - The error code corresponding to the failure.
 
 Callback is invoked with the session's current cache size.
+
+**[Deprecated Soon](promisification.md)**
+
+#### `ses.getCacheSize()`
+
+Returns `Promise<Integer>` - the session's current cache size, in bytes.
 
 #### `ses.clearCache(callback)`
 
 * `callback` Function - Called when operation is done.
+  * `error` Integer - The error code corresponding to the failure.
+
+Clears the session’s HTTP cache.
+
+**[Deprecated Soon](promisification.md)**
+
+#### `ses.clearCache()`
+
+Returns `Promise<void>` - resolves when the cache clear operation is complete.
 
 Clears the session’s HTTP cache.
 
