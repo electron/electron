@@ -52,6 +52,7 @@ def am(repo, patch_data, threeway=False, directory=None,
     root_args += ['-c', 'user.name=' + committer_name]
   if committer_email is not None:
     root_args += ['-c', 'user.email=' + committer_email]
+  root_args += ['-c', 'commit.gpgsign=false']
   command = ['git'] + root_args + ['am'] + args
   proc = subprocess.Popen(
       command,
