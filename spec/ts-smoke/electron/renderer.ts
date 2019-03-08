@@ -72,9 +72,10 @@ webFrame.setSpellCheckProvider('en-US', {
 
 webFrame.insertText('text')
 
-webFrame.executeJavaScript('JSON.stringify({})', false, (result) => {
-  console.log(result)
-}).then((result: string) => console.log('OK:' + result))
+webFrame.executeJavaScript('return true;').then((v: boolean) => console.log(v))
+webFrame.executeJavaScript('return true;', true).then((v: boolean) => console.log(v))
+webFrame.executeJavaScript('return true;', true)
+webFrame.executeJavaScript('return true;', true, (result: boolean) => console.log(result))
 
 console.log(webFrame.getResourceUsage())
 webFrame.clearCache()

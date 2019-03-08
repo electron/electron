@@ -374,6 +374,23 @@ Injects CSS into the guest page.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
+Returns `Promise<any>` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise.
+
+Evaluates `code` in page. If `userGesture` is set, it will create the user
+gesture context in the page. HTML APIs like `requestFullScreen`, which require
+user action, can take advantage of this option for automation.
+
+**[Deprecated Soon](promisification.md)**
+
+### `<webview>.executeJavaScript(code[, userGesture])`
+
+* `code` String
+* `userGesture` Boolean (optional) - Default `false`.
+
+Returns `Promise<any>` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise.
+
 Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
 user action, can take advantage of this option for automation.

@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/promise_util.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
@@ -92,23 +93,20 @@ class RenderFrameStatus : public content::RenderFrameObserver {
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
-  using CompletionCallback =
-      base::Callback<void(const v8::Local<v8::Value>& result)>;
-
-  explicit ScriptExecutionCallback(const CompletionCallback& callback)
-      : callback_(callback) {}
+  explicit ScriptExecutionCallback(atom::util::Promise promise)
+      : promise_(std::move(promise)) {}
   ~ScriptExecutionCallback() override {}
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
-    if (!callback_.is_null() && !result.empty() && !result[0].IsEmpty())
+    if (!result.empty() && !result[0].IsEmpty())
       // Right now only single results per frame is supported.
-      callback_.Run(result[0]);
+      promise_.Resolve(result[0]);
     delete this;
   }
 
  private:
-  CompletionCallback callback_;
+  atom::util::Promise promise_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
@@ -322,25 +320,32 @@ void InsertCSS(v8::Local<v8::Value> window, const std::string& css) {
   }
 }
 
-void ExecuteJavaScript(mate::Arguments* args,
-                       v8::Local<v8::Value> window,
-                       const base::string16& code) {
+v8::Local<v8::Promise> ExecuteJavaScript(mate::Arguments* args,
+                                         v8::Local<v8::Value> window,
+                                         const base::string16& code) {
+  v8::Isolate* isolate = args->isolate();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
-  ScriptExecutionCallback::CompletionCallback completion_callback;
-  args->GetNext(&completion_callback);
-  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
-      new ScriptExecutionCallback(completion_callback));
+
   GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
-      has_user_gesture, callback.release());
+      has_user_gesture, new ScriptExecutionCallback(std::move(promise)));
+
+  return handle;
 }
 
-void ExecuteJavaScriptInIsolatedWorld(
+v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
     mate::Arguments* args,
     v8::Local<v8::Value> window,
     int world_id,
     const std::vector<mate::Dictionary>& scripts) {
+  v8::Isolate* isolate = args->isolate();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   std::vector<blink::WebScriptSource> sources;
 
   for (const auto& script : scripts) {
@@ -351,8 +356,8 @@ void ExecuteJavaScriptInIsolatedWorld(
     script.Get("startLine", &start_line);
 
     if (!script.Get("code", &code)) {
-      args->ThrowError("Invalid 'code'");
-      return;
+      promise.RejectWithErrorMessage("Invalid 'code'");
+      return handle;
     }
 
     sources.emplace_back(
@@ -367,14 +372,11 @@ void ExecuteJavaScriptInIsolatedWorld(
       blink::WebLocalFrame::kSynchronous;
   args->GetNext(&scriptExecutionType);
 
-  ScriptExecutionCallback::CompletionCallback completion_callback;
-  args->GetNext(&completion_callback);
-  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
-      new ScriptExecutionCallback(completion_callback));
-
   GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
-      scriptExecutionType, callback.release());
+      scriptExecutionType, new ScriptExecutionCallback(std::move(promise)));
+
+  return handle;
 }
 
 void SetIsolatedWorldInfo(v8::Local<v8::Value> window,

@@ -1075,7 +1075,21 @@ describe('webContents module', () => {
   })
 
   describe('webframe messages in sandboxed contents', () => {
-    it('responds to executeJavaScript', (done) => {
+    it('responds to executeJavaScript', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      await w.loadURL('about:blank')
+      const result = await w.webContents.executeJavaScript('37 + 5')
+      assert.strictEqual(result, 42)
+    })
+
+    // TODO(miniak): remove when promisification is complete
+    it('responds to executeJavaScript (callback)', (done) => {
       w.destroy()
       w = new BrowserWindow({
         show: false,
