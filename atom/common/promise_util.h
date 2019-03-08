@@ -172,7 +172,7 @@ class CopyablePromise {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(Promise::ResolvePromise, promise.GetPromise(),
+          base::BindOnce(Promise::ResolvePromise<T>, promise.GetPromise(),
                          std::move(result)));
     } else {
       promise.GetPromise().Resolve(result);
