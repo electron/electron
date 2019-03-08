@@ -112,7 +112,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       for (let j = 0; j < length; j++) {
         const newConfig = Object.assign({}, configs[j])
         newConfig.webPreferences = Object.assign({},
-            newConfig.webPreferences, permutations[i].webPreferences)
+          newConfig.webPreferences, permutations[i].webPreferences)
         newConfig.names = newConfig.names.slice(0)
         newConfig.names.push(permutations[i].name)
         configs.push(newConfig)
