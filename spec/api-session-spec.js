@@ -643,7 +643,7 @@ describe('session module', () => {
       // creation of request context which in turn initializes
       // the network context, can be removed with network
       // service enabled.
-      customSession.clearHostResolverCache(() => done())
+      customSession.clearHostResolverCache().then(() => done())
     })
 
     afterEach(() => {

@@ -77,7 +77,7 @@ class Session : public mate::TrackableObject<Session>,
                                    mate::Arguments* args);
   void SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                  mate::Arguments* args);
-  void ClearHostResolverCache(mate::Arguments* args);
+  v8::Local<v8::Promise> ClearHostResolverCache(mate::Arguments* args);
   void ClearAuthCache(mate::Arguments* args);
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
