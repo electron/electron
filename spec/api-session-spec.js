@@ -965,8 +965,61 @@ describe('session module', () => {
     })
   })
 
-  describe('ses.clearAuthCache(options[, callback])', () => {
+  describe('ses.clearAuthCache(options)', () => {
     it('can clear http auth info from cache', (done) => {
+      const ses = session.fromPartition('auth-cache')
+      const server = http.createServer((req, res) => {
+        const credentials = auth(req)
+        if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
+          res.statusCode = 401
+          res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"')
+          res.end()
+        } else {
+          res.end('authenticated')
+        }
+      })
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port
+        function issueLoginRequest (attempt = 1) {
+          if (attempt > 2) {
+            server.close()
+            return done()
+          }
+          const request = net.request({
+            url: `http://127.0.0.1:${port}`,
+            session: ses
+          })
+          request.on('login', (info, callback) => {
+            attempt += 1
+            assert.strictEqual(info.scheme, 'basic')
+            assert.strictEqual(info.realm, 'Restricted')
+            callback('test', 'test')
+          })
+          request.on('response', (response) => {
+            let data = ''
+            response.pause()
+            response.on('data', (chunk) => {
+              data += chunk
+            })
+            response.on('end', () => {
+              assert.strictEqual(data, 'authenticated')
+              ses.clearAuthCache({ type: 'password' }).then(() => {
+                issueLoginRequest(attempt)
+              })
+            })
+            response.on('error', (error) => { done(error) })
+            response.resume()
+          })
+          // Internal api to bypass cache for testing.
+          request.urlRequest._setLoadFlags(1 << 1)
+          request.end()
+        }
+        issueLoginRequest()
+      })
+    })
+
+    // TODO(codebytere): remove when promisification complete
+    it('can clear http auth info from cache (callback)', (done) => {
       const ses = session.fromPartition('auth-cache')
       const server = http.createServer((req, res) => {
         const credentials = auth(req)
