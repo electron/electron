@@ -1,7 +1,6 @@
 import("all.gn")
 is_component_build = false
 is_official_build = true
-strip_debug_info = true
 
 # This may be guarded behind is_chrome_branded alongside
 # proprietary_codecs https://webrtc-review.googlesource.com/c/src/+/36321,
