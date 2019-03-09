@@ -162,6 +162,9 @@ When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
 after this script has finished executing.
 
+**Note:** For security reasons, preload scripts can only be loaded from
+a subpath of the [app path](app.md#appgetapppath).
+
 **Note:** This option will be appear as `preloadURL` (not `preload`) in
 the `webPreferences` specified to the `will-attach-webview` event.
 
