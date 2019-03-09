@@ -61,10 +61,10 @@ index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06
  
  // In the browser process we allow some overage to
 diff --git a/content/renderer/dom_storage/dom_storage_cached_area.cc b/content/renderer/dom_storage/dom_storage_cached_area.cc
-index a7cdf900661bff52e1d3d9bc98d68e6a457c3fa7..ce302dcbece11880b5b6da4b6d5d807ba9dc09c9 100644
+index 13bcf8e3f2882999e073d0c7ac6d8f1627f0bfa2..6d330cd1de358b477df4c1fed4d814c206a3643d 100644
 --- a/content/renderer/dom_storage/dom_storage_cached_area.cc
 +++ b/content/renderer/dom_storage/dom_storage_cached_area.cc
-@@ -53,11 +53,13 @@ bool DOMStorageCachedArea::SetItem(int connection_id,
+@@ -54,11 +54,13 @@ bool DOMStorageCachedArea::SetItem(int connection_id,
                                     const base::string16& key,
                                     const base::string16& value,
                                     const GURL& page_url) {
@@ -79,7 +79,7 @@ index a7cdf900661bff52e1d3d9bc98d68e6a457c3fa7..ce302dcbece11880b5b6da4b6d5d807b
    PrimeIfNeeded(connection_id);
    base::NullableString16 old_value;
 diff --git a/content/renderer/dom_storage/local_storage_cached_area.cc b/content/renderer/dom_storage/local_storage_cached_area.cc
-index c04e0e8bff1a7a41a1e18aca5403aed16a80aead..d63cec971f0a98f7b8ff30c1f6a0fa843efbecfa 100644
+index 1b406b322f6de52d808b021015c656f60700645e..8bc713a723569e9d28212d68a0b2a22cd2bcc6c0 100644
 --- a/content/renderer/dom_storage/local_storage_cached_area.cc
 +++ b/content/renderer/dom_storage/local_storage_cached_area.cc
 @@ -142,11 +142,13 @@ bool LocalStorageCachedArea::SetItem(const base::string16& key,
@@ -97,10 +97,10 @@ index c04e0e8bff1a7a41a1e18aca5403aed16a80aead..d63cec971f0a98f7b8ff30c1f6a0fa84
    EnsureLoaded();
    bool result = false;
 diff --git a/third_party/blink/renderer/modules/storage/cached_storage_area.cc b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
-index 35a114eb8fc2ee6176c25377081df7f04f8b72f1..689df99ebd955e544bbc1e3048842801fb9c5367 100644
+index 21ce9fe01d3a125055fe3c3f29cc89ecf014944f..3ecdfe1011113ddaecbad1766cd8044366a9e47f 100644
 --- a/third_party/blink/renderer/modules/storage/cached_storage_area.cc
 +++ b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
-@@ -101,11 +101,13 @@ bool CachedStorageArea::SetItem(const String& key,
+@@ -102,11 +102,13 @@ bool CachedStorageArea::SetItem(const String& key,
                                  Source* source) {
    DCHECK(areas_->Contains(source));
  

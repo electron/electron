@@ -373,6 +373,9 @@ describe('webContents module', () => {
     if (process.platform === 'darwin' && isCi) {
       testFn = it.skip
     }
+    if (process.platform === 'win32' && isCi) {
+      testFn = it.skip
+    }
     try {
       // We have other tests that check if native modules work, if we fail to require
       // robotjs let's skip this test to avoid false negatives

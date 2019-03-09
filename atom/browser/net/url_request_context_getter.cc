@@ -177,8 +177,6 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
         base_path.Append(chrome::kNetworkPersistentStateFilename);
     network_context_params->cookie_path =
         base_path.Append(chrome::kCookieFilename);
-    network_context_params->channel_id_path =
-        base_path.Append(chrome::kChannelIDFilename);
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
     // TODO(deepak1556): Matches the existing behavior https://git.io/fxHMl,

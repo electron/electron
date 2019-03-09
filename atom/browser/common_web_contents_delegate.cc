@@ -508,7 +508,7 @@ void CommonWebContentsDelegate::DevToolsIndexPath(
     return;
   std::vector<std::string> excluded_folders;
   std::unique_ptr<base::Value> parsed_excluded_folders =
-      base::JSONReader::Read(excluded_folders_message);
+      base::JSONReader::ReadDeprecated(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     const std::vector<base::Value>& folder_paths =
         parsed_excluded_folders->GetList();

@@ -13,7 +13,3 @@ ffmpeg_branding = "Chrome"
 enable_basic_printing = true
 
 is_cfi = false
-
-# FIXME(deepak1556): workaround for https://crbug.com/924225
-# remove this when clang roll 352138 lands.
-enable_precompiled_headers = false

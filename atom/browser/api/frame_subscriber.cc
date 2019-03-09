@@ -10,6 +10,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "media/capture/mojom/video_capture_types.mojom.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 #include "atom/common/node_includes.h"
@@ -87,7 +88,6 @@ void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
 void FrameSubscriber::OnFrameCaptured(
     base::ReadOnlySharedMemoryRegion data,
     ::media::mojom::VideoFrameInfoPtr info,
-    const gfx::Rect& update_rect,
     const gfx::Rect& content_rect,
     viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) {
   gfx::Size view_size = host_->GetView()->GetViewBounds().size();

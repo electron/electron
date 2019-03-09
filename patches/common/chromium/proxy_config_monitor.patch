@@ -67,10 +67,10 @@ index f1e287553244cfd1054c4949ffbb1acdaccbe1e2..94cbca68cedc314d55993375bc48159c
  }
  #endif
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index c6c1fa51cbf35e8183a34848f79ed8dcbc97e0e2..c511bf188b0f24a9bf6c8729d9188c9bf342cf6a 100644
+index 0f20947c7819c3be2086a69f5997412652a99915..a88a1e001a4c1b8d7bafdac74fb060a1ee30361d 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
-@@ -38,11 +38,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  {
   public:
@@ -84,7 +84,7 @@ index c6c1fa51cbf35e8183a34848f79ed8dcbc97e0e2..c511bf188b0f24a9bf6c8729d9188c9b
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
-@@ -89,7 +90,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -91,7 +92,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  #if BUILDFLAG(ENABLE_EXTENSIONS)
    mojo::BindingSet<network::mojom::ProxyErrorClient> error_binding_set_;

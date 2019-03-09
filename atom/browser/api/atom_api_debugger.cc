@@ -45,7 +45,8 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
-  std::unique_ptr<base::Value> parsed_message = base::JSONReader::Read(message);
+  std::unique_ptr<base::Value> parsed_message =
+      base::JSONReader::ReadDeprecated(message);
   if (!parsed_message || !parsed_message->is_dict())
     return;
   base::DictionaryValue* dict =
@@ -205,4 +206,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_debugger, Initialize);
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_debugger, Initialize)

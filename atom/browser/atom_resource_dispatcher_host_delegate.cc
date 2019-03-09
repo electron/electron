@@ -80,7 +80,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     GURL* origin,
     std::string* payload) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  const content::ResourceRequestInfo* info =
+  content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
 
   int render_process_host_id;

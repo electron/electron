@@ -139,7 +139,8 @@ inline net::CookieStore* GetCookieStore(
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
                    util::Promise promise,
-                   const net::CookieList& list) {
+                   const net::CookieList& list,
+                   const net::CookieStatusList& excluded_list) {
   net::CookieList result;
   for (const auto& cookie : list) {
     if (MatchesCookie(filter.get(), cookie))
@@ -175,14 +176,50 @@ void RemoveCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const GURL& url,
                       const std::string& name,
                       util::Promise promise) {
-  GetCookieStore(getter)->DeleteCookieAsync(
-      url, name,
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
+  net::CookieDeletionInfo cookie_info;
+  cookie_info.url = url;
+  cookie_info.name = name;
+  GetCookieStore(getter)->DeleteAllMatchingInfoAsync(
+      std::move(cookie_info),
+      base::BindOnce(
+          [](util::Promise promise, uint32_t num_deleted) {
+            util::Promise::ResolveEmptyPromise(std::move(promise));
+          },
+          std::move(promise)));
 }
 
 // Callback of SetCookie.
-void OnSetCookie(util::Promise promise, bool success) {
-  if (success) {
+void OnSetCookie(util::Promise promise,
+                 net::CanonicalCookie::CookieInclusionStatus status) {
+  std::string errmsg;
+  switch (status) {
+    case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_HTTP_ONLY:
+      errmsg = "Failed to create httponly cookie";
+      break;
+    case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_SECURE_ONLY:
+      errmsg = "Cannot create a secure cookie from an insecure URL";
+      break;
+    case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE:
+      errmsg = "Failed to parse cookie";
+      break;
+    case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN:
+      errmsg = "Failed to get cookie domain";
+      break;
+    case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX:
+      errmsg = "Failed because the cookie violated prefix rules.";
+      break;
+    case net::CanonicalCookie::CookieInclusionStatus::
+        EXCLUDE_NONCOOKIEABLE_SCHEME:
+      errmsg = "Cannot set cookie for current scheme";
+      break;
+    case net::CanonicalCookie::CookieInclusionStatus::INCLUDE:
+      errmsg = "";
+      break;
+    default:
+      errmsg = "Setting cookie failed";
+      break;
+  }
+  if (errmsg.empty()) {
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
         base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
@@ -190,7 +227,7 @@ void OnSetCookie(util::Promise promise, bool success) {
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
         base::BindOnce(util::Promise::RejectPromise, std::move(promise),
-                       "Setting cookie failed"));
+                       std::move(errmsg)));
   }
 }
 
@@ -206,13 +243,13 @@ void FlushCookieStoreOnIOThread(
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                    std::unique_ptr<base::DictionaryValue> details,
                    util::Promise promise) {
-  std::string url, name, value, domain, path;
+  std::string url_string, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
   double creation_date;
   double expiration_date;
   double last_access_date;
-  details->GetString("url", &url);
+  details->GetString("url", &url_string);
   details->GetString("name", &name);
   details->GetString("value", &value);
   details->GetString("domain", &domain);
@@ -241,26 +278,33 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                            : base::Time::FromDoubleT(last_access_date);
   }
 
+  GURL url(url_string);
   std::unique_ptr<net::CanonicalCookie> canonical_cookie(
       net::CanonicalCookie::CreateSanitizedCookie(
-          GURL(url), name, value, domain, path, creation_time, expiration_time,
+          url, name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
   auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
-    std::move(completion_callback).Run(false);
+    std::move(completion_callback)
+        .Run(net::CanonicalCookie::CookieInclusionStatus::
+                 EXCLUDE_FAILURE_TO_STORE);
     return;
   }
-  if (url.empty()) {
-    std::move(completion_callback).Run(false);
+  if (url.is_empty()) {
+    std::move(completion_callback)
+        .Run(net::CanonicalCookie::CookieInclusionStatus::
+                 EXCLUDE_INVALID_DOMAIN);
     return;
   }
   if (name.empty()) {
-    std::move(completion_callback).Run(false);
+    std::move(completion_callback)
+        .Run(net::CanonicalCookie::CookieInclusionStatus::
+                 EXCLUDE_FAILURE_TO_STORE);
     return;
   }
   GetCookieStore(getter)->SetCanonicalCookieAsync(
-      std::move(canonical_cookie), secure, http_only,
+      std::move(canonical_cookie), url.scheme(), http_only,
       std::move(completion_callback));
 }
 

@@ -6,15 +6,15 @@
 
 #include "base/no_destructor.h"
 #include "printing/buildflags/buildflags.h"
-#include "services/proxy_resolver/proxy_resolver_manifest.h"
+#include "services/proxy_resolver/public/cpp/manifest.h"
 #include "services/service_manager/public/cpp/manifest_builder.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "components/services/pdf_compositor/pdf_compositor_manifest.h"
+#include "components/services/pdf_compositor/public/cpp/manifest.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-#include "chrome/services/printing/manifest.h"
+#include "chrome/services/printing/public/cpp/manifest.h"
 #endif
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
@@ -34,10 +34,10 @@ GetElectronPackagedServicesOverlayManifest() {
   static base::NoDestructor<std::vector<service_manager::Manifest>> manifests{{
       proxy_resolver::GetManifest(),
 #if BUILDFLAG(ENABLE_PRINTING)
-      pdf_compositor::GetManifest(),
+      printing::GetPdfCompositorManifest(),
 #endif
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-      chrome_printing::GetManifest(),
+      GetChromePrintingManifest(),
 #endif
   }};
   return *manifests;

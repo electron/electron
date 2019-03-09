@@ -17,22 +17,6 @@
 - (void)setAppearance:(NSAppearance*)appearance API_AVAILABLE(macosx(10.14));
 @end
 
-#if !defined(MAC_OS_X_VERSION_10_13_2)
-
-// forward declare Touch ID APIs
-typedef NS_ENUM(NSInteger, LABiometryType) {
-  LABiometryTypeNone = 0,
-  LABiometryTypeFaceID = 1,
-  LABiometryTypeTouchID = 2,
-} API_AVAILABLE(macosx(10.13.2));
-
-@interface LAContext (HighSierraPointTwoSDK)
-@property(nonatomic, readonly)
-    LABiometryType biometryType API_AVAILABLE(macosx(10.13.2));
-@end
-
-#endif
-
 // forward declare Access APIs
 typedef NSString* AVMediaType NS_EXTENSIBLE_STRING_ENUM;
 

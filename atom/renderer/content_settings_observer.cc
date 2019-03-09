@@ -19,10 +19,7 @@ ContentSettingsObserver::ContentSettingsObserver(
 
 ContentSettingsObserver::~ContentSettingsObserver() {}
 
-bool ContentSettingsObserver::AllowDatabase(
-    const blink::WebString& name,
-    const blink::WebString& display_name,
-    unsigned estimated_size) {
+bool ContentSettingsObserver::AllowDatabase() {
   blink::WebFrame* frame = render_frame()->GetWebFrame();
   if (frame->GetSecurityOrigin().IsUnique() ||
       frame->Top()->GetSecurityOrigin().IsUnique())

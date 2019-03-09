@@ -122,7 +122,7 @@ void PlatformNotificationService::CloseNotification(
 
 void PlatformNotificationService::GetDisplayedNotifications(
     content::BrowserContext* browser_context,
-    const DisplayedNotificationsCallback& callback) {}
+    DisplayedNotificationsCallback callback) {}
 
 int64_t PlatformNotificationService::ReadNextPersistentNotificationId(
     content::BrowserContext* browser_context) {
