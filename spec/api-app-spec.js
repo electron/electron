@@ -379,6 +379,22 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
+    it('should emit renderer-process-crashed event when renderer crashes', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      await w.loadURL('about:blank')
+
+      const promise = emittedOnce(app, 'renderer-process-crashed')
+      w.webContents.executeJavaScript('process.crash()')
+
+      const [, webContents] = await promise
+      expect(webContents).to.equal(w.webContents)
+    })
+
     it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
       w = new BrowserWindow({
         show: false,

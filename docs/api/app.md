@@ -352,6 +352,16 @@ Returns:
 
 Emitted when the gpu process crashes or is killed.
 
+### Event: 'renderer-process-crashed'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `killed` Boolean
+
+Emitted when the renderer process of `webContents` crashes or is killed.
+
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
 Returns:
