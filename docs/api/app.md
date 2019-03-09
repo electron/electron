@@ -886,11 +886,6 @@ app.setJumpList([
 
 Returns `Boolean`
 
-This method makes your application a Single Instance Application - instead of
-allowing multiple instances of your app to run, this method obtains a lock which you
- can then use to make your application single instance allowing for other 
-instances to signal this single instance and exit.
-
 The return value of this method indicates whether or not this instance of your
 application successfully obtained the lock.  If it failed to obtain the lock,
 you can assume that another instance of your application is already running with
