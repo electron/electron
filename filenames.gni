@@ -94,8 +94,9 @@ filenames = {
 
   default_app_ts_sources = [
     "default_app/default_app.ts",
+    "default_app/index.ts",
     "default_app/main.ts",
-    "default_app/renderer.ts",
+    "default_app/preload.ts",
   ]
 
   default_app_static_sources = [

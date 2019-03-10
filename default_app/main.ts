@@ -129,9 +129,14 @@ function showErrorMessage (message: string) {
   process.exit(1)
 }
 
-async function loadApplicationByUrl (appUrl: string) {
-  const { load } = await import('./default_app')
-  load(appUrl)
+async function loadApplicationByURL (appUrl: string) {
+  const { loadURL } = await import('./default_app')
+  loadURL(appUrl)
+}
+
+async function loadApplicationByFile (appPath: string) {
+  const { loadFile } = await import('./default_app')
+  loadFile(appPath)
 }
 
 function startRepl () {
@@ -156,13 +161,9 @@ if (option.file && !option.webdriver) {
   const protocol = url.parse(file).protocol
   const extension = path.extname(file)
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
-    loadApplicationByUrl(file)
+    loadApplicationByURL(file)
   } else if (extension === '.html' || extension === '.htm') {
-    loadApplicationByUrl(url.format({
-      protocol: 'file:',
-      slashes: true,
-      pathname: path.resolve(file)
-    }))
+    loadApplicationByFile(path.resolve(file))
   } else {
     loadApplicationPackage(file)
   }
@@ -196,10 +197,5 @@ Options:
     console.log(welcomeMessage)
   }
 
-  const indexPath = path.join(__dirname, '/index.html')
-  loadApplicationByUrl(url.format({
-    protocol: 'file:',
-    slashes: true,
-    pathname: indexPath
-  }))
+  loadApplicationByFile('index.html')
 }
