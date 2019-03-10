@@ -33,7 +33,22 @@ async function main () {
     await getSpecHash().then(saveSpecHash)
   }
 
+  if (!fs.existsSync(path.resolve(__dirname, '../electron.d.ts'))) {
+    console.log('Generating electron.d.ts as it is missing')
+    generateTypeDefinitions()
+  }
+
   await runElectronTests()
+}
+
+function generateTypeDefinitions () {
+  const { status } = childProcess.spawnSync('npm', ['run', 'create-typescript-definitions'], {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'inherit'
+  })
+  if (status !== 0) {
+    throw new Error(`Electron typescript definition generation failed with exit code: ${status}.`)
+  }
 }
 
 function loadLastSpecHash () {
