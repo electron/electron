@@ -13,6 +13,15 @@ const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
+let only = null
+const onlyArg = process.argv.find(arg => arg.startsWith('--only='))
+if (onlyArg) {
+  only = onlyArg.substr(7).split(',')
+  console.log('Only running:', only)
+} else {
+  console.log('Will trigger all spec runners')
+}
+
 async function main () {
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash()
   const [currentSpecHash, currentSpecInstallHash] = await getSpecHash()
@@ -38,14 +47,62 @@ function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
 }
 
 async function runElectronTests () {
+  const errors = []
+  const runners = [
+    ['Remote based specs', 'remote', runRemoteBasedElectronTests],
+    ['Main process specs', 'main', runMainProcessElectronTests]
+  ]
+
+  const mochaFile = process.env.MOCHA_FILE
+  for (const runner of runners) {
+    if (only && !only.includes(runner[1])) {
+      console.info('\nSkipping:', runner[0])
+      continue
+    }
+    try {
+      console.info('\nRunning:', runner[0])
+      if (mochaFile) {
+        process.env.MOCHA_FILE = mochaFile.replace('.xml', `-${runner[1]}.xml`)
+      }
+      await runner[2]()
+    } catch (err) {
+      errors.push([runner[0], err])
+    }
+  }
+
+  if (errors.length !== 0) {
+    for (const err of errors) {
+      console.error('\n\nRunner Failed:', err[0])
+      console.error(err[1])
+    }
+    throw new Error('Electron test runners have failed')
+  }
+}
+
+async function runRemoteBasedElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec())
-  const args = process.argv.slice(2)
+  const args = process.argv.slice(2).filter(arg => !arg.startsWith('--only='))
   if (process.platform === 'linux') {
     args.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
     exe = 'python'
   }
 
-  const { status } = childProcess.spawnSync(exe, args, {
+  const { status } = childProcess.spawnSync(exe, ['electron/spec', ...args], {
+    cwd: path.resolve(__dirname, '../..'),
+    stdio: 'inherit'
+  })
+  if (status !== 0) {
+    throw new Error(`Electron tests failed with code ${status}.`)
+  }
+}
+
+async function runMainProcessElectronTests () {
+  const exe = path.resolve(BASE, utils.getElectronExec())
+  const args = process.argv.slice(2).filter(arg => !arg.startsWith('--only='))
+
+  console.log(exe, args)
+
+  const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...args], {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   })

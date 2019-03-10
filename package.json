@@ -5,7 +5,11 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@octokit/rest": "^16.3.2",
+    "@types/chai": "^4.1.7",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/mocha": "^5.2.6",
     "@types/node": "^10.12.21",
+    "@types/split": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^1.4.2",
     "@typescript-eslint/parser": "^1.4.2",
     "aliasify": "^2.1.0",
@@ -42,6 +46,7 @@
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
+    "ts-node": "^6.0.3",
     "tsify": "^4.0.1",
     "typescript": "~3.3.3333"
   },
@@ -71,7 +76,7 @@
     "prepush": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
-    "test": "node ./script/spec-runner.js electron/spec",
+    "test": "node ./script/spec-runner.js",
     "tsc": "tsc"
   },
   "license": "MIT",
