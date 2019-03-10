@@ -27,7 +27,6 @@ const WEB_VIEW_EVENTS: Record<string, Array<string>> = {
   'focus-change': ['focus', 'guestInstanceId'],
   'close': [],
   'crashed': [],
-  'gpu-crashed': [],
   'plugin-crashed': ['name', 'version'],
   'destroyed': [],
   'page-title-updated': ['title', 'explicitSet'],
