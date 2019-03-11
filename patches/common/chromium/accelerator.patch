@@ -3,6 +3,12 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 4 Oct 2018 14:57:02 -0700
 Subject: accelerator.patch
 
+This patch makes three changes to Accelerator::GetShortcutText to improve shortcut display text in menus:
+
+1. Ctrl-Alt-<Key> accelerators show as Ctrl-Alt-<Key> instead of as Ctrl-<Key>
+2. F2-F24 accelerators show up as such
+3. Ctrl-Shift-= should show as Ctrl-+
+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
 index bf214d0b04ea5cf6711cd50618ad843bd054e538..7f245b1e8b9b3c5dc6666be4d74b69c86e80a351 100644
