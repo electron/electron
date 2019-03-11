@@ -69,7 +69,6 @@ support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
 disable_time_ticks_dcheck.patch
 revert_build_swiftshader_for_arm32.patch
-fix_backup_includes_for_ptrace_get_thread_area_on_arm_arm64.patch
 color_chooser_mac.patch
 color_chooser_win.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch
