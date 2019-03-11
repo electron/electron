@@ -127,7 +127,7 @@ describe('nativeImage module', () => {
     })
   })
 
-  describe('createFromBuffer(buffer, scaleFactor)', () => {
+  describe('createFromBuffer(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
       expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty())
     })
@@ -164,6 +164,11 @@ describe('nativeImage module', () => {
       const imageI = nativeImage.createFromBuffer(imageA.toBitmap(),
         { width: 538, height: 190, scaleFactor: 2.0 })
       expect(imageI.getSize()).to.deep.equal({ width: 269, height: 95 })
+    })
+
+    it('throws on invalid arguments', () => {
+      expect(() => nativeImage.createFromBuffer(null)).to.throw('buffer must be a node Buffer')
+      expect(() => nativeImage.createFromBuffer([12, 14, 124, 12])).to.throw('buffer must be a node Buffer')
     })
   })
 
