@@ -509,6 +509,11 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args,
     v8::Local<v8::Value> buffer) {
+  if (!node::Buffer::HasInstance(buffer)) {
+    args->ThrowError("buffer must be a node Buffer");
+    return mate::Handle<NativeImage>();
+  }
+
   int width = 0;
   int height = 0;
   double scale_factor = 1.;
