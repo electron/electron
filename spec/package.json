@@ -7,9 +7,10 @@
     "postinstall": "node ../tools/run-if-exists.js node_modules/robotjs node-gyp rebuild"
   },
   "devDependencies": {
+    "abstract-socket": "github:nornagon/node-abstractsocket#v8-compat",
     "basic-auth": "^2.0.1",
     "bluebird": "^3.5.3",
-    "chai": "~4.1.2",
+    "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coffee-script": "1.12.7",
     "dbus-native": "^0.4.0",
@@ -32,7 +33,6 @@
     "yargs": "^12.0.5"
   },
   "optionalDependencies": {
-    "abstract-socket": "github:nornagon/node-abstractsocket#v8-compat",
     "robotjs": "github:nornagon/robotjs#node-12"
   }
 }
