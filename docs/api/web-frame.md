@@ -95,6 +95,12 @@ webFrame.setSpellCheckProvider('en-US', {
 })
 ```
 
+### `webFrame.insertCSS(css)`
+
+* `css` String - CSS source code.
+
+Inserts `css` as a style sheet in the document.
+
 ### `webFrame.insertText(text)`
 
 * `text` String
@@ -119,7 +125,7 @@ this limitation.
 
 ### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])`
 
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `scripts` [WebSource[]](structures/web-source.md)
 * `userGesture` Boolean (optional) - Default is `false`.
 * `callback` Function (optional) - Called after script has been executed.
@@ -129,27 +135,27 @@ Work like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
 ### `webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)` _(Deprecated)_
 
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `csp` String
 
 Set the content security policy of the isolated world.
 
 ### `webFrame.setIsolatedWorldHumanReadableName(worldId, name)` _(Deprecated)_
 
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `name` String
 
 Set the name of the isolated world. Useful in devtools.
 
 ### `webFrame.setIsolatedWorldSecurityOrigin(worldId, securityOrigin)` _(Deprecated)_
 
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `securityOrigin` String
 
 Set the security origin of the isolated world.
 
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature.  You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `info` Object
   * `securityOrigin` String (optional) - Security origin for the isolated world.
   * `csp` String (optional) - Content Security Policy for the isolated world.

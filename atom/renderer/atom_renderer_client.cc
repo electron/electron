@@ -210,6 +210,27 @@ void AtomRendererClient::SetupMainWorldOverrides(
       &isolated_bundle_args, nullptr);
 }
 
+void AtomRendererClient::SetupExtensionWorldOverrides(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame,
+    int world_id) {
+  auto* isolate = context->GetIsolate();
+
+  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
+
+  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
+      GetEnvironment(render_frame)->process_object(),
+      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
+      v8::Integer::New(isolate, world_id)};
+
+  node::per_process::native_module_loader.CompileAndCall(
+      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
+      &isolated_bundle_args, nullptr);
+}
+
 node::Environment* AtomRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
   if (injected_frames_.find(render_frame) == injected_frames_.end())

@@ -137,6 +137,37 @@ npm_action("atom_browserify_isolated") {
   ]
 }
 
+npm_action("atom_browserify_content_script") {
+  script = "browserify"
+  deps = [
+    ":build_electron_definitions",
+  ]
+
+  inputs = [
+    "lib/content_script/init.js",
+    "tsconfig.electron.json",
+    "tsconfig.json",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/content_script_bundle.js",
+  ]
+
+  args = [
+    "lib/content_script/init.js",
+    "-t",
+    "aliasify",
+    "-p",
+    "[",
+    "tsify",
+    "-p",
+    "tsconfig.electron.json",
+    "]",
+    "-o",
+    rebase_path(outputs[0]),
+  ]
+}
+
 copy("atom_js2c_copy") {
   sources = [
     "lib/common/asar.js",
@@ -149,12 +180,14 @@ copy("atom_js2c_copy") {
 
 action("atom_js2c") {
   deps = [
+    ":atom_browserify_content_script",
     ":atom_browserify_isolated",
     ":atom_browserify_sandbox",
     ":atom_js2c_copy",
   ]
 
   browserify_sources = [
+    "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/preload_bundle.js",
   ]
