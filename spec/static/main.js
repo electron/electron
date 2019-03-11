@@ -110,10 +110,12 @@ app.on('window-all-closed', function () {
   app.quit()
 })
 
-app.on('web-contents-created', (event, contents) => {
-  contents.on('crashed', (event, killed) => {
-    console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
-  })
+app.on('gpu-process-crashed', (event, killed) => {
+  console.log(`GPU process crashed (killed=${killed})`)
+})
+
+app.on('renderer-process-crashed', (event, contents, killed) => {
+  console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
 })
 
 app.on('ready', function () {
