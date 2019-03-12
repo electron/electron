@@ -9,10 +9,9 @@
 #include "atom/browser/net/url_request_stream_job.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/node_includes.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 

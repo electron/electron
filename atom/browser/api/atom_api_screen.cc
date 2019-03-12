@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -20,8 +21,6 @@
 #if defined(OS_WIN)
 #include "ui/display/win/screen_win.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

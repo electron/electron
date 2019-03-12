@@ -5,13 +5,12 @@
 #include "atom/browser/api/event_emitter.h"
 
 #include "atom/browser/api/event.h"
+#include "atom/common/node_includes.h"
 #include "content/public/browser/render_frame_host.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/events/event_constants.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 

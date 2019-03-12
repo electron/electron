@@ -10,6 +10,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "base/base_paths.h"
@@ -22,8 +23,6 @@
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
-
-#include "atom/common/node_includes.h"
 #include "third_party/electron_node/src/node_binding.h"
 #include "third_party/electron_node/src/node_native_module.h"
 

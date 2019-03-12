@@ -18,6 +18,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/converter.h"
@@ -32,8 +33,6 @@
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 namespace mate {

@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "atom/common/node_includes.h"
 #include "base/task/post_task.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
@@ -15,8 +16,6 @@
 #include "storage/browser/blob/blob_data_handle.h"
 #include "storage/browser/blob/blob_reader.h"
 #include "storage/browser/blob/blob_storage_context.h"
-
-#include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 
