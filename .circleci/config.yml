@@ -22,12 +22,12 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "8.3.3"
+    xcode: "9.4.1"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "8.3.3"
+    xcode: "9.4.1"
 
 # Build configurations options.
 env-debug-build: &env-debug-build
@@ -175,16 +175,6 @@ step-restore-brew-cache: &step-restore-brew-cache
       - /usr/local/Homebrew
     keys:
       - v1-brew-cache-{{ arch }}
-
-step-install-nodejs-on-mac: &step-install-nodejs-on-mac
-  run:
-    name: Install Node.js 10 on MacOS
-    command: |
-      if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install node@10
-        echo 'export PATH="/usr/local/opt/node@10/bin:$PATH"' >> $BASH_ENV
-      fi
 
 # On macOS the npm install command during gclient sync was run on a linux
 # machine and therefore installed a slightly different set of dependencies
@@ -546,7 +536,6 @@ steps-checkout: &steps-checkout
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
     - *step-install-gnutar-on-mac
 
     - restore_cache:
@@ -618,7 +607,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
     - *step-gn-gen-default
@@ -668,7 +656,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
     - *step-gn-gen-default
@@ -802,7 +789,6 @@ steps-tests: &steps-tests
     - *step-mksnapshot-unzip
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
     - *step-fix-known-hosts-linux
 
     - run:
