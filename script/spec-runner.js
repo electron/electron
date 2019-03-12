@@ -115,8 +115,6 @@ async function runMainProcessElectronTests () {
   const exe = path.resolve(BASE, utils.getElectronExec())
   const args = process.argv.slice(2).filter(arg => !arg.startsWith('--only='))
 
-  console.log(exe, args)
-
   const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...args], {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
@@ -132,7 +130,7 @@ async function installSpecModules () {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'
   })
-  const { status } = childProcess.spawnSync(NPM_CMD, ['ci'], {
+  const { status } = childProcess.spawnSync(NPM_CMD, ['install'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
