@@ -73,8 +73,9 @@ describe('<webview> tag', function () {
         nodeIntegration: true
       }
     })
+    const pong = emittedOnce(ipcMain, 'pong')
     w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
-    await emittedOnce(ipcMain, 'pong')
+    await pong
   })
 
   it('works with sandbox', async () => {
@@ -86,8 +87,9 @@ describe('<webview> tag', function () {
         sandbox: true
       }
     })
+    const pong = emittedOnce(ipcMain, 'pong')
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
-    await emittedOnce(ipcMain, 'pong')
+    await pong
   })
 
   it('works with contextIsolation', async () => {
@@ -99,8 +101,9 @@ describe('<webview> tag', function () {
         contextIsolation: true
       }
     })
+    const pong = emittedOnce(ipcMain, 'pong')
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
-    await emittedOnce(ipcMain, 'pong')
+    await pong
   })
 
   it('works with contextIsolation + sandbox', async () => {
@@ -113,8 +116,9 @@ describe('<webview> tag', function () {
         sandbox: true
       }
     })
+    const pong = emittedOnce(ipcMain, 'pong')
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
-    await emittedOnce(ipcMain, 'pong')
+    await pong
   })
 
   it('is disabled by default', async () => {
@@ -126,8 +130,9 @@ describe('<webview> tag', function () {
       }
     })
 
+    const webview = emittedOnce(ipcMain, 'webview')
     w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
-    const [, type] = await emittedOnce(ipcMain, 'webview')
+    const [, type] = await webview
 
     expect(type).to.equal('undefined', 'WebView still exists')
   })
