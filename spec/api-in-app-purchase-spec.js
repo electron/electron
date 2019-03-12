@@ -38,21 +38,39 @@ describe('inAppPurchase module', function () {
     expect(correctUrlEnd).to.be.true()
   })
 
-  it('purchaseProduct() fails when buying invalid product', done => {
+  it('purchaseProduct() fails when buying invalid product', async () => {
+    const success = await inAppPurchase.purchaseProduct('non-exist', 1)
+    expect(success).to.be.false()
+  })
+
+  // TODO(codebytere): remove when promisification is complete
+  it('purchaseProduct() fails when buying invalid product (callback)', done => {
     inAppPurchase.purchaseProduct('non-exist', 1, success => {
       expect(success).to.be.false()
       done()
     })
   })
 
-  it('purchaseProduct() accepts optional arguments', done => {
-    inAppPurchase.purchaseProduct('non-exist', () => {
-      inAppPurchase.purchaseProduct('non-exist', 1)
+  it('purchaseProduct() accepts optional arguments', async () => {
+    const success = await inAppPurchase.purchaseProduct('non-exist')
+    expect(success).to.be.false()
+  })
+
+  // TODO(codebytere): remove when promisification is complete
+  it('purchaseProduct() accepts optional arguments (callback)', done => {
+    inAppPurchase.purchaseProduct('non-exist', success => {
+      expect(success).to.be.false()
       done()
     })
   })
 
-  it('getProducts() returns an empty list when getting invalid product', done => {
+  it('getProducts() returns an empty list when getting invalid product', async () => {
+    const products = await inAppPurchase.getProducts(['non-exist'])
+    expect(products).to.be.an('array').of.length(0)
+  })
+
+  // TODO(codebytere): remove when promisification is complete
+  it('getProducts() returns an empty list when getting invalid product (callback)', done => {
     inAppPurchase.getProducts(['non-exist'], products => {
       expect(products).to.be.an('array').of.length(0)
       done()
