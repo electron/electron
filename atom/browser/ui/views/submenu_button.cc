@@ -37,7 +37,7 @@ SubmenuButton::SubmenuButton(const base::string16& title,
 
   SetInkDropMode(InkDropMode::ON);
   set_ink_drop_base_color(
-      color_utils::BlendTowardMaxContrast(background_color_, 0x61));
+      color_utils::BlendTowardMaxContrast(background_color_, 0x81));
 }
 
 SubmenuButton::~SubmenuButton() {}
@@ -55,6 +55,7 @@ std::unique_ptr<views::InkDrop> SubmenuButton::CreateInkDrop() {
   std::unique_ptr<views::InkDropImpl> ink_drop =
       views::Button::CreateDefaultInkDropImpl();
   ink_drop->SetShowHighlightOnHover(false);
+  ink_drop->SetShowHighlightOnFocus(true);
   return std::move(ink_drop);
 }
 
