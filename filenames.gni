@@ -388,6 +388,8 @@ filenames = {
     "atom/browser/relauncher.h",
     "atom/browser/render_process_preferences.cc",
     "atom/browser/render_process_preferences.h",
+    "atom/browser/renderer_host/atom_render_message_filter.cc",
+    "atom/browser/renderer_host/atom_render_message_filter.h",
     "atom/browser/session_preferences.cc",
     "atom/browser/session_preferences.h",
     "atom/browser/special_storage_policy.cc",

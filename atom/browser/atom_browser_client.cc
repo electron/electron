@@ -28,6 +28,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "atom/browser/notifications/platform_notification_service.h"
+#include "atom/browser/renderer_host/atom_render_message_filter.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/browser/ui/devtools_manager_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -49,6 +50,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
@@ -329,6 +331,9 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
     return;
+
+  Profile* profile = static_cast<Profile*>(host->GetBrowserContext());
+  host->AddFilter(new AtomRenderMessageFilter(process_id, profile));
 
 #if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(

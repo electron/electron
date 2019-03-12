@@ -18,6 +18,10 @@
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
+namespace network_hints {
+class PrescientNetworkingDispatcher;
+}
+
 namespace atom {
 
 class PreferencesManager;
@@ -37,6 +41,8 @@ class RendererClientBase : public content::ContentRendererClient {
   virtual void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
                                             content::RenderFrame* render_frame,
                                             int world_id) = 0;
+
+  blink::WebPrescientNetworking* GetPrescientNetworking() override;
 
   bool isolated_world() const { return isolated_world_; }
 
@@ -68,6 +74,8 @@ class RendererClientBase : public content::ContentRendererClient {
 
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
+  std::unique_ptr<network_hints::PrescientNetworkingDispatcher>
+      prescient_networking_dispatcher_;
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif

@@ -19,6 +19,7 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
+#include "components/network_hints/renderer/prescient_networking_dispatcher.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
@@ -191,6 +192,9 @@ void RendererClientBase::RenderThreadStarted() {
 
   preferences_manager_.reset(new PreferencesManager);
 
+  prescient_networking_dispatcher_.reset(
+      new network_hints::PrescientNetworkingDispatcher());
+
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
   base::string16 app_id =
@@ -293,6 +297,10 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #if BUILDFLAG(ENABLE_PRINTING)
   printing::SetAgent(user_agent);
 #endif
+}
+
+blink::WebPrescientNetworking* RendererClientBase::GetPrescientNetworking() {
+  return prescient_networking_dispatcher_.get();
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
