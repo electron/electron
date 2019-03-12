@@ -40,16 +40,15 @@ int ShowMessageBoxSync(int type,
       cancel_id, options, title, message, detail, icon);
 }
 
-void ResolvePromiseObject(const atom::util::CopyablePromise& promise,
+void ResolvePromiseObject(atom::util::Promise promise,
                           int result,
                           bool checkbox_checked) {
-  mate::Dictionary dict =
-      mate::Dictionary::CreateEmpty(promise.GetPromise().isolate());
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
 
   dict.Set("response", result);
   dict.Set("checkboxChecked", checkbox_checked);
 
-  promise.GetPromise().Resolve(dict.GetHandle());
+  promise.Resolve(dict.GetHandle());
 }
 
 v8::Local<v8::Promise> ShowMessageBox(int type,
@@ -73,7 +72,7 @@ v8::Local<v8::Promise> ShowMessageBox(int type,
       window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
       cancel_id, options, title, message, detail, checkbox_label,
       checkbox_checked, icon,
-      base::Bind(&ResolvePromiseObject, atom::util::CopyablePromise(promise)));
+      base::BindOnce(&ResolvePromiseObject, std::move(promise)));
 
   return handle;
 }

@@ -219,12 +219,13 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               const std::string& checkbox_label,
                               bool checkbox_checked,
                               const gfx::ImageSkia& icon,
-                              const MessageBoxCallback& callback) {
+                              MessageBoxCallback callback) {
   int result = ShowTaskDialogUTF8(parent, type, buttons, default_id, cancel_id,
                                   options, title, message, detail,
                                   checkbox_label, &checkbox_checked, icon);
-  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                           base::Bind(callback, result, checkbox_checked));
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(std::move(callback), result, checkbox_checked));
   content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
                                      thread);
 }
@@ -258,12 +259,12 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
-                    const MessageBoxCallback& callback) {
+                    MessageBoxCallback callback) {
   auto thread =
       std::make_unique<base::Thread>(ATOM_PRODUCT_NAME "MessageBoxThread");
   thread->init_com_with_mta(false);
   if (!thread->Start()) {
-    callback.Run(cancel_id, checkbox_checked);
+    std::move(callback).Run(cancel_id, checkbox_checked);
     return;
   }
 
@@ -273,7 +274,7 @@ void ShowMessageBox(NativeWindow* parent,
       base::BindOnce(&RunMessageBoxInNewThread, base::Unretained(unretained),
                      parent, type, buttons, default_id, cancel_id, options,
                      title, message, detail, checkbox_label, checkbox_checked,
-                     icon, callback));
+                     icon, std::move(callback)));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {

@@ -151,8 +151,8 @@ class GtkMessageBox : public NativeWindowObserver {
     return (response < 0) ? cancel_id_ : response;
   }
 
-  void RunAsynchronous(const MessageBoxCallback& callback) {
-    callback_ = callback;
+  void RunAsynchronous(MessageBoxCallback callback) {
+    callback_ = std::move(callback);
 
     g_signal_connect(dialog_, "delete-event",
                      G_CALLBACK(gtk_widget_hide_on_delete), nullptr);
@@ -188,9 +188,9 @@ void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
   gtk_widget_hide(dialog_);
 
   if (response < 0)
-    callback_.Run(cancel_id_, checkbox_checked_);
+    std::move(callback_).Run(cancel_id_, checkbox_checked_);
   else
-    callback_.Run(response, checkbox_checked_);
+    std::move(callback_).Run(response, checkbox_checked_);
   delete this;
 }
 
@@ -227,10 +227,10 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
-                    const MessageBoxCallback& callback) {
+                    MessageBoxCallback callback) {
   (new GtkMessageBox(parent, type, buttons, default_id, cancel_id, title,
                      message, detail, checkbox_label, checkbox_checked, icon))
-      ->RunAsynchronous(callback);
+      ->RunAsynchronous(std::move(callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {

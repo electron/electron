@@ -43,7 +43,7 @@ int ShowMessageBoxSync(NativeWindow* parent_window,
                        const std::string& detail,
                        const gfx::ImageSkia& icon);
 
-typedef base::Callback<void(int code, bool checkbox_checked)>
+typedef base::OnceCallback<void(int code, bool checkbox_checked)>
     MessageBoxCallback;
 
 void ShowMessageBox(NativeWindow* parent_window,
@@ -58,7 +58,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
-                    const MessageBoxCallback& callback);
+                    MessageBoxCallback callback);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.

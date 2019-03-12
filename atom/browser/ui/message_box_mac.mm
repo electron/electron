@@ -134,7 +134,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
-                    const MessageBoxCallback& callback) {
+                    MessageBoxCallback callback) {
   NSAlert* alert =
       CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
                     message, detail, checkbox_label, checkbox_checked, icon);
@@ -143,7 +143,7 @@ void ShowMessageBox(NativeWindow* parent_window,
   // window to wait for.
   if (!parent_window) {
     int ret = [[alert autorelease] runModal];
-    callback.Run(ret, alert.suppressionButton.state == NSOnState);
+    std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
     NSWindow* window =
         parent_window ? parent_window->GetNativeWindow().GetNativeNSWindow()
@@ -151,12 +151,12 @@ void ShowMessageBox(NativeWindow* parent_window,
 
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
-    __block MessageBoxCallback callback_ = callback;
+    __block MessageBoxCallback callback_ = std::move(callback);
 
     [alert beginSheetModalForWindow:window
                   completionHandler:^(NSModalResponse response) {
-                    callback_.Run(response,
-                                  alert.suppressionButton.state == NSOnState);
+                    std::move(callback_).Run(
+                        response, alert.suppressionButton.state == NSOnState);
                   }];
   }
 }
