@@ -335,6 +335,29 @@ On Windows the options are more limited, due to the Win32 APIs used:
 * The `browserWindow` argument is ignored since it is not possible to make
    this confirmation dialog modal.
 
+**[Deprecated Soon](promisification.md)**
+
+### `dialog.showCertificateTrustDialog([browserWindow, ]options)` _macOS_ _Windows_
+
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
+* `options` Object
+  * `certificate` [Certificate](structures/certificate.md) - The certificate to trust/import.
+  * `message` String - The message to display to the user.
+
+Returns `Promise<void>` - resolves when the certificate trust dialog is shown.
+
+On macOS, this displays a modal dialog that shows a message and certificate
+information, and gives the user the option of trusting/importing the
+certificate. If you provide a `browserWindow` argument the dialog will be
+attached to the parent window, making it modal.
+
+On Windows the options are more limited, due to the Win32 APIs used:
+
+* The `message` argument is not used, as the OS provides its own confirmation
+   dialog.
+* The `browserWindow` argument is ignored since it is not possible to make
+   this confirmation dialog modal.
+
 ## Sheets
 
 On macOS, dialogs are presented as sheets attached to a window if you provide
