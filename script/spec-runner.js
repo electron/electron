@@ -60,7 +60,7 @@ async function installSpecModules () {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'
   })
-  const { status } = childProcess.spawnSync(NPM_CMD, ['install'], {
+  const { status } = childProcess.spawnSync(NPM_CMD, ['install', '--no-package-lock'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
