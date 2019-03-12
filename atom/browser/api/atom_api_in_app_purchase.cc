@@ -119,8 +119,9 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 }
 
 v8::Local<v8::Promise> InAppPurchase::GetProducts(
-    const std::vector<std::string>& productIDs) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    const std::vector<std::string>& productIDs,
+    mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
   atom::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

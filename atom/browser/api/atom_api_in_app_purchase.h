@@ -34,8 +34,8 @@ class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
   v8::Local<v8::Promise> PurchaseProduct(const std::string& product_id,
                                          mate::Arguments* args);
 
-  v8::Local<v8::Promise> GetProducts(
-      const std::vector<std::string>& productIDs);
+  v8::Local<v8::Promise> GetProducts(const std::vector<std::string>& productIDs,
+                                     mate::Arguments* args);
 
   // TransactionObserver:
   void OnTransactionsUpdated(
