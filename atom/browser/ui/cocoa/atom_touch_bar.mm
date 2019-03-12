@@ -623,9 +623,14 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     segments[i].Get("enabled", &enabled);
     if (segments[i].Get("label", &label)) {
       [control setLabel:base::SysUTF8ToNSString(label) forSegment:i];
-    } else if (segments[i].Get("icon", &image)) {
+    } else {
+      [control setLabel:@"" forSegment:i];
+    }
+    if (segments[i].Get("icon", &image)) {
       [control setImage:image.AsNSImage() forSegment:i];
       [control setImageScaling:NSImageScaleProportionallyUpOrDown forSegment:i];
+    } else {
+      [control setImage:nil forSegment:i];
     }
     [control setEnabled:enabled forSegment:i];
   }
