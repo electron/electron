@@ -451,14 +451,6 @@ bool SystemPreferences::CanPromptTouchID() {
   return false;
 }
 
-void OnTouchIDCompleted(util::Promise promise) {
-  promise.Resolve();
-}
-
-void OnTouchIDFailed(util::Promise promise, const std::string& reason) {
-  promise.RejectWithErrorMessage(reason);
-}
-
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     v8::Isolate* isolate,
     const std::string& reason) {
@@ -486,16 +478,19 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
               localizedReason:[NSString stringWithUTF8String:reason.c_str()]
                         reply:^(BOOL success, NSError* error) {
                           if (!success) {
+                            std::string err_msg = std::string(
+                                [error.localizedDescription UTF8String]);
+                            runner->PostTask(
+                                FROM_HERE,
+                                base::BindOnce(util::Promise::RejectPromise,
+                                               std::move(p),
+                                               std::move(err_msg)));
+                          } else {
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    &OnTouchIDFailed, std::move(p),
-                                    std::string([error.localizedDescription
-                                                     UTF8String])));
-                          } else {
-                            runner->PostTask(FROM_HERE,
-                                             base::BindOnce(&OnTouchIDCompleted,
-                                                            std::move(p)));
+                                    util::Promise::ResolveEmptyPromise,
+                                    std::move(p)));
                           }
                         }];
   } else {

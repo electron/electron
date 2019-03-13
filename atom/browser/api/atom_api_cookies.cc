@@ -149,7 +149,7 @@ void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
 
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(util::Promise::ResolvePromise<net::CookieList>,
+      base::BindOnce(util::Promise::ResolvePromise<const net::CookieList&>,
                      std::move(promise), std::move(result)));
 }
 
