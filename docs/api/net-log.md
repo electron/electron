@@ -35,7 +35,7 @@ Starts recording network events to `path`.
 
 Stops recording network events. If not called, net logging will automatically end when app quits.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 ### `netLog.stopLogging()`
 

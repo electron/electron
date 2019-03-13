@@ -30,7 +30,7 @@ The `inAppPurchase` module has the following methods:
 
 You should listen for the `transactions-updated` event as soon as possible and certainly before you call `purchaseProduct`.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 ### `inAppPurchase.purchaseProduct(productID, quantity)`
 
@@ -49,7 +49,7 @@ You should listen for the `transactions-updated` event as soon as possible and c
 
 Retrieves the product descriptions.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 ### `inAppPurchase.getProducts(productIDs)`
 

@@ -335,7 +335,7 @@ On Windows the options are more limited, due to the Win32 APIs used:
 * The `browserWindow` argument is ignored since it is not possible to make
    this confirmation dialog modal.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 ### `dialog.showCertificateTrustDialog([browserWindow, ]options)` _macOS_ _Windows_
 
