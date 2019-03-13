@@ -55,6 +55,10 @@ declare namespace Electron {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
 
+  interface WebContentsInternal extends Electron.WebContents {
+    _sendInternal(channel: string, ...args: any[]): void;
+  }
+
   const deprecate: ElectronInternal.DeprecationUtil;
 }
 
