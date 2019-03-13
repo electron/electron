@@ -56,14 +56,24 @@ const deprecate: ElectronInternal.DeprecationUtil = {
   },
 
   // deprecate a getter/setter function in favor of a property
-  fnToProperty: (fn, propName) => {
-    const fnName = fn.name || 'function'
-    const warn = warnOnce(`${fnName} function`, `${propName} property `)
+  fnToProperty: <A extends Function, B extends Function>(propName: string, getterFn: A, setterFn: B) => {
+    const getterName = getterFn.name || 'function'
+    const setterName = setterFn.name || 'function'
 
-    return function (this: any) {
-      warn()
-      fn.apply(this, arguments)
+    const warnGetter = warnOnce(`${getterName} function`, `${propName} property `)
+    const warnSetter = warnOnce(`${setterName} function`, `${propName} property `)
+
+    const deprecatedGetter: unknown = function (this: any) {
+      warnGetter()
+      getterFn.apply(this, arguments)
     }
+
+    const deprecatedSetter: unknown = function (this: any) {
+      warnSetter()
+      setterFn.apply(this, arguments)
+    }
+
+    return [deprecatedGetter as A, deprecatedSetter as B]
   },
 
   // remove a property with no replacement
