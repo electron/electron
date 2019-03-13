@@ -91,7 +91,7 @@ void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
                  &in_app_purchase::FinishAllTransactions)
       .SetMethod("finishTransactionByDate",
                  &in_app_purchase::FinishTransactionByDate)
-      .SetMethod("getProducts", &in_app_purchase::GetProducts);
+      .SetMethod("getProducts", &InAppPurchase::GetProducts);
 }
 
 InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
@@ -100,13 +100,37 @@ InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
 
 InAppPurchase::~InAppPurchase() {}
 
-void InAppPurchase::PurchaseProduct(const std::string& product_id,
-                                    mate::Arguments* args) {
+v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
+    const std::string& product_id,
+    mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   int quantity = 1;
-  in_app_purchase::InAppPurchaseCallback callback;
   args->GetNext(&quantity);
-  args->GetNext(&callback);
-  in_app_purchase::PurchaseProduct(product_id, quantity, callback);
+
+  in_app_purchase::PurchaseProduct(
+      product_id, quantity,
+      base::BindOnce(atom::util::Promise::ResolvePromise<bool>,
+                     std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> InAppPurchase::GetProducts(
+    const std::vector<std::string>& productIDs,
+    mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  in_app_purchase::GetProducts(
+      productIDs, base::BindOnce(atom::util::Promise::ResolvePromise<
+                                     std::vector<in_app_purchase::Product>>,
+                                 std::move(promise)));
+
+  return handle;
 }
 
 void InAppPurchase::OnTransactionsUpdated(

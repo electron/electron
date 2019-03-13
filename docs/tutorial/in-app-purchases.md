@@ -3,7 +3,7 @@
 ## Preparing
 
 ### Paid Applications Agreement
-If you haven't already, you’ll need to sign the Paid Applications Agreement and set up your banking and tax information in iTunes Connect. 
+If you haven't already, you’ll need to sign the Paid Applications Agreement and set up your banking and tax information in iTunes Connect.
 
 [iTunes Connect Developer Help: Agreements, tax, and banking overview](https://help.apple.com/itunes-connect/developer/#/devb6df5ee51)
 
@@ -11,7 +11,6 @@ If you haven't already, you’ll need to sign the Paid Applications Agreement an
 Then, you'll need to configure your in-app purchases in iTunes Connect, and include details such as name, pricing, and description that highlights the features and functionality of your in-app purchase.
 
 [iTunes Connect Developer Help: Create an in-app purchase](https://help.apple.com/itunes-connect/developer/#/devae49fb316)
-
 
 ### Change the CFBundleIdentifier
 
@@ -22,11 +21,9 @@ To test In-App Purchase in development with Electron you'll have to change the `
 <string>com.example.app</string>
 ```
 
-
 ## Code example
 
 Here is an example that shows how to use In-App Purchases in Electron. You'll have to replace the product ids by the identifiers of the products created with iTunes Connect (the identifier of `com.example.app.product1` is `product1`). Note that you have to listen to the `transactions-updated` event as soon as possible in your app.
-
 
 ```javascript
 const { inAppPurchase } = require('electron').remote
@@ -95,7 +92,7 @@ if (!inAppPurchase.canMakePayments()) {
 }
 
 // Retrieve and display the product descriptions.
-inAppPurchase.getProducts(PRODUCT_IDS, (products) => {
+inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
   // Check the parameters.
   if (!Array.isArray(products) || products.length <= 0) {
     console.log('Unable to retrieve the product informations.')
@@ -103,17 +100,16 @@ inAppPurchase.getProducts(PRODUCT_IDS, (products) => {
   }
 
   // Display the name and price of each product.
-  products.forEach((product) => {
+  products.forEach(product => {
     console.log(`The price of ${product.localizedTitle} is ${product.formattedPrice}.`)
   })
 
   // Ask the user which product he/she wants to purchase.
-  // ...
   let selectedProduct = products[0]
   let selectedQuantity = 1
 
   // Purchase the selected product.
-  inAppPurchase.purchaseProduct(selectedProduct.productIdentifier, selectedQuantity, (isProductValid) => {
+  inAppPurchase.purchaseProduct(selectedProduct.productIdentifier, selectedQuantity).then(isProductValid => {
     if (!isProductValid) {
       console.log('The product is not valid.')
       return

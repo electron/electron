@@ -38,13 +38,13 @@ struct Product {
 
 // --------------------------- Typedefs ---------------------------
 
-typedef base::Callback<void(const std::vector<in_app_purchase::Product>&)>
+typedef base::OnceCallback<void(std::vector<in_app_purchase::Product>)>
     InAppPurchaseProductsCallback;
 
 // --------------------------- Functions ---------------------------
 
 void GetProducts(const std::vector<std::string>& productIDs,
-                 const InAppPurchaseProductsCallback& callback);
+                 InAppPurchaseProductsCallback callback);
 
 }  // namespace in_app_purchase
 
