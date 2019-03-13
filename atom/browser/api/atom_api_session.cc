@@ -209,7 +209,7 @@ const char kPersistPrefix[] = "persist:";
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 
-void ResolveOrRejectPromiseInUI(atom::util::Promise promise, int net_error) {
+void ResolveOrRejectPromiseInUI(util::Promise promise, int net_error) {
   if (net_error != net::OK) {
     std::string err_msg = net::ErrorToString(net_error);
     util::Promise::RejectPromise(std::move(promise), std::move(err_msg));
@@ -221,7 +221,7 @@ void ResolveOrRejectPromiseInUI(atom::util::Promise promise, int net_error) {
 // Callback of HttpCache::GetBackend.
 void OnGetBackend(disk_cache::Backend** backend_ptr,
                   Session::CacheAction action,
-                  const atom::util::CopyablePromise& promise,
+                  const util::CopyablePromise& promise,
                   int result) {
   if (result != net::OK) {
     std::string err_msg =
@@ -254,7 +254,7 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
 void DoCacheActionInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     Session::CacheAction action,
-    atom::util::Promise promise) {
+    util::Promise promise) {
   auto* request_context = context_getter->GetURLRequestContext();
 
   auto* http_cache = request_context->http_transaction_factory()->GetCache();
@@ -270,7 +270,7 @@ void DoCacheActionInIO(
   auto** backend_ptr = new BackendPtr(nullptr);
   net::CompletionCallback on_get_backend =
       base::Bind(&OnGetBackend, base::Owned(backend_ptr), action,
-                 atom::util::CopyablePromise(promise));
+                 util::CopyablePromise(promise));
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
   if (rv != net::ERR_IO_PENDING)
     on_get_backend.Run(net::OK);
@@ -431,7 +431,7 @@ v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
       url,
       base::Bind(util::CopyablePromise::ResolveCopyablePromise<std::string>,
-                 atom::util::CopyablePromise(promise)));
+                 util::CopyablePromise(promise)));
 
   return handle;
 }
@@ -659,16 +659,17 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
-void Session::GetBlobData(const std::string& uuid,
-                          const AtomBlobReader::CompletionCallback& callback) {
-  if (callback.is_null())
-    return;
+v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
+                                            const std::string& uuid) {
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&AtomBlobReader::StartReading,
-                     base::Unretained(blob_reader), uuid, callback));
+                     base::Unretained(blob_reader), uuid, std::move(promise)));
+  return handle;
 }
 
 void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
