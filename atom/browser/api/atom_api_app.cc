@@ -1360,6 +1360,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX) || defined(OS_WIN)
       .SetMethod("showEmojiPanel",
                  base::Bind(&Browser::ShowEmojiPanel, browser))
+      .SetProperty("accessibilitySupportEnabled",
+                   &App::IsAccessibilitySupportEnabled,
+                   &App::SetAccessibilitySupportEnabled)
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))

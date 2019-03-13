@@ -76,6 +76,18 @@ for (const name of events) {
   })
 }
 
+// Function Deprecations
+app.getFileIcon = deprecate.promisify(app.getFileIcon)
+
+// Property Deprecations
+const [
+  deprecatedGetter,
+  deprecatedSetter
+] = deprecate.fnToProperty('accessibilitySupportEnabled', app.isAccessibilitySupportEnabled, app.setAccessibilitySupportEnabled)
+
+app.isAccessibilitySupportEnabled = deprecatedGetter
+app.setAccessibilitySupportEnabled = deprecatedSetter
+
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')
 Object.setPrototypeOf(DownloadItem.prototype, EventEmitter.prototype)
