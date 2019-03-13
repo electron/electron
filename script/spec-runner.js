@@ -5,6 +5,9 @@ const crypto = require('crypto')
 const fs = require('fs')
 const { hashElement } = require('folder-hash')
 const path = require('path')
+const args = require('minimist')(process.argv, {
+  string: ['only']
+})
 
 const utils = require('./lib/utils')
 
@@ -14,9 +17,8 @@ const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
 let only = null
-const onlyArg = process.argv.find(arg => arg.startsWith('--only='))
-if (onlyArg) {
-  only = onlyArg.substr(7).split(',')
+if (args.only) {
+  only = args.only.split(',')
   console.log('Only running:', only)
 } else {
   console.log('Will trigger all spec runners')
@@ -96,13 +98,13 @@ async function runElectronTests () {
 
 async function runRemoteBasedElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec())
-  const args = ['electron/spec', ...process.argv.slice(2).filter(arg => !arg.startsWith('--only='))]
+  const runnerArgs = ['electron/spec', ...args._]
   if (process.platform === 'linux') {
-    args.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
+    runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
     exe = 'python'
   }
 
-  const { status } = childProcess.spawnSync(exe, args, {
+  const { status } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   })
@@ -113,9 +115,8 @@ async function runRemoteBasedElectronTests () {
 
 async function runMainProcessElectronTests () {
   const exe = path.resolve(BASE, utils.getElectronExec())
-  const args = process.argv.slice(2).filter(arg => !arg.startsWith('--only='))
 
-  const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...args], {
+  const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...args._], {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   })

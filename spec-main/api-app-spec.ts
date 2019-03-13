@@ -209,7 +209,7 @@ describe('app module', () => {
 
     it('passes arguments to the second-instance event', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
-      const first = ChildProcess.spawn(remote.process.execPath, [appPath])
+      const first = cp.spawn(process.execPath, [appPath])
       const firstExited = emittedOnce(first, 'exit')
 
       // Wait for the first app to boot.
@@ -219,16 +219,16 @@ describe('app module', () => {
       }
       const data2Promise = emittedOnce(firstStdoutLines, 'data')
 
-      const secondInstanceArgs = [remote.process.execPath, appPath, '--some-switch', 'some-arg']
-      const second = ChildProcess.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1))
+      const secondInstanceArgs = [process.execPath, appPath, '--some-switch', 'some-arg']
+      const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1))
       const [code2] = await emittedOnce(second, 'exit')
       expect(code2).to.equal(1)
       const [code1] = await firstExited
       expect(code1).to.equal(0)
-      const data2 = (await data2Promise).toString('ascii')
+      const data2 = (await data2Promise)[0].toString('ascii')
       const secondInstanceArgsReceived = JSON.parse(data2.toString('ascii'))
       const expected = process.platform === 'win32'
-        ? [remote.process.execPath, '--some-switch', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes('original-process-start-time')), appPath, 'some-arg']
+        ? [process.execPath, '--some-switch', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes('original-process-start-time')), appPath, 'some-arg']
         : secondInstanceArgs
       expect(secondInstanceArgsReceived).to.eql(expected,
         `expected ${JSON.stringify(expected)} but got ${data2.toString('ascii')}`)
