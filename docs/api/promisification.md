@@ -9,8 +9,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 ### Candidate Functions
 
 - [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
-- [dialog.showMessageBox([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showMessageBox)
-- [dialog.showCertificateTrustDialog([browserWindow, ]options, callback)](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showCertificateTrustDialog)
 - [contents.print([options], [callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#print)
 
 ### Converted Functions
@@ -34,6 +32,8 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [dialog.showSaveDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showSaveDialog)
 - [inAppPurchase.purchaseProduct(productID, quantity, callback)](https://github.com/electron/electron/blob/master/docs/api/in-app-purchase.md#purchaseProduct)
 - [inAppPurchase.getProducts(productIDs, callback)](https://github.com/electron/electron/blob/master/docs/api/in-app-purchase.md#getProducts)
+- [dialog.showMessageBox([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showMessageBox)
+- [dialog.showCertificateTrustDialog([browserWindow, ]options, callback)](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showCertificateTrustDialog)
 - [netLog.stopLogging([callback])](https://github.com/electron/electron/blob/master/docs/api/net-log.md#stopLogging)
 - [protocol.isProtocolHandled(scheme, callback)](https://github.com/electron/electron/blob/master/docs/api/protocol.md#isProtocolHandled)
 - [ses.clearHostResolverCache([callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearHostResolverCache)
