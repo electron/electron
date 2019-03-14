@@ -144,6 +144,32 @@ describe('deprecations', () => {
     }).to.throw(/this is deprecated/)
   })
 
+  it('warns when a function is deprecated in favor of a property', () => {
+    const warnings = []
+    deprecations.setHandler(warning => warnings.push(warning))
+
+    function oldGetterFn () { return 'getter' }
+    function oldSetterFn () { return 'setter' }
+
+    const newProp = 'myRadProp'
+
+    const [
+      deprecatedGetter,
+      deprecatedSetter
+    ] = deprecate.fnToProperty(newProp, oldGetterFn, oldSetterFn)
+
+    deprecatedGetter()
+    deprecatedSetter()
+
+    expect(warnings).to.have.lengthOf(2)
+
+    expect(warnings[0]).to.include('oldGetterFn')
+    expect(warnings[0]).to.include(newProp)
+
+    expect(warnings[1]).to.include('oldSetterFn')
+    expect(warnings[1]).to.include(newProp)
+  })
+
   describe('promisify', () => {
     const expected = 'Hello, world!'
     let promiseFunc
