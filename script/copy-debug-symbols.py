@@ -8,13 +8,13 @@ from lib.config import LINUX_BINARIES, PLATFORM
 from lib.util import execute, get_objcopy_path, get_out_dir, safe_mkdir
 
 # It has to be done before stripping the binaries.
-def copy_debug_from_binaries(directory, out_dir, target_cpu):
+def copy_debug_from_binaries(directory, out_dir, target_cpu, compress):
   for binary in LINUX_BINARIES:
     binary_path = os.path.join(directory, binary)
     if os.path.isfile(binary_path):
-      copy_debug_from_binary(binary_path, out_dir, target_cpu)
+      copy_debug_from_binary(binary_path, out_dir, target_cpu, compress)
 
-def copy_debug_from_binary(binary_path, out_dir, target_cpu):
+def copy_debug_from_binary(binary_path, out_dir, target_cpu, compress):
   try:
     objcopy = get_objcopy_path(target_cpu)
   except:
@@ -24,8 +24,10 @@ def copy_debug_from_binary(binary_path, out_dir, target_cpu):
       return
     raise
   debug_name = get_debug_name(binary_path)
-  cmd = [objcopy, '--only-keep-debug', binary_path,
-         os.path.join(out_dir, debug_name)]
+  cmd = [objcopy, '--only-keep-debug']
+  if compress:
+    cmd.extend(['--compress-debug-sections'])
+  cmd.extend([binary_path, os.path.join(out_dir, debug_name)])
   execute(cmd)
   return debug_name
 
@@ -36,9 +38,11 @@ def main():
   args = parse_args()
   safe_mkdir(args.out_dir)
   if args.file:
-    copy_debug_from_binary(args.file, args.out_dir, args.target_cpu)
+    copy_debug_from_binary(args.file, args.out_dir, args.target_cpu,
+                           args.compress)
   else:
-    copy_debug_from_binaries(args.directory, args.out_dir, args.target_cpu)
+    copy_debug_from_binaries(args.directory, args.out_dir, args.target_cpu,
+                             args.compress)
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Copy debug from binaries')
@@ -60,6 +64,10 @@ def parse_args():
                       default='',
                       required=False,
                       help='Target cpu of binaries to copy debug symbols')
+  parser.add_argument('--compress',
+                      action='store_true',
+                      required=False,
+                      help='Compress the debug symbols')
 
   return parser.parse_args()
 
