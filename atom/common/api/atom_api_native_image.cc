@@ -505,6 +505,54 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 }
 
 // static
+mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
+    mate::Arguments* args,
+    v8::Local<v8::Value> buffer,
+    const mate::Dictionary& options) {
+  if (!node::Buffer::HasInstance(buffer)) {
+    args->ThrowError("buffer must be a node Buffer");
+    return mate::Handle<NativeImage>();
+  }
+
+  unsigned int width = 0;
+  unsigned int height = 0;
+  double scale_factor = 1.;
+
+  if (!options.Get("width", &width)) {
+    args->ThrowError("width is required");
+    return mate::Handle<NativeImage>();
+  }
+
+  if (!options.Get("height", &height)) {
+    args->ThrowError("height is required");
+    return mate::Handle<NativeImage>();
+  }
+
+  auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
+  auto size_bytes = info.computeMinByteSize();
+
+  if (size_bytes != node::Buffer::Length(buffer)) {
+    args->ThrowError("invalid buffer size");
+    return mate::Handle<NativeImage>();
+  }
+
+  options.Get("scaleFactor", &scale_factor);
+
+  if (width == 0 || height == 0) {
+    return CreateEmpty(args->isolate());
+  }
+
+  SkBitmap bitmap;
+  bitmap.allocN32Pixels(width, height, false);
+  bitmap.setPixels(node::Buffer::Data(buffer));
+
+  gfx::ImageSkia image_skia;
+  image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
+
+  return Create(args->isolate(), gfx::Image(image_skia));
+}
+
+// static
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args,
     v8::Local<v8::Value> buffer) {
@@ -618,6 +666,7 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
+  dict.SetMethod("createFromBitmap", &atom::api::NativeImage::CreateFromBitmap);
   dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataURL",
                  &atom::api::NativeImage::CreateFromDataURL);
