@@ -789,11 +789,7 @@ describe('<webview> tag', function () {
       const devtools = webview2.getWebContents()
       assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
 
-      const name = await new Promise((resolve) => {
-        devtools.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
-          resolve(name)
-        })
-      })
+      const name = await devtools.executeJavaScript('InspectorFrontendHost.constructor.name')
       document.body.removeChild(webview2)
 
       expect(name).to.be.equal('InspectorFrontendHostImpl')
@@ -994,6 +990,19 @@ describe('<webview> tag', function () {
     })
 
     it('can return the result of the executed script', async () => {
+      await loadWebView(webview, {
+        src: 'about:blank'
+      })
+
+      const jsScript = "'4'+2"
+      const expectedResult = '42'
+
+      const result = await webview.executeJavaScript(jsScript)
+      assert.strictEqual(result, expectedResult)
+    })
+
+    // TODO(miniak): remove when promisification is complete
+    it('can return the result of the executed script (callback)', async () => {
       await loadWebView(webview, {
         src: 'about:blank'
       })

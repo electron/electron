@@ -94,10 +94,12 @@ const deprecate: ElectronInternal.DeprecationUtil = {
           process.nextTick(() => {
             cb!.length === 2 ? cb!(null, res) : cb!(res)
           })
+          return res
         }, (err: Error) => {
           process.nextTick(() => {
             cb!.length === 2 ? cb!(err) : cb!()
           })
+          throw err
         })
     } as T
   },

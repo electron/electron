@@ -85,6 +85,15 @@ function getWebFrame (context: Window) {
   return context ? new WebFrame(context) : null
 }
 
+const promisifiedMethods = new Set<string>([
+  'executeJavaScript',
+  'executeJavaScriptInIsolatedWorld'
+])
+
+for (const method of promisifiedMethods) {
+  (WebFrame as any).prototype[method] = deprecate.promisify((WebFrame as any).prototype[method])
+}
+
 const _webFrame = new WebFrame(window)
 
 export default _webFrame

@@ -64,16 +64,14 @@ const getIsRemoteProtocol = function () {
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
  */
 const isUnsafeEvalEnabled = function () {
-  return new Promise((resolve) => {
-    webFrame.executeJavaScript(`(${(() => {
-      try {
-        new Function('') // eslint-disable-line no-new,no-new-func
-      } catch {
-        return false
-      }
-      return true
-    }).toString()})()`, false, resolve)
-  })
+  return webFrame.executeJavaScript(`(${(() => {
+    try {
+      new Function('') // eslint-disable-line no-new,no-new-func
+    } catch {
+      return false
+    }
+    return true
+  }).toString()})()`, false)
 }
 
 const moreInformation = `\nFor more information and help, consult
