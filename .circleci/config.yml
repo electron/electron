@@ -287,7 +287,7 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
           target_cpu="$TARGET_ARCH"
         fi
         cd src
-        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug
+        electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
         electron/script/strip-binaries.py --target-cpu="$target_cpu"
         electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
       fi
