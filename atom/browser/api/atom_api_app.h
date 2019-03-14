@@ -214,6 +214,7 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   v8::Global<v8::Value> dock_;
 #endif
+
 #if defined(MAS_BUILD)
   base::Callback<void()> StartAccessingSecurityScopedResource(
       mate::Arguments* args);

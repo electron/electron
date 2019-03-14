@@ -25,6 +25,7 @@
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
+#include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
 namespace atom {
 
@@ -341,6 +342,30 @@ std::string Browser::GetExecutableFileVersion() const {
 
 std::string Browser::GetExecutableFileProductName() const {
   return GetApplicationName();
+}
+
+bool Browser::IsEmojiPanelSupported() {
+  // emoji picker is supported on Windows 10's Spring 2018 update & above.
+  return base::win::GetVersion() >= base::win::Version::VERSION_WIN10_RS4;
+}
+
+void Browser::ShowEmojiPanel() {
+  // This sends Windows Key + '.' (both keydown and keyup events).
+  // "SendInput" is used because Windows needs to receive these events and
+  // open the Emoji picker.
+  INPUT input[4] = {};
+  input[0].type = INPUT_KEYBOARD;
+  input[0].ki.wVk = ui::WindowsKeyCodeForKeyboardCode(ui::VKEY_COMMAND);
+  input[1].type = INPUT_KEYBOARD;
+  input[1].ki.wVk = ui::WindowsKeyCodeForKeyboardCode(ui::VKEY_OEM_PERIOD);
+
+  input[2].type = INPUT_KEYBOARD;
+  input[2].ki.wVk = ui::WindowsKeyCodeForKeyboardCode(ui::VKEY_COMMAND);
+  input[2].ki.dwFlags |= KEYEVENTF_KEYUP;
+  input[3].type = INPUT_KEYBOARD;
+  input[3].ki.wVk = ui::WindowsKeyCodeForKeyboardCode(ui::VKEY_OEM_PERIOD);
+  input[3].ki.dwFlags |= KEYEVENTF_KEYUP;
+  ::SendInput(4, input, sizeof(INPUT));
 }
 
 }  // namespace atom

@@ -187,6 +187,10 @@ class Browser : public WindowListObserver {
   void SetAboutPanelOptions(const base::DictionaryValue& options);
 #endif
 
+#if defined(OS_MACOSX) || defined(OS_WIN)
+  void ShowEmojiPanel();
+#endif
+
 #if defined(OS_WIN)
   struct UserTask {
     base::FilePath program;
@@ -229,6 +233,8 @@ class Browser : public WindowListObserver {
   // Tell the application that application is activated with visible/invisible
   // windows.
   void Activate(bool has_visible_windows);
+
+  bool IsEmojiPanelSupported();
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
