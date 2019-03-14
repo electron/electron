@@ -512,6 +512,14 @@ Returns `String` - The user agent for this session.
 * `callback` Function
   * `result` Buffer - Blob data.
 
+**[Deprecated Soon](promisification.md)**
+
+#### `ses.getBlobData(identifier)`
+
+* `identifier` String - Valid UUID.
+
+Returns `Promise<Buffer>` - resolves with blob data.
+
 #### `ses.createInterruptedDownload(options)`
 
 * `options` Object

@@ -774,7 +774,7 @@ describe('session module', () => {
     })
   })
 
-  describe('ses.getBlobData(identifier, callback)', () => {
+  describe('ses.getBlobData()', () => {
     it('returns blob data for uuid', (done) => {
       const scheme = 'cors-blob'
       const protocol = session.defaultSession.protocol
@@ -811,7 +811,7 @@ describe('session module', () => {
         } else if (request.method === 'POST') {
           const uuid = request.uploadData[1].blobUUID
           assert(uuid)
-          session.defaultSession.getBlobData(uuid, (result) => {
+          session.defaultSession.getBlobData(uuid).then(result => {
             assert.strictEqual(result.toString(), postData)
             done()
           })
