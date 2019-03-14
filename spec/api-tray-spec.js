@@ -1,4 +1,5 @@
 const { remote } = require('electron')
+const { expect } = require('chai')
 const { Menu, Tray, nativeImage } = remote
 
 describe('tray module', () => {
@@ -35,13 +36,21 @@ describe('tray module', () => {
     })
   })
 
-  describe('tray.setTitle', () => {
-    it('accepts non-empty string', () => {
-      tray.setTitle('Hello World!')
+  describe('tray title get/set', () => {
+    it('sets/gets non-empty title', () => {
+      const title = 'Hello World!'
+      tray.setTitle(title)
+      const newTitle = tray.getTitle()
+
+      expect(newTitle).to.equal(title)
     })
 
-    it('accepts empty string', () => {
-      tray.setTitle('')
+    it('sets/gets empty title', () => {
+      const title = ''
+      tray.setTitle(title)
+      const newTitle = tray.getTitle()
+
+      expect(newTitle).to.equal(title)
     })
   })
 })
