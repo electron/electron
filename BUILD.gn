@@ -917,6 +917,9 @@ dist_zip("electron_dist_zip") {
     ":licenses",
     ":electron_version",
   ]
+  if (is_linux) {
+    data_deps += [ "//sandbox/linux:chrome_sandbox" ]
+  }
   outputs = [
     "$root_build_dir/dist.zip",
   ]
