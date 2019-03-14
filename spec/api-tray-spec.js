@@ -37,6 +37,12 @@ describe('tray module', () => {
   })
 
   describe('tray title get/set', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
     it('sets/gets non-empty title', () => {
       const title = 'Hello World!'
       tray.setTitle(title)
