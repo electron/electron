@@ -101,7 +101,7 @@ async function runElectronTests () {
 
 async function runRemoteBasedElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec())
-  const runnerArgs = ['electron/spec', unknownArgs.slice(2)]
+  const runnerArgs = ['electron/spec', ...unknownArgs.slice(2)]
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
     exe = 'python'
