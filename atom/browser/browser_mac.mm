@@ -411,4 +411,12 @@ void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
   }
 }
 
+void Browser::ShowEmojiPanel() {
+  [[AtomApplication sharedApplication] orderFrontCharacterPalette:nil];
+}
+
+bool Browser::IsEmojiPanelSupported() {
+  return true;
+}
+
 }  // namespace atom
