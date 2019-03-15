@@ -614,6 +614,20 @@ describe('Menu module', () => {
   })
 
   describe('Menu.insert', () => {
+    it('should throw when attempting to insert at out-of-range indices', () => {
+      const menu = Menu.buildFromTemplate([
+        { label: '1' },
+        { label: '2' },
+        { label: '3' }
+      ])
+
+      const item = new MenuItem({ label: 'badInsert' })
+
+      expect(() => {
+        menu.insert(9999, item)
+      }).to.throw(/Position 9999 cannot be greater than the total MenuItem count/)
+    })
+
     it('should store item in @items by its index', () => {
       const menu = Menu.buildFromTemplate([
         { label: '1' },
