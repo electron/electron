@@ -226,7 +226,7 @@ describe('app module', () => {
       const [code1] = await firstExited
       expect(code1).to.equal(0)
       const data2 = (await data2Promise)[0].toString('ascii')
-      const secondInstanceArgsReceived = JSON.parse(data2.toString('ascii'))
+      const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'))
       const expected = process.platform === 'win32'
         ? [process.execPath, '--some-switch', '--allow-file-access-from-files', secondInstanceArgsReceived.find(x => x.includes('original-process-start-time')), appPath, 'some-arg']
         : secondInstanceArgs

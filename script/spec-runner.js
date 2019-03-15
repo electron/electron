@@ -21,7 +21,7 @@ const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
 let runnersToRun = null
 if (args.runners) {
-  runnersToRun = args.only.split(',')
+  runnersToRun = args.runners.split(',')
   console.log('Only running:', runnersToRun)
 } else {
   console.log('Will trigger all spec runners')
