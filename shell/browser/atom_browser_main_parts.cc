@@ -207,6 +207,44 @@ int X11EmptyIOErrorHandler(Display* d) {
 
 }  // namespace
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void AtomBrowserMainParts::InitializeExtensionSystem() {
+  extension_system_ = static_cast<extensions::AtomExtensionSystem*>(
+      extensions::ExtensionSystem::Get(browser_context_.get()));
+  extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+  extension_system_->FinishInitialization();
+}
+#endif
+
+void AtomBrowserMainParts::InitializeFeatureList() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  auto enable_features =
+      cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
+  auto disable_features =
+      cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
+  // Disable creation of spare renderer process with site-per-process mode,
+  // it interferes with our process preference tracking for non sandboxed mode.
+  // Can be reenabled when our site instance policy is aligned with chromium
+  // when node integration is enabled.
+  disable_features +=
+      std::string(",") + features::kSpareRendererForSitePerProcess.name +
+      std::string(",") + network::features::kNetworkService.name;
+  auto feature_list = std::make_unique<base::FeatureList>();
+  feature_list->InitializeFromCommandLine(enable_features, disable_features);
+  base::FeatureList::SetInstance(std::move(feature_list));
+}
+
+#if !defined(OS_MACOSX)
+void AtomBrowserMainParts::OverrideAppLogsPath() {
+  base::FilePath path;
+  if (base::PathService::Get(DIR_APP_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+    base::PathService::Override(DIR_APP_LOGS, path);
+  }
+}
+#endif
+
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
@@ -472,6 +510,17 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch("load-extension")) {
+    auto load_extension = cmd_line->GetSwitchValueASCII("load-extension");
+    auto extension_path = base::FilePath::FromUTF8Unsafe(load_extension);
+    auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+        extensions::ExtensionSystem::Get(browser_context_.get()));
+    extension_system->LoadExtension(extension_path);
+  }
+#endif
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
@@ -526,6 +575,10 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
       std::move(callback).Run();
     ++iter;
   }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extension_system_ = NULL;
+#endif
 
   fake_browser_process_->PostMainMessageLoopRun();
 }

@@ -31,6 +31,10 @@ namespace electron {
 class AtomExtensionsRendererClient;
 #endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+class AtomExtensionsRendererClient;
+#endif
+
 class RendererClientBase : public content::ContentRendererClient {
  public:
   RendererClientBase();

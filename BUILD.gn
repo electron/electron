@@ -551,16 +551,8 @@ source_set("electron_lib") {
     deps += [ "//third_party/crashpad/crashpad/client" ]
   }
 
-  if (enable_pdf_viewer) {
-    deps += [
-      "//components/guest_view/common",
-      "//components/pdf/browser",
-      "//content/public/common:service_names",
-      "//extensions/browser",
-      "//extensions/common/api",
-      "//pdf",
-      "//services/service_manager/public/cpp",
-    ]
+  if (enable_pdf) {
+    deps += [ "//pdf" ]
   }
 
   if (enable_run_as_node) {

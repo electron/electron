@@ -27,6 +27,6 @@ declare_args() {
   # Enable flash plugin support.
   enable_pepper_flash = true
 
-  # Enable Chrome extensions support.
-  enable_electron_extensions = false
+  # Enable Chrome extensions support
+  enable_electron_extensions = true
 }
