@@ -567,6 +567,14 @@ void TopLevelWindow::SetSkipTaskbar(bool skip) {
   window_->SetSkipTaskbar(skip);
 }
 
+void TopLevelWindow::SetExcludedFromWindowsMenu(bool excluded) {
+  window_->SetExcludedFromWindowsMenu(excluded);
+}
+
+bool TopLevelWindow::IsExcludedFromWindowsMenu() {
+  return window_->IsExcludedFromWindowsMenu();
+}
+
 void TopLevelWindow::SetSimpleFullScreen(bool simple_fullscreen) {
   window_->SetSimpleFullScreen(simple_fullscreen);
 }
@@ -1133,6 +1141,9 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addTabbedWindow", &TopLevelWindow::AddTabbedWindow)
       .SetMethod("setWindowButtonVisibility",
                  &TopLevelWindow::SetWindowButtonVisibility)
+      .SetProperty("excludedFromWindowsMenu",
+                   &TopLevelWindow::IsExcludedFromWindowsMenu,
+                   &TopLevelWindow::SetExcludedFromWindowsMenu)
 #endif
       .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
