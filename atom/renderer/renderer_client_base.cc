@@ -159,10 +159,10 @@ void RendererClientBase::RenderThreadStarted() {
   }
 #endif
   extensions_client_.reset(CreateExtensionsClient());
-  ExtensionsClient::Set(extensions_client_.get());
+  extensions::ExtensionsClient::Set(extensions_client_.get());
 
   extensions_renderer_client_.reset(new AtomExtensionsRendererClient);
-  ExtensionsRendererClient::Set(extensions_renderer_client_.get());
+  extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
@@ -325,6 +325,24 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #if BUILDFLAG(ENABLE_PRINTING)
   printing::SetAgent(user_agent);
 #endif
+}
+
+void RendererClientBase::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
+  // TODO(samuelmaddock):
+  extensions_renderer_client_.get()->RunScriptsAtDocumentStart(render_frame);
+}
+
+void RendererClientBase::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+  // TODO(samuelmaddock):
+  extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
+}
+
+void RendererClientBase::RunScriptsAtDocumentIdle(
+    content::RenderFrame* render_frame) {
+  // TODO(samuelmaddock):
+  extensions_renderer_client_.get()->RunScriptsAtDocumentIdle(render_frame);
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(

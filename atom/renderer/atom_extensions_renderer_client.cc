@@ -11,8 +11,8 @@
 namespace atom {
 
 AtomExtensionsRendererClient::AtomExtensionsRendererClient()
-    : dispatcher_(std::make_unique<Dispatcher>(
-          std::make_unique<DispatcherDelegate>())) {
+    : dispatcher_(std::make_unique<extensions::Dispatcher>(
+          std::make_unique<extensions::DispatcherDelegate>())) {
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 
@@ -33,6 +33,21 @@ int AtomExtensionsRendererClient::GetLowestIsolatedWorldId() const {
 
 Dispatcher* AtomExtensionsRendererClient::GetDispatcher() {
   return dispatcher_.get();
+}
+
+void AtomExtensionsRendererClient::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
+  dispatcher_->RunScriptsAtDocumentStart(render_frame);
+}
+
+void AtomExtensionsRendererClient::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+  dispatcher_->RunScriptsAtDocumentEnd(render_frame);
+}
+
+void AtomExtensionsRendererClient::RunScriptsAtDocumentIdle(
+    content::RenderFrame* render_frame) {
+  dispatcher_->RunScriptsAtDocumentIdle(render_frame);
 }
 
 }  // namespace atom

@@ -67,6 +67,10 @@ class RendererClientBase : public content::ContentRendererClient {
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
 
+  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
+
  protected:
   // app_shell embedders may need custom extensions client interfaces.
   // This class takes ownership of the returned object.

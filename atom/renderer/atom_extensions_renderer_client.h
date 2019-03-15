@@ -10,10 +10,15 @@
 #include "base/macros.h"
 #include "extensions/renderer/extensions_renderer_client.h"
 
+namespace content {
+class RenderFrame;
+}
+
 namespace atom {
 class extensions::Dispatcher;
 
-class AtomExtensionsRendererClient : public ExtensionsRendererClient {
+class AtomExtensionsRendererClient
+    : public extensions::ExtensionsRendererClient {
  public:
   AtomExtensionsRendererClient();
   ~AtomExtensionsRendererClient() override;
@@ -22,6 +27,10 @@ class AtomExtensionsRendererClient : public ExtensionsRendererClient {
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
   extensions::Dispatcher* GetDispatcher() override;
+
+  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame);
+  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame);
+  void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame);
 
  private:
   std::unique_ptr<extensions::Dispatcher> dispatcher_;
