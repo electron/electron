@@ -700,6 +700,10 @@ describe('Menu module', () => {
       expect(() => {
         menu.insert(9999, item)
       }).to.throw(/Position 9999 cannot be greater than the total MenuItem count/)
+
+      expect(() => {
+        menu.insert(-9999, item)
+      }).to.throw(/Position -9999 cannot be less than 0/)
     })
 
     it('should store item in @items by its index', () => {
