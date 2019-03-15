@@ -1672,8 +1672,12 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
     return false;
   if (!(*iter)->IsRenderFrameLive())
     return false;
-  return (*iter)->Send(new AtomFrameMsg_Message(
-      frame_id, internal, send_to_all, channel, args, 0 /* sender_id */));
+
+  electron_api::mojom::ElectronAssociatedPtr electron_ptr;
+  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&electron_ptr));
+  electron_ptr->Message(internal, channel, args.Clone(), 0 /* sender_id */);
+  return true;
 }
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,

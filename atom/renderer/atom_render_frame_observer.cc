@@ -185,7 +185,6 @@ bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
 bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
-    IPC_MESSAGE_HANDLER(AtomFrameMsg_Message, OnBrowserMessage)
     IPC_MESSAGE_HANDLER(AtomFrameMsg_TakeHeapSnapshot, OnTakeHeapSnapshot)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
