@@ -1,8 +1,12 @@
-// Copyright (c) 2019 Slack, Inc.
+// Copyright (c) 2019 Slack Technologies, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #include "electron/atom/renderer/electron_api_service_impl.h"
+
+#include <utility>
+#include <vector>
+
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "electron/atom/common/api/event_emitter_caller.h"
 #include "electron/atom/common/node_includes.h"

@@ -1,9 +1,11 @@
-// Copyright (c) 2019 Slack, Inc.
+// Copyright (c) 2019 Slack Technologies, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #ifndef ATOM_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 #define ATOM_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+
+#include <string>
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"

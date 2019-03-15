@@ -18,6 +18,8 @@
 #include "chrome/services/printing/public/cpp/manifest.h"
 #endif
 
+#include <set>
+
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
   static base::NoDestructor<service_manager::Manifest> manifest{
       service_manager::ManifestBuilder()
