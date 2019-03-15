@@ -605,6 +605,14 @@ static_library("electron_lib") {
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]
   }
+
+  if (enable_extensions) {
+    deps += [
+      "//extensions/browser",
+      "//extensions/common",
+      "//extensions/renderer",
+    ]
+  }
 }
 
 electron_paks("packed_resources") {
