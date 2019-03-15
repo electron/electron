@@ -35,6 +35,11 @@ Dispatcher* AtomExtensionsRendererClient::GetDispatcher() {
   return dispatcher_.get();
 }
 
+bool AtomExtensionsRendererClient::AllowPopup() {
+  // TODO(samuelmaddock):
+  return false
+}
+
 void AtomExtensionsRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   dispatcher_->RunScriptsAtDocumentStart(render_frame);
