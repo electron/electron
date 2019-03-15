@@ -101,7 +101,7 @@ void ElectronApiServiceImpl::CreateMojoService(
     electron_api::mojom::ElectronAssociatedRequest request) {
   DCHECK(render_frame);
 
-  // Owns itself. Will be deleted when message pipe is destroyed.
+  // Owns itself. Will be deleted when the render frame is destroyed.
   new ElectronApiServiceImpl(render_frame, std::move(request));
 }
 
@@ -111,8 +111,8 @@ void ElectronApiServiceImpl::OnDestruct() {
 
 void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
-                                     base::Value arguments) {
-  LOG(INFO) << "Got message on channel '" << channel << "'";
+                                     base::Value arguments,
+                                     int32_t sender_id) {
   /*
   // Don't handle browser messages before document element is created.
   // When we receive a message from the browser, we try to transfer it
@@ -127,7 +127,6 @@ void ElectronApiServiceImpl::Message(bool internal,
   if (!frame)
     return;
 
-  int32_t sender_id = 0;
   EmitIPCEvent(frame, isolated_world_, internal, channel, arguments.GetList(),
                sender_id);
 
@@ -143,10 +142,5 @@ void ElectronApiServiceImpl::Message(bool internal,
   }
   */
 }
-
-void ElectronApiServiceImpl::MessageSync(bool internal,
-                                         const std::string& channel,
-                                         base::Value arguments,
-                                         MessageSyncCallback callback) {}
 
 }  // namespace atom

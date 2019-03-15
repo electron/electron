@@ -21,11 +21,8 @@ class ElectronApiServiceImpl : public electron_api::mojom::Electron,
 
   void Message(bool internal,
                const std::string& channel,
-               base::Value arguments) override;
-  void MessageSync(bool internal,
-                   const std::string& channel,
-                   base::Value arguments,
-                   MessageSyncCallback callback) override;
+               base::Value arguments,
+               int32_t sender_id) override;
 
  private:
   ~ElectronApiServiceImpl() override;

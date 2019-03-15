@@ -6,11 +6,6 @@ interface Electron {
   Message(
       bool internal,
       string channel,
-      mojo_base.mojom.ListValue arguments);
-
-  [Sync]
-  MessageSync(
-      bool internal,
-      string channel,
-      mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.ListValue result);
+      mojo_base.mojom.ListValue arguments,
+      int32 sender_id);
 };

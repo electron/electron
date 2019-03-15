@@ -1653,7 +1653,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     electron_api::mojom::ElectronAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, channel, args.Clone());
+    electron_ptr->Message(internal, channel, args.Clone(), sender_id);
     return true;
   }
   return false;
