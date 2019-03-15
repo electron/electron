@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//extensions/buildflags/buildflags.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
@@ -606,10 +607,12 @@ static_library("electron_lib") {
     deps += [ "components/pepper_flash" ]
   }
 
-  if (enable_extensions) {
+  if (enable_electron_extensions) {
     deps += [
       "//extensions/browser",
       "//extensions/common",
+
+      # "//extensions/common/api",
       "//extensions/renderer",
     ]
   }
