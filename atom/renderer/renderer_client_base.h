@@ -21,6 +21,7 @@
 namespace atom {
 
 class PreferencesManager;
+class extensions::ExtensionsClient;
 class AtomExtensionsRendererClient;
 
 class RendererClientBase : public content::ContentRendererClient {
@@ -66,7 +67,13 @@ class RendererClientBase : public content::ContentRendererClient {
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
 
+ protected:
+  // app_shell embedders may need custom extensions client interfaces.
+  // This class takes ownership of the returned object.
+  virtual extensions::ExtensionsClient* CreateExtensionsClient();
+
  private:
+  std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
   std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;
   std::unique_ptr<PreferencesManager> preferences_manager_;
 #if defined(WIDEVINE_CDM_AVAILABLE)
