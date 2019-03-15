@@ -21,6 +21,7 @@
 namespace atom {
 
 class PreferencesManager;
+class AtomExtensionsRendererClient;
 
 class RendererClientBase : public content::ContentRendererClient {
  public:
@@ -66,6 +67,7 @@ class RendererClientBase : public content::ContentRendererClient {
   void DidSetUserAgent(const std::string& user_agent) override;
 
  private:
+  std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;
   std::unique_ptr<PreferencesManager> preferences_manager_;
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
