@@ -208,7 +208,7 @@ describe('app module', () => {
     })
 
     it('passes arguments to the second-instance event', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+      const appPath = path.join(fixturesPath, 'api', 'singleton')
       const first = cp.spawn(process.execPath, [appPath])
       const firstExited = emittedOnce(first, 'exit')
 
