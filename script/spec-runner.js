@@ -8,7 +8,7 @@ const path = require('path')
 const unknownArgs = []
 
 const args = require('minimist')(process.argv, {
-  string: ['only'],
+  string: ['runners'],
   unknown: arg => unknownArgs.push(arg)
 })
 
@@ -19,10 +19,10 @@ const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
-let only = null
-if (args.only) {
-  only = args.only.split(',')
-  console.log('Only running:', only)
+let runnersToRun = null
+if (args.runners) {
+  runnersToRun = args.only.split(',')
+  console.log('Only running:', runnersToRun)
 } else {
   console.log('Will trigger all spec runners')
 }
@@ -75,7 +75,7 @@ async function runElectronTests () {
 
   const mochaFile = process.env.MOCHA_FILE
   for (const runner of runners) {
-    if (only && !only.includes(runner[1])) {
+    if (runnersToRun && !runnersToRun.includes(runner[1])) {
       console.info('\nSkipping:', runner[0])
       continue
     }

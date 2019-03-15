@@ -119,7 +119,7 @@ describe('app module', () => {
 
   describe('app.isPackaged', () => {
     it('should be false durings tests', () => {
-      expect(app.isPackaged).equal(false)
+      expect(app.isPackaged).to.equal(false)
     })
   })
 
@@ -180,7 +180,7 @@ describe('app module', () => {
 
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
-      appProcess.stdout.on('data', data => appProcess && appProcess.kill())
+      appProcess.stdout.on('data', data => appProcess!.kill())
       const [code, signal] = await emittedOnce(appProcess, 'close')
 
       const message = `code:\n${code}\nsignal:\n${signal}`
@@ -1226,9 +1226,9 @@ describe('app module', () => {
       expect(app.whenReady()).to.be.a('promise')
     })
 
-    it('becomes fulfilled if the app is already ready', () => {
+    it('becomes fulfilled if the app is already ready', async () => {
       expect(app.isReady()).to.equal(true)
-      expect(app.whenReady()).to.be.eventually.fulfilled.equal(undefined)
+      await expect(app.whenReady()).to.be.eventually.fulfilled.equal(undefined)
     })
   })
 
