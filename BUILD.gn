@@ -360,6 +360,7 @@ static_library("electron_lib") {
   deps = [
     ":atom_js2c",
     ":resources",
+    "atom/common/api:mojo",
     "buildflags",
     "chromium_src:chrome",
     "manifests",

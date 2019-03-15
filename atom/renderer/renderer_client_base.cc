@@ -15,6 +15,7 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
+#include "atom/renderer/electron_api_service_impl.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
@@ -26,6 +27,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -203,6 +205,10 @@ void RendererClientBase::RenderThreadStarted() {
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
+      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
+                          render_frame));
+
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
 #endif

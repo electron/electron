@@ -5,6 +5,7 @@
 #include "atom/app/manifests.h"
 
 #include "base/no_destructor.h"
+#include "content/public/common/service_names.mojom.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/proxy_resolver/public/cpp/manifest.h"
 #include "services/service_manager/public/cpp/manifest_builder.h"
@@ -25,6 +26,25 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
           .RequireCapability("proxy_resolver", "factory")
           .RequireCapability("chrome_printing", "converter")
           .RequireCapability("pdf_compositor", "compositor")
+          .RequireCapability(content::mojom::kRendererServiceName,
+                             "electron_api")
+          .Build()};
+  return *manifest;
+}
+
+const service_manager::Manifest& GetElectronContentRendererOverlayManifest() {
+  static base::NoDestructor<service_manager::Manifest> manifest{
+      service_manager::ManifestBuilder()
+          .WithDisplayName("Electron (renderer process)")
+          .ExposeCapability("electron_api",
+                            std::set<const char*>{
+                                "electron_api.mojom.Electron",
+                            })
+          .ExposeInterfaceFilterCapability_Deprecated(
+              "navigation:frame", "browser",
+              std::set<const char*>{
+                  "electron_api.mojom.Electron",
+              })
           .Build()};
   return *manifest;
 }

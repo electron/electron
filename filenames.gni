@@ -656,6 +656,8 @@ filenames = {
     "atom/renderer/atom_renderer_client.h",
     "atom/renderer/content_settings_observer.cc",
     "atom/renderer/content_settings_observer.h",
+    "atom/renderer/electron_api_service_impl.cc",
+    "atom/renderer/electron_api_service_impl.h",
     "atom/renderer/atom_sandboxed_renderer_client.cc",
     "atom/renderer/atom_sandboxed_renderer_client.h",
     "atom/renderer/guest_view_container.cc",

@@ -78,10 +78,12 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/display/screen.h"
@@ -1648,9 +1650,11 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            int32_t sender_id) {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    return frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(),
-                                                     internal, send_to_all,
-                                                     channel, args, sender_id));
+    electron_api::mojom::ElectronAssociatedPtr electron_ptr;
+    frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
+        mojo::MakeRequest(&electron_ptr));
+    electron_ptr->Message(internal, channel, args.Clone());
+    return true;
   }
   return false;
 }
