@@ -1,4 +1,4 @@
-import { deprecate, webFrame } from 'electron'
+import { deprecate, remote, webFrame } from 'electron'
 
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
@@ -221,15 +221,15 @@ export const setupAttributes = () => {
 export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement) => {
   // WebContents associated with this webview.
   WebViewElement.prototype.getWebContents = function () {
-    const { getRemote } = require('@electron/internal/renderer/remote')
-    const getGuestWebContents = getRemote('getGuestWebContents')
+    if (!remote) {
+      throw new Error('getGuestWebContents requires remote, which is not enabled')
+    }
     const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal')
-
     if (!internal.guestInstanceId) {
       internal.createGuestSync()
     }
 
-    return getGuestWebContents(internal.guestInstanceId)
+    return (remote as Electron.RemoteInternal).getGuestWebContents(internal.guestInstanceId!)
   }
 
   // Focusing the webview should move page focus to the underlying iframe.
