@@ -9,7 +9,7 @@
       var {ipcRenderer} = require('electron')
       var wv = document.querySelector('webview')
       wv.addEventListener('dom-ready', () => {
-        ipcRenderer.send('webview-dom-ready', wv.getWebContents().id)
+        ipcRenderer.send('webview-dom-ready', wv.getWebContentsId())
       })
     </script>
   </body>

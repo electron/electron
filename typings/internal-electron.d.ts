@@ -121,6 +121,7 @@ declare namespace ElectronInternal {
 
     // Created in web-view-impl
     public getWebContents(): Electron.WebContents;
+    public getWebContentsId(): number;
   }
 }
 

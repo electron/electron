@@ -672,6 +672,10 @@ this `webview`.
 It depends on the [`remote`](remote.md) module,
 it is therefore not available when this module is disabled.
 
+### `<webview>.getWebContentsId()`
+
+Returns `Number` - The WebContents ID of this `webview`.
+
 ## DOM events
 
 The following DOM events are available to the `webview` tag:
