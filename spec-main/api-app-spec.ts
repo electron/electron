@@ -1151,7 +1151,7 @@ describe('app module', () => {
 
       it('keeps references to the menu', () => {
         app.dock.setMenu(new Menu())
-        const v8Util = process.atomBinding('v8_util')
+        const v8Util = process.electronBinding('v8_util')
         v8Util.requestGarbageCollectionForTesting()
       })
     })

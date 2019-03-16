@@ -1,5 +1,5 @@
-export function atomBindingSetup (binding: typeof process['_linkedBinding'], processType: typeof process['type']): typeof process['atomBinding'] {
-  return function atomBinding (name: string) {
+export function electronBindingSetup (binding: typeof process['_linkedBinding'], processType: typeof process['type']): typeof process['electronBinding'] {
+  return function electronBinding (name: string) {
     try {
       return binding(`atom_${processType}_${name}`)
     } catch (error) {

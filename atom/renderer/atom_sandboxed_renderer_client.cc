@@ -5,7 +5,7 @@
 #include "atom/renderer/atom_sandboxed_renderer_client.h"
 
 #include "atom/common/api/api_messages.h"
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -149,7 +149,7 @@ void AtomSandboxedRendererClient::InitializeBindings(
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
 
-  AtomBindings::BindProcess(isolate, &process, metrics_.get());
+  ElectronBindings::BindProcess(isolate, &process, metrics_.get());
 
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());

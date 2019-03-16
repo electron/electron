@@ -20,7 +20,7 @@ const globalPaths = Module.globalPaths
 globalPaths.push(path.join(__dirname, 'api', 'exports'))
 
 // The global variable will be used by ipc for event dispatching
-const v8Util = process.atomBinding('v8_util')
+const v8Util = process.electronBinding('v8_util')
 
 v8Util.setHiddenValue(global, 'ipc', new EventEmitter())
 v8Util.setHiddenValue(global, 'ipc-internal', new EventEmitter())
@@ -31,7 +31,7 @@ const { webFrameInit } = require('@electron/internal/renderer/web-frame-init')
 webFrameInit()
 
 // Process command line arguments.
-const { hasSwitch, getSwitchValue } = process.atomBinding('command_line')
+const { hasSwitch, getSwitchValue } = process.electronBinding('command_line')
 
 const parseOption = function<T> (
   name: string, defaultValue: T, converter?: (value: string) => T

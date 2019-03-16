@@ -13,7 +13,7 @@ const { emittedOnce } = require('./events-helpers')
 const { ipcRenderer, remote } = require('electron')
 const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, webContents } = remote
 
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 const { expect } = chai
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')

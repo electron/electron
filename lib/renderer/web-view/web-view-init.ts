@@ -1,6 +1,6 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 
-const v8Util = process.atomBinding('v8_util')
+const v8Util = process.electronBinding('v8_util')
 
 function handleFocusBlur (guestInstanceId: number) {
   // Note that while Chromium content APIs have observer for focus/blur, they

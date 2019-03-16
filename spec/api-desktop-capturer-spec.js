@@ -3,7 +3,7 @@ const dirtyChai = require('dirty-chai')
 const chaiAsPromised = require('chai-as-promised')
 const { desktopCapturer, ipcRenderer, remote } = require('electron')
 const { screen } = remote
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai

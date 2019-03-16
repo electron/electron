@@ -17,14 +17,14 @@ declare namespace NodeJS {
   }
   interface Process {
     /**
-     * DO NOT USE DIRECTLY, USE process.atomBinding
+     * DO NOT USE DIRECTLY, USE process.electronBinding
      */
     _linkedBinding(name: string): any;
-    atomBinding(name: string): any;
-    atomBinding(name: 'features'): FeaturesBinding;
-    atomBinding(name: 'v8_util'): V8UtilBinding;
-    atomBinding(name: 'app'): { app: Electron.App, App: Function };
-    atomBinding(name: 'command_line'): Electron.CommandLine;
+    electronBinding(name: string): any;
+    electronBinding(name: 'features'): FeaturesBinding;
+    electronBinding(name: 'v8_util'): V8UtilBinding;
+    electronBinding(name: 'app'): { app: Electron.App, App: Function };
+    electronBinding(name: 'command_line'): Electron.CommandLine;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 

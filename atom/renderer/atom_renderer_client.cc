@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
@@ -35,7 +35,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
-      atom_bindings_(new AtomBindings(uv_default_loop())) {}
+      electron_bindings_(new ElectronBindings(uv_default_loop())) {}
 
 AtomRendererClient::~AtomRendererClient() {
   asar::ClearArchives();
@@ -114,7 +114,7 @@ void AtomRendererClient::DidCreateScriptContext(
   environments_.insert(env);
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(env->isolate(), env->process_object());
+  electron_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object());
   mate::Dictionary process_dict(env->isolate(), env->process_object());
   process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
@@ -157,8 +157,8 @@ void AtomRendererClient::WillReleaseScriptContext(
           switches::kNodeIntegrationInSubFrames))
     node::FreeEnvironment(env);
 
-  // AtomBindings is tracking node environments.
-  atom_bindings_->EnvironmentDestroyed(env);
+  // ElectronBindings is tracking node environments.
+  electron_bindings_->EnvironmentDestroyed(env);
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,

@@ -5,7 +5,7 @@ const fs = require('fs')
 const { remote } = require('electron')
 const { BrowserWindow } = remote
 const { closeWindow } = require('./window-helpers')
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 

@@ -6,7 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const { ipcRenderer, remote } = require('electron')
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 
 const isCI = remote.getGlobal('isCi')
 chai.use(dirtyChai)

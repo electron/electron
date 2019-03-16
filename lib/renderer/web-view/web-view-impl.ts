@@ -9,7 +9,7 @@ import {
   asyncPromiseMethods
 } from '@electron/internal/common/web-view-methods'
 
-const v8Util = process.atomBinding('v8_util')
+const v8Util = process.electronBinding('v8_util')
 
 // ID generator.
 let nextId = 0
