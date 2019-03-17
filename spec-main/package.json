@@ -1,0 +1,6 @@
+{
+  "name": "electron-test-main",
+  "productName": "Electron Test Main",
+  "main": "index.js",
+  "version": "0.1.0"
+}

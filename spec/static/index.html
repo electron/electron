@@ -17,6 +17,12 @@
   const electron = require('electron')
   const { remote, ipcRenderer } = electron
 
+  // Set up chai-as-promised here first to avoid conflicts
+  // It must be loaded first or really strange things happen inside
+  // chai that cause test failures
+  // DO NOT MOVE, REMOVE OR EDIT THIS LINE
+  require('chai').use(require('chai-as-promised'))
+
   // Check if we are running in CI.
   const isCi = remote.getGlobal('isCi')
 

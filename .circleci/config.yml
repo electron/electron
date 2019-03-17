@@ -810,7 +810,13 @@ steps-tests: &steps-tests
     - run:
         name: Check test results existence
         command: |
-          MOCHA_FILE='src/junit/test-results.xml'
+          MOCHA_FILE='src/junit/test-results-remote.xml'
+          # Check if it exists and not empty.
+          if [ ! -s "$MOCHA_FILE" ]; then
+            exit 1
+          fi
+
+          MOCHA_FILE='src/junit/test-results-main.xml'
           # Check if it exists and not empty.
           if [ ! -s "$MOCHA_FILE" ]; then
             exit 1
