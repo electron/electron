@@ -60,7 +60,8 @@ void NodeDebugger::Start() {
   }
 
   const char* path = "";
-  if (inspector->Start(path, options, env_->inspector_host_port(),
+  if (inspector->Start(path, options,
+                       std::make_shared<node::HostPort>(options.host_port),
                        true /* is_main */))
     DCHECK(env_->inspector_agent()->IsListening());
 }
