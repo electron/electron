@@ -1,7 +1,7 @@
 import { app, session } from 'electron'
 
 // Global protocol APIs.
-const protocol = process.atomBinding('protocol')
+const protocol = process.electronBinding('protocol')
 
 // Fallback protocol APIs of default session.
 Object.setPrototypeOf(protocol, new Proxy({}, {

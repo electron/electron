@@ -1,5 +1,5 @@
-const binding = process.atomBinding('ipc')
-const v8Util = process.atomBinding('v8_util')
+const binding = process.electronBinding('ipc')
+const v8Util = process.electronBinding('v8_util')
 
 // Created by init.js.
 export const ipcRendererInternal: Electron.IpcRendererInternal = v8Util.getHiddenValue(global, 'ipc-internal')

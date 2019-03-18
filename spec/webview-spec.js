@@ -12,7 +12,7 @@ const { emittedOnce, waitForEvent } = require('./events-helpers')
 const { expect } = chai
 chai.use(dirtyChai)
 
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 

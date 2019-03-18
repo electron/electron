@@ -10,7 +10,7 @@
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -70,9 +70,9 @@ int NodeMain(int argc, char* argv[]) {
 
     mate::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
-    process.SetMethod("log", &AtomBindings::Log);
+    process.SetMethod("log", &ElectronBindings::Log);
 #endif
-    process.SetMethod("crash", &AtomBindings::Crash);
+    process.SetMethod("crash", &ElectronBindings::Crash);
 
     // Setup process.crashReporter.start in child node processes
     auto reporter = mate::Dictionary::CreateEmpty(gin_env.isolate());

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_ATOM_BINDINGS_H_
-#define ATOM_COMMON_API_ATOM_BINDINGS_H_
+#ifndef ATOM_COMMON_API_ELECTRON_BINDINGS_H_
+#define ATOM_COMMON_API_ELECTRON_BINDINGS_H_
 
 #include <list>
 #include <memory>
@@ -32,13 +32,13 @@ class Environment;
 
 namespace atom {
 
-class AtomBindings {
+class ElectronBindings {
  public:
-  explicit AtomBindings(uv_loop_t* loop);
-  virtual ~AtomBindings();
+  explicit ElectronBindings(uv_loop_t* loop);
+  virtual ~ElectronBindings();
 
-  // Add process.atomBinding function, which behaves like process.binding but
-  // load native code from Electron instead.
+  // Add process.electronBinding function, which behaves like process.binding
+  // but load native code from Electron instead.
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 
   // Should be called when a node::Environment has been destroyed.
@@ -78,9 +78,9 @@ class AtomBindings {
   std::list<node::Environment*> pending_next_ticks_;
   std::unique_ptr<base::ProcessMetrics> metrics_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBindings);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBindings);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_API_ATOM_BINDINGS_H_
+#endif  // ATOM_COMMON_API_ELECTRON_BINDINGS_H_

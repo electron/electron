@@ -4,7 +4,7 @@
 
 #include "atom/renderer/web_worker_observer.h"
 
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
@@ -30,7 +30,7 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 
 WebWorkerObserver::WebWorkerObserver()
     : node_bindings_(NodeBindings::Create(NodeBindings::WORKER)),
-      atom_bindings_(new AtomBindings(node_bindings_->uv_loop())) {
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
   lazy_tls.Pointer()->Set(this);
 }
 
@@ -50,7 +50,7 @@ void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> context) {
   node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(env->isolate(), env->process_object());
+  electron_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

@@ -18,7 +18,7 @@ class Environment;
 
 namespace atom {
 
-class AtomBindings;
+class ElectronBindings;
 class NodeBindings;
 
 class AtomRendererClient : public RendererClientBase {
@@ -60,7 +60,7 @@ class AtomRendererClient : public RendererClientBase {
   bool node_integration_initialized_ = false;
 
   std::unique_ptr<NodeBindings> node_bindings_;
-  std::unique_ptr<AtomBindings> atom_bindings_;
+  std::unique_ptr<ElectronBindings> electron_bindings_;
 
   // The node::Environment::GetCurrent API does not return nullptr when it
   // is called for a context without node::Environment, so we have to keep

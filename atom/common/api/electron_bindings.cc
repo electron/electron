@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 
 #include <algorithm>
 #include <iostream>
@@ -43,25 +43,25 @@ struct DummyClass {
 // we can get the stack trace.
 void FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  AtomBindings::Crash();
+  ElectronBindings::Crash();
 }
 
 }  // namespace
 
-AtomBindings::AtomBindings(uv_loop_t* loop) {
+ElectronBindings::ElectronBindings(uv_loop_t* loop) {
   uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
   call_next_tick_async_.data = this;
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-AtomBindings::~AtomBindings() {
+ElectronBindings::~ElectronBindings() {
   uv_close(reinterpret_cast<uv_handle_t*>(&call_next_tick_async_), nullptr);
 }
 
 // static
-void AtomBindings::BindProcess(v8::Isolate* isolate,
-                               mate::Dictionary* process,
-                               base::ProcessMetrics* metrics) {
+void ElectronBindings::BindProcess(v8::Isolate* isolate,
+                                   mate::Dictionary* process,
+                                   base::ProcessMetrics* metrics) {
   // These bindings are shared between sandboxed & unsandboxed renderers
   process->SetMethod("crash", &Crash);
   process->SetMethod("hang", &Hang);
@@ -73,7 +73,7 @@ void AtomBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getSystemVersion",
                      &base::SysInfo::OperatingSystemVersion);
   process->SetMethod("getIOCounters", &GetIOCounters);
-  process->SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
+  process->SetMethod("getCPUUsage", base::Bind(&ElectronBindings::GetCPUUsage,
                                                base::Unretained(metrics)));
 
 #if defined(MAS_BUILD)
@@ -86,7 +86,8 @@ void AtomBindings::BindProcess(v8::Isolate* isolate,
 #endif
 }
 
-void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
+void ElectronBindings::BindTo(v8::Isolate* isolate,
+                              v8::Local<v8::Object> process) {
   isolate->SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
@@ -96,7 +97,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
 #endif
-  dict.SetMethod("activateUvLoop", base::Bind(&AtomBindings::ActivateUVLoop,
+  dict.SetMethod("activateUvLoop", base::Bind(&ElectronBindings::ActivateUVLoop,
                                               base::Unretained(this)));
 
   mate::Dictionary versions;
@@ -106,14 +107,14 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   }
 }
 
-void AtomBindings::EnvironmentDestroyed(node::Environment* env) {
+void ElectronBindings::EnvironmentDestroyed(node::Environment* env) {
   auto it =
       std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(), env);
   if (it != pending_next_ticks_.end())
     pending_next_ticks_.erase(it);
 }
 
-void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {
+void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
   node::Environment* env = node::Environment::GetCurrent(isolate);
   if (std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(), env) !=
       pending_next_ticks_.end())
@@ -124,8 +125,8 @@ void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {
 }
 
 // static
-void AtomBindings::OnCallNextTick(uv_async_t* handle) {
-  AtomBindings* self = static_cast<AtomBindings*>(handle->data);
+void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
+  ElectronBindings* self = static_cast<ElectronBindings*>(handle->data);
   for (std::list<node::Environment*>::const_iterator it =
            self->pending_next_ticks_.begin();
        it != self->pending_next_ticks_.end(); ++it) {
@@ -141,23 +142,23 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
 }
 
 // static
-void AtomBindings::Log(const base::string16& message) {
+void ElectronBindings::Log(const base::string16& message) {
   std::cout << message << std::flush;
 }
 
 // static
-void AtomBindings::Crash() {
+void ElectronBindings::Crash() {
   static_cast<DummyClass*>(nullptr)->crash = true;
 }
 
 // static
-void AtomBindings::Hang() {
+void ElectronBindings::Hang() {
   for (;;)
     base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
 }
 
 // static
-v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
+v8::Local<v8::Value> ElectronBindings::GetHeapStatistics(v8::Isolate* isolate) {
   v8::HeapStatistics v8_heap_stats;
   isolate->GetHeapStatistics(&v8_heap_stats);
 
@@ -187,7 +188,7 @@ v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
 }
 
 // static
-v8::Local<v8::Value> AtomBindings::GetCreationTime(v8::Isolate* isolate) {
+v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
   auto timeValue = base::Process::Current().CreationTime();
   if (timeValue.is_null()) {
     return v8::Null(isolate);
@@ -197,8 +198,9 @@ v8::Local<v8::Value> AtomBindings::GetCreationTime(v8::Isolate* isolate) {
 }
 
 // static
-v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
-                                                       mate::Arguments* args) {
+v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
+    v8::Isolate* isolate,
+    mate::Arguments* args) {
   base::SystemMemoryInfoKB mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
     args->ThrowError("Unable to retrieve system memory information");
@@ -228,7 +230,7 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 }
 
 // static
-v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
+v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
   util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -243,13 +245,13 @@ v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
           base::GetCurrentProcId(), std::vector<std::string>(),
-          base::BindOnce(&AtomBindings::DidReceiveMemoryDump,
+          base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
                          std::move(context), std::move(promise)));
   return handle;
 }
 
 // static
-void AtomBindings::DidReceiveMemoryDump(
+void ElectronBindings::DidReceiveMemoryDump(
     v8::Global<v8::Context> context,
     util::Promise promise,
     bool success,
@@ -290,8 +292,9 @@ void AtomBindings::DidReceiveMemoryDump(
 }
 
 // static
-v8::Local<v8::Value> AtomBindings::GetCPUUsage(base::ProcessMetrics* metrics,
-                                               v8::Isolate* isolate) {
+v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
+    base::ProcessMetrics* metrics,
+    v8::Isolate* isolate) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   int processor_count = base::SysInfo::NumberOfProcessors();
@@ -310,7 +313,7 @@ v8::Local<v8::Value> AtomBindings::GetCPUUsage(base::ProcessMetrics* metrics,
 }
 
 // static
-v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
+v8::Local<v8::Value> ElectronBindings::GetIOCounters(v8::Isolate* isolate) {
   auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
   base::IoCounters io_counters;
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
@@ -329,8 +332,8 @@ v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
 }
 
 // static
-bool AtomBindings::TakeHeapSnapshot(v8::Isolate* isolate,
-                                    const base::FilePath& file_path) {
+bool ElectronBindings::TakeHeapSnapshot(v8::Isolate* isolate,
+                                        const base::FilePath& file_path) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
   base::File file(file_path,

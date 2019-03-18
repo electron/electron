@@ -12,7 +12,7 @@ const remote = require('electron').remote
 
 const { ipcMain, BrowserWindow } = remote
 
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 
 describe('asar package', function () {
   const fixtures = path.join(__dirname, 'fixtures')

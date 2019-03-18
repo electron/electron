@@ -13,7 +13,7 @@ const { closeWindow, waitForWebContentsToLoad } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -83,7 +83,7 @@ describe('chromium feature', () => {
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
-      process.atomBinding('v8_util').takeHeapSnapshot()
+      process.electronBinding('v8_util').takeHeapSnapshot()
     })
   })
 

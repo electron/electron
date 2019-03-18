@@ -1,7 +1,7 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import { webFrame } from 'electron'
 
-const v8Util = process.atomBinding('v8_util')
+const v8Util = process.electronBinding('v8_util')
 
 const IsolatedWorldIDs = {
   /**

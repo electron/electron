@@ -23,7 +23,7 @@
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/browser/ui/devtools_manager_delegate.h"
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
@@ -234,7 +234,7 @@ AtomBrowserMainParts::AtomBrowserMainParts(
     : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
-      atom_bindings_(new AtomBindings(uv_default_loop())),
+      electron_bindings_(new ElectronBindings(uv_default_loop())),
       main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
@@ -323,7 +323,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_debugger_->Start();
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

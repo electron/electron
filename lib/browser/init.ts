@@ -162,7 +162,7 @@ require('@electron/internal/browser/chrome-devtools')
 // Load the chrome extension support.
 require('@electron/internal/browser/chrome-extension')
 
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 if (features.isDesktopCapturerEnabled()) {
   // Load internal desktop-capturer module.
   require('@electron/internal/browser/desktop-capturer')

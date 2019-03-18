@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { deprecate } from 'electron'
 
-const binding = process.atomBinding('web_frame')
+const binding = process.electronBinding('web_frame')
 
 class WebFrame extends EventEmitter {
   constructor (public context: Window) {

@@ -10,7 +10,7 @@ const { emittedOnce } = require('./events-helpers')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 const { ipcRenderer, remote, clipboard } = require('electron')
 const { BrowserWindow, webContents, ipcMain, session } = remote
 const { expect } = chai

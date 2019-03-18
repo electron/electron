@@ -3,8 +3,8 @@ import * as path from 'path'
 import * as electron from 'electron'
 import { EventEmitter } from 'events'
 
-const bindings = process.atomBinding('app')
-const commandLine = process.atomBinding('command_line')
+const bindings = process.electronBinding('app')
+const commandLine = process.electronBinding('command_line')
 const { app, App } = bindings
 
 // Only one app object permitted.
@@ -64,5 +64,5 @@ for (const name of events) {
 }
 
 // Wrappers for native classes.
-const { DownloadItem } = process.atomBinding('download_item')
+const { DownloadItem } = process.electronBinding('download_item')
 Object.setPrototypeOf(DownloadItem.prototype, EventEmitter.prototype)
