@@ -19,7 +19,7 @@
 #include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_process_impl.h"
-#include "atom/browser/feature_list.h"
+#include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
@@ -27,6 +27,7 @@
 #include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
+#include "atom/common/atom_extensions_client.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/base_switches.h"
@@ -345,6 +346,8 @@ int AtomBrowserMainParts::PreCreateThreads() {
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
+  extensions_browser_client_.reset();
+  extensions::ExtensionsBrowserClient::Set(nullptr);
 #if defined(OS_LINUX)
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
@@ -384,6 +387,19 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
+
+  extensions_client_ = std::make_unique<AtomExtensionsClient>();
+  extensions::ExtensionsClient::Set(extensions_client_.get());
+
+  // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
+  extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
+  extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
+
+  // TODO(samuelmaddock):
+  // extensions_browser_client_->InitWithBrowserContext(browser_context_.get(),
+  // user_pref_service_.get());
+  // BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(browser_context_.get());
+  // InitExtensionSystem();
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();

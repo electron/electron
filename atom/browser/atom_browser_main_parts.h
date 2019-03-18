@@ -29,8 +29,10 @@ class WMState;
 
 namespace atom {
 
-class ElectronBindings;
+class AtomExtensionsClient;
+class AtomExtensionsBrowserClient;
 class Browser;
+class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
@@ -126,6 +128,8 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<NodeDebugger> node_debugger_;
   std::unique_ptr<IconManager> icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
+  std::unique_ptr<AtomExtensionsClient> extensions_client_;
+  std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
 
   base::RepeatingTimer gc_timer_;
 
