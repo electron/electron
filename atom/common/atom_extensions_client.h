@@ -10,28 +10,40 @@
 #include "extensions/common/extensions_client.h"
 #include "url/gurl.h"
 
+namespace extensions {
+class APIPermissionSet;
+class Extension;
+class PermissionMessageProvider;
+class PermissionIDSet;
+class ScriptingWhitelist;
+class URLPatternSet;
+}  // namespace extensions
+
 namespace atom {
 
 // The app_shell implementation of ExtensionsClient.
 class AtomExtensionsClient : public extensions::ExtensionsClient {
  public:
+  typedef extensions::ExtensionsClient::ScriptingWhitelist ScriptingWhitelist;
+
   AtomExtensionsClient();
   ~AtomExtensionsClient() override;
 
   // ExtensionsClient overrides:
   void Initialize() override;
   void InitializeWebStoreUrls(base::CommandLine* command_line) override;
-  const PermissionMessageProvider& GetPermissionMessageProvider()
+  const extensions::PermissionMessageProvider& GetPermissionMessageProvider()
       const override;
   const std::string GetProductName() override;
-  void FilterHostPermissions(const URLPatternSet& hosts,
-                             URLPatternSet* new_hosts,
-                             PermissionIDSet* permissions) const override;
+  void FilterHostPermissions(
+      const extensions::URLPatternSet& hosts,
+      extensions::URLPatternSet* new_hosts,
+      extensions::PermissionIDSet* permissions) const override;
   void SetScriptingWhitelist(const ScriptingWhitelist& whitelist) override;
   const ScriptingWhitelist& GetScriptingWhitelist() const override;
-  URLPatternSet GetPermittedChromeSchemeHosts(
-      const Extension* extension,
-      const APIPermissionSet& api_permissions) const override;
+  extensions::URLPatternSet GetPermittedChromeSchemeHosts(
+      const extensions::Extension* extension,
+      const extensions::APIPermissionSet& api_permissions) const override;
   bool IsScriptableURL(const GURL& url, std::string* error) const override;
   bool ShouldSuppressFatalErrors() const override;
   void RecordDidSuppressFatalError() override;

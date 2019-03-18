@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "extensions/shell/common/shell_extensions_client.h"
+#include "atom/common/atom_extensions_client.h"
 
 #include <memory>
 #include <string>
 
+#include "atom/common/atom_extensions_api_provider.h"
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/macros.h"
@@ -17,7 +18,8 @@
 #include "extensions/common/features/simple_feature.h"
 #include "extensions/common/permissions/permission_message_provider.h"
 #include "extensions/common/url_pattern_set.h"
-#include "extensions/shell/common/shell_extensions_api_provider.h"
+
+using extensions::ExtensionsClient;
 
 namespace atom {
 
@@ -25,34 +27,36 @@ namespace {
 
 // TODO(jamescook): Refactor ChromePermissionsMessageProvider so we can share
 // code. For now, this implementation does nothing.
-class AtomPermissionMessageProvider : public PermissionMessageProvider {
+class AtomPermissionMessageProvider
+    : public extensions::PermissionMessageProvider {
  public:
   AtomPermissionMessageProvider() {}
   ~AtomPermissionMessageProvider() override {}
 
   // PermissionMessageProvider implementation.
-  PermissionMessages GetPermissionMessages(
-      const PermissionIDSet& permissions) const override {
-    return PermissionMessages();
+  extensions::PermissionMessages GetPermissionMessages(
+      const extensions::PermissionIDSet& permissions) const override {
+    return extensions::PermissionMessages();
   }
 
-  PermissionMessages GetPowerfulPermissionMessages(
-      const PermissionIDSet& permissions) const override {
-    return PermissionMessages();
+  extensions::PermissionMessages GetPowerfulPermissionMessages(
+      const extensions::PermissionIDSet& permissions) const override {
+    return extensions::PermissionMessages();
   }
 
-  bool IsPrivilegeIncrease(const PermissionSet& granted_permissions,
-                           const PermissionSet& requested_permissions,
-                           Manifest::Type extension_type) const override {
+  bool IsPrivilegeIncrease(
+      const extensions::PermissionSet& granted_permissions,
+      const extensions::PermissionSet& requested_permissions,
+      extensions::Manifest::Type extension_type) const override {
     // Ensure we implement this before shipping.
     CHECK(false);
     return false;
   }
 
-  PermissionIDSet GetAllPermissionIDs(
-      const PermissionSet& permissions,
-      Manifest::Type extension_type) const override {
-    return PermissionIDSet();
+  extensions::PermissionIDSet GetAllPermissionIDs(
+      const extensions::PermissionSet& permissions,
+      extensions::Manifest::Type extension_type) const override {
+    return extensions::PermissionIDSet();
   }
 
  private:
@@ -67,8 +71,8 @@ base::LazyInstance<AtomPermissionMessageProvider>::DestructorAtExit
 AtomExtensionsClient::AtomExtensionsClient()
     : webstore_base_url_(extension_urls::kChromeWebstoreBaseURL),
       webstore_update_url_(extension_urls::kChromeWebstoreUpdateURL) {
-  AddAPIProvider(std::make_unique<CoreExtensionsAPIProvider>());
-  AddAPIProvider(std::make_unique<ShellExtensionsAPIProvider>());
+  AddAPIProvider(std::make_unique<extensions::CoreExtensionsAPIProvider>());
+  AddAPIProvider(std::make_unique<AtomExtensionsAPIProvider>());
 }
 
 AtomExtensionsClient::~AtomExtensionsClient() {}
@@ -80,7 +84,7 @@ void AtomExtensionsClient::Initialize() {
 void AtomExtensionsClient::InitializeWebStoreUrls(
     base::CommandLine* command_line) {}
 
-const PermissionMessageProvider&
+const extensions::PermissionMessageProvider&
 AtomExtensionsClient::GetPermissionMessageProvider() const {
   NOTIMPLEMENTED();
   return g_permission_message_provider.Get();
@@ -92,14 +96,14 @@ const std::string AtomExtensionsClient::GetProductName() {
 }
 
 void AtomExtensionsClient::FilterHostPermissions(
-    const URLPatternSet& hosts,
-    URLPatternSet* new_hosts,
-    PermissionIDSet* permissions) const {
+    const extensions::URLPatternSet& hosts,
+    extensions::URLPatternSet* new_hosts,
+    extensions::PermissionIDSet* permissions) const {
   NOTIMPLEMENTED();
 }
 
 void AtomExtensionsClient::SetScriptingWhitelist(
-    const ScriptingWhitelist& whitelist) {
+    const ExtensionsClient::ScriptingWhitelist& whitelist) {
   scripting_whitelist_ = whitelist;
 }
 
@@ -109,11 +113,11 @@ AtomExtensionsClient::GetScriptingWhitelist() const {
   return scripting_whitelist_;
 }
 
-URLPatternSet AtomExtensionsClient::GetPermittedChromeSchemeHosts(
-    const Extension* extension,
-    const APIPermissionSet& api_permissions) const {
+extensions::URLPatternSet AtomExtensionsClient::GetPermittedChromeSchemeHosts(
+    const extensions::Extension* extension,
+    const extensions::APIPermissionSet& api_permissions) const {
   NOTIMPLEMENTED();
-  return URLPatternSet();
+  return extensions::URLPatternSet();
 }
 
 bool AtomExtensionsClient::IsScriptableURL(const GURL& url,

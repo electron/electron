@@ -14,8 +14,11 @@ namespace content {
 class RenderFrame;
 }
 
+namespace extensions {
+class Dispatcher;
+}
+
 namespace atom {
-class extensions::Dispatcher;
 
 class AtomExtensionsRendererClient
     : public extensions::ExtensionsRendererClient {

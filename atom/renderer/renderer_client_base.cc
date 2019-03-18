@@ -333,16 +333,16 @@ void RendererClientBase::RunScriptsAtDocumentStart(
   extensions_renderer_client_.get()->RunScriptsAtDocumentStart(render_frame);
 }
 
-void RendererClientBase::RunScriptsAtDocumentEnd(
-    content::RenderFrame* render_frame) {
-  // TODO(samuelmaddock):
-  extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
-}
-
 void RendererClientBase::RunScriptsAtDocumentIdle(
     content::RenderFrame* render_frame) {
   // TODO(samuelmaddock):
   extensions_renderer_client_.get()->RunScriptsAtDocumentIdle(render_frame);
+}
+
+void RendererClientBase::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+  // TODO(samuelmaddock):
+  extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
@@ -364,7 +364,7 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
   return script->Run(context).ToLocalChecked();
 }
 
-extensions::ExtensionsClient* AtomRendererClientBase::CreateExtensionsClient() {
+extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
   return new AtomExtensionsClient;
 }
 

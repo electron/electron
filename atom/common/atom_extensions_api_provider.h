@@ -10,7 +10,7 @@
 
 namespace atom {
 
-class AtomExtensionsAPIProvider : public ExtensionsAPIProvider {
+class AtomExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
  public:
   AtomExtensionsAPIProvider();
   ~AtomExtensionsAPIProvider() override;
@@ -24,7 +24,8 @@ class AtomExtensionsAPIProvider : public ExtensionsAPIProvider {
       extensions::JSONFeatureProviderSource* json_source) override;
   bool IsAPISchemaGenerated(const std::string& name) override;
   base::StringPiece GetAPISchema(const std::string& name) override;
-  void RegisterPermissions(PermissionsInfo* permissions_info) override;
+  void RegisterPermissions(
+      extensions::PermissionsInfo* permissions_info) override;
   void RegisterManifestHandlers() override;
 
  private:

@@ -5,20 +5,20 @@
 #include "atom/common/atom_extensions_api_provider.h"
 
 #include "extensions/common/features/json_feature_provider_source.h"
-#include "extensions/shell/common/api/generated_schemas.h"
-#include "extensions/shell/common/api/shell_api_features.h"
-#include "extensions/shell/grit/app_shell_resources.h"
+// #include "extensions/shell/common/api/generated_schemas.h"
+// #include "extensions/shell/common/api/shell_api_features.h"
+// #include "extensions/shell/grit/app_shell_resources.h"
 
 namespace atom {
 
 AtomExtensionsAPIProvider::AtomExtensionsAPIProvider() = default;
 AtomExtensionsAPIProvider::~AtomExtensionsAPIProvider() = default;
 
-// TODO(samuelmaddock): do we need to add any features?
+// TODO(samuelmaddock): generate API features?
 
 void AtomExtensionsAPIProvider::AddAPIFeatures(
     extensions::FeatureProvider* provider) {
-  AddShellAPIFeatures(provider);
+  // AddShellAPIFeatures(provider);
 }
 
 void AtomExtensionsAPIProvider::AddManifestFeatures(
@@ -38,20 +38,22 @@ void AtomExtensionsAPIProvider::AddBehaviorFeatures(
 
 void AtomExtensionsAPIProvider::AddAPIJSONSources(
     extensions::JSONFeatureProviderSource* json_source) {
-  json_source->LoadJSON(IDR_SHELL_EXTENSION_API_FEATURES);
+  // json_source->LoadJSON(IDR_SHELL_EXTENSION_API_FEATURES);
 }
 
 bool AtomExtensionsAPIProvider::IsAPISchemaGenerated(const std::string& name) {
-  return shell::api::ShellGeneratedSchemas::IsGenerated(name);
+  // return shell::api::ShellGeneratedSchemas::IsGenerated(name);
+  return false;
 }
 
 base::StringPiece AtomExtensionsAPIProvider::GetAPISchema(
     const std::string& name) {
-  return shell::api::ShellGeneratedSchemas::Get(name);
+  // return shell::api::ShellGeneratedSchemas::Get(name);
+  return "";
 }
 
 void AtomExtensionsAPIProvider::RegisterPermissions(
-    PermissionsInfo* permissions_info) {}
+    extensions::PermissionsInfo* permissions_info) {}
 
 void AtomExtensionsAPIProvider::RegisterManifestHandlers() {}
 

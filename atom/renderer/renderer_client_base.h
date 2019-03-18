@@ -18,10 +18,13 @@
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
+namespace extensions {
+class ExtensionsClient;
+}
+
 namespace atom {
 
 class PreferencesManager;
-class extensions::ExtensionsClient;
 class AtomExtensionsRendererClient;
 
 class RendererClientBase : public content::ContentRendererClient {
