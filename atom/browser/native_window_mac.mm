@@ -886,12 +886,12 @@ void NativeWindowMac::FlashFrame(bool flash) {
 
 void NativeWindowMac::SetSkipTaskbar(bool skip) {}
 
-bool NativeWindowMac::IsExcludedFromWindowsMenu() {
+bool NativeWindowMac::IsExcludedFromShownWindowsMenu() {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
   return [window isExcludedFromWindowsMenu];
 }
 
-void NativeWindowMac::SetExcludedFromWindowsMenu(bool excluded) {
+void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
   [window setExcludedFromWindowsMenu:excluded];
 }

@@ -1651,7 +1651,7 @@ removed in future Electron releases.
 
 ### Properties
 
-#### `win.excludedFromWindowsMenu` _macOS_
+#### `win.excludedFromShownWindowsMenu` _macOS_
 
 A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
 
@@ -1664,7 +1664,7 @@ const template = [
   }
 ]
 
-win.excludedFromWindowsMenu = true
+win.excludedFromShownWindowsMenu = true
 
 const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
