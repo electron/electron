@@ -6,6 +6,10 @@
 
 #include <utility>
 
+#include "atom/browser/extensions/api/runtime/shell_runtime_api_delegate.h"
+#include "atom/browser/extensions/shell_extension_host_delegate.h"
+#include "atom/browser/extensions/shell_extension_system_factory.h"
+#include "atom/browser/extensions/shell_extension_web_contents_observer.h"
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/task/post_task.h"
@@ -26,13 +30,9 @@
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
 #include "extensions/common/features/feature_channel.h"
-#include "extensions/shell/browser/api/runtime/shell_runtime_api_delegate.h"
-#include "extensions/shell/browser/shell_extension_host_delegate.h"
-#include "extensions/shell/browser/shell_extension_system_factory.h"
-#include "extensions/shell/browser/shell_extension_web_contents_observer.h"
-// #include "extensions/shell/browser/shell_extensions_api_client.h"
-// #include "extensions/shell/browser/shell_extensions_browser_api_provider.h"
-#include "extensions/shell/browser/shell_navigation_ui_data.h"
+// #include "atom/browser/extensions/shell_extensions_api_client.h"
+// #include "atom/browser/extensions/shell_extensions_browser_api_provider.h"
+#include "atom/browser/extensions/shell_navigation_ui_data.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
 using content::BrowserContext;
@@ -48,8 +48,9 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
   // enable all channel-dependent extension APIs.
   extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
 
-  AddAPIProvider(
-      std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
+  // TODO(samuelmaddock): undefined symbol for
+  // extensions::CoreExtensionsBrowserAPIProvider AddAPIProvider(
+  //     std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
   // AddAPIProvider(std::make_unique<ShellExtensionsBrowserAPIProvider>());
 }
 

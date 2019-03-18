@@ -609,7 +609,7 @@ static_library("electron_lib") {
 
   if (enable_electron_extensions) {
     deps += [
-      # "//extensions/browser",
+      "//extensions/browser",
       "//extensions/common",
       "//extensions/renderer",
     ]

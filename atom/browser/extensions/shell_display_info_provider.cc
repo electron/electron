@@ -1,0 +1,16 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "atom/browser/extensions/shell_display_info_provider.h"
+
+namespace extensions {
+
+ShellDisplayInfoProvider::ShellDisplayInfoProvider() = default;
+
+// static
+DisplayInfoProvider* DisplayInfoProvider::Create() {
+  return new ShellDisplayInfoProvider();
+}
+
+}  // namespace extensions
