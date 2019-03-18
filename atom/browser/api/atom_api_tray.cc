@@ -159,7 +159,17 @@ void Tray::SetToolTip(const std::string& tool_tip) {
 }
 
 void Tray::SetTitle(const std::string& title) {
+#if defined(OS_MACOSX)
   tray_icon_->SetTitle(title);
+#endif
+}
+
+std::string Tray::GetTitle() {
+#if defined(OS_MACOSX)
+  return tray_icon_->GetTitle();
+#else
+  return "";
+#endif
 }
 
 void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
@@ -227,6 +237,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
+      .SetMethod("getTitle", &Tray::GetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)

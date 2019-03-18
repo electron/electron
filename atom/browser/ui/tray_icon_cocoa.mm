@@ -235,6 +235,10 @@ const CGFloat kVerticalTitleMargin = 2;
   [self updateDimensions];
 }
 
+- (NSString*)title {
+  return title_;
+}
+
 - (void)updateAttributedTitle {
   NSDictionary* attributes =
       @{NSFontAttributeName : [NSFont menuBarFontOfSize:0]};
@@ -457,6 +461,10 @@ void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
 
 void TrayIconCocoa::SetTitle(const std::string& title) {
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
+}
+
+std::string TrayIconCocoa::GetTitle() {
+  return base::SysNSStringToUTF8([status_item_view_ title]);
 }
 
 void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
