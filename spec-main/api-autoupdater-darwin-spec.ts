@@ -64,7 +64,7 @@ describeFn('autoUpdater behavior', function () {
     return newPath
   }
 
-  const spawn = async (cmd: string, args: string[], opts: any = {}) => {
+  const spawn = (cmd: string, args: string[], opts: any = {}) => {
     let out = ''
     const child = cp.spawn(cmd, args, opts)
     child.stdout.on('data', (chunk: Buffer) => {
@@ -73,7 +73,7 @@ describeFn('autoUpdater behavior', function () {
     child.stderr.on('data', (chunk: Buffer) => {
       out += chunk.toString()
     })
-    return await new Promise<{ code: number, out: string }>((resolve) => {
+    return new Promise<{ code: number, out: string }>((resolve) => {
       child.on('exit', (code, signal) => {
         expect(signal).to.equal(null)
         resolve({
@@ -88,7 +88,7 @@ describeFn('autoUpdater behavior', function () {
     return spawn('codesign', ['-s', identity, '--deep', '--force', appPath])
   }
 
-  const launchApp = async (appPath: string, args: string[] = []) => {
+  const launchApp = (appPath: string, args: string[] = []) => {
     return spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args)
   }
 
@@ -96,11 +96,9 @@ describeFn('autoUpdater behavior', function () {
     const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'))
     try {
       await fn(dir)
-    } catch (err) {
+    } finally {
       cp.execSync(`rm -r "${dir}"`)
-      throw err
     }
-    cp.execSync(`rm -r "${dir}"`)
   }
 
   const logOnError = (what: any, fn: () => void) => {
