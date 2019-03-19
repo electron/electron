@@ -7,11 +7,14 @@
 #include <utility>
 #include <vector>
 
+#include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/threading/thread_restrictions.h"
 #include "electron/atom/common/api/event_emitter_caller.h"
 #include "electron/atom/common/node_includes.h"
 #include "electron/atom/common/options_switches.h"
 #include "electron/atom/renderer/atom_render_frame_observer.h"
+#include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -145,6 +148,25 @@ void ElectronApiServiceImpl::Message(bool internal,
       }
   }
   */
+}
+
+void ElectronApiServiceImpl::TakeHeapSnapshot(
+    mojo::ScopedHandle file,
+    TakeHeapSnapshotCallback callback) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  base::PlatformFile platform_file;
+  if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
+      MOJO_RESULT_OK) {
+    LOG(ERROR) << "Unable to get the file handle from mojo.";
+    std::move(callback).Run(false);
+    return;
+  }
+  base::File base_file(platform_file);
+
+  bool success = atom::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);
+
+  std::move(callback).Run(success);
 }
 
 }  // namespace atom

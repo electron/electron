@@ -91,42 +91,6 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                        preloadSrc);
 }
 
-class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
- public:
-  AtomSandboxedRenderFrameObserver(content::RenderFrame* render_frame,
-                                   AtomSandboxedRendererClient* renderer_client)
-      : AtomRenderFrameObserver(render_frame, renderer_client),
-        renderer_client_(renderer_client) {}
-
- protected:
-  void EmitIPCEvent(blink::WebLocalFrame* frame,
-                    bool internal,
-                    const std::string& channel,
-                    const base::ListValue& args,
-                    int32_t sender_id) override {
-    if (!frame)
-      return;
-
-    auto* isolate = blink::MainThreadIsolate();
-    v8::HandleScope handle_scope(isolate);
-
-    auto context = renderer_client_->GetContext(frame, isolate);
-    v8::Context::Scope context_scope(context);
-
-    v8::Local<v8::Value> argv[] = {mate::ConvertToV8(isolate, internal),
-                                   mate::ConvertToV8(isolate, channel),
-                                   mate::ConvertToV8(isolate, args),
-                                   mate::ConvertToV8(isolate, sender_id)};
-    renderer_client_->InvokeIpcCallback(
-        context, "onMessage",
-        std::vector<v8::Local<v8::Value>>(argv, argv + node::arraysize(argv)));
-  }
-
- private:
-  AtomSandboxedRendererClient* renderer_client_;
-  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderFrameObserver);
-};
-
 }  // namespace
 
 AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
@@ -166,7 +130,7 @@ void AtomSandboxedRendererClient::InitializeBindings(
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomSandboxedRenderFrameObserver(render_frame, this);
+  new AtomRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 

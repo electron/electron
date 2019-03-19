@@ -8,6 +8,8 @@ interface ElectronRenderer {
       string channel,
       mojo_base.mojom.ListValue arguments,
       int32 sender_id);
+
+  TakeHeapSnapshot(handle file) => (bool success);
 };
 
 interface ElectronBrowser {
@@ -21,5 +23,4 @@ interface ElectronBrowser {
     bool internal,
     string channel,
     mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
-
 };

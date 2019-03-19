@@ -26,6 +26,9 @@ class ElectronApiServiceImpl : public electron_api::mojom::ElectronRenderer,
                base::Value arguments,
                int32_t sender_id) override;
 
+  void TakeHeapSnapshot(mojo::ScopedHandle file,
+                        TakeHeapSnapshotCallback callback) override;
+
  private:
   ~ElectronApiServiceImpl() override;
   ElectronApiServiceImpl(

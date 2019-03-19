@@ -51,26 +51,13 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
-  bool OnMessageReceived(const IPC::Message& message) override;
   void DidCreateDocumentElement() override;
-
- protected:
-  virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
-                            bool internal,
-                            const std::string& channel,
-                            const base::ListValue& args,
-                            int32_t sender_id);
 
  private:
   bool ShouldNotifyClient(int world_id);
   void CreateIsolatedWorldContext();
   bool IsMainWorld(int world_id);
   bool IsIsolatedWorld(int world_id);
-  void OnBrowserMessage(bool internal,
-                        bool send_to_all,
-                        const std::string& channel,
-                        const base::ListValue& args,
-                        int32_t sender_id);
   void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
                           const std::string& channel);
 

@@ -67,7 +67,3 @@ IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
                     GURL /* url */,
                     content::Referrer /* referrer */)
-
-IPC_MESSAGE_ROUTED2(AtomFrameMsg_TakeHeapSnapshot,
-                    IPC::PlatformFileForTransit /* file_handle */,
-                    std::string /* channel */)
