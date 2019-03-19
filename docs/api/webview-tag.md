@@ -137,7 +137,7 @@ This option is disabled by default in the guest page.
 ```
 
 When this attribute is `false` the guest page in `webview` will not have access
-to the [`remote`](remote.md) module. The remote module is avaiable by default.
+to the [`remote`](remote.md) module. The remote module is available by default.
 
 ### `plugins`
 
