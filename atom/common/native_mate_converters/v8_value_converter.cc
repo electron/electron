@@ -334,11 +334,10 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8ValueImpl(
                                           v8::NewStringType::kNormal)
                       .ToLocalChecked());
     if (toISOString->IsFunction()) {
-      v8::Local<v8::Value> result = toISOString.As<v8::Function>()
-                                        ->Call(context, val, 0, nullptr)
-                                        .ToLocalChecked();
+      v8::MaybeLocal<v8::Value> result =
+          toISOString.As<v8::Function>()->Call(context, val, 0, nullptr);
       if (!result.IsEmpty()) {
-        v8::String::Utf8Value utf8(isolate, result);
+        v8::String::Utf8Value utf8(isolate, result.ToLocalChecked());
         return std::make_unique<base::Value>(std::string(*utf8, utf8.length()));
       }
     }
