@@ -20,3 +20,6 @@ security list-keychains -s mac-build.keychain
 
 echo "Settting key partition list"
 security set-key-partition-list -S apple-tool:,apple: -s -k $KEYCHAIN_PASSWORD $KEY_CHAIN
+
+echo "Trusting self-signed certificate"
+sudo security trust-settings-import -d $(dirname $0)/trust-settings.plist
