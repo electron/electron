@@ -20,6 +20,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_process_impl.h"
 #include "atom/browser/extensions/atom_extensions_browser_client.h"
+#include "atom/browser/extensions/shell_extension_system.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
@@ -394,6 +395,26 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
   extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
   extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
+
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch("load-extension")) {
+    // TODO(samuelmaddock): move into InitExtensionSystem
+    auto browser_context = AtomBrowserContext::From("", false);
+
+    extensions_browser_client_->InitWithBrowserContext(
+        browser_context.get(), browser_context.get()->prefs());
+    // BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(browser_context.get());
+
+    extensions::ShellExtensionSystem* extension_system =
+        static_cast<extensions::ShellExtensionSystem*>(
+            extensions::ExtensionSystem::Get(browser_context.get()));
+    extension_system->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system->FinishInitialization();
+
+    auto load_extension = cmd_line->GetSwitchValueASCII("load-extension");
+    auto extension_path = base::FilePath::FromUTF8Unsafe(load_extension);
+    extension_system->LoadExtension(extension_path);
+  }
 
   // TODO(samuelmaddock):
   // extensions_browser_client_->InitWithBrowserContext(browser_context_.get(),

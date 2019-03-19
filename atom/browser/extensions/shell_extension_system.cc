@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "extensions/shell/browser/shell_extension_system.h"
+#include "atom/browser/extensions/shell_extension_system.h"
 
 #include <memory>
 #include <string>
 
-#include "apps/launcher.h"
 #include "atom/browser/extensions/shell_extension_loader.h"
 #include "base/bind.h"
 #include "base/files/file_path.h"

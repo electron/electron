@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "extensions/shell/browser/api/runtime/shell_runtime_api_delegate.h"
+#include "atom/browser/extensions/api/runtime/shell_runtime_api_delegate.h"
 
 #include "build/build_config.h"
 #include "extensions/common/api/runtime.h"

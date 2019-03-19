@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "extensions/shell/browser/shell_navigation_ui_data.h"
+#include "atom/browser/extensions/shell_navigation_ui_data.h"
 
 #include "content/public/browser/navigation_handle.h"
 #include "extensions/common/constants.h"

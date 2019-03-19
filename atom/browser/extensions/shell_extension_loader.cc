@@ -4,7 +4,6 @@
 
 #include "atom/browser/extensions/shell_extension_loader.h"
 
-#include "apps/launcher.h"
 #include "base/auto_reset.h"
 #include "base/bind.h"
 #include "base/files/file_path.h"
