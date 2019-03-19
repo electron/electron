@@ -100,6 +100,8 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   binding_.Bind(std::move(request));
+  binding_.set_connection_error_handler(base::BindOnce(
+      &ElectronApiServiceImpl::OnDestruct, base::Unretained(this)));
 }
 
 // static
