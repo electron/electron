@@ -12,7 +12,7 @@ const features = process.atomBinding('features')
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures')
 
 // We can only test the auto updater on darwin non-component builds
-const describeFn = (process.platform === 'darwin' && !process.mas && !features.isComponentBuild() ? describe.only : describe.skip)
+const describeFn = (process.platform === 'darwin' && !process.mas && !features.isComponentBuild() ? describe : describe.skip)
 
 describeFn('autoUpdater behavior', function () {
   this.timeout(120000)

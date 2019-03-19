@@ -206,7 +206,7 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
-    name: Install NPM Dependencies on MacOS
+    name: Import and trust self-signed codesigning cert on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
