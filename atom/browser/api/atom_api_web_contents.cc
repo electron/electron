@@ -79,6 +79,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
 #include "electron/atom/common/api/api.mojom.h"
+#include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -2083,7 +2084,7 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 }
 
 bool WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
-                                   const std::string& channel) {
+                                   base::Callback<void(bool)> callback) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
   base::File file(file_path,
@@ -2095,9 +2096,12 @@ bool WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
   if (!frame_host)
     return false;
 
-  return frame_host->Send(new AtomFrameMsg_TakeHeapSnapshot(
-      frame_host->GetRoutingID(),
-      IPC::TakePlatformFileForTransit(std::move(file)), channel));
+  electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
+  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&electron_ptr));
+  electron_ptr->TakeHeapSnapshot(
+      mojo::WrapPlatformFile(file.TakePlatformFile()), callback);
+  return true;
 }
 
 // static
