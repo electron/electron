@@ -13,6 +13,9 @@
 #include "electron/atom/common/api/api.mojom.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
+#include "native_mate/handle.h"
+#include "native_mate/object_template_builder.h"
+#include "native_mate/wrappable.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -29,36 +32,46 @@ RenderFrame* GetCurrentRenderFrame() {
   return RenderFrame::FromWebFrame(frame);
 }
 
-void Send(mate::Arguments* args,
-          bool internal,
-          const std::string& channel,
-          const base::ListValue& arguments) {
-  RenderFrame* render_frame = GetCurrentRenderFrame();
-  if (render_frame == nullptr)
-    return;
+class IPCRenderer : public mate::Wrappable<IPCRenderer> {
+ public:
+  explicit IPCRenderer(v8::Isolate* isolate) {
+    Init(isolate);
+    RenderFrame* render_frame = GetCurrentRenderFrame();
+    DCHECK(render_frame);
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+        mojo::MakeRequest(&electron_browser_ptr_));
+  }
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype) {
+    prototype->SetClassName(mate::StringToV8(isolate, "IPCRenderer"));
+    mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+        .SetMethod("send", &IPCRenderer::Send)
+        .SetMethod("sendSync", &IPCRenderer::SendSync);
+  }
+  static mate::Handle<IPCRenderer> Create(v8::Isolate* isolate) {
+    return mate::CreateHandle(isolate, new IPCRenderer(isolate));
+  }
 
-  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
-  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, channel, arguments.Clone());
-}
+  void Send(mate::Arguments* args,
+            bool internal,
+            const std::string& channel,
+            const base::ListValue& arguments) {
+    electron_browser_ptr_->Message(internal, channel, arguments.Clone());
+  }
 
-base::Value SendSync(mate::Arguments* args,
-                     bool internal,
-                     const std::string& channel,
-                     const base::ListValue& arguments) {
-  base::Value result;
-
-  RenderFrame* render_frame = GetCurrentRenderFrame();
-  if (render_frame == nullptr)
+  base::Value SendSync(mate::Arguments* args,
+                       bool internal,
+                       const std::string& channel,
+                       const base::ListValue& arguments) {
+    base::Value result;
+    electron_browser_ptr_->MessageSync(internal, channel, arguments.Clone(),
+                                       &result);
     return result;
+  }
 
-  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
-  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(&electron_ptr));
-  electron_ptr->MessageSync(internal, channel, arguments.Clone(), &result);
-  return result;
-}
+ private:
+  electron_api::mojom::ElectronBrowserAssociatedPtr electron_browser_ptr_;
+};
 
 void SendTo(mate::Arguments* args,
             bool internal,
@@ -97,8 +110,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("send", &Send);
-  dict.SetMethod("sendSync", &SendSync);
+  dict.Set("ipc", IPCRenderer::Create(context->GetIsolate()));
   dict.SetMethod("sendTo", &SendTo);
   dict.SetMethod("sendToHost", &SendToHost);
 }
