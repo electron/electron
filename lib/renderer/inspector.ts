@@ -1,4 +1,3 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import { invoke, invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 window.onload = function () {
@@ -23,14 +22,6 @@ function completeURL (project: string, path: string) {
   return invokeSync('ELECTRON_INSPECTOR_CONFIRM', message, title) as boolean
 }
 
-ipcRendererInternal.on('ELECTRON_INSPECTOR_CONTEXT_MENU_CLICK', function (_event: Electron.Event, id: number) {
-  window.DevToolsAPI!.contextMenuItemSelected(id)
-})
-
-ipcRendererInternal.on('ELECTRON_INSPECTOR_CONTEXT_MENU_CLOSE', function () {
-  window.DevToolsAPI!.contextMenuCleared()
-})
-
 const useEditMenuItems = function (x: number, y: number, items: any[]) {
   return items.length === 0 && document.elementsFromPoint(x, y).some(function (element) {
     return element.nodeName === 'INPUT' ||
@@ -41,7 +32,12 @@ const useEditMenuItems = function (x: number, y: number, items: any[]) {
 
 const createMenu = function (x: number, y: number, items: any[]) {
   const isEditMenu = useEditMenuItems(x, y, items)
-  invoke('ELECTRON_INSPECTOR_CONTEXT_MENU', items, isEditMenu)
+  invoke<number>('ELECTRON_INSPECTOR_CONTEXT_MENU', items, isEditMenu).then(id => {
+    if (typeof id === 'number') {
+      window.DevToolsAPI!.contextMenuItemSelected(id)
+    }
+    window.DevToolsAPI!.contextMenuCleared()
+  })
 }
 
 const showFileChooserDialog = function (callback: (blob: File) => void) {
