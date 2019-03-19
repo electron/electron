@@ -6,7 +6,7 @@ import * as net from 'net'
 import * as fs from 'fs'
 import * as path from 'path'
 import split = require('split')
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, ipcRenderer } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
@@ -292,56 +292,56 @@ describe('app module', () => {
     })
   })
 
-  // xdescribe('app.importCertificate', () => {
-  //   let w = null
+  describe('app.importCertificate', () => {
+    let w: BrowserWindow | null = null as any
 
-  //   before(function () {
-  //     if (process.platform !== 'linux') {
-  //       this.skip()
-  //     }
-  //   })
+    before(function () {
+      if (process.platform !== 'linux') {
+        this.skip()
+      }
+    })
 
-  //   afterEach(() => closeWindow(w).then(() => { w = null }))
+    afterEach(() => closeWindow(w).then(() => { w = null }))
 
-  //   it('can import certificate into platform cert store', done => {
-  //     const options = {
-  //       certificate: path.join(certPath, 'client.p12'),
-  //       password: 'electron'
-  //     }
+    it('can import certificate into platform cert store', done => {
+      const options = {
+        certificate: path.join(certPath, 'client.p12'),
+        password: 'electron'
+      }
 
-  //     w = new BrowserWindow({
-  //       show: false,
-  //       webPreferences: {
-  //         nodeIntegration: true
-  //       }
-  //     })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
-  //     w.webContents.on('did-finish-load', () => {
-  //       expect(w.webContents.getTitle()).to.equal('authorized')
-  //       done()
-  //     })
+      w.webContents.on('did-finish-load', () => {
+        expect(w!.webContents.getTitle()).to.equal('authorized')
+        done()
+      })
 
-  //     ipcRenderer.once('select-client-certificate', (event, webContentsId, list) => {
-  //       expect(webContentsId).to.equal(w.webContents.id)
-  //       expect(list).to.have.lengthOf(1)
+      ipcRenderer.once('select-client-certificate', (event, webContentsId, list) => {
+        expect(webContentsId).to.equal(w!.webContents.id)
+        expect(list).to.have.lengthOf(1)
 
-  //       expect(list[0]).to.deep.equal({
-  //         issuerName: 'Intermediate CA',
-  //         subjectName: 'Client Cert',
-  //         issuer: { commonName: 'Intermediate CA' },
-  //         subject: { commonName: 'Client Cert' }
-  //       })
+        expect(list[0]).to.deep.equal({
+          issuerName: 'Intermediate CA',
+          subjectName: 'Client Cert',
+          issuer: { commonName: 'Intermediate CA' },
+          subject: { commonName: 'Client Cert' }
+        })
 
-  //       event.sender.send('client-certificate-response', list[0])
-  //     })
+        event.sender.send('client-certificate-response', list[0])
+      })
 
-  //     app.importCertificate(options, result => {
-  //       expect(result).toNotExist()
-  //       ipcRenderer.sendSync('set-client-certificate-option', false)
-  //       w.loadURL(secureUrl)
-  //     })
-  //   })
-  // })
+      app.importCertificate(options, result => {
+        expect(result).to.not.exist
+        ipcRenderer.sendSync('set-client-certificate-option', false)
+        w!.loadURL(secureUrl)
+      })
+    })
+  })
 
   describe('BrowserWindow events', () => {
     let w: BrowserWindow = null as any

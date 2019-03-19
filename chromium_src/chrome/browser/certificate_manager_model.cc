@@ -120,7 +120,10 @@ bool CertificateManagerModel::SetCertTrust(
     CERTCertificate* cert,
     net::CertType type,
     net::NSSCertDatabase::TrustBits trust_bits) {
-  return cert_db_->SetCertTrust(cert, type, trust_bits);
+  CertsSource* certs_source = FindCertsSourceForCert(cert);
+  if (!certs_source)
+    return false;
+  return certs_source->SetCertTrust(cert, type, trust_bits);
 }
 
 bool CertificateManagerModel::Delete(CERTCertificate* cert) {
@@ -157,9 +160,16 @@ void CertificateManagerModel::GetCertDBOnIOThread(
     content::ResourceContext* context,
     const CreationCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  auto did_get_cert_db_callback = base::AdaptCallbackForRepeating(
+      base::BindOnce(&CertificateManagerModel::DidGetCertDBOnIOThread,
+                     std::move(params), observer, callback));
+
   net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
-      context,
-      base::Bind(&CertificateManagerModel::DidGetCertDBOnIOThread, callback));
+      resource_context, did_get_cert_db_callback);
+
+  // If the NSS database was already available, |cert_db| is non-null and
+  // |did_get_cert_db_callback| has not been called. Call it explicitly.
   if (cert_db)
-    DidGetCertDBOnIOThread(callback, cert_db);
+    did_get_cert_db_callback.Run(cert_db);
 }

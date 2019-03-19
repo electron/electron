@@ -107,6 +107,7 @@ class CertificateManagerModel {
                                   const CreationCallback& callback);
 
   net::NSSCertDatabase* cert_db_;
+
   // Whether the certificate database has a public slot associated with the
   // profile. If not set, importing certificates is not allowed with this model.
   bool is_user_db_available_;
