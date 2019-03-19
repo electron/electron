@@ -28,25 +28,6 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
           .RequireCapability("proxy_resolver", "factory")
           .RequireCapability("chrome_printing", "converter")
           .RequireCapability("pdf_compositor", "compositor")
-          .RequireCapability(content::mojom::kRendererServiceName,
-                             "electron_api")
-          .Build()};
-  return *manifest;
-}
-
-const service_manager::Manifest& GetElectronContentRendererOverlayManifest() {
-  static base::NoDestructor<service_manager::Manifest> manifest{
-      service_manager::ManifestBuilder()
-          .WithDisplayName("Electron (renderer process)")
-          .ExposeCapability("electron_api",
-                            std::set<const char*>{
-                                "electron_api.mojom.Electron",
-                            })
-          .ExposeInterfaceFilterCapability_Deprecated(
-              "navigation:frame", "browser",
-              std::set<const char*>{
-                  "electron_api.mojom.Electron",
-              })
           .Build()};
   return *manifest;
 }

@@ -710,8 +710,6 @@ base::Optional<service_manager::Manifest>
 AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   if (name == content::mojom::kBrowserServiceName) {
     return GetElectronContentBrowserOverlayManifest();
-  } else if (name == content::mojom::kRendererServiceName) {
-    return GetElectronContentRendererOverlayManifest();
   } else if (name == content::mojom::kPackagedServicesServiceName) {
     service_manager::Manifest overlay;
     overlay.packaged_services = GetElectronPackagedServicesOverlayManifest();

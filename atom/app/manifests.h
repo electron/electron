@@ -10,7 +10,6 @@
 #include "services/service_manager/public/cpp/manifest.h"
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest();
-const service_manager::Manifest& GetElectronContentRendererOverlayManifest();
 const std::vector<service_manager::Manifest>&
 GetElectronPackagedServicesOverlayManifest();
 
