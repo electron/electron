@@ -101,7 +101,7 @@ The following methods are available on instances of `Session`:
 
 Callback is invoked with the session's current cache size.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.getCacheSize()`
 
@@ -114,7 +114,7 @@ Returns `Promise<Integer>` - the session's current cache size, in bytes.
 
 Clears the session’s HTTP cache.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearCache()`
 
@@ -136,7 +136,7 @@ Clears the session’s HTTP cache.
 
 Clears the storage data for the current session.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearStorageData([options])`
 
@@ -231,7 +231,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match local addresses. The meaning of `<local>` is whether the
    host matches one of: "127.0.0.1", "::1", "localhost".
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.setProxy(config)`
 
@@ -319,7 +319,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.resolveProxy(url)`
 
@@ -463,7 +463,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 Clears the host resolver cache.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearHostResolverCache()`
 
@@ -512,7 +512,7 @@ Returns `String` - The user agent for this session.
 * `callback` Function
   * `result` Buffer - Blob data.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.getBlobData(identifier)`
 
@@ -546,7 +546,7 @@ the initial state will be `interrupted`. The download will start only when the
 
 Clears the session’s HTTP authentication cache.
 
-**[Deprecated Soon](promisification.md)**
+**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearAuthCache(options)`
 
