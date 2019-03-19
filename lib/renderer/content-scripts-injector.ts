@@ -45,7 +45,7 @@ const runContentScript = function (this: any, extensionId: string, url: string, 
   })
 
   const sources = [{ code, url }]
-  webFrame.executeJavaScriptInIsolatedWorld(worldId, sources)
+  return webFrame.executeJavaScriptInIsolatedWorld(worldId, sources)
 }
 
 const runAllContentScript = function (scripts: Array<Electron.InjectionBase>, extensionId: string) {
@@ -102,8 +102,9 @@ ipcRendererInternal.on('CHROME_TABS_EXECUTESCRIPT', function (
   url: string,
   code: string
 ) {
-  const result = runContentScript.call(window, extensionId, url, code)
-  ipcRendererInternal.sendToAll(senderWebContentsId, `CHROME_TABS_EXECUTESCRIPT_RESULT_${requestId}`, result)
+  runContentScript.call(window, extensionId, url, code).then(result => {
+    ipcRendererInternal.sendToAll(senderWebContentsId, `CHROME_TABS_EXECUTESCRIPT_RESULT_${requestId}`, result)
+  })
 })
 
 module.exports = (getRenderProcessPreferences: typeof process.getRenderProcessPreferences) => {
