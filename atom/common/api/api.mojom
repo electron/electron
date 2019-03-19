@@ -2,10 +2,24 @@ module electron_api.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
 
-interface Electron {
+interface ElectronRenderer {
   Message(
       bool internal,
       string channel,
       mojo_base.mojom.ListValue arguments,
       int32 sender_id);
+};
+
+interface ElectronBrowser {
+  Message(
+      bool internal,
+      string channel,
+      mojo_base.mojom.ListValue arguments);
+
+  [Sync]
+  MessageSync(
+    bool internal,
+    string channel,
+    mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
+
 };

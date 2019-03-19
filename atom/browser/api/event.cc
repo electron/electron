@@ -20,11 +20,11 @@ Event::Event(v8::Isolate* isolate) {
 Event::~Event() {}
 
 void Event::SetSenderAndMessage(content::RenderFrameHost* sender,
-                                IPC::Message* message) {
+                                base::Optional<MessageSyncCallback> callback) {
   DCHECK(!sender_);
-  DCHECK(!message_);
+  DCHECK(!callback_);
   sender_ = sender;
-  message_ = message;
+  callback_ = std::move(callback);
 
   Observe(content::WebContents::FromRenderFrameHost(sender));
 }
@@ -33,7 +33,7 @@ void Event::RenderFrameDeleted(content::RenderFrameHost* rfh) {
   if (sender_ != rfh)
     return;
   sender_ = nullptr;
-  message_ = nullptr;
+  callback_.reset();
 }
 
 void Event::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
@@ -46,7 +46,7 @@ void Event::FrameDeleted(content::RenderFrameHost* rfh) {
   if (sender_ != rfh)
     return;
   sender_ = nullptr;
-  message_ = nullptr;
+  callback_.reset();
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
@@ -54,14 +54,11 @@ void Event::PreventDefault(v8::Isolate* isolate) {
 }
 
 bool Event::SendReply(const base::ListValue& result) {
-  if (message_ == nullptr || sender_ == nullptr)
+  if (!callback_ || sender_ == nullptr)
     return false;
 
-  AtomFrameHostMsg_Message_Sync::WriteReplyParams(message_, result);
-  bool success = sender_->Send(message_);
-  message_ = nullptr;
-  sender_ = nullptr;
-  return success;
+  std::move(*callback_).Run(result.Clone());
+  return true;
 }
 
 // static

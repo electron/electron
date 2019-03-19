@@ -25,17 +25,6 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
 
-IPC_MESSAGE_ROUTED3(AtomFrameHostMsg_Message,
-                    bool /* internal */,
-                    std::string /* channel */,
-                    base::ListValue /* arguments */)
-
-IPC_SYNC_MESSAGE_ROUTED3_1(AtomFrameHostMsg_Message_Sync,
-                           bool /* internal */,
-                           std::string /* channel */,
-                           base::ListValue /* arguments */,
-                           base::ListValue /* result */)
-
 IPC_MESSAGE_ROUTED5(AtomFrameHostMsg_Message_To,
                     bool /* internal */,
                     bool /* send_to_all */,

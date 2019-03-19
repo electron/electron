@@ -19,10 +19,13 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
+#include "mojo/public/cpp/bindings/associated_binding.h"
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -233,8 +236,10 @@ void AtomRenderFrameObserver::OnTakeHeapSnapshot(
   base::ListValue args;
   args.AppendBoolean(success);
 
-  render_frame_->Send(new AtomFrameHostMsg_Message(
-      render_frame_->GetRoutingID(), true, channel, args));
+  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
+  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&electron_ptr));
+  electron_ptr->Message(true, channel, args.Clone());
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,

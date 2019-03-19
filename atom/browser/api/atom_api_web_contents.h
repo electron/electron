@@ -19,8 +19,10 @@
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "printing/buildflags/buildflags.h"
@@ -462,6 +464,41 @@ class WebContents : public mate::TrackableObject<WebContents>,
 #endif
 
  private:
+  // Handles IPC messages from a specific RenderFrame. Created lazily.
+  // TODO(nornagon): this probably shouldn't be tied to the api::WebContents.
+  // Message/MessageSync are api::WebContents-specific but it's also totally
+  // plausible that there would be IPC messages that could be handled by the
+  // browser process that don't require an api::WebContents to exist.
+  class IPCHandler : public electron_api::mojom::ElectronBrowser,
+                     public content::WebContentsUserData<IPCHandler> {
+   public:
+    ~IPCHandler() override;
+
+    void Message(bool internal,
+                 const std::string& channel,
+                 base::Value arguments) override;
+    void MessageSync(bool internal,
+                     const std::string& channel,
+                     base::Value arguments,
+                     MessageSyncCallback callback) override;
+
+    static void CreateForWebContentsWithApiWebContents(
+        content::WebContents* web_contents,
+        WebContents* api_web_contents);
+
+   private:
+    IPCHandler(content::WebContents* web_contents,
+               WebContents* api_web_contents);
+    friend class content::WebContentsUserData<IPCHandler>;
+
+    WebContents* api_web_contents_;
+    content::WebContentsFrameBindingSet<electron_api::mojom::ElectronBrowser>
+        bindings_;
+
+    WEB_CONTENTS_USER_DATA_KEY_DECL();
+  };
+  friend class IPCHandler;
+
   struct FrameDispatchHelper;
   AtomBrowserContext* GetBrowserContext() const;
 
@@ -479,14 +516,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnRendererMessage(content::RenderFrameHost* frame_host,
                          bool internal,
                          const std::string& channel,
-                         const base::ListValue& args);
+                         const base::Value& args);
 
   // Called when received a synchronous message from renderer.
-  void OnRendererMessageSync(content::RenderFrameHost* frame_host,
-                             bool internal,
-                             const std::string& channel,
-                             const base::ListValue& args,
-                             IPC::Message* message);
+  void OnRendererMessageSync(
+      content::RenderFrameHost* frame_host,
+      bool internal,
+      const std::string& channel,
+      const base::Value& args,
+      electron_api::mojom::ElectronBrowser::MessageSyncCallback callback);
 
   // Called when received a message from renderer to be forwarded.
   void OnRendererMessageTo(content::RenderFrameHost* frame_host,

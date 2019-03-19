@@ -10,8 +10,10 @@
 #include "atom/common/node_includes.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
@@ -35,30 +37,26 @@ void Send(mate::Arguments* args,
   if (render_frame == nullptr)
     return;
 
-  bool success = render_frame->Send(new AtomFrameHostMsg_Message(
-      render_frame->GetRoutingID(), internal, channel, arguments));
-
-  if (!success)
-    args->ThrowError("Unable to send AtomFrameHostMsg_Message");
+  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
+  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&electron_ptr));
+  electron_ptr->Message(internal, channel, arguments.Clone());
 }
 
-base::ListValue SendSync(mate::Arguments* args,
-                         bool internal,
-                         const std::string& channel,
-                         const base::ListValue& arguments) {
-  base::ListValue result;
+base::Value SendSync(mate::Arguments* args,
+                     bool internal,
+                     const std::string& channel,
+                     const base::ListValue& arguments) {
+  base::Value result;
 
   RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame == nullptr)
     return result;
 
-  IPC::SyncMessage* message = new AtomFrameHostMsg_Message_Sync(
-      render_frame->GetRoutingID(), internal, channel, arguments, &result);
-  bool success = render_frame->Send(message);
-
-  if (!success)
-    args->ThrowError("Unable to send AtomFrameHostMsg_Message_Sync");
-
+  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
+  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&electron_ptr));
+  electron_ptr->MessageSync(internal, channel, arguments.Clone(), &result);
   return result;
 }
 

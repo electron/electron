@@ -262,14 +262,6 @@ struct WebContents::FrameDispatchHelper {
   void OnGetZoomLevel(IPC::Message* reply_msg) {
     api_web_contents->OnGetZoomLevel(rfh, reply_msg);
   }
-
-  void OnRendererMessageSync(bool internal,
-                             const std::string& channel,
-                             const base::ListValue& args,
-                             IPC::Message* message) {
-    api_web_contents->OnRendererMessageSync(rfh, internal, channel, args,
-                                            message);
-  }
 };
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -426,6 +418,8 @@ void WebContents::InitWithSessionAndOptions(
   SecurityStateTabHelper::CreateForWebContents(web_contents());
   // Initialize zoom controller.
   InitZoomController(web_contents(), options);
+
+  IPCHandler::CreateForWebContentsWithApiWebContents(web_contents(), this);
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
@@ -888,6 +882,41 @@ bool WebContents::EmitNavigationEvent(
               frame_routing_id);
 }
 
+void WebContents::IPCHandler::CreateForWebContentsWithApiWebContents(
+    content::WebContents* web_contents,
+    WebContents* api_web_contents) {
+  if (FromWebContents(web_contents))
+    return;
+
+  web_contents->SetUserData(
+      UserDataKey(),
+      base::WrapUnique(new IPCHandler(web_contents, api_web_contents)));
+}
+
+WebContents::IPCHandler::IPCHandler(content::WebContents* web_contents,
+                                    WebContents* api_web_contents)
+    : api_web_contents_(api_web_contents), bindings_(web_contents, this) {}
+
+WebContents::IPCHandler::~IPCHandler() = default;
+
+void WebContents::IPCHandler::Message(bool internal,
+                                      const std::string& channel,
+                                      base::Value arguments) {
+  content::RenderFrameHost* rfh = bindings_.GetCurrentTargetFrame();
+  api_web_contents_->OnRendererMessage(rfh, internal, channel, arguments);
+}
+
+void WebContents::IPCHandler::MessageSync(bool internal,
+                                          const std::string& channel,
+                                          base::Value arguments,
+                                          MessageSyncCallback callback) {
+  content::RenderFrameHost* rfh = bindings_.GetCurrentTargetFrame();
+  api_web_contents_->OnRendererMessageSync(rfh, internal, channel, arguments,
+                                           std::move(callback));
+}
+
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContents::IPCHandler)
+
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   EmitNavigationEvent("did-start-navigation", navigation_handle);
@@ -1051,9 +1080,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   bool handled = true;
   FrameDispatchHelper helper = {this, frame_host};
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message, OnRendererMessage)
-    IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_Message_Sync, &helper,
-                                    FrameDispatchHelper::OnRendererMessageSync)
     IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_To, OnRendererMessageTo)
     IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_Host, OnRendererMessageHost)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(
@@ -1650,7 +1676,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            int32_t sender_id) {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    electron_api::mojom::ElectronAssociatedPtr electron_ptr;
+    electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
     electron_ptr->Message(internal, channel, args.Clone(), sender_id);
@@ -1673,7 +1699,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   if (!(*iter)->IsRenderFrameLive())
     return false;
 
-  electron_api::mojom::ElectronAssociatedPtr electron_ptr;
+  electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->Message(internal, channel, args.Clone(), 0 /* sender_id */);
@@ -2192,20 +2218,22 @@ AtomBrowserContext* WebContents::GetBrowserContext() const {
 void WebContents::OnRendererMessage(content::RenderFrameHost* frame_host,
                                     bool internal,
                                     const std::string& channel,
-                                    const base::ListValue& args) {
+                                    const base::Value& args) {
   // webContents.emit('-ipc-message', new Event(), internal, channel, args);
-  EmitWithSender("-ipc-message", frame_host, nullptr, internal, channel, args);
+  EmitWithSender("-ipc-message", frame_host, base::nullopt, internal, channel,
+                 args);
 }
 
-void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
-                                        bool internal,
-                                        const std::string& channel,
-                                        const base::ListValue& args,
-                                        IPC::Message* message) {
+void WebContents::OnRendererMessageSync(
+    content::RenderFrameHost* frame_host,
+    bool internal,
+    const std::string& channel,
+    const base::Value& args,
+    electron_api::mojom::ElectronBrowser::MessageSyncCallback callback) {
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, args);
-  EmitWithSender("-ipc-message-sync", frame_host, message, internal, channel,
-                 args);
+  EmitWithSender("-ipc-message-sync", frame_host, std::move(callback), internal,
+                 channel, args);
 }
 
 void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
@@ -2227,7 +2255,7 @@ void WebContents::OnRendererMessageHost(content::RenderFrameHost* frame_host,
                                         const std::string& channel,
                                         const base::ListValue& args) {
   // webContents.emit('ipc-message-host', new Event(), channel, args);
-  EmitWithSender("ipc-message-host", frame_host, nullptr, channel, args);
+  EmitWithSender("ipc-message-host", frame_host, base::nullopt, channel, args);
 }
 
 // static

@@ -8,25 +8,25 @@
 #include <vector>
 
 #include "atom/common/api/event_emitter_caller.h"
+#include "base/optional.h"
 #include "content/public/browser/browser_thread.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "native_mate/wrappable.h"
 
 namespace content {
 class RenderFrameHost;
 }
 
-namespace IPC {
-class Message;
-}
-
 namespace mate {
 
 namespace internal {
 
-v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
-                                    v8::Local<v8::Object> object,
-                                    content::RenderFrameHost* sender,
-                                    IPC::Message* message);
+v8::Local<v8::Object> CreateJSEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> object,
+    content::RenderFrameHost* sender,
+    base::Optional<electron_api::mojom::ElectronBrowser::MessageSyncCallback>
+        callback);
 v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
                                         v8::Local<v8::Object> object,
                                         v8::Local<v8::Object> event);
@@ -69,23 +69,25 @@ class EventEmitter : public Wrappable<T> {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const base::StringPiece& name, const Args&... args) {
-    return EmitWithSender(name, nullptr, nullptr, args...);
+    return EmitWithSender(name, nullptr, base::nullopt, args...);
   }
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
-  bool EmitWithSender(const base::StringPiece& name,
-                      content::RenderFrameHost* sender,
-                      IPC::Message* message,
-                      const Args&... args) {
+  bool EmitWithSender(
+      const base::StringPiece& name,
+      content::RenderFrameHost* sender,
+      base::Optional<electron_api::mojom::ElectronBrowser::MessageSyncCallback>
+          callback,
+      const Args&... args) {
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty()) {
       return false;
     }
-    v8::Local<v8::Object> event =
-        internal::CreateJSEvent(isolate(), wrapper, sender, message);
+    v8::Local<v8::Object> event = internal::CreateJSEvent(
+        isolate(), wrapper, sender, std::move(callback));
     return EmitWithEvent(name, event, args...);
   }
 

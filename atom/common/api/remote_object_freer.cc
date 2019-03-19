@@ -8,6 +8,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
+#include "electron/atom/common/api/api.mojom.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
@@ -60,8 +62,11 @@ void RemoteObjectFreer::RunDestructor() {
   base::ListValue args;
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
-  render_frame->Send(new AtomFrameHostMsg_Message(render_frame->GetRoutingID(),
-                                                  true, channel, args));
+
+  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
+  render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&electron_ptr));
+  electron_ptr->Message(true, channel, args.Clone());
 }
 
 }  // namespace atom

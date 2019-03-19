@@ -87,7 +87,7 @@ ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
 
 ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
-    electron_api::mojom::ElectronAssociatedRequest request)
+    electron_api::mojom::ElectronRendererAssociatedRequest request)
     : content::RenderFrameObserver(render_frame),
       binding_(this),
       render_frame_(render_frame),
@@ -102,7 +102,7 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
 // static
 void ElectronApiServiceImpl::CreateMojoService(
     content::RenderFrame* render_frame,
-    electron_api::mojom::ElectronAssociatedRequest request) {
+    electron_api::mojom::ElectronRendererAssociatedRequest request) {
   DCHECK(render_frame);
 
   // Owns itself. Will be deleted when the render frame is destroyed.

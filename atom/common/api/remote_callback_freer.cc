@@ -42,7 +42,7 @@ void RemoteCallbackFreer::RunDestructor() {
   args.AppendInteger(object_id_);
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    electron_api::mojom::ElectronAssociatedPtr electron_ptr;
+    electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
     electron_ptr->Message(true, channel, args.Clone(), sender_id);
