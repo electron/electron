@@ -8,6 +8,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
 
 namespace atom {
@@ -42,6 +43,19 @@ bool SystemPreferences::IsHighContrastColorScheme() {
   return false;
 }
 #endif  // !defined(OS_WIN)
+
+v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
+    v8::Isolate* isolate) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
+  dict.Set("shouldRenderRichAnimation",
+           gfx::Animation::ShouldRenderRichAnimation());
+  dict.Set("scrollAnimationsEnabledBySystem",
+           gfx::Animation::ScrollAnimationsEnabledBySystem());
+  dict.Set("prefersReducedMotion", gfx::Animation::PrefersReducedMotion());
+
+  return dict.GetHandle();
+}
 
 // static
 mate::Handle<SystemPreferences> SystemPreferences::Create(
@@ -105,7 +119,9 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::IsInvertedColorScheme)
       .SetMethod("isHighContrastColorScheme",
                  &SystemPreferences::IsHighContrastColorScheme)
-      .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
+      .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode)
+      .SetMethod("getAnimationSettings",
+                 &SystemPreferences::GetAnimationSettings);
 }
 
 }  // namespace api

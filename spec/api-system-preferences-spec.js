@@ -173,4 +173,14 @@ describe('systemPreferences module', () => {
       assert.strictEqual(typeof systemPreferences.isInvertedColorScheme(), 'boolean')
     })
   })
+
+  describe('systemPreferences.getAnimationSettings()', () => {
+    it('returns an object with all properties', () => {
+      const settings = systemPreferences.getAnimationSettings()
+      assert.strictEqual(typeof settings, 'object')
+      assert.strictEqual(typeof settings.shouldRenderRichAnimation, 'boolean')
+      assert.strictEqual(typeof settings.scrollAnimationsEnabledBySystem, 'boolean')
+      assert.strictEqual(typeof settings.prefersReducedMotion, 'boolean')
+    })
+  })
 })

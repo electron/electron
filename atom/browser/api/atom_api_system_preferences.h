@@ -117,6 +117,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   bool IsDarkMode();
   bool IsInvertedColorScheme();
   bool IsHighContrastColorScheme();
+  v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
