@@ -2442,15 +2442,24 @@ describe('BrowserWindow module', () => {
 
   describe('beginFrameSubscription method', () => {
     before(function () {
-      // This test is too slow, only test it on CI.
-      if (!isCI) {
-        this.skip()
-      }
-
       // FIXME These specs crash on Linux when run in a docker container
       if (isCI && process.platform === 'linux') {
         this.skip()
       }
+    })
+
+    it('does not crash when callback returns nothing', (done) => {
+      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
+      w.webContents.on('dom-ready', () => {
+        w.webContents.beginFrameSubscription(function (data) {
+          // Pending endFrameSubscription to next tick can reliably reproduce
+          // a crash which happens when nothing is returned in the callback.
+          setTimeout(() => {
+            w.webContents.endFrameSubscription()
+            done()
+          })
+        })
+      })
     })
 
     it('subscribes to frame updates', (done) => {
