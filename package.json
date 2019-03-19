@@ -7,6 +7,7 @@
     "@octokit/rest": "^16.3.2",
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
+    "@types/fs-extra": "^5.0.5",
     "@types/mocha": "^5.2.6",
     "@types/node": "^10.12.21",
     "@types/split": "^1.0.0",
