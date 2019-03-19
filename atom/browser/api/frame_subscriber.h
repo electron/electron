@@ -54,6 +54,9 @@ class FrameSubscriber : public content::WebContentsObserver,
 
   void Done(const gfx::Rect& damage, const SkBitmap& frame);
 
+  // Get the pixel size of render view.
+  gfx::Size GetRenderViewSize() const;
+
   FrameCaptureCallback callback_;
   bool only_dirty_;
 
