@@ -215,7 +215,7 @@ void SpellCheckClient::SpellCheckWords(
   v8::Local<v8::Value> args[] = {mate::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function
-  scope.spell_check_->Call(context, scope.provider_, 2, args).ToLocalChecked();
+  scope.spell_check_->Call(context, scope.provider_, 2, args).IsEmpty();
 }
 
 // Returns whether or not the given string is a contraction.
