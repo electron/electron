@@ -499,6 +499,14 @@ step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
         npm run create-typescript-definitions
       fi
 
+step-fix-known-hosts-linux: &step-fix-known-hosts-linux
+  run:
+    name: Fix Known Hosts on Linux
+    command: |
+      if [ "`uname`" == "Linux" ]; then
+        ./src/electron/.circleci/fix-known-hosts.sh
+      fi
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -795,6 +803,7 @@ steps-tests: &steps-tests
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
     - *step-install-nodejs-on-mac
+    - *step-fix-known-hosts-linux
 
     - run:
         name: Run Electron tests
