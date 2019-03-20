@@ -29,7 +29,7 @@ let nextId = 0
 export function invokeInWebContents<T> (sender: Electron.WebContentsInternal, command: string, ...args: any[]) {
   return new Promise<T>((resolve, reject) => {
     const requestId = ++nextId
-    ipcMainInternal.once(`${command}_RESPONSE_${requestId}`, (
+    sender._ipcInternal.once(`${command}_RESPONSE_${requestId}`, (
       _event, error: Electron.SerializedError, result: any
     ) => {
       if (error) {

@@ -60,6 +60,7 @@ declare namespace Electron {
   }
 
   interface WebContentsInternal extends Electron.WebContents {
+    readonly _ipcInternal: ElectronInternal.IpcMainInternal;
     _sendInternal(channel: string, ...args: any[]): void;
   }
 
