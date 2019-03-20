@@ -20,6 +20,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_process_impl.h"
 #include "atom/browser/extensions/atom_extensions_browser_client.h"
+#include "atom/browser/extensions/shell_browser_context_keyed_service_factories.h"
 #include "atom/browser/extensions/shell_extension_system.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
@@ -47,6 +48,7 @@
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
@@ -395,6 +397,9 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
   extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
   extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
+
+  extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+  extensions::shell::EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
   if (cmd_line->HasSwitch("load-extension")) {

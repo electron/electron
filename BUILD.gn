@@ -609,6 +609,7 @@ static_library("electron_lib") {
 
   if (enable_electron_extensions) {
     deps += [
+      "//components/user_prefs",
       "//extensions/browser",
       "//extensions/common",
       "//extensions/renderer",

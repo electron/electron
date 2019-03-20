@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "extensions/shell/browser/shell_extension_web_contents_observer.h"
+#include "atom/browser/extensions/shell_extension_web_contents_observer.h"
 
 namespace extensions {
 

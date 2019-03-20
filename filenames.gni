@@ -178,6 +178,8 @@ filenames = {
     "atom/browser/extensions/api/runtime/shell_runtime_api_delegate.h",
     "atom/browser/extensions/atom_extensions_browser_client.cc",
     "atom/browser/extensions/atom_extensions_browser_client.h",
+    "atom/browser/extensions/shell_browser_context_keyed_service_factories.cc",
+    "atom/browser/extensions/shell_browser_context_keyed_service_factories.h",
     "atom/browser/extensions/shell_display_info_provider.cc",
     "atom/browser/extensions/shell_display_info_provider.h",
     "atom/browser/extensions/shell_extension_host_delegate.cc",
