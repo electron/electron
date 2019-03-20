@@ -63,7 +63,7 @@ void RemoteObjectFreer::RunDestructor() {
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
 
-  electron_api::mojom::ElectronBrowserAssociatedPtr electron_ptr;
+  mojom::ElectronBrowserAssociatedPtr electron_ptr;
   render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->Message(true, channel, args.Clone());

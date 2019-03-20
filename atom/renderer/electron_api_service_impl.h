@@ -14,12 +14,12 @@
 
 namespace atom {
 
-class ElectronApiServiceImpl : public electron_api::mojom::ElectronRenderer,
+class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                                public content::RenderFrameObserver {
  public:
   static void CreateMojoService(
       content::RenderFrame* render_frame,
-      electron_api::mojom::ElectronRendererAssociatedRequest request);
+      mojom::ElectronRendererAssociatedRequest request);
 
   void Message(bool internal,
                const std::string& channel,
@@ -31,14 +31,13 @@ class ElectronApiServiceImpl : public electron_api::mojom::ElectronRenderer,
 
  private:
   ~ElectronApiServiceImpl() override;
-  ElectronApiServiceImpl(
-      content::RenderFrame* render_frame,
-      electron_api::mojom::ElectronRendererAssociatedRequest request);
+  ElectronApiServiceImpl(content::RenderFrame* render_frame,
+                         mojom::ElectronRendererAssociatedRequest request);
 
   // RenderFrameObserver implementation.
   void OnDestruct() override;
 
-  mojo::AssociatedBinding<electron_api::mojom::ElectronRenderer> binding_;
+  mojo::AssociatedBinding<mojom::ElectronRenderer> binding_;
 
   content::RenderFrame* render_frame_;
   bool isolated_world_;

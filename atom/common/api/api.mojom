@@ -1,4 +1,4 @@
-module electron_api.mojom;
+module atom.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
 

@@ -70,7 +70,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   }
 
  private:
-  electron_api::mojom::ElectronBrowserAssociatedPtr electron_browser_ptr_;
+  atom::mojom::ElectronBrowserAssociatedPtr electron_browser_ptr_;
 };
 
 void SendTo(mate::Arguments* args,

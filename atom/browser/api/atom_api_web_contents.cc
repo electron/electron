@@ -1678,7 +1678,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            int32_t sender_id) {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
+    mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
     electron_ptr->Message(internal, channel, args.Clone(), sender_id);
@@ -1701,7 +1701,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   if (!(*iter)->IsRenderFrameLive())
     return false;
 
-  electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
+  mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->Message(internal, channel, args.Clone(), 0 /* sender_id */);
@@ -2101,7 +2101,7 @@ void WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
     return;
   }
 
-  electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
+  mojom::ElectronRendererAssociatedPtr electron_ptr;
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->TakeHeapSnapshot(
@@ -2237,7 +2237,7 @@ void WebContents::OnRendererMessageSync(
     bool internal,
     const std::string& channel,
     const base::Value& args,
-    electron_api::mojom::ElectronBrowser::MessageSyncCallback callback) {
+    mojom::ElectronBrowser::MessageSyncCallback callback) {
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, args);
   EmitWithSender("-ipc-message-sync", frame_host, std::move(callback), internal,

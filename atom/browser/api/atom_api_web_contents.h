@@ -469,7 +469,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Message/MessageSync are api::WebContents-specific but it's also totally
   // plausible that there would be IPC messages that could be handled by the
   // browser process that don't require an api::WebContents to exist.
-  class IPCHandler : public electron_api::mojom::ElectronBrowser,
+  class IPCHandler : public mojom::ElectronBrowser,
                      public content::WebContentsUserData<IPCHandler> {
    public:
     ~IPCHandler() override;
@@ -492,8 +492,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     friend class content::WebContentsUserData<IPCHandler>;
 
     WebContents* api_web_contents_;
-    content::WebContentsFrameBindingSet<electron_api::mojom::ElectronBrowser>
-        bindings_;
+    content::WebContentsFrameBindingSet<mojom::ElectronBrowser> bindings_;
 
     WEB_CONTENTS_USER_DATA_KEY_DECL();
   };
@@ -524,7 +523,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       bool internal,
       const std::string& channel,
       const base::Value& args,
-      electron_api::mojom::ElectronBrowser::MessageSyncCallback callback);
+      mojom::ElectronBrowser::MessageSyncCallback callback);
 
   // Called when received a message from renderer to be forwarded.
   void OnRendererMessageTo(content::RenderFrameHost* frame_host,

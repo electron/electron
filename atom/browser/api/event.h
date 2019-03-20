@@ -19,8 +19,7 @@ namespace mate {
 
 class Event : public Wrappable<Event>, public content::WebContentsObserver {
  public:
-  using MessageSyncCallback =
-      electron_api::mojom::ElectronBrowser::MessageSyncCallback;
+  using MessageSyncCallback = atom::mojom::ElectronBrowser::MessageSyncCallback;
   static Handle<Event> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
