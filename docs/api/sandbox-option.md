@@ -1,6 +1,6 @@
 # `sandbox` Option
 
-> Create a browser window with a renderer that can run inside Chromium OS sandbox. With this
+> Create a browser window with a sandboxed renderer. With this
 option enabled, the renderer must communicate via IPC to the main process in order to access node APIs.
 
 One of the key security features of Chromium is that all blink rendering/JavaScript
