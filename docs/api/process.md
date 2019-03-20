@@ -171,14 +171,7 @@ Returns an object with V8 heap statistics. Note that all statistics are reported
 
 ### `process.getProcessMemoryInfo()`
 
-Returns `Object`:
-
-* `residentSet` Integer _Linux_ and _Windows_ - The amount of memory 
-currently pinned to actual physical RAM in Kilobytes.
-* `private` Integer - The amount of memory not shared by other processes, such as
-  JS heap or HTML content in Kilobytes.
-* `shared` Integer - The amount of memory shared between processes, typically
-  memory consumed by the Electron code itself in Kilobytes.
+Returns `Promise<ProcessMemoryInfo>` - Resolves with a [ProcessMemoryInfo](structures/process-memory-info.md)
 
 Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
