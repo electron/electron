@@ -166,6 +166,7 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -181,6 +182,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
