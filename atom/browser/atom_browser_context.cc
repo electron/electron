@@ -25,6 +25,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
+#include "base/task/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_paths.h"
@@ -319,6 +320,16 @@ AtomBrowserContext::GetBrowsingDataRemoverDelegate() {
 content::ClientHintsControllerDelegate*
 AtomBrowserContext::GetClientHintsControllerDelegate() {
   return nullptr;
+}
+
+void AtomBrowserContext::SetCorsOriginAccessListForOrigin(
+    const url::Origin& source_origin,
+    std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
+    std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
+    base::OnceClosure closure) {
+  // This method is called for Extension supports, but tests do not need to
+  // support exceptional CORS handling.
+  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(closure));
 }
 
 net::URLRequestContextGetter*

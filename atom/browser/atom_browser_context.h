@@ -92,6 +92,13 @@ class AtomBrowserContext
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
 
+  // extensions deps
+  void SetCorsOriginAccessListForOrigin(
+      const url::Origin& source_origin,
+      std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
+      std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
+      base::OnceClosure closure) override;
+
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
