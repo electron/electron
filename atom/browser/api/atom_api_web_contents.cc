@@ -2084,25 +2084,28 @@ void WebContents::GrantOriginAccess(const GURL& url) {
       url::Origin::Create(url));
 }
 
-bool WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
+void WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
                                    base::Callback<void(bool)> callback) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
-  if (!file.IsValid())
-    return false;
+  if (!file.IsValid()) {
+    std::move(callback).Run(false);
+    return;
+  }
 
   auto* frame_host = web_contents()->GetMainFrame();
-  if (!frame_host)
-    return false;
+  if (!frame_host) {
+    std::move(callback).Run(false);
+    return;
+  }
 
   electron_api::mojom::ElectronRendererAssociatedPtr electron_ptr;
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->TakeHeapSnapshot(
-      mojo::WrapPlatformFile(file.TakePlatformFile()), callback);
-  return true;
+      mojo::WrapPlatformFile(file.TakePlatformFile()), std::move(callback));
 }
 
 // static

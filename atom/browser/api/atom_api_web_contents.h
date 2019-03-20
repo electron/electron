@@ -291,7 +291,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
 
-  bool TakeHeapSnapshot(const base::FilePath& file_path,
+  void TakeHeapSnapshot(const base::FilePath& file_path,
                         base::Callback<void(bool)>);
 
   // Properties.
