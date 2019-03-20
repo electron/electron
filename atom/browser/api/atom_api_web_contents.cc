@@ -273,6 +273,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   Init(isolate);
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, mate::Dictionary::CreateEmpty(isolate));
+  IPCHandler::CreateForWebContentsWithApiWebContents(web_contents, this);
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
