@@ -5,7 +5,6 @@
 #include "atom/app/manifests.h"
 
 #include "base/no_destructor.h"
-#include "content/public/common/service_names.mojom.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/proxy_resolver/public/cpp/manifest.h"
 #include "services/service_manager/public/cpp/manifest_builder.h"
@@ -17,8 +16,6 @@
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
 #include "chrome/services/printing/public/cpp/manifest.h"
 #endif
-
-#include <set>
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
   static base::NoDestructor<service_manager::Manifest> manifest{
