@@ -95,8 +95,7 @@ them will get reported without `companyName`, `productName` or any of the `extra
 
 Returns [`CrashReport`](structures/crash-report.md):
 
-Returns the date and ID of the last crash report. If no crash reports have been
-sent (i.e a crash was triggered with `process.crash()` and crash reports are present in the `crashDirectory`, but have not been explicitly uploaded) or the crash reporter has not been started, `null` is returned.
+Returns the date and ID of the last crash report. Only crash reports that have been uploaded will be returned; even if a crash report is present on disk it will not be returned until it is uploaded. In the case that there are no uploaded reports, `null` is returned.
 
 ### `crashReporter.getUploadedReports()`
 
