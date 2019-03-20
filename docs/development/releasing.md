@@ -26,7 +26,7 @@ with the scope of `Build (read and execute)`.
 If you don't have these, ask a team member to help you.
 
 Once you've generated these tokens, put them in a `.env` file in the root directory
-of the project. This file is gitignored, and will be loaded into the 
+of the project. This file is gitignored, and will be loaded into the
 environment by the release scripts.
 
 
