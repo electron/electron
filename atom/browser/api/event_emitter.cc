@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/event_emitter.h"
 
+#include <utility>
+
 #include "atom/browser/api/event.h"
 #include "atom/common/node_includes.h"
 #include "content/public/browser/render_frame_host.h"

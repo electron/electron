@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_EVENT_EMITTER_H_
 #define ATOM_BROWSER_API_EVENT_EMITTER_H_
 
+#include <utility>
 #include <vector>
 
 #include "atom/common/api/event_emitter_caller.h"
