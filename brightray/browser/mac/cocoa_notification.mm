@@ -13,8 +13,6 @@
 
 namespace brightray {
 
-int g_identifier_ = 1;
-
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
     : Notification(delegate, presenter) {}
@@ -29,7 +27,9 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
 
   NSString* identifier =
-      [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
+      [NSString stringWithFormat:@"%@:notification:%@",
+                                 [[NSBundle mainBundle] bundleIdentifier],
+                                 [[[NSUUID alloc] init] UUIDString]];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
