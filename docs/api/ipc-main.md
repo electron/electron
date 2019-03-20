@@ -88,6 +88,17 @@ Removes the specified `listener` from the listener array for the specified
 
 Removes listeners of the specified `channel`.
 
+### `ipcMain.getScopedToSender(sender)`
+
+* `sender` [WebContents](web-contents.md)
+
+Returns `IpcMain`
+
+Gets a new instance of `IpcMain` that is scoped to only emit ipc messages from
+the given sender.  This is useful for ensuring the messages you are handling
+only come from a webContents you trust without having to check the sender
+for every message.
+
 ## Event object
 
 The documentation for the `event` object passed to the `callback` can be found
