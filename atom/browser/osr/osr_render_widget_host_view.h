@@ -14,7 +14,6 @@
 #include <windows.h>
 #endif
 
-#include "atom/browser/osr/osr_output_device.h"
 #include "atom/browser/osr/osr_view_proxy.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
@@ -36,6 +35,9 @@
 #include "ui/compositor/layer_delegate.h"
 #include "ui/compositor/layer_owner.h"
 #include "ui/gfx/geometry/point.h"
+
+#include "components/viz/host/host_display_client.h"
+#include "ui/compositor/external_begin_frame_client.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/win/window_impl.h"
@@ -70,7 +72,11 @@ class MacHelper;
 class AtomDelegatedFrameHostClient;
 #endif
 
+typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
+typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
+
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
+                                      public ui::ExternalBeginFrameClient,
                                       public ui::CompositorDelegate,
                                       public OffscreenViewProxyObserver {
  public:
@@ -86,6 +92,9 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
       content::BrowserAccessibilityDelegate*,
       bool) override;
+
+  void OnDisplayDidFinishFrame(const viz::BeginFrameAck& ack) override;
+  void OnNeedsExternalBeginFrames(bool needs_begin_frames) override;
 
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
@@ -183,7 +192,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       viz::EventSource source = viz::EventSource::ANY) override;
 
   // ui::CompositorDelegate:
-  std::unique_ptr<viz::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+  std::unique_ptr<viz::HostDisplayClient> CreateHostDisplayClient(
       ui::Compositor* compositor) override;
 
   bool InstallTransparency();
@@ -207,12 +216,16 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
   void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
-  void OnPopupPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
+  void OnPopupPaint(const gfx::Rect& damage_rect);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
+
+  void CompositeFrame(const gfx::Rect& damage_rect);
 
   bool IsPopupWidget() const {
     return widget_type_ == content::WidgetType::kPopup;
   }
+
+  const SkBitmap& GetBacking() { return *backing_.get(); }
 
   void HoldResize();
   void ReleaseResize();
@@ -281,11 +294,9 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
 
-  OffScreenOutputDevice* software_output_device_ = nullptr;
-
   const bool transparent_;
   OnPaintCallback callback_;
-  OnPaintCallback parent_callback_;
+  OnPopupPaintCallback parent_callback_;
 
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;
@@ -314,7 +325,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
-  std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
   // Provides |source_id| for BeginFrameArgs that we create.
@@ -347,6 +357,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   uint32_t latest_capture_sequence_number_ = 0u;
 
   SkColor background_color_ = SkColor();
+
+  std::unique_ptr<SkBitmap> backing_;
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
 
