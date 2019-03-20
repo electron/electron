@@ -9,6 +9,7 @@
 
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
 #include "electron/atom/common/api/event_emitter_caller.h"
 #include "electron/atom/common/node_includes.h"
@@ -23,30 +24,28 @@ namespace atom {
 
 namespace {
 
-std::vector<v8::Local<v8::Value>> ListValueToVector(
-    v8::Isolate* isolate,
-    const std::vector<base::Value>& list) {
-  v8::Local<v8::Value> array = mate::ConvertToV8(isolate, list);
-  std::vector<v8::Local<v8::Value>> result;
-  mate::ConvertFromV8(isolate, array, &result);
-  return result;
-}
+const char kIpcKey[] = "ipcNative";
 
-bool GetIPCObject(v8::Isolate* isolate,
-                  v8::Local<v8::Context> context,
-                  bool internal,
-                  v8::Local<v8::Object>* ipc) {
-  v8::Local<v8::String> key =
-      mate::StringToV8(isolate, internal ? "ipc-internal" : "ipc");
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-  v8::Local<v8::Object> global_object = context->Global();
+void InvokeIpcCallback(v8::Handle<v8::Context> context,
+                       const std::string& callback_name,
+                       std::vector<v8::Handle<v8::Value>> args) {
+  TRACE_EVENT0("devtools.timeline", "FunctionCall");
+  auto* isolate = context->GetIsolate();
+  auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString(isolate);
+  auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
+  auto global_object = context->Global();
   v8::Local<v8::Value> value;
-  if (!global_object->GetPrivate(context, privateKey).ToLocal(&value))
-    return false;
+  if (!global_object->GetPrivate(context, private_binding_key).ToLocal(&value))
+    return;
   if (value.IsEmpty() || !value->IsObject())
-    return false;
-  *ipc = value->ToObject(isolate);
-  return true;
+    return;
+  auto binding = value->ToObject(isolate);
+  auto callback_key =
+      mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
+  auto callback_value = binding->Get(callback_key);
+  DCHECK(callback_value->IsFunction());  // set by init.ts
+  auto callback = v8::Handle<v8::Function>::Cast(callback_value);
+  ignore_result(callback->Call(context, binding, args.size(), args.data()));
 }
 
 void EmitIPCEvent(blink::WebLocalFrame* frame,
@@ -66,22 +65,11 @@ void EmitIPCEvent(blink::WebLocalFrame* frame,
                      : frame->MainWorldScriptContext();
   v8::Context::Scope context_scope(context);
 
-  // Only emit IPC event for context with node integration.
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (!env)
-    return;
+  std::vector<v8::Local<v8::Value>> argv = {
+      mate::ConvertToV8(isolate, internal), mate::ConvertToV8(isolate, channel),
+      mate::ConvertToV8(isolate, args), mate::ConvertToV8(isolate, sender_id)};
 
-  v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, internal, &ipc)) {
-    TRACE_EVENT0("devtools.timeline", "FunctionCall");
-    auto args_vector = ListValueToVector(isolate, args);
-    // Insert the Event object, event.sender is ipc.
-    mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
-    event.Set("sender", ipc);
-    event.Set("senderId", sender_id);
-    args_vector.insert(args_vector.begin(), event.GetHandle());
-    mate::EmitEvent(isolate, ipc, channel, args_vector);
-  }
+  InvokeIpcCallback(context, "onMessage", argv);
 }
 
 }  // namespace

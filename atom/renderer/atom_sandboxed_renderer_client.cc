@@ -30,7 +30,7 @@ namespace atom {
 
 namespace {
 
-const char kIpcKey[] = "ipcNative";
+const char kLifecycleKey[] = "lifecycle";
 const char kModuleCacheKey[] = "native-module-cache";
 
 bool IsDevTools(content::RenderFrame* render_frame) {
@@ -89,6 +89,27 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> preloadSrc) {
   return RendererClientBase::RunScript(isolate->GetCurrentContext(),
                                        preloadSrc);
+}
+
+void InvokeHiddenCallback(v8::Handle<v8::Context> context,
+                          const std::string& hidden_key,
+                          const std::string& callback_name) {
+  auto* isolate = context->GetIsolate();
+  auto binding_key = mate::ConvertToV8(isolate, hidden_key)->ToString(isolate);
+  auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
+  auto global_object = context->Global();
+  v8::Local<v8::Value> value;
+  if (!global_object->GetPrivate(context, private_binding_key).ToLocal(&value))
+    return;
+  if (value.IsEmpty() || !value->IsObject())
+    return;
+  auto binding = value->ToObject(isolate);
+  auto callback_key =
+      mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
+  auto callback_value = binding->Get(callback_key);
+  DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
+  auto callback = v8::Handle<v8::Function>::Cast(callback_value);
+  ignore_result(callback->Call(context, binding, 0, nullptr));
 }
 
 }  // namespace
@@ -151,8 +172,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
       GetContext(render_frame->GetWebFrame(), isolate);
   v8::Context::Scope context_scope(context);
 
-  InvokeIpcCallback(context, "onDocumentStart",
-                    std::vector<v8::Local<v8::Value>>());
+  InvokeHiddenCallback(context, kLifecycleKey, "onDocumentStart");
 }
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
@@ -167,8 +187,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
       GetContext(render_frame->GetWebFrame(), isolate);
   v8::Context::Scope context_scope(context);
 
-  InvokeIpcCallback(context, "onDocumentEnd",
-                    std::vector<v8::Local<v8::Value>>());
+  InvokeHiddenCallback(context, kLifecycleKey, "onDocumentEnd");
 }
 
 void AtomSandboxedRendererClient::DidCreateScriptContext(
@@ -267,29 +286,7 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
-  InvokeIpcCallback(context, "onExit", std::vector<v8::Local<v8::Value>>());
-}
-
-void AtomSandboxedRendererClient::InvokeIpcCallback(
-    v8::Handle<v8::Context> context,
-    const std::string& callback_name,
-    std::vector<v8::Handle<v8::Value>> args) {
-  auto* isolate = context->GetIsolate();
-  auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString(isolate);
-  auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
-  auto global_object = context->Global();
-  v8::Local<v8::Value> value;
-  if (!global_object->GetPrivate(context, private_binding_key).ToLocal(&value))
-    return;
-  if (value.IsEmpty() || !value->IsObject())
-    return;
-  auto binding = value->ToObject(isolate);
-  auto callback_key =
-      mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
-  auto callback_value = binding->Get(callback_key);
-  DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
-  auto callback = v8::Handle<v8::Function>::Cast(callback_value);
-  ignore_result(callback->Call(context, binding, args.size(), args.data()));
+  InvokeHiddenCallback(context, kLifecycleKey, "onExit");
 }
 
 }  // namespace atom

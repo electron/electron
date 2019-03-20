@@ -22,8 +22,20 @@ globalPaths.push(path.join(__dirname, 'api', 'exports'))
 // The global variable will be used by ipc for event dispatching
 const v8Util = process.electronBinding('v8_util')
 
-v8Util.setHiddenValue(global, 'ipc', new EventEmitter())
-v8Util.setHiddenValue(global, 'ipc-internal', new EventEmitter())
+const ipcEmitter = new EventEmitter()
+const ipcInternalEmitter = new EventEmitter()
+v8Util.setHiddenValue(global, 'ipc', ipcEmitter)
+v8Util.setHiddenValue(global, 'ipc-internal', ipcInternalEmitter)
+
+v8Util.setHiddenValue(global, 'ipcNative', {
+  onMessage (internal: boolean, channel: string, args: any[], senderId: number) {
+    (internal ? ipcInternalEmitter : ipcEmitter).emit(
+      channel,
+      { sender: ipcInternalEmitter, senderId },
+      ...args
+    )
+  }
+})
 
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
