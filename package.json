@@ -116,8 +116,9 @@
       "node script/lint.js --py --fix --only --",
       "git add"
     ],
-    "docs/api/*.md": [
+    "docs/api/**/*.md": [
       "node script/gen-filenames.js",
+      "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
     ]
   }
