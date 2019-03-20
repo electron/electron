@@ -102,7 +102,7 @@ Child windows opened with the `nativeWindowOpen` option will always have Node.js
 Renderer process APIs `webFrame.setRegisterURLSchemeAsPrivileged` and `webFrame.registerURLSchemeAsBypassingCSP` as well as browser process API `protocol.registerStandardSchemes` have been removed.
 A new API, `protocol.registerSchemesAsPrivileged` has been added and should be used for registering custom schemes with the required privileges. Custom schemes are required to be registered before app ready.
 
-## webFrame Isolated World APIs 
+## webFrame Isolated World APIs
 
 ```js
 // Deprecated
