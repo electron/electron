@@ -23,6 +23,23 @@ describe('tray module', () => {
     })
   })
 
+  describe('tray.popUpContextMenu', () => {
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
+
+    it('can be called when menu is showing', (done) => {
+      tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
+      setTimeout(() => {
+        tray.popUpContextMenu()
+        done()
+      })
+      tray.popUpContextMenu()
+    })
+  })
+
   describe('tray.setImage', () => {
     it('accepts empty image', () => {
       tray.setImage(nativeImage.createEmpty())
