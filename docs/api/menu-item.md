@@ -119,6 +119,46 @@ Lowercase `role`, e.g. `toggledevtools`, is still supported.
 
 The following properties are available on instances of `MenuItem`:
 
+#### `menuItem.id`
+
+A `String` indicating the item's unique id, this property can be
+dynamically changed.
+
+#### `menuItem.label`
+
+A `String` indicating the item's visible label, this property can be
+dynamically changed.
+
+#### `menuItem.click`
+
+A `Function` that is fired when the MenuItem receives a click event.
+
+#### `menuItem.submenu`
+
+A `MenuItemConstructorOptions[] | Menu` (optional) containing the menu
+item's submenu, if present.
+
+#### `menuItem.type`
+
+A `String` indicating the type of the item.
+
+#### `menuItem.role`
+
+A `String` (optional) indicating the item's role, if set.
+
+#### `menuItem.accelerator`
+
+A `String` (optional) indicating the item's accelerator, if set.
+
+#### `menuItem.icon`
+
+A `[NativeImage](native-image.md) | String` (optional) indicating the
+item's icon, if set.
+
+#### `menuItem.sublabel`
+
+A `String` indicating the item's sublabel, this property can be dynamically changed.
+
 #### `menuItem.enabled`
 
 A `Boolean` indicating whether the item is enabled, this property can be
@@ -142,10 +182,15 @@ will turn off that property for all adjacent items in the same menu.
 
 You can add a `click` function for additional behavior.
 
-#### `menuItem.label`
+#### `menuItem.registerAccelerator`
 
-A `String` representing the menu items visible label.
+A `Boolean` indicating if the accelerator should be registered with the
+system or just displayed, this property can be dynamically changed.
 
-#### `menuItem.click`
+#### `menuItem.commandId`
 
-A `Function` that is fired when the MenuItem receives a click event.
+A `Number` indicating an item's sequential unique id.
+
+#### `menuItem.menu`
+
+A `[Menu](#menu.md))` that the item is a part of.
