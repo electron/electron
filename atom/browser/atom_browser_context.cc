@@ -143,7 +143,6 @@ void AtomBrowserContext::InitPrefs() {
       IsOffTheRecord());
 
   prefs_factory.set_extension_prefs(ext_pref_store);
-  LOG(INFO) << "Set ExtensionPrefStore on factory";
 
   // auto registry = WrapRefCounted(new PrefRegistrySimple);
   auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);

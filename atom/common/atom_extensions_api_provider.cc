@@ -8,6 +8,7 @@
 // #include "extensions/shell/common/api/generated_schemas.h"
 // #include "extensions/shell/common/api/shell_api_features.h"
 // #include "extensions/shell/grit/app_shell_resources.h"
+#include "atom/common/extensions/api/manifest_features.h"
 
 namespace atom {
 
@@ -23,7 +24,8 @@ void AtomExtensionsAPIProvider::AddAPIFeatures(
 
 void AtomExtensionsAPIProvider::AddManifestFeatures(
     extensions::FeatureProvider* provider) {
-  // No shell-specific manifest features.
+  // TODO(samuelmaddock): why is the extensions namespace generated?
+  extensions::AddAtomManifestFeatures(provider);
 }
 
 void AtomExtensionsAPIProvider::AddPermissionFeatures(

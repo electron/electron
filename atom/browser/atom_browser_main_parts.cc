@@ -49,6 +49,7 @@
 #include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/browser_context_keyed_service_factories.h"
+#include "extensions/common/extension_api.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
