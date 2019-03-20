@@ -58,6 +58,7 @@ bool Event::SendReply(const base::ListValue& result) {
     return false;
 
   std::move(*callback_).Run(result.Clone());
+  callback_.reset();
   return true;
 }
 
