@@ -135,7 +135,7 @@ A `Function` that is fired when the MenuItem receives a click event.
 
 #### `menuItem.submenu`
 
-A `MenuItemConstructorOptions[] | Menu` (optional) containing the menu
+A `Menu` (optional) containing the menu
 item's submenu, if present.
 
 #### `menuItem.type`
@@ -152,7 +152,7 @@ A `String` (optional) indicating the item's accelerator, if set.
 
 #### `menuItem.icon`
 
-A `[NativeImage](native-image.md) | String` (optional) indicating the
+A `NativeImage | String` (optional) indicating the
 item's icon, if set.
 
 #### `menuItem.sublabel`
@@ -193,4 +193,4 @@ A `Number` indicating an item's sequential unique id.
 
 #### `menuItem.menu`
 
-A `[Menu](#menu.md))` that the item is a part of.
+A `Menu` that the item is a part of.
