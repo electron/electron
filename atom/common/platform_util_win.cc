@@ -231,7 +231,8 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
 }
 
 void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::MAY_BLOCK);
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::MAY_BLOCK);
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
     return;
