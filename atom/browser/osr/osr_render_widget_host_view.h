@@ -161,6 +161,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
+  std::unique_ptr<content::SyntheticGestureTarget>
+  CreateSyntheticGestureTarget() override;
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
   gfx::Size GetCompositorViewportPixelSize() const override;
