@@ -8,7 +8,7 @@ enum IpcMainHeirachy {
 }
 
 export const createIndependentIpcMain = () => {
-  const senderScoped = new Map<number, IpcMain>()
+  const senderScoped = new WeakMap<Electron.WebContents, IpcMain>()
 
   class IpcMain extends EventEmitter implements Electron.IpcMain {
     constructor (private heirachy: IpcMainHeirachy) {
@@ -18,12 +18,11 @@ export const createIndependentIpcMain = () => {
     }
 
     getScopedToSender (webContents: Electron.WebContents) {
-      const senderId = webContents.id
-      let scoped = senderScoped.get(senderId)
+      let scoped = senderScoped.get(webContents)
       if (!scoped) {
         // Store based on senderId here and don't persist the webContents to avoid it leaking
         scoped = new IpcMain(IpcMainHeirachy.SCOPED)
-        senderScoped.set(senderId, scoped)
+        senderScoped.set(webContents, scoped)
       }
       return scoped
     }
@@ -33,7 +32,7 @@ export const createIndependentIpcMain = () => {
       // If this is the root instance of IpcMain and we have an event with a valid sender
       // we should try emit the event on the scoped IpcMain instance
       if (this.heirachy === IpcMainHeirachy.ROOT && event && event.sender && event.sender.id) {
-        const scoped = senderScoped.get(event.sender.id)
+        const scoped = senderScoped.get(event.sender)
         if (scoped) {
           handled = scoped.emit(channel, event, ...args) || handled
         }
