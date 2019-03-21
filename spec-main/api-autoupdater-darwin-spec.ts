@@ -7,7 +7,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { AddressInfo } from 'net';
 
-const features = process.atomBinding('features')
+const features = process.electronBinding('features')
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures')
 
