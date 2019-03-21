@@ -29,6 +29,10 @@ LayeredWindowUpdater::LayeredWindowUpdater(
 
 LayeredWindowUpdater::~LayeredWindowUpdater() = default;
 
+void LayeredWindowUpdater::SetActive(bool active) {
+  active_ = active;
+}
+
 void LayeredWindowUpdater::OnAllocatedSharedMemory(
     const gfx::Size& pixel_size,
     mojo::ScopedSharedBufferHandle scoped_buffer_handle) {
@@ -57,8 +61,6 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
       pixel_size.width(), pixel_size.height(), false,
       static_cast<uint8_t*>(shm.memory()), skia::CRASH_ON_FAILURE);
 #endif
-
-  shm_handle.Close();
 }
 
 void LayeredWindowUpdater::Draw(const gfx::Rect& damage_rect,
@@ -66,7 +68,7 @@ void LayeredWindowUpdater::Draw(const gfx::Rect& damage_rect,
   SkPixmap pixmap;
   SkBitmap bitmap;
 
-  if (canvas_->peekPixels(&pixmap)) {
+  if (active_ && canvas_->peekPixels(&pixmap)) {
     bitmap.installPixels(pixmap);
     callback_.Run(damage_rect, bitmap);
   }
@@ -80,6 +82,13 @@ OffScreenHostDisplayClient::OffScreenHostDisplayClient(
     : viz::HostDisplayClient(widget), callback_(callback) {}
 OffScreenHostDisplayClient::~OffScreenHostDisplayClient() {}
 
+void OffScreenHostDisplayClient::SetActive(bool active) {
+  active_ = active;
+  if (layered_window_updater_) {
+    layered_window_updater_->SetActive(active_);
+  }
+}
+
 void OffScreenHostDisplayClient::IsOffscreen(IsOffscreenCallback callback) {
   std::move(callback).Run(true);
 }
@@ -88,6 +97,7 @@ void OffScreenHostDisplayClient::CreateLayeredWindowUpdater(
     viz::mojom::LayeredWindowUpdaterRequest request) {
   layered_window_updater_ =
       std::make_unique<LayeredWindowUpdater>(std::move(request), callback_);
+  layered_window_updater_->SetActive(active_);
 }
 
 }  // namespace atom

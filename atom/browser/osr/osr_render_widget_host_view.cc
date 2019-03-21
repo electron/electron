@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/osr/osr_host_display_client.h"
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
@@ -248,10 +247,11 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(background_color_);
 
-#if !defined(OS_MACOSX)
-  // On macOS the ui::Compositor is created/owned by the platform view.
   content::ImageTransportFactory* factory =
       content::ImageTransportFactory::GetInstance();
+
+#if !defined(OS_MACOSX)
+  // On macOS the ui::Compositor is created/owned by the platform view.
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
   compositor_.reset(
@@ -267,6 +267,15 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   ResizeRootLayer(false);
   render_widget_host_->SetView(this);
   InstallTransparency();
+
+  if (!factory->IsGpuCompositingDisabled()) {
+    video_consumer_.reset(new OffScreenVideoConsumer(
+        this, base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
+                         weak_ptr_factory_.GetWeakPtr())));
+    video_consumer_->SetActive(IsPainting());
+    video_consumer_->SetFrameRate(GetFrameRate());
+  }
+
   Show();
 }
 
@@ -347,6 +356,7 @@ void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
   parent_host_view_->Hide();
 
   ResizeRootLayer(false);
+  SetPainting(parent_host_view_->IsPainting());
 }
 
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
@@ -522,7 +532,6 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   }
 
   parent_host_view_->set_popup_host_view(this);
-  parent_host_view_->popup_bitmap_.reset(new SkBitmap);
   parent_callback_ =
       base::Bind(&OffScreenRenderWidgetHostView::OnPopupPaint,
                  parent_host_view_->weak_ptr_factory_.GetWeakPtr());
@@ -530,6 +539,10 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   popup_position_ = pos;
 
   ResizeRootLayer(false);
+  SetPainting(parent_host_view_->IsPainting());
+  if (video_consumer_) {
+    video_consumer_->SizeChanged();
+  }
 }
 
 void OffScreenRenderWidgetHostView::InitAsFullscreen(
@@ -562,7 +575,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
     } else {
       if (popup_host_view_)
         popup_host_view_->CancelWidget();
-      popup_bitmap_.reset();
       if (child_host_view_)
         child_host_view_->CancelWidget();
       if (!guest_host_views_.empty()) {
@@ -612,6 +624,7 @@ void OffScreenRenderWidgetHostView::InitAsGuest(
     content::RenderWidgetHostView* parent_host_view,
     content::RenderWidgetHostViewGuest* guest_view) {
   parent_host_view_->AddGuestHostView(this);
+  SetPainting(parent_host_view_->IsPainting());
 }
 
 void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
@@ -717,7 +730,6 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
   if (parent_host_view_) {
     if (parent_host_view_->popup_host_view_ == this) {
       parent_host_view_->set_popup_host_view(NULL);
-      parent_host_view_->popup_bitmap_.reset();
     } else if (parent_host_view_->child_host_view_ == this) {
       parent_host_view_->set_child_host_view(NULL);
       parent_host_view_->Show();
@@ -763,10 +775,11 @@ void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
 std::unique_ptr<viz::HostDisplayClient>
 OffScreenRenderWidgetHostView::CreateHostDisplayClient(
     ui::Compositor* compositor) {
-  return base::WrapUnique(new OffScreenHostDisplayClient(
+  host_display_client_ = new OffScreenHostDisplayClient(
       gfx::kNullAcceleratedWidget,
       base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
-                 weak_ptr_factory_.GetWeakPtr())));
+                 weak_ptr_factory_.GetWeakPtr()));
+  return base::WrapUnique(host_display_client_);
 }
 
 bool OffScreenRenderWidgetHostView::InstallTransparency() {
@@ -803,23 +816,32 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
   }
 }
 
+gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
+  if (IsPopupWidget()) {
+    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
+                                   popup_position_.size());
+  } else {
+    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
+                                   GetViewBounds().size());
+  }
+}
+
 void OffScreenRenderWidgetHostView::CompositeFrame(
     const gfx::Rect& damage_rect) {
   HoldResize();
 
-  gfx::Size size_in_pixels = gfx::ConvertSizeToPixel(
-      current_device_scale_factor_, GetViewBounds().size());
+  gfx::Size size_in_pixels = SizeInPixels();
 
-  SkBitmap backing;
+  SkBitmap frame;
 
   // Optimize for the case when there is no popup
   if (proxy_views_.size() == 0 && !popup_host_view_) {
-    backing = GetBacking();
+    frame = GetBacking();
   } else {
-    backing.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
-                           false);
+    frame.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
+                         false);
     if (!GetBacking().drawsNothing()) {
-      SkCanvas canvas(backing);
+      SkCanvas canvas(frame);
       canvas.writePixels(GetBacking(), 0, 0);
 
       if (popup_host_view_ && !popup_host_view_->GetBacking().drawsNothing()) {
@@ -841,21 +863,22 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
   }
 
   paint_callback_running_ = true;
-  callback_.Run(
-      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect),
-      backing);
+  callback_.Run(gfx::IntersectRects(gfx::Rect(size_in_pixels), damage_rect),
+                frame);
   paint_callback_running_ = false;
 
   ReleaseResize();
 }
 
 void OffScreenRenderWidgetHostView::OnPopupPaint(const gfx::Rect& damage_rect) {
-  InvalidateBounds(damage_rect);
+  InvalidateBounds(
+      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect));
 }
 
 void OffScreenRenderWidgetHostView::OnProxyViewPaint(
     const gfx::Rect& damage_rect) {
-  InvalidateBounds(damage_rect);
+  InvalidateBounds(
+      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect));
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
@@ -1011,6 +1034,19 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
+
+  if (popup_host_view_) {
+    popup_host_view_->SetPainting(painting);
+  }
+
+  for (auto* guest_host_view : guest_host_views_)
+    guest_host_view->SetPainting(painting);
+
+  if (video_consumer_) {
+    video_consumer_->SetActive(IsPainting());
+  } else if (host_display_client_) {
+    host_display_client_->SetActive(IsPainting());
+  }
 }
 
 bool OffScreenRenderWidgetHostView::IsPainting() const {
@@ -1033,6 +1069,10 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   }
 
   SetupFrameRate(true);
+
+  if (video_consumer_) {
+    video_consumer_->SetFrameRate(GetFrameRate());
+  }
 
   for (auto* guest_host_view : guest_host_views_)
     guest_host_view->SetFrameRate(frame_rate);

@@ -14,6 +14,8 @@
 #include <windows.h>
 #endif
 
+#include "atom/browser/osr/osr_host_display_client.h"
+#include "atom/browser/osr/osr_video_consumer.h"
 #include "atom/browser/osr/osr_view_proxy.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
@@ -221,6 +223,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void OnPopupPaint(const gfx::Rect& damage_rect);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
 
+  gfx::Size SizeInPixels();
+
   void CompositeFrame(const gfx::Rect& damage_rect);
 
   bool IsPopupWidget() const {
@@ -291,7 +295,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   OffScreenRenderWidgetHostView* parent_host_view_ = nullptr;
   OffScreenRenderWidgetHostView* popup_host_view_ = nullptr;
-  std::unique_ptr<SkBitmap> popup_bitmap_;
   OffScreenRenderWidgetHostView* child_host_view_ = nullptr;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
@@ -328,6 +331,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
+  OffScreenHostDisplayClient* host_display_client_;
+  std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
   // Provides |source_id| for BeginFrameArgs that we create.
   viz::StubBeginFrameSource begin_frame_source_;
