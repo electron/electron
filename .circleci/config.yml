@@ -509,7 +509,7 @@ steps-lint: &steps-lint
 
           mkdir -p "buildtools/linux64"
           cipd ensure -ensure-file - -root . <<-CIPD
-          $ServiceURL https://chrome-infra-packages.appspot.com/
+          \$ServiceURL https://chrome-infra-packages.appspot.com/
           @Subdir buildtools/linux64
           gn/gn/linux-amd64 $GN_VERSION
           CIPD
