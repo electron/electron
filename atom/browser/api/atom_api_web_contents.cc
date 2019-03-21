@@ -2103,11 +2103,19 @@ void WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
     return;
   }
 
-  mojom::ElectronRendererAssociatedPtr electron_ptr;
+  // This dance with `base::Owned` is to ensure that the interface stays alive
+  // until the callback is called. Otherwise it would be closed at the end of
+  // this function.
+  auto electron_ptr = std::make_unique<mojom::ElectronRendererAssociatedPtr>();
   frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      mojo::MakeRequest(&electron_ptr));
-  electron_ptr->TakeHeapSnapshot(
-      mojo::WrapPlatformFile(file.TakePlatformFile()), std::move(callback));
+      mojo::MakeRequest(electron_ptr.get()));
+  auto* raw_ptr = electron_ptr.get();
+  (*raw_ptr)->TakeHeapSnapshot(
+      mojo::WrapPlatformFile(file.TakePlatformFile()),
+      base::BindOnce([](mojom::ElectronRendererAssociatedPtr* ep,
+                        base::Callback<void(bool)> callback,
+                        bool success) { callback.Run(success); },
+                     base::Owned(std::move(electron_ptr)), callback));
 }
 
 // static
