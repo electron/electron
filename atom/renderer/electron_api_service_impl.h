@@ -43,9 +43,6 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   content::RenderFrame* render_frame_;
   bool isolated_world_;
 
-  base::WeakPtr<ElectronApiServiceImpl> weak_this_;
-  base::WeakPtrFactory<ElectronApiServiceImpl> weak_ptr_factory_;
-
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
 

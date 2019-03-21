@@ -29,11 +29,8 @@ v8Util.setHiddenValue(global, 'ipc-internal', ipcInternalEmitter)
 
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, args: any[], senderId: number) {
-    (internal ? ipcInternalEmitter : ipcEmitter).emit(
-      channel,
-      { sender: ipcInternalEmitter, senderId },
-      ...args
-    )
+    const sender = internal ? ipcInternalEmitter : ipcEmitter
+    sender.emit(channel, { sender, senderId }, ...args)
   }
 })
 

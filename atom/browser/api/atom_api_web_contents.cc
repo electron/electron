@@ -890,9 +890,8 @@ void WebContents::IPCHandler::CreateForWebContentsWithApiWebContents(
   if (FromWebContents(web_contents))
     return;
 
-  web_contents->SetUserData(
-      UserDataKey(),
-      base::WrapUnique(new IPCHandler(web_contents, api_web_contents)));
+  web_contents->SetUserData(UserDataKey(), std::make_unique<IPCHandler>(
+                                               web_contents, api_web_contents));
 }
 
 WebContents::IPCHandler::IPCHandler(content::WebContents* web_contents,

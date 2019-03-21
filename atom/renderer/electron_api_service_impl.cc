@@ -81,10 +81,7 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     mojom::ElectronRendererAssociatedRequest request)
     : content::RenderFrameObserver(render_frame),
       binding_(this),
-      render_frame_(render_frame),
-      weak_ptr_factory_(this) {
-  (void)render_frame_;
-  weak_this_ = weak_ptr_factory_.GetWeakPtr();
+      render_frame_(render_frame) {
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   binding_.Bind(std::move(request));

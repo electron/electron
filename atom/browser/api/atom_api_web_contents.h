@@ -473,6 +473,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                      public content::WebContentsUserData<IPCHandler> {
    public:
     ~IPCHandler() override;
+    IPCHandler(content::WebContents* web_contents,
+               WebContents* api_web_contents);
 
     void Message(bool internal,
                  const std::string& channel,
@@ -487,8 +489,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
         WebContents* api_web_contents);
 
    private:
-    IPCHandler(content::WebContents* web_contents,
-               WebContents* api_web_contents);
     friend class content::WebContentsUserData<IPCHandler>;
 
     WebContents* api_web_contents_;
