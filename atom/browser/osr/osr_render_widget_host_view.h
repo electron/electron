@@ -22,12 +22,12 @@
 #include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
-#include "content/browser/frame_host/render_widget_host_view_guest.h"
-#include "content/browser/renderer_host/delegated_frame_host.h"
-#include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "content/browser/web_contents/web_contents_view.h"
+#include "content/browser/frame_host/render_widget_host_view_guest.h"  // nogncheck
+#include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
+#include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
@@ -44,7 +44,7 @@
 #endif
 
 #if defined(OS_MACOSX)
-#include "content/browser/renderer_host/browser_compositor_view_mac.h"
+#include "content/browser/renderer_host/browser_compositor_view_mac.h"  // nogncheck
 #endif
 
 #if defined(OS_MACOSX)
