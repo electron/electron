@@ -107,19 +107,10 @@ void ElectronApiServiceImpl::OnDestruct() {
 }
 
 void ElectronApiServiceImpl::Message(bool internal,
+                                     bool send_to_all,
                                      const std::string& channel,
                                      base::Value arguments,
                                      int32_t sender_id) {
-  /*
-  // Don't handle browser messages before document element is created.
-  // When we receive a message from the browser, we try to transfer it
-  // to a web page, and when we do that Blink creates an empty
-  // document element if it hasn't been created yet, and it makes our init
-  // script to run while `window.location` is still "about:blank".
-  if (!document_created_)
-    return;
-    */
-
   blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
   if (!frame)
     return;
@@ -127,17 +118,15 @@ void ElectronApiServiceImpl::Message(bool internal,
   EmitIPCEvent(frame, isolated_world_, internal, channel, arguments.GetList(),
                sender_id);
 
-  /*
   // Also send the message to all sub-frames.
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
       if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), internal, channel, args,
-                     sender_id);
+        EmitIPCEvent(child->ToWebLocalFrame(), isolated_world_, internal,
+                     channel, arguments.GetList(), sender_id);
       }
   }
-  */
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(

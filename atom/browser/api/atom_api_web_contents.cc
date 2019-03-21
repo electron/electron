@@ -1681,7 +1681,8 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(internal, channel, args.Clone(), sender_id);
+    electron_ptr->Message(internal, send_to_all, channel, args.Clone(),
+                          sender_id);
     return true;
   }
   return false;
@@ -1704,7 +1705,8 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   mojom::ElectronRendererAssociatedPtr electron_ptr;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->Message(internal, channel, args.Clone(), 0 /* sender_id */);
+  electron_ptr->Message(internal, send_to_all, channel, args.Clone(),
+                        0 /* sender_id */);
   return true;
 }
 

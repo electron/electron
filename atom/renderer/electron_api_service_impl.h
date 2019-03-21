@@ -22,6 +22,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
       mojom::ElectronRendererAssociatedRequest request);
 
   void Message(bool internal,
+               bool send_to_all,
                const std::string& channel,
                base::Value arguments,
                int32_t sender_id) override;

@@ -45,7 +45,8 @@ void RemoteCallbackFreer::RunDestructor() {
     mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
-    electron_ptr->Message(true, channel, args.Clone(), sender_id);
+    electron_ptr->Message(true /* internal */, false /* send_to_all */, channel,
+                          args.Clone(), sender_id);
   }
 
   Observe(nullptr);

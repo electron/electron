@@ -5,6 +5,7 @@ import "mojo/public/mojom/base/values.mojom";
 interface ElectronRenderer {
   Message(
       bool internal,
+      bool send_to_all,
       string channel,
       mojo_base.mojom.ListValue arguments,
       int32 sender_id);
