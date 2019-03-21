@@ -5,12 +5,21 @@ const crypto = require('crypto')
 const fs = require('fs')
 const { hashElement } = require('folder-hash')
 const path = require('path')
-const unknownArgs = []
+const unknownFlags = []
 
 const args = require('minimist')(process.argv, {
   string: ['runners'],
-  unknown: arg => unknownArgs.push(arg)
+  unknown: arg => unknownFlags.push(arg)
 })
+
+const unknownArgs = []
+for (const flag of unknownFlags) {
+  unknownArgs.push(flag)
+  const onlyFlag = flag.replace(/^-+/, '')
+  if (args[onlyFlag]) {
+    unknownArgs.push(args[onlyFlag])
+  }
+}
 
 const utils = require('./lib/utils')
 
