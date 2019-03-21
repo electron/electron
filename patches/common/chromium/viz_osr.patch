@@ -30,11 +30,15 @@ index bdd1e8bde77ac458639d2b6064c58a133becc5ee..c0f9868fddddac167bbb19af206745c9
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -59,7 +63,7 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -59,7 +63,11 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
  
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(request));
 -}
++#else
++  CHECK(false) << "Chromium is calling CreateLayeredWindowUpdater for non-OSR "
++                  "windows on POSIX platforms, something is wrong with "
++                  "Electron's OSR implementation.";
  #endif
 +}
  
