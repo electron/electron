@@ -22,6 +22,7 @@
 #include "components/viz/common/gl_helper.h"
 #include "components/viz/common/quads/render_pass.h"
 #include "content/browser/renderer_host/cursor_manager.h"
+#include "content/browser/renderer_host/input/synthetic_gesture_target.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"
@@ -625,6 +626,12 @@ viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
   return GetDelegatedFrameHost()
              ? GetDelegatedFrameHost()->GetCurrentSurfaceId()
              : viz::SurfaceId();
+}
+
+std::unique_ptr<content::SyntheticGestureTarget>
+OffScreenRenderWidgetHostView::CreateSyntheticGestureTarget() {
+  NOTIMPLEMENTED();
+  return nullptr;
 }
 
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(

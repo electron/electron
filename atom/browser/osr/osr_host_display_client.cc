@@ -4,17 +4,21 @@
 
 #include "atom/browser/osr/osr_host_display_client.h"
 
+#include <utility>
+
 #include "base/memory/shared_memory.h"
 #include "components/viz/common/resources/resource_format.h"
 #include "components/viz/common/resources/resource_sizes.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "skia/ext/platform_canvas.h"
-#include "skia/ext/skia_utils_win.h"
-
 #include "third_party/skia/include/core/SkColor.h"
 #include "third_party/skia/include/core/SkRect.h"
 #include "third_party/skia/src/core/SkDevice.h"
 #include "ui/gfx/skia_util.h"
+
+#if defined(OS_WIN)
+#include "skia/ext/skia_utils_win.h"
+#endif
 
 namespace atom {
 
@@ -50,8 +54,8 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
       skia::CRASH_ON_FAILURE);
 #else
   canvas_ = skia::CreatePlatformCanvasWithPixels(
-      pixel_size.width(), pixel_size.height(), false, shm.memory(),
-      skia::CRASH_ON_FAILURE);
+      pixel_size.width(), pixel_size.height(), false,
+      static_cast<uint8_t*>(shm.memory()), skia::CRASH_ON_FAILURE);
 #endif
 
   shm_handle.Close();
@@ -80,12 +84,10 @@ void OffScreenHostDisplayClient::IsOffscreen(IsOffscreenCallback callback) {
   std::move(callback).Run(true);
 }
 
-#if defined(OS_WIN)
 void OffScreenHostDisplayClient::CreateLayeredWindowUpdater(
     viz::mojom::LayeredWindowUpdaterRequest request) {
   layered_window_updater_ =
       std::make_unique<LayeredWindowUpdater>(std::move(request), callback_);
 }
-#endif
 
 }  // namespace atom

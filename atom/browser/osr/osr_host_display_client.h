@@ -47,14 +47,11 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
  private:
   void IsOffscreen(IsOffscreenCallback callback) override;
 
-  OnPaintCallback callback_;
-
-#if defined(OS_WIN)
   void CreateLayeredWindowUpdater(
       viz::mojom::LayeredWindowUpdaterRequest request) override;
 
   std::unique_ptr<LayeredWindowUpdater> layered_window_updater_;
-#endif
+  OnPaintCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenHostDisplayClient);
 };
