@@ -207,7 +207,7 @@ void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
       base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
-                          render_frame));
+                          render_frame, this));
 
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);

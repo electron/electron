@@ -15,6 +15,7 @@
 #include "electron/atom/common/node_includes.h"
 #include "electron/atom/common/options_switches.h"
 #include "electron/atom/renderer/atom_render_frame_observer.h"
+#include "electron/atom/renderer/renderer_client_base.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"
@@ -48,22 +49,14 @@ void InvokeIpcCallback(v8::Handle<v8::Context> context,
   ignore_result(callback->Call(context, binding, args.size(), args.data()));
 }
 
-void EmitIPCEvent(blink::WebLocalFrame* frame,
-                  bool isolated_world,
+void EmitIPCEvent(v8::Local<v8::Context> context,
                   bool internal,
                   const std::string& channel,
                   const std::vector<base::Value>& args,
                   int32_t sender_id) {
-  if (!frame)
-    return;
-
-  v8::Isolate* isolate = blink::MainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  v8::Local<v8::Context> context =
-      isolated_world ? frame->WorldScriptContext(isolate, World::ISOLATED_WORLD)
-                     : frame->MainWorldScriptContext();
   v8::Context::Scope context_scope(context);
+
+  auto* isolate = context->GetIsolate();
 
   std::vector<v8::Local<v8::Value>> argv = {
       mate::ConvertToV8(isolate, internal), mate::ConvertToV8(isolate, channel),
@@ -78,12 +71,12 @@ ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
 
 ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
+    RendererClientBase* renderer_client,
     mojom::ElectronRendererAssociatedRequest request)
     : content::RenderFrameObserver(render_frame),
       binding_(this),
-      render_frame_(render_frame) {
-  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kContextIsolation);
+      render_frame_(render_frame),
+      renderer_client_(renderer_client) {
   binding_.Bind(std::move(request));
   binding_.set_connection_error_handler(base::BindOnce(
       &ElectronApiServiceImpl::OnDestruct, base::Unretained(this)));
@@ -92,11 +85,12 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
 // static
 void ElectronApiServiceImpl::CreateMojoService(
     content::RenderFrame* render_frame,
+    RendererClientBase* renderer_client,
     mojom::ElectronRendererAssociatedRequest request) {
   DCHECK(render_frame);
 
   // Owns itself. Will be deleted when the render frame is destroyed.
-  new ElectronApiServiceImpl(render_frame, std::move(request));
+  new ElectronApiServiceImpl(render_frame, renderer_client, std::move(request));
 }
 
 void ElectronApiServiceImpl::OnDestruct() {
@@ -112,16 +106,22 @@ void ElectronApiServiceImpl::Message(bool internal,
   if (!frame)
     return;
 
-  EmitIPCEvent(frame, isolated_world_, internal, channel, arguments.GetList(),
-               sender_id);
+  v8::Isolate* isolate = blink::MainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
+
+  EmitIPCEvent(context, internal, channel, arguments.GetList(), sender_id);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
       if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), isolated_world_, internal,
-                     channel, arguments.GetList(), sender_id);
+        v8::Local<v8::Context> child_context =
+            renderer_client_->GetContext(child->ToWebLocalFrame(), isolate);
+        EmitIPCEvent(child_context, internal, channel, arguments.GetList(),
+                     sender_id);
       }
   }
 }

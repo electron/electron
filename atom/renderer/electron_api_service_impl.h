@@ -14,11 +14,14 @@
 
 namespace atom {
 
+class RendererClientBase;
+
 class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                                public content::RenderFrameObserver {
  public:
   static void CreateMojoService(
       content::RenderFrame* render_frame,
+      RendererClientBase* renderer_client,
       mojom::ElectronRendererAssociatedRequest request);
 
   void Message(bool internal,
@@ -33,6 +36,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
  private:
   ~ElectronApiServiceImpl() override;
   ElectronApiServiceImpl(content::RenderFrame* render_frame,
+                         RendererClientBase* renderer_client,
                          mojom::ElectronRendererAssociatedRequest request);
 
   // RenderFrameObserver implementation.
@@ -41,7 +45,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   mojo::AssociatedBinding<mojom::ElectronRenderer> binding_;
 
   content::RenderFrame* render_frame_;
-  bool isolated_world_;
+  RendererClientBase* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
