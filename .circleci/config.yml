@@ -505,12 +505,16 @@ steps-lint: &steps-lint
         name: Download GN Binary
         command: |
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+          gn_version="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
 
           mkdir -p "buildtools/linux64"
-          curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/linux64/gn.sha1?format=TEXT" | base64 -d > "buildtools/linux64/gn.sha1"
-          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          cipd ensure -ensure-file - -root . <<-CIPD
+          $ServiceURL https://chrome-infra-packages.appspot.com/
+          @Subdir buildtools/linux64
+          gn/gn/linux-amd64 $GN_VERSION
+          CIPD
 
-          download_from_google_storage --bucket chromium-gn -s "buildtools/linux64/gn.sha1"
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
     - run:
         name: Run Lint
         command: |
