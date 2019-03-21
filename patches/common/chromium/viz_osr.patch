@@ -575,10 +575,10 @@ index a339eaa4dc9ccec292b3df9f31adf1ad45119a77..84388947e0bc5b7232d4fec17c3f514b
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
 diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index b7c138978ae2556a2b7035351e0167c1c3449282..cef272020048c0290d1b68e13a52d75c71faf311 100644
+index b7c138978ae2556a2b7035351e0167c1c3449282..4d74cdbfcca2ee0142ac5529a26a8561d6d7537a 100644
 --- a/services/viz/privileged/interfaces/compositing/display_private.mojom
 +++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
-@@ -58,6 +58,9 @@ interface DisplayClient {
+@@ -58,12 +58,14 @@ interface DisplayClient {
    // component reached the display.
    DidSwapAfterSnapshotRequestReceived(array<ui.mojom.LatencyInfo> latency_info);
  
@@ -588,6 +588,12 @@ index b7c138978ae2556a2b7035351e0167c1c3449282..cef272020048c0290d1b68e13a52d75c
    [EnableIf=is_mac]
    OnDisplayReceivedCALayerParams(gfx.mojom.CALayerParams ca_layer_params);
  
+   // Creates a LayeredWindowUpdater implementation to draw into a layered
+   // window.
+-  [EnableIf=is_win]
+   CreateLayeredWindowUpdater(LayeredWindowUpdater& layered_window_updater);
+ 
+   // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom b/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
 index 360cab3eee4c5189a55269d76daa1d78a98ed3d3..6834242f23d27fd6d428c2cd6040206a79d5097b 100644
 --- a/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
@@ -600,7 +606,7 @@ index 360cab3eee4c5189a55269d76daa1d78a98ed3d3..6834242f23d27fd6d428c2cd6040206a
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 29784c677f4be6e4fd7cfb298ab3554d22e1beaa..381267dc996763449c471af2d60f4ab48534a039 100644
+index 29784c677f4be6e4fd7cfb298ab3554d22e1beaa..5d7da6481ebedb706c1dd31de1f7dfe4735433e8 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -24,6 +24,7 @@
@@ -627,6 +633,25 @@ index 29784c677f4be6e4fd7cfb298ab3554d22e1beaa..381267dc996763449c471af2d60f4ab4
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
+@@ -235,6 +245,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+   // Schedules a redraw of the layer tree associated with this compositor.
+   void ScheduleDraw();
+ 
++  CompositorDelegate* delegate() const { return delegate_; }
++  void SetDelegate(CompositorDelegate* delegate) { delegate_ = delegate; }
++
+   // Sets the root of the layer tree drawn by this Compositor. The root layer
+   // must have no parent. The compositor's root layer is reset if the root layer
+   // is destroyed. NULL can be passed to reset the root layer, in which case the
+@@ -458,6 +471,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+   ui::ContextFactory* context_factory_;
+   ui::ContextFactoryPrivate* context_factory_private_;
+ 
++  CompositorDelegate* delegate_ = nullptr;
++
+   // The root of the Layer tree drawn by this compositor.
+   Layer* root_layer_ = nullptr;
+ 
 diff --git a/ui/compositor/host/host_context_factory_private.cc b/ui/compositor/host/host_context_factory_private.cc
 index 8297e1aabe3b29698a965407e24d1e987be679d3..a78d455e99eb27730b6ac42cd5fd9469caa4a7de 100644
 --- a/ui/compositor/host/host_context_factory_private.cc
