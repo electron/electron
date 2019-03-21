@@ -396,215 +396,28 @@ index a339eaa4dc9ccec292b3df9f31adf1ad45119a77..84388947e0bc5b7232d4fec17c3f514b
  #include "mojo/public/cpp/system/platform_handle.h"
  #include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
  #include "skia/ext/platform_canvas.h"
-@@ -25,79 +26,21 @@ namespace viz {
- namespace {
+@@ -321,7 +322,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+   if (!canvas_)
+     return;
  
- // Shared base class for Windows SoftwareOutputDevice implementations.
--class SoftwareOutputDeviceWinBase : public SoftwareOutputDevice {
-+class SoftwareOutputDeviceWinBase : public SoftwareOutputDeviceBase {
-  public:
-   explicit SoftwareOutputDeviceWinBase(HWND hwnd) : hwnd_(hwnd) {
-     vsync_provider_ = std::make_unique<gl::VSyncProviderWin>(hwnd);
-   }
--
--  ~SoftwareOutputDeviceWinBase() override {
--    DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
--    DCHECK(!in_paint_);
--  }
-+  ~SoftwareOutputDeviceWinBase() override = default;
- 
-   HWND hwnd() const { return hwnd_; }
- 
--  // SoftwareOutputDevice implementation.
--  void Resize(const gfx::Size& viewport_pixel_size,
--              float scale_factor) override;
--  SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
--  void EndPaint() override;
--
--  // Called from Resize() if |viewport_pixel_size_| has changed.
--  virtual void ResizeDelegated() = 0;
--
--  // Called from BeginPaint() and should return an SkCanvas.
--  virtual SkCanvas* BeginPaintDelegated() = 0;
--
--  // Called from EndPaint() if there is damage.
--  virtual void EndPaintDelegated(const gfx::Rect& damage_rect) = 0;
--
-  private:
-   const HWND hwnd_;
--  bool in_paint_ = false;
--
--  THREAD_CHECKER(thread_checker_);
- 
-   DISALLOW_COPY_AND_ASSIGN(SoftwareOutputDeviceWinBase);
- };
- 
--void SoftwareOutputDeviceWinBase::Resize(const gfx::Size& viewport_pixel_size,
--                                         float scale_factor) {
--  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
--  DCHECK(!in_paint_);
--
--  if (viewport_pixel_size_ == viewport_pixel_size)
--    return;
--
--  viewport_pixel_size_ = viewport_pixel_size;
--  ResizeDelegated();
--}
--
--SkCanvas* SoftwareOutputDeviceWinBase::BeginPaint(
--    const gfx::Rect& damage_rect) {
--  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
--  DCHECK(!in_paint_);
--
--  damage_rect_ = damage_rect;
--  in_paint_ = true;
--  return BeginPaintDelegated();
--}
--
--void SoftwareOutputDeviceWinBase::EndPaint() {
--  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
--  DCHECK(in_paint_);
--
--  in_paint_ = false;
--
--  gfx::Rect intersected_damage_rect = damage_rect_;
--  intersected_damage_rect.Intersect(gfx::Rect(viewport_pixel_size_));
--  if (intersected_damage_rect.IsEmpty())
--    return;
--
--  EndPaintDelegated(intersected_damage_rect);
--}
--
- // SoftwareOutputDevice implementation that draws directly to the provided HWND.
- // The backing buffer for paint is shared for all instances of this class.
- class SoftwareOutputDeviceWinDirect : public SoftwareOutputDeviceWinBase,
-@@ -226,118 +169,6 @@ void SoftwareOutputDeviceWinLayered::EndPaintDelegated(
-                       RGB(0xFF, 0xFF, 0xFF), &blend, ULW_ALPHA);
- }
- 
--// SoftwareOutputDevice implementation that uses layered window API to draw
--// indirectly. Since UpdateLayeredWindow() is blocked by the GPU sandbox an
--// implementation of mojom::LayeredWindowUpdater in the browser process handles
--// calling UpdateLayeredWindow. Pixel backing is in SharedMemory so no copying
--// between processes is required.
--class SoftwareOutputDeviceWinProxy : public SoftwareOutputDeviceWinBase {
-- public:
--  SoftwareOutputDeviceWinProxy(
--      HWND hwnd,
--      mojom::LayeredWindowUpdaterPtr layered_window_updater);
--  ~SoftwareOutputDeviceWinProxy() override = default;
--
--  // SoftwareOutputDevice implementation.
--  void OnSwapBuffers(base::OnceClosure swap_ack_callback) override;
--
--  // SoftwareOutputDeviceWinBase implementation.
--  void ResizeDelegated() override;
--  SkCanvas* BeginPaintDelegated() override;
--  void EndPaintDelegated(const gfx::Rect& rect) override;
--
-- private:
--  // Runs |swap_ack_callback_| after draw has happened.
--  void DrawAck();
--
--  mojom::LayeredWindowUpdaterPtr layered_window_updater_;
--
--  std::unique_ptr<SkCanvas> canvas_;
--  bool waiting_on_draw_ack_ = false;
--  base::OnceClosure swap_ack_callback_;
--
--  DISALLOW_COPY_AND_ASSIGN(SoftwareOutputDeviceWinProxy);
--};
--
--SoftwareOutputDeviceWinProxy::SoftwareOutputDeviceWinProxy(
--    HWND hwnd,
--    mojom::LayeredWindowUpdaterPtr layered_window_updater)
--    : SoftwareOutputDeviceWinBase(hwnd),
--      layered_window_updater_(std::move(layered_window_updater)) {
--  DCHECK(layered_window_updater_.is_bound());
--}
--
--void SoftwareOutputDeviceWinProxy::OnSwapBuffers(
--    base::OnceClosure swap_ack_callback) {
--  DCHECK(swap_ack_callback_.is_null());
--
--  // We aren't waiting on DrawAck() and can immediately run the callback.
--  if (!waiting_on_draw_ack_) {
--    task_runner_->PostTask(FROM_HERE, std::move(swap_ack_callback));
--    return;
--  }
--
--  swap_ack_callback_ = std::move(swap_ack_callback);
--}
--
--void SoftwareOutputDeviceWinProxy::ResizeDelegated() {
--  canvas_.reset();
--
--  size_t required_bytes;
--  if (!ResourceSizes::MaybeSizeInBytes(
--          viewport_pixel_size_, ResourceFormat::RGBA_8888, &required_bytes)) {
--    DLOG(ERROR) << "Invalid viewport size " << viewport_pixel_size_.ToString();
--    return;
--  }
--
--  base::SharedMemory shm;
--  if (!shm.CreateAnonymous(required_bytes)) {
--    DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
--    return;
--  }
--
--  // The SkCanvas maps shared memory on creation and unmaps on destruction.
--  canvas_ = skia::CreatePlatformCanvasWithSharedSection(
--      viewport_pixel_size_.width(), viewport_pixel_size_.height(), true,
--      shm.handle().GetHandle(), skia::CRASH_ON_FAILURE);
--
--  // Transfer handle ownership to the browser process.
--  mojo::ScopedSharedBufferHandle scoped_handle = mojo::WrapSharedMemoryHandle(
--      shm.TakeHandle(), required_bytes,
--      mojo::UnwrappedSharedMemoryHandleProtection::kReadWrite);
--
--  layered_window_updater_->OnAllocatedSharedMemory(viewport_pixel_size_,
--                                                   std::move(scoped_handle));
--}
--
--SkCanvas* SoftwareOutputDeviceWinProxy::BeginPaintDelegated() {
--  return canvas_.get();
--}
--
--void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
--    const gfx::Rect& damage_rect) {
--  DCHECK(!waiting_on_draw_ack_);
--
--  if (!canvas_)
--    return;
--
 -  layered_window_updater_->Draw(base::BindOnce(
--      &SoftwareOutputDeviceWinProxy::DrawAck, base::Unretained(this)));
--  waiting_on_draw_ack_ = true;
--
--  TRACE_EVENT_ASYNC_BEGIN0("viz", "SoftwareOutputDeviceWinProxy::Draw", this);
--}
--
--void SoftwareOutputDeviceWinProxy::DrawAck() {
--  DCHECK(waiting_on_draw_ack_);
--  DCHECK(!swap_ack_callback_.is_null());
--
--  TRACE_EVENT_ASYNC_END0("viz", "SoftwareOutputDeviceWinProxy::Draw", this);
--
--  waiting_on_draw_ack_ = false;
--  std::move(swap_ack_callback_).Run();
--}
--
- }  // namespace
++  layered_window_updater_->Draw(damage_rect, base::BindOnce(
+       &SoftwareOutputDeviceWinProxy::DrawAck, base::Unretained(this)));
+   waiting_on_draw_ack_ = true;
  
- std::unique_ptr<SoftwareOutputDevice> CreateSoftwareOutputDeviceWinBrowser(
-@@ -362,8 +193,8 @@ std::unique_ptr<SoftwareOutputDevice> CreateSoftwareOutputDeviceWinGpu(
+@@ -362,8 +363,13 @@ std::unique_ptr<SoftwareOutputDevice> CreateSoftwareOutputDeviceWinGpu(
      display_client->CreateLayeredWindowUpdater(
          mojo::MakeRequest(&layered_window_updater));
  
 -    return std::make_unique<SoftwareOutputDeviceWinProxy>(
 -        hwnd, std::move(layered_window_updater));
-+    return std::make_unique<SoftwareOutputDeviceProxy>(
-+        std::move(layered_window_updater));
++    bool offscreen = false;
++    if (display_client->IsOffscreen(&offscreen) && offscreen)
++      return std::make_unique<SoftwareOutputDeviceProxy>(
++          std::move(layered_window_updater));
++    else
++      return std::make_unique<SoftwareOutputDeviceWinProxy>(
++          hwnd, std::move(layered_window_updater));
    } else {
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
