@@ -24,6 +24,8 @@ class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
                                 OnPaintCallback callback);
   ~LayeredWindowUpdater() override;
 
+  void SetActive(bool active);
+
   // viz::mojom::LayeredWindowUpdater implementation.
   void OnAllocatedSharedMemory(
       const gfx::Size& pixel_size,
@@ -34,6 +36,7 @@ class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
   OnPaintCallback callback_;
   mojo::Binding<viz::mojom::LayeredWindowUpdater> binding_;
   std::unique_ptr<SkCanvas> canvas_;
+  bool active_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(LayeredWindowUpdater);
 };
@@ -44,6 +47,8 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
                                       OnPaintCallback callback);
   ~OffScreenHostDisplayClient() override;
 
+  void SetActive(bool active);
+
  private:
   void IsOffscreen(IsOffscreenCallback callback) override;
 
@@ -52,6 +57,7 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
 
   std::unique_ptr<LayeredWindowUpdater> layered_window_updater_;
   OnPaintCallback callback_;
+  bool active_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenHostDisplayClient);
 };
