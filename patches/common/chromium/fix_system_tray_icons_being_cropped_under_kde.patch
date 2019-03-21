@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 20 Mar 2019 22:48:27 -0700
+Subject: Fix system tray icons being cropped under KDE
+
+The code that adds padding to too small icons was breaking the larger
+ones by cutting the minimal size (22x22px) out of their center.
+
+Backports: https://chromium-review.googlesource.com/c/chromium/src/+/1173235
+
+diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon.cc b/chrome/browser/ui/libgtkui/app_indicator_icon.cc
+index 5aeb9d4d115ccae7763872aaa50734ead5228ec6..96134270493893c27b1f903028097220a6dd6fcf 100644
+--- a/chrome/browser/ui/libgtkui/app_indicator_icon.cc
++++ b/chrome/browser/ui/libgtkui/app_indicator_icon.cc
+@@ -285,15 +285,16 @@ AppIndicatorIcon::WriteKDE4TempImageOnWorkerThread(
+   std::string icon_name = base::StringPrintf(
+       "chrome_app_indicator2_%s", base::MD5DigestToBase16(digest).c_str());
+ 
+-  // If |bitmap| is not 22x22, KDE does some really ugly resizing. Pad |bitmap|
+-  // with transparent pixels to make it 22x22.
+-  const int kDesiredSize = 22;
++  // If |bitmap| is smaller than 22x22, KDE does some really ugly resizing.
++  // Pad |bitmap| with transparent pixels to make it 22x22.
++  const int kMinimalSize = 22;
+   SkBitmap scaled_bitmap;
+-  scaled_bitmap.allocN32Pixels(kDesiredSize, kDesiredSize);
++  scaled_bitmap.allocN32Pixels(std::max(bitmap.width(), kMinimalSize),
++                               std::max(bitmap.height(), kMinimalSize));
+   scaled_bitmap.eraseARGB(0, 0, 0, 0);
+   SkCanvas canvas(scaled_bitmap);
+-  canvas.drawBitmap(bitmap, (kDesiredSize - bitmap.width()) / 2,
+-                    (kDesiredSize - bitmap.height()) / 2);
++  canvas.drawBitmap(bitmap, (scaled_bitmap.width() - bitmap.width()) / 2,
++                    (scaled_bitmap.height() - bitmap.height()) / 2);
+ 
+   base::FilePath image_path = image_dir.Append(icon_name + ".png");
+   if (!WriteFile(image_path, scaled_bitmap))
