@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 import sys
 
@@ -8,6 +9,8 @@ DOCS_DIR = os.path.join(SOURCE_ROOT, 'docs')
 
 def main():
   os.chdir(SOURCE_ROOT)
+
+  args = parse_args()
 
   filepaths = []
   totalDirs = 0
@@ -23,7 +26,7 @@ def main():
 
   trailingWhiteSpaceFiles = 0
   for path in filepaths:
-    trailingWhiteSpaceFiles += hasTrailingWhiteSpace(path)
+    trailingWhiteSpaceFiles += hasTrailingWhiteSpace(path, args.fix)
 
   print('Parsed through ' + str(len(filepaths)) +
         ' files within docs directory and its ' +
@@ -32,7 +35,7 @@ def main():
         ' files with trailing whitespace.')
   return trailingWhiteSpaceFiles
 
-def hasTrailingWhiteSpace(filepath):
+def hasTrailingWhiteSpace(filepath, fix):
   try:
     f = open(filepath, 'r')
     lines = f.read().splitlines()
@@ -41,12 +44,26 @@ def hasTrailingWhiteSpace(filepath):
   finally:
     f.close()
 
+  fixed_lines = []
   for line in lines:
-    if line != line.rstrip():
+    fixed_lines.append(line.rstrip() + '\n')
+    if not fix and line != line.rstrip():
       print "Trailing whitespace in: " + filepath
       return True
+  if fix:
+    with open(filepath, 'w') as f:
+      print(fixed_lines)
+      f.writelines(fixed_lines)
 
   return False
+
+def parse_args():
+  parser = argparse.ArgumentParser(
+                      description='Check for trailing whitespace in md files')
+  parser.add_argument('-f', '--fix',
+                      help='Automatically fix trailing whitespace issues',
+                      action='store_true')
+  return parser.parse_known_args()[0]
 
 if __name__ == '__main__':
   sys.exit(main())
