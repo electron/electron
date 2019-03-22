@@ -426,7 +426,7 @@ void DesktopNotificationController::Notification::Set(std::wstring caption,
 
 DesktopNotificationController::NotificationLink::NotificationLink(
     DesktopNotificationController* controller)
-    : shared_ptr(make_shared<NotificationData>()) {
+    : shared_ptr(make_shared<NotificationData>(NotificationData())) {
   get()->controller = controller;
 }
 
