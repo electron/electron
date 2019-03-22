@@ -275,7 +275,7 @@ describe('chromium feature', () => {
   })
 
   describe('navigator.geolocation', () => {
-    before(function () {
+    beforeEach(function () {
       if (!features.isFakeLocationProviderEnabled()) {
         return this.skip()
       }
