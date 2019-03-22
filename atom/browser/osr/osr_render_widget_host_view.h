@@ -45,20 +45,6 @@
 #include "ui/gfx/win/window_impl.h"
 #endif
 
-#if defined(OS_MACOSX)
-#include "content/browser/renderer_host/browser_compositor_view_mac.h"  // nogncheck
-#endif
-
-#if defined(OS_MACOSX)
-#ifdef __OBJC__
-@class CALayer;
-@class NSWindow;
-#else
-class CALayer;
-class NSWindow;
-#endif
-#endif
-
 namespace content {
 class CursorManager;
 }  // namespace content
@@ -68,11 +54,7 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
-#if defined(OS_MACOSX)
-class MacHelper;
-#else
 class AtomDelegatedFrameHostClient;
-#endif
 
 typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
@@ -169,11 +151,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                   const std::vector<gfx::Rect>&) override;
   gfx::Size GetCompositorViewportPixelSize() const override;
 
-#if defined(OS_MACOSX)
-  viz::ScopedSurfaceIdAllocator DidUpdateVisualProperties(
-      const cc::RenderFrameMetadata& metadata) override;
-#endif
-
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
       content::RenderWidgetHost*,
@@ -203,14 +180,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time, base::TimeDelta vsync_period);
-
-#if defined(OS_MACOSX)
-  void CreatePlatformWidget(bool is_guest_view_hack);
-  void DestroyPlatformWidget();
-  SkColor last_frame_root_background_color() const {
-    return last_frame_root_background_color_;
-  }
-#endif
 
   void CancelWidget();
   void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
@@ -249,12 +218,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   ui::Compositor* GetCompositor() const;
   ui::Layer* GetRootLayer() const;
 
-#if defined(OS_MACOSX)
-  content::BrowserCompositorMac* browser_compositor() const {
-    return browser_compositor_.get();
-  }
-#endif
-
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;
 
   void Invalidate();
@@ -275,12 +238,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   }
 
  private:
-#if defined(OS_MACOSX)
-  display::Display GetDisplay();
-  void OnDidUpdateVisualPropertiesComplete(
-      const cc::RenderFrameMetadata& metadata);
-#endif
-
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
 
@@ -338,20 +295,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   viz::StubBeginFrameSource begin_frame_source_;
   uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
 
-#if defined(OS_MACOSX)
-  std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
-
-  SkColor last_frame_root_background_color_;
-
-  // Can not be managed by smart pointer because its header can not be included
-  // in the file that has the destructor.
-  MacHelper* mac_helper_;
-
-  // Selected text on the renderer.
-  std::string selected_text_;
-#else
   std::unique_ptr<AtomDelegatedFrameHostClient> delegated_frame_host_client_;
-#endif
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
 

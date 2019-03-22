@@ -426,7 +426,6 @@ static_library("electron_lib") {
       "atom/browser/osr/osr_host_display_client.h",
       "atom/browser/osr/osr_render_widget_host_view.cc",
       "atom/browser/osr/osr_render_widget_host_view.h",
-      "atom/browser/osr/osr_render_widget_host_view_mac.mm",
       "atom/browser/osr/osr_video_consumer.cc",
       "atom/browser/osr/osr_video_consumer.h",
       "atom/browser/osr/osr_view_proxy.cc",

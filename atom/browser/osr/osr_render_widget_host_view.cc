@@ -153,7 +153,6 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
   DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
 };
 
-#if !defined(OS_MACOSX)
 class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
  public:
   explicit AtomDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
@@ -197,7 +196,6 @@ class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
 
   DISALLOW_COPY_AND_ASSIGN(AtomDelegatedFrameHostClient);
 };
-#endif  // !defined(OS_MACOSX)
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
@@ -225,7 +223,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   current_device_scale_factor_ = kDefaultScaleFactor;
 
-#if !defined(OS_MACOSX)
   local_surface_id_allocator_.GenerateId();
   local_surface_id_allocation_ =
       local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
@@ -236,12 +233,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       true /* should_register_frame_sink_id */);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
-#endif
-
-#if defined(OS_MACOSX)
-  last_frame_root_background_color_ = SK_ColorTRANSPARENT;
-  CreatePlatformWidget(is_guest_view_hack);
-#endif
 
   bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
@@ -250,8 +241,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   content::ImageTransportFactory* factory =
       content::ImageTransportFactory::GetInstance();
 
-#if !defined(OS_MACOSX)
-  // On macOS the ui::Compositor is created/owned by the platform view.
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
   compositor_.reset(
@@ -261,7 +250,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
                          false /* enable_pixel_canvas */, this));
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
-#endif
+
   GetCompositor()->SetDelegate(this);
 
   ResizeRootLayer(false);
@@ -275,29 +264,18 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     video_consumer_->SetActive(IsPainting());
     video_consumer_->SetFrameRate(GetFrameRate());
   }
-
-  Show();
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
-#if defined(OS_MACOSX)
-  if (is_showing_)
-    browser_compositor_->SetRenderWidgetHostIsHidden(true);
-#else
   // Marking the DelegatedFrameHost as removed from the window hierarchy is
   // necessary to remove all connections to its old ui::Compositor.
   if (is_showing_)
     delegated_frame_host_->WasHidden();
   delegated_frame_host_->DetachFromCompositor();
-#endif
 
-#if defined(OS_MACOSX)
-  DestroyPlatformWidget();
-#else
   delegated_frame_host_.reset(NULL);
   compositor_.reset(NULL);
   root_layer_.reset(NULL);
-#endif
 }
 
 content::BrowserAccessibilityManager*
@@ -397,14 +375,10 @@ void OffScreenRenderWidgetHostView::Show() {
 
   is_showing_ = true;
 
-#if defined(OS_MACOSX)
-  browser_compositor_->SetRenderWidgetHostIsHidden(false);
-#else
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(
       GetLocalSurfaceIdAllocation().local_surface_id(),
       GetRootLayer()->bounds().size(), false);
-#endif
 
   if (render_widget_host_)
     render_widget_host_->WasShown(false);
@@ -417,12 +391,8 @@ void OffScreenRenderWidgetHostView::Hide() {
   if (render_widget_host_)
     render_widget_host_->WasHidden();
 
-#if defined(OS_MACOSX)
-  browser_compositor_->SetRenderWidgetHostIsHidden(true);
-#else
   GetDelegatedFrameHost()->WasHidden();
   GetDelegatedFrameHost()->DetachFromCompositor();
-#endif
 
   is_showing_ = false;
 }
@@ -495,15 +465,10 @@ void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
     viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
   renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
 
-#if defined(OS_MACOSX)
-  browser_compositor_->DidCreateNewRendererCompositorFrameSink(
-      renderer_compositor_frame_sink_);
-#else
   if (GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
         renderer_compositor_frame_sink_);
   }
-#endif
 }
 
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
@@ -683,12 +648,8 @@ const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
 
 void OffScreenRenderWidgetHostView::DidNavigate() {
   ResizeRootLayer(true);
-#if defined(OS_MACOSX)
-  browser_compositor_->DidNavigate();
-#else
   if (delegated_frame_host_)
     delegated_frame_host_->DidNavigate();
-#endif
 }
 
 bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpaceLegacy(
@@ -785,11 +746,7 @@ OffScreenRenderWidgetHostView::CreateHostDisplayClient(
 bool OffScreenRenderWidgetHostView::InstallTransparency() {
   if (transparent_) {
     SetBackgroundColor(SkColor());
-#if defined(OS_MACOSX)
-    browser_compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
-#else
     compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
-#endif
     return true;
   }
   return false;
@@ -802,6 +759,18 @@ void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
 }
 
 void OffScreenRenderWidgetHostView::SetWantsAnimateOnlyBeginFrames() {}
+
+#if defined(OS_MACOSX)
+void OffScreenRenderWidgetHostView::SetActive(bool active) {}
+
+void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
+
+void OffScreenRenderWidgetHostView::SpeakSelection() {}
+
+bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
+  return false;
+}
+#endif
 
 void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
                                             const SkBitmap& bitmap) {
@@ -1082,7 +1051,6 @@ int OffScreenRenderWidgetHostView::GetFrameRate() const {
   return frame_rate_;
 }
 
-#if !defined(OS_MACOSX)
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
   return compositor_.get();
 }
@@ -1100,7 +1068,6 @@ content::DelegatedFrameHost*
 OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
   return delegated_frame_host_.get();
 }
-#endif
 
 void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   if (!force && frame_rate_threshold_us_ != 0)
@@ -1149,9 +1116,6 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
 
-#if defined(OS_MACOSX)
-  bool resized = UpdateNSViewAndDisplay();
-#else
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
@@ -1165,7 +1129,6 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   GetDelegatedFrameHost()->EmbedSurface(
       local_surface_id_allocation_.local_surface_id(), size,
       cc::DeadlinePolicy::UseDefaultDeadline());
-#endif
 
   // Note that |render_widget_host_| will retrieve resize parameters from the
   // DelegatedFrameHost, so it must have SynchronizeVisualProperties called
