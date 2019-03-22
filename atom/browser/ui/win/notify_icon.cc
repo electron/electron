@@ -142,6 +142,10 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   if (!SetForegroundWindow(window_))
     return;
 
+  // Cancel current menu if there is one.
+  if (menu_runner_ && menu_runner_->IsRunning())
+    menu_runner_->Cancel();
+
   // Show menu at mouse's position by default.
   gfx::Rect rect(pos, gfx::Size());
   if (pos.IsOrigin())
