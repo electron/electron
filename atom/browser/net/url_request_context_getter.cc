@@ -261,6 +261,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (!url_request_context_) {
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
+
+    // Enable file:// support.
+    builder->set_file_enabled(true);
+
     auto network_delegate = std::make_unique<AtomNetworkDelegate>();
     network_delegate_ = network_delegate.get();
     builder->set_network_delegate(std::move(network_delegate));
