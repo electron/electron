@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/common/atom_extensions_api_provider.h"
+#include "atom/common/extensions/atom_extensions_api_provider.h"
 
 #include "extensions/common/features/json_feature_provider_source.h"
 // #include "extensions/shell/common/api/generated_schemas.h"

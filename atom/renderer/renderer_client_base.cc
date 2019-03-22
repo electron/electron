@@ -8,15 +8,15 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/atom_extensions_client.h"
 #include "atom/common/color_util.h"
+#include "atom/common/extensions/atom_extensions_client.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_autofill_agent.h"
-#include "atom/renderer/atom_extensions_renderer_client.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/electron_api_service_impl.h"
+#include "atom/renderer/extensions/atom_extensions_renderer_client.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"

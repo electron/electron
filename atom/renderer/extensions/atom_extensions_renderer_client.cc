@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/atom_extensions_renderer_client.h"
+#include "atom/renderer/extensions/atom_extensions_renderer_client.h"
 
 #include "content/public/renderer/render_thread.h"
 #include "extensions/renderer/dispatcher.h"

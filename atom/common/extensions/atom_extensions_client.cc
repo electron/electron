@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/common/atom_extensions_client.h"
+#include "atom/common/extensions/atom_extensions_client.h"
 
 #include <memory>
 #include <string>
 
-#include "atom/common/atom_extensions_api_provider.h"
+#include "atom/common/extensions/atom_extensions_api_provider.h"
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/macros.h"

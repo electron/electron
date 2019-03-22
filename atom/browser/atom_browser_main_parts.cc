@@ -29,7 +29,7 @@
 #include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
-#include "atom/common/atom_extensions_client.h"
+#include "atom/common/extensions/atom_extensions_client.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/base_switches.h"
