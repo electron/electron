@@ -830,7 +830,9 @@ bool AtomBrowserClient::HandleExternalProtocol(
     ui::PageTransition page_transition,
     bool has_user_gesture,
     const std::string& method,
-    const net::HttpRequestHeaders& headers) {
+    const net::HttpRequestHeaders& headers,
+    network::mojom::URLLoaderFactoryRequest* factory_request,
+    network::mojom::URLLoaderFactory*& out_factory) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
