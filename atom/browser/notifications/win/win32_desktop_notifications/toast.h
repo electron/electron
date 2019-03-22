@@ -42,7 +42,7 @@ class DesktopNotificationController::Toast {
     return ease_in_active_ || ease_out_active_ || IsStackCollapseActive();
   }
   bool IsHighlighted() const {
-    _ASSERT(!(is_highlighted_ && !IsWindowVisible(hwnd_)));
+    DCHECK(!(is_highlighted_ && !IsWindowVisible(hwnd_)));
     return is_highlighted_;
   }
 
