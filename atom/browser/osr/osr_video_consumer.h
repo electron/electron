@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_OSR_OSR_VIDEO_CONSUMER_H_
 #define ATOM_BROWSER_OSR_OSR_VIDEO_CONSUMER_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "components/viz/host/client_frame_sink_video_capturer.h"
