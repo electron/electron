@@ -249,8 +249,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
 
   network_context_params->http_cache_enabled = false;
 
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
-    network_context_params->enable_file_url_support = true;
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;
 #endif

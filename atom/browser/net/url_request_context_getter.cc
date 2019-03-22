@@ -156,8 +156,6 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
       net::HttpUtil::GenerateAcceptLanguageHeader(
           AtomBrowserClient::Get()->GetApplicationLocale());
 
-  network_context_params->enable_data_url_support = false;
-
   if (!browser_context_->IsOffTheRecord()) {
     auto base_path = browser_context_->GetPath();
     network_context_params->http_cache_path =
