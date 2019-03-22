@@ -174,7 +174,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const std::string& method,
       const net::HttpRequestHeaders& headers,
       network::mojom::URLLoaderFactoryRequest* factory_request,
-      network::mojom::URLLoaderFactory*& out_factory) override;
+      // clang-format off
+      network::mojom::URLLoaderFactory*& out_factory)  // NOLINT
+      // clang-format on
+      override;
 
  private:
   struct ProcessPreferences {
