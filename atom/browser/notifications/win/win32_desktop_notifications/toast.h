@@ -9,6 +9,8 @@
 
 #include "atom/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
+#include "base/logging.h"
+
 namespace atom {
 
 class DesktopNotificationController::Toast {
