@@ -1091,12 +1091,10 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
   return root_layer_.get();
 }
 
-#if !defined(OS_MACOSX)
 const viz::LocalSurfaceIdAllocation&
 OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
   return local_surface_id_allocation_;
 }
-#endif  // defined(OS_MACOSX)
 
 content::DelegatedFrameHost*
 OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
