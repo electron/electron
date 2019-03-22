@@ -1388,8 +1388,7 @@ describe('net module', () => {
         assert.strictEqual(statusMessage, 'OK')
         const headers = response.headers
         assert(typeof headers === 'object')
-        assert.deepStrictEqual(headers[customHeaderName.toLowerCase()],
-          [customHeaderValue])
+        assert.deepStrictEqual(headers[customHeaderName.toLowerCase()], customHeaderValue)
         const httpVersion = response.httpVersion
         assert(typeof httpVersion === 'string')
         assert(httpVersion.length > 0)
@@ -1400,11 +1399,8 @@ describe('net module', () => {
         assert(typeof httpVersionMinor === 'number')
         assert(httpVersionMinor >= 0)
         response.pause()
-        response.on('data', (chunk) => {
-        })
-        response.on('end', () => {
-          done()
-        })
+        response.on('data', (chunk) => {})
+        response.on('end', () => { done() })
         response.resume()
       })
       urlRequest.end()
