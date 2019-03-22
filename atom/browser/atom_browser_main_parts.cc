@@ -40,6 +40,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/web_ui_controller_factory.h"
@@ -409,7 +410,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
     extensions_browser_client_->InitWithBrowserContext(
         browser_context.get(), browser_context.get()->prefs());
-    // BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(browser_context.get());
+    BrowserContextDependencyManager::GetInstance()
+        ->CreateBrowserContextServices(browser_context.get());
 
     extensions::ShellExtensionSystem* extension_system =
         static_cast<extensions::ShellExtensionSystem*>(

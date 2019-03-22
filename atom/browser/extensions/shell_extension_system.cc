@@ -26,6 +26,7 @@
 #include "extensions/browser/quota_service.h"
 #include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
+#include "extensions/browser/shared_user_script_master.h"
 #include "extensions/browser/value_store/value_store_factory_impl.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
@@ -74,6 +75,8 @@ void ShellExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   runtime_data_ =
       std::make_unique<RuntimeData>(ExtensionRegistry::Get(browser_context_));
   quota_service_ = std::make_unique<QuotaService>();
+  shared_user_script_master_ =
+      std::make_unique<SharedUserScriptMaster>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
   extension_loader_ = std::make_unique<ShellExtensionLoader>(browser_context_);
 }
@@ -99,7 +102,7 @@ ServiceWorkerManager* ShellExtensionSystem::service_worker_manager() {
 }
 
 SharedUserScriptMaster* ShellExtensionSystem::shared_user_script_master() {
-  return nullptr;
+  return new SharedUserScriptMaster(browser_context_);
 }
 
 StateStore* ShellExtensionSystem::state_store() {
