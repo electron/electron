@@ -134,4 +134,13 @@ void PlatformNotificationService::RecordNotificationUkmEvent(
     content::BrowserContext* browser_context,
     const content::NotificationDatabaseData& data) {}
 
+void PlatformNotificationService::ScheduleTrigger(
+    BrowserContext* browser_context,
+    base::Time timestamp) {}
+
+base::Time PlatformNotificationService::ReadNextTriggerTimestamp(
+    BrowserContext* browser_context) {
+  return base::Time::Max();
+}
+
 }  // namespace atom
