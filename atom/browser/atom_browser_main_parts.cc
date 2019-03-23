@@ -22,6 +22,7 @@
 #include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "atom/browser/extensions/shell_browser_context_keyed_service_factories.h"
 #include "atom/browser/extensions/shell_extension_system.h"
+#include "atom/browser/extensions/shell_extension_system_factory.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
@@ -203,6 +204,42 @@ int X11EmptyIOErrorHandler(Display* d) {
 #endif
 
 }  // namespace
+
+void AtomBrowserMainParts::InitializeExtensionSystem() {
+  extension_system_ = static_cast<extensions::ShellExtensionSystem*>(
+      extensions::ExtensionSystem::Get(browser_context_.get()));
+  extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+  extension_system_->FinishInitialization();
+}
+
+void AtomBrowserMainParts::InitializeFeatureList() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  auto enable_features =
+      cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
+  auto disable_features =
+      cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
+  // Disable creation of spare renderer process with site-per-process mode,
+  // it interferes with our process preference tracking for non sandboxed mode.
+  // Can be reenabled when our site instance policy is aligned with chromium
+  // when node integration is enabled.
+  disable_features +=
+      std::string(",") + features::kSpareRendererForSitePerProcess.name +
+      std::string(",") + network::features::kNetworkService.name;
+  auto feature_list = std::make_unique<base::FeatureList>();
+  feature_list->InitializeFromCommandLine(enable_features, disable_features);
+  base::FeatureList::SetInstance(std::move(feature_list));
+}
+
+#if !defined(OS_MACOSX)
+void AtomBrowserMainParts::OverrideAppLogsPath() {
+  base::FilePath path;
+  if (base::PathService::Get(DIR_APP_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+    base::PathService::Override(DIR_APP_LOGS, path);
+  }
+}
+#endif
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
@@ -403,32 +440,14 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
   extensions::shell::EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
-  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  if (cmd_line->HasSwitch("load-extension")) {
-    // TODO(samuelmaddock): move into InitExtensionSystem
-    auto browser_context = AtomBrowserContext::From("", false);
+  browser_context_ = AtomBrowserContext::From("", false);
 
-    extensions_browser_client_->InitWithBrowserContext(
-        browser_context.get(), browser_context.get()->prefs());
-    BrowserContextDependencyManager::GetInstance()
-        ->CreateBrowserContextServices(browser_context.get());
+  extensions_browser_client_->InitWithBrowserContext(
+      browser_context_.get(), browser_context_.get()->prefs());
+  BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
+      browser_context_.get());
 
-    extensions::ShellExtensionSystem* extension_system =
-        static_cast<extensions::ShellExtensionSystem*>(
-            extensions::ExtensionSystem::Get(browser_context.get()));
-    extension_system->InitForRegularProfile(true /* extensions_enabled */);
-    extension_system->FinishInitialization();
-
-    auto load_extension = cmd_line->GetSwitchValueASCII("load-extension");
-    auto extension_path = base::FilePath::FromUTF8Unsafe(load_extension);
-    extension_system->LoadExtension(extension_path);
-  }
-
-  // TODO(samuelmaddock):
-  // extensions_browser_client_->InitWithBrowserContext(browser_context_.get(),
-  // user_pref_service_.get());
-  // BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(browser_context_.get());
-  // InitExtensionSystem();
+  InitializeExtensionSystem();
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();
@@ -462,6 +481,15 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
+
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch("load-extension")) {
+    auto load_extension = cmd_line->GetSwitchValueASCII("load-extension");
+    auto extension_path = base::FilePath::FromUTF8Unsafe(load_extension);
+    auto* extension_system = static_cast<extensions::ShellExtensionSystem*>(
+        extensions::ExtensionSystem::Get(browser_context_.get()));
+    extension_system->LoadExtension(extension_path);
+  }
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
@@ -516,6 +544,8 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
       std::move(callback).Run();
     ++iter;
   }
+
+  extension_system_ = NULL;
 
   fake_browser_process_->PostMainMessageLoopRun();
 }

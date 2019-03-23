@@ -27,8 +27,13 @@ class WMState;
 }
 #endif
 
+namespace extensions {
+class ShellExtensionSystem;
+}
+
 namespace atom {
 
+class AtomBrowserContext;
 class AtomExtensionsClient;
 class AtomExtensionsBrowserClient;
 class Browser;
@@ -89,6 +94,9 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   void PostDestroyThreads() override;
 
  private:
+  void InitializeExtensionSystem();
+  void InitializeFeatureList();
+  void OverrideAppLogsPath();
   void PreMainMessageLoopStartCommon();
 
 #if defined(OS_POSIX)
@@ -130,6 +138,10 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
   std::unique_ptr<AtomExtensionsClient> extensions_client_;
   std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
+  scoped_refptr<AtomBrowserContext> browser_context_;
+
+  // Owned by the KeyedService system.
+  extensions::ShellExtensionSystem* extension_system_;
 
   base::RepeatingTimer gc_timer_;
 
