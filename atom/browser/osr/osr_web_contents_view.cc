@@ -187,10 +187,9 @@ void OffScreenWebContentsView::UpdateDragCursor(
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   auto* view = GetView();
+  painting_ = painting;
   if (view != nullptr) {
     view->SetPainting(painting);
-  } else {
-    painting_ = painting;
   }
 }
 
@@ -205,10 +204,9 @@ bool OffScreenWebContentsView::IsPainting() const {
 
 void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
   auto* view = GetView();
+  frame_rate_ = frame_rate;
   if (view != nullptr) {
     view->SetFrameRate(frame_rate);
-  } else {
-    frame_rate_ = frame_rate;
   }
 }
 
