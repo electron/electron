@@ -585,6 +585,7 @@ static_library("electron_lib") {
     sources += [
       "atom/browser/osr/osr_host_display_client.cc",
       "atom/browser/osr/osr_host_display_client.h",
+      "atom/browser/osr/osr_host_display_client_mac.mm",
       "atom/browser/osr/osr_render_widget_host_view.cc",
       "atom/browser/osr/osr_render_widget_host_view.h",
       "atom/browser/osr/osr_video_consumer.cc",
@@ -763,6 +764,11 @@ if (is_mac) {
       "ServiceManagement.framework",
       "StoreKit.framework",
     ]
+
+    if (enable_osr) {
+      libs += [ "IOSurface.framework" ]
+    }
+
     ldflags = [
       "-F",
       rebase_path("external_binaries", root_build_dir),

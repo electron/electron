@@ -140,7 +140,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
                     ->GetRenderWidgetHostView()
               : web_contents_impl->GetRenderWidgetHostView());
 
-  return new OffScreenRenderWidgetHostView(transparent_, false,
+  return new OffScreenRenderWidgetHostView(transparent_, painting_,
                                            view->GetFrameRate(), callback_,
                                            render_widget_host, view, GetSize());
 }
