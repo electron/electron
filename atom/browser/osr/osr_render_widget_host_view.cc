@@ -28,6 +28,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
+#include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "media/base/video_frame.h"
 #include "third_party/blink/public/platform/web_input_event.h"
@@ -257,7 +258,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   render_widget_host_->SetView(this);
   InstallTransparency();
 
-  if (!factory->IsGpuCompositingDisabled()) {
+  if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
     video_consumer_.reset(new OffScreenVideoConsumer(
         this, base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
                          weak_ptr_factory_.GetWeakPtr())));
@@ -508,6 +509,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   if (video_consumer_) {
     video_consumer_->SizeChanged();
   }
+  Show();
 }
 
 void OffScreenRenderWidgetHostView::InitAsFullscreen(
