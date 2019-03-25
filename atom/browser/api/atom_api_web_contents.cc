@@ -912,8 +912,12 @@ void WebContents::IPCHandler::MessageSync(bool internal,
                                           base::Value arguments,
                                           MessageSyncCallback callback) {
   content::RenderFrameHost* rfh = bindings_.GetCurrentTargetFrame();
-  api_web_contents_->OnRendererMessageSync(rfh, internal, channel, arguments,
-                                           std::move(callback));
+
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&WebContents::OnRendererMessageSync,
+                     base::Unretained(api_web_contents_), rfh, internal,
+                     channel, std::move(arguments), std::move(callback)));
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContents::IPCHandler)

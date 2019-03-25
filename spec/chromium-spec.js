@@ -374,9 +374,6 @@ describe('chromium feature', () => {
       listener = async (event) => {
         assert.strictEqual(event.data.isProcessGlobalUndefined, true)
         b.close()
-        while (!b.closed) {
-          await new Promise(resolve => setTimeout(resolve, 10))
-        }
         done()
       }
       window.addEventListener('message', listener)
