@@ -52,11 +52,9 @@ class AtomRenderMessageFilter : public content::BrowserMessageFilter {
 
   const int render_process_id_;
 
-  base::WeakPtrFactory<AtomPreconnectDelegate> weak_factory_;
-
   // The PreconnectManager for the associated Profile. This must only be
   // accessed on the UI thread.
-  static predictors::PreconnectManager* preconnect_manager_;
+  base::WeakPtr<predictors::PreconnectManager> preconnect_manager_;
 
   // Allows to check on the IO thread whether the PreconnectManager was
   // initialized.

@@ -5,7 +5,6 @@
 import("//build/config/ui.gni")
 import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
-import("//third_party/protobuf/proto_library.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
 # Builds some of the chrome sources that Electron depends on.
@@ -40,12 +39,24 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/predictors/loading_predictor.cc",
+    "//chrome/browser/predictors/loading_predictor.h",
+    "//chrome/browser/predictors/loading_predictor_config.cc",
+    "//chrome/browser/predictors/loading_predictor_config.h",
+    "//chrome/browser/predictors/loading_predictor_factory.cc",
+    "//chrome/browser/predictors/loading_predictor_factory.h",
+    "//chrome/browser/predictors/loading_predictor_tab_helper.cc",
+    "//chrome/browser/predictors/loading_predictor_tab_helper.h",
     "//chrome/browser/predictors/preconnect_manager.cc",
     "//chrome/browser/predictors/preconnect_manager.h",
     "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
+    "//chrome/browser/predictors/resource_prefetch_common.cc",
+    "//chrome/browser/predictors/resource_prefetch_common.h",
+    "//chrome/browser/predictors/resource_prefetch_predictor.cc",
+    "//chrome/browser/predictors/resource_prefetch_predictor.h",
     "//chrome/browser/profiles/profile.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
