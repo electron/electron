@@ -1,0 +1,31 @@
+From 4eab1744c164013657091bcd424be06988f55ad8 Mon Sep 17 00:00:00 2001
+From: Richard Townsend <richard.townsend@arm.com>
+Date: Wed, 24 Apr 2019 14:19:27 +0100
+Subject: [PATCH] fix: support getting a clang version from the environment
+
+Due to an MSVC interoperability defect in the version of Clang used for
+Chromium 74-76, it's necessary to build with a later version of Clang.
+This change allows the correct version to be specified via the
+environment during a gclient sync. This is only intended to be a
+temporary workaround and will be removed when Electron's Chromium
+updates to a new version.
+---
+ tools/clang/scripts/update.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index c284aff1e3b7..145232ac6a27 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -37,6 +37,8 @@ import zipfile
+ # Reverting problematic clang rolls is safe, though.
+ CLANG_REVISION = '357692'
+ 
++CLANG_REVISION = os.environ.get('LLVM_FORCE_REVISION', CLANG_REVISION).strip()
++
+ use_head_revision = bool(os.environ.get('LLVM_FORCE_HEAD_REVISION', '0')
+                          in ('1', 'YES'))
+ if use_head_revision:
+-- 
+2.19.1.windows.1
+
