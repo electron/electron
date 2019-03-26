@@ -585,6 +585,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // -1 means no speculative RVH has been committed yet.
   int currently_committed_process_id_ = -1;
 
+  base::WeakPtrFactory<WebContents> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 

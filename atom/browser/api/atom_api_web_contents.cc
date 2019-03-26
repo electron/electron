@@ -267,7 +267,9 @@ struct WebContents::FrameDispatchHelper {
 
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents), type_(REMOTE) {
+    : content::WebContentsObserver(web_contents),
+      type_(REMOTE),
+      weak_ptr_factory_(this) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                      false);
   Init(isolate);
@@ -279,7 +281,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          std::unique_ptr<content::WebContents> web_contents,
                          Type type)
-    : content::WebContentsObserver(web_contents.get()), type_(type) {
+    : content::WebContentsObserver(web_contents.get()),
+      type_(type),
+      weak_ptr_factory_(this) {
   DCHECK(type != REMOTE) << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
@@ -287,8 +291,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                             mate::Dictionary::CreateEmpty(isolate));
 }
 
-WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options) {
+WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
+    : weak_ptr_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -916,8 +920,9 @@ void WebContents::IPCHandler::MessageSync(bool internal,
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::BindOnce(&WebContents::OnRendererMessageSync,
-                     base::Unretained(api_web_contents_), rfh, internal,
-                     channel, std::move(arguments), std::move(callback)));
+                     api_web_contents_->weak_ptr_factory_.GetWeakPtr(), rfh,
+                     internal, channel, std::move(arguments),
+                     std::move(callback)));
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContents::IPCHandler)
