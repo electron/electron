@@ -11,6 +11,7 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 namespace atom {
@@ -19,12 +20,10 @@ namespace api {
 
 constexpr static int kMaxFrameRate = 30;
 
-FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
-                                 content::WebContents* web_contents,
+FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
                                  const FrameCaptureCallback& callback,
                                  bool only_dirty)
     : content::WebContentsObserver(web_contents),
-      isolate_(isolate),
       callback_(callback),
       only_dirty_(only_dirty),
       weak_ptr_factory_(this) {
@@ -147,17 +146,23 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())
     return;
 
-  const_cast<SkBitmap&>(frame).setAlphaType(kPremul_SkAlphaType);
-  v8::Local<v8::Value> damage_rect =
-      mate::Converter<gfx::Rect>::ToV8(isolate_, damage);
+  const SkBitmap& bitmap = only_dirty_ ? SkBitmapOperations::CreateTiledBitmap(
+                                             frame, damage.x(), damage.y(),
+                                             damage.width(), damage.height())
+                                       : frame;
 
-  if (only_dirty_) {
-    const SkBitmap& damageFrame = SkBitmapOperations::CreateTiledBitmap(
-        frame, damage.x(), damage.y(), damage.width(), damage.height());
-    callback_.Run(gfx::Image::CreateFrom1xBitmap(damageFrame), damage_rect);
-  } else {
-    callback_.Run(gfx::Image::CreateFrom1xBitmap(frame), damage_rect);
-  }
+  // Copying SkBitmap does not copy the internal pixels, we have to manually
+  // allocate and write pixels otherwise crash may happen when the original
+  // frame is modified.
+  SkBitmap copy;
+  copy.allocPixels(SkImageInfo::Make(bitmap.width(), bitmap.height(),
+                                     kRGBA_8888_SkColorType,
+                                     kPremul_SkAlphaType));
+  SkPixmap pixmap;
+  bool success = bitmap.peekPixels(&pixmap) && copy.writePixels(pixmap, 0, 0);
+  CHECK(success);
+
+  callback_.Run(gfx::Image::CreateFrom1xBitmap(copy), damage);
 }
 
 }  // namespace api
