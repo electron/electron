@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/callback.h"
+#include "base/memory/shared_memory.h"
 #include "components/viz/host/host_display_client.h"
 #include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -37,6 +38,10 @@ class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
   mojo::Binding<viz::mojom::LayeredWindowUpdater> binding_;
   std::unique_ptr<SkCanvas> canvas_;
   bool active_ = false;
+
+#if !defined(WIN32)
+  base::WritableSharedMemoryMapping shm_mapping_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(LayeredWindowUpdater);
 };
