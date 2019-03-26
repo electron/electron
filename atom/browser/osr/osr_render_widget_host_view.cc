@@ -781,7 +781,7 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
   backing_->allocN32Pixels(bitmap.width(), bitmap.height(), !transparent_);
   bitmap.readPixels(backing_->pixmap());
 
-  if (IsPopupWidget()) {
+  if (IsPopupWidget() && parent_callback_) {
     parent_callback_.Run(this->popup_position_);
   } else {
     CompositeFrame(damage_rect);

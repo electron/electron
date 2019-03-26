@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/memory/shared_memory.h"
 #include "components/viz/common/resources/resource_format.h"
 #include "components/viz/common/resources/resource_sizes.h"
 #include "mojo/public/cpp/system/platform_handle.h"
@@ -45,21 +44,40 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
   if (!size_result)
     return;
 
+#if defined(WIN32)
   base::SharedMemoryHandle shm_handle;
+  size_t required_bytes;
   MojoResult unwrap_result = mojo::UnwrapSharedMemoryHandle(
-      std::move(scoped_buffer_handle), &shm_handle, nullptr, nullptr);
+      std::move(scoped_buffer_handle), &shm_handle, &required_bytes, nullptr);
   if (unwrap_result != MOJO_RESULT_OK)
     return;
 
   base::SharedMemory shm(shm_handle, false);
-#if defined(WIN32)
+  if (!shm.Map(required_bytes)) {
+    DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
+    return;
+  }
+
   canvas_ = skia::CreatePlatformCanvasWithSharedSection(
       pixel_size.width(), pixel_size.height(), false, shm.handle().GetHandle(),
       skia::CRASH_ON_FAILURE);
 #else
+  auto shm =
+      mojo::UnwrapWritableSharedMemoryRegion(std::move(scoped_buffer_handle));
+  if (!shm.IsValid()) {
+    DLOG(ERROR) << "Failed to unwrap shared memory region";
+    return;
+  }
+
+  shm_mapping_ = shm.Map();
+  if (!shm_mapping_.IsValid()) {
+    DLOG(ERROR) << "Failed to map shared memory region";
+    return;
+  }
+
   canvas_ = skia::CreatePlatformCanvasWithPixels(
       pixel_size.width(), pixel_size.height(), false,
-      static_cast<uint8_t*>(shm.memory()), skia::CRASH_ON_FAILURE);
+      static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
 #endif
 }
 

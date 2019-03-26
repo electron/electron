@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Heilig Benedek <benecene@gmail.com>
 Date: Wed, 20 Mar 2019 20:30:44 +0100
-Subject: Make OSR work with viz compositor
+Subject: feat: offscreen rendering with viz compositor
 
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
@@ -179,10 +179,10 @@ index f3867356e3d641416e00e6d115ae9ae2a0be90ab..b1d192d2b20ccb63fba07093101d745e
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..4d43b2a5cf5de12e4fad3a0790ca286e2058400c
+index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655857f3e31
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,167 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -203,6 +203,8 @@ index 0000000000000000000000000000000000000000..4d43b2a5cf5de12e4fad3a0790ca286e
 +#include "skia/ext/skia_utils_win.h"
 +#include "ui/gfx/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
++#else
++#include "mojo/public/cpp/base/shared_memory_utils.h"
 +#endif
 +
 +namespace viz {
@@ -279,26 +281,41 @@ index 0000000000000000000000000000000000000000..4d43b2a5cf5de12e4fad3a0790ca286e
 +    return;
 +  }
 +
-+  base::SharedMemory shm;
-+  if (!shm.CreateAnonymous(required_bytes)) {
-+    DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
-+    return;
-+  }
-+
 +  #if defined(WIN32)
++    base::SharedMemory shm;
++    if (!shm.CreateAnonymous(required_bytes)) {
++      DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
++      return;
++    }
++
 +    canvas_ = skia::CreatePlatformCanvasWithSharedSection(
 +        viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
 +        shm.handle().GetHandle(), skia::CRASH_ON_FAILURE);
++
++    // Transfer handle ownership to the browser process.
++    mojo::ScopedSharedBufferHandle scoped_handle = mojo::WrapSharedMemoryHandle(
++        shm.TakeHandle(), required_bytes,
++        mojo::UnwrappedSharedMemoryHandleProtection::kReadWrite);
 +  #else
++    auto shm = mojo::CreateWritableSharedMemoryRegion(required_bytes);
++    if (!shm.IsValid()) {
++      DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
++      return;
++    }
++
++    shm_mapping_ = shm.Map();
++    if (!shm_mapping_.IsValid()) {
++      DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
++      return;
++    }
++
 +    canvas_ = skia::CreatePlatformCanvasWithPixels(
 +        viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+        static_cast<uint8_t*>(shm.memory()), skia::CRASH_ON_FAILURE);
-+  #endif
++        static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
 +
-+  // Transfer handle ownership to the browser process.
-+  mojo::ScopedSharedBufferHandle scoped_handle = mojo::WrapSharedMemoryHandle(
-+      shm.TakeHandle(), required_bytes,
-+      mojo::UnwrappedSharedMemoryHandleProtection::kReadWrite);
++    mojo::ScopedSharedBufferHandle scoped_handle =
++        mojo::WrapWritableSharedMemoryRegion(std::move(shm));
++  #endif
 +
 +  layered_window_updater_->OnAllocatedSharedMemory(viewport_pixel_size_,
 +                                                   std::move(scoped_handle));
@@ -335,10 +352,10 @@ index 0000000000000000000000000000000000000000..4d43b2a5cf5de12e4fad3a0790ca286e
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..f15038a33c309faae5684ed5ea73d040a6526745
+index 0000000000000000000000000000000000000000..01e1e2f0860faa1afe42c342c8905a7f838bd363
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,88 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -416,6 +433,10 @@ index 0000000000000000000000000000000000000000..f15038a33c309faae5684ed5ea73d040
 +  std::unique_ptr<SkCanvas> canvas_;
 +  bool waiting_on_draw_ack_ = false;
 +  base::OnceClosure swap_ack_callback_;
++
++#if !defined(WIN32)
++  base::WritableSharedMemoryMapping shm_mapping_;
++#endif
 +
 +  DISALLOW_COPY_AND_ASSIGN(SoftwareOutputDeviceProxy);
 +};
