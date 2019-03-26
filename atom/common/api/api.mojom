@@ -19,7 +19,6 @@ interface ElectronBrowser {
       string channel,
       mojo_base.mojom.ListValue arguments);
 
-  [Sync]
   MessageSync(
     bool internal,
     string channel,

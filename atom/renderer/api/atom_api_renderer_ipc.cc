@@ -8,6 +8,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
+#include "base/task/post_task.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/atom/common/api/api.mojom.h"
@@ -16,7 +17,7 @@
 #include "native_mate/handle.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
@@ -38,7 +39,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     Init(isolate);
     RenderFrame* render_frame = GetCurrentRenderFrame();
     DCHECK(render_frame);
-    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+    render_frame->GetRemoteInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_browser_ptr_));
   }
   static void BuildPrototype(v8::Isolate* isolate,
@@ -64,13 +65,55 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                        const std::string& channel,
                        const base::ListValue& arguments) {
     base::Value result;
-    electron_browser_ptr_->MessageSync(internal, channel, arguments.Clone(),
-                                       &result);
+
+    // A task is posted to a separate thread to execute the request so that
+    // this thread may block on a waitable event. It is safe to pass raw
+    // pointers to |sync_load_response| and |event| as this stack frame will
+    // survive until the request is complete.
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner =
+        base::CreateSingleThreadTaskRunnerWithTraits({});
+
+    base::WaitableEvent response_received_event;
+
+    auto interface_info = electron_browser_ptr_.PassInterface();
+    atom::mojom::ElectronBrowserPtrInfo returned_interface_info;
+    task_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](atom::mojom::ElectronBrowserPtrInfo interface_info,
+               atom::mojom::ElectronBrowserPtrInfo* return_interface_info,
+               base::WaitableEvent* event, base::Value* result, bool internal,
+               const std::string& channel, const base::ListValue* arguments) {
+              atom::mojom::ElectronBrowserPtr browser_ptr(
+                  std::move(interface_info));
+              browser_ptr->MessageSync(
+                  internal, channel, arguments->Clone(),
+                  base::BindOnce(
+                      [](atom::mojom::ElectronBrowserPtr ptr,
+                         atom::mojom::ElectronBrowserPtrInfo*
+                             return_interface_info,
+                         base::WaitableEvent* event, base::Value* result,
+                         base::Value response) {
+                        *result = std::move(response);
+                        *return_interface_info = ptr.PassInterface();
+                        event->Signal();
+                      },
+                      std::move(browser_ptr),
+                      base::Unretained(return_interface_info),
+                      base::Unretained(event), base::Unretained(result)));
+            },
+            std::move(interface_info),
+            base::Unretained(&returned_interface_info),
+            base::Unretained(&response_received_event),
+            base::Unretained(&result), internal, channel,
+            base::Unretained(&arguments)));
+    response_received_event.Wait();
+    electron_browser_ptr_.Bind(std::move(returned_interface_info));
     return result;
   }
 
  private:
-  atom::mojom::ElectronBrowserAssociatedPtr electron_browser_ptr_;
+  atom::mojom::ElectronBrowserPtr electron_browser_ptr_;
 };
 
 void SendTo(mate::Arguments* args,

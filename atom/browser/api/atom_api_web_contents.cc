@@ -275,7 +275,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   Init(isolate);
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, mate::Dictionary::CreateEmpty(isolate));
-  IPCHandler::CreateForWebContentsWithApiWebContents(web_contents, this);
+  registry_.AddInterface(base::BindRepeating(&WebContents::CreateIPCHandler,
+                                             base::Unretained(this)));
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -425,7 +426,8 @@ void WebContents::InitWithSessionAndOptions(
   // Initialize zoom controller.
   InitZoomController(web_contents(), options);
 
-  IPCHandler::CreateForWebContentsWithApiWebContents(web_contents(), this);
+  registry_.AddInterface(base::BindRepeating(&WebContents::CreateIPCHandler,
+                                             base::Unretained(this)));
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
@@ -825,6 +827,13 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
   }
 }
 
+void WebContents::OnInterfaceRequestFromFrame(
+    content::RenderFrameHost* render_frame_host,
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle* interface_pipe) {
+  registry_.TryBindInterface(interface_name, interface_pipe, render_frame_host);
+}
+
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())
@@ -888,44 +897,37 @@ bool WebContents::EmitNavigationEvent(
               frame_routing_id);
 }
 
-void WebContents::IPCHandler::CreateForWebContentsWithApiWebContents(
-    content::WebContents* web_contents,
-    WebContents* api_web_contents) {
-  if (FromWebContents(web_contents))
+void WebContents::CreateIPCHandler(
+    mojom::ElectronBrowserRequest request,
+    content::RenderFrameHost* render_frame_host) {
+  auto id = bindings_.AddBinding(this, std::move(request), render_frame_host);
+  frame_to_bindings_map_[render_frame_host].push_back(id);
+}
+
+void WebContents::Message(bool internal,
+                          const std::string& channel,
+                          base::Value arguments) {
+  OnRendererMessage(bindings_.dispatch_context(), internal, channel,
+                    std::move(arguments));
+}
+
+void WebContents::MessageSync(bool internal,
+                              const std::string& channel,
+                              base::Value arguments,
+                              MessageSyncCallback callback) {
+  OnRendererMessageSync(bindings_.dispatch_context(), internal, channel,
+                        std::move(arguments), std::move(callback));
+}
+
+void WebContents::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  auto it = frame_to_bindings_map_.find(render_frame_host);
+  if (it == frame_to_bindings_map_.end())
     return;
-
-  web_contents->SetUserData(UserDataKey(), std::make_unique<IPCHandler>(
-                                               web_contents, api_web_contents));
+  for (auto id : it->second)
+    bindings_.RemoveBinding(id);
+  frame_to_bindings_map_.erase(it);
 }
-
-WebContents::IPCHandler::IPCHandler(content::WebContents* web_contents,
-                                    WebContents* api_web_contents)
-    : api_web_contents_(api_web_contents), bindings_(web_contents, this) {}
-
-WebContents::IPCHandler::~IPCHandler() = default;
-
-void WebContents::IPCHandler::Message(bool internal,
-                                      const std::string& channel,
-                                      base::Value arguments) {
-  content::RenderFrameHost* rfh = bindings_.GetCurrentTargetFrame();
-  api_web_contents_->OnRendererMessage(rfh, internal, channel, arguments);
-}
-
-void WebContents::IPCHandler::MessageSync(bool internal,
-                                          const std::string& channel,
-                                          base::Value arguments,
-                                          MessageSyncCallback callback) {
-  content::RenderFrameHost* rfh = bindings_.GetCurrentTargetFrame();
-
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&WebContents::OnRendererMessageSync,
-                     api_web_contents_->weak_ptr_factory_.GetWeakPtr(), rfh,
-                     internal, channel, std::move(arguments),
-                     std::move(callback)));
-}
-
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContents::IPCHandler)
 
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {

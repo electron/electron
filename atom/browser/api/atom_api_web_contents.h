@@ -26,6 +26,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/binder_registry.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -75,7 +76,8 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
 // Wrapper around the content::WebContents.
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
-                    public content::WebContentsObserver {
+                    public content::WebContentsObserver,
+                    public mojom::ElectronBrowser {
  public:
   enum Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
@@ -447,6 +449,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(SkColor theme_color) override;
+  void OnInterfaceRequestFromFrame(
+      content::RenderFrameHost* render_frame_host,
+      const std::string& interface_name,
+      mojo::ScopedMessagePipeHandle* interface_pipe) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
@@ -463,43 +469,23 @@ class WebContents : public mate::TrackableObject<WebContents>,
                          const std::vector<base::string16>& labels);
 #endif
 
+  void Message(bool internal,
+               const std::string& channel,
+               base::Value arguments) override;
+
+  void MessageSync(bool internal,
+                   const std::string& channel,
+                   base::Value arguments,
+                   MessageSyncCallback callback) override;
+
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
+
  private:
-  // Handles IPC messages from a specific RenderFrame. Created lazily.
-  // TODO(nornagon): this probably shouldn't be tied to the api::WebContents.
-  // Message/MessageSync are api::WebContents-specific but it's also totally
-  // plausible that there would be IPC messages that could be handled by the
-  // browser process that don't require an api::WebContents to exist.
-  class IPCHandler : public mojom::ElectronBrowser,
-                     public content::WebContentsUserData<IPCHandler> {
-   public:
-    ~IPCHandler() override;
-    IPCHandler(content::WebContents* web_contents,
-               WebContents* api_web_contents);
-
-    void Message(bool internal,
-                 const std::string& channel,
-                 base::Value arguments) override;
-    void MessageSync(bool internal,
-                     const std::string& channel,
-                     base::Value arguments,
-                     MessageSyncCallback callback) override;
-
-    static void CreateForWebContentsWithApiWebContents(
-        content::WebContents* web_contents,
-        WebContents* api_web_contents);
-
-   private:
-    friend class content::WebContentsUserData<IPCHandler>;
-
-    WebContents* api_web_contents_;
-    content::WebContentsFrameBindingSet<mojom::ElectronBrowser> bindings_;
-
-    WEB_CONTENTS_USER_DATA_KEY_DECL();
-  };
-  friend class IPCHandler;
-
   struct FrameDispatchHelper;
   AtomBrowserContext* GetBrowserContext() const;
+
+  void CreateIPCHandler(mojom::ElectronBrowserRequest request,
+                        content::RenderFrameHost* render_frame_host);
 
   uint32_t GetNextRequestId() { return ++request_id_; }
 
@@ -584,6 +570,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // The ID of the process of the currently committed RenderViewHost.
   // -1 means no speculative RVH has been committed yet.
   int currently_committed_process_id_ = -1;
+
+  service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
+  mojo::BindingSet<mojom::ElectronBrowser, content::RenderFrameHost*> bindings_;
+  std::map<content::RenderFrameHost*, std::vector<mojo::BindingId>>
+      frame_to_bindings_map_;
 
   base::WeakPtrFactory<WebContents> weak_ptr_factory_;
 
