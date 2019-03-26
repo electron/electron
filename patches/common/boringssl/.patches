@@ -1,2 +1,3 @@
 expose_ripemd160.patch
 expose_aes-cfb.patch
+support_get_versions_with_get_min_max_proto_version_for_context.patch
