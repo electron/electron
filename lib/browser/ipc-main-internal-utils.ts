@@ -26,7 +26,7 @@ export const handle = function <T extends IPCHandler> (channel: string, handler:
 
 let nextId = 0
 
-export function invokeInWebContents<T> (sender: Electron.WebContentsInternal, command: string, ...args: any[]) {
+export function invokeInWebContents<T> (sender: Electron.WebContentsInternal, sendToAll: boolean, command: string, ...args: any[]) {
   return new Promise<T>((resolve, reject) => {
     const requestId = ++nextId
     const channel = `${command}_RESPONSE_${requestId}`
@@ -46,6 +46,11 @@ export function invokeInWebContents<T> (sender: Electron.WebContentsInternal, co
         resolve(result)
       }
     })
-    sender._sendInternal(command, requestId, ...args)
+
+    if (sendToAll) {
+      sender._sendInternalToAll(command, requestId, ...args)
+    } else {
+      sender._sendInternal(command, requestId, ...args)
+    }
   })
 }
