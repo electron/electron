@@ -26,6 +26,8 @@
 #include "atom/browser/io_thread.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/net/network_context_service.h"
+#include "atom/browser/net/network_context_service_factory.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "atom/browser/notifications/platform_notification_service.h"
 #include "atom/browser/session_preferences.h"
@@ -72,6 +74,7 @@
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -686,7 +689,20 @@ network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
     const base::FilePath& /*relative_partition_path*/) {
   if (!browser_context)
     return nullptr;
-  return static_cast<AtomBrowserContext*>(browser_context)->GetNetworkContext();
+
+  if (base::FeatureList::IsEnabled(network::features::kNetworkService)) {
+    return NetworkContextServiceFactory::GetForContext(browser_context)
+        ->CreateNetworkContext();
+  } else {
+    return static_cast<AtomBrowserContext*>(browser_context)
+        ->GetNetworkContext();
+  }
+}
+
+network::mojom::NetworkContext* AtomBrowserClient::GetSystemNetworkContext() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK(g_browser_process->system_network_context_manager());
+  return g_browser_process->system_network_context_manager()->GetContext();
 }
 
 void AtomBrowserClient::RegisterOutOfProcessServices(
@@ -872,8 +888,10 @@ AtomBrowserClient::GetSystemSharedURLLoaderFactory() {
 
 void AtomBrowserClient::OnNetworkServiceCreated(
     network::mojom::NetworkService* network_service) {
-  if (!g_browser_process)
+  if (!g_browser_process ||
+      !base::FeatureList::IsEnabled(network::features::kNetworkService))
     return;
+
   g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
       network_service);
 }

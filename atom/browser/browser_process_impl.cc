@@ -95,8 +95,8 @@ void BrowserProcessImpl::PreCreateThreads(
   // Must be created before the IOThread.
   // Once IOThread class is no longer needed,
   // this can be created on first use.
-  system_network_context_manager_ =
-      std::make_unique<SystemNetworkContextManager>();
+  if (!SystemNetworkContextManager::GetInstance())
+    SystemNetworkContextManager::CreateInstance(local_state_.get());
 
   net_log_ = std::make_unique<net_log::ChromeNetLog>();
   // start net log trace if --log-net-log is passed in the command line.
@@ -110,11 +110,11 @@ void BrowserProcessImpl::PreCreateThreads(
     }
   }
   // Initialize net log file exporter.
-  system_network_context_manager_->GetNetExportFileWriter()->Initialize();
+  system_network_context_manager()->GetNetExportFileWriter()->Initialize();
 
   // Manage global state of net and other IO thread related.
   io_thread_ = std::make_unique<IOThread>(
-      net_log_.get(), system_network_context_manager_.get());
+      net_log_.get(), SystemNetworkContextManager::GetInstance());
 }
 
 void BrowserProcessImpl::PostDestroyThreads() {
@@ -122,8 +122,11 @@ void BrowserProcessImpl::PostDestroyThreads() {
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
+  if (local_state_)
+    local_state_->CommitPendingWrite();
+
   // This expects to be destroyed before the task scheduler is torn down.
-  system_network_context_manager_.reset();
+  SystemNetworkContextManager::DeleteInstance();
 }
 
 bool BrowserProcessImpl::IsShuttingDown() {
@@ -189,8 +192,8 @@ IOThread* BrowserProcessImpl::io_thread() {
 
 SystemNetworkContextManager*
 BrowserProcessImpl::system_network_context_manager() {
-  DCHECK(system_network_context_manager_.get());
-  return system_network_context_manager_.get();
+  DCHECK(SystemNetworkContextManager::GetInstance());
+  return SystemNetworkContextManager::GetInstance();
 }
 
 network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {

@@ -122,7 +122,6 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<PrefService> local_state_;
   std::unique_ptr<IOThread> io_thread_;
   std::unique_ptr<net_log::ChromeNetLog> net_log_;
-  std::unique_ptr<SystemNetworkContextManager> system_network_context_manager_;
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);
