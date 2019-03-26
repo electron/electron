@@ -24,7 +24,7 @@ class FrameSubscriber : public content::WebContentsObserver,
                         public viz::mojom::FrameSinkVideoConsumer {
  public:
   using FrameCaptureCallback =
-      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
+      base::Callback<void(const gfx::Image&, v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
                   content::WebContents* web_contents,
