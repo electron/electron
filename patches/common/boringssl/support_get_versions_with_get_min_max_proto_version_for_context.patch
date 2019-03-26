@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Mon, 25 Mar 2019 17:26:59 -0700
+Subject: Support get versions with get_{min,max}_proto_version for context
+
+When building node with boringssl, `SSL_CTX_get_min_proto_version` and
+`SSL_CTX_get_max_proto_version` are used. Openssl exposes those; this
+change adds support for boringssl.
+
+For this to work right in DTLS, we switch conf_{min,max}_version to store wire
+versions, rather than our internal normalized versions.
+
+Change-Id: I282ed224806c41f69e6f166ca97c6cc05ff51f17
+Reviewed-on: https://boringssl-review.googlesource.com/c/boringssl/+/35404
+Reviewed-by: Nitish Sakhawalkar <nitsakh@gmail.com>
+Reviewed-by: David Benjamin <davidben@google.com>
+Commit-Queue: David Benjamin <davidben@google.com>
+
+diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
+index d5883950d48d8c1be63bcbca23a455803494a49e..7078c4d3f7d1ffae842d2e715fa1a6ee483cea99 100644
+--- a/include/openssl/ssl.h
++++ b/include/openssl/ssl.h
+@@ -634,6 +634,12 @@ OPENSSL_EXPORT int SSL_CTX_set_min_proto_version(SSL_CTX *ctx,
+ OPENSSL_EXPORT int SSL_CTX_set_max_proto_version(SSL_CTX *ctx,
+                                                  uint16_t version);
+ 
++// SSL_CTX_get_min_proto_version returns the minimum protocol version for |ctx|
++OPENSSL_EXPORT uint16_t SSL_CTX_get_min_proto_version(SSL_CTX *ctx);
++
++// SSL_CTX_get_max_proto_version returns the maximum protocol version for |ctx|
++OPENSSL_EXPORT uint16_t SSL_CTX_get_max_proto_version(SSL_CTX *ctx);
++
+ // SSL_set_min_proto_version sets the minimum protocol version for |ssl| to
+ // |version|. If |version| is zero, the default minimum version is used. It
+ // returns one on success and zero if |version| is invalid.
+diff --git a/ssl/internal.h b/ssl/internal.h
+index bc45b504cfca436349d7c3411322b2497c426bcb..169cbfec78b24c13e259fb9ebc830cb28605a55b 100644
+--- a/ssl/internal.h
++++ b/ssl/internal.h
+@@ -2403,14 +2403,14 @@ struct SSL_CONFIG {
+   // ssl is a non-owning pointer to the parent |SSL| object.
+   SSL *const ssl = nullptr;
+ 
+-  // conf_max_version is the maximum acceptable protocol version configured by
+-  // |SSL_set_max_proto_version|. Note this version is normalized in DTLS and is
+-  // further constrainted by |SSL_OP_NO_*|.
++  // conf_max_version is the maximum acceptable version configured by
++  // |SSL_set_max_proto_version|. Note this version is not normalized in DTLS
++  // and is further constrained by |SSL_OP_NO_*|.
+   uint16_t conf_max_version = 0;
+ 
+-  // conf_min_version is the minimum acceptable protocol version configured by
+-  // |SSL_set_min_proto_version|. Note this version is normalized in DTLS and is
+-  // further constrainted by |SSL_OP_NO_*|.
++  // conf_min_version is the minimum acceptable version configured by
++  // |SSL_set_min_proto_version|. Note this version is not normalized in DTLS
++  // and is further constrained by |SSL_OP_NO_*|.
+   uint16_t conf_min_version = 0;
+ 
+   X509_VERIFY_PARAM *param = nullptr;
+diff --git a/ssl/ssl_test.cc b/ssl/ssl_test.cc
+index 1f09156efa2d449ab84fe10972e32d5c208e0324..d90a466a9aa32e04d239f8edb4fdb170e0a47dd2 100644
+--- a/ssl/ssl_test.cc
++++ b/ssl/ssl_test.cc
+@@ -840,8 +840,8 @@ static void ExpectDefaultVersion(uint16_t min_version, uint16_t max_version,
+                                  const SSL_METHOD *(*method)(void)) {
+   bssl::UniquePtr<SSL_CTX> ctx(SSL_CTX_new(method()));
+   ASSERT_TRUE(ctx);
+-  EXPECT_EQ(min_version, ctx->conf_min_version);
+-  EXPECT_EQ(max_version, ctx->conf_max_version);
++  EXPECT_EQ(min_version, SSL_CTX_get_min_proto_version(ctx.get()));
++  EXPECT_EQ(max_version, SSL_CTX_get_max_proto_version(ctx.get()));
+ }
+ 
+ TEST(SSLTest, DefaultVersion) {
+@@ -850,9 +850,9 @@ TEST(SSLTest, DefaultVersion) {
+   ExpectDefaultVersion(TLS1_VERSION, TLS1_VERSION, &TLSv1_method);
+   ExpectDefaultVersion(TLS1_1_VERSION, TLS1_1_VERSION, &TLSv1_1_method);
+   ExpectDefaultVersion(TLS1_2_VERSION, TLS1_2_VERSION, &TLSv1_2_method);
+-  ExpectDefaultVersion(TLS1_1_VERSION, TLS1_2_VERSION, &DTLS_method);
+-  ExpectDefaultVersion(TLS1_1_VERSION, TLS1_1_VERSION, &DTLSv1_method);
+-  ExpectDefaultVersion(TLS1_2_VERSION, TLS1_2_VERSION, &DTLSv1_2_method);
++  ExpectDefaultVersion(DTLS1_VERSION, DTLS1_2_VERSION, &DTLS_method);
++  ExpectDefaultVersion(DTLS1_VERSION, DTLS1_VERSION, &DTLSv1_method);
++  ExpectDefaultVersion(DTLS1_2_VERSION, DTLS1_2_VERSION, &DTLSv1_2_method);
+ }
+ 
+ TEST(SSLTest, CipherProperties) {
+@@ -2617,13 +2617,13 @@ TEST(SSLTest, SetVersion) {
+ 
+   // Zero is the default version.
+   EXPECT_TRUE(SSL_CTX_set_max_proto_version(ctx.get(), 0));
+-  EXPECT_EQ(TLS1_2_VERSION, ctx->conf_max_version);
++  EXPECT_EQ(TLS1_2_VERSION, SSL_CTX_get_max_proto_version(ctx.get()));
+   EXPECT_TRUE(SSL_CTX_set_min_proto_version(ctx.get(), 0));
+-  EXPECT_EQ(TLS1_VERSION, ctx->conf_min_version);
++  EXPECT_EQ(TLS1_VERSION, SSL_CTX_get_min_proto_version(ctx.get()));
+ 
+   // TLS 1.3 is available, but not by default.
+   EXPECT_TRUE(SSL_CTX_set_max_proto_version(ctx.get(), TLS1_3_VERSION));
+-  EXPECT_EQ(TLS1_3_VERSION, ctx->conf_max_version);
++  EXPECT_EQ(TLS1_3_VERSION, SSL_CTX_get_max_proto_version(ctx.get()));
+ 
+   // SSL 3.0 is not available.
+   EXPECT_FALSE(SSL_CTX_set_min_proto_version(ctx.get(), SSL3_VERSION));
+@@ -2651,9 +2651,9 @@ TEST(SSLTest, SetVersion) {
+   EXPECT_FALSE(SSL_CTX_set_min_proto_version(ctx.get(), 0x1234));
+ 
+   EXPECT_TRUE(SSL_CTX_set_max_proto_version(ctx.get(), 0));
+-  EXPECT_EQ(TLS1_2_VERSION, ctx->conf_max_version);
++  EXPECT_EQ(DTLS1_2_VERSION, SSL_CTX_get_max_proto_version(ctx.get()));
+   EXPECT_TRUE(SSL_CTX_set_min_proto_version(ctx.get(), 0));
+-  EXPECT_EQ(TLS1_1_VERSION, ctx->conf_min_version);
++  EXPECT_EQ(DTLS1_VERSION, SSL_CTX_get_min_proto_version(ctx.get()));
+ }
+ 
+ static const char *GetVersionName(uint16_t version) {
+diff --git a/ssl/ssl_versions.cc b/ssl/ssl_versions.cc
+index 861696762c5ab1eceddde83d2e7062e57677f8b5..2b72aaaf116619e0fc0c8f9447e7a1e275fc2a47 100644
+--- a/ssl/ssl_versions.cc
++++ b/ssl/ssl_versions.cc
+@@ -160,12 +160,12 @@ static bool api_version_to_wire(uint16_t *out, uint16_t version) {
+ static bool set_version_bound(const SSL_PROTOCOL_METHOD *method, uint16_t *out,
+                               uint16_t version) {
+   if (!api_version_to_wire(&version, version) ||
+-      !ssl_method_supports_version(method, version) ||
+-      !ssl_protocol_version_from_wire(out, version)) {
++      !ssl_method_supports_version(method, version)) {
+     OPENSSL_PUT_ERROR(SSL, SSL_R_UNKNOWN_SSL_VERSION);
+     return false;
+   }
+ 
++  *out = version;
+   return true;
+ }
+ 
+@@ -173,8 +173,7 @@ static bool set_min_version(const SSL_PROTOCOL_METHOD *method, uint16_t *out,
+                             uint16_t version) {
+   // Zero is interpreted as the default minimum version.
+   if (version == 0) {
+-    // TLS 1.0 does not exist in DTLS.
+-    *out = method->is_dtls ? TLS1_1_VERSION : TLS1_VERSION;
++    *out = method->is_dtls ? DTLS1_VERSION : TLS1_VERSION;
+     return true;
+   }
+ 
+@@ -185,7 +184,7 @@ static bool set_max_version(const SSL_PROTOCOL_METHOD *method, uint16_t *out,
+                             uint16_t version) {
+   // Zero is interpreted as the default maximum version.
+   if (version == 0) {
+-    *out = TLS1_2_VERSION;
++    *out = method->is_dtls ? DTLS1_2_VERSION : TLS1_2_VERSION;
+     return true;
+   }
+ 
+@@ -214,8 +213,14 @@ bool ssl_get_version_range(const SSL_HANDSHAKE *hs, uint16_t *out_min_version,
+     }
+   }
+ 
+-  uint16_t min_version = hs->config->conf_min_version;
+-  uint16_t max_version = hs->config->conf_max_version;
++  uint16_t min_version, max_version;
++  if (!ssl_protocol_version_from_wire(&min_version,
++                                      hs->config->conf_min_version) ||
++      !ssl_protocol_version_from_wire(&max_version,
++                                      hs->config->conf_max_version)) {
++    OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
++    return false;
++  }
+ 
+   // QUIC requires TLS 1.3.
+   if (hs->ssl->ctx->quic_method && min_version < TLS1_3_VERSION) {
+@@ -389,6 +394,14 @@ int SSL_CTX_set_max_proto_version(SSL_CTX *ctx, uint16_t version) {
+   return set_max_version(ctx->method, &ctx->conf_max_version, version);
+ }
+ 
++uint16_t SSL_CTX_get_min_proto_version(SSL_CTX *ctx) {
++  return ctx->conf_min_version;
++}
++
++uint16_t SSL_CTX_get_max_proto_version(SSL_CTX *ctx) {
++  return ctx->conf_max_version;
++}
++
+ int SSL_set_min_proto_version(SSL *ssl, uint16_t version) {
+   if (!ssl->config) {
+     return 0;
