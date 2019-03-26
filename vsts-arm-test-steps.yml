@@ -53,6 +53,17 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
+   export CROSS_ARCH_SNAPSHOTS=$PWD/src/out/Default/cross-arch-snapshots
+   mkdir -p $CROSS_ARCH_SNAPSHOTS
+   cd src/electron
+   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=cross-arch-snapshots/snapshot_blob.bin --dest=$CROSS_ARCH_SNAPSHOTS
+   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=cross-arch-snapshots/v8_context_snapshot.bin --dest=$CROSS_ARCH_SNAPSHOTS
+  displayName: 'Download cross arch snapshot files'
+  env:
+    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
+
+
+- bash: |
     cd src
     export npm_config_nodedir=$PWD/out/Default/gen/node_headers
     cd electron/spec
@@ -64,6 +75,16 @@ steps:
   displayName: Setup for headless testing
   env:
     DISPLAY: ":99.0"
+
+- bash: |
+    cd src
+    echo Verify cross arch snapshot
+    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default " --build-dir out/Debug --snapshot-files-dir $PWD/src/out/Default/cross-arch-snapshots
+  displayName: Verify cross arch snapshot
+  timeoutInMinutes: 5
+  env:
+    ELECTRON_DISABLE_SANDBOX: 1
+  condition: and(succeeded(), eq(variables['RUN_NATIVE_MKSNAPSHOT'], 'true'))
 
 - bash: |
    cd src
@@ -83,8 +104,8 @@ steps:
 
 - bash: |
     cd src
-    echo Verify mksnapshot temporarily disabled due to M74 upgrade
-    #python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+    echo Verify native arm mksnapshot
+    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
   displayName: Verify mksnapshot
   timeoutInMinutes: 5
   env:
