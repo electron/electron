@@ -1,7 +1,7 @@
-From 513ad3630cef9d605725d9e13c7f0b3c1673a0bd Mon Sep 17 00:00:00 2001
+From 22a881e202e4ecc230a8163ecdaa687b890040f4 Mon Sep 17 00:00:00 2001
 From: Alexey Kuts <kruntuid@gmail.com>
-Date: Mon, 25 Mar 2019 23:43:45 +0300
-Subject: [PATCH] 	preconnect support
+Date: Tue, 26 Mar 2019 01:27:56 +0300
+Subject: [PATCH] 	preconnect feature
 
 ---
  chrome/browser/predictors/loading_predictor.cc     | 41 +++++++++++++---------
@@ -13,8 +13,8 @@ Subject: [PATCH] 	preconnect support
  .../browser/predictors/resource_prefetch_common.cc | 15 ++++----
  .../browser/predictors/resource_prefetch_common.h  |  2 +-
  .../predictors/resource_prefetch_predictor.cc      |  6 ++++
- .../predictors/resource_prefetch_predictor.h       |  4 +++
- 10 files changed, 75 insertions(+), 33 deletions(-)
+ .../predictors/resource_prefetch_predictor.h       |  6 ++++
+ 10 files changed, 77 insertions(+), 33 deletions(-)
 
 diff --git a/chrome/browser/predictors/loading_predictor.cc b/chrome/browser/predictors/loading_predictor.cc
 index f2ae6c5..45605fd 100644
@@ -471,10 +471,26 @@ index 89cbadd..7a7a2d41 100644
 +
  }  // namespace predictors
 diff --git a/chrome/browser/predictors/resource_prefetch_predictor.h b/chrome/browser/predictors/resource_prefetch_predictor.h
-index 3e87439..ca8ad7c 100644
+index 3e87439..ee688e7 100644
 --- a/chrome/browser/predictors/resource_prefetch_predictor.h
 +++ b/chrome/browser/predictors/resource_prefetch_predictor.h
-@@ -74,6 +74,8 @@ struct PreconnectPrediction {
+@@ -19,6 +19,7 @@
+ #include "base/scoped_observer.h"
+ #include "base/task/cancelable_task_tracker.h"
+ #include "base/time/time.h"
++#if 0
+ #include "chrome/browser/predictors/glowplug_key_value_data.h"
+ #include "chrome/browser/predictors/loading_predictor_config.h"
+ #include "chrome/browser/predictors/resource_prefetch_common.h"
+@@ -26,6 +27,7 @@
+ #include "components/history/core/browser/history_db_task.h"
+ #include "components/history/core/browser/history_service_observer.h"
+ #include "components/history/core/browser/history_types.h"
++#endif
+ #include "components/keyed_service/core/keyed_service.h"
+ #include "content/public/common/resource_type.h"
+ #include "url/gurl.h"
+@@ -74,6 +76,8 @@ struct PreconnectPrediction {
    std::vector<PreconnectRequest> requests;
  };
  
@@ -483,7 +499,7 @@ index 3e87439..ca8ad7c 100644
  // Contains logic for learning what can be prefetched and for kicking off
  // speculative prefetching.
  // - The class is a profile keyed service owned by the profile.
-@@ -289,6 +291,8 @@ class TestObserver {
+@@ -289,6 +293,8 @@ class TestObserver {
    DISALLOW_COPY_AND_ASSIGN(TestObserver);
  };
  
