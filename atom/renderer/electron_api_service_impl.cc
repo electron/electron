@@ -27,26 +27,40 @@ namespace {
 
 const char kIpcKey[] = "ipcNative";
 
-void InvokeIpcCallback(v8::Handle<v8::Context> context,
-                       const std::string& callback_name,
-                       std::vector<v8::Handle<v8::Value>> args) {
-  TRACE_EVENT0("devtools.timeline", "FunctionCall");
+// Gets the private object under kIpcKey
+v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
   auto* isolate = context->GetIsolate();
   auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString(isolate);
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
-  v8::Local<v8::Value> value;
-  if (!global_object->GetPrivate(context, private_binding_key).ToLocal(&value))
-    return;
-  if (value.IsEmpty() || !value->IsObject())
-    return;
-  auto binding = value->ToObject(isolate);
+  auto value =
+      global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
+  DCHECK(!value.IsEmpty() && value->IsObject());
+  return value->ToObject(isolate);
+}
+
+void InvokeIpcCallback(v8::Local<v8::Context> context,
+                       const std::string& callback_name,
+                       std::vector<v8::Local<v8::Value>> args) {
+  TRACE_EVENT0("devtools.timeline", "FunctionCall");
+  auto* isolate = context->GetIsolate();
+
+  auto ipcNative = GetIpcObject(context);
+
+  // Only set up the node::CallbackScope if there's a node environment.
+  // Sandboxed renderers don't have a node environment.
+  node::Environment* env = node::Environment::GetCurrent(context);
+  std::unique_ptr<node::CallbackScope> callback_scope;
+  if (env) {
+    callback_scope.reset(new node::CallbackScope(isolate, ipcNative, {0, 0}));
+  }
+
   auto callback_key =
       mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
-  auto callback_value = binding->Get(callback_key);
+  auto callback_value = ipcNative->Get(callback_key);
   DCHECK(callback_value->IsFunction());  // set by init.ts
-  auto callback = v8::Handle<v8::Function>::Cast(callback_value);
-  ignore_result(callback->Call(context, binding, args.size(), args.data()));
+  auto callback = v8::Local<v8::Function>::Cast(callback_value);
+  ignore_result(callback->Call(context, ipcNative, args.size(), args.data()));
 }
 
 void EmitIPCEvent(v8::Local<v8::Context> context,
@@ -54,9 +68,12 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
                   const std::string& channel,
                   const std::vector<base::Value>& args,
                   int32_t sender_id) {
-  v8::Context::Scope context_scope(context);
-
   auto* isolate = context->GetIsolate();
+
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  v8::MicrotasksScope script_scope(isolate,
+                                   v8::MicrotasksScope::kRunMicrotasks);
 
   std::vector<v8::Local<v8::Value>> argv = {
       mate::ConvertToV8(isolate, internal), mate::ConvertToV8(isolate, channel),
