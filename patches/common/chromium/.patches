@@ -74,3 +74,4 @@ fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_mas.patch
 fix_disable_usage_of_setapplicationisdaemon_and.patch
 viz_osr.patch
+video_capturer_dirty_rect.patch

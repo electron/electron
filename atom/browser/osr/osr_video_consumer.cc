@@ -53,6 +53,7 @@ void OffScreenVideoConsumer::SizeChanged() {
 void OffScreenVideoConsumer::OnFrameCaptured(
     base::ReadOnlySharedMemoryRegion data,
     ::media::mojom::VideoFrameInfoPtr info,
+    const gfx::Rect& update_rect,
     const gfx::Rect& content_rect,
     viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) {
   if (!CheckContentRect(content_rect)) {
@@ -107,14 +108,8 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
   media::VideoFrameMetadata metadata;
   metadata.MergeInternalValuesFrom(info->metadata);
-  gfx::Rect damage_rect;
 
-  auto UPDATE_RECT = media::VideoFrameMetadata::CAPTURE_UPDATE_RECT;
-  if (!metadata.GetRect(UPDATE_RECT, &damage_rect)) {
-    damage_rect = content_rect;
-  }
-
-  callback_.Run(damage_rect, bitmap);
+  callback_.Run(update_rect, bitmap);
 }
 
 void OffScreenVideoConsumer::OnStopped() {}

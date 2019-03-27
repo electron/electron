@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Heilig Benedek <benecene@gmail.com>
+Date: Wed, 27 Mar 2019 13:52:53 +0100
+Subject: fix: report correct dirty rect in FrameSinkVideoCapturerImpl
+
+This patch is only necessary for 5-0-x, there is an upstream
+patch that achieves the same thing (already on master), but
+that patch is huge compared to this, with no other real benefits.
+
+diff --git a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc
+index 521ce7e9de52a80571f17003f18e14554d299357..bfca10c864b27da5994319427b5410981b25bbde 100644
+--- a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc
++++ b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc
+@@ -533,14 +533,14 @@ void FrameSinkVideoCapturerImpl::MaybeCaptureFrame(
+     }
+     dirty_rect_ = gfx::Rect();
+     DidCaptureFrame(frame_number, oracle_frame_number, gfx::Rect(),
+-                    std::move(frame));
++                    dirty_rect_, std::move(frame));
+     return;
+   }
+ 
+   // For passive refreshes, just deliver the resurrected frame.
+   if (dirty_rect_.IsEmpty()) {
+     DidCaptureFrame(frame_number, oracle_frame_number, content_rect,
+-                    std::move(frame));
++                    dirty_rect_, std::move(frame));
+     return;
+   }
+ 
+@@ -551,7 +551,7 @@ void FrameSinkVideoCapturerImpl::MaybeCaptureFrame(
+           : CopyOutputRequest::ResultFormat::RGBA_BITMAP,
+       base::BindOnce(&FrameSinkVideoCapturerImpl::DidCopyFrame,
+                      capture_weak_factory_.GetWeakPtr(), frame_number,
+-                     oracle_frame_number, content_rect,
++                     oracle_frame_number, content_rect, dirty_rect_,
+                      VideoCaptureOverlay::MakeCombinedRenderer(
+                          GetOverlaysInOrder(), content_rect, frame->format()),
+                      std::move(frame))));
+@@ -572,6 +572,7 @@ void FrameSinkVideoCapturerImpl::DidCopyFrame(
+     int64_t frame_number,
+     OracleFrameNumber oracle_frame_number,
+     const gfx::Rect& content_rect,
++    const gfx::Rect& dirty_rect,
+     VideoCaptureOverlay::OnceRenderer overlay_renderer,
+     scoped_refptr<VideoFrame> frame,
+     std::unique_ptr<CopyOutputResult> result) {
+@@ -637,13 +638,14 @@ void FrameSinkVideoCapturerImpl::DidCopyFrame(
+   }
+ 
+   DidCaptureFrame(frame_number, oracle_frame_number, content_rect,
+-                  std::move(frame));
++                  dirty_rect, std::move(frame));
+ }
+ 
+ void FrameSinkVideoCapturerImpl::DidCaptureFrame(
+     int64_t frame_number,
+     OracleFrameNumber oracle_frame_number,
+     const gfx::Rect& content_rect,
++    const gfx::Rect& dirty_rect,
+     scoped_refptr<VideoFrame> frame) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK_GE(frame_number, next_delivery_frame_number_);
+@@ -656,11 +658,11 @@ void FrameSinkVideoCapturerImpl::DidCaptureFrame(
+   // Ensure frames are delivered in-order by using a min-heap, and only
+   // deliver the next frame(s) in-sequence when they are found at the top.
+   delivery_queue_.emplace(frame_number, oracle_frame_number, content_rect,
+-                          std::move(frame));
++                          dirty_rect, std::move(frame));
+   while (delivery_queue_.top().frame_number == next_delivery_frame_number_) {
+     auto& next = delivery_queue_.top();
+     MaybeDeliverFrame(next.oracle_frame_number, next.content_rect,
+-                      std::move(next.frame));
++                      next.dirty_rect, std::move(next.frame));
+     ++next_delivery_frame_number_;
+     delivery_queue_.pop();
+     if (delivery_queue_.empty()) {
+@@ -672,6 +674,7 @@ void FrameSinkVideoCapturerImpl::DidCaptureFrame(
+ void FrameSinkVideoCapturerImpl::MaybeDeliverFrame(
+     OracleFrameNumber oracle_frame_number,
+     const gfx::Rect& content_rect,
++    const gfx::Rect& dirty_rect,
+     scoped_refptr<VideoFrame> frame) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+@@ -724,7 +727,7 @@ void FrameSinkVideoCapturerImpl::MaybeDeliverFrame(
+   info->visible_rect = frame->visible_rect();
+   DCHECK(frame->ColorSpace().IsValid());  // Ensure it was set by this point.
+   info->color_space = frame->ColorSpace();
+-  const gfx::Rect update_rect = frame->visible_rect();
++  const gfx::Rect update_rect = dirty_rect;
+ 
+   // Create an InFlightFrameDelivery for this frame, owned by its mojo binding.
+   // It responds to the consumer's Done() notification by returning the video
+@@ -771,10 +774,12 @@ FrameSinkVideoCapturerImpl::CapturedFrame::CapturedFrame(
+     int64_t frame_number,
+     OracleFrameNumber oracle_frame_number,
+     const gfx::Rect& content_rect,
++    const gfx::Rect& dirty_rect,
+     scoped_refptr<media::VideoFrame> frame)
+     : frame_number(frame_number),
+       oracle_frame_number(oracle_frame_number),
+       content_rect(content_rect),
++      dirty_rect(dirty_rect),
+       frame(std::move(frame)) {}
+ 
+ FrameSinkVideoCapturerImpl::CapturedFrame::CapturedFrame(
+diff --git a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h
+index 69f25dab2aaabbcd6760972b85b94c527b5d3667..38218ae3b1cd8bf05ce97c655a1b06483975a8b1 100644
+--- a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h
++++ b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h
+@@ -189,6 +189,7 @@ class VIZ_SERVICE_EXPORT FrameSinkVideoCapturerImpl final
+   void DidCopyFrame(int64_t frame_number,
+                     OracleFrameNumber oracle_frame_number,
+                     const gfx::Rect& content_rect,
++                    const gfx::Rect& dirty_rect,
+                     VideoCaptureOverlay::OnceRenderer overlay_renderer,
+                     scoped_refptr<media::VideoFrame> frame,
+                     std::unique_ptr<CopyOutputResult> result);
+@@ -199,6 +200,7 @@ class VIZ_SERVICE_EXPORT FrameSinkVideoCapturerImpl final
+   void DidCaptureFrame(int64_t frame_number,
+                        OracleFrameNumber oracle_frame_number,
+                        const gfx::Rect& content_rect,
++                       const gfx::Rect& dirty_rect,
+                        scoped_refptr<media::VideoFrame> frame);
+ 
+   // Delivers a |frame| to the consumer, if the VideoCaptureOracle allows
+@@ -207,6 +209,7 @@ class VIZ_SERVICE_EXPORT FrameSinkVideoCapturerImpl final
+   // consumer.
+   void MaybeDeliverFrame(OracleFrameNumber oracle_frame_number,
+                          const gfx::Rect& content_rect,
++                         const gfx::Rect& dirty_rect,
+                          scoped_refptr<media::VideoFrame> frame);
+ 
+   // For ARGB format, ensures that every dimension of |size| is positive. For
+@@ -278,10 +281,12 @@ class VIZ_SERVICE_EXPORT FrameSinkVideoCapturerImpl final
+     int64_t frame_number;
+     OracleFrameNumber oracle_frame_number;
+     gfx::Rect content_rect;
++    gfx::Rect dirty_rect;
+     scoped_refptr<media::VideoFrame> frame;
+     CapturedFrame(int64_t frame_number,
+                   OracleFrameNumber oracle_frame_number,
+                   const gfx::Rect& content_rect,
++                  const gfx::Rect& dirty_rect,
+                   scoped_refptr<media::VideoFrame> frame);
+     CapturedFrame(const CapturedFrame& other);
+     ~CapturedFrame();
