@@ -38,13 +38,13 @@ void NodeDebugger::Start() {
   }
 
   node::DebugOptions options;
+  node::options_parser::OptionsParser<node::DebugOptions> options_parser;
   std::vector<std::string> exec_args;
   std::vector<std::string> v8_args;
   std::vector<std::string> errors;
 
-  node::options_parser::DebugOptionsParser::instance.Parse(
-      &args, &exec_args, &v8_args, &options,
-      node::options_parser::kDisallowedInEnvironment, &errors);
+  options_parser.Parse(&args, &exec_args, &v8_args, &options,
+                       node::options_parser::kDisallowedInEnvironment, &errors);
 
   if (!errors.empty()) {
     // TODO(jeremy): what's the appropriate behaviour here?
