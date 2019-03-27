@@ -20,7 +20,7 @@ diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser
 index cec3bd8a97b8b9bcab176a9bd2c296ec12aba838..7a2b4462bd44176e8e8389499f8c3d5fea647fa0 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -348,6 +348,7 @@ GetRenderWidgetHostAtPoint:(const NSPoint&)viewPoint
+@@ -348,6 +348,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
