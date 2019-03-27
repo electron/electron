@@ -5,6 +5,8 @@
 
   "src/electron/patches/common/ffmpeg": "src/third_party/ffmpeg",
 
+  "src/electron/patches/common/icu": "src/third_party/icu",
+
   "src/electron/patches/common/skia": "src/third_party/skia",
 
   "src/electron/patches/common/webrtc":  "src/third_party/webrtc",
