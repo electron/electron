@@ -77,16 +77,6 @@ steps:
     DISPLAY: ":99.0"
 
 - bash: |
-    cd src
-    echo Verify cross arch snapshot
-    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default " --build-dir out/Debug --snapshot-files-dir $PWD/src/out/Default/cross-arch-snapshots
-  displayName: Verify cross arch snapshot
-  timeoutInMinutes: 5
-  env:
-    ELECTRON_DISABLE_SANDBOX: 1
-  condition: and(succeeded(), eq(variables['RUN_NATIVE_MKSNAPSHOT'], 'true'))
-
-- bash: |
    cd src
    ./out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
@@ -104,9 +94,9 @@ steps:
 
 - bash: |
     cd src
-    echo Verify native arm mksnapshot
-    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
-  displayName: Verify mksnapshot
+    echo Verify cross arch snapshot
+    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/src/out/Default/cross-arch-snapshots
+  displayName: Verify cross arch snapshot
   timeoutInMinutes: 5
   env:
     ELECTRON_DISABLE_SANDBOX: 1
