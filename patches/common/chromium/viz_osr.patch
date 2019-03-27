@@ -513,17 +513,17 @@ index 360cab3eee4c5189a55269d76daa1d78a98ed3d3..6834242f23d27fd6d428c2cd6040206a
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 313431f82ee7e181dad2c48dd27950129afbb223..77de544d8bd472e9c61ff3fd72e5094f05a4827d 100644
+index 313431f82ee7e181dad2c48dd27950129afbb223..34a208c1b7159b3444c947684d8aaee110244585 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -24,6 +24,7 @@
- #include "components/viz/common/frame_sinks/begin_frame_args.h"
- #include "components/viz/common/surfaces/frame_sink_id.h"
- #include "components/viz/common/surfaces/local_surface_id.h"
-+#include "components/viz/host/host_display_client.h"
- #include "components/viz/host/host_frame_sink_client.h"
- #include "third_party/skia/include/core/SkColor.h"
- #include "third_party/skia/include/core/SkMatrix44.h"
+@@ -67,6 +67,7 @@ namespace viz {
+ class FrameSinkManagerImpl;
+ class ContextProvider;
+ class HostFrameSinkManager;
++class HostDisplayClient;
+ }
+ 
+ namespace ui {
 @@ -193,6 +194,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual bool SyncTokensRequiredForDisplayCompositor() = 0;
  };
