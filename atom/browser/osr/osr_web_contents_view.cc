@@ -166,9 +166,11 @@ void OffScreenWebContentsView::RenderViewHostChanged(
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {}
 
 #if defined(OS_MACOSX)
-bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
+bool OffScreenWebContentsView::IsEventTracking() const {
   return false;
 }
+
+void OffScreenWebContentsView::CloseTabAfterEventTracking() {}
 #endif  // defined(OS_MACOSX)
 
 void OffScreenWebContentsView::StartDragging(

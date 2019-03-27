@@ -67,7 +67,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void SetOverscrollControllerEnabled(bool enabled) override;
 
 #if defined(OS_MACOSX)
-  bool CloseTabAfterEventTrackingIfNeeded() override;
+  bool IsEventTracking() const override;
+  void CloseTabAfterEventTracking() override;
 #endif
 
   // content::RenderViewHostDelegateView
