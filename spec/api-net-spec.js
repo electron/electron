@@ -1,4 +1,5 @@
 const assert = require('assert')
+const { expect } = require('chai')
 const { remote } = require('electron')
 const { ipcRenderer } = require('electron')
 const http = require('http')
@@ -1363,6 +1364,7 @@ describe('net module', () => {
       const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
+
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
@@ -1375,31 +1377,115 @@ describe('net module', () => {
             handleUnexpectedURL(request, response)
         }
       })
+
       const urlRequest = net.request({
         method: 'GET',
         url: `${server.url}${requestUrl}`
       })
+
       urlRequest.on('response', (response) => {
-        const statusCode = response.statusCode
-        assert(typeof statusCode === 'number')
-        assert.strictEqual(statusCode, 200)
-        const statusMessage = response.statusMessage
-        assert(typeof statusMessage === 'string')
-        assert.strictEqual(statusMessage, 'OK')
+        expect(response.statusCode).to.equal(200)
+        expect(response.statusMessage).to.equal('OK')
+
         const headers = response.headers
-        assert(typeof headers === 'object')
-        assert.deepStrictEqual(headers[customHeaderName.toLowerCase()], customHeaderValue)
+        expect(headers).to.be.an('object')
+        const headerValue = headers[customHeaderName.toLowerCase()]
+        expect(headerValue).to.equal(customHeaderValue)
+
         const httpVersion = response.httpVersion
-        assert(typeof httpVersion === 'string')
-        assert(httpVersion.length > 0)
+        expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1)
+
         const httpVersionMajor = response.httpVersionMajor
-        assert(typeof httpVersionMajor === 'number')
-        assert(httpVersionMajor >= 1)
+        expect(httpVersionMajor).to.be.a('number').and.to.be.at.least(1)
+
         const httpVersionMinor = response.httpVersionMinor
-        assert(typeof httpVersionMinor === 'number')
-        assert(httpVersionMinor >= 0)
+        expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0)
+
         response.pause()
-        response.on('data', (chunk) => {})
+        response.on('data', chunk => {})
+        response.on('end', () => { done() })
+        response.resume()
+      })
+      urlRequest.end()
+    })
+
+    it('should discard duplicate headers', (done) => {
+      const requestUrl = '/duplicateRequestUrl'
+      const includedHeader = 'max-forwards'
+      const discardableHeader = 'Max-Forwards'
+
+      const includedHeaderValue = 'max-fwds-val'
+      const discardableHeaderValue = 'max-fwds-val-two'
+
+      server.on('request', (request, response) => {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.setHeader(includedHeader, includedHeaderValue)
+            response.setHeader(discardableHeader, discardableHeaderValue)
+            response.end()
+            break
+          default:
+            handleUnexpectedURL(request, response)
+        }
+      })
+
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+
+      urlRequest.on('response', response => {
+        expect(response.statusCode).to.equal(200)
+        expect(response.statusMessage).to.equal('OK')
+
+        const headers = response.headers
+        expect(headers).to.be.an('object')
+
+        expect(headers).to.have.property(includedHeader)
+        expect(headers).to.not.have.property(discardableHeader)
+
+        response.pause()
+        response.on('data', chunk => {})
+        response.on('end', () => { done() })
+        response.resume()
+      })
+      urlRequest.end()
+    })
+
+    it('should join repeated non-discardable value with ,', (done) => {
+      const requestUrl = '/requestUrl'
+
+      server.on('request', (request, response) => {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.setHeader('referrer-policy', ['first-text', 'second-text'])
+            response.end()
+            break
+          default:
+            handleUnexpectedURL(request, response)
+        }
+      })
+
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+
+      urlRequest.on('response', response => {
+        expect(response.statusCode).to.equal(200)
+        expect(response.statusMessage).to.equal('OK')
+
+        const headers = response.headers
+        expect(headers).to.be.an('object')
+        expect(headers).to.have.a.property('referrer-policy')
+        expect(headers['referrer-policy']).to.equal('first-text, second-text')
+
+        response.pause()
+        response.on('data', chunk => {})
         response.on('end', () => { done() })
         response.resume()
       })
