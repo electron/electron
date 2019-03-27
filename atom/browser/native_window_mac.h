@@ -87,6 +87,8 @@ class NativeWindowMac : public NativeWindow {
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
+  void SetExcludedFromShownWindowsMenu(bool excluded) override;
+  bool IsExcludedFromShownWindowsMenu() override;
   void SetSimpleFullScreen(bool simple_fullscreen) override;
   bool IsSimpleFullScreen() override;
   void SetKiosk(bool kiosk) override;
