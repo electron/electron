@@ -224,9 +224,13 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   current_device_scale_factor_ = kDefaultScaleFactor;
 
-  local_surface_id_allocator_.GenerateId();
-  local_surface_id_allocation_ =
-      local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_allocator_.GenerateId();
+  delegated_frame_host_allocation_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  compositor_allocator_.GenerateId();
+  compositor_allocation_ =
+      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+
   delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack),
@@ -1063,7 +1067,7 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
 
 const viz::LocalSurfaceIdAllocation&
 OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
-  return local_surface_id_allocation_;
+  return delegated_frame_host_allocation_;
 }
 
 content::DelegatedFrameHost*
@@ -1121,15 +1125,20 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
-  local_surface_id_allocator_.GenerateId();
-  local_surface_id_allocation_ =
-      local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  compositor_allocator_.GenerateId();
+  compositor_allocation_ =
+      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
   GetCompositor()->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
-                                   local_surface_id_allocation_);
+                                   compositor_allocation_);
+
+  delegated_frame_host_allocator_.GenerateId();
+  delegated_frame_host_allocation_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+
   bool resized = true;
   GetDelegatedFrameHost()->EmbedSurface(
-      local_surface_id_allocation_.local_surface_id(), size,
+      delegated_frame_host_allocation_.local_surface_id(), size,
       cc::DeadlinePolicy::UseDefaultDeadline());
 
   // Note that |render_widget_host_| will retrieve resize parameters from the

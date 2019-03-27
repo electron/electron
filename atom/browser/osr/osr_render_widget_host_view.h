@@ -277,8 +277,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool paint_callback_running_ = false;
 
-  viz::LocalSurfaceIdAllocation local_surface_id_allocation_;
-  viz::ParentLocalSurfaceIdAllocator local_surface_id_allocator_;
+  viz::LocalSurfaceIdAllocation delegated_frame_host_allocation_;
+  viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
+
+  viz::LocalSurfaceIdAllocation compositor_allocation_;
+  viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;
