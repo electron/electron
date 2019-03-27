@@ -45,14 +45,14 @@ For more info, see the [Mac App Store Submission Guide].
 
 Before signing Windows builds, you must do the following:
 
-1. Get a Windows Authenticode code signing certificate
+1. Get a Windows Authenticode code signing certificate (requires an annual fee)
 2. Install Visual Studio 2015/2017 (to get the signing utility)
 
 You can get a code signing certificate from a lot of resellers, popular ones include:
 
-* [digicert](https://www.digicert.com/code-signing/microsoft-authenticode.htm)
-* [Comodo](https://www.comodo.com/landing/ssl-certificate/authenticode-signature/)
-* [GoDaddy](https://au.godaddy.com/web-security/code-signing-certificate)
+* [digicert $$$](https://www.digicert.com/code-signing/microsoft-authenticode.htm)
+* [Comodo $](https://www.comodo.com/landing/ssl-certificate/authenticode-signature/)
+* [GoDaddy $$](https://au.godaddy.com/web-security/code-signing-certificate)
 * Amongst others, please shop around to find one that suits your needs, Google is your friend :)
 
 There are a number of tools for signing your packaged app:
