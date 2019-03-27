@@ -33,15 +33,6 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
-    cd src/electron
-    node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=native_mksnapshot.zip --dest=$ZIP_DEST
-    cd $ZIP_DEST
-    unzip -o native_mksnapshot.zip
-  displayName: 'Download and unzip native_mksnapshot.zip for test'
-  env:
-    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
-
-- bash: |
    export NODE_HEADERS_DEST=$PWD/src/out/Default/gen
    mkdir -p $NODE_HEADERS_DEST
    cd src/electron
