@@ -41,7 +41,16 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     DialogClosedCallback callback,
     bool* did_suppress_message) {
   auto origin_url = rfh->GetLastCommittedURL();
-  const std::string& origin = origin_url.GetOrigin().spec();
+
+  std::string origin;
+  // For file:// URLs we do the alert filtering by the
+  // file path currently loaded
+  if (origin_url.SchemeIsFile()) {
+    origin = origin_url.path();
+  } else {
+    origin = origin_url.GetOrigin().spec();
+  }
+
   if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
     return std::move(callback).Run(false, base::string16());
   }
