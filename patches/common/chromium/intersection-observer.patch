@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Wed, 27 Mar 2019 23:27:40 +0100
+Subject: [IntersectionObserver] Report coordinates as CSS pixels.
+
+Prior to this patch, IntersectionObserverEntry was reporting
+coordinates in device pixels.
+
+Backports https://chromium-review.googlesource.com/c/chromium/src/+/1250121
+
+diff --git a/third_party/WebKit/LayoutTests/external/wpt/intersection-observer/bounding-box.html b/third_party/WebKit/LayoutTests/external/wpt/intersection-observer/bounding-box.html
+index 69052b11ce6c40c6a56fe2b723c70c49ddc36dd9..50f33f0443bb70e64bec2e2fcc930fa2b4118ed6 100644
+--- a/third_party/WebKit/LayoutTests/external/wpt/intersection-observer/bounding-box.html
++++ b/third_party/WebKit/LayoutTests/external/wpt/intersection-observer/bounding-box.html
+@@ -13,7 +13,7 @@ pre, #log {
+   overflow: visible;
+   height: 200px;
+   width: 160px;
+-  border: 7px solid black;
++  border: 8px solid black;
+ }
+ #target {
+   margin: 10px;
+@@ -50,12 +50,35 @@ function step0() {
+   var targetBounds = clientBounds(target);
+   target.style.transform = "translateY(195px)";
+   runTestCycle(step1, "target.style.transform = 'translateY(195px)'");
+-  checkLastEntry(entries, 0, targetBounds.concat(0, 0, 0, 0, 8, 182, 8, 222, false));
++  checkLastEntry(entries, 0, targetBounds.concat(0, 0, 0, 0, 8, 184, 8, 224, false));
+ }
+ 
+ function step1() {
++  var targetBounds = clientBounds(target);
++  target.style.transform = "translateY(300px)";
++  runTestCycle(step2, "target.style.transform = 'translateY(300px)'");
++  checkLastEntry(entries, 1, targetBounds.concat(26, 146, 221, 224, 8, 184, 8, 224, true));
++}
++
++function step2() {
+   var targetBounds = clientBounds(target);
+   target.style.transform = "";
+-  checkLastEntry(entries, 1, targetBounds.concat(25, 145, 220, 222, 8, 182, 8, 222, true));
++  target.style.zoom = "2";
++  runTestCycle(step3, "target.style.zoom = 2");
++  checkLastEntry(entries, 2, targetBounds.concat(0, 0, 0, 0, 8, 184, 8, 224, false));
+ }
++
++function step3() {
++  var targetBounds = clientBounds(target);
++  var intersectionWidth = (
++      176  // root width including border
++      -8   // root left border
++      -20  // target left margin * target zoom
++  ) / 2;   // convert to target's zoom factor.
++  var intersectionHeight = (216 - 8 - 20) / 2;
++  var intersectionRect = [targetBounds[0], targetBounds[0] + intersectionWidth,
++                          targetBounds[2], targetBounds[2] + intersectionHeight];
++  checkLastEntry(entries, 3, targetBounds.concat(intersectionRect).concat(8, 184, 8, 224, true));
++}
++
+ </script>
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc b/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc
+index 8b355a9f0b1e567950f8b5e9525d3af3e56605c4..d44b8b4e50f2a9de0628ebfb1bfdeac0292f79b5 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc
+@@ -100,12 +100,12 @@ void IntersectionObservation::ComputeIntersectionObservations(
+ 
+   if (last_threshold_index_ != new_threshold_index ||
+       last_is_visible_ != is_visible) {
+-    FloatRect snapped_root_bounds(geometry.RootRect());
++    FloatRect root_bounds(geometry.UnZoomedRootRect());
+     FloatRect* root_bounds_pointer =
+-        should_report_root_bounds_ ? &snapped_root_bounds : nullptr;
++        should_report_root_bounds_ ? &root_bounds : nullptr;
+     IntersectionObserverEntry* new_entry = new IntersectionObserverEntry(
+-        timestamp, new_visible_ratio, FloatRect(geometry.TargetRect()),
+-        root_bounds_pointer, FloatRect(geometry.IntersectionRect()),
++        timestamp, new_visible_ratio, FloatRect(geometry.UnZoomedTargetRect()),
++        root_bounds_pointer, FloatRect(geometry.UnZoomedIntersectionRect()),
+         geometry.DoesIntersect(), is_visible, Target());
+     Observer()->EnqueueIntersectionObserverEntry(*new_entry);
+     SetLastThresholdIndex(new_threshold_index);
+diff --git a/third_party/blink/renderer/core/layout/intersection_geometry.cc b/third_party/blink/renderer/core/layout/intersection_geometry.cc
+index 2efb1a9cfef2c8372c98986f6a168979cafcd6df..1102b72814941faacf36ce486a46535565ea11e8 100644
+--- a/third_party/blink/renderer/core/layout/intersection_geometry.cc
++++ b/third_party/blink/renderer/core/layout/intersection_geometry.cc
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+ #include "third_party/blink/renderer/core/frame/settings.h"
+ #include "third_party/blink/renderer/core/html/html_frame_owner_element.h"
++#include "third_party/blink/renderer/core/layout/adjust_for_absolute_zoom.h"
+ #include "third_party/blink/renderer/core/layout/layout_box.h"
+ #include "third_party/blink/renderer/core/layout/layout_view.h"
+ #include "third_party/blink/renderer/core/page/page.h"
+@@ -230,4 +231,28 @@ void IntersectionGeometry::ComputeGeometry() {
+     MapRootRectToRootFrameCoordinates();
+ }
+ 
++LayoutRect IntersectionGeometry::UnZoomedTargetRect() const {
++  if (!target_)
++    return target_rect_;
++  FloatRect rect(target_rect_);
++  AdjustForAbsoluteZoom::AdjustFloatRect(rect, *target_);
++  return LayoutRect(rect);
++}
++
++LayoutRect IntersectionGeometry::UnZoomedIntersectionRect() const {
++  if (!target_)
++    return intersection_rect_;
++  FloatRect rect(intersection_rect_);
++  AdjustForAbsoluteZoom::AdjustFloatRect(rect, *target_);
++  return LayoutRect(rect);
++}
++
++LayoutRect IntersectionGeometry::UnZoomedRootRect() const {
++  if (!root_)
++    return root_rect_;
++  FloatRect rect(root_rect_);
++  AdjustForAbsoluteZoom::AdjustFloatRect(rect, *root_);
++  return LayoutRect(rect);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/layout/intersection_geometry.h b/third_party/blink/renderer/core/layout/intersection_geometry.h
+index cd264792a894bb2d25cb3df80a60cd667dcba36e..f08cfdbcc0778900558816eaaeee14dc662c3f9c 100644
+--- a/third_party/blink/renderer/core/layout/intersection_geometry.h
++++ b/third_party/blink/renderer/core/layout/intersection_geometry.h
+@@ -38,12 +38,18 @@ class IntersectionGeometry {
+ 
+   // Client rect in the coordinate system of the frame containing target.
+   LayoutRect TargetRect() const { return target_rect_; }
++  // Target rect in CSS pixels
++  LayoutRect UnZoomedTargetRect() const;
+ 
+   // Client rect in the coordinate system of the frame containing target.
+   LayoutRect IntersectionRect() const { return intersection_rect_; }
++  // Intersection rect in CSS pixels
++  LayoutRect UnZoomedIntersectionRect() const;
+ 
+   // Client rect in the coordinate system of the frame containing root.
+   LayoutRect RootRect() const { return root_rect_; }
++  // Root rect in CSS pixels
++  LayoutRect UnZoomedRootRect() const;
+ 
+   bool DoesIntersect() const { return does_intersect_; }
+ 
