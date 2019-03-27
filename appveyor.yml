@@ -43,7 +43,6 @@ build_script:
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - ps: if (Test-Path src\electron) { Remove-Item src\electron -Recurse }
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
@@ -75,6 +74,10 @@ build_script:
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/chromedriver.zip
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
+  - 7z a node_headers.zip out\Default\gen\node_headers
+  - appveyor PushArtifact node_headers.zip
+  - appveyor PushArtifact out/Default/mksnapshot.zip
+  - appveyor PushArtifact out/Default/electron.lib
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         ninja -C out/Default third_party/breakpad:dump_syms
@@ -89,7 +92,7 @@ test_script:
   # Workaround for https://github.com/appveyor/ci/issues/2420
   - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
   - ps: >-
-      if ((-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
+      if ((-Not (Test-Path Env:\TEST_WOA)) -And (-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
         $env:RUN_TESTS="true"
       }
   - ps: >-
@@ -117,4 +120,6 @@ deploy_script:
           Write-Output "Uploading Electron release distribution to github releases"
           & python script\upload.py
         }
+      } elseif (Test-Path Env:\TEST_WOA) {
+        node script/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
