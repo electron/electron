@@ -1422,8 +1422,8 @@ describe('net module', () => {
           case requestUrl:
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.setHeader(includedHeader, includedHeaderValue)
             response.setHeader(discardableHeader, discardableHeaderValue)
+            response.setHeader(includedHeader, includedHeaderValue)
             response.end()
             break
           default:
