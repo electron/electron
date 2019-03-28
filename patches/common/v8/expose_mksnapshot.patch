@@ -3,7 +3,7 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Mon, 22 Oct 2018 10:47:13 -0700
 Subject: expose_mksnapshot.patch
 
-Needed in order to build mksnapshot on arm.
+Needed in order to target mksnapshot for mksnapshot zip.
 
 diff --git a/BUILD.gn b/BUILD.gn
 index d8a2b8e11a3e0e9820dca061a00dbf1a6859bcf4..d3dbe37d0a145921dddaea72e394c87826d6d5fe 100644

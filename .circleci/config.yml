@@ -429,44 +429,29 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       export BUILD_PATH="$PWD/out/Default"
       electron/script/zip-symbols.py -b $BUILD_PATH
 
-step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
+step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
-    name: Native mksnapshot GN gen (arm/arm64)
+    name: Generate cross arch snapshot (arm/arm64)
     command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
+      if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         cd src
-        gn gen out/native_mksnapshot --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS v8_enable_embedded_builtins = false"
-      else
-        echo 'Skipping native mksnapshot GN gen for non arm build'
+        if [ "$TARGET_ARCH" == "arm" ]; then
+          export MKSNAPSHOT_PATH="clang_x86_v8_arm"
+        elif [ "$TARGET_ARCH" == "arm64" ]; then
+          export MKSNAPSHOT_PATH="clang_x64_v8_arm64"
+        fi
+        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
+        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
+        mkdir cross-arch-snapshots
+        cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
       fi
 
-step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
-  run:
-    name: Native mksnapshot build (arm/arm64)
-    no_output_timeout: 30m
-    command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
-        cd src
-        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-      else
-        echo 'Skipping native mksnapshot build for non arm build'
-      fi
-
-step-maybe-native-mksnapshot-strip: &step-maybe-native-mksnapshot-strip
-  run:
-    name: Native mksnapshot binary strip (arm/arm64)
-    command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
-        cd src
-        electron/script/strip-binaries.py --file $PWD/out/native_mksnapshot/mksnapshot --target-cpu="$TARGET_ARCH"
-      else
-        echo 'Skipping native mksnapshot binary strip'
-      fi
-
-step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
+step-maybe-cross-arch-snapshot-store: &step-maybe-cross-arch-snapshot-store
   store_artifacts:
-    path: src/out/native_mksnapshot/mksnapshot.zip
-    destination: native_mksnapshot.zip
+    path: src/cross-arch-snapshots
+    destination: cross-arch-snapshots
 
 step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
   run:
@@ -626,12 +611,8 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # mksnapshot
     - *step-mksnapshot-build
     - *step-mksnapshot-store
-
-    # native_mksnapshot
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-strip
-    - *step-maybe-native-mksnapshot-store
+    - *step-maybe-cross-arch-snapshot
+    - *step-maybe-cross-arch-snapshot-store
 
     # ffmpeg
     - *step-ffmpeg-gn-gen
@@ -673,12 +654,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-mksnapshot-build
     - *step-mksnapshot-store
 
-    # native_mksnapshot
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-strip
-    - *step-maybe-native-mksnapshot-store
-
     # chromedriver
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
@@ -709,18 +684,6 @@ steps-chromedriver-build: &steps-chromedriver-build
 
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
-
-    - *step-maybe-notify-slack-failure
-
-steps-native-mksnapshot-build: &steps-native-mksnapshot-build
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-store
 
     - *step-maybe-notify-slack-failure
 
@@ -1017,16 +980,6 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
 
-  linux-arm-native-mksnapshot:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm
-      <<: *env-release-build
-      <<: *env-enable-sccache
-      <<: *env-send-slack-notifications
-    <<: *steps-native-mksnapshot-build
-
   linux-arm64-debug:
     <<: *machine-linux-2xlarge
     environment:
@@ -1090,16 +1043,6 @@ jobs:
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
-
-  linux-arm64-native-mksnapshot:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm64
-      <<: *env-release-build
-      <<: *env-enable-sccache
-      <<: *env-send-slack-notifications
-    <<: *steps-native-mksnapshot-build
 
   osx-testing:
     <<: *machine-mac-large
@@ -1565,9 +1508,6 @@ workflows:
       - linux-arm-release:
           requires:
             - linux-checkout
-      - linux-arm-native-mksnapshot:
-          requires:
-            - linux-checkout
       - linux-arm-chromedriver:
           requires:
             - linux-checkout
@@ -1575,12 +1515,9 @@ workflows:
           requires:
             - linux-arm-release
             - linux-arm-chromedriver
-            - linux-arm-native-mksnapshot
+
 
       - linux-arm64-release:
-          requires:
-            - linux-checkout
-      - linux-arm64-native-mksnapshot:
           requires:
             - linux-checkout
       - linux-arm64-chromedriver:
@@ -1590,7 +1527,6 @@ workflows:
           requires:
             - linux-arm64-release
             - linux-arm64-chromedriver
-            - linux-arm64-native-mksnapshot
 
   nightly-mac-release-test:
     triggers:
