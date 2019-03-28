@@ -20,7 +20,7 @@ describeFn('autoUpdater behavior', function () {
   let identity = ''
 
   beforeEach(function () {
-    const result = cp.spawnSync('bash', [path.resolve(__dirname, '../script/codesign/get-trusted-identity.sh')])
+    const result = cp.spawnSync(path.resolve(__dirname, '../script/codesign/get-trusted-identity.sh'))
     if (result.status !== 0 || result.stdout.toString().trim().length === 0)  {
       if (isCI) {
         throw new Error('No valid signing identity available to run autoUpdater specs')
@@ -38,7 +38,7 @@ describeFn('autoUpdater behavior', function () {
   const copyApp = async (newDir: string, fixture = 'initial') => {
     const appBundlePath = path.resolve(process.execPath, '../../..')
     const newPath = path.resolve(newDir, 'Electron.app')
-    cp.execSync(`cp -R "${appBundlePath}" "${path.dirname(newPath)}"`)
+    cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)])
     const appDir = path.resolve(newPath, 'Contents/Resources/app')
     await fs.mkdirp(appDir)
     await fs.copy(path.resolve(fixturesPath, 'auto-update', fixture), appDir)
@@ -97,7 +97,7 @@ describeFn('autoUpdater behavior', function () {
     try {
       await fn(dir)
     } finally {
-      cp.execSync(`rm -r "${dir}"`)
+      cp.spawnSync('rm', ['-r' , dir])
     }
   }
 
