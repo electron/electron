@@ -21,11 +21,15 @@ const getIsolatedWorldIdForInstance = () => {
   return isolatedWorldIds++
 }
 
+const escapePattern = function (pattern: string) {
+  return pattern.replace(/[\\^$+?.()|[\]{}]/g, '\\$&')
+}
+
 // Check whether pattern matches.
 // https://developer.chrome.com/extensions/match_patterns
 const matchesPattern = function (pattern: string) {
   if (pattern === '<all_urls>') return true
-  const regexp = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`)
+  const regexp = new RegExp(`^${pattern.split('*').map(escapePattern).join('.*')}$`)
   const url = `${location.protocol}//${location.host}${location.pathname}`
   return url.match(regexp)
 }
