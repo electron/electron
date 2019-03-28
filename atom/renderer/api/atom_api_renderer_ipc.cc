@@ -68,13 +68,16 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
 
     // A task is posted to a separate thread to execute the request so that
     // this thread may block on a waitable event. It is safe to pass raw
-    // pointers to |sync_load_response| and |event| as this stack frame will
-    // survive until the request is complete.
+    // pointers to |result| and |event| as this stack frame will survive until
+    // the request is complete.
     scoped_refptr<base::SingleThreadTaskRunner> task_runner =
         base::CreateSingleThreadTaskRunnerWithTraits({});
 
     base::WaitableEvent response_received_event;
 
+    // We unbind the interface from this thread to pass it over to the worker
+    // thread temporarily. This requires that no callbacks be pending for this
+    // interface.
     auto interface_info = electron_browser_ptr_.PassInterface();
     atom::mojom::ElectronBrowserPtrInfo returned_interface_info;
     task_runner->PostTask(

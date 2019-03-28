@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
