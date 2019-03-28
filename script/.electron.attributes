@@ -1,1 +1,2 @@
 *.mm diff=objc
+*.m diff=objc
