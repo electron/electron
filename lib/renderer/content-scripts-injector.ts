@@ -25,7 +25,7 @@ const getIsolatedWorldIdForInstance = () => {
 // https://developer.chrome.com/extensions/match_patterns
 const matchesPattern = function (pattern: string) {
   if (pattern === '<all_urls>') return true
-  const regexp = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`)
+  const regexp = new RegExp(`^${pattern.replace(/\./g, '\\.').replace(/\*/g, '.*')}$`)
   const url = `${location.protocol}//${location.host}${location.pathname}`
   return url.match(regexp)
 }
