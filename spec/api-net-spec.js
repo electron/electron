@@ -1445,6 +1445,7 @@ describe('net module', () => {
 
         expect(headers).to.have.property(includedHeader)
         expect(headers).to.not.have.property(discardableHeader)
+        expect(headers[includedHeader]).to.equal(includedHeaderValue)
 
         response.pause()
         response.on('data', chunk => {})
