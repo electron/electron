@@ -610,6 +610,7 @@ static_library("electron_lib") {
   if (enable_electron_extensions) {
     public_deps += [ "atom/common/extensions/api:extensions_features" ]
     deps += [
+      "//components/pref_registry",
       "//components/user_prefs",
       "//extensions/browser",
       "//extensions/common",
