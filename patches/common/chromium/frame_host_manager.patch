@@ -108,7 +108,7 @@ index cc7c7b4ffab5377fa71016e233fbfaae87d50329..81a351569528e74fa44e68a804de968b
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 798a62cbb030514ce2373f898d9680ceda7b9062..337bb0ed74b3efe7ae0bcb6ea8ef662becb0cabd 100644
+index 4665bd481c452ff790f3626b2f5dc2ab621ebfdf..08fd583f43c15505fa7b8fa4947db429bb3cc595 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -51,6 +51,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -129,7 +129,7 @@ index 798a62cbb030514ce2373f898d9680ceda7b9062..337bb0ed74b3efe7ae0bcb6ea8ef662b
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 5a6d3cbf0a913f56a789ac1166d850eb29332a78..3dfe4abcc76b88580d818ea1bd61a0e32c0af882 100644
+index ef7385a2d8619b1264e4aa77629d16948bd3669a..53aeab691ae012401008162e71415e64fa204177 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -210,8 +210,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(

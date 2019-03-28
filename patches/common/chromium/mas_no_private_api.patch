@@ -181,10 +181,10 @@ index 9b8e15866a325faee845a97f0e5a2f14e343d2f6..148d5fdd3f11ab318f6a0d0add23bd45
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 2a1ad6a78e90ea8b84630bcefeacab7cf9ec7a05..fced3606ea1a3746554ee7bfbf80fec3dad46c37 100644
+index 47525323f56ca591ac5551c45dbdfed5208ac674..d559e05afb73c73e37d0c11ee5dc1597699ab562 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -460,6 +460,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -461,6 +461,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -192,7 +192,7 @@ index 2a1ad6a78e90ea8b84630bcefeacab7cf9ec7a05..fced3606ea1a3746554ee7bfbf80fec3
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -467,6 +468,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -468,6 +469,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }

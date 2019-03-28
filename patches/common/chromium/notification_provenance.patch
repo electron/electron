@@ -106,7 +106,7 @@ index c7c9bc8fb304697bb1802d04e26038c65b8facdc..e73d2b0a276d4a0a7d1a484d11d5ac43
  
    // Removes |service| from the list of owned services, for example because the
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 8e4df0b15aebc30c517a8c99f20201d8148777e0..ad49782df16c92a6ed0f736a5980263de908c137 100644
+index b317a37b4fa12be4e737a91948110fd16308c221..b3968f52c478ce051370e543b2fb904360d7892c 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
 @@ -189,7 +189,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {

@@ -22,7 +22,7 @@ index f86a9167ac1ec5e7b082e474eb4b5f217d06df92..47df32ecb078a8f18e474f5c38faf2c7
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 337bb0ed74b3efe7ae0bcb6ea8ef662becb0cabd..a3dcd9c097254fa7b9f7278f6e960be27cfbd133 100644
+index 08fd583f43c15505fa7b8fa4947db429bb3cc595..a841e5c00e2fcc52481ffffcd62fa55892ab8109 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -61,6 +61,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
@@ -37,7 +37,7 @@ index 337bb0ed74b3efe7ae0bcb6ea8ef662becb0cabd..a3dcd9c097254fa7b9f7278f6e960be2
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3dfe4abcc76b88580d818ea1bd61a0e32c0af882..924d9da7d9f6bd6b1adc1aa2d286f3cc998efdce 100644
+index 53aeab691ae012401008162e71415e64fa204177..9161d0055ad26bd95de7f8fcad3c1587db1e54e9 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -241,6 +241,9 @@ class CONTENT_EXPORT ContentBrowserClient {
