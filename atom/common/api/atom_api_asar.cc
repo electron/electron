@@ -118,14 +118,14 @@ class Archive : public mate::Wrappable<Archive> {
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
 
-void InitAsarSupport(v8::Isolate* isolate,
-                     v8::Local<v8::Value> source,
-                     v8::Local<v8::Value> require) {
+void InitAsarSupport(v8::Isolate* isolate, v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
   std::vector<v8::Local<v8::String>> asar_init_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "source"),
       node::FIXED_ONE_BYTE_STRING(isolate, "require")};
 
+  auto source = node::per_process::native_module_loader.GetSourceObject(
+      isolate->GetCurrentContext());
   std::vector<v8::Local<v8::Value>> asar_init_args = {source, require};
 
   node::per_process::native_module_loader.CompileAndCall(
