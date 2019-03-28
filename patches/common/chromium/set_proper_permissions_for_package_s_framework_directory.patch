@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Fri, 12 Oct 2018 15:11:20 +0000
+Subject: Set proper permissions for package's framework directory.
+
+Bug: 893616
+Change-Id: I09d5d906c3cb2e075e142a36b3ebe9b6532eb11f
+Reviewed-on: https://chromium-review.googlesource.com/c/1271001
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Commit-Queue: Robert Sesek <rsesek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#599218}
+
+diff --git a/build/config/mac/package_framework.py b/build/config/mac/package_framework.py
+index f669528fe50a4084ee99be96a5308ffbaf28fff7..75604094e422c8e0bcedd241ad897eea8348053c 100644
+--- a/build/config/mac/package_framework.py
++++ b/build/config/mac/package_framework.py
+@@ -23,7 +23,7 @@ def Main():
+   # Foo.framework/Versions/Current symlink to it.
+   if args.version:
+     try:
+-      os.makedirs(os.path.join(args.framework, VERSIONS, args.version), 0744)
++      os.makedirs(os.path.join(args.framework, VERSIONS, args.version), 0755)
+     except OSError as e:
+       if e.errno != errno.EEXIST:
+         raise e
