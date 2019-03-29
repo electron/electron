@@ -616,6 +616,7 @@ static_library("electron_lib") {
       "//extensions/common",
       "//extensions/renderer",
     ]
+    sources += filenames.lib_sources_extensions
   }
 }
 
