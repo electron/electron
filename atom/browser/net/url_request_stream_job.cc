@@ -13,13 +13,15 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/time/time.h"
 #include "native_mate/dictionary.h"
 #include "net/base/net_errors.h"
 #include "net/filter/gzip_source_stream.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -82,14 +84,14 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
     return;
   }
 
-  auto subscriber = std::make_unique<mate::StreamSubscriber>(
-      args->isolate(), data.GetHandle(), job);
+  auto subscriber = base::MakeRefCounted<mate::StreamSubscriber>(
+      args->isolate(), data.GetHandle(), job,
+      base::ThreadTaskRunnerHandle::Get());
 
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&URLRequestStreamJob::StartAsync, job,
-                     std::move(subscriber), base::RetainedRef(response_headers),
-                     ended, error));
+      base::BindOnce(&URLRequestStreamJob::StartAsync, job, subscriber,
+                     base::RetainedRef(response_headers), ended, error));
 }
 
 }  // namespace
@@ -104,10 +106,7 @@ URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
       weak_factory_(this) {}
 
 URLRequestStreamJob::~URLRequestStreamJob() {
-  if (subscriber_) {
-    content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                       std::move(subscriber_));
-  }
+  DCHECK(!subscriber_ || subscriber_->HasOneRef());
 }
 
 void URLRequestStreamJob::Start() {
@@ -121,7 +120,7 @@ void URLRequestStreamJob::Start() {
 }
 
 void URLRequestStreamJob::StartAsync(
-    std::unique_ptr<mate::StreamSubscriber> subscriber,
+    scoped_refptr<mate::StreamSubscriber> subscriber,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool ended,
     int error) {
@@ -133,7 +132,7 @@ void URLRequestStreamJob::StartAsync(
 
   ended_ = ended;
   response_headers_ = response_headers;
-  subscriber_ = std::move(subscriber);
+  subscriber_ = subscriber;
   request_start_time_ = base::TimeTicks::Now();
   NotifyHeadersComplete();
 }
@@ -192,12 +191,13 @@ int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
 }
 
 void URLRequestStreamJob::DoneReading() {
-  content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                     std::move(subscriber_));
   write_buffer_.clear();
 }
 
 void URLRequestStreamJob::DoneReadingRedirectResponse() {
+  if (subscriber_) {
+    subscriber_ = nullptr;
+  }
   DoneReading();
 }
 
