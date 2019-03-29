@@ -25,10 +25,6 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
 
-IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_Message_Host,
-                    std::string /* channel */,
-                    base::ListValue /* arguments */)
-
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 
 IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,

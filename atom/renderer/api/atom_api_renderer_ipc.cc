@@ -48,7 +48,8 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
         .SetMethod("send", &IPCRenderer::Send)
         .SetMethod("sendSync", &IPCRenderer::SendSync)
-        .SetMethod("sendTo", &IPCRenderer::SendTo);
+        .SetMethod("sendTo", &IPCRenderer::SendTo)
+        .SetMethod("sendToHost", &IPCRenderer::SendToHost);
   }
   static mate::Handle<IPCRenderer> Create(v8::Isolate* isolate) {
     return mate::CreateHandle(isolate, new IPCRenderer(isolate));
@@ -69,6 +70,12 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
               const base::ListValue& arguments) {
     electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
                                      channel, arguments.Clone());
+  }
+
+  void SendToHost(mate::Arguments* args,
+                  const std::string& channel,
+                  const base::ListValue& arguments) {
+    electron_browser_ptr_->MessageHost(channel, arguments.Clone());
   }
 
   base::Value SendSync(mate::Arguments* args,
@@ -130,27 +137,12 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   atom::mojom::ElectronBrowserPtr electron_browser_ptr_;
 };
 
-void SendToHost(mate::Arguments* args,
-                const std::string& channel,
-                const base::ListValue& arguments) {
-  RenderFrame* render_frame = GetCurrentRenderFrame();
-  if (render_frame == nullptr)
-    return;
-
-  bool success = render_frame->Send(new AtomFrameHostMsg_Message_Host(
-      render_frame->GetRoutingID(), channel, arguments));
-
-  if (!success)
-    args->ThrowError("Unable to send AtomFrameHostMsg_Message_Host");
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.Set("ipc", IPCRenderer::Create(context->GetIsolate()));
-  dict.SetMethod("sendToHost", &SendToHost);
 }
 
 }  // namespace

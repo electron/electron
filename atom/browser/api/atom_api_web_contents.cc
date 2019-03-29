@@ -934,6 +934,13 @@ void WebContents::MessageTo(bool internal,
   }
 }
 
+void WebContents::MessageHost(const std::string& channel,
+                              base::Value arguments) {
+  // webContents.emit('ipc-message-host', new Event(), channel, args);
+  EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
+                 base::nullopt, channel, std::move(arguments));
+}
+
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
   // A RenderFrameHost can be destroyed before the related Mojo binding is
@@ -1112,7 +1119,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   bool handled = true;
   FrameDispatchHelper helper = {this, frame_host};
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_Host, OnRendererMessageHost)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(
         AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
@@ -2270,13 +2276,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {
   return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
-}
-
-void WebContents::OnRendererMessageHost(content::RenderFrameHost* frame_host,
-                                        const std::string& channel,
-                                        const base::ListValue& args) {
-  // webContents.emit('ipc-message-host', new Event(), channel, args);
-  EmitWithSender("ipc-message-host", frame_host, base::nullopt, channel, args);
 }
 
 // static

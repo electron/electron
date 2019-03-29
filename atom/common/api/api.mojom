@@ -40,4 +40,8 @@ interface ElectronBrowser {
     int32 web_contents_id,
     string channel,
     mojo_base.mojom.ListValue arguments);
+
+  MessageHost(
+    string channel,
+    mojo_base.mojom.ListValue arguments);
 };
