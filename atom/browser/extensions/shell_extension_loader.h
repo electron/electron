@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_LOADER_H_
-#define EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_LOADER_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_LOADER_H_
+#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_LOADER_H_
 
 #include <memory>
 #include <string>
@@ -84,4 +84,4 @@ class ShellExtensionLoader : public ExtensionRegistrar::Delegate {
 
 }  // namespace extensions
 
-#endif  // EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_LOADER_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_LOADER_H_

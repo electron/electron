@@ -4,6 +4,8 @@
 
 #include "atom/common/extensions/atom_extensions_api_provider.h"
 
+#include <string>
+
 #include "extensions/common/features/json_feature_provider_source.h"
 // #include "extensions/shell/common/api/generated_schemas.h"
 // #include "extensions/shell/common/api/shell_api_features.h"

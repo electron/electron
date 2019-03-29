@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_ATOM_COMMON_ATOM_EXTENSIONS_CLIENT_H_
-#define EXTENSIONS_ATOM_COMMON_ATOM_EXTENSIONS_CLIENT_H_
+#ifndef ATOM_COMMON_EXTENSIONS_ATOM_EXTENSIONS_CLIENT_H_
+#define ATOM_COMMON_EXTENSIONS_ATOM_EXTENSIONS_CLIENT_H_
+
+#include <string>
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
@@ -62,4 +64,4 @@ class AtomExtensionsClient : public extensions::ExtensionsClient {
 
 }  // namespace atom
 
-#endif  // EXTENSIONS_ATOM_COMMON_ATOM_EXTENSIONS_CLIENT_H_
+#endif  // ATOM_COMMON_EXTENSIONS_ATOM_EXTENSIONS_CLIENT_H_

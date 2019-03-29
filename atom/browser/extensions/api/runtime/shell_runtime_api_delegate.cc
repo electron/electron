@@ -4,6 +4,8 @@
 
 #include "atom/browser/extensions/api/runtime/shell_runtime_api_delegate.h"
 
+#include <string>
+
 #include "atom/browser/extensions/shell_extension_system.h"
 #include "build/build_config.h"
 #include "extensions/common/api/runtime.h"

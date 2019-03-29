@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_SYSTEM_H_
-#define EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_SYSTEM_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_H_
+#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "base/compiler_specific.h"
@@ -115,4 +116,4 @@ class ShellExtensionSystem : public ExtensionSystem {
 
 }  // namespace extensions
 
-#endif  // EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_SYSTEM_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_H_

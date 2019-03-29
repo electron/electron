@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_SHELL_BROWSER_SHELL_NAVIGATION_UI_DATA_H_
-#define EXTENSIONS_SHELL_BROWSER_SHELL_NAVIGATION_UI_DATA_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_NAVIGATION_UI_DATA_H_
+#define ATOM_BROWSER_EXTENSIONS_SHELL_NAVIGATION_UI_DATA_H_
 
 #include <memory>
 
@@ -45,4 +45,4 @@ class ShellNavigationUIData : public content::NavigationUIData {
 
 }  // namespace extensions
 
-#endif  // EXTENSIONS_SHELL_BROWSER_SHELL_NAVIGATION_UI_DATA_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_NAVIGATION_UI_DATA_H_

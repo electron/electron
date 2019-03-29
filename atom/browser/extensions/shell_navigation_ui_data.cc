@@ -4,6 +4,8 @@
 
 #include "atom/browser/extensions/shell_navigation_ui_data.h"
 
+#include <utility>
+
 #include "content/public/browser/navigation_handle.h"
 #include "extensions/common/constants.h"
 

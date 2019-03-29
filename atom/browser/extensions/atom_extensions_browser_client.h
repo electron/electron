@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_ATOM_BROWSER_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
-#define EXTENSIONS_ATOM_BROWSER_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
 
 #include <memory>
 #include <string>
@@ -153,4 +153,4 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
 
 }  // namespace atom
 
-#endif  // EXTENSIONS_ATOM_BROWSER_ATOM_EXTENSIONS_BROWSER_CLIENT_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSIONS_BROWSER_CLIENT_H_

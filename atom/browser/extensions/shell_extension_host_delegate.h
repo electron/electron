@@ -2,8 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_HOST_DELEGATE_H_
-#define EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_HOST_DELEGATE_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_HOST_DELEGATE_H_
+#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_HOST_DELEGATE_H_
+
+#include <memory>
+#include <string>
 
 #include "base/macros.h"
 #include "extensions/browser/extension_host_delegate.h"
@@ -45,4 +48,4 @@ class ShellExtensionHostDelegate : public ExtensionHostDelegate {
 
 }  // namespace extensions
 
-#endif  // EXTENSIONS_SHELL_BROWSER_SHELL_EXTENSION_HOST_DELEGATE_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_HOST_DELEGATE_H_

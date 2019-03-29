@@ -4,6 +4,10 @@
 
 #include "atom/browser/extensions/shell_extension_host_delegate.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "atom/browser/extensions/shell_extension_web_contents_observer.h"
 #include "base/lazy_instance.h"
 #include "base/logging.h"

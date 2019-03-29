@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_SHELL_BROWSER_API_RUNTIME_SHELL_RUNTIME_API_DELEGATE_H_
-#define EXTENSIONS_SHELL_BROWSER_API_RUNTIME_SHELL_RUNTIME_API_DELEGATE_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_API_RUNTIME_SHELL_RUNTIME_API_DELEGATE_H_
+#define ATOM_BROWSER_EXTENSIONS_API_RUNTIME_SHELL_RUNTIME_API_DELEGATE_H_
+
+#include <string>
 
 #include "base/macros.h"
 #include "extensions/browser/api/runtime/runtime_api_delegate.h"
@@ -37,4 +39,4 @@ class ShellRuntimeAPIDelegate : public RuntimeAPIDelegate {
 
 }  // namespace extensions
 
-#endif  // EXTENSIONS_SHELL_BROWSER_API_RUNTIME_SHELL_RUNTIME_API_DELEGATE_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_API_RUNTIME_SHELL_RUNTIME_API_DELEGATE_H_

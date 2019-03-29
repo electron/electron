@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_ATOM_COMMON_ATOM_EXTENSIONS_API_PROVIDER_H_
-#define EXTENSIONS_ATOM_COMMON_ATOM_EXTENSIONS_API_PROVIDER_H_
+#ifndef ATOM_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
+#define ATOM_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
+
+#include <string>
 
 #include "base/macros.h"
 #include "extensions/common/extensions_api_provider.h"
@@ -34,4 +36,4 @@ class AtomExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
 
 }  // namespace atom
 
-#endif  // EXTENSIONS_ATOM_COMMON_ATOM_EXTENSIONS_API_PROVIDER_H_
+#endif  // ATOM_COMMON_EXTENSIONS_ATOM_EXTENSIONS_API_PROVIDER_H_
