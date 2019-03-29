@@ -275,6 +275,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   InitZoomController(web_contents, mate::Dictionary::CreateEmpty(isolate));
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
+  bindings_.set_connection_error_handler(base::BindRepeating(
+      &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -424,6 +426,8 @@ void WebContents::InitWithSessionAndOptions(
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
+  bindings_.set_connection_error_handler(base::BindRepeating(
+      &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
@@ -898,6 +902,12 @@ void WebContents::BindElectronBrowser(
     content::RenderFrameHost* render_frame_host) {
   auto id = bindings_.AddBinding(this, std::move(request), render_frame_host);
   frame_to_bindings_map_[render_frame_host].push_back(id);
+}
+
+void WebContents::OnElectronBrowserConnectionError() {
+  auto binding_id = bindings_.dispatch_binding();
+  auto* frame_host = bindings_.dispatch_context();
+  base::Erase(frame_to_bindings_map_[frame_host], binding_id);
 }
 
 void WebContents::Message(bool internal,

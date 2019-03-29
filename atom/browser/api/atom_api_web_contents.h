@@ -479,6 +479,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // RenderFrameHost is destroyed, all related bindings will be removed.
   void BindElectronBrowser(mojom::ElectronBrowserRequest request,
                            content::RenderFrameHost* render_frame_host);
+  void OnElectronBrowserConnectionError();
 
   uint32_t GetNextRequestId() { return ++request_id_; }
 
