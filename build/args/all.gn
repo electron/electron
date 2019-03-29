@@ -13,7 +13,3 @@ ffmpeg_branding = "Chrome"
 enable_basic_printing = true
 
 is_cfi = false
-
-if (is_win) {
-  use_custom_libcxx = false
-}

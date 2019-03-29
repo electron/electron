@@ -20,7 +20,7 @@ index d04130dcb387a985c57fd0d94c10a8c327afe6f3..8d2ed9af59a8e9bbd242ab098cba7f75
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -403,6 +408,9 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -403,6 +408,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -30,7 +30,7 @@ index d04130dcb387a985c57fd0d94c10a8c327afe6f3..8d2ed9af59a8e9bbd242ab098cba7f75
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -786,6 +794,10 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -786,6 +794,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -41,7 +41,7 @@ index d04130dcb387a985c57fd0d94c10a8c327afe6f3..8d2ed9af59a8e9bbd242ab098cba7f75
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
      clientHelper_->ForwardKeyboardEvent(event, latency_info);
-@@ -1534,9 +1546,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -1534,9 +1546,11 @@ - (id)accessibilityFocusedUIElement {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -53,7 +53,7 @@ index d04130dcb387a985c57fd0d94c10a8c327afe6f3..8d2ed9af59a8e9bbd242ab098cba7f75
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1545,7 +1559,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
+@@ -1545,7 +1559,10 @@ - (NSArray*)validAttributesForMarkedText {
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,
