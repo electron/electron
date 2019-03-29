@@ -470,15 +470,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                          const std::vector<base::string16>& labels);
 #endif
 
-  void Message(bool internal,
-               const std::string& channel,
-               base::Value arguments) override;
-
-  void MessageSync(bool internal,
-                   const std::string& channel,
-                   base::Value arguments,
-                   MessageSyncCallback callback) override;
-
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
  private:
@@ -498,19 +489,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
 
-  // Called when received a message from renderer.
-  void OnRendererMessage(content::RenderFrameHost* frame_host,
-                         bool internal,
-                         const std::string& channel,
-                         const base::Value& args);
-
-  // Called when received a synchronous message from renderer.
-  void OnRendererMessageSync(
-      content::RenderFrameHost* frame_host,
-      bool internal,
-      const std::string& channel,
-      const base::Value& args,
-      mojom::ElectronBrowser::MessageSyncCallback callback);
+  // mojom::ElectronBrowser
+  void Message(bool internal,
+               const std::string& channel,
+               base::Value arguments) override;
+  void MessageSync(bool internal,
+                   const std::string& channel,
+                   base::Value arguments,
+                   MessageSyncCallback callback) override;
 
   // Called when received a message from renderer to be forwarded.
   void OnRendererMessageTo(content::RenderFrameHost* frame_host,

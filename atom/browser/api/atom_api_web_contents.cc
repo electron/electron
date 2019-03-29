@@ -903,16 +903,20 @@ void WebContents::CreateIPCHandler(
 void WebContents::Message(bool internal,
                           const std::string& channel,
                           base::Value arguments) {
-  OnRendererMessage(bindings_.dispatch_context(), internal, channel,
-                    std::move(arguments));
+  // webContents.emit('-ipc-message', new Event(), internal, channel,
+  // arguments);
+  EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
+                 internal, channel, std::move(arguments));
 }
 
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               base::Value arguments,
                               MessageSyncCallback callback) {
-  OnRendererMessageSync(bindings_.dispatch_context(), internal, channel,
-                        std::move(arguments), std::move(callback));
+  // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
+  // channel, arguments);
+  EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
+                 std::move(callback), internal, channel, std::move(arguments));
 }
 
 void WebContents::RenderFrameDeleted(
@@ -2237,27 +2241,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {
   return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
-}
-
-void WebContents::OnRendererMessage(content::RenderFrameHost* frame_host,
-                                    bool internal,
-                                    const std::string& channel,
-                                    const base::Value& args) {
-  // webContents.emit('-ipc-message', new Event(), internal, channel, args);
-  EmitWithSender("-ipc-message", frame_host, base::nullopt, internal, channel,
-                 args);
-}
-
-void WebContents::OnRendererMessageSync(
-    content::RenderFrameHost* frame_host,
-    bool internal,
-    const std::string& channel,
-    const base::Value& args,
-    mojom::ElectronBrowser::MessageSyncCallback callback) {
-  // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
-  // channel, args);
-  EmitWithSender("-ipc-message-sync", frame_host, std::move(callback), internal,
-                 channel, args);
 }
 
 void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
