@@ -130,7 +130,7 @@ namespace {
 // is not modified.
 std::unique_ptr<const char* []> StringVectorToArgArray(
     const std::vector<std::string>& vector) {
-  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
+  std::unique_ptr<const char* []> array(new const char*[vector.size()]);
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
@@ -324,7 +324,7 @@ node::Environment* NodeBindings::CreateEnvironment(
           .Append(FILE_PATH_LITERAL("init.js"));
   args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
 
-  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
+  std::unique_ptr<const char* []> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
