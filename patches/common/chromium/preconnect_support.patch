@@ -1,23 +1,23 @@
-From 22a881e202e4ecc230a8163ecdaa687b890040f4 Mon Sep 17 00:00:00 2001
+From ae44d24aa7bb56e53dfa8a99234452ae586eec93 Mon Sep 17 00:00:00 2001
 From: Alexey Kuts <kruntuid@gmail.com>
-Date: Tue, 26 Mar 2019 01:27:56 +0300
-Subject: [PATCH] 	preconnect feature
+Date: Fri, 29 Mar 2019 21:00:59 +0300
+Subject: [PATCH] 	preconnect_support
 
 ---
- chrome/browser/predictors/loading_predictor.cc     | 41 +++++++++++++---------
- chrome/browser/predictors/loading_predictor.h      | 11 ++++--
- .../browser/predictors/loading_predictor_config.cc |  5 ++-
- .../predictors/loading_predictor_factory.cc        |  4 ++-
- .../predictors/loading_predictor_tab_helper.cc     | 14 +++++---
- .../predictors/loading_predictor_tab_helper.h      |  6 ++++
- .../browser/predictors/resource_prefetch_common.cc | 15 ++++----
- .../browser/predictors/resource_prefetch_common.h  |  2 +-
- .../predictors/resource_prefetch_predictor.cc      |  6 ++++
- .../predictors/resource_prefetch_predictor.h       |  6 ++++
- 10 files changed, 77 insertions(+), 33 deletions(-)
+ chrome/browser/predictors/loading_predictor.cc     |  59 +--
+ chrome/browser/predictors/loading_predictor.h      |  29 +-
+ .../browser/predictors/loading_predictor_config.cc |   6 +-
+ .../predictors/loading_predictor_factory.cc        |   4 +-
+ .../predictors/loading_predictor_tab_helper.cc     |  24 +-
+ .../predictors/loading_predictor_tab_helper.h      |   6 +
+ .../browser/predictors/resource_prefetch_common.cc |  18 +-
+ .../browser/predictors/resource_prefetch_common.h  |   1 -
+ .../predictors/resource_prefetch_predictor.cc      | 435 ---------------------
+ .../predictors/resource_prefetch_predictor.h       |   6 +
+ 10 files changed, 41 insertions(+), 547 deletions(-)
 
 diff --git a/chrome/browser/predictors/loading_predictor.cc b/chrome/browser/predictors/loading_predictor.cc
-index f2ae6c5..45605fd 100644
+index f2ae6c5..24e6f45 100644
 --- a/chrome/browser/predictors/loading_predictor.cc
 +++ b/chrome/browser/predictors/loading_predictor.cc
 @@ -25,22 +25,23 @@ const base::TimeDelta kMinDelayBetweenPreconnectRequests =
@@ -48,23 +48,23 @@ index f2ae6c5..45605fd 100644
    }
  
    return !prediction->requests.empty();
-@@ -52,6 +53,7 @@ LoadingPredictor::LoadingPredictor(const LoadingPredictorConfig& config,
+@@ -52,15 +53,6 @@ LoadingPredictor::LoadingPredictor(const LoadingPredictorConfig& config,
                                     Profile* profile)
      : config_(config),
        profile_(profile),
-+#if 0
-       resource_prefetch_predictor_(
-           std::make_unique<ResourcePrefetchPredictor>(config, profile)),
-       stats_collector_(std::make_unique<LoadingStatsCollector>(
-@@ -61,6 +63,7 @@ LoadingPredictor::LoadingPredictor(const LoadingPredictorConfig& config,
-           resource_prefetch_predictor_.get(),
-           stats_collector_.get(),
-           config)),
-+#endif
+-      resource_prefetch_predictor_(
+-          std::make_unique<ResourcePrefetchPredictor>(config, profile)),
+-      stats_collector_(std::make_unique<LoadingStatsCollector>(
+-          resource_prefetch_predictor_.get(),
+-          config)),
+-      loading_data_collector_(std::make_unique<LoadingDataCollector>(
+-          resource_prefetch_predictor_.get(),
+-          stats_collector_.get(),
+-          config)),
        weak_factory_(this) {}
  
  LoadingPredictor::~LoadingPredictor() {
-@@ -69,13 +72,13 @@ LoadingPredictor::~LoadingPredictor() {
+@@ -69,13 +61,13 @@ LoadingPredictor::~LoadingPredictor() {
  
  void LoadingPredictor::PrepareForPageLoad(const GURL& url,
                                            HintOrigin origin,
@@ -80,14 +80,12 @@ index f2ae6c5..45605fd 100644
      return;
    }
  
-@@ -84,12 +87,14 @@ void LoadingPredictor::PrepareForPageLoad(const GURL& url,
+@@ -84,12 +76,10 @@ void LoadingPredictor::PrepareForPageLoad(const GURL& url,
  
    bool has_preconnect_prediction = false;
    PreconnectPrediction prediction;
-+#if 0
-   has_preconnect_prediction =
-       resource_prefetch_predictor_->PredictPreconnectOrigins(url, &prediction);
-+#endif
+-  has_preconnect_prediction =
+-      resource_prefetch_predictor_->PredictPreconnectOrigins(url, &prediction);
    // Try to preconnect to the |url| even if the predictor has no
    // prediction.
    has_preconnect_prediction =
@@ -96,32 +94,28 @@ index f2ae6c5..45605fd 100644
  
    if (!has_preconnect_prediction)
      return;
-@@ -111,9 +116,10 @@ void LoadingPredictor::StartInitialization() {
+@@ -110,16 +100,6 @@ void LoadingPredictor::CancelPageLoadHint(const GURL& url) {
+ void LoadingPredictor::StartInitialization() {
    if (shutdown_)
      return;
- 
+-
 -  resource_prefetch_predictor_->StartInitialization();
-+  //resource_prefetch_predictor_->StartInitialization();
+-}
+-
+-LoadingDataCollector* LoadingPredictor::loading_data_collector() {
+-  return loading_data_collector_.get();
+-}
+-
+-ResourcePrefetchPredictor* LoadingPredictor::resource_prefetch_predictor() {
+-  return resource_prefetch_predictor_.get();
  }
- 
-+#if 0
- LoadingDataCollector* LoadingPredictor::loading_data_collector() {
-   return loading_data_collector_.get();
- }
-@@ -121,6 +127,7 @@ LoadingDataCollector* LoadingPredictor::loading_data_collector() {
- ResourcePrefetchPredictor* LoadingPredictor::resource_prefetch_predictor() {
-   return resource_prefetch_predictor_.get();
- }
-+#endif
  
  PreconnectManager* LoadingPredictor::preconnect_manager() {
-   if (shutdown_ || !IsPreconnectFeatureEnabled())
-@@ -136,18 +143,20 @@ PreconnectManager* LoadingPredictor::preconnect_manager() {
+@@ -136,18 +116,18 @@ PreconnectManager* LoadingPredictor::preconnect_manager() {
  
  void LoadingPredictor::Shutdown() {
    DCHECK(!shutdown_);
 -  resource_prefetch_predictor_->Shutdown();
-+  //resource_prefetch_predictor_->Shutdown();
    shutdown_ = true;
  }
  
@@ -132,7 +126,6 @@ index f2ae6c5..45605fd 100644
      return;
  
 -  loading_data_collector()->RecordStartNavigation(navigation_id);
-+  //loading_data_collector()->RecordStartNavigation(navigation_id);
    CleanupAbandonedHintsAndNavigations(navigation_id);
    active_navigations_.emplace(navigation_id);
 -  PrepareForPageLoad(navigation_id.main_frame_url, HintOrigin::NAVIGATION);
@@ -141,44 +134,44 @@ index f2ae6c5..45605fd 100644
  }
  
  void LoadingPredictor::OnNavigationFinished(
-@@ -157,8 +166,7 @@ void LoadingPredictor::OnNavigationFinished(
+@@ -157,8 +137,6 @@ void LoadingPredictor::OnNavigationFinished(
    if (shutdown_)
      return;
  
 -  loading_data_collector()->RecordFinishNavigation(
 -      old_navigation_id, new_navigation_id, is_error_page);
-+  //loading_data_collector()->RecordFinishNavigation(old_navigation_id, new_navigation_id, is_error_page);
    active_navigations_.erase(old_navigation_id);
    CancelPageLoadHint(old_navigation_id.main_frame_url);
  }
-@@ -191,7 +199,7 @@ void LoadingPredictor::CleanupAbandonedHintsAndNavigations(
-     }
-   }
- 
--  // Navigations.
-+#if 0
-   for (auto it = active_navigations_.begin();
-        it != active_navigations_.end();) {
-     if ((it->tab_id == navigation_id.tab_id) ||
-@@ -202,6 +210,7 @@ void LoadingPredictor::CleanupAbandonedHintsAndNavigations(
+@@ -190,18 +168,6 @@ void LoadingPredictor::CleanupAbandonedHintsAndNavigations(
        ++it;
      }
    }
-+#endif
+-
+-  // Navigations.
+-  for (auto it = active_navigations_.begin();
+-       it != active_navigations_.end();) {
+-    if ((it->tab_id == navigation_id.tab_id) ||
+-        (time_now - it->creation_time > max_navigation_age)) {
+-      CancelActiveHint(active_hints_.find(it->main_frame_url));
+-      it = active_navigations_.erase(it);
+-    } else {
+-      ++it;
+-    }
+-  }
  }
  
  void LoadingPredictor::MaybeAddPreconnect(
-@@ -252,7 +261,7 @@ void LoadingPredictor::PreconnectFinished(
+@@ -252,7 +218,6 @@ void LoadingPredictor::PreconnectFinished(
  
    DCHECK(stats);
    active_hints_.erase(stats->url);
 -  stats_collector_->RecordPreconnectStats(std::move(stats));
-+  //stats_collector_->RecordPreconnectStats(std::move(stats));
  }
  
  }  // namespace predictors
 diff --git a/chrome/browser/predictors/loading_predictor.h b/chrome/browser/predictors/loading_predictor.h
-index 8a64bed..af5c3cb 100644
+index 8a64bed..cd3bfef 100644
 --- a/chrome/browser/predictors/loading_predictor.h
 +++ b/chrome/browser/predictors/loading_predictor.h
 @@ -51,7 +51,7 @@ class LoadingPredictor : public KeyedService,
@@ -186,19 +179,17 @@ index 8a64bed..af5c3cb 100644
    void PrepareForPageLoad(const GURL& url,
                            HintOrigin origin,
 -                          bool preconnectable = false);
-+                          int num_sockets_to_preconnect = -1);
++                          int num_sockets_to_preconnect);
  
    // Indicates that a page load hint is no longer active.
    void CancelPageLoadHint(const GURL& url);
-@@ -59,15 +59,18 @@ class LoadingPredictor : public KeyedService,
+@@ -59,15 +59,13 @@ class LoadingPredictor : public KeyedService,
    // Starts initialization, will complete asynchronously.
    void StartInitialization();
  
-+#if 0
-   // Don't use, internal only.
-   ResourcePrefetchPredictor* resource_prefetch_predictor();
-   LoadingDataCollector* loading_data_collector();
-+#endif
+-  // Don't use, internal only.
+-  ResourcePrefetchPredictor* resource_prefetch_predictor();
+-  LoadingDataCollector* loading_data_collector();
    PreconnectManager* preconnect_manager();
  
    // KeyedService:
@@ -206,36 +197,42 @@ index 8a64bed..af5c3cb 100644
  
 -  void OnNavigationStarted(const NavigationID& navigation_id);
 +  void OnNavigationStarted(const NavigationID& navigation_id,
-+                           int num_sockets_to_preconnect = -1);
++                           int num_sockets_to_preconnect);
    void OnNavigationFinished(const NavigationID& old_navigation_id,
                              const NavigationID& new_navigation_id,
                              bool is_error_page);
-@@ -105,6 +108,7 @@ class LoadingPredictor : public KeyedService,
+@@ -105,29 +103,8 @@ class LoadingPredictor : public KeyedService,
    // indicates if preconnect is possible.
    void HandleOmniboxHint(const GURL& url, bool preconnectable);
  
-+#if 0
-   // For testing.
-   void set_mock_resource_prefetch_predictor(
-       std::unique_ptr<ResourcePrefetchPredictor> predictor) {
-@@ -122,12 +126,15 @@ class LoadingPredictor : public KeyedService,
-       std::unique_ptr<LoadingDataCollector> loading_data_collector) {
-     loading_data_collector_ = std::move(loading_data_collector);
-   }
-+#endif
- 
+-  // For testing.
+-  void set_mock_resource_prefetch_predictor(
+-      std::unique_ptr<ResourcePrefetchPredictor> predictor) {
+-    resource_prefetch_predictor_ = std::move(predictor);
+-  }
+-
+-  // For testing.
+-  void set_mock_preconnect_manager(
+-      std::unique_ptr<PreconnectManager> preconnect_manager) {
+-    preconnect_manager_ = std::move(preconnect_manager);
+-  }
+-
+-  // For testing.
+-  void set_mock_loading_data_collector(
+-      std::unique_ptr<LoadingDataCollector> loading_data_collector) {
+-    loading_data_collector_ = std::move(loading_data_collector);
+-  }
+-
    LoadingPredictorConfig config_;
    Profile* profile_;
-+#if 0
-   std::unique_ptr<ResourcePrefetchPredictor> resource_prefetch_predictor_;
-   std::unique_ptr<LoadingStatsCollector> stats_collector_;
-   std::unique_ptr<LoadingDataCollector> loading_data_collector_;
-+#endif
+-  std::unique_ptr<ResourcePrefetchPredictor> resource_prefetch_predictor_;
+-  std::unique_ptr<LoadingStatsCollector> stats_collector_;
+-  std::unique_ptr<LoadingDataCollector> loading_data_collector_;
    std::unique_ptr<PreconnectManager> preconnect_manager_;
    std::map<GURL, base::TimeTicks> active_hints_;
    std::set<NavigationID> active_navigations_;
 diff --git a/chrome/browser/predictors/loading_predictor_config.cc b/chrome/browser/predictors/loading_predictor_config.cc
-index 146ad85..37c3888f 100644
+index 146ad85..f695cdb 100644
 --- a/chrome/browser/predictors/loading_predictor_config.cc
 +++ b/chrome/browser/predictors/loading_predictor_config.cc
 @@ -20,7 +20,7 @@ bool IsPreconnectFeatureEnabled() {
@@ -243,35 +240,31 @@ index 146ad85..37c3888f 100644
  bool IsLoadingPredictorEnabled(Profile* profile) {
    // Disabled for off-the-record. Policy choice, not a technical limitation.
 -  if (!profile || profile->IsOffTheRecord())
-+  if (!profile) // || profile->IsOffTheRecord())
++  if (!profile)
      return false;
  
    // Run the Loading Predictor only if the preconnect feature is turned on,
-@@ -32,9 +32,12 @@ bool IsPreconnectAllowed(Profile* profile) {
+@@ -32,9 +32,7 @@ bool IsPreconnectAllowed(Profile* profile) {
    if (!IsPreconnectFeatureEnabled())
      return false;
  
-+#if 0
-   // Checks that the preconnect is allowed by user settings.
-   return profile && profile->GetPrefs() &&
-          chrome_browser_net::CanPreresolveAndPreconnectUI(profile->GetPrefs());
-+#endif
+-  // Checks that the preconnect is allowed by user settings.
+-  return profile && profile->GetPrefs() &&
+-         chrome_browser_net::CanPreresolveAndPreconnectUI(profile->GetPrefs());
 +  return true;
  }
  
  LoadingPredictorConfig::LoadingPredictorConfig()
 diff --git a/chrome/browser/predictors/loading_predictor_factory.cc b/chrome/browser/predictors/loading_predictor_factory.cc
-index 1166d85..e0688c2 100644
+index 1166d85..57e9cdd 100644
 --- a/chrome/browser/predictors/loading_predictor_factory.cc
 +++ b/chrome/browser/predictors/loading_predictor_factory.cc
-@@ -29,15 +29,17 @@ LoadingPredictorFactory::LoadingPredictorFactory()
+@@ -29,15 +29,13 @@ LoadingPredictorFactory::LoadingPredictorFactory()
      : BrowserContextKeyedServiceFactory(
            "LoadingPredictor",
            BrowserContextDependencyManager::GetInstance()) {
-+#if 0
-   DependsOn(HistoryServiceFactory::GetInstance());
-   DependsOn(PredictorDatabaseFactory::GetInstance());
-+#endif
+-  DependsOn(HistoryServiceFactory::GetInstance());
+-  DependsOn(PredictorDatabaseFactory::GetInstance());
  }
  
  LoadingPredictorFactory::~LoadingPredictorFactory() {}
@@ -284,7 +277,7 @@ index 1166d85..e0688c2 100644
    if (!IsLoadingPredictorEnabled(profile))
      return nullptr;
 diff --git a/chrome/browser/predictors/loading_predictor_tab_helper.cc b/chrome/browser/predictors/loading_predictor_tab_helper.cc
-index 7983afcc..f1cf012a 100644
+index 7983afcc..6ff0a71 100644
 --- a/chrome/browser/predictors/loading_predictor_tab_helper.cc
 +++ b/chrome/browser/predictors/loading_predictor_tab_helper.cc
 @@ -29,9 +29,9 @@ bool IsHandledNavigation(content::NavigationHandle* navigation_handle) {
@@ -295,7 +288,7 @@ index 7983afcc..f1cf012a 100644
 -  auto* predictor = LoadingPredictorFactory::GetForProfile(
 -      Profile::FromBrowserContext(web_contents->GetBrowserContext()));
 +    : content::WebContentsObserver(web_contents), 
-+      num_sockets_to_preconnect_(-1) {
++      num_sockets_to_preconnect_(1) {
 +  auto* predictor = LoadingPredictorFactory::GetForProfile((Profile *)web_contents->GetBrowserContext());
    if (predictor)
      predictor_ = predictor->GetWeakPtr();
@@ -309,41 +302,40 @@ index 7983afcc..f1cf012a 100644
  }
  
  void LoadingPredictorTabHelper::DidFinishNavigation(
-@@ -93,8 +93,10 @@ void LoadingPredictorTabHelper::ResourceLoadComplete(
+@@ -92,9 +92,6 @@ void LoadingPredictorTabHelper::ResourceLoadComplete(
+   auto navigation_id = NavigationID(web_contents());
    if (!navigation_id.is_valid())
      return;
- 
-+#if 0
-   predictor_->loading_data_collector()->RecordResourceLoadComplete(
-       navigation_id, resource_load_info);
-+#endif
+-
+-  predictor_->loading_data_collector()->RecordResourceLoadComplete(
+-      navigation_id, resource_load_info);
  }
  
  void LoadingPredictorTabHelper::DidLoadResourceFromMemoryCache(
-@@ -109,6 +111,7 @@ void LoadingPredictorTabHelper::DidLoadResourceFromMemoryCache(
+@@ -108,16 +105,6 @@ void LoadingPredictorTabHelper::DidLoadResourceFromMemoryCache(
+   auto navigation_id = NavigationID(web_contents());
    if (!navigation_id.is_valid())
      return;
- 
-+#if 0
-   content::mojom::ResourceLoadInfo resource_load_info;
-   resource_load_info.url = url;
-   resource_load_info.mime_type = mime_type;
-@@ -118,6 +121,7 @@ void LoadingPredictorTabHelper::DidLoadResourceFromMemoryCache(
-       content::mojom::CommonNetworkInfo::New(false, false, base::nullopt);
-   predictor_->loading_data_collector()->RecordResourceLoadComplete(
-       navigation_id, resource_load_info);
-+#endif
+-
+-  content::mojom::ResourceLoadInfo resource_load_info;
+-  resource_load_info.url = url;
+-  resource_load_info.mime_type = mime_type;
+-  resource_load_info.resource_type = resource_type;
+-  resource_load_info.method = "GET";
+-  resource_load_info.network_info =
+-      content::mojom::CommonNetworkInfo::New(false, false, base::nullopt);
+-  predictor_->loading_data_collector()->RecordResourceLoadComplete(
+-      navigation_id, resource_load_info);
  }
  
  void LoadingPredictorTabHelper::DocumentOnLoadCompletedInMainFrame() {
-@@ -129,8 +133,10 @@ void LoadingPredictorTabHelper::DocumentOnLoadCompletedInMainFrame() {
+@@ -128,9 +115,6 @@ void LoadingPredictorTabHelper::DocumentOnLoadCompletedInMainFrame() {
+   auto navigation_id = NavigationID(web_contents());
    if (!navigation_id.is_valid())
      return;
- 
-+#if 0
-   predictor_->loading_data_collector()->RecordMainFrameLoadComplete(
-       navigation_id);
-+#endif
+-
+-  predictor_->loading_data_collector()->RecordMainFrameLoadComplete(
+-      navigation_id);
  }
  
  WEB_CONTENTS_USER_DATA_KEY_IMPL(LoadingPredictorTabHelper)
@@ -372,10 +364,10 @@ index 5755ab0..206c2c5 100644
  
    DISALLOW_COPY_AND_ASSIGN(LoadingPredictorTabHelper);
 diff --git a/chrome/browser/predictors/resource_prefetch_common.cc b/chrome/browser/predictors/resource_prefetch_common.cc
-index 5f3020a..1c9178c 100644
+index 5f3020a..dcb3d96 100644
 --- a/chrome/browser/predictors/resource_prefetch_common.cc
 +++ b/chrome/browser/predictors/resource_prefetch_common.cc
-@@ -18,38 +18,37 @@
+@@ -18,38 +18,34 @@
  
  namespace predictors {
  
@@ -384,27 +376,27 @@ index 5f3020a..1c9178c 100644
  
  NavigationID::NavigationID(const NavigationID& other)
 -    : tab_id(other.tab_id),
-+    : //tab_id(other.tab_id),
-       main_frame_url(other.main_frame_url),
+-      main_frame_url(other.main_frame_url),
++    : main_frame_url(other.main_frame_url),
        creation_time(other.creation_time) {}
  
  NavigationID::NavigationID(content::WebContents* web_contents)
 -    : tab_id(SessionTabHelper::IdForTab(web_contents)),
-+    : //tab_id(SessionTabHelper::IdForTab(web_contents)),
-       main_frame_url(web_contents->GetLastCommittedURL()),
+-      main_frame_url(web_contents->GetLastCommittedURL()),
++    : main_frame_url(web_contents->GetLastCommittedURL()),
        creation_time(base::TimeTicks::Now()) {}
  
  NavigationID::NavigationID(content::WebContents* web_contents,
                             const GURL& main_frame_url,
                             const base::TimeTicks& creation_time)
 -    : tab_id(SessionTabHelper::IdForTab(web_contents)),
-+    : //tab_id(SessionTabHelper::IdForTab(web_contents)),
-       main_frame_url(main_frame_url),
+-      main_frame_url(main_frame_url),
++    : main_frame_url(main_frame_url),
        creation_time(creation_time) {}
  
  bool NavigationID::is_valid() const {
 -  return tab_id.is_valid() && !main_frame_url.is_empty();
-+  return /*tab_id.is_valid() &&*/ !main_frame_url.is_empty();
++  return !main_frame_url.is_empty();
  }
  
  bool NavigationID::operator<(const NavigationID& rhs) const {
@@ -422,53 +414,467 @@ index 5f3020a..1c9178c 100644
  
  }  // namespace predictors
 diff --git a/chrome/browser/predictors/resource_prefetch_common.h b/chrome/browser/predictors/resource_prefetch_common.h
-index 8edd401..6346bfe 100644
+index 8edd401..dd6730a 100644
 --- a/chrome/browser/predictors/resource_prefetch_common.h
 +++ b/chrome/browser/predictors/resource_prefetch_common.h
-@@ -33,7 +33,7 @@ struct NavigationID {
+@@ -33,7 +33,6 @@ struct NavigationID {
    // Returns true iff the tab_id is valid and the Main frame URL is set.
    bool is_valid() const;
  
 -  SessionID tab_id;
-+  //SessionID tab_id;
    GURL main_frame_url;
  
    // NOTE: Even though we store the creation time here, it is not used during
 diff --git a/chrome/browser/predictors/resource_prefetch_predictor.cc b/chrome/browser/predictors/resource_prefetch_predictor.cc
-index 89cbadd..7a7a2d41 100644
+index 89cbadd..90331f5 100644
 --- a/chrome/browser/predictors/resource_prefetch_predictor.cc
 +++ b/chrome/browser/predictors/resource_prefetch_predictor.cc
-@@ -30,6 +30,7 @@ using content::BrowserThread;
+@@ -30,35 +30,6 @@ using content::BrowserThread;
  
  namespace predictors {
  
-+#if 0
- namespace {
- 
- const float kMinOriginConfidenceToTriggerPreconnect = 0.75f;
-@@ -58,6 +59,7 @@ void InitializeOnDBSequence(
- }
- 
- }  // namespace
-+#endif
- 
+-namespace {
+-
+-const float kMinOriginConfidenceToTriggerPreconnect = 0.75f;
+-const float kMinOriginConfidenceToTriggerPreresolve = 0.2f;
+-
+-float ComputeRedirectConfidence(const predictors::RedirectStat& redirect) {
+-  return (redirect.number_of_hits() + 0.0) /
+-         (redirect.number_of_hits() + redirect.number_of_misses());
+-}
+-
+-void InitializeOriginStatFromOriginRequestSummary(
+-    OriginStat* origin,
+-    const OriginRequestSummary& summary) {
+-  origin->set_origin(summary.origin.spec());
+-  origin->set_number_of_hits(1);
+-  origin->set_average_position(summary.first_occurrence + 1);
+-  origin->set_always_access_network(summary.always_access_network);
+-  origin->set_accessed_network(summary.accessed_network);
+-}
+-
+-void InitializeOnDBSequence(
+-    ResourcePrefetchPredictor::RedirectDataMap* host_redirect_data,
+-    ResourcePrefetchPredictor::OriginDataMap* origin_data) {
+-  host_redirect_data->InitializeOnDBSequence();
+-  origin_data->InitializeOnDBSequence();
+-}
+-
+-}  // namespace
+-
  PreconnectRequest::PreconnectRequest(const GURL& origin, int num_sockets)
      : origin(origin), num_sockets(num_sockets) {
-@@ -69,6 +71,8 @@ PreconnectPrediction::PreconnectPrediction(
+   DCHECK_GE(num_sockets, 0);
+@@ -69,410 +40,4 @@ PreconnectPrediction::PreconnectPrediction(
      const PreconnectPrediction& prediction) = default;
  PreconnectPrediction::~PreconnectPrediction() = default;
  
-+#if 0
-+
- ////////////////////////////////////////////////////////////////////////////////
- // ResourcePrefetchPredictor static functions.
- 
-@@ -475,4 +479,6 @@ TestObserver::TestObserver(ResourcePrefetchPredictor* predictor)
-   predictor_->SetObserverForTesting(this);
- }
- 
-+#endif
-+
+-////////////////////////////////////////////////////////////////////////////////
+-// ResourcePrefetchPredictor static functions.
+-
+-bool ResourcePrefetchPredictor::GetRedirectEndpoint(
+-    const std::string& entry_point,
+-    const RedirectDataMap& redirect_data,
+-    std::string* redirect_endpoint) const {
+-  DCHECK(redirect_endpoint);
+-
+-  RedirectData data;
+-  bool exists = redirect_data.TryGetData(entry_point, &data);
+-  if (!exists) {
+-    // Fallback to fetching URLs based on the incoming URL/host. By default
+-    // the predictor is confident that there is no redirect.
+-    *redirect_endpoint = entry_point;
+-    return true;
+-  }
+-
+-  DCHECK_GT(data.redirect_endpoints_size(), 0);
+-  if (data.redirect_endpoints_size() > 1) {
+-    // The predictor observed multiple redirect destinations recently. Redirect
+-    // endpoint is ambiguous. The predictor predicts a redirect only if it
+-    // believes that the redirect is "permanent", i.e. subsequent navigations
+-    // will lead to the same destination.
+-    return false;
+-  }
+-
+-  // The threshold is higher than the threshold for resources because the
+-  // redirect misprediction causes the waste of whole prefetch.
+-  const float kMinRedirectConfidenceToTriggerPrefetch = 0.9f;
+-  const int kMinRedirectHitsToTriggerPrefetch = 2;
+-
+-  // The predictor doesn't apply a minimum-number-of-hits threshold to
+-  // the no-redirect case because the no-redirect is a default assumption.
+-  const RedirectStat& redirect = data.redirect_endpoints(0);
+-  if (ComputeRedirectConfidence(redirect) <
+-          kMinRedirectConfidenceToTriggerPrefetch ||
+-      (redirect.number_of_hits() < kMinRedirectHitsToTriggerPrefetch &&
+-       redirect.url() != entry_point)) {
+-    return false;
+-  }
+-
+-  *redirect_endpoint = redirect.url();
+-  return true;
+-}
+-
+-////////////////////////////////////////////////////////////////////////////////
+-// ResourcePrefetchPredictor.
+-
+-ResourcePrefetchPredictor::ResourcePrefetchPredictor(
+-    const LoadingPredictorConfig& config,
+-    Profile* profile)
+-    : profile_(profile),
+-      observer_(nullptr),
+-      config_(config),
+-      initialization_state_(NOT_INITIALIZED),
+-      tables_(PredictorDatabaseFactory::GetForProfile(profile)
+-                  ->resource_prefetch_tables()),
+-      history_service_observer_(this),
+-      weak_factory_(this) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-}
+-
+-ResourcePrefetchPredictor::~ResourcePrefetchPredictor() {}
+-
+-void ResourcePrefetchPredictor::StartInitialization() {
+-  TRACE_EVENT0("browser", "ResourcePrefetchPredictor::StartInitialization");
+-
+-  if (initialization_state_ != NOT_INITIALIZED)
+-    return;
+-  initialization_state_ = INITIALIZING;
+-
+-  // Create local caches using the database as loaded.
+-  auto host_redirect_data = std::make_unique<RedirectDataMap>(
+-      tables_, tables_->host_redirect_table(), config_.max_hosts_to_track,
+-      base::TimeDelta::FromSeconds(config_.flush_data_to_disk_delay_seconds));
+-  auto origin_data = std::make_unique<OriginDataMap>(
+-      tables_, tables_->origin_table(), config_.max_hosts_to_track,
+-      base::TimeDelta::FromSeconds(config_.flush_data_to_disk_delay_seconds));
+-
+-  // Get raw pointers to pass to the first task. Ownership of the unique_ptrs
+-  // will be passed to the reply task.
+-  auto task = base::BindOnce(InitializeOnDBSequence, host_redirect_data.get(),
+-                             origin_data.get());
+-  auto reply = base::BindOnce(
+-      &ResourcePrefetchPredictor::CreateCaches, weak_factory_.GetWeakPtr(),
+-      std::move(host_redirect_data), std::move(origin_data));
+-
+-  tables_->GetTaskRunner()->PostTaskAndReply(FROM_HERE, std::move(task),
+-                                             std::move(reply));
+-}
+-
+-bool ResourcePrefetchPredictor::IsUrlPreconnectable(
+-    const GURL& main_frame_url) const {
+-  return PredictPreconnectOrigins(main_frame_url, nullptr);
+-}
+-
+-void ResourcePrefetchPredictor::SetObserverForTesting(TestObserver* observer) {
+-  observer_ = observer;
+-}
+-
+-void ResourcePrefetchPredictor::Shutdown() {
+-  history_service_observer_.RemoveAll();
+-}
+-
+-void ResourcePrefetchPredictor::RecordPageRequestSummary(
+-    std::unique_ptr<PageRequestSummary> summary) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  // Make sure initialization is done or start initialization if necessary.
+-  if (initialization_state_ == NOT_INITIALIZED) {
+-    StartInitialization();
+-    return;
+-  } else if (initialization_state_ == INITIALIZING) {
+-    return;
+-  } else if (initialization_state_ != INITIALIZED) {
+-    NOTREACHED() << "Unexpected initialization_state_: "
+-                 << initialization_state_;
+-    return;
+-  }
+-
+-  const std::string& host = summary->main_frame_url.host();
+-  LearnRedirect(summary->initial_url.host(), host, host_redirect_data_.get());
+-  LearnOrigins(host, summary->main_frame_url.GetOrigin(), summary->origins);
+-
+-  if (observer_)
+-    observer_->OnNavigationLearned(*summary);
+-}
+-
+-bool ResourcePrefetchPredictor::PredictPreconnectOrigins(
+-    const GURL& url,
+-    PreconnectPrediction* prediction) const {
+-  DCHECK(!prediction || prediction->requests.empty());
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (initialization_state_ != INITIALIZED)
+-    return false;
+-
+-  std::string host = url.host();
+-  std::string redirect_endpoint;
+-  if (!GetRedirectEndpoint(host, *host_redirect_data_, &redirect_endpoint))
+-    return false;
+-
+-  OriginData data;
+-  if (!origin_data_->TryGetData(redirect_endpoint, &data))
+-    return false;
+-
+-  if (prediction) {
+-    prediction->host = redirect_endpoint;
+-    prediction->is_redirected = (host != redirect_endpoint);
+-  }
+-
+-  bool has_any_prediction = false;
+-  for (const OriginStat& origin : data.origins()) {
+-    float confidence = static_cast<float>(origin.number_of_hits()) /
+-                       (origin.number_of_hits() + origin.number_of_misses());
+-    if (confidence < kMinOriginConfidenceToTriggerPreresolve)
+-      continue;
+-
+-    has_any_prediction = true;
+-    if (prediction) {
+-      if (confidence > kMinOriginConfidenceToTriggerPreconnect)
+-        prediction->requests.emplace_back(GURL(origin.origin()), 1);
+-      else
+-        prediction->requests.emplace_back(GURL(origin.origin()), 0);
+-    }
+-  }
+-
+-  return has_any_prediction;
+-}
+-
+-void ResourcePrefetchPredictor::CreateCaches(
+-    std::unique_ptr<RedirectDataMap> host_redirect_data,
+-    std::unique_ptr<OriginDataMap> origin_data) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  DCHECK_EQ(INITIALIZING, initialization_state_);
+-
+-  DCHECK(host_redirect_data);
+-  DCHECK(origin_data);
+-
+-  host_redirect_data_ = std::move(host_redirect_data);
+-  origin_data_ = std::move(origin_data);
+-
+-  ConnectToHistoryService();
+-}
+-
+-void ResourcePrefetchPredictor::OnHistoryAndCacheLoaded() {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  DCHECK_EQ(INITIALIZING, initialization_state_);
+-
+-  initialization_state_ = INITIALIZED;
+-  if (delete_all_data_requested_) {
+-    DeleteAllUrls();
+-    delete_all_data_requested_ = false;
+-  }
+-  if (observer_)
+-    observer_->OnPredictorInitialized();
+-}
+-
+-void ResourcePrefetchPredictor::DeleteAllUrls() {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (initialization_state_ != INITIALIZED) {
+-    delete_all_data_requested_ = true;
+-    return;
+-  }
+-
+-  host_redirect_data_->DeleteAllData();
+-  origin_data_->DeleteAllData();
+-}
+-
+-void ResourcePrefetchPredictor::DeleteUrls(const history::URLRows& urls) {
+-  std::vector<std::string> hosts_to_delete;
+-
+-  for (const auto& it : urls)
+-    hosts_to_delete.emplace_back(it.url().host());
+-
+-  host_redirect_data_->DeleteData(hosts_to_delete);
+-  origin_data_->DeleteData(hosts_to_delete);
+-}
+-
+-void ResourcePrefetchPredictor::LearnRedirect(const std::string& key,
+-                                              const std::string& final_redirect,
+-                                              RedirectDataMap* redirect_data) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  // If the primary key is too long reject it.
+-  if (key.length() > ResourcePrefetchPredictorTables::kMaxStringLength)
+-    return;
+-
+-  RedirectData data;
+-  bool exists = redirect_data->TryGetData(key, &data);
+-  if (!exists) {
+-    data.set_primary_key(key);
+-    data.set_last_visit_time(base::Time::Now().ToInternalValue());
+-    RedirectStat* redirect_to_add = data.add_redirect_endpoints();
+-    redirect_to_add->set_url(final_redirect);
+-    redirect_to_add->set_number_of_hits(1);
+-  } else {
+-    data.set_last_visit_time(base::Time::Now().ToInternalValue());
+-
+-    bool need_to_add = true;
+-    for (RedirectStat& redirect : *(data.mutable_redirect_endpoints())) {
+-      if (redirect.url() == final_redirect) {
+-        need_to_add = false;
+-        redirect.set_number_of_hits(redirect.number_of_hits() + 1);
+-        redirect.set_consecutive_misses(0);
+-      } else {
+-        redirect.set_number_of_misses(redirect.number_of_misses() + 1);
+-        redirect.set_consecutive_misses(redirect.consecutive_misses() + 1);
+-      }
+-    }
+-
+-    if (need_to_add) {
+-      RedirectStat* redirect_to_add = data.add_redirect_endpoints();
+-      redirect_to_add->set_url(final_redirect);
+-      redirect_to_add->set_number_of_hits(1);
+-    }
+-  }
+-
+-  // Trim the redirects after the update.
+-  ResourcePrefetchPredictorTables::TrimRedirects(
+-      &data, config_.max_redirect_consecutive_misses);
+-
+-  if (data.redirect_endpoints_size() == 0)
+-    redirect_data->DeleteData({key});
+-  else
+-    redirect_data->UpdateData(key, data);
+-}
+-
+-void ResourcePrefetchPredictor::LearnOrigins(
+-    const std::string& host,
+-    const GURL& main_frame_origin,
+-    const std::map<GURL, OriginRequestSummary>& summaries) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (host.size() > ResourcePrefetchPredictorTables::kMaxStringLength)
+-    return;
+-
+-  OriginData data;
+-  bool exists = origin_data_->TryGetData(host, &data);
+-  if (!exists) {
+-    data.set_host(host);
+-    data.set_last_visit_time(base::Time::Now().ToInternalValue());
+-    size_t origins_size = summaries.size();
+-    auto ordered_origins =
+-        std::vector<const OriginRequestSummary*>(origins_size);
+-    for (const auto& kv : summaries) {
+-      size_t index = kv.second.first_occurrence;
+-      DCHECK_LT(index, origins_size);
+-      ordered_origins[index] = &kv.second;
+-    }
+-
+-    for (const OriginRequestSummary* summary : ordered_origins) {
+-      auto* origin_to_add = data.add_origins();
+-      InitializeOriginStatFromOriginRequestSummary(origin_to_add, *summary);
+-    }
+-  } else {
+-    data.set_last_visit_time(base::Time::Now().ToInternalValue());
+-
+-    std::map<GURL, int> old_index;
+-    int old_size = static_cast<int>(data.origins_size());
+-    for (int i = 0; i < old_size; ++i) {
+-      bool is_new =
+-          old_index.insert({GURL(data.origins(i).origin()), i}).second;
+-      DCHECK(is_new);
+-    }
+-
+-    // Update the old origins.
+-    for (int i = 0; i < old_size; ++i) {
+-      auto* old_origin = data.mutable_origins(i);
+-      GURL origin(old_origin->origin());
+-      auto it = summaries.find(origin);
+-      if (it == summaries.end()) {
+-        // miss
+-        old_origin->set_number_of_misses(old_origin->number_of_misses() + 1);
+-        old_origin->set_consecutive_misses(old_origin->consecutive_misses() +
+-                                           1);
+-      } else {
+-        // hit: update.
+-        const auto& new_origin = it->second;
+-        old_origin->set_always_access_network(new_origin.always_access_network);
+-        old_origin->set_accessed_network(new_origin.accessed_network);
+-
+-        int position = new_origin.first_occurrence + 1;
+-        int total =
+-            old_origin->number_of_hits() + old_origin->number_of_misses();
+-        old_origin->set_average_position(
+-            ((old_origin->average_position() * total) + position) /
+-            (total + 1));
+-        old_origin->set_number_of_hits(old_origin->number_of_hits() + 1);
+-        old_origin->set_consecutive_misses(0);
+-      }
+-    }
+-
+-    // Add new origins.
+-    for (const auto& kv : summaries) {
+-      if (old_index.find(kv.first) != old_index.end())
+-        continue;
+-
+-      auto* origin_to_add = data.add_origins();
+-      InitializeOriginStatFromOriginRequestSummary(origin_to_add, kv.second);
+-    }
+-  }
+-
+-  // Trim and Sort.
+-  ResourcePrefetchPredictorTables::TrimOrigins(&data,
+-                                               config_.max_consecutive_misses);
+-  ResourcePrefetchPredictorTables::SortOrigins(&data, main_frame_origin.spec());
+-  if (data.origins_size() > static_cast<int>(config_.max_origins_per_entry)) {
+-    data.mutable_origins()->DeleteSubrange(
+-        config_.max_origins_per_entry,
+-        data.origins_size() - config_.max_origins_per_entry);
+-  }
+-
+-  // Update the database.
+-  if (data.origins_size() == 0)
+-    origin_data_->DeleteData({host});
+-  else
+-    origin_data_->UpdateData(host, data);
+-}
+-
+-void ResourcePrefetchPredictor::OnURLsDeleted(
+-    history::HistoryService* history_service,
+-    const history::DeletionInfo& deletion_info) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  DCHECK(initialization_state_ == INITIALIZED);
+-
+-  if (deletion_info.IsAllHistory())
+-    DeleteAllUrls();
+-  else
+-    DeleteUrls(deletion_info.deleted_rows());
+-}
+-
+-void ResourcePrefetchPredictor::OnHistoryServiceLoaded(
+-    history::HistoryService* history_service) {
+-  if (initialization_state_ == INITIALIZING) {
+-    OnHistoryAndCacheLoaded();
+-  }
+-}
+-
+-void ResourcePrefetchPredictor::ConnectToHistoryService() {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  DCHECK_EQ(INITIALIZING, initialization_state_);
+-
+-  // Register for HistoryServiceLoading if it is not ready.
+-  history::HistoryService* history_service =
+-      HistoryServiceFactory::GetForProfile(profile_,
+-                                           ServiceAccessType::EXPLICIT_ACCESS);
+-  if (!history_service)
+-    return;
+-  DCHECK(!history_service_observer_.IsObserving(history_service));
+-  history_service_observer_.Add(history_service);
+-  if (history_service->BackendLoaded()) {
+-    // HistoryService is already loaded. Continue with Initialization.
+-    OnHistoryAndCacheLoaded();
+-  }
+-}
+-
+-////////////////////////////////////////////////////////////////////////////////
+-// TestObserver.
+-
+-TestObserver::~TestObserver() {
+-  predictor_->SetObserverForTesting(nullptr);
+-}
+-
+-TestObserver::TestObserver(ResourcePrefetchPredictor* predictor)
+-    : predictor_(predictor) {
+-  predictor_->SetObserverForTesting(this);
+-}
+-
  }  // namespace predictors
 diff --git a/chrome/browser/predictors/resource_prefetch_predictor.h b/chrome/browser/predictors/resource_prefetch_predictor.h
 index 3e87439..ee688e7 100644
