@@ -12,6 +12,7 @@ source_set("manifests") {
     "//electron/atom/common/api:mojo",
     "//printing/buildflags",
     "//services/proxy_resolver/public/cpp:manifest",
+    "//services/service_manager/public/cpp",
   ]
 
   if (enable_basic_printing) {
