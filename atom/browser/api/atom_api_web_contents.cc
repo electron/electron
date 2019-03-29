@@ -919,6 +919,21 @@ void WebContents::MessageSync(bool internal,
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
+void WebContents::MessageTo(bool internal,
+                            bool send_to_all,
+                            int32_t web_contents_id,
+                            const std::string& channel,
+                            base::Value arguments) {
+  auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
+      isolate(), web_contents_id);
+
+  if (web_contents) {
+    web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
+                                           base::ListValue(arguments.GetList()),
+                                           ID());
+  }
+}
+
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
   // A RenderFrameHost can be destroyed before the related Mojo binding is
@@ -1097,7 +1112,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   bool handled = true;
   FrameDispatchHelper helper = {this, frame_host};
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_To, OnRendererMessageTo)
     IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_Host, OnRendererMessageHost)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(
         AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
@@ -2256,21 +2270,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {
   return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
-}
-
-void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
-                                      bool internal,
-                                      bool send_to_all,
-                                      int32_t web_contents_id,
-                                      const std::string& channel,
-                                      const base::ListValue& args) {
-  auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
-      isolate(), web_contents_id);
-
-  if (web_contents) {
-    web_contents->SendIPCMessageWithSender(internal, send_to_all, channel, args,
-                                           ID());
-  }
 }
 
 void WebContents::OnRendererMessageHost(content::RenderFrameHost* frame_host,
