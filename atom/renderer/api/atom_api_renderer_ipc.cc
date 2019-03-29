@@ -79,43 +79,43 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     // thread temporarily. This requires that no callbacks be pending for this
     // interface.
     auto interface_info = electron_browser_ptr_.PassInterface();
-    atom::mojom::ElectronBrowserPtrInfo returned_interface_info;
     task_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](atom::mojom::ElectronBrowserPtrInfo interface_info,
-               atom::mojom::ElectronBrowserPtrInfo* return_interface_info,
-               base::WaitableEvent* event, base::Value* result, bool internal,
-               const std::string& channel, const base::ListValue* arguments) {
-              atom::mojom::ElectronBrowserPtr browser_ptr(
-                  std::move(interface_info));
-              browser_ptr->MessageSync(
-                  internal, channel, arguments->Clone(),
-                  base::BindOnce(
-                      [](atom::mojom::ElectronBrowserPtr ptr,
-                         atom::mojom::ElectronBrowserPtrInfo*
-                             return_interface_info,
-                         base::WaitableEvent* event, base::Value* result,
-                         base::Value response) {
-                        *result = std::move(response);
-                        *return_interface_info = ptr.PassInterface();
-                        event->Signal();
-                      },
-                      std::move(browser_ptr),
-                      base::Unretained(return_interface_info),
-                      base::Unretained(event), base::Unretained(result)));
-            },
-            std::move(interface_info),
-            base::Unretained(&returned_interface_info),
-            base::Unretained(&response_received_event),
-            base::Unretained(&result), internal, channel,
-            base::Unretained(&arguments)));
+        FROM_HERE, base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
+                                  base::Unretained(&interface_info),
+                                  base::Unretained(&response_received_event),
+                                  base::Unretained(&result), internal, channel,
+                                  base::Unretained(&arguments)));
     response_received_event.Wait();
-    electron_browser_ptr_.Bind(std::move(returned_interface_info));
+    electron_browser_ptr_.Bind(std::move(interface_info));
     return result;
   }
 
  private:
+  static void SendMessageSyncOnWorkerThread(
+      atom::mojom::ElectronBrowserPtrInfo* interface_info,
+      base::WaitableEvent* event,
+      base::Value* result,
+      bool internal,
+      const std::string& channel,
+      const base::ListValue* arguments) {
+    atom::mojom::ElectronBrowserPtr browser_ptr(std::move(*interface_info));
+    browser_ptr->MessageSync(
+        internal, channel, arguments->Clone(),
+        base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
+                       std::move(browser_ptr), base::Unretained(interface_info),
+                       base::Unretained(event), base::Unretained(result)));
+  }
+  static void ReturnSyncResponseToMainThread(
+      atom::mojom::ElectronBrowserPtr ptr,
+      atom::mojom::ElectronBrowserPtrInfo* interface_info,
+      base::WaitableEvent* event,
+      base::Value* result,
+      base::Value response) {
+    *result = std::move(response);
+    *interface_info = ptr.PassInterface();
+    event->Signal();
+  }
+
   atom::mojom::ElectronBrowserPtr electron_browser_ptr_;
 };
 
