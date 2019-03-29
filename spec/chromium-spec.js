@@ -371,7 +371,7 @@ describe('chromium feature', () => {
 
     it('disables node integration when it is disabled on the parent window', (done) => {
       let b = null
-      listener = async (event) => {
+      listener = (event) => {
         assert.strictEqual(event.data.isProcessGlobalUndefined, true)
         b.close()
         done()
