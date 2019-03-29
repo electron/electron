@@ -31,7 +31,6 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
-#include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -39,7 +38,6 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
-#include "components/user_prefs/user_prefs.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -47,6 +45,8 @@
 #include "services/network/public/cpp/features.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/user_prefs/user_prefs.h"
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
 #include "extensions/browser/extension_prefs.h"
@@ -145,9 +145,11 @@ void AtomBrowserContext::InitPrefs() {
       ExtensionPrefValueMapFactory::GetForBrowserContext(this),
       IsOffTheRecord());
   prefs_factory.set_extension_prefs(ext_pref_store);
-#endif
 
   auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
+#else
+  auto registry = WrapRefCounted(new PrefRegistrySimple);
+#endif
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
                                  base::FilePath());
