@@ -19,6 +19,8 @@
 #include "chrome/browser/content_settings/cookie_settings_factory.h"
 #include "chrome/browser/content_settings/tab_specific_content_settings.h"
 #include "chrome/browser/metrics/chrome_metrics_service_accessor.h"
+#include "chrome/browser/predictors/loading_predictor.h"
+#include "chrome/browser/predictors/loading_predictor_factory.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_manager.h"
@@ -39,27 +41,21 @@ const uint32_t kRenderFilteredMessageClasses[] = {
 
 }  // namespace
 
-class AtomPreconnectDelegate : public predictors::PreconnectManager::Delegate {
- public:
-  void PreconnectFinished(
-      std::unique_ptr<predictors::PreconnectStats> stats) override {}
-};
-
 AtomRenderMessageFilter::AtomRenderMessageFilter(int render_process_id,
                                                  Profile* profile)
     : BrowserMessageFilter(kRenderFilteredMessageClasses,
                            base::size(kRenderFilteredMessageClasses)),
       render_process_id_(render_process_id),
-      weak_factory_(new AtomPreconnectDelegate()),  // LEAK! TODO
       preconnect_manager_initialized_(false) {
-  preconnect_manager_initialized_ = true;
-  if (preconnect_manager_ == NULL) {
-    preconnect_manager_ =
-        new predictors::PreconnectManager(weak_factory_.GetWeakPtr(), profile);
+  auto* loading_predictor =
+      predictors::LoadingPredictorFactory::GetForProfile(profile);
+  if (loading_predictor && loading_predictor->preconnect_manager()) {
+    preconnect_manager_ = loading_predictor->preconnect_manager()->GetWeakPtr();
+    preconnect_manager_->SetNetworkContextForTesting(
+        content::BrowserContext::GetDefaultStoragePartition(profile)
+            ->GetNetworkContext());
+    preconnect_manager_initialized_ = true;
   }
-  preconnect_manager_->SetNetworkContextForTesting(
-      content::BrowserContext::GetDefaultStoragePartition(profile)
-          ->GetNetworkContext());
 }
 
 AtomRenderMessageFilter::~AtomRenderMessageFilter() {}
@@ -89,17 +85,9 @@ void AtomRenderMessageFilter::OnPreconnect(const GURL& url,
   }
 
   if (preconnect_manager_initialized_) {
-    base::WeakPtrFactory<predictors::PreconnectManager>*
-        weak_preconnect_manager_factory =
-            new base::WeakPtrFactory<predictors::PreconnectManager>(
-                preconnect_manager_);
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
         base::BindOnce(&predictors::PreconnectManager::StartPreconnectUrl,
-                       weak_preconnect_manager_factory->GetWeakPtr(), url,
-                       allow_credentials));
+                       preconnect_manager_, url, allow_credentials));
   }
 }
-
-predictors::PreconnectManager* AtomRenderMessageFilter::preconnect_manager_ =
-    NULL;

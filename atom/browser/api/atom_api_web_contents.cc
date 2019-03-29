@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <string>
@@ -54,6 +55,8 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/predictors/loading_predictor_factory.h"
+#include "chrome/browser/predictors/loading_predictor_tab_helper.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/frame_host/frame_tree_node.h"             // nogncheck
 #include "content/browser/frame_host/render_frame_host_manager.h"   // nogncheck
@@ -424,6 +427,21 @@ void WebContents::InitWithSessionAndOptions(
   SecurityStateTabHelper::CreateForWebContents(web_contents());
   // Initialize zoom controller.
   InitZoomController(web_contents(), options);
+
+  predictors::LoadingPredictorTabHelper::CreateForWebContents(web_contents());
+
+  int num_sockets_to_preconnect;
+  if (options.Get(options::kNumSocketsToPreconnect,
+                  &num_sockets_to_preconnect)) {
+    const int kMinSocketsToPreconnect = 1;
+    const int kMaxSocketsToPreconnect = 6;
+    num_sockets_to_preconnect =
+        std::max(num_sockets_to_preconnect, kMinSocketsToPreconnect);
+    num_sockets_to_preconnect =
+        std::min(num_sockets_to_preconnect, kMaxSocketsToPreconnect);
+    predictors::LoadingPredictorTabHelper::FromWebContents(web_contents())
+        ->SetNumSocketsToPreconnect(num_sockets_to_preconnect);
+  }
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
