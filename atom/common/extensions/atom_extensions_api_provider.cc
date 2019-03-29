@@ -6,11 +6,15 @@
 
 #include <string>
 
+#include "electron/buildflags/buildflags.h"
 #include "extensions/common/features/json_feature_provider_source.h"
 // #include "extensions/shell/common/api/generated_schemas.h"
 // #include "extensions/shell/common/api/shell_api_features.h"
 // #include "extensions/shell/grit/app_shell_resources.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "atom/common/extensions/api/manifest_features.h"
+#endif
 
 namespace atom {
 
@@ -26,8 +30,10 @@ void AtomExtensionsAPIProvider::AddAPIFeatures(
 
 void AtomExtensionsAPIProvider::AddManifestFeatures(
     extensions::FeatureProvider* provider) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // TODO(samuelmaddock): why is the extensions namespace generated?
   extensions::AddAtomManifestFeatures(provider);
+#endif
 }
 
 void AtomExtensionsAPIProvider::AddPermissionFeatures(
