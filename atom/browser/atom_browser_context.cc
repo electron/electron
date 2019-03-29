@@ -43,12 +43,15 @@
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "net/base/escape.h"
+#include "services/network/public/cpp/features.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/pref_names.h"
-#include "net/base/escape.h"
-#include "services/network/public/cpp/features.h"
+#endif
 
 using content::BrowserThread;
 
@@ -137,14 +140,13 @@ void AtomBrowserContext::InitPrefs() {
   pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
 
-  // TODO(samuelmaddock): better place to put this?
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* ext_pref_store = new ExtensionPrefStore(
       ExtensionPrefValueMapFactory::GetForBrowserContext(this),
       IsOffTheRecord());
-
   prefs_factory.set_extension_prefs(ext_pref_store);
+#endif
 
-  // auto registry = WrapRefCounted(new PrefRegistrySimple);
   auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
@@ -158,13 +160,17 @@ void AtomBrowserContext::InitPrefs() {
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
+#endif
 
   prefs_ = prefs_factory.Create(
       registry.get(),
       std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
-  user_prefs::UserPrefs::Set(this, prefs_.get());
   prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  user_prefs::UserPrefs::Set(this, prefs_.get());
+#endif
 }
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {

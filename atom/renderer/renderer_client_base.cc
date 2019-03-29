@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "atom/common/color_util.h"
-#include "atom/common/extensions/atom_extensions_client.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_autofill_agent.h"
@@ -28,12 +27,6 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
-#include "extensions/common/extensions_client.h"
-#include "extensions/renderer/dispatcher.h"
-#include "extensions/renderer/extension_frame_helper.h"
-#include "extensions/renderer/guest_view/extensions_guest_view_container.h"
-#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
-#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
 #include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -71,6 +64,17 @@
 #include "components/printing/renderer/print_render_frame_helper.h"
 #include "printing/print_settings.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "atom/common/extensions/atom_extensions_client.h"
+#include "atom/renderer/extensions/atom_extensions_renderer_client.h"
+#include "extensions/common/extensions_client.h"
+#include "extensions/renderer/dispatcher.h"
+#include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
+#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace atom {
 
@@ -150,6 +154,8 @@ void RendererClientBase::AddRenderBindings(
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* thread = content::RenderThread::Get();
 
 #if BUILDFLAG(USE_EXTERNAL_POPUP_MENU)
@@ -167,6 +173,7 @@ void RendererClientBase::RenderThreadStarted() {
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
+#endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
@@ -277,11 +284,13 @@ void RendererClientBase::RenderFrameCreated(
     }
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->GetDispatcher();
   // ExtensionFrameHelper destroys itself when the RenderFrame is destroyed.
   new extensions::ExtensionFrameHelper(render_frame, dispatcher);
 
   dispatcher->OnRenderFrameCreated(render_frame);
+#endif
 }
 
 void RendererClientBase::DidClearWindowObject(
@@ -339,20 +348,23 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 
 void RendererClientBase::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
-  // TODO(samuelmaddock):
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_.get()->RunScriptsAtDocumentStart(render_frame);
+#endif
 }
 
 void RendererClientBase::RunScriptsAtDocumentIdle(
     content::RenderFrame* render_frame) {
-  // TODO(samuelmaddock):
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_.get()->RunScriptsAtDocumentIdle(render_frame);
+#endif
 }
 
 void RendererClientBase::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
-  // TODO(samuelmaddock):
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
+#endif
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
@@ -374,8 +386,10 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
   return script->Run(context).ToLocalChecked();
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
   return new AtomExtensionsClient;
 }
+#endif
 
 }  // namespace atom

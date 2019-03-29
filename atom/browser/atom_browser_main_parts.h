@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "content/public/common/main_function_params.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -27,15 +28,15 @@ class WMState;
 }
 #endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
 class ShellExtensionSystem;
 }
+#endif
 
 namespace atom {
 
 class AtomBrowserContext;
-class AtomExtensionsClient;
-class AtomExtensionsBrowserClient;
 class Browser;
 class ElectronBindings;
 class JavascriptEnvironment;
@@ -43,6 +44,11 @@ class NodeBindings;
 class NodeDebugger;
 class NodeEnvironment;
 class BridgeTaskRunner;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+class AtomExtensionsClient;
+class AtomExtensionsBrowserClient;
+#endif
 
 #if defined(TOOLKIT_VIEWS)
 class ViewsDelegate;
@@ -94,10 +100,13 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   void PostDestroyThreads() override;
 
  private:
-  void InitializeExtensionSystem();
   void InitializeFeatureList();
   void OverrideAppLogsPath();
   void PreMainMessageLoopStartCommon();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  void InitializeExtensionSystem();
+#endif
 
 #if defined(OS_POSIX)
   // Set signal handlers.
@@ -136,12 +145,15 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<NodeDebugger> node_debugger_;
   std::unique_ptr<IconManager> icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<AtomExtensionsClient> extensions_client_;
   std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
   scoped_refptr<AtomBrowserContext> browser_context_;
 
   // Owned by the KeyedService system.
   extensions::ShellExtensionSystem* extension_system_;
+#endif
 
   base::RepeatingTimer gc_timer_;
 

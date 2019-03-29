@@ -17,6 +17,7 @@
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
+#include "electron/buildflags/buildflags.h"
 
 class PrefRegistrySimple;
 class PrefService;

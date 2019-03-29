@@ -19,10 +19,6 @@
 #include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_process_impl.h"
-#include "atom/browser/extensions/atom_extensions_browser_client.h"
-#include "atom/browser/extensions/shell_browser_context_keyed_service_factories.h"
-#include "atom/browser/extensions/shell_extension_system.h"
-#include "atom/browser/extensions/shell_extension_system_factory.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
@@ -30,7 +26,6 @@
 #include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
-#include "atom/common/extensions/atom_extensions_client.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/base_switches.h"
@@ -50,8 +45,6 @@
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
-#include "extensions/browser/browser_context_keyed_service_factories.h"
-#include "extensions/common/extension_api.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
@@ -98,6 +91,17 @@
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "atom/browser/extensions/atom_extensions_browser_client.h"
+#include "atom/browser/extensions/shell_browser_context_keyed_service_factories.h"
+#include "atom/browser/extensions/shell_extension_system.h"
+#include "atom/browser/extensions/shell_extension_system_factory.h"
+#include "atom/common/extensions/atom_extensions_client.h"
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
+#include "extensions/common/extension_api.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace atom {
 
@@ -205,12 +209,14 @@ int X11EmptyIOErrorHandler(Display* d) {
 
 }  // namespace
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void AtomBrowserMainParts::InitializeExtensionSystem() {
   extension_system_ = static_cast<extensions::ShellExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context_.get()));
   extension_system_->InitForRegularProfile(true /* extensions_enabled */);
   extension_system_->FinishInitialization();
 }
+#endif
 
 void AtomBrowserMainParts::InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
@@ -388,8 +394,10 @@ int AtomBrowserMainParts::PreCreateThreads() {
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_browser_client_.reset();
   extensions::ExtensionsBrowserClient::Set(nullptr);
+#endif
 #if defined(OS_LINUX)
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
@@ -430,6 +438,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_client_ = std::make_unique<AtomExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
@@ -448,6 +457,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       browser_context_.get());
 
   InitializeExtensionSystem();
+#endif
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();
@@ -482,6 +492,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
   if (cmd_line->HasSwitch("load-extension")) {
     auto load_extension = cmd_line->GetSwitchValueASCII("load-extension");
@@ -490,6 +501,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
         extensions::ExtensionSystem::Get(browser_context_.get()));
     extension_system->LoadExtension(extension_path);
   }
+#endif
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
@@ -545,7 +557,9 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
     ++iter;
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extension_system_ = NULL;
+#endif
 
   fake_browser_process_->PostMainMessageLoopRun();
 }
