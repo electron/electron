@@ -577,8 +577,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::map<content::RenderFrameHost*, std::vector<mojo::BindingId>>
       frame_to_bindings_map_;
 
-  base::WeakPtrFactory<WebContents> weak_ptr_factory_;
-
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 

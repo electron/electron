@@ -267,9 +267,7 @@ struct WebContents::FrameDispatchHelper {
 
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      type_(REMOTE),
-      weak_ptr_factory_(this) {
+    : content::WebContentsObserver(web_contents), type_(REMOTE) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                      false);
   Init(isolate);
@@ -282,9 +280,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          std::unique_ptr<content::WebContents> web_contents,
                          Type type)
-    : content::WebContentsObserver(web_contents.get()),
-      type_(type),
-      weak_ptr_factory_(this) {
+    : content::WebContentsObserver(web_contents.get()), type_(type) {
   DCHECK(type != REMOTE) << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
@@ -292,8 +288,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                             mate::Dictionary::CreateEmpty(isolate));
 }
 
-WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
-    : weak_ptr_factory_(this) {
+WebContents::WebContents(v8::Isolate* isolate,
+                         const mate::Dictionary& options) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
