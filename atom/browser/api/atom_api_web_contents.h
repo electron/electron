@@ -416,6 +416,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              content::RenderViewHost* new_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void DocumentLoadedInFrame(
       content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -470,14 +471,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                          const std::vector<base::string16>& labels);
 #endif
 
-  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
-
  private:
   struct FrameDispatchHelper;
   AtomBrowserContext* GetBrowserContext() const;
 
-  void CreateIPCHandler(mojom::ElectronBrowserRequest request,
-                        content::RenderFrameHost* render_frame_host);
+  // Binds the given request for the ElectronBrowser API. When the
+  // RenderFrameHost is destroyed, all related bindings will be removed.
+  void BindElectronBrowser(mojom::ElectronBrowserRequest request,
+                           content::RenderFrameHost* render_frame_host);
 
   uint32_t GetNextRequestId() { return ++request_id_; }
 
@@ -485,9 +486,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   OffScreenWebContentsView* GetOffScreenWebContentsView() const override;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
-
-  // Called when we receive a CursorChange message from chromium.
-  void OnCursorChange(const content::WebCursor& cursor);
 
   // mojom::ElectronBrowser
   void Message(bool internal,
@@ -497,6 +495,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                    const std::string& channel,
                    base::Value arguments,
                    MessageSyncCallback callback) override;
+
+  // Called when we receive a CursorChange message from chromium.
+  void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a message from renderer to be forwarded.
   void OnRendererMessageTo(content::RenderFrameHost* frame_host,

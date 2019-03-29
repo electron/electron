@@ -19,6 +19,9 @@ interface ElectronBrowser {
       string channel,
       mojo_base.mojom.ListValue arguments);
 
+  // NB. this is not marked [Sync] because mojo synchronous methods can be
+  // reordered with respect to asynchronous methods on the same channel.
+  // Instead, callers can manually block on the response to this method.
   MessageSync(
     bool internal,
     string channel,

@@ -273,7 +273,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   Init(isolate);
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, mate::Dictionary::CreateEmpty(isolate));
-  registry_.AddInterface(base::BindRepeating(&WebContents::CreateIPCHandler,
+  registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
 }
 
@@ -422,7 +422,7 @@ void WebContents::InitWithSessionAndOptions(
   // Initialize zoom controller.
   InitZoomController(web_contents(), options);
 
-  registry_.AddInterface(base::BindRepeating(&WebContents::CreateIPCHandler,
+  registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
@@ -893,7 +893,7 @@ bool WebContents::EmitNavigationEvent(
               frame_routing_id);
 }
 
-void WebContents::CreateIPCHandler(
+void WebContents::BindElectronBrowser(
     mojom::ElectronBrowserRequest request,
     content::RenderFrameHost* render_frame_host) {
   auto id = bindings_.AddBinding(this, std::move(request), render_frame_host);
@@ -921,6 +921,11 @@ void WebContents::MessageSync(bool internal,
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
+  // A RenderFrameHost can be destroyed before the related Mojo binding is
+  // closed, which can result in Mojo calls being sent for RenderFrameHosts
+  // that no longer exist. To prevent this from happening, when a
+  // RenderFrameHost goes away, we close all the bindings related to that
+  // frame.
   auto it = frame_to_bindings_map_.find(render_frame_host);
   if (it == frame_to_bindings_map_.end())
     return;
