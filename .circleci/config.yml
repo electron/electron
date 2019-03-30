@@ -204,6 +204,15 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
         python src/electron/script/update-external-binaries.py
       fi
 
+step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
+  run:
+    name: Import and trust self-signed codesigning cert on MacOS
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        cd src/electron
+        ./script/codesign/import-testing-cert-ci.sh
+      fi
+
 step-install-gnutar-on-mac: &step-install-gnutar-on-mac
   run:
     name: Install gnu-tar on macos
@@ -753,6 +762,7 @@ steps-tests: &steps-tests
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
     - *step-fix-known-hosts-linux
+    - *step-install-signing-cert-on-mac
 
     - run:
         name: Run Electron tests

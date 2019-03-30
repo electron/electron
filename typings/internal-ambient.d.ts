@@ -8,6 +8,7 @@ declare namespace NodeJS {
     isViewApiEnabled(): boolean;
     isTtsEnabled(): boolean;
     isPrintingEnabled(): boolean;
+    isComponentBuild(): boolean;
   }
 
   interface V8UtilBinding {

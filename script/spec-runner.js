@@ -78,8 +78,8 @@ function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
 async function runElectronTests () {
   const errors = []
   const runners = [
-    ['Remote based specs', 'remote', runRemoteBasedElectronTests],
-    ['Main process specs', 'main', runMainProcessElectronTests]
+    ['Main process specs', 'main', runMainProcessElectronTests],
+    ['Remote based specs', 'remote', runRemoteBasedElectronTests]
   ]
 
   const mochaFile = process.env.MOCHA_FILE
