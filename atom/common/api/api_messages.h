@@ -51,8 +51,3 @@ IPC_SYNC_MESSAGE_ROUTED1_1(AtomFrameHostMsg_SetTemporaryZoomLevel,
 
 // Sent by renderer to get the zoom level.
 IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
-
-// Brings up SaveAs... dialog to save specified URL.
-IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
-                    GURL /* url */,
-                    content::Referrer /* referrer */)
