@@ -161,6 +161,9 @@ step-setup-env-for-build: &step-setup-env-for-build
       if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
+        $SCCACHE_PATH --start-server
+        $SCCACHE_PATH --show-stats
+
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
