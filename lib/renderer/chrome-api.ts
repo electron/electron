@@ -122,7 +122,7 @@ export function injectTo (extensionId: string, context: any) {
         [targetExtensionId, connectInfo] = args
       }
 
-      const { tabId, portId } = ipcRendererInternal.sendSync('CHROME_RUNTIME_CONNECT', targetExtensionId, connectInfo)
+      const { tabId, portId } = ipcRendererUtils.invokeSync('CHROME_RUNTIME_CONNECT', targetExtensionId, connectInfo)
       return new Port(tabId, portId, extensionId, connectInfo.name)
     },
 
@@ -210,4 +210,10 @@ export function injectTo (extensionId: string, context: any) {
 
   chrome.i18n = require('@electron/internal/renderer/extensions/i18n').setup(extensionId)
   chrome.webNavigation = require('@electron/internal/renderer/extensions/web-navigation').setup()
+
+  // Electron has no concept of a browserAction but we should stub these APIs for compatibility
+  chrome.browserAction = {
+    setIcon () {},
+    setPopup () {}
+  }
 }
