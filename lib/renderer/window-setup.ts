@@ -1,6 +1,4 @@
-// This file should have no requires since it is used by the isolated context
-// preload bundle. Instead arguments should be passed in for everything it
-// needs.
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 
 // This file implements the following APIs:
 // - window.history.back()
@@ -37,10 +35,10 @@ const toString = (value: any) => {
 
 const windowProxies: Record<number, BrowserWindowProxy> = {}
 
-const getOrCreateProxy = (ipcRenderer: Electron.IpcRenderer, guestId: number) => {
+const getOrCreateProxy = (guestId: number) => {
   let proxy = windowProxies[guestId]
   if (proxy == null) {
-    proxy = new BrowserWindowProxy(ipcRenderer, guestId)
+    proxy = new BrowserWindowProxy(guestId)
     windowProxies[guestId] = proxy
   }
   return proxy
@@ -63,7 +61,6 @@ class LocationProxy {
   @LocationProxy.ProxyProperty public protocol!: string;
   @LocationProxy.ProxyProperty public search!: URLSearchParams;
 
-  private ipcRenderer: Electron.IpcRenderer;
   private guestId: number;
 
   /**
@@ -92,11 +89,10 @@ class LocationProxy {
     })
   }
 
-  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
+  constructor (guestId: number) {
     // eslint will consider the constructor "useless"
     // unless we assign them in the body. It's fine, that's what
     // TS would do anyway.
-    this.ipcRenderer = ipcRenderer
     this.guestId = guestId
     this.getGuestURL = this.getGuestURL.bind(this)
   }
@@ -106,7 +102,7 @@ class LocationProxy {
   }
 
   private getGuestURL (): URL | null {
-    const urlString = this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'getURL')
+    const urlString = ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'getURL')
     try {
       return new URL(urlString)
     } catch (e) {
@@ -122,7 +118,6 @@ class BrowserWindowProxy {
 
   private _location: LocationProxy
   private guestId: number
-  private ipcRenderer: Electron.IpcRenderer
 
   // TypeScript doesn't allow getters/accessors with different types,
   // so for now, we'll have to make do with an "any" in the mix.
@@ -132,47 +127,46 @@ class BrowserWindowProxy {
   }
   public set location (url: string | any) {
     url = resolveURL(url)
-    this.ipcRenderer.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'loadURL', url)
+    ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD_SYNC', this.guestId, 'loadURL', url)
   }
 
-  constructor (ipcRenderer: Electron.IpcRenderer, guestId: number) {
+  constructor (guestId: number) {
     this.guestId = guestId
-    this.ipcRenderer = ipcRenderer
-    this._location = new LocationProxy(ipcRenderer, guestId)
+    this._location = new LocationProxy(guestId)
 
-    ipcRenderer.once(`ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_${guestId}`, () => {
+    ipcRendererInternal.once(`ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_${guestId}`, () => {
       removeProxy(guestId)
       this.closed = true
     })
   }
 
   public close () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', this.guestId)
+    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', this.guestId)
   }
 
   public focus () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'focus')
+    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'focus')
   }
 
   public blur () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'blur')
+    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, 'blur')
   }
 
   public print () {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'print')
+    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'print')
   }
 
   public postMessage (message: any, targetOrigin: any) {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
+    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
   }
 
   public eval (...args: any[]) {
-    this.ipcRenderer.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'executeJavaScript', ...args)
+    ipcRendererInternal.send('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, 'executeJavaScript', ...args)
   }
 }
 
 export const windowSetup = (
-  ipcRendererInternal: Electron.IpcRendererInternal, guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
+  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
   if (guestInstanceId == null) {
     // Override default window.close.
@@ -189,14 +183,14 @@ export const windowSetup = (
       }
       const guestId = ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, toString(frameName), toString(features))
       if (guestId != null) {
-        return getOrCreateProxy(ipcRendererInternal, guestId)
+        return getOrCreateProxy(guestId)
       } else {
         return null
       }
     }
 
     if (openerId != null) {
-      window.opener = getOrCreateProxy(ipcRendererInternal, openerId)
+      window.opener = getOrCreateProxy(openerId)
     }
   }
 
@@ -219,7 +213,7 @@ export const windowSetup = (
 
     event.data = message
     event.origin = sourceOrigin
-    event.source = getOrCreateProxy(ipcRendererInternal, sourceId)
+    event.source = getOrCreateProxy(sourceId)
 
     window.dispatchEvent(event as MessageEvent)
   })
