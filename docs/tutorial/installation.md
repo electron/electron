@@ -97,6 +97,17 @@ a text file. A typical cache might look like this:
 ├── SHASUMS256.txt-1.8.2-beta.3
 ```
 
+## Skip binary download
+When installing the `electron` NPM package, it automatically downloads the electron binary.
+
+This can sometimes be unnecessary, e.g. in a CI environment, when testing another component.
+
+To prevent the binary from being downloaded when you install all npm dependencies you can set the environment variable `ELECTRON_SKIP_BINARY_DOWNLOAD`.
+E.g.:
+```sh
+ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
+```
+
 ## Troubleshooting
 
 When running `npm install electron`, some users occasionally encounter
