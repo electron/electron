@@ -95,3 +95,4 @@ merge_m72_filereader_make_a_copy_of_the_arraybuffer_when_returning.patch
 fix_system_tray_icons_being_cropped_under_kde.patch
 set_proper_permissions_for_package_s_framework_directory.patch
 intersection-observer.patch
+keyboard-lock-service-impl.patch
