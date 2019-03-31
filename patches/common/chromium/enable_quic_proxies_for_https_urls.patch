@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Sun, 31 Mar 2019 21:12:59 +0200
+Subject: =?UTF-8?q?Enable=20support=20for=20sending=20HTTPS=20URLs=20via?=
+ =?UTF-8?q?=20QUIC=20proxies=20only=20when=0Athe=20finch=20param=20enable?=
+ =?UTF-8?q?=5Fquic=5Fproxies=5Ffor=5Fhttps=5Furls=20is=20set.?=
+
+Backports:
+- https://chromium-review.googlesource.com/c/chromium/src/+/1377709
+- https://chromium-review.googlesource.com/c/chromium/src/+/1375112
+- https://chromium-review.googlesource.com/c/chromium/src/+/1417356
+
+diff --git a/components/network_session_configurator/browser/network_session_configurator.cc b/components/network_session_configurator/browser/network_session_configurator.cc
+index 39fd430aafb358d465ba30120c30580672f95aa8..21d34cfab2c426ae367148433d21916fcd92c757 100644
+--- a/components/network_session_configurator/browser/network_session_configurator.cc
++++ b/components/network_session_configurator/browser/network_session_configurator.cc
+@@ -143,6 +143,14 @@ bool ShouldEnableQuic(base::StringPiece quic_trial_group,
+              GetVariationParam(quic_trial_params, "enable_quic"), "true");
+ }
+ 
++bool ShouldEnableQuicProxiesForHttpsUrls(
++    const VariationParameters& quic_trial_params) {
++  return base::LowerCaseEqualsASCII(
++      GetVariationParam(quic_trial_params,
++                        "enable_quic_proxies_for_https_urls"),
++      "true");
++}
++
+ bool ShouldMarkQuicBrokenWhenNetworkBlackholes(
+     const VariationParameters& quic_trial_params) {
+   return base::LowerCaseEqualsASCII(
+@@ -367,6 +375,8 @@ void ConfigureQuicParams(base::StringPiece quic_trial_group,
+       ShouldSupportIetfFormatQuicAltSvc(quic_trial_params);
+ 
+   if (params->enable_quic) {
++    params->enable_quic_proxies_for_https_urls =
++        ShouldEnableQuicProxiesForHttpsUrls(quic_trial_params);
+     params->quic_connection_options =
+         GetQuicConnectionOptions(quic_trial_params);
+     params->quic_client_connection_options =
+diff --git a/components/network_session_configurator/browser/network_session_configurator_unittest.cc b/components/network_session_configurator/browser/network_session_configurator_unittest.cc
+index 6235f7d927a82ebcc7a04792bc44e0675c8ced54..1e3f7b89c3c1ef5b3da2c89516acd13ac1ad283f 100644
+--- a/components/network_session_configurator/browser/network_session_configurator_unittest.cc
++++ b/components/network_session_configurator/browser/network_session_configurator_unittest.cc
+@@ -67,6 +67,7 @@ TEST_F(NetworkSessionConfiguratorTest, Defaults) {
+   EXPECT_FALSE(params_.enable_websocket_over_http2);
+ 
+   EXPECT_FALSE(params_.enable_quic);
++  EXPECT_FALSE(params_.enable_quic_proxies_for_https_urls);
+   EXPECT_EQ("Chrome/52.0.2709.0 Linux x86_64", params_.quic_user_agent_id);
+   EXPECT_EQ(0u, params_.origins_to_force_quic_on.size());
+ }
+@@ -146,6 +147,17 @@ TEST_F(NetworkSessionConfiguratorTest, EnableQuicForDataReductionProxy) {
+   EXPECT_TRUE(params_.enable_quic);
+ }
+ 
++TEST_F(NetworkSessionConfiguratorTest, EnableQuicProxiesForHttpsUrls) {
++  std::map<std::string, std::string> field_trial_params;
++  field_trial_params["enable_quic_proxies_for_https_urls"] = "true";
++  variations::AssociateVariationParams("QUIC", "Enabled", field_trial_params);
++  base::FieldTrialList::CreateFieldTrial("QUIC", "Enabled");
++
++  ParseFieldTrials();
++
++  EXPECT_TRUE(params_.enable_quic_proxies_for_https_urls);
++}
++
+ TEST_F(NetworkSessionConfiguratorTest,
+        MarkQuicBrokenWhenNetworkBlackholesFromFieldTrialParams) {
+   std::map<std::string, std::string> field_trial_params;
+diff --git a/net/http/http_network_session.cc b/net/http/http_network_session.cc
+index 3bcaca68145012fe11374044e4dddf2b4c3d0b5c..d997e092d56c43222b491b27740cecead2ec3947 100644
+--- a/net/http/http_network_session.cc
++++ b/net/http/http_network_session.cc
+@@ -112,6 +112,7 @@ HttpNetworkSession::Params::Params()
+       enable_http2_alternative_service(false),
+       enable_websocket_over_http2(false),
+       enable_quic(false),
++      enable_quic_proxies_for_https_urls(false),
+       quic_max_packet_length(quic::kDefaultMaxPacketSize),
+       quic_max_server_configs_stored_in_properties(0u),
+       quic_enable_socket_recv_optimization(false),
+diff --git a/net/http/http_network_session.h b/net/http/http_network_session.h
+index 3392c846d577da239466b74f9de6fd076bb2ea84..03fbf1c253b01c6d503c02f56c1854ea59ae69ab 100644
+--- a/net/http/http_network_session.h
++++ b/net/http/http_network_session.h
+@@ -124,6 +124,9 @@ class NET_EXPORT HttpNetworkSession : public base::MemoryCoordinatorClient {
+     // Enables QUIC support.
+     bool enable_quic;
+ 
++    // If true, HTTPS URLs can be sent to QUIC proxies.
++    bool enable_quic_proxies_for_https_urls;
++
+     // QUIC runtime configuration options.
+ 
+     // Versions of QUIC which may be used.
+diff --git a/net/http/http_stream_factory_job.cc b/net/http/http_stream_factory_job.cc
+index ab66394c2023e5db037897853d9d86b29c78d72d..3cfc627225e4f531c06c66d5de5f1f075187cf92 100644
+--- a/net/http/http_stream_factory_job.cc
++++ b/net/http/http_stream_factory_job.cc
+@@ -221,6 +221,10 @@ HttpStreamFactory::Job::Job(Delegate* delegate,
+       stream_type_(HttpStreamRequest::BIDIRECTIONAL_STREAM),
+       init_connection_already_resumed_(false),
+       ptr_factory_(this) {
++  // QUIC can only be spoken to servers, never to proxies.
++  if (alternative_protocol == kProtoQUIC)
++    DCHECK(proxy_info_.is_direct());
++
+   // The Job is forced to use QUIC without a designated version, try the
+   // preferred QUIC version that is supported by default.
+   if (quic_version_ == quic::QUIC_VERSION_UNSUPPORTED &&
+@@ -769,6 +773,11 @@ int HttpStreamFactory::Job::DoStart() {
+     return ERR_UNSAFE_PORT;
+   }
+ 
++  if (!session_->params().enable_quic_proxies_for_https_urls &&
++      proxy_info_.is_quic() && !request_info_.url.SchemeIs(url::kHttpScheme)) {
++    return ERR_NOT_IMPLEMENTED;
++  }
++
+   next_state_ = STATE_WAIT;
+   return OK;
+ }
+diff --git a/net/http/http_stream_factory_job_controller.cc b/net/http/http_stream_factory_job_controller.cc
+index d632aabbdc155c10e1bd04a091e816a8231ab30c..91d4ba7446c2fd63976887c075aad9ff7a8e42c8 100644
+--- a/net/http/http_stream_factory_job_controller.cc
++++ b/net/http/http_stream_factory_job_controller.cc
+@@ -793,9 +793,13 @@ int HttpStreamFactory::JobController::DoCreateJobs() {
+   HostPortPair destination(HostPortPair::FromURL(request_info_.url));
+   GURL origin_url = ApplyHostMappingRules(request_info_.url, &destination);
+ 
+-  // Create an alternative job if alternative service is set up for this domain.
+-  alternative_service_info_ =
+-      GetAlternativeServiceInfoFor(request_info_, delegate_, stream_type_);
++  // Create an alternative job if alternative service is set up for this domain,
++  // but only if we'll be speaking directly to the server, since QUIC through
++  // proxies is not supported.
++  if (proxy_info_.is_direct()) {
++    alternative_service_info_ =
++        GetAlternativeServiceInfoFor(request_info_, delegate_, stream_type_);
++  }
+   quic::QuicTransportVersion quic_version = quic::QUIC_VERSION_UNSUPPORTED;
+   if (alternative_service_info_.protocol() == kProtoQUIC) {
+     quic_version =
