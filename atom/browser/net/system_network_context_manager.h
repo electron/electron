@@ -40,12 +40,20 @@ class NetExportFileWriter;
 // using the actual network service.
 class SystemNetworkContextManager {
  public:
-  SystemNetworkContextManager();
   ~SystemNetworkContextManager();
 
+  // Creates the global instance of SystemNetworkContextManager. If an
+  // instance already exists, this will cause a DCHECK failure.
+  static SystemNetworkContextManager* CreateInstance(PrefService* pref_service);
+
+  // Gets the global SystemNetworkContextManager instance.
+  static SystemNetworkContextManager* GetInstance();
+
+  // Destroys the global SystemNetworkContextManager instance.
+  static void DeleteInstance();
+
   // Returns default set of parameters for configuring the network service.
-  static network::mojom::NetworkContextParamsPtr
-  CreateDefaultNetworkContextParams();
+  network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams();
 
   // Initializes |network_context_params| as needed to set up a system
   // NetworkContext. If the network service is disabled,
@@ -84,6 +92,8 @@ class SystemNetworkContextManager {
 
  private:
   class URLLoaderFactoryForSystem;
+
+  explicit SystemNetworkContextManager(PrefService* pref_service);
 
   // Creates parameters for the NetworkContext. May only be called once, since
   // it initializes some class members.

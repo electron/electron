@@ -1240,7 +1240,7 @@ Returns `String` - The command-line switch value.
 
 **Note:** When the switch is not present or has no value, it returns empty string.
 
-### `app.enableSandbox()` _Experimental_ _macOS_ _Windows_
+### `app.enableSandbox()` _Experimental_
 
 Enables full sandbox mode on the app.
 

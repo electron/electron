@@ -90,7 +90,7 @@ that contains the user information dictionary sent along with the notification.
 * `callback` Function
   * `event` String
   * `userInfo` Object
-  
+
 Returns `Number` - The ID of this subscription
 
 Subscribes to native notifications of macOS, `callback` will be called with
@@ -115,7 +115,7 @@ example values of `event` are:
 * `callback` Function
   * `event` String
   * `userInfo` Object
-  
+
 Returns `Number` - The ID of this subscription
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
@@ -149,9 +149,9 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 
 Same as `unsubscribeNotification`, but removes the subscriber from `NSWorkspace.sharedWorkspace.notificationCenter`.
 
-### `systemPreferences.registerDefaults(defaults)` _macOS_		
+### `systemPreferences.registerDefaults(defaults)` _macOS_
 
-* `defaults` Object - a dictionary of (`key: value`) user defaults			
+* `defaults` Object - a dictionary of (`key: value`) user defaults
 
 Add the specified defaults to your application's `NSUserDefaults`.
 
@@ -319,7 +319,7 @@ This API is only available on macOS 10.14 Mojave or newer.
     * `unemphasized-selected-text-background` - A background for selected text in a non-key window or view.
     * `unemphasized-selected-text` - Selected text in a non-key window or view.
     * `window-background` - The background of a window.
-    * `window-frame-text` - The text in the window's titlebar area.	
+    * `window-frame-text` - The text in the window's titlebar area.
 
 Returns `String` - The system color setting in RGB hexadecimal form (`#ABCDEF`).
 See the [Windows docs][windows-colors] and the [MacOS docs][macos-colors] for more details.

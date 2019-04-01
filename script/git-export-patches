@@ -24,6 +24,12 @@ def format_patch(repo, since):
     'git',
     '-C',
     repo,
+    '-c',
+    'core.attributesfile=' + os.path.join(os.path.dirname(os.path.realpath(__file__)), '.electron.attributes'),
+    # Ensure it is not possible to match anything
+    # Disabled for now as we have consistent chunk headers
+    # '-c',
+    # 'diff.electron.xfuncname=$^',
     'format-patch',
     '--keep-subject',
     '--no-stat',

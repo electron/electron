@@ -1218,6 +1218,9 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
+  // Discord non-committed entries to ensure that we don't re-use a pending
+  // entry
+  web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
 
   // Set the background color of RenderWidgetHostView.
@@ -1664,13 +1667,24 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            const std::string& channel,
                                            const base::ListValue& args,
                                            int32_t sender_id) {
-  auto* frame_host = web_contents()->GetMainFrame();
-  if (frame_host) {
-    return frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(),
-                                                     internal, send_to_all,
-                                                     channel, args, sender_id));
+  std::vector<content::RenderFrameHost*> target_hosts;
+  if (!send_to_all) {
+    auto* frame_host = web_contents()->GetMainFrame();
+    if (frame_host) {
+      target_hosts.push_back(frame_host);
+    }
+  } else {
+    target_hosts = web_contents()->GetAllFrames();
   }
-  return false;
+
+  bool handled = false;
+  for (auto* frame_host : target_hosts) {
+    handled = frame_host->Send(
+                  new AtomFrameMsg_Message(frame_host->GetRoutingID(), internal,
+                                           false, channel, args, sender_id)) ||
+              handled;
+  }
+  return handled;
 }
 
 bool WebContents::SendIPCMessageToFrame(bool internal,
