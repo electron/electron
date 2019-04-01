@@ -98,7 +98,7 @@ void AtomExtensionLoader::FinishExtensionReload(
 }
 
 void AtomExtensionLoader::PreAddExtension(const Extension* extension,
-                                           const Extension* old_extension) {
+                                          const Extension* old_extension) {
   if (old_extension)
     return;
 

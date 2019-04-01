@@ -92,10 +92,10 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "atom/browser/extensions/atom_browser_context_keyed_service_factories.h"
 #include "atom/browser/extensions/atom_extension_system.h"
 #include "atom/browser/extensions/atom_extension_system_factory.h"
+#include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "atom/common/extensions/atom_extensions_client.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"  // nogncheck
 #include "extensions/browser/browser_context_keyed_service_factories.h"  // nogncheck

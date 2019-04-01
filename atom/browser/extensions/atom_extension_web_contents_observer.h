@@ -25,8 +25,7 @@ class AtomExtensionWebContentsObserver
  private:
   friend class content::WebContentsUserData<AtomExtensionWebContentsObserver>;
 
-  explicit AtomExtensionWebContentsObserver(
-      content::WebContents* web_contents);
+  explicit AtomExtensionWebContentsObserver(content::WebContents* web_contents);
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

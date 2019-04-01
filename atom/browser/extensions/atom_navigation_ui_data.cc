@@ -22,8 +22,7 @@ AtomNavigationUIData::AtomNavigationUIData(
 
 AtomNavigationUIData::~AtomNavigationUIData() {}
 
-std::unique_ptr<content::NavigationUIData> AtomNavigationUIData::Clone()
-    const {
+std::unique_ptr<content::NavigationUIData> AtomNavigationUIData::Clone() const {
   std::unique_ptr<AtomNavigationUIData> copy =
       std::make_unique<AtomNavigationUIData>();
 
