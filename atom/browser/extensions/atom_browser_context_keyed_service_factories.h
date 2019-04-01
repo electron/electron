@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_BROWSER_CONTEXT_KEYED_SERVICE_FACTORIES_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_BROWSER_CONTEXT_KEYED_SERVICE_FACTORIES_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_BROWSER_CONTEXT_KEYED_SERVICE_FACTORIES_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_BROWSER_CONTEXT_KEYED_SERVICE_FACTORIES_H_
 
 namespace extensions {
-namespace shell {
+namespace atom {
 
 // Ensures the existence of any BrowserContextKeyedServiceFactory provided by
 // the core extensions code.
 void EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
-}  // namespace shell
+}  // namespace atom
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_BROWSER_CONTEXT_KEYED_SERVICE_FACTORIES_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_BROWSER_CONTEXT_KEYED_SERVICE_FACTORIES_H_

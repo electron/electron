@@ -2,25 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/shell_extension_web_contents_observer.h"
+#include "atom/browser/extensions/atom_extension_web_contents_observer.h"
 
 namespace extensions {
 
-ShellExtensionWebContentsObserver::ShellExtensionWebContentsObserver(
+AtomExtensionWebContentsObserver::AtomExtensionWebContentsObserver(
     content::WebContents* web_contents)
     : ExtensionWebContentsObserver(web_contents) {}
 
-ShellExtensionWebContentsObserver::~ShellExtensionWebContentsObserver() {}
+AtomExtensionWebContentsObserver::~AtomExtensionWebContentsObserver() {}
 
-void ShellExtensionWebContentsObserver::CreateForWebContents(
+void AtomExtensionWebContentsObserver::CreateForWebContents(
     content::WebContents* web_contents) {
   content::WebContentsUserData<
-      ShellExtensionWebContentsObserver>::CreateForWebContents(web_contents);
+      AtomExtensionWebContentsObserver>::CreateForWebContents(web_contents);
 
   // Initialize this instance if necessary.
   FromWebContents(web_contents)->Initialize();
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(ShellExtensionWebContentsObserver)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(AtomExtensionWebContentsObserver)
 
 }  // namespace extensions

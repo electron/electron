@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/shell_navigation_ui_data.h"
+#include "atom/browser/extensions/atom_navigation_ui_data.h"
 
 #include <utility>
 
@@ -11,21 +11,21 @@
 
 namespace extensions {
 
-ShellNavigationUIData::ShellNavigationUIData() {}
+AtomNavigationUIData::AtomNavigationUIData() {}
 
-ShellNavigationUIData::ShellNavigationUIData(
+AtomNavigationUIData::AtomNavigationUIData(
     content::NavigationHandle* navigation_handle) {
   extension_data_ = std::make_unique<ExtensionNavigationUIData>(
       navigation_handle, extension_misc::kUnknownTabId,
       extension_misc::kUnknownWindowId);
 }
 
-ShellNavigationUIData::~ShellNavigationUIData() {}
+AtomNavigationUIData::~AtomNavigationUIData() {}
 
-std::unique_ptr<content::NavigationUIData> ShellNavigationUIData::Clone()
+std::unique_ptr<content::NavigationUIData> AtomNavigationUIData::Clone()
     const {
-  std::unique_ptr<ShellNavigationUIData> copy =
-      std::make_unique<ShellNavigationUIData>();
+  std::unique_ptr<AtomNavigationUIData> copy =
+      std::make_unique<AtomNavigationUIData>();
 
   if (extension_data_)
     copy->SetExtensionNavigationUIData(extension_data_->DeepCopy());
@@ -33,7 +33,7 @@ std::unique_ptr<content::NavigationUIData> ShellNavigationUIData::Clone()
   return std::move(copy);
 }
 
-void ShellNavigationUIData::SetExtensionNavigationUIData(
+void AtomNavigationUIData::SetExtensionNavigationUIData(
     std::unique_ptr<ExtensionNavigationUIData> extension_data) {
   extension_data_ = std::move(extension_data);
 }

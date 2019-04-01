@@ -93,9 +93,9 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "atom/browser/extensions/atom_extensions_browser_client.h"
-#include "atom/browser/extensions/shell_browser_context_keyed_service_factories.h"
-#include "atom/browser/extensions/shell_extension_system.h"
-#include "atom/browser/extensions/shell_extension_system_factory.h"
+#include "atom/browser/extensions/atom_browser_context_keyed_service_factories.h"
+#include "atom/browser/extensions/atom_extension_system.h"
+#include "atom/browser/extensions/atom_extension_system_factory.h"
 #include "atom/common/extensions/atom_extensions_client.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"  // nogncheck
 #include "extensions/browser/browser_context_keyed_service_factories.h"  // nogncheck
@@ -210,7 +210,7 @@ int X11EmptyIOErrorHandler(Display* d) {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void AtomBrowserMainParts::InitializeExtensionSystem() {
-  extension_system_ = static_cast<extensions::ShellExtensionSystem*>(
+  extension_system_ = static_cast<extensions::AtomExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context_.get()));
   extension_system_->InitForRegularProfile(true /* extensions_enabled */);
   extension_system_->FinishInitialization();
@@ -446,7 +446,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
 
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
-  extensions::shell::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+  extensions::atom::EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
   browser_context_ = AtomBrowserContext::From("", false);
 
@@ -496,7 +496,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   if (cmd_line->HasSwitch("load-extension")) {
     auto load_extension = cmd_line->GetSwitchValueASCII("load-extension");
     auto extension_path = base::FilePath::FromUTF8Unsafe(load_extension);
-    auto* extension_system = static_cast<extensions::ShellExtensionSystem*>(
+    auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
         extensions::ExtensionSystem::Get(browser_context_.get()));
     extension_system->LoadExtension(extension_path);
   }

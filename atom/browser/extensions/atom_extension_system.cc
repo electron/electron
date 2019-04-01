@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/shell_extension_system.h"
+#include "atom/browser/extensions/atom_extension_system.h"
 
 #include <memory>
 #include <string>
 
-#include "atom/browser/extensions/shell_extension_loader.h"
+#include "atom/browser/extensions/atom_extension_loader.h"
 #include "base/bind.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -36,23 +36,23 @@ using content::BrowserThread;
 
 namespace extensions {
 
-ShellExtensionSystem::ShellExtensionSystem(BrowserContext* browser_context)
+AtomExtensionSystem::AtomExtensionSystem(BrowserContext* browser_context)
     : browser_context_(browser_context),
       store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())),
       weak_factory_(this) {}
 
-ShellExtensionSystem::~ShellExtensionSystem() = default;
+AtomExtensionSystem::~AtomExtensionSystem() = default;
 
-const Extension* ShellExtensionSystem::LoadExtension(
+const Extension* AtomExtensionSystem::LoadExtension(
     const base::FilePath& extension_dir) {
   return extension_loader_->LoadExtension(extension_dir);
 }
 
-const Extension* ShellExtensionSystem::LoadApp(const base::FilePath& app_dir) {
+const Extension* AtomExtensionSystem::LoadApp(const base::FilePath& app_dir) {
   return LoadExtension(app_dir);
 }
 
-void ShellExtensionSystem::FinishInitialization() {
+void AtomExtensionSystem::FinishInitialization() {
   // Inform the rest of the extensions system to start.
   ready_.Signal();
   content::NotificationService::current()->Notify(
@@ -61,15 +61,15 @@ void ShellExtensionSystem::FinishInitialization() {
       content::NotificationService::NoDetails());
 }
 
-void ShellExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {
+void AtomExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {
   extension_loader_->ReloadExtension(extension_id);
 }
 
-void ShellExtensionSystem::Shutdown() {
+void AtomExtensionSystem::Shutdown() {
   extension_loader_.reset();
 }
 
-void ShellExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
+void AtomExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   service_worker_manager_ =
       std::make_unique<ServiceWorkerManager>(browser_context_);
   runtime_data_ =
@@ -78,60 +78,60 @@ void ShellExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   shared_user_script_master_ =
       std::make_unique<SharedUserScriptMaster>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
-  extension_loader_ = std::make_unique<ShellExtensionLoader>(browser_context_);
+  extension_loader_ = std::make_unique<AtomExtensionLoader>(browser_context_);
 }
 
-void ShellExtensionSystem::InitForIncognitoProfile() {
+void AtomExtensionSystem::InitForIncognitoProfile() {
   NOTREACHED();
 }
 
-ExtensionService* ShellExtensionSystem::extension_service() {
+ExtensionService* AtomExtensionSystem::extension_service() {
   return nullptr;
 }
 
-RuntimeData* ShellExtensionSystem::runtime_data() {
+RuntimeData* AtomExtensionSystem::runtime_data() {
   return runtime_data_.get();
 }
 
-ManagementPolicy* ShellExtensionSystem::management_policy() {
+ManagementPolicy* AtomExtensionSystem::management_policy() {
   return nullptr;
 }
 
-ServiceWorkerManager* ShellExtensionSystem::service_worker_manager() {
+ServiceWorkerManager* AtomExtensionSystem::service_worker_manager() {
   return service_worker_manager_.get();
 }
 
-SharedUserScriptMaster* ShellExtensionSystem::shared_user_script_master() {
+SharedUserScriptMaster* AtomExtensionSystem::shared_user_script_master() {
   return new SharedUserScriptMaster(browser_context_);
 }
 
-StateStore* ShellExtensionSystem::state_store() {
+StateStore* AtomExtensionSystem::state_store() {
   return nullptr;
 }
 
-StateStore* ShellExtensionSystem::rules_store() {
+StateStore* AtomExtensionSystem::rules_store() {
   return nullptr;
 }
 
-scoped_refptr<ValueStoreFactory> ShellExtensionSystem::store_factory() {
+scoped_refptr<ValueStoreFactory> AtomExtensionSystem::store_factory() {
   return store_factory_;
 }
 
-InfoMap* ShellExtensionSystem::info_map() {
+InfoMap* AtomExtensionSystem::info_map() {
   if (!info_map_.get())
     info_map_ = new InfoMap;
   return info_map_.get();
 }
 
-QuotaService* ShellExtensionSystem::quota_service() {
+QuotaService* AtomExtensionSystem::quota_service() {
   return quota_service_.get();
 }
 
-AppSorting* ShellExtensionSystem::app_sorting() {
+AppSorting* AtomExtensionSystem::app_sorting() {
   return app_sorting_.get();
 }
 
-void ShellExtensionSystem::RegisterExtensionWithRequestContexts(
+void AtomExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     const base::Closure& callback) {
   base::PostTaskWithTraitsAndReply(
@@ -141,24 +141,24 @@ void ShellExtensionSystem::RegisterExtensionWithRequestContexts(
       callback);
 }
 
-void ShellExtensionSystem::UnregisterExtensionWithRequestContexts(
+void AtomExtensionSystem::UnregisterExtensionWithRequestContexts(
     const std::string& extension_id,
     const UnloadedExtensionReason reason) {}
 
-const OneShotEvent& ShellExtensionSystem::ready() const {
+const OneShotEvent& AtomExtensionSystem::ready() const {
   return ready_;
 }
 
-ContentVerifier* ShellExtensionSystem::content_verifier() {
+ContentVerifier* AtomExtensionSystem::content_verifier() {
   return nullptr;
 }
 
-std::unique_ptr<ExtensionSet> ShellExtensionSystem::GetDependentExtensions(
+std::unique_ptr<ExtensionSet> AtomExtensionSystem::GetDependentExtensions(
     const Extension* extension) {
   return std::make_unique<ExtensionSet>();
 }
 
-void ShellExtensionSystem::InstallUpdate(
+void AtomExtensionSystem::InstallUpdate(
     const std::string& extension_id,
     const std::string& public_key,
     const base::FilePath& temp_dir,
@@ -168,14 +168,14 @@ void ShellExtensionSystem::InstallUpdate(
   base::DeleteFile(temp_dir, true /* recursive */);
 }
 
-bool ShellExtensionSystem::FinishDelayedInstallationIfReady(
+bool AtomExtensionSystem::FinishDelayedInstallationIfReady(
     const std::string& extension_id,
     bool install_immediately) {
   NOTREACHED();
   return false;
 }
 
-void ShellExtensionSystem::OnExtensionRegisteredWithRequestContexts(
+void AtomExtensionSystem::OnExtensionRegisteredWithRequestContexts(
     scoped_refptr<Extension> extension) {
   ExtensionRegistry* registry = ExtensionRegistry::Get(browser_context_);
   registry->AddReady(extension);

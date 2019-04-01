@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/shell_extension_system_factory.h"
+#include "atom/browser/extensions/atom_extension_system_factory.h"
 
-#include "atom/browser/extensions/shell_extension_system.h"
+#include "atom/browser/extensions/atom_extension_system.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "extensions/browser/extension_prefs_factory.h"
 #include "extensions/browser/extension_registry_factory.h"
@@ -13,38 +13,38 @@ using content::BrowserContext;
 
 namespace extensions {
 
-ExtensionSystem* ShellExtensionSystemFactory::GetForBrowserContext(
+ExtensionSystem* AtomExtensionSystemFactory::GetForBrowserContext(
     BrowserContext* context) {
-  return static_cast<ShellExtensionSystem*>(
+  return static_cast<AtomExtensionSystem*>(
       GetInstance()->GetServiceForBrowserContext(context, true));
 }
 
 // static
-ShellExtensionSystemFactory* ShellExtensionSystemFactory::GetInstance() {
-  return base::Singleton<ShellExtensionSystemFactory>::get();
+AtomExtensionSystemFactory* AtomExtensionSystemFactory::GetInstance() {
+  return base::Singleton<AtomExtensionSystemFactory>::get();
 }
 
-ShellExtensionSystemFactory::ShellExtensionSystemFactory()
-    : ExtensionSystemProvider("ShellExtensionSystem",
+AtomExtensionSystemFactory::AtomExtensionSystemFactory()
+    : ExtensionSystemProvider("AtomExtensionSystem",
                               BrowserContextDependencyManager::GetInstance()) {
   DependsOn(ExtensionPrefsFactory::GetInstance());
   DependsOn(ExtensionRegistryFactory::GetInstance());
 }
 
-ShellExtensionSystemFactory::~ShellExtensionSystemFactory() {}
+AtomExtensionSystemFactory::~AtomExtensionSystemFactory() {}
 
-KeyedService* ShellExtensionSystemFactory::BuildServiceInstanceFor(
+KeyedService* AtomExtensionSystemFactory::BuildServiceInstanceFor(
     BrowserContext* context) const {
-  return new ShellExtensionSystem(context);
+  return new AtomExtensionSystem(context);
 }
 
-BrowserContext* ShellExtensionSystemFactory::GetBrowserContextToUse(
+BrowserContext* AtomExtensionSystemFactory::GetBrowserContextToUse(
     BrowserContext* context) const {
   // Use a separate instance for incognito.
   return context;
 }
 
-bool ShellExtensionSystemFactory::ServiceIsCreatedWithBrowserContext() const {
+bool AtomExtensionSystemFactory::ServiceIsCreatedWithBrowserContext() const {
   return true;
 }
 

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_HOST_DELEGATE_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_HOST_DELEGATE_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_HOST_DELEGATE_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_HOST_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -14,10 +14,10 @@
 namespace extensions {
 
 // A minimal ExtensionHostDelegate.
-class ShellExtensionHostDelegate : public ExtensionHostDelegate {
+class AtomExtensionHostDelegate : public ExtensionHostDelegate {
  public:
-  ShellExtensionHostDelegate();
-  ~ShellExtensionHostDelegate() override;
+  AtomExtensionHostDelegate();
+  ~AtomExtensionHostDelegate() override;
 
   // ExtensionHostDelegate implementation.
   void OnExtensionHostCreated(content::WebContents* web_contents) override;
@@ -43,9 +43,9 @@ class ShellExtensionHostDelegate : public ExtensionHostDelegate {
   void ExitPictureInPicture() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(ShellExtensionHostDelegate);
+  DISALLOW_COPY_AND_ASSIGN(AtomExtensionHostDelegate);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_HOST_DELEGATE_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_HOST_DELEGATE_H_

@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_DISPLAY_INFO_PROVIDER_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_DISPLAY_INFO_PROVIDER_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_DISPLAY_INFO_PROVIDER_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_DISPLAY_INFO_PROVIDER_H_
 
 #include "base/macros.h"
 #include "extensions/browser/api/system_display/display_info_provider.h"
 
 namespace extensions {
 
-class ShellDisplayInfoProvider : public DisplayInfoProvider {
+class AtomDisplayInfoProvider : public DisplayInfoProvider {
  public:
-  ShellDisplayInfoProvider();
+  AtomDisplayInfoProvider();
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(ShellDisplayInfoProvider);
+  DISALLOW_COPY_AND_ASSIGN(AtomDisplayInfoProvider);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_DISPLAY_INFO_PROVIDER_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_DISPLAY_INFO_PROVIDER_H_

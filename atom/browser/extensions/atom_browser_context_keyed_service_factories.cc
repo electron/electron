@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/shell_browser_context_keyed_service_factories.h"
+#include "atom/browser/extensions/atom_browser_context_keyed_service_factories.h"
 
 #include "extensions/browser/updater/update_service_factory.h"
 // #include "extensions/shell/browser/api/identity/identity_api.h"
-#include "atom/browser/extensions/shell_extension_system_factory.h"
+#include "atom/browser/extensions/atom_extension_system_factory.h"
 
 namespace extensions {
-namespace shell {
+namespace atom {
 
 void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   // IdentityAPI::GetFactoryInstance();
@@ -18,8 +18,8 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   // extensions embedders (and namely chrome.)
   UpdateServiceFactory::GetInstance();
 
-  ShellExtensionSystemFactory::GetInstance();
+  AtomExtensionSystemFactory::GetInstance();
 }
 
-}  // namespace shell
+}  // namespace atom
 }  // namespace extensions

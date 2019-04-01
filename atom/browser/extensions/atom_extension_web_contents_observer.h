@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_WEB_CONTENTS_OBSERVER_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_WEB_CONTENTS_OBSERVER_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_WEB_CONTENTS_OBSERVER_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_WEB_CONTENTS_OBSERVER_H_
 
 #include "base/macros.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -12,27 +12,27 @@
 namespace extensions {
 
 // The app_shell version of ExtensionWebContentsObserver.
-class ShellExtensionWebContentsObserver
+class AtomExtensionWebContentsObserver
     : public ExtensionWebContentsObserver,
-      public content::WebContentsUserData<ShellExtensionWebContentsObserver> {
+      public content::WebContentsUserData<AtomExtensionWebContentsObserver> {
  public:
-  ~ShellExtensionWebContentsObserver() override;
+  ~AtomExtensionWebContentsObserver() override;
 
   // Creates and initializes an instance of this class for the given
   // |web_contents|, if it doesn't already exist.
   static void CreateForWebContents(content::WebContents* web_contents);
 
  private:
-  friend class content::WebContentsUserData<ShellExtensionWebContentsObserver>;
+  friend class content::WebContentsUserData<AtomExtensionWebContentsObserver>;
 
-  explicit ShellExtensionWebContentsObserver(
+  explicit AtomExtensionWebContentsObserver(
       content::WebContents* web_contents);
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 
-  DISALLOW_COPY_AND_ASSIGN(ShellExtensionWebContentsObserver);
+  DISALLOW_COPY_AND_ASSIGN(AtomExtensionWebContentsObserver);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_WEB_CONTENTS_OBSERVER_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_WEB_CONTENTS_OBSERVER_H_

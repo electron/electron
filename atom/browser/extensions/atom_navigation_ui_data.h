@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_NAVIGATION_UI_DATA_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_NAVIGATION_UI_DATA_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_NAVIGATION_UI_DATA_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_NAVIGATION_UI_DATA_H_
 
 #include <memory>
 
@@ -18,11 +18,11 @@ namespace extensions {
 // beginning of each navigation. The class is instantiated on the UI thread,
 // then a copy created using Clone is passed to the content::ResourceRequestInfo
 // on the IO thread.
-class ShellNavigationUIData : public content::NavigationUIData {
+class AtomNavigationUIData : public content::NavigationUIData {
  public:
-  ShellNavigationUIData();
-  explicit ShellNavigationUIData(content::NavigationHandle* navigation_handle);
-  ~ShellNavigationUIData() override;
+  AtomNavigationUIData();
+  explicit AtomNavigationUIData(content::NavigationHandle* navigation_handle);
+  ~AtomNavigationUIData() override;
 
   // Creates a new ChromeNavigationUIData that is a deep copy of the original.
   // Any changes to the original after the clone is created will not be
@@ -40,9 +40,9 @@ class ShellNavigationUIData : public content::NavigationUIData {
   // Manages the lifetime of optional ExtensionNavigationUIData information.
   std::unique_ptr<ExtensionNavigationUIData> extension_data_;
 
-  DISALLOW_COPY_AND_ASSIGN(ShellNavigationUIData);
+  DISALLOW_COPY_AND_ASSIGN(AtomNavigationUIData);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_NAVIGATION_UI_DATA_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_NAVIGATION_UI_DATA_H_

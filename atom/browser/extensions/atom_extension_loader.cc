@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/shell_extension_loader.h"
+#include "atom/browser/extensions/atom_extension_loader.h"
 
 #include "base/auto_reset.h"
 #include "base/bind.h"
@@ -56,15 +56,15 @@ scoped_refptr<const Extension> LoadUnpacked(
 
 }  // namespace
 
-ShellExtensionLoader::ShellExtensionLoader(
+AtomExtensionLoader::AtomExtensionLoader(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context),
       extension_registrar_(browser_context, this),
       weak_factory_(this) {}
 
-ShellExtensionLoader::~ShellExtensionLoader() = default;
+AtomExtensionLoader::~AtomExtensionLoader() = default;
 
-const Extension* ShellExtensionLoader::LoadExtension(
+const Extension* AtomExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir) {
   scoped_refptr<const Extension> extension = LoadUnpacked(extension_dir);
   if (extension)
@@ -73,7 +73,7 @@ const Extension* ShellExtensionLoader::LoadExtension(
   return extension.get();
 }
 
-void ShellExtensionLoader::ReloadExtension(ExtensionId extension_id) {
+void AtomExtensionLoader::ReloadExtension(ExtensionId extension_id) {
   const Extension* extension = ExtensionRegistry::Get(browser_context_)
                                    ->GetInstalledExtension(extension_id);
   // We shouldn't be trying to reload extensions that haven't been added.
@@ -89,7 +89,7 @@ void ShellExtensionLoader::ReloadExtension(ExtensionId extension_id) {
     return;
 }
 
-void ShellExtensionLoader::FinishExtensionReload(
+void AtomExtensionLoader::FinishExtensionReload(
     const ExtensionId old_extension_id,
     scoped_refptr<const Extension> extension) {
   if (extension) {
@@ -97,7 +97,7 @@ void ShellExtensionLoader::FinishExtensionReload(
   }
 }
 
-void ShellExtensionLoader::PreAddExtension(const Extension* extension,
+void AtomExtensionLoader::PreAddExtension(const Extension* extension,
                                            const Extension* old_extension) {
   if (old_extension)
     return;
@@ -118,13 +118,13 @@ void ShellExtensionLoader::PreAddExtension(const Extension* extension,
   }
 }
 
-void ShellExtensionLoader::PostActivateExtension(
+void AtomExtensionLoader::PostActivateExtension(
     scoped_refptr<const Extension> extension) {}
 
-void ShellExtensionLoader::PostDeactivateExtension(
+void AtomExtensionLoader::PostDeactivateExtension(
     scoped_refptr<const Extension> extension) {}
 
-void ShellExtensionLoader::LoadExtensionForReload(
+void AtomExtensionLoader::LoadExtensionForReload(
     const ExtensionId& extension_id,
     const base::FilePath& path,
     LoadErrorBehavior load_error_behavior) {
@@ -133,21 +133,21 @@ void ShellExtensionLoader::LoadExtensionForReload(
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
       base::BindOnce(&LoadUnpacked, path),
-      base::BindOnce(&ShellExtensionLoader::FinishExtensionReload,
+      base::BindOnce(&AtomExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
 }
 
-bool ShellExtensionLoader::CanEnableExtension(const Extension* extension) {
+bool AtomExtensionLoader::CanEnableExtension(const Extension* extension) {
   return true;
 }
 
-bool ShellExtensionLoader::CanDisableExtension(const Extension* extension) {
+bool AtomExtensionLoader::CanDisableExtension(const Extension* extension) {
   // Extensions cannot be disabled by the user.
   return false;
 }
 
-bool ShellExtensionLoader::ShouldBlockExtension(const Extension* extension) {
+bool AtomExtensionLoader::ShouldBlockExtension(const Extension* extension) {
   return false;
 }
 

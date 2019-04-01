@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_H_
 
 #include <memory>
 #include <string>
@@ -26,16 +26,16 @@ class BrowserContext;
 
 namespace extensions {
 
-class ShellExtensionLoader;
+class AtomExtensionLoader;
 class ValueStoreFactory;
 
 // A simplified version of ExtensionSystem for app_shell. Allows
 // app_shell to skip initialization of services it doesn't need.
-class ShellExtensionSystem : public ExtensionSystem {
+class AtomExtensionSystem : public ExtensionSystem {
  public:
   using InstallUpdateCallback = ExtensionSystem::InstallUpdateCallback;
-  explicit ShellExtensionSystem(content::BrowserContext* browser_context);
-  ~ShellExtensionSystem() override;
+  explicit AtomExtensionSystem(content::BrowserContext* browser_context);
+  ~AtomExtensionSystem() override;
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
@@ -102,18 +102,18 @@ class ShellExtensionSystem : public ExtensionSystem {
   std::unique_ptr<SharedUserScriptMaster> shared_user_script_master_;
   std::unique_ptr<AppSorting> app_sorting_;
 
-  std::unique_ptr<ShellExtensionLoader> extension_loader_;
+  std::unique_ptr<AtomExtensionLoader> extension_loader_;
 
   scoped_refptr<ValueStoreFactory> store_factory_;
 
   // Signaled when the extension system has completed its startup tasks.
   OneShotEvent ready_;
 
-  base::WeakPtrFactory<ShellExtensionSystem> weak_factory_;
+  base::WeakPtrFactory<AtomExtensionSystem> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(ShellExtensionSystem);
+  DISALLOW_COPY_AND_ASSIGN(AtomExtensionSystem);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_H_

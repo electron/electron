@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_LOADER_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_LOADER_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_LOADER_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_LOADER_H_
 
 #include <memory>
 #include <string>
@@ -13,7 +13,6 @@
 #include "base/memory/weak_ptr.h"
 #include "extensions/browser/extension_registrar.h"
 #include "extensions/common/extension_id.h"
-// #include "extensions/shell/browser/shell_keep_alive_requester.h"
 
 namespace base {
 class FilePath;
@@ -28,10 +27,10 @@ namespace extensions {
 class Extension;
 
 // Handles extension loading and reloading using ExtensionRegistrar.
-class ShellExtensionLoader : public ExtensionRegistrar::Delegate {
+class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
  public:
-  explicit ShellExtensionLoader(content::BrowserContext* browser_context);
-  ~ShellExtensionLoader() override;
+  explicit AtomExtensionLoader(content::BrowserContext* browser_context);
+  ~AtomExtensionLoader() override;
 
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
@@ -77,11 +76,11 @@ class ShellExtensionLoader : public ExtensionRegistrar::Delegate {
   // LoadExtensionForReload().
   bool did_schedule_reload_ = false;
 
-  base::WeakPtrFactory<ShellExtensionLoader> weak_factory_;
+  base::WeakPtrFactory<AtomExtensionLoader> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(ShellExtensionLoader);
+  DISALLOW_COPY_AND_ASSIGN(AtomExtensionLoader);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_LOADER_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_LOADER_H_

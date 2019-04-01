@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/extensions/api/runtime/shell_runtime_api_delegate.h"
+#include "atom/browser/extensions/api/runtime/atom_runtime_api_delegate.h"
 
 #include <string>
 
-#include "atom/browser/extensions/shell_extension_system.h"
+#include "atom/browser/extensions/atom_extension_system.h"
 #include "build/build_config.h"
 #include "extensions/common/api/runtime.h"
 
@@ -19,32 +19,32 @@ using extensions::api::runtime::PlatformInfo;
 
 namespace extensions {
 
-ShellRuntimeAPIDelegate::ShellRuntimeAPIDelegate(
+AtomRuntimeAPIDelegate::AtomRuntimeAPIDelegate(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context) {
   DCHECK(browser_context_);
 }
 
-ShellRuntimeAPIDelegate::~ShellRuntimeAPIDelegate() = default;
+AtomRuntimeAPIDelegate::~AtomRuntimeAPIDelegate() = default;
 
-void ShellRuntimeAPIDelegate::AddUpdateObserver(UpdateObserver* observer) {}
+void AtomRuntimeAPIDelegate::AddUpdateObserver(UpdateObserver* observer) {}
 
-void ShellRuntimeAPIDelegate::RemoveUpdateObserver(UpdateObserver* observer) {}
+void AtomRuntimeAPIDelegate::RemoveUpdateObserver(UpdateObserver* observer) {}
 
-void ShellRuntimeAPIDelegate::ReloadExtension(const std::string& extension_id) {
-  static_cast<ShellExtensionSystem*>(ExtensionSystem::Get(browser_context_))
+void AtomRuntimeAPIDelegate::ReloadExtension(const std::string& extension_id) {
+  static_cast<AtomExtensionSystem*>(ExtensionSystem::Get(browser_context_))
       ->ReloadExtension(extension_id);
 }
 
-bool ShellRuntimeAPIDelegate::CheckForUpdates(
+bool AtomRuntimeAPIDelegate::CheckForUpdates(
     const std::string& extension_id,
     const UpdateCheckCallback& callback) {
   return false;
 }
 
-void ShellRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
+void AtomRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
 
-bool ShellRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
+bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
 #if defined(OS_CHROMEOS)
   info->os = api::runtime::PLATFORM_OS_CROS;
 #elif defined(OS_LINUX)
@@ -53,7 +53,7 @@ bool ShellRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   return true;
 }
 
-bool ShellRuntimeAPIDelegate::RestartDevice(std::string* error_message) {
+bool AtomRuntimeAPIDelegate::RestartDevice(std::string* error_message) {
 // We allow chrome.runtime.restart() to request a device restart on ChromeOS.
 #if defined(OS_CHROMEOS)
   chromeos::PowerManagerClient::Get()->RequestRestart(

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_FACTORY_H_
-#define ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_FACTORY_H_
+#ifndef ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_FACTORY_H_
+#define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_FACTORY_H_
 
 #include "base/macros.h"
 #include "base/memory/singleton.h"
@@ -11,20 +11,20 @@
 
 namespace extensions {
 
-// A factory that provides ShellExtensionSystem for app_shell.
-class ShellExtensionSystemFactory : public ExtensionSystemProvider {
+// A factory that provides AtomExtensionSystem.
+class AtomExtensionSystemFactory : public ExtensionSystemProvider {
  public:
   // ExtensionSystemProvider implementation:
   ExtensionSystem* GetForBrowserContext(
       content::BrowserContext* context) override;
 
-  static ShellExtensionSystemFactory* GetInstance();
+  static AtomExtensionSystemFactory* GetInstance();
 
  private:
-  friend struct base::DefaultSingletonTraits<ShellExtensionSystemFactory>;
+  friend struct base::DefaultSingletonTraits<AtomExtensionSystemFactory>;
 
-  ShellExtensionSystemFactory();
-  ~ShellExtensionSystemFactory() override;
+  AtomExtensionSystemFactory();
+  ~AtomExtensionSystemFactory() override;
 
   // BrowserContextKeyedServiceFactory implementation:
   KeyedService* BuildServiceInstanceFor(
@@ -33,9 +33,9 @@ class ShellExtensionSystemFactory : public ExtensionSystemProvider {
       content::BrowserContext* context) const override;
   bool ServiceIsCreatedWithBrowserContext() const override;
 
-  DISALLOW_COPY_AND_ASSIGN(ShellExtensionSystemFactory);
+  DISALLOW_COPY_AND_ASSIGN(AtomExtensionSystemFactory);
 };
 
 }  // namespace extensions
 
-#endif  // ATOM_BROWSER_EXTENSIONS_SHELL_EXTENSION_SYSTEM_FACTORY_H_
+#endif  // ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_FACTORY_H_

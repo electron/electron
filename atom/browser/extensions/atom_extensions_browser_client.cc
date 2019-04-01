@@ -6,10 +6,10 @@
 
 #include <utility>
 
-#include "atom/browser/extensions/api/runtime/shell_runtime_api_delegate.h"
-#include "atom/browser/extensions/shell_extension_host_delegate.h"
-#include "atom/browser/extensions/shell_extension_system_factory.h"
-#include "atom/browser/extensions/shell_extension_web_contents_observer.h"
+#include "atom/browser/extensions/api/runtime/atom_runtime_api_delegate.h"
+#include "atom/browser/extensions/atom_extension_host_delegate.h"
+#include "atom/browser/extensions/atom_extension_system_factory.h"
+#include "atom/browser/extensions/atom_extension_web_contents_observer.h"
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/task/post_task.h"
@@ -30,9 +30,9 @@
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
 #include "extensions/common/features/feature_channel.h"
-// #include "atom/browser/extensions/shell_extensions_api_client.h"
-// #include "atom/browser/extensions/shell_extensions_browser_api_provider.h"
-#include "atom/browser/extensions/shell_navigation_ui_data.h"
+// #include "atom/browser/extensions/atom_extensions_api_client.h"
+// #include "atom/browser/extensions/atom_extensions_browser_api_provider.h"
+#include "atom/browser/extensions/atom_navigation_ui_data.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
 using content::BrowserContext;
@@ -42,7 +42,7 @@ namespace atom {
 
 AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
     : api_client_(new extensions::ExtensionsAPIClient),
-      // : api_client_(new extensions::ShellExtensionsAPIClient),
+      // : api_client_(new extensions::AtomExtensionsAPIClient),
       extension_cache_(new extensions::NullExtensionCache()) {
   // app_shell does not have a concept of channel yet, so leave UNKNOWN to
   // enable all channel-dependent extension APIs.
@@ -51,7 +51,7 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
   // TODO(samuelmaddock): undefined symbol for
   // extensions::CoreExtensionsBrowserAPIProvider AddAPIProvider(
   //     std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
-  // AddAPIProvider(std::make_unique<ShellExtensionsBrowserAPIProvider>());
+  // AddAPIProvider(std::make_unique<AtomExtensionsBrowserAPIProvider>());
 }
 
 AtomExtensionsBrowserClient::~AtomExtensionsBrowserClient() {}
@@ -176,7 +176,7 @@ AtomExtensionsBrowserClient::GetProcessManagerDelegate() const {
 std::unique_ptr<extensions::ExtensionHostDelegate>
 AtomExtensionsBrowserClient::CreateExtensionHostDelegate() {
   // TODO(samuelmaddock):
-  return base::WrapUnique(new extensions::ShellExtensionHostDelegate);
+  return base::WrapUnique(new extensions::AtomExtensionHostDelegate);
 }
 
 bool AtomExtensionsBrowserClient::DidVersionUpdate(BrowserContext* context) {
@@ -211,7 +211,7 @@ bool AtomExtensionsBrowserClient::IsLoggedInAsPublicAccount() {
 extensions::ExtensionSystemProvider*
 AtomExtensionsBrowserClient::GetExtensionSystemFactory() {
   // TODO(samuelmaddock):
-  return extensions::ShellExtensionSystemFactory::GetInstance();
+  return extensions::AtomExtensionSystemFactory::GetInstance();
   // return extensions::ExtensionSystemFactory::GetInstance();
 }
 
@@ -227,7 +227,7 @@ std::unique_ptr<extensions::RuntimeAPIDelegate>
 AtomExtensionsBrowserClient::CreateRuntimeAPIDelegate(
     content::BrowserContext* context) const {
   // TODO(samuelmaddock):
-  return std::make_unique<extensions::ShellRuntimeAPIDelegate>(context);
+  return std::make_unique<extensions::AtomRuntimeAPIDelegate>(context);
 }
 
 const extensions::ComponentExtensionResourceManager*
@@ -280,7 +280,7 @@ extensions::ExtensionWebContentsObserver*
 AtomExtensionsBrowserClient::GetExtensionWebContentsObserver(
     content::WebContents* web_contents) {
   // TODO(samuelmaddock):
-  return extensions::ShellExtensionWebContentsObserver::FromWebContents(
+  return extensions::AtomExtensionWebContentsObserver::FromWebContents(
       web_contents);
 }
 
@@ -291,8 +291,8 @@ AtomExtensionsBrowserClient::GetExtensionNavigationUIData(
       content::ResourceRequestInfo::ForRequest(request);
   if (!info)
     return nullptr;
-  extensions::ShellNavigationUIData* navigation_data =
-      static_cast<extensions::ShellNavigationUIData*>(
+  extensions::AtomNavigationUIData* navigation_data =
+      static_cast<extensions::AtomNavigationUIData*>(
           info->GetNavigationUIData());
   if (!navigation_data)
     return nullptr;

@@ -30,7 +30,7 @@ class WMState;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
-class ShellExtensionSystem;
+class AtomExtensionSystem;
 }
 #endif
 
@@ -152,7 +152,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   scoped_refptr<AtomBrowserContext> browser_context_;
 
   // Owned by the KeyedService system.
-  extensions::ShellExtensionSystem* extension_system_;
+  extensions::AtomExtensionSystem* extension_system_;
 #endif
 
   base::RepeatingTimer gc_timer_;
