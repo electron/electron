@@ -137,6 +137,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
+  network::mojom::NetworkContext* GetSystemNetworkContext() override;
   void RegisterOutOfProcessServices(OutOfProcessServiceMap* services) override;
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;

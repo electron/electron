@@ -132,6 +132,7 @@ void ElectronApiServiceImpl::Message(bool internal,
   EmitIPCEvent(context, internal, channel, arguments.GetList(), sender_id);
 
   // Also send the message to all sub-frames.
+  // TODO(MarshallOfSound): Completely move this logic to the main process
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())

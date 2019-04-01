@@ -41,6 +41,14 @@ bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
+bool IsComponentBuild() {
+#if defined(COMPONENT_BUILD)
+  return true;
+#else
+  return false;
+#endif
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -55,6 +63,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
+  dict.SetMethod("isComponentBuild", &IsComponentBuild);
 }
 
 }  // namespace

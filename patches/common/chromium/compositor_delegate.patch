@@ -5,10 +5,10 @@ Subject: compositor_delegate.patch
 
 
 diff --git a/content/browser/compositor/gpu_process_transport_factory.cc b/content/browser/compositor/gpu_process_transport_factory.cc
-index bc1934e2c7b40595b0c06d9beace5f4a569e7751..a354265c235bc8c81f3e5ab5b703bf6c7af06187 100644
+index 4768ac1a3bac8dee0b146d2ad30a50c6aee330c4..531c862a7a01bd74775621115fade56025cd15c6 100644
 --- a/content/browser/compositor/gpu_process_transport_factory.cc
 +++ b/content/browser/compositor/gpu_process_transport_factory.cc
-@@ -451,11 +451,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
+@@ -452,11 +452,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
        // surfaces as they are not following the correct mode.
        DisableGpuCompositing(compositor.get());
      }

@@ -31,7 +31,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
-#include "content/public/browser/resource_context.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
@@ -102,18 +101,9 @@ void SetupAtomURLRequestJobFactory(
 
 }  // namespace
 
-class ResourceContext : public content::ResourceContext {
- public:
-  ResourceContext() = default;
-  ~ResourceContext() override = default;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ResourceContext);
-};
-
 URLRequestContextGetter::Handle::Handle(
     base::WeakPtr<AtomBrowserContext> browser_context)
-    : resource_context_(new ResourceContext),
+    : resource_context_(new content::ResourceContext),
       browser_context_(browser_context),
       initialized_(false) {}
 
@@ -154,7 +144,8 @@ URLRequestContextGetter::Handle::GetNetworkContext() {
 network::mojom::NetworkContextParamsPtr
 URLRequestContextGetter::Handle::CreateNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
-      SystemNetworkContextManager::CreateDefaultNetworkContextParams();
+      SystemNetworkContextManager::GetInstance()
+          ->CreateDefaultNetworkContextParams();
 
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
@@ -250,7 +241,7 @@ URLRequestContextGetter::~URLRequestContextGetter() {
 }
 
 void URLRequestContextGetter::NotifyContextShuttingDown(
-    std::unique_ptr<ResourceContext> resource_context) {
+    std::unique_ptr<content::ResourceContext> resource_context) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   // todo(brenca): remove once C70 lands

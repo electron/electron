@@ -156,6 +156,11 @@ describe('nativeImage module', () => {
       expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true()
     })
 
+    it('returns an empty image when the buffer is too small', () => {
+      const image = nativeImage.createFromBuffer(Buffer.from([1, 2, 3, 4]), { width: 100, height: 100 })
+      expect(image.isEmpty()).to.be.true()
+    })
+
     it('returns an image created from the given buffer', () => {
       const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
 
@@ -476,6 +481,18 @@ describe('nativeImage module', () => {
   })
 
   describe('addRepresentation()', () => {
+    it('does not add representation when the buffer is too small', () => {
+      const image = nativeImage.createEmpty()
+
+      image.addRepresentation({
+        buffer: Buffer.from([1, 2, 3, 4]),
+        width: 100,
+        height: 100
+      })
+
+      expect(image.isEmpty()).to.be.true()
+    })
+
     it('supports adding a buffer representation for a scale factor', () => {
       const image = nativeImage.createEmpty()
 

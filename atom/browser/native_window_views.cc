@@ -721,6 +721,13 @@ bool NativeWindowViews::IsMaximizable() {
 #endif
 }
 
+void NativeWindowViews::SetExcludedFromShownWindowsMenu(bool excluded) {}
+
+bool NativeWindowViews::IsExcludedFromShownWindowsMenu() {
+  // return false on unsupported platforms
+  return false;
+}
+
 void NativeWindowViews::SetFullScreenable(bool fullscreenable) {
   fullscreenable_ = fullscreenable;
 }

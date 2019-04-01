@@ -5,7 +5,7 @@ Subject: webgl_context_attributes.patch
 
 
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index a1538e5ca041ed42e3c77512434fcc2a2ed77533..de849f696e15004cda5648f565972f4529503d50 100644
+index 1277a3b2c1e4d9ff61d7e4968831e03e57395c51..b9f3d081a6ff0309aa4f2133e42bc097addaaf4e 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -916,8 +916,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
