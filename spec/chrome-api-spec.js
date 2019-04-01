@@ -73,13 +73,8 @@ describe('chrome api', () => {
     w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
 
     const [,, responseString] = await promise
-    try {
-      const response = JSON.parse(responseString)
+    const response = JSON.parse(responseString)
 
-      expect(response).to.equal(3)
-    } catch (e) {
-      console.log(responseString)
-      throw e
-    }
+    expect(response).to.equal(3)
   })
 })
