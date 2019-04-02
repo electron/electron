@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Thu, 20 Dec 2018 00:22:07 +0000
+Subject: Fix crashes in RenderFrameImpl::OnSelectPopupMenuItem(s)
+
+ExternalPopupMenu::DidSelectItem(s) can delete the RenderFrameImpl.
+We need to reset external_popup_menu_ before calling it.
+
+Bug: 912211
+Change-Id: Ia9a628e144464a2ebb14ab77d3a693fd5cead6fc
+Reviewed-on: https://chromium-review.googlesource.com/c/1381325
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#618026}
+
+diff --git a/content/renderer/external_popup_menu_browsertest.cc b/content/renderer/external_popup_menu_browsertest.cc
+index d3cff681551c4961a4a47c48bac9155b22fd7524..0ea34d8809f1b191504d2cc833f74fef694230d3 100644
+--- a/content/renderer/external_popup_menu_browsertest.cc
++++ b/content/renderer/external_popup_menu_browsertest.cc
+@@ -12,6 +12,7 @@
+ #include "content/renderer/render_view_impl.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/platform/web_size.h"
++#include "third_party/blink/public/web/web_local_frame.h"
+ #include "third_party/blink/public/web/web_view.h"
+ 
+ // Tests for the external select popup menu (Mac specific).
+@@ -153,6 +154,31 @@ TEST_F(ExternalPopupMenuRemoveTest, RemoveOnChange) {
+   EXPECT_FALSE(SimulateElementClick(kSelectID));
+ }
+ 
++// crbug.com/912211
++TEST_F(ExternalPopupMenuRemoveTest, RemoveFrameOnChange) {
++  LoadHTML(
++      "<style>* { margin: 0; } iframe { border: 0; }</style>"
++      "<body><iframe srcdoc=\""
++      "<style>* { margin: 0; }</style><select><option>opt1<option>opt2"
++      "\"></iframe>"
++      "<script>"
++      "onload = function() {"
++      "  const frame = document.querySelector('iframe');"
++      "  frame.contentDocument.querySelector('select').onchange = "
++      "      () => { frame.remove(); };"
++      "};"
++      "</script>");
++  // Open a popup.
++  SimulatePointClick(gfx::Point(8, 8));
++  // Select something on the sub-frame, it causes the frame to be removed from
++  // the page.
++  auto* child_web_frame =
++      static_cast<blink::WebLocalFrame*>(frame()->GetWebFrame()->FirstChild());
++  static_cast<RenderFrameImpl*>(RenderFrame::FromWebFrame(child_web_frame))
++      ->OnSelectPopupMenuItem(1);
++  // The test passes if the test didn't crash and ASAN didn't complain.
++}
++
+ class ExternalPopupMenuDisplayNoneTest : public ExternalPopupMenuTest {
+   public:
+   ExternalPopupMenuDisplayNoneTest() {}
+diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
+index 9571ea0233e84e3ab2f2159018efd12f18adcea9..7db2fa3591040b73a55ac620cbf35816afbd715f 100644
+--- a/content/renderer/render_frame_impl.cc
++++ b/content/renderer/render_frame_impl.cc
+@@ -6473,8 +6473,12 @@ void RenderFrameImpl::OnSelectPopupMenuItem(int selected_index) {
+     return;
+ 
+   blink::WebScopedUserGesture gesture(frame_);
+-  external_popup_menu_->DidSelectItem(selected_index);
+-  external_popup_menu_.reset();
++  // We need to reset |external_popup_menu_| before calling DidSelectItem(),
++  // which might delete |this|.
++  // See ExternalPopupMenuRemoveTest.RemoveFrameOnChange
++  std::unique_ptr<ExternalPopupMenu> popup;
++  popup.swap(external_popup_menu_);
++  popup->DidSelectItem(selected_index);
+ }
+ #else
+ void RenderFrameImpl::OnSelectPopupMenuItems(
+@@ -6488,8 +6492,12 @@ void RenderFrameImpl::OnSelectPopupMenuItems(
+     return;
+ 
+   blink::WebScopedUserGesture gesture(frame_);
+-  external_popup_menu_->DidSelectItems(canceled, selected_indices);
+-  external_popup_menu_.reset();
++  // We need to reset |external_popup_menu_| before calling DidSelectItems(),
++  // which might delete |this|.
++  // See ExternalPopupMenuRemoveTest.RemoveFrameOnChange
++  std::unique_ptr<ExternalPopupMenu> popup;
++  popup.swap(external_popup_menu_);
++  popup->DidSelectItems(canceled, selected_indices);
+ }
+ #endif
+ #endif
+diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
+index cb5ffc56b005d8fb5492c1254bf533a370d42448..c9fea9da0cf2e24cd1c1581cbe939a736edd65bf 100644
+--- a/content/renderer/render_frame_impl.h
++++ b/content/renderer/render_frame_impl.h
+@@ -900,6 +900,7 @@ class CONTENT_EXPORT RenderFrameImpl
+   friend class RenderAccessibilityImplTest;
+   friend class TestRenderFrame;
+   FRIEND_TEST_ALL_PREFIXES(ExternalPopupMenuDisplayNoneTest, SelectItem);
++  FRIEND_TEST_ALL_PREFIXES(ExternalPopupMenuRemoveTest, RemoveFrameOnChange);
+   FRIEND_TEST_ALL_PREFIXES(ExternalPopupMenuRemoveTest, RemoveOnChange);
+   FRIEND_TEST_ALL_PREFIXES(ExternalPopupMenuTest, NormalCase);
+   FRIEND_TEST_ALL_PREFIXES(ExternalPopupMenuTest, ShowPopupThenNavigate);
