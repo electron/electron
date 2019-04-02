@@ -907,7 +907,14 @@ std::string AtomBrowserClient::GetProduct() const {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
-std::string AtomBrowserClient::GetUserAgent() const {
+std::string AtomBrowserClient::GetUserAgent(
+    content::BrowserContext* browser_context) const {
+  if (browser_context) {
+    AtomBrowserContext* atom_context =
+        static_cast<AtomBrowserContext*>(browser_context);
+    return atom_context->GetUserAgent();
+  }
+
   return GetApplicationUserAgent();
 }
 

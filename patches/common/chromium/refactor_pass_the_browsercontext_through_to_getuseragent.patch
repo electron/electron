@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Tue, 2 Apr 2019 13:02:38 -0700
+Subject: refactor: pass the BrowserContext through to GetUserAgent
+
+Passes BrowserContext to BrowserClient when requesting the user agent.
+This allows embedders to return a useragent specific to the
+BrowserContext.
+
+This allows service worker user agents to be configured at a session level.
+
+diff --git a/content/browser/devtools/browser_devtools_agent_host.cc b/content/browser/devtools/browser_devtools_agent_host.cc
+index 2862801939324918f92ddd51aaf104f9814ef4c8..41aca98816ff4c2270f3cee9113dcc1891e6a578 100644
+--- a/content/browser/devtools/browser_devtools_agent_host.cc
++++ b/content/browser/devtools/browser_devtools_agent_host.cc
+@@ -77,7 +77,7 @@ bool BrowserDevToolsAgentHost::AttachSession(DevToolsSession* session) {
+   if (only_discovery_)
+     return true;
+ 
+-  session->AddHandler(std::make_unique<protocol::BrowserHandler>());
++  session->AddHandler(std::make_unique<protocol::BrowserHandler>(GetBrowserContext()));
+   session->AddHandler(std::make_unique<protocol::IOHandler>(GetIOContext()));
+   session->AddHandler(std::make_unique<protocol::FetchHandler>(GetIOContext()));
+   session->AddHandler(std::make_unique<protocol::MemoryHandler>());
+diff --git a/content/browser/devtools/devtools_http_handler.cc b/content/browser/devtools/devtools_http_handler.cc
+index 3a1bc8719732a33ecd83800eb43d102af86d8ae3..87e2e7cabd49fbb898e293fe0d81d54e2577a7e1 100644
+--- a/content/browser/devtools/devtools_http_handler.cc
++++ b/content/browser/devtools/devtools_http_handler.cc
+@@ -576,7 +576,7 @@ void DevToolsHttpHandler::OnJsonRequest(
+     version.SetString("WebKit-Version", GetWebKitVersion());
+     version.SetString("Browser", GetContentClient()->browser()->GetProduct());
+     version.SetString("User-Agent",
+-                      GetContentClient()->browser()->GetUserAgent());
++                      GetContentClient()->browser()->GetUserAgent(delegate_->GetDefaultBrowserContext()));
+     version.SetString("V8-Version", V8_VERSION_STRING);
+     std::string host = info.headers["host"];
+     version.SetString(
+diff --git a/content/browser/devtools/protocol/browser_handler.cc b/content/browser/devtools/protocol/browser_handler.cc
+index 17af5799ae2e0973780b62fac47c328c4805f8f1..fe02b600cc020ea86f6ced5fb64645ae15fc44bd 100644
+--- a/content/browser/devtools/protocol/browser_handler.cc
++++ b/content/browser/devtools/protocol/browser_handler.cc
+@@ -28,8 +28,9 @@
+ namespace content {
+ namespace protocol {
+ 
+-BrowserHandler::BrowserHandler()
+-    : DevToolsDomainHandler(Browser::Metainfo::domainName) {}
++BrowserHandler::BrowserHandler(content::BrowserContext* browser_context)
++    : DevToolsDomainHandler(Browser::Metainfo::domainName),
++      browser_context_(browser_context) {}
+ 
+ BrowserHandler::~BrowserHandler() {}
+ 
+@@ -63,7 +64,7 @@ Response BrowserHandler::GetVersion(std::string* protocol_version,
+   *protocol_version = DevToolsAgentHost::GetProtocolVersion();
+   *revision = GetWebKitRevision();
+   *product = GetContentClient()->browser()->GetProduct();
+-  *user_agent = GetContentClient()->browser()->GetUserAgent();
++  *user_agent = GetContentClient()->browser()->GetUserAgent(browser_context_);
+   *js_version = V8_VERSION_STRING;
+   return Response::OK();
+ }
+diff --git a/content/browser/devtools/protocol/browser_handler.h b/content/browser/devtools/protocol/browser_handler.h
+index eeaf4e6dc1ec88db058f55d9abf152738e34a264..6d9ae5926b7ee2c895dec6556fed386c87aec14a 100644
+--- a/content/browser/devtools/protocol/browser_handler.h
++++ b/content/browser/devtools/protocol/browser_handler.h
+@@ -18,7 +18,7 @@ namespace protocol {
+ 
+ class BrowserHandler : public DevToolsDomainHandler, public Browser::Backend {
+  public:
+-  BrowserHandler();
++  BrowserHandler(content::BrowserContext* browser_context);
+   ~BrowserHandler() override;
+ 
+   void Wire(UberDispatcher* dispatcher) override;
+@@ -62,6 +62,8 @@ class BrowserHandler : public DevToolsDomainHandler, public Browser::Backend {
+ 
+   base::flat_set<std::string> contexts_with_overridden_permissions_;
+ 
++  content::BrowserContext* browser_context_;
++
+   DISALLOW_COPY_AND_ASSIGN(BrowserHandler);
+ };
+ 
+diff --git a/content/browser/devtools/render_frame_devtools_agent_host.cc b/content/browser/devtools/render_frame_devtools_agent_host.cc
+index d88e0a599d2118257c684cb6f057b297c08bb991..4b240509d7c07b52022432397222d6448789344c 100644
+--- a/content/browser/devtools/render_frame_devtools_agent_host.cc
++++ b/content/browser/devtools/render_frame_devtools_agent_host.cc
+@@ -279,7 +279,7 @@ bool RenderFrameDevToolsAgentHost::AttachSession(DevToolsSession* session) {
+   protocol::EmulationHandler* emulation_handler_ptr = emulation_handler.get();
+ 
+   session->AddHandler(std::make_unique<protocol::BackgroundServiceHandler>());
+-  session->AddHandler(std::make_unique<protocol::BrowserHandler>());
++  session->AddHandler(std::make_unique<protocol::BrowserHandler>(GetBrowserContext()));
+   session->AddHandler(std::make_unique<protocol::DOMHandler>(
+       session->client()->MayReadLocalFiles()));
+   session->AddHandler(std::move(emulation_handler));
+diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
+index 5bca54fa888b7cf3b12f6882003ecb334e250f63..3ad48c54a64b6d8480ab824234a7b544ce67b125 100644
+--- a/content/browser/frame_host/navigation_request.cc
++++ b/content/browser/frame_host/navigation_request.cc
+@@ -202,7 +202,7 @@ void AddAdditionalRequestHeaders(
+   headers->SetHeaderIfMissing(
+       net::HttpRequestHeaders::kUserAgent,
+       user_agent_override.empty()
+-          ? GetContentClient()->browser()->GetUserAgent()
++          ? GetContentClient()->browser()->GetUserAgent(browser_context)
+           : user_agent_override);
+ 
+   // TODO(mkwst): Extract this logic out somewhere that can be shared between
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index 7805ce82b11be1eaed59aae1fe76f6fd13e901a5..808e612f31d44816f96ff22b4cd8417c55542cdc 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -4506,7 +4506,7 @@ void RenderProcessHostImpl::OnProcessLaunched() {
+ 
+   // Pass bits of global renderer state to the renderer.
+   GetRendererInterface()->SetUserAgent(
+-      GetContentClient()->browser()->GetUserAgent());
++      GetContentClient()->browser()->GetUserAgent(GetBrowserContext()));
+   GetRendererInterface()->SetUserAgentMetadata(
+       GetContentClient()->browser()->GetUserAgentMetadata());
+   NotifyRendererIfLockedToSite();
+diff --git a/content/browser/service_worker/service_worker_process_manager.cc b/content/browser/service_worker/service_worker_process_manager.cc
+index 68718d4f55e89cb5004091f7cfaff9f0df259348..0420fda8e11b9a18daf956fdd25a8e7be38c62aa 100644
+--- a/content/browser/service_worker/service_worker_process_manager.cc
++++ b/content/browser/service_worker/service_worker_process_manager.cc
+@@ -50,6 +50,11 @@ BrowserContext* ServiceWorkerProcessManager::browser_context() {
+   return browser_context_;
+ }
+ 
++std::string ServiceWorkerProcessManager::GetUserAgent(ContentBrowserClient* client) {
++  base::AutoLock lock(browser_context_lock_);
++  return client->GetUserAgent(browser_context_);
++}
++
+ void ServiceWorkerProcessManager::Shutdown() {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   {
+diff --git a/content/browser/service_worker/service_worker_process_manager.h b/content/browser/service_worker/service_worker_process_manager.h
+index 7eada9bf2d9fd6042a488ee2df7be565c287bcba..9b8d293f2ab61d0c1b22c15f0eb16e7c4afdaf69 100644
+--- a/content/browser/service_worker/service_worker_process_manager.h
++++ b/content/browser/service_worker/service_worker_process_manager.h
+@@ -13,6 +13,7 @@
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/synchronization/lock.h"
++#include "content/public/browser/content_browser_client.h"
+ #include "content/browser/service_worker/service_worker_metrics.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
+ 
+@@ -51,6 +52,8 @@ class CONTENT_EXPORT ServiceWorkerProcessManager {
+   // Called on the UI thread.
+   BrowserContext* browser_context();
+ 
++  std::string GetUserAgent(ContentBrowserClient* client);
++
+   // Synchronously prevents new processes from being allocated
+   // and drops references to RenderProcessHosts. Called on the UI thread.
+   void Shutdown();
+diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
+index c6d61cc8795e1eb12f19b5eafec7e80446403afa..0bec70805949f37581eaf8a5e378b557c9aa071d 100644
+--- a/content/browser/service_worker/service_worker_version.cc
++++ b/content/browser/service_worker/service_worker_version.cc
+@@ -1634,7 +1634,7 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+   params->scope = scope_;
+   params->script_url = script_url_;
+   params->script_type = script_type_;
+-  params->user_agent = GetContentClient()->browser()->GetUserAgent();
++  params->user_agent = context_->process_manager()->GetUserAgent(GetContentClient()->browser());
+   params->is_installed = IsInstalled(status_);
+   params->pause_after_download = pause_after_download();
+ 
+diff --git a/content/browser/tracing/tracing_controller_impl.cc b/content/browser/tracing/tracing_controller_impl.cc
+index 62b5c62a9a6410201a8f459e71b8f772d82ca775..7ee5a9bf1e2dc5567ee1d6ba2d02e6b0914f8f38 100644
+--- a/content/browser/tracing/tracing_controller_impl.cc
++++ b/content/browser/tracing/tracing_controller_impl.cc
+@@ -216,7 +216,7 @@ TracingControllerImpl::GenerateMetadataDict() const {
+                            GetContentClient()->browser()->GetProduct());
+   metadata_dict->SetString("v8-version", V8_VERSION_STRING);
+   metadata_dict->SetString("user-agent",
+-                           GetContentClient()->browser()->GetUserAgent());
++                           GetContentClient()->browser()->GetUserAgent(nullptr));
+ 
+ #if defined(OS_ANDROID)
+   // The library name is used for symbolizing heap profiles. This cannot be
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index a841e5c00e2fcc52481ffffcd62fa55892ab8109..b787b89d6d9b8572ce5f468defdeda50fe4735a6 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -799,7 +799,7 @@ network::mojom::NetworkContextPtr ContentBrowserClient::CreateNetworkContext(
+   network::mojom::NetworkContextPtr network_context;
+   network::mojom::NetworkContextParamsPtr context_params =
+       network::mojom::NetworkContextParams::New();
+-  context_params->user_agent = GetUserAgent();
++  context_params->user_agent = GetUserAgent(context);
+   context_params->accept_language = "en-us,en";
+   context_params->enable_data_url_support = true;
+   GetNetworkService()->CreateNetworkContext(MakeRequest(&network_context),
+@@ -956,7 +956,7 @@ std::string ContentBrowserClient::GetProduct() const {
+   return std::string();
+ }
+ 
+-std::string ContentBrowserClient::GetUserAgent() const {
++std::string ContentBrowserClient::GetUserAgent(BrowserContext* context) const {
+   return std::string();
+ }
+ 
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 9161d0055ad26bd95de7f8fcad3c1587db1e54e9..cf0da8bb5304368e3a422ac63e6ee5dce1e226a0 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -1531,7 +1531,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+   virtual std::string GetProduct() const;
+ 
+   // Returns the user agent.  Content may cache this value.
+-  virtual std::string GetUserAgent() const;
++  // browser_context may be a nullptr
++  virtual std::string GetUserAgent(content::BrowserContext* browser_context) const;
+ 
+   // Returns user agent metadata. Content may cache this value.
+   virtual blink::UserAgentMetadata GetUserAgentMetadata() const;
+diff --git a/content/shell/browser/shell_content_browser_client.cc b/content/shell/browser/shell_content_browser_client.cc
+index b4e405339512277ee3402bdc312540a238b6b610..98b1e21bf42de8fc167f6eab5afb69e477e69a0b 100644
+--- a/content/shell/browser/shell_content_browser_client.cc
++++ b/content/shell/browser/shell_content_browser_client.cc
+@@ -503,7 +503,7 @@ std::unique_ptr<LoginDelegate> ShellContentBrowserClient::CreateLoginDelegate(
+ #endif
+ }
+ 
+-std::string ShellContentBrowserClient::GetUserAgent() const {
++std::string ShellContentBrowserClient::GetUserAgent(BrowserContext* context) const {
+   return GetShellUserAgent();
+ }
+ 
+diff --git a/content/shell/browser/shell_content_browser_client.h b/content/shell/browser/shell_content_browser_client.h
+index 052bed37df4528f60ee790e09dcd6008d9a1f8e2..2cec1b9b573cf852e0b9d263cda7e69dc92ec58d 100644
+--- a/content/shell/browser/shell_content_browser_client.h
++++ b/content/shell/browser/shell_content_browser_client.h
+@@ -88,7 +88,7 @@ class ShellContentBrowserClient : public ContentBrowserClient {
+       bool first_auth_attempt,
+       LoginAuthRequiredCallback auth_required_callback) override;
+ 
+-  std::string GetUserAgent() const override;
++  std::string GetUserAgent(BrowserContext* context) const override;
+   blink::UserAgentMetadata GetUserAgentMetadata() const override;
+ 
+ #if defined(OS_LINUX) || defined(OS_ANDROID)
