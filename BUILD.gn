@@ -2,6 +2,7 @@ import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
+import("//printing/buildflags/buildflags.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -351,6 +352,28 @@ if (is_linux) {
   }
 }
 
+source_set("manifests") {
+  sources = [
+    "//electron/atom/app/manifests.cc",
+    "//electron/atom/app/manifests.h",
+  ]
+
+  include_dirs = [ "//electron" ]
+
+  deps = [
+    "//printing/buildflags",
+    "//services/proxy_resolver/public/cpp:manifest",
+  ]
+
+  if (enable_basic_printing) {
+    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
+  }
+
+  if (enable_print_preview) {
+    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
+  }
+}
+
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -359,10 +382,10 @@ static_library("electron_lib") {
 
   deps = [
     ":atom_js2c",
+    ":manifests",
     ":resources",
     "buildflags",
     "chromium_src:chrome",
-    "manifests",
     "native_mate",
     "//base:base_static",
     "//base/allocator:buildflags",
