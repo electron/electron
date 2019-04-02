@@ -1340,7 +1340,8 @@ Sets the `image` associated with this dock icon.
 
 A `Menu` property that return [`Menu`](menu.md) if one has been set and `null` otherwise.
 Users can pass a [Menu](menu.md) to set this property.
-### app.accessibilitySupport _macOS_ _Windows_
+
+### `app.accessibilitySupportEnabled` _macOS_ _Windows_
 
 A `Boolean` property that's `true` if Chrome's accessibility support is enabled, `false` otherwise. This property will be `true` if the use of assistive technologies, such as screen readers, has been detected. Setting this property to `true` manually enables Chrome's accessibility support, allowing developers to expose accessibility switch to users in application settings.
 

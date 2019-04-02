@@ -5,9 +5,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
 ## Candidates
 
 * `app` module
-  * `accessibilitySupport`
   * `badgeCount`
-  * `applicationMenu`
   * `name`
   * `dock`
     * `badge`
@@ -56,3 +54,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `audioMuted`
 
 ## Converted Properties
+
+* `app` module
+  * `accessibilitySupport`
+  * `applicationMenu`

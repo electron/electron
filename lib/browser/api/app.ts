@@ -38,8 +38,6 @@ Object.assign(app, {
   }
 })
 
-app.getFileIcon = deprecate.promisify(app.getFileIcon)
-
 // we define this here because it'd be overly complicated to
 // do in native land
 Object.defineProperty(app, 'applicationMenu', {
@@ -80,13 +78,7 @@ for (const name of events) {
 app.getFileIcon = deprecate.promisify(app.getFileIcon)
 
 // Property Deprecations
-const [
-  deprecatedGetter,
-  deprecatedSetter
-] = deprecate.fnToProperty('accessibilitySupportEnabled', app.isAccessibilitySupportEnabled, app.setAccessibilitySupportEnabled)
-
-app.isAccessibilitySupportEnabled = deprecatedGetter
-app.setAccessibilitySupportEnabled = deprecatedSetter
+deprecate.fnToProperty(app, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
 
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')

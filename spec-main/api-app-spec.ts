@@ -634,11 +634,15 @@ describe('app module', () => {
     })
   })
 
-  describe.only('accessibilitySupportEnabled property', () => {
+  describe('accessibilitySupportEnabled property', () => {
     if (process.platform === 'linux') return
 
     it('returns whether the Chrome has accessibility APIs enabled', () => {
       expect(app.accessibilitySupportEnabled).to.be.a('boolean')
+
+      //TODO(codebytere): remove when propertyification is complete
+      expect(app.isAccessibilitySupportEnabled).to.be.a('function')
+      expect(app.setAccessibilitySupportEnabled).to.be.a('function')
     })
   })
 
