@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joe Downing <joedow@chromium.org>
+Date: Thu, 27 Sep 2018 00:24:13 +0000
+Subject: Destroy KeyboardLockServiceImpl instance when RenderFrameHost goes
+ away
+
+This CL updates KeyboardLockServiceImpl to release its mojo binding if
+the RenderFrameHost instance it is linked to is destroyed.
+
+Bug: 888678
+Change-Id: Icea5fe1a5c76df4d71fa4e78c423e49828664637
+Reviewed-on: https://chromium-review.googlesource.com/1246290
+Commit-Queue: Joe Downing <joedow@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#594534}
+
+diff --git a/content/browser/keyboard_lock/keyboard_lock_service_impl.cc b/content/browser/keyboard_lock/keyboard_lock_service_impl.cc
+index f783d5356c8c81137ad99b366062aea1c76616a4..b0aa16010bbc602b0a854cd777221221164a49e3 100644
+--- a/content/browser/keyboard_lock/keyboard_lock_service_impl.cc
++++ b/content/browser/keyboard_lock/keyboard_lock_service_impl.cc
+@@ -38,20 +38,22 @@ void LogKeyboardLockMethodCalled(KeyboardLockMethods method) {
+ }  // namespace
+ 
+ KeyboardLockServiceImpl::KeyboardLockServiceImpl(
+-    RenderFrameHost* render_frame_host)
+-    : render_frame_host_(static_cast<RenderFrameHostImpl*>(render_frame_host)) {
++    RenderFrameHost* render_frame_host,
++    blink::mojom::KeyboardLockServiceRequest request)
++    : FrameServiceBase(render_frame_host, std::move(request)),
++      render_frame_host_(static_cast<RenderFrameHostImpl*>(render_frame_host)) {
+   DCHECK(render_frame_host_);
+ }
+ 
+-KeyboardLockServiceImpl::~KeyboardLockServiceImpl() = default;
+-
+ // static
+ void KeyboardLockServiceImpl::CreateMojoService(
+     RenderFrameHost* render_frame_host,
+     blink::mojom::KeyboardLockServiceRequest request) {
+-  mojo::MakeStrongBinding(
+-      std::make_unique<KeyboardLockServiceImpl>(render_frame_host),
+-      std::move(request));
++  DCHECK(render_frame_host);
++
++  // The object is bound to the lifetime of |render_frame_host| and the mojo
++  // connection. See FrameServiceBase for details.
++  new KeyboardLockServiceImpl(render_frame_host, std::move(request));
+ }
+ 
+ void KeyboardLockServiceImpl::RequestKeyboardLock(
+@@ -131,4 +133,6 @@ void KeyboardLockServiceImpl::GetKeyboardLayoutMap(
+   std::move(callback).Run(std::move(response));
+ }
+ 
++KeyboardLockServiceImpl::~KeyboardLockServiceImpl() = default;
++
+ }  // namespace content
+diff --git a/content/browser/keyboard_lock/keyboard_lock_service_impl.h b/content/browser/keyboard_lock/keyboard_lock_service_impl.h
+index 19c2f994758801e7d21d5256ec762eab84e7dd15..eecefd26e448befcb9c12b7203271c04d728751f 100644
+--- a/content/browser/keyboard_lock/keyboard_lock_service_impl.h
++++ b/content/browser/keyboard_lock/keyboard_lock_service_impl.h
+@@ -9,6 +9,7 @@
+ #include <vector>
+ 
+ #include "content/common/content_export.h"
++#include "content/public/browser/frame_service_base.h"
+ #include "mojo/public/cpp/bindings/strong_binding.h"
+ #include "third_party/blink/public/platform/modules/keyboard_lock/keyboard_lock.mojom.h"
+ 
+@@ -17,11 +18,11 @@ namespace content {
+ class RenderFrameHost;
+ class RenderFrameHostImpl;
+ 
+-class CONTENT_EXPORT KeyboardLockServiceImpl
+-    : public blink::mojom::KeyboardLockService {
++class CONTENT_EXPORT KeyboardLockServiceImpl final
++    : public FrameServiceBase<blink::mojom::KeyboardLockService> {
+  public:
+-  explicit KeyboardLockServiceImpl(RenderFrameHost* render_frame_host);
+-  ~KeyboardLockServiceImpl() override;
++  KeyboardLockServiceImpl(RenderFrameHost* render_frame_host,
++                          blink::mojom::KeyboardLockServiceRequest request);
+ 
+   static void CreateMojoService(
+       RenderFrameHost* render_frame_host,
+@@ -34,6 +35,9 @@ class CONTENT_EXPORT KeyboardLockServiceImpl
+   void GetKeyboardLayoutMap(GetKeyboardLayoutMapCallback callback) override;
+ 
+  private:
++  // |this| can only be destroyed by FrameServiceBase.
++  ~KeyboardLockServiceImpl() override;
++
+   RenderFrameHostImpl* const render_frame_host_;
+ };
+ 
