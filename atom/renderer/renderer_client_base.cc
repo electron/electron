@@ -128,17 +128,6 @@ void RendererClientBase::DidCreateScriptContext(
       !command_line->HasSwitch(switches::kDisableRemoteModule);
   SetHiddenValue(context, "enableRemoteModule",
                  mate::ConvertToV8(isolate, enableRemoteModule));
-
-  // TODO(nornagon): putting this interface registration here rather than in
-  // the more likely-seeming `RenderFrameCreated` method is intended to prevent
-  // IPC messages from triggering v8 context creation before the page has begun
-  // loading. However, it's unclear whether such a timing is possible to
-  // trigger, and we don't have any test to confirm it. Either move this
-  // registration to RenderFrameCreated or add a test that confirms that a
-  // main->renderer IPC can't cause the preload script to be executed twice.
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
-                          render_frame, this));
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -227,6 +216,18 @@ void RendererClientBase::RenderFrameCreated(
   new printing::PrintRenderFrameHelper(
       render_frame, std::make_unique<atom::PrintRenderFrameHelperDelegate>());
 #endif
+
+  // TODO(nornagon): it might be possible for an IPC message sent to this
+  // service to trigger v8 context creation before the page has begun loading.
+  // However, it's unclear whether such a timing is possible to trigger, and we
+  // don't have any test to confirm it. Add a test that confirms that a
+  // main->renderer IPC can't cause the preload script to be executed twice. If
+  // it is possible to trigger the preload script before the document is ready
+  // through this interface, we should delay adding it to the registry until
+  // the document is ready.
+  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
+      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
+                          render_frame, this));
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
