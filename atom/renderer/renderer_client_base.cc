@@ -128,6 +128,17 @@ void RendererClientBase::DidCreateScriptContext(
       !command_line->HasSwitch(switches::kDisableRemoteModule);
   SetHiddenValue(context, "enableRemoteModule",
                  mate::ConvertToV8(isolate, enableRemoteModule));
+
+  // TODO(nornagon): putting this interface registration here rather than in
+  // the more likely-seeming `RenderFrameCreated` method is intended to prevent
+  // IPC messages from triggering v8 context creation before the page has begun
+  // loading. However, it's unclear whether such a timing is possible to
+  // trigger, and we don't have any test to confirm it. Either move this
+  // registration to RenderFrameCreated or add a test that confirms that a
+  // main->renderer IPC can't cause the preload script to be executed twice.
+  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
+      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
+                          render_frame, this));
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -205,10 +216,6 @@ void RendererClientBase::RenderThreadStarted() {
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
-                          render_frame, this));
-
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
 #endif

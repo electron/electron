@@ -63,10 +63,6 @@ void AtomRenderFrameObserver::DidClearWindowObject() {
   renderer_client_->DidClearWindowObject(render_frame_);
 }
 
-void AtomRenderFrameObserver::DidCreateDocumentElement() {
-  document_created_ = true;
-}
-
 void AtomRenderFrameObserver::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     int world_id) {
