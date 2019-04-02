@@ -1232,6 +1232,12 @@ describe('app module', () => {
     })
   })
 
+  describe('app.applicationMenu', () => {
+    it('has the applicationMenu property', () => {
+      expect(app).to.have.property('applicationMenu')
+    })
+  })
+
   describe('commandLine.hasSwitch', () => {
     it('returns true when present', () => {
       app.commandLine.appendSwitch('foobar1')

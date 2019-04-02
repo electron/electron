@@ -1332,6 +1332,11 @@ Sets the `image` associated with this dock icon.
 
 ## Properties
 
+### `app.applicationMenu`
+
+A `Menu` property that return [`Menu`](menu.md) if one has been set and `null` otherwise.
+Users can pass a [Menu](menu.md) to set this property.
+
 ### `app.isPackaged`
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
