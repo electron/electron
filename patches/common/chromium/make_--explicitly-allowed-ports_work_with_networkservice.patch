@@ -1,0 +1,246 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Roman <eroman@chromium.org>
+Date: Tue, 8 Jan 2019 22:35:26 +0000
+Subject: Make --explicitly-allowed-ports work with NetworkService.
+
+This also makes it work in content_shell, whereas previously it was only wired up in chrome.
+
+Bug: 916025
+Change-Id: Ic79e478d02160e2cb0727a22495c029f21447796
+Reviewed-on: https://chromium-review.googlesource.com/c/1400042
+Commit-Queue: Eric Roman <eroman@chromium.org>
+Reviewed-by: John Abd-El-Malek <jam@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#620910}
+
+diff --git a/chrome/browser/ui/startup/startup_browser_creator.cc b/chrome/browser/ui/startup/startup_browser_creator.cc
+index 665718d90bf66061f92164c2715f5e500608beb5..63b88c0051354eab316edd16c522b3c7f89158ca 100644
+--- a/chrome/browser/ui/startup/startup_browser_creator.cc
++++ b/chrome/browser/ui/startup/startup_browser_creator.cc
+@@ -66,7 +66,6 @@
+ #include "content/public/browser/notification_source.h"
+ #include "content/public/common/content_switches.h"
+ #include "extensions/common/switches.h"
+-#include "net/base/port_util.h"
+ #include "printing/buildflags/buildflags.h"
+ 
+ #if defined(OS_CHROMEOS)
+@@ -585,12 +584,6 @@ bool StartupBrowserCreator::ProcessCmdLineImpl(
+   }
+ #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
+ 
+-  if (command_line.HasSwitch(switches::kExplicitlyAllowedPorts)) {
+-    std::string allowed_ports =
+-        command_line.GetSwitchValueASCII(switches::kExplicitlyAllowedPorts);
+-    net::SetExplicitlyAllowedPorts(allowed_ports);
+-  }
+-
+   if (command_line.HasSwitch(switches::kValidateCrx)) {
+     if (!process_startup) {
+       LOG(ERROR) << "chrome is already running; you must close all running "
+diff --git a/content/browser/net/net_command_line_flags_browsertest.cc b/content/browser/net/net_command_line_flags_browsertest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e47cbbf08076216f60f0d01942626f162746e4f3
+--- /dev/null
++++ b/content/browser/net/net_command_line_flags_browsertest.cc
+@@ -0,0 +1,52 @@
++// Copyright 2018 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/public/browser/browser_context.h"
++#include "content/public/browser/storage_partition.h"
++#include "content/public/browser/web_contents.h"
++#include "content/public/test/browser_test_utils.h"
++#include "content/public/test/content_browser_test.h"
++#include "content/shell/browser/shell.h"
++#include "services/network/public/cpp/network_switches.h"
++
++namespace content {
++
++class CommandLineFlagsBrowserTest : public ContentBrowserTest {
++ protected:
++  network::mojom::NetworkContext* network_context() {
++    return content::BrowserContext::GetDefaultStoragePartition(
++               shell()->web_contents()->GetBrowserContext())
++        ->GetNetworkContext();
++  }
++};
++
++// Tests that when no special command line flags are passed, requests to port 79
++// (finger) fail with ERR_UNSAFE_PORT.
++IN_PROC_BROWSER_TEST_F(CommandLineFlagsBrowserTest, Port79DefaultBlocked) {
++  EXPECT_EQ(net::ERR_UNSAFE_PORT,
++            content::LoadBasicRequest(network_context(),
++                                      GURL("http://127.0.0.1:79"), 0, 0, 0));
++}
++
++class ExplicitlyAllowPort79BrowserTest : public CommandLineFlagsBrowserTest {
++ public:
++  void SetUpCommandLine(base::CommandLine* command_line) override {
++    command_line->AppendSwitchASCII(network::switches::kExplicitlyAllowedPorts,
++                                    "79");
++  }
++};
++
++// Tests that when run with the flag --explicitly-allowed-ports=79, requests to
++// port 79 (finger) are permitted.
++//
++// The request may succeed or fail depending on the platform and what services
++// are running, so the test just verifies the reason for failure is not
++// ERR_UNSAFE_PORT.
++IN_PROC_BROWSER_TEST_F(ExplicitlyAllowPort79BrowserTest, Load) {
++  EXPECT_NE(net::ERR_UNSAFE_PORT,
++            content::LoadBasicRequest(network_context(),
++                                      GURL("http://127.0.0.1:79"), 0, 0, 0));
++}
++
++}  // namespace content
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index aac3f05054724c2fa030efd4c8d7543de9433612..b8a0e794b9ea2791a699d84fa3d4987cced36324 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -2793,6 +2793,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+   static const char* const kSwitchNames[] = {
+     switches::kDisableColorCorrectRendering,
+     network::switches::kNoReferrers,
++    network::switches::kExplicitlyAllowedPorts,
+     service_manager::switches::kDisableInProcessStackTraces,
+     service_manager::switches::kDisableSeccompFilterSandbox,
+     service_manager::switches::kNoSandbox,
+@@ -2875,7 +2876,6 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+     switches::kEnableWebGLDraftExtensions,
+     switches::kEnableWebGLImageChromium,
+     switches::kEnableWebVR,
+-    switches::kExplicitlyAllowedPorts,
+     switches::kFileUrlPathAlias,
+     switches::kFMPNetworkQuietTimeout,
+     switches::kForceColorProfile,
+diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
+index 074f290638ff7311d6c9683a63f7a7c39a402876..5e1c9138bcf604831fca12a9673675e0d9d4734f 100644
+--- a/content/browser/utility_process_host.cc
++++ b/content/browser/utility_process_host.cc
+@@ -286,6 +286,7 @@ bool UtilityProcessHost::StartProcess() {
+       network::switches::kIgnoreCertificateErrorsSPKIList,
+       network::switches::kLogNetLog,
+       network::switches::kNoReferrers,
++      network::switches::kExplicitlyAllowedPorts,
+       service_manager::switches::kNoSandbox,
+ #if defined(OS_MACOSX)
+       service_manager::switches::kEnableSandboxLogging,
+diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
+index eeb540ba52e109aff7348714a0ad22399a460a2d..512d0bb910bf9d5091943a5a40b253ad7ac43e65 100644
+--- a/content/public/common/content_switches.cc
++++ b/content/public/common/content_switches.cc
+@@ -473,10 +473,6 @@ const char kEnableWebVR[] = "enable-webvr";
+ // Enable rasterizer that writes directly to GPU memory associated with tiles.
+ const char kEnableZeroCopy[]                = "enable-zero-copy";
+ 
+-// Explicitly allows additional ports using a comma-separated list of port
+-// numbers.
+-const char kExplicitlyAllowedPorts[]        = "explicitly-allowed-ports";
+-
+ // Handle to the shared memory segment containing field trial state that is to
+ // be shared between processes. The argument to this switch is the handle id
+ // (pointer on Windows) as a string, followed by a comma, then the size of the
+diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
+index 2a08de6a59bb67bfe0f65f82f6ba3397a4896056..f420773ee9fe29e5562878ded07ad98ad6700e5f 100644
+--- a/content/public/common/content_switches.h
++++ b/content/public/common/content_switches.h
+@@ -148,7 +148,6 @@ CONTENT_EXPORT extern const char kEnableWebGLDraftExtensions[];
+ CONTENT_EXPORT extern const char kEnableWebGLImageChromium[];
+ CONTENT_EXPORT extern const char kEnableWebVR[];
+ CONTENT_EXPORT extern const char kEnableZeroCopy[];
+-CONTENT_EXPORT extern const char kExplicitlyAllowedPorts[];
+ CONTENT_EXPORT extern const char kFieldTrialHandle[];
+ CONTENT_EXPORT extern const char kFileUrlPathAlias[];
+ CONTENT_EXPORT extern const char kForceDisplayList2dCanvas[];
+diff --git a/content/renderer/render_thread_impl.cc b/content/renderer/render_thread_impl.cc
+index 2e17bf6f1522d3f8557b5d4bac0fb76fec034418..44df5d5461c718d2a793171d3592691c7bba12c8 100644
+--- a/content/renderer/render_thread_impl.cc
++++ b/content/renderer/render_thread_impl.cc
+@@ -143,6 +143,7 @@
+ #include "net/base/url_util.h"
+ #include "ppapi/buildflags/buildflags.h"
+ #include "services/metrics/public/cpp/mojo_ukm_recorder.h"
++#include "services/network/public/cpp/network_switches.h"
+ #include "services/service_manager/public/cpp/connector.h"
+ #include "services/service_manager/public/cpp/interface_provider.h"
+ #include "services/ui/public/cpp/gpu/context_provider_command_buffer.h"
+@@ -1281,9 +1282,9 @@ void RenderThreadImpl::InitializeWebKit(
+   SkGraphics::SetImageGeneratorFromEncodedDataFactory(
+       blink::WebImageGenerator::CreateAsSkImageGenerator);
+ 
+-  if (command_line.HasSwitch(switches::kExplicitlyAllowedPorts)) {
+-    std::string allowed_ports =
+-        command_line.GetSwitchValueASCII(switches::kExplicitlyAllowedPorts);
++  if (command_line.HasSwitch(network::switches::kExplicitlyAllowedPorts)) {
++    std::string allowed_ports = command_line.GetSwitchValueASCII(
++        network::switches::kExplicitlyAllowedPorts);
+     net::SetExplicitlyAllowedPorts(allowed_ports);
+   }
+ }
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index 9e705c8b905c21db05b9e6461c31b0cea7d30980..dab1cfc7e2dd3ad65e9a554362f159970eb5cbd4 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -791,6 +791,7 @@ test("content_browsertests") {
+     "../browser/message_port_provider_browsertest.cc",
+     "../browser/mojo_sandbox_browsertest.cc",
+     "../browser/net/accept_header_browsertest.cc",
++    "../browser/net/net_command_line_flags_browsertest.cc",
+     "../browser/net_info_browsertest.cc",
+     "../browser/network_service_browsertest.cc",
+     "../browser/network_service_restart_browsertest.cc",
+diff --git a/services/network/network_service.cc b/services/network/network_service.cc
+index e4cf8022f4d017321fb2f684ec0ade3bbd122df3..d22a74c6a8d7cc2e3acc1f0adc15f4b3a6b47867 100644
+--- a/services/network/network_service.cc
++++ b/services/network/network_service.cc
+@@ -19,6 +19,7 @@
+ #include "mojo/public/cpp/bindings/strong_binding.h"
+ #include "net/base/logging_network_change_observer.h"
+ #include "net/base/network_change_notifier.h"
++#include "net/base/port_util.h"
+ #include "net/cert/ct_log_response_parser.h"
+ #include "net/cert/signed_tree_head.h"
+ #include "net/dns/host_resolver.h"
+@@ -121,6 +122,13 @@ NetworkService::NetworkService(
+ 
+   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+ 
++  // Set-up the global port overrides.
++  if (command_line->HasSwitch(switches::kExplicitlyAllowedPorts)) {
++    std::string allowed_ports =
++        command_line->GetSwitchValueASCII(switches::kExplicitlyAllowedPorts);
++    net::SetExplicitlyAllowedPorts(allowed_ports);
++  }
++
+   // Record this once per session, though the switch is appled on a
+   // per-NetworkContext basis.
+   UMA_HISTOGRAM_BOOLEAN(
+diff --git a/services/network/public/cpp/network_switches.cc b/services/network/public/cpp/network_switches.cc
+index 8b2d4ed3b39e35e1a078ad26a946cc752a830310..60859bc46e6420165a11e2c4bd03dcd81345b122 100644
+--- a/services/network/public/cpp/network_switches.cc
++++ b/services/network/public/cpp/network_switches.cc
+@@ -37,6 +37,10 @@ const char kLogNetLog[] = "log-net-log";
+ // Don't send HTTP-Referer headers.
+ const char kNoReferrers[] = "no-referrers";
+ 
++// Allows overriding the list of restricted ports by passing a comma-separated
++// list of port numbers.
++const char kExplicitlyAllowedPorts[] = "explicitly-allowed-ports";
++
+ }  // namespace switches
+ 
+ }  // namespace network
+diff --git a/services/network/public/cpp/network_switches.h b/services/network/public/cpp/network_switches.h
+index 83e78d0f3f705dc4082992ad8147bb5145308152..db64e5af747369823f91eb5d596ecb6f0cf94f96 100644
+--- a/services/network/public/cpp/network_switches.h
++++ b/services/network/public/cpp/network_switches.h
+@@ -18,6 +18,7 @@ COMPONENT_EXPORT(NETWORK_CPP)
+ extern const char kIgnoreCertificateErrorsSPKIList[];
+ COMPONENT_EXPORT(NETWORK_CPP) extern const char kLogNetLog[];
+ COMPONENT_EXPORT(NETWORK_CPP) extern const char kNoReferrers[];
++COMPONENT_EXPORT(NETWORK_CPP) extern const char kExplicitlyAllowedPorts[];
+ 
+ }  // namespace switches
+ 
