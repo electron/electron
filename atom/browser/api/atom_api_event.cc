@@ -10,7 +10,7 @@ namespace {
 
 v8::Local<v8::Object> CreateWithSender(v8::Isolate* isolate,
                                        v8::Local<v8::Object> sender) {
-  return mate::internal::CreateJSEvent(isolate, sender, nullptr, nullptr);
+  return mate::internal::CreateJSEvent(isolate, sender, nullptr, base::nullopt);
 }
 
 void Initialize(v8::Local<v8::Object> exports,

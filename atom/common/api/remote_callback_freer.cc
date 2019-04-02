@@ -4,11 +4,12 @@
 
 #include "atom/common/api/remote_callback_freer.h"
 
-#include "atom/common/api/api_messages.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/atom/common/api/api.mojom.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 namespace atom {
 
@@ -41,8 +42,11 @@ void RemoteCallbackFreer::RunDestructor() {
   args.AppendInteger(object_id_);
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(), true,
-                                              false, channel, args, sender_id));
+    mojom::ElectronRendererAssociatedPtr electron_ptr;
+    frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
+        mojo::MakeRequest(&electron_ptr));
+    electron_ptr->Message(true /* internal */, false /* send_to_all */, channel,
+                          args.Clone(), sender_id);
   }
 
   Observe(nullptr);

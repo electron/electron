@@ -39,9 +39,7 @@ class AtomRendererClient : public RendererClientBase {
 
  private:
   // content::ContentRendererClient:
-  void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
-  void RenderViewCreated(content::RenderView*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   bool ShouldFork(blink::WebLocalFrame* frame,

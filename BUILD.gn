@@ -361,8 +361,10 @@ source_set("manifests") {
   include_dirs = [ "//electron" ]
 
   deps = [
+    "//electron/atom/common/api:mojo",
     "//printing/buildflags",
     "//services/proxy_resolver/public/cpp:manifest",
+    "//services/service_manager/public/cpp",
   ]
 
   if (enable_basic_printing) {
@@ -384,6 +386,7 @@ static_library("electron_lib") {
     ":atom_js2c",
     ":manifests",
     ":resources",
+    "atom/common/api:mojo",
     "buildflags",
     "chromium_src:chrome",
     "native_mate",
