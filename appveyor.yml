@@ -58,7 +58,7 @@ build_script:
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
-  - gn check out/Default //electron/manifests
+  - gn check out/Default //electron:manifests
   - gn check out/Default //electron/atom/common/api:mojo
   - ninja -C out/Default electron:electron_app
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
