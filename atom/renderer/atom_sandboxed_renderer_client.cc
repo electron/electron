@@ -226,6 +226,10 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   node::per_process::native_module_loader.CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/preload_bundle",
       &preload_bundle_params, &preload_bundle_args, nullptr);
+
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  InvokeHiddenCallback(context, kLifecycleKey, "onLoaded");
 }
 
 void AtomSandboxedRendererClient::SetupMainWorldOverrides(
