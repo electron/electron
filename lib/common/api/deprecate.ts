@@ -65,8 +65,8 @@ const deprecate: ElectronInternal.DeprecationUtil = {
       }
     }
 
-    module[getter.substr(1)] = withWarnOnce(module, getter, `${getter} function`, `${prop} property`)
-    module[setter.substr(1)] = withWarnOnce(module, setter, `${setter} function`, `${prop} property`)
+    module[getter.substr(1)] = withWarnOnce(module, getter, `${getter.substr(1)} function`, `${prop} property`)
+    module[setter.substr(1)] = withWarnOnce(module, setter, `${setter.substr(1)} function`, `${prop} property`)
   },
 
   // remove a property with no replacement
