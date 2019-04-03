@@ -25,17 +25,6 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
 
-IPC_MESSAGE_ROUTED3(AtomFrameHostMsg_Message,
-                    bool /* internal */,
-                    std::string /* channel */,
-                    base::ListValue /* arguments */)
-
-IPC_SYNC_MESSAGE_ROUTED3_1(AtomFrameHostMsg_Message_Sync,
-                           bool /* internal */,
-                           std::string /* channel */,
-                           base::ListValue /* arguments */,
-                           base::ListValue /* result */)
-
 IPC_MESSAGE_ROUTED5(AtomFrameHostMsg_Message_To,
                     bool /* internal */,
                     bool /* send_to_all */,
@@ -46,13 +35,6 @@ IPC_MESSAGE_ROUTED5(AtomFrameHostMsg_Message_To,
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_Message_Host,
                     std::string /* channel */,
                     base::ListValue /* arguments */)
-
-IPC_MESSAGE_ROUTED5(AtomFrameMsg_Message,
-                    bool /* internal */,
-                    bool /* send_to_all */,
-                    std::string /* channel */,
-                    base::ListValue /* arguments */,
-                    int32_t /* sender_id */)
 
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 
@@ -85,7 +67,3 @@ IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
                     GURL /* url */,
                     content::Referrer /* referrer */)
-
-IPC_MESSAGE_ROUTED2(AtomFrameMsg_TakeHeapSnapshot,
-                    IPC::PlatformFileForTransit /* file_handle */,
-                    std::string /* channel */)

@@ -74,7 +74,12 @@ app.whenReady().then(() => {
   })
 
   walker.on('end', () => {
-    const cb = () => { process.exit(runner.failures) }
+    const cb = () => {
+      // Ensure the callback is called after runner is defined
+      process.nextTick(() => {
+        process.exit(runner.failures)
+      })
+    }
     const runner = (isCI) ? mocha.run(cb) : mocha.forbidOnly().run(cb) 
   })
 })

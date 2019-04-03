@@ -104,6 +104,10 @@
       "node script/lint.js --js --fix --only --",
       "git add"
     ],
+    "*.{js,ts,d.ts}": [
+      "node script/gen-filenames.js",
+      "git add"
+    ],
     "*.{cc,mm,c,h}": [
       "python script/run-clang-format.py -r -c --fix",
       "git add"
