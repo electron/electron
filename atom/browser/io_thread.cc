@@ -16,6 +16,7 @@
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/url_request/url_request_context.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/url_request_context_builder_mojo.h"
 
 using content::BrowserThread;
@@ -35,31 +36,35 @@ IOThread::~IOThread() {
 }
 
 void IOThread::Init() {
-  std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
-      std::make_unique<network::URLRequestContextBuilderMojo>();
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
+    std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
+        std::make_unique<network::URLRequestContextBuilderMojo>();
 
-  auto cert_verifier = std::make_unique<net::CachingCertVerifier>(
-      std::make_unique<net::MultiThreadedCertVerifier>(
-          net::CertVerifyProc::CreateDefault()));
-  builder->SetCertVerifier(std::move(cert_verifier));
+    auto cert_verifier = std::make_unique<net::CachingCertVerifier>(
+        std::make_unique<net::MultiThreadedCertVerifier>(
+            net::CertVerifyProc::CreateDefault()));
+    builder->SetCertVerifier(std::move(cert_verifier));
 
-  // Create the network service, so that shared host resolver
-  // gets created which is required to set the auth preferences below.
-  network::NetworkService* network_service = content::GetNetworkServiceImpl();
-  network_service->SetUpHttpAuth(std::move(http_auth_static_params_));
-  network_service->ConfigureHttpAuthPrefs(std::move(http_auth_dynamic_params_));
+    // Create the network service, so that shared host resolver
+    // gets created which is required to set the auth preferences below.
+    network::NetworkService* network_service = content::GetNetworkServiceImpl();
+    network_service->SetUpHttpAuth(std::move(http_auth_static_params_));
+    network_service->ConfigureHttpAuthPrefs(
+        std::move(http_auth_dynamic_params_));
 
-  system_network_context_ =
-      network_service
-          ->CreateNetworkContextWithBuilder(std::move(network_context_request_),
-                                            std::move(network_context_params_),
-                                            std::move(builder),
-                                            &system_request_context_)
-          .release();
+    system_network_context_ =
+        network_service
+            ->CreateNetworkContextWithBuilder(
+                std::move(network_context_request_),
+                std::move(network_context_params_), std::move(builder),
+                &system_request_context_)
+            .release();
+  }
 }
 
 void IOThread::CleanUp() {
-  system_request_context_->proxy_resolution_service()->OnShutdown();
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
+    system_request_context_->proxy_resolution_service()->OnShutdown();
 
   if (net_log_)
     net_log_->ShutDownBeforeTaskScheduler();

@@ -576,7 +576,12 @@ void NativeWindowMac::Hide() {
 }
 
 bool NativeWindowMac::IsVisible() {
-  return [window_ isVisible];
+  bool occluded = [window_ occlusionState] == NSWindowOcclusionStateVisible;
+
+  // For a window to be visible, it must be visible to the user in the
+  // foreground of the app, which means that it should not be minimized or
+  // occluded
+  return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
 bool NativeWindowMac::IsEnabled() {
@@ -880,6 +885,16 @@ void NativeWindowMac::FlashFrame(bool flash) {
 }
 
 void NativeWindowMac::SetSkipTaskbar(bool skip) {}
+
+bool NativeWindowMac::IsExcludedFromShownWindowsMenu() {
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  return [window isExcludedFromWindowsMenu];
+}
+
+void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  [window setExcludedFromWindowsMenu:excluded];
+}
 
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();

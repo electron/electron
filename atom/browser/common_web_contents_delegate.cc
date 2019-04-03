@@ -126,14 +126,16 @@ std::unique_ptr<base::DictionaryValue> CreateFileSystemValue(
 }
 
 void WriteToFile(const base::FilePath& path, const std::string& content) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::WILL_BLOCK);
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
   base::WriteFile(path, content.data(), content.size());
 }
 
 void AppendToFile(const base::FilePath& path, const std::string& content) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::WILL_BLOCK);
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
   base::AppendToFile(path, content.data(), content.size());

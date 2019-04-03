@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events'
+import * as fs from 'fs'
 import * as path from 'path'
 
 const Module = require('module')
@@ -49,7 +50,6 @@ const contextIsolation = hasSwitch('context-isolation')
 const nodeIntegration = hasSwitch('node-integration')
 const webviewTag = hasSwitch('webview-tag')
 const isHiddenPage = hasSwitch('hidden-page')
-const isBackgroundPage = hasSwitch('background-page')
 const usesNativeWindowOpen = hasSwitch('native-window-open')
 
 const preloadScript = parseOption('preload', null)
@@ -74,7 +74,7 @@ switch (window.location.protocol) {
   }
   case 'chrome-extension:': {
     // Inject the chrome.* APIs that chrome extensions require
-    require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, isBackgroundPage, window)
+    require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window)
     break
   }
   case 'chrome:':
@@ -82,7 +82,7 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup')
-    windowSetup(ipcRendererInternal, guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
     require('@electron/internal/renderer/content-scripts-injector')(process.getRenderProcessPreferences)
@@ -161,10 +161,22 @@ if (nodeIntegration) {
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
+const { isParentDir } = require('@electron/internal/common/path-utils')
+
+let absoluteAppPath: string
+const getAppPath = function () {
+  if (absoluteAppPath === undefined) {
+    absoluteAppPath = fs.realpathSync(appPath!)
+  }
+  return absoluteAppPath
+}
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
+    if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
+      throw new Error('Preload scripts outside of app path are not allowed')
+    }
     require(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)

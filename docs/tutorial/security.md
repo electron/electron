@@ -48,21 +48,21 @@ the result of the overall security of the framework foundation
 your code. As such, it is your responsibility to follow a few important best
 practices:
 
-* **Keep your application up-to-date with the latest Electron framework release.** 
-When releasing your product, you’re also shipping a bundle composed of Electron, 
-Chromium shared library and Node.js. Vulnerabilities affecting these components 
-may impact the security of your application. By updating Electron to the latest 
-version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*) 
+* **Keep your application up-to-date with the latest Electron framework release.**
+When releasing your product, you’re also shipping a bundle composed of Electron,
+Chromium shared library and Node.js. Vulnerabilities affecting these components
+may impact the security of your application. By updating Electron to the latest
+version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*)
 are already patched and cannot be exploited in your application.
 
-* **Evaluate your dependencies.** While NPM provides half a million reusable packages, 
-it is your responsibility to choose trusted 3rd-party libraries. If you use outdated 
-libraries affected by known vulnerabilities or rely on poorly maintained code, 
+* **Evaluate your dependencies.** While NPM provides half a million reusable packages,
+it is your responsibility to choose trusted 3rd-party libraries. If you use outdated
+libraries affected by known vulnerabilities or rely on poorly maintained code,
 your application security could be in jeopardy.
 
-* **Adopt secure coding practices.** The first line of defense for your application 
-is your own code. Common web vulnerabilities, such as Cross-Site Scripting (XSS), 
-have a higher security impact on Electron applications hence it is highly recommended 
+* **Adopt secure coding practices.** The first line of defense for your application
+is your own code. Common web vulnerabilities, such as Cross-Site Scripting (XSS),
+have a higher security impact on Electron applications hence it is highly recommended
 to adopt secure software development best practices and perform security testing.
 
 
@@ -193,7 +193,7 @@ const mainWindow = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false,
     nodeIntegrationInWorker: false,
-    preload: './preload.js'
+    preload: path.join(app.getAppPath(), 'preload.js')
   }
 })
 
@@ -260,7 +260,7 @@ very small investment.
 const mainWindow = new BrowserWindow({
   webPreferences: {
     contextIsolation: true,
-    preload: 'preload.js'
+    preload: path.join(app.getAppPath(), 'preload.js')
   }
 })
 ```

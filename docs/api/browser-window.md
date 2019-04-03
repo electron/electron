@@ -266,6 +266,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
+      **Note:** For security reasons, preload scripts can only be loaded from
+      a subpath of the [app path](app.md#appgetapppath).
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
@@ -1648,3 +1650,24 @@ removed in future Electron releases.
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
+
+### Properties
+
+#### `win.excludedFromShownWindowsMenu` _macOS_
+
+A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
+
+```js
+const win = new BrowserWindow({ height: 600, width: 600 })
+
+const template = [
+  {
+    role: 'windowmenu'
+  }
+]
+
+win.excludedFromShownWindowsMenu = true
+
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```

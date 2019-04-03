@@ -8,7 +8,7 @@ Electron's [autoUpdater](../api/auto-updater.md) module.
 ## Using `update.electronjs.org`
 
 GitHub's Electron team maintains [update.electronjs.org], a free and open-source
-webservice that Electron apps can use to self-update. The service is designed 
+webservice that Electron apps can use to self-update. The service is designed
 for Electron apps that meet the following criteria:
 
 - App runs on macOS or Windows
@@ -31,13 +31,13 @@ Invoke the updater from your app's main process file:
 require('update-electron-app')()
 ```
 
-By default, this module will check for updates at app startup, then every ten 
-minutes. When an update is found, it will automatically be downloaded in the background. When the download completes, a dialog is displayed allowing the user 
+By default, this module will check for updates at app startup, then every ten
+minutes. When an update is found, it will automatically be downloaded in the background. When the download completes, a dialog is displayed allowing the user
 to restart the app.
 
-If you need to customize your configuration, you can 
+If you need to customize your configuration, you can
 [pass options to `update-electron-app`][update-electron-app]
-or 
+or
 [use the update service directly][update.electronjs.org].
 
 ## Using `electron-builder`
@@ -51,7 +51,7 @@ update mechanism, meaning that the rest of this documentation will not apply to
 ## Deploying an Update Server
 
 If you're developing a private Electron application, or if you're not
-publishing releases to GitHub Releases, it may be necessary to run your own 
+publishing releases to GitHub Releases, it may be necessary to run your own
 update server.
 
 Depending on your needs, you can choose from one of these:
