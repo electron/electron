@@ -479,6 +479,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // RenderFrameHost is destroyed, all related bindings will be removed.
   void BindElectronBrowser(mojom::ElectronBrowserRequest request,
                            content::RenderFrameHost* render_frame_host);
+  void OnElectronBrowserConnectionError();
 
   uint32_t GetNextRequestId() { return ++request_id_; }
 
@@ -495,22 +496,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
                    const std::string& channel,
                    base::Value arguments,
                    MessageSyncCallback callback) override;
+  void MessageTo(bool internal,
+                 bool send_to_all,
+                 int32_t web_contents_id,
+                 const std::string& channel,
+                 base::Value arguments) override;
+  void MessageHost(const std::string& channel, base::Value arguments) override;
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
-
-  // Called when received a message from renderer to be forwarded.
-  void OnRendererMessageTo(content::RenderFrameHost* frame_host,
-                           bool internal,
-                           bool send_to_all,
-                           int32_t web_contents_id,
-                           const std::string& channel,
-                           const base::ListValue& args);
-
-  // Called when received a message from renderer to host.
-  void OnRendererMessageHost(content::RenderFrameHost* frame_host,
-                             const std::string& channel,
-                             const base::ListValue& args);
 
   // Called when received a synchronous message from renderer to
   // set temporary zoom level.

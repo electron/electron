@@ -25,17 +25,6 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
 
-IPC_MESSAGE_ROUTED5(AtomFrameHostMsg_Message_To,
-                    bool /* internal */,
-                    bool /* send_to_all */,
-                    int32_t /* web_contents_id */,
-                    std::string /* channel */,
-                    base::ListValue /* arguments */)
-
-IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_Message_Host,
-                    std::string /* channel */,
-                    base::ListValue /* arguments */)
-
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 
 IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
@@ -62,8 +51,3 @@ IPC_SYNC_MESSAGE_ROUTED1_1(AtomFrameHostMsg_SetTemporaryZoomLevel,
 
 // Sent by renderer to get the zoom level.
 IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
-
-// Brings up SaveAs... dialog to save specified URL.
-IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
-                    GURL /* url */,
-                    content::Referrer /* referrer */)
