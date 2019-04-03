@@ -414,6 +414,7 @@ static_library("electron_lib") {
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:init_webrtc",
     "//third_party/widevine/cdm:headers",
+    "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
     "//ui/native_theme",
