@@ -525,9 +525,8 @@ describe('session module', () => {
 
     it('can generate a default filename', function (done) {
       if (process.env.APPVEYOR === 'True') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
+        this.test.parent.pending = true
+        this.skip()
       }
 
       downloadServer.listen(0, '127.0.0.1', () => {

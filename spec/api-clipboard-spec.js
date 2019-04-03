@@ -106,9 +106,8 @@ describe('clipboard module', () => {
   describe('clipboard.writeBuffer(format, buffer)', () => {
     it('writes a Buffer for the specified format', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const buffer = Buffer.from('writeBuffer', 'utf8')

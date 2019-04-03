@@ -2761,15 +2761,9 @@ describe('BrowserWindow module', () => {
   })
 
   describe('window states (excluding Linux)', () => {
-    // FIXME(alexeykuzmin): Skip the tests instead of using the `return` here.
-    // Why it cannot be done now:
-    // - `.skip()` called in the 'before' hook doesn't affect
-    //     nested `describe`s.
-    // - `.skip()` called in the 'beforeEach' hook prevents 'afterEach'
-    //     hook from being called.
-    // Not implemented on Linux.
     if (process.platform === 'linux') {
-      return
+      this.test.parent.pending = true
+      this.skip()
     }
 
     describe('movable state', () => {

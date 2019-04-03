@@ -57,8 +57,10 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump when renderer crashes', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.APPVEYOR === 'True') {
+          this.test.parent.pending = true
+          this.skip()
+        }
 
         this.timeout(180000)
 
@@ -72,8 +74,10 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump when node processes crash', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.APPVEYOR === 'True') {
+          this.test.parent.pending = true
+          this.skip()
+        }
 
         this.timeout(180000)
 
@@ -167,8 +171,10 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump with updated extra parameters', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.APPVEYOR === 'True') {
+          this.test.parent.pending = true
+          this.skip()
+        }
 
         this.timeout(180000)
 
@@ -290,11 +296,11 @@ describe('crashReporter module', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.getUploadToServer())
     })
+
     it('returns true when uploadToServer is set to true', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       crashReporter.start({
@@ -304,11 +310,11 @@ describe('crashReporter module', () => {
       })
       assert.strictEqual(crashReporter.getUploadToServer(), true)
     })
+
     it('returns false when uploadToServer is set to false', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       crashReporter.start({
@@ -325,11 +331,11 @@ describe('crashReporter module', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.setUploadToServer('arg'))
     })
+
     it('sets uploadToServer false when called with false', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       crashReporter.start({
@@ -340,11 +346,11 @@ describe('crashReporter module', () => {
       crashReporter.setUploadToServer(false)
       assert.strictEqual(crashReporter.getUploadToServer(), false)
     })
+
     it('sets uploadToServer true when called with true', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       crashReporter.start({
@@ -367,11 +373,11 @@ describe('crashReporter module', () => {
       const parameters = crashReporter.getParameters()
       assert(typeof parameters === 'object')
     })
+
     it('adds a parameter to current parameters', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       crashReporter.start({
@@ -382,11 +388,11 @@ describe('crashReporter module', () => {
       crashReporter.addExtraParameter('hello', 'world')
       assert('hello' in crashReporter.getParameters())
     })
+
     it('removes a parameter from current parameters', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       crashReporter.start({

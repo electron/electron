@@ -336,9 +336,8 @@ describe('nativeImage module', () => {
 
     it('Gets an NSImage pointer on macOS', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`
@@ -354,9 +353,8 @@ describe('nativeImage module', () => {
 
     it('loads images from .ico files on Windows', function () {
       if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico')
@@ -374,9 +372,8 @@ describe('nativeImage module', () => {
 
     it('returns empty on non-darwin platforms', function () {
       if (process.platform === 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
@@ -385,9 +382,8 @@ describe('nativeImage module', () => {
 
     it('returns a valid image on darwin', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
@@ -396,9 +392,8 @@ describe('nativeImage module', () => {
 
     it('returns allows an HSL shift for a valid image on darwin', function () {
       if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])

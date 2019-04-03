@@ -850,9 +850,8 @@ describe('chromium feature', () => {
 
     it('can be get as context in canvas', () => {
       if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const webgl = document.createElement('canvas').getContext('webgl')

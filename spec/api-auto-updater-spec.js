@@ -3,21 +3,15 @@ const { ipcRenderer } = require('electron')
 const { expect } = require('chai')
 
 describe('autoUpdater module', function () {
-  // XXX(alexeykuzmin): Calling `.skip()` in a 'before' hook
-  // doesn't affect nested 'describe's
   beforeEach(function () {
-    // Skip autoUpdater tests in MAS build.
-    if (process.mas) {
-      this.skip()
-    }
+    if (process.mas) this.skip()
   })
 
   describe('checkForUpdates', function () {
     it('emits an error on Windows when called the feed URL is not set', function (done) {
       if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
+        this.test.parent.pending = true
+        this.skip()
       }
 
       ipcRenderer.once('auto-updater-error', (event, message) => {
@@ -36,9 +30,8 @@ describe('autoUpdater module', function () {
 
     it('correctly fetches the previously set FeedURL', function (done) {
       if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
+        this.test.parent.pending = true
+        this.skip()
       }
 
       const updateURL = 'https://fake-update.electron.io'
@@ -55,9 +48,7 @@ describe('autoUpdater module', function () {
       }
 
       before(function () {
-        if (process.platform !== 'win32' && process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform === 'linux') this.skip()
       })
 
       it('sets url successfully using old (url, headers) syntax', () => {
@@ -89,9 +80,7 @@ describe('autoUpdater module', function () {
       const isServerTypeError = (err) => err.message.includes('Expected serverType to be \'default\' or \'json\'')
 
       before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('emits an error when the application is unsigned', done => {
@@ -125,9 +114,8 @@ describe('autoUpdater module', function () {
   describe('quitAndInstall', () => {
     it('emits an error on Windows when no update is available', function (done) {
       if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
+        this.test.parent.pending = true
+        this.skip()
       }
 
       ipcRenderer.once('auto-updater-error', (event, message) => {
@@ -141,9 +129,8 @@ describe('autoUpdater module', function () {
   describe('error event', () => {
     it('serializes correctly over the remote module', function (done) {
       if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
+        this.test.parent.pending = true
+        this.skip()
       }
 
       autoUpdater.once('error', error => {
