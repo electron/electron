@@ -184,4 +184,32 @@ static_library("chrome") {
       ]
     }
   }
+
+  if (enable_picture_in_picture) {
+    sources += [
+      "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
+      "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
+      "//chrome/browser/ui/views/overlay/back_to_tab_image_button.cc",
+      "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
+      "//chrome/browser/ui/views/overlay/close_image_button.cc",
+      "//chrome/browser/ui/views/overlay/close_image_button.h",
+      "//chrome/browser/ui/views/overlay/mute_image_button.cc",
+      "//chrome/browser/ui/views/overlay/mute_image_button.h",
+      "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
+      "//chrome/browser/ui/views/overlay/overlay_window_views.h",
+      "//chrome/browser/ui/views/overlay/playback_image_button.cc",
+      "//chrome/browser/ui/views/overlay/playback_image_button.h",
+      "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
+      "//chrome/browser/ui/views/overlay/resize_handle_button.h",
+      "//chrome/browser/ui/views/overlay/skip_ad_label_button.cc",
+      "//chrome/browser/ui/views/overlay/skip_ad_label_button.h",
+      "//chrome/browser/ui/views/overlay/track_image_button.cc",
+      "//chrome/browser/ui/views/overlay/track_image_button.h",
+    ]
+
+    deps += [
+      "//chrome/app/vector_icons",
+      "//components/vector_icons:vector_icons",
+    ]
+  }
 }

@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Heilig Benedek <benecene@gmail.com>
+Date: Wed, 3 Apr 2019 16:11:00 +0200
+Subject: feat: enable picture in picture mode for video players
+
+
+diff --git a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
+index fae1519ec6c1d39b70716265385b1736d9905df8..fff8b3bca0403739d014cb242b271279574f97bf 100644
+--- a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
++++ b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
+ 
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/color_palette.h"
+diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
+index 65e0eb972044cab6d687ef8c0ba21e4a6135f409..31bd5b086b47025432fcfeee36b44502573b8bf8 100644
+--- a/chrome/browser/ui/views/overlay/close_image_button.cc
++++ b/chrome/browser/ui/views/overlay/close_image_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/close_image_button.h"
+ 
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/color_palette.h"
+diff --git a/chrome/browser/ui/views/overlay/mute_image_button.cc b/chrome/browser/ui/views/overlay/mute_image_button.cc
+index d60a6465b48e0deb220b4f068ac2ca7118b09a80..56737a5475fdd7dff2b83ead7df70490f9f72e70 100644
+--- a/chrome/browser/ui/views/overlay/mute_image_button.cc
++++ b/chrome/browser/ui/views/overlay/mute_image_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/mute_image_button.h"
+ 
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/l10n/l10n_util.h"
+diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
+index f10d5abf435270db70dae43b16ac906a9d8329ff..0a87e2330014dc8d493c8b5687a3fb965cb8a96e 100644
+--- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
++++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
+@@ -20,7 +20,7 @@
+ #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
+ #include "chrome/browser/ui/views/overlay/skip_ad_label_button.h"
+ #include "chrome/browser/ui/views/overlay/track_image_button.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "content/public/browser/picture_in_picture_window_controller.h"
+ #include "content/public/browser/web_contents.h"
+diff --git a/chrome/browser/ui/views/overlay/playback_image_button.cc b/chrome/browser/ui/views/overlay/playback_image_button.cc
+index dbbde00f27afbe483755c40adfee795d74a58f33..4bb0242deae3a701b928b60e9bc7fdd7d1c75b8f 100644
+--- a/chrome/browser/ui/views/overlay/playback_image_button.cc
++++ b/chrome/browser/ui/views/overlay/playback_image_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/playback_image_button.h"
+ 
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/l10n/l10n_util.h"
+diff --git a/chrome/browser/ui/views/overlay/resize_handle_button.cc b/chrome/browser/ui/views/overlay/resize_handle_button.cc
+index 29fd1e871ccc385a815c390469d53d861c600c25..222e1d248f51730dca52303985e3b9dfed2fe6ad 100644
+--- a/chrome/browser/ui/views/overlay/resize_handle_button.cc
++++ b/chrome/browser/ui/views/overlay/resize_handle_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
+ 
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/hit_test.h"
+ #include "ui/base/l10n/l10n_util.h"
+diff --git a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
+index bd1d9952d9fe055ba8ae5edfb0777a783d5fab48..50a0ee5e917a23c6901e4f10da8b62057567a451 100644
+--- a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
++++ b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
+@@ -4,7 +4,7 @@
+ 
+ #include "chrome/browser/ui/views/overlay/skip_ad_label_button.h"
+ 
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/color_palette.h"
+ #include "ui/views/background.h"
+diff --git a/chrome/browser/ui/views/overlay/track_image_button.cc b/chrome/browser/ui/views/overlay/track_image_button.cc
+index 3d54f48df70efc7e2f935b45c3088b098f2441b4..1c858fcc8f45698a89171c3dfcb3cdfdfdf9ce14 100644
+--- a/chrome/browser/ui/views/overlay/track_image_button.cc
++++ b/chrome/browser/ui/views/overlay/track_image_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/track_image_button.h"
+ 
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/l10n/l10n_util.h"
