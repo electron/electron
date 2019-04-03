@@ -5,7 +5,7 @@
 #include "atom/browser/osr/osr_web_contents_view.h"
 
 #include "atom/common/api/api_messages.h"
-#include "content/browser/web_contents/web_contents_impl.h"
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_view_host.h"
 #include "third_party/blink/public/platform/web_screen_info.h"
 #include "ui/display/screen.h"
@@ -140,7 +140,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
                     ->GetRenderWidgetHostView()
               : web_contents_impl->GetRenderWidgetHostView());
 
-  return new OffScreenRenderWidgetHostView(transparent_, true,
+  return new OffScreenRenderWidgetHostView(transparent_, painting_,
                                            view->GetFrameRate(), callback_,
                                            render_widget_host, view, GetSize());
 }
@@ -189,10 +189,9 @@ void OffScreenWebContentsView::UpdateDragCursor(
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   auto* view = GetView();
+  painting_ = painting;
   if (view != nullptr) {
     view->SetPainting(painting);
-  } else {
-    painting_ = painting;
   }
 }
 
@@ -207,10 +206,9 @@ bool OffScreenWebContentsView::IsPainting() const {
 
 void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
   auto* view = GetView();
+  frame_rate_ = frame_rate;
   if (view != nullptr) {
     view->SetFrameRate(frame_rate);
-  } else {
-    frame_rate_ = frame_rate;
   }
 }
 
