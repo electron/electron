@@ -565,9 +565,12 @@ the active app. On Windows, focuses on the application's first window.
 
 Hides all application windows without minimizing them.
 
-### `app.show()` _macOS_
+### `app.show(options)` _macOS_
 
-Shows application windows after they were hidden. Does not automatically focus
+* `options` Object
+  * `shouldActivate` String - whether or not app should activate windows after restoring them.
+
+Shows application windows after they were hidden. If `noActivate` is `true`, the app does not automatically focus
 them.
 
 ### `app.getAppPath()`
