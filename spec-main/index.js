@@ -74,20 +74,12 @@ app.whenReady().then(() => {
   })
 
   walker.on('end', () => {
-    const runner = mocha.run(() => {
+    const cb = () => {
       // Ensure the callback is called after runner is defined
       process.nextTick(() => {
-        if (isCi && runner.hasOnly) {
-          try {
-            throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
-          } catch (error) {
-            console.error(error.stack || error)
-          }
-          process.exit(1)
-        }
-
         process.exit(runner.failures)
       })
-    })
+    }
+    const runner = (isCI) ? mocha.run(cb) : mocha.forbidOnly().run(cb) 
   })
 })
