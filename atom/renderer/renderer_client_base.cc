@@ -13,7 +13,6 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_autofill_agent.h"
 #include "atom/renderer/atom_render_frame_observer.h"
-#include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/electron_api_service_impl.h"
 #include "atom/renderer/preferences_manager.h"
@@ -142,6 +141,15 @@ void RendererClientBase::AddRenderBindings(
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
+#if BUILDFLAG(USE_EXTERNAL_POPUP_MENU)
+  // On macOS, popup menus are rendered by the main process by default.
+  // This causes problems in OSR, since when the popup is rendered separately,
+  // it won't be captured in the rendered image.
+  if (command_line->HasSwitch(options::kOffscreen)) {
+    blink::WebView::SetUseExternalPopupMenus(false);
+  }
+#endif
+
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
@@ -250,10 +258,6 @@ void RendererClientBase::RenderFrameCreated(
       }
     }
   }
-}
-
-void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
-  new AtomRenderViewObserver(render_view);
 }
 
 void RendererClientBase::DidClearWindowObject(

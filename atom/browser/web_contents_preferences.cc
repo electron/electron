@@ -309,6 +309,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
   }
 
+  // --offscreen
+  if (IsEnabled(options::kOffscreen)) {
+    command_line->AppendSwitch(options::kOffscreen);
+  }
+
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
