@@ -19,6 +19,7 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
+#include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
