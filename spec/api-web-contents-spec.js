@@ -1285,7 +1285,7 @@ describe('webContents module', () => {
       })
       w.webContents.once('did-finish-load', async () => {
         const result = await w.webContents.executeJavaScript(
-            `runTest(${features.isPictureInPictureEnabled()})`, true)
+          `runTest(${features.isPictureInPictureEnabled()})`, true)
         assert.strictEqual(result, true)
         done()
       })
