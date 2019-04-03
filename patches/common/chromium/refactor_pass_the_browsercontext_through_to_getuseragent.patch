@@ -9,6 +9,19 @@ BrowserContext.
 
 This allows service worker user agents to be configured at a session level.
 
+diff --git a/content/browser/accessibility/browser_accessibility_com_win.cc b/content/browser/accessibility/browser_accessibility_com_win.cc
+index db93f53dc75b5cc926f5633ba6ba6173cbce06a0..4d209b816b9285bd95c9ce72f550dc6126ae18fb 100644
+--- a/content/browser/accessibility/browser_accessibility_com_win.cc
++++ b/content/browser/accessibility/browser_accessibility_com_win.cc
+@@ -141,7 +141,7 @@ IFACEMETHODIMP BrowserAccessibilityComWin::get_toolkitVersion(
+   if (!toolkit_version)
+     return E_INVALIDARG;
+ 
+-  std::string user_agent = GetContentClient()->browser()->GetUserAgent();
++  std::string user_agent = GetContentClient()->browser()->GetUserAgent(nullptr);
+   *toolkit_version = SysAllocString(base::UTF8ToUTF16(user_agent).c_str());
+   DCHECK(*toolkit_version);
+   return *toolkit_version ? S_OK : E_FAIL;
 diff --git a/content/browser/devtools/browser_devtools_agent_host.cc b/content/browser/devtools/browser_devtools_agent_host.cc
 index 2862801939324918f92ddd51aaf104f9814ef4c8..41aca98816ff4c2270f3cee9113dcc1891e6a578 100644
 --- a/content/browser/devtools/browser_devtools_agent_host.cc
@@ -108,6 +121,19 @@ index 5bca54fa888b7cf3b12f6882003ecb334e250f63..3ad48c54a64b6d8480ab824234a7b544
            : user_agent_override);
  
    // TODO(mkwst): Extract this logic out somewhere that can be shared between
+diff --git a/content/browser/media/android/media_player_renderer.cc b/content/browser/media/android/media_player_renderer.cc
+index 250cfc1cb2691dfe2fd71c34125f548346415560..7e0f321460e903a6cc97e826581629393a3aa57d 100644
+--- a/content/browser/media/android/media_player_renderer.cc
++++ b/content/browser/media/android/media_player_renderer.cc
+@@ -110,7 +110,7 @@ void MediaPlayerRenderer::CreateMediaPlayer(
+     return;
+   }
+ 
+-  const std::string user_agent = GetContentClient()->browser()->GetUserAgent();
++  const std::string user_agent = GetContentClient()->browser()->GetUserAgent(RenderProcessHost::FromID(render_process_id_)->GetBrowserContext());
+ 
+   media_player_.reset(new media::MediaPlayerBridge(
+       url_params.media_url, url_params.site_for_cookies, user_agent,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
 index 7805ce82b11be1eaed59aae1fe76f6fd13e901a5..808e612f31d44816f96ff22b4cd8417c55542cdc 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
