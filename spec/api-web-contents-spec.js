@@ -1273,4 +1273,23 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
   })
+
+  describe('PictureInPicture video', () => {
+    it('works as expected', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      w.webContents.once('did-finish-load', async () => {
+        const result = await w.webContents.executeJavaScript(
+            `runTest(${features.isPictureInPictureEnabled()})`, true)
+        assert.strictEqual(result, true)
+        done()
+      })
+      w.loadFile(path.join(fixtures, 'api', 'picture-in-picture.html'))
+    })
+  })
 })
