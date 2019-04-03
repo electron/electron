@@ -75,16 +75,19 @@ app.whenReady().then(() => {
 
   walker.on('end', () => {
     const runner = mocha.run(() => {
-      if (isCi && runner.hasOnly) {
-        try {
-          throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
-        } catch (error) {
-          console.error(error.stack || error)
+      // Ensure the callback is called after runner is defined
+      process.nextTick(() => {
+        if (isCi && runner.hasOnly) {
+          try {
+            throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+          } catch (error) {
+            console.error(error.stack || error)
+          }
+          process.exit(1)
         }
-        process.exit(1)
-      }
 
-      process.exit(runner.failures)
+        process.exit(runner.failures)
+      })
     })
   })
 })
