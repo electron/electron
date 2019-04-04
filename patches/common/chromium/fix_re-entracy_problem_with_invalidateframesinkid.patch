@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Mon, 3 Dec 2018 18:17:17 +0000
+Subject: Fix re-entracy problem with InvalidateFrameSinkId().
+
+HostFrameSinkManager::InvalidateFrameSinkId() can make a synchronous IPC
+to ensure whatever is drawing the platform window is destroyed before
+the platform window gets destroyed. However, while waiting for the
+synchronous IPC response other synchronous IPCs continue to get
+processed. |frame_sink_data_map_| can get mutated in response to a
+different synchronous IPC and |data| may no longer point to a valid
+memory location when DestroyCompositorFrameSink() returns.
+
+Change the order so that all modifications to |data| happen before the
+synchronous IPC. Also add a comment to clarify that FrameSinkIds
+shouldn't be reused after they are invalidated. We don't do this today
+and it would cause more re-entrancy problems.
+
+Also switch |frame_sink_data_map_| to use std::unordered_map instead of
+base::flat_map. This map can get large (tens of elements per open tab)
+so std::unordered_map is probably a better choice.
+
+Bug: 907211
+Change-Id: Iea42d1eca290f5b61f215c66da9b9021f671c1e0
+Reviewed-on: https://chromium-review.googlesource.com/c/1352525
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Commit-Queue: Sadrul Chowdhury <sadrul@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#613160}
+
+diff --git a/components/viz/host/host_frame_sink_manager.cc b/components/viz/host/host_frame_sink_manager.cc
+index 53ccb9f26f8ce6bb472487d4650c0b1a51b9a4c6..bceb1bd9d96e11080928014e2c30674690e28a06 100644
+--- a/components/viz/host/host_frame_sink_manager.cc
++++ b/components/viz/host/host_frame_sink_manager.cc
+@@ -79,15 +79,9 @@ void HostFrameSinkManager::InvalidateFrameSinkId(
+   FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
+   DCHECK(data.IsFrameSinkRegistered());
+ 
+-  if (data.has_created_compositor_frame_sink && data.is_root) {
+-    // This synchronous call ensures that the GL context/surface that draw to
+-    // the platform window (eg. XWindow or HWND) get destroyed before the
+-    // platform window is destroyed.
+-    mojo::SyncCallRestrictions::ScopedAllowSyncCall allow_sync_call;
+-    frame_sink_manager_->DestroyCompositorFrameSink(frame_sink_id);
+-  }
++  const bool destroy_synchronously =
++      data.has_created_compositor_frame_sink && data.is_root;
+ 
+-  frame_sink_manager_->InvalidateFrameSinkId(frame_sink_id);
+   data.has_created_compositor_frame_sink = false;
+   data.client = nullptr;
+ 
+@@ -96,6 +90,21 @@ void HostFrameSinkManager::InvalidateFrameSinkId(
+     frame_sink_data_map_.erase(frame_sink_id);
+ 
+   display_hit_test_query_.erase(frame_sink_id);
++
++  if (destroy_synchronously) {
++    // This synchronous call ensures that the GL context/surface that draw to
++    // the platform window (eg. XWindow or HWND) get destroyed before the
++    // platform window is destroyed.
++    mojo::SyncCallRestrictions::ScopedAllowSyncCall allow_sync_call;
++    frame_sink_manager_->DestroyCompositorFrameSink(frame_sink_id);
++
++    // Other synchronous IPCs continue to get processed while
++    // DestroyCompositorFrameSink() is happening, so it's possible
++    // HostFrameSinkManager has been mutated. |data| might not be a valid
++    // reference at this point.
++  }
++
++  frame_sink_manager_->InvalidateFrameSinkId(frame_sink_id);
+ }
+ 
+ void HostFrameSinkManager::EnableSynchronizationReporting(
+diff --git a/components/viz/host/host_frame_sink_manager.h b/components/viz/host/host_frame_sink_manager.h
+index 1b6a6aca6d5cd58400bd0dd6784085f9dfd77ddb..68d0a251b0b60aac77fe04e1e910b51364357ae7 100644
+--- a/components/viz/host/host_frame_sink_manager.h
++++ b/components/viz/host/host_frame_sink_manager.h
+@@ -7,6 +7,7 @@
+ 
+ #include <memory>
+ #include <string>
++#include <unordered_map>
+ #include <vector>
+ 
+ #include "base/compiler_specific.h"
+@@ -72,15 +73,24 @@ class VIZ_HOST_EXPORT HostFrameSinkManager
+   // Sets a callback to be notified after Viz sent bad message to Viz host.
+   void SetBadMessageReceivedFromGpuCallback(base::RepeatingClosure callback);
+ 
+-  // Registers |frame_sink_id| will be used. This must be called before
+-  // CreateCompositorFrameSink(Support) is called.
++  // Registers |frame_sink_id| so that a client can submit CompositorFrames
++  // using it. This must be called before creating a CompositorFrameSink or
++  // registering FrameSinkId hierarchy.
++  //
++  // When the client is done submitting CompositorFrames to |frame_sink_id| then
++  // InvalidateFrameSink() should be called.
+   void RegisterFrameSinkId(const FrameSinkId& frame_sink_id,
+                            HostFrameSinkClient* client);
+ 
+-  // Invalidates |frame_sink_id| which cleans up any dangling temporary
+-  // references assigned to it. If there is a CompositorFrameSink for
+-  // |frame_sink_id| then it will be destroyed and the message pipe to the
+-  // client will be closed.
++  // Invalidates |frame_sink_id| when the client is done submitting
++  // CompositorFrames. If there is a CompositorFrameSink for |frame_sink_id|
++  // then it will be destroyed and the message pipe to the client will be
++  // closed.
++  //
++  // It's expected, but not enforced, that RegisterFrameSinkId() will never be
++  // called for |frame_sink_id| again. This is to avoid problems with re-entrant
++  // code. If the same client wants to submit CompositorFrames later a new
++  // FrameSinkId should be allocated.
+   void InvalidateFrameSinkId(const FrameSinkId& frame_sink_id);
+ 
+   // Tells FrameSinkManger to report when a synchronization event completes via
+@@ -256,7 +266,8 @@ class VIZ_HOST_EXPORT HostFrameSinkManager
+   FrameSinkManagerImpl* frame_sink_manager_impl_ = nullptr;
+ 
+   // Per CompositorFrameSink data.
+-  base::flat_map<FrameSinkId, FrameSinkData> frame_sink_data_map_;
++  std::unordered_map<FrameSinkId, FrameSinkData, FrameSinkIdHash>
++      frame_sink_data_map_;
+ 
+   // If |frame_sink_manager_ptr_| connection was lost.
+   bool connection_was_lost_ = false;
