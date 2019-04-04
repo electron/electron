@@ -12,7 +12,7 @@ Without this patch, calling `registerStandardSchemes` during initialization
 when in debug mode will cause a DCHECK to fire.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index f006f0992df5b8192849799c2d3d546779d87a08..a63b9d5a95960cca15cde5e392cbe06a0325f517 100644
+index 010ecd6f98489d0945f0998bed2a3c6ff1ff7137..793004d877394bb89447db275cc8d0d8660d263a 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -757,7 +757,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {

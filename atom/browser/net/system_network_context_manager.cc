@@ -249,11 +249,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
 
   network_context_params->http_cache_enabled = false;
 
-  // These are needed for PAC scripts that use file or data URLs (Or FTP URLs?).
-  // TODO(crbug.com/839566): remove file support for all cases.
-  network_context_params->enable_data_url_support = true;
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
-    network_context_params->enable_file_url_support = true;
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;
 #endif

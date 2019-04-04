@@ -156,8 +156,6 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
       net::HttpUtil::GenerateAcceptLanguageHeader(
           AtomBrowserClient::Get()->GetApplicationLocale());
 
-  network_context_params->enable_data_url_support = false;
-
   if (!browser_context_->IsOffTheRecord()) {
     auto base_path = browser_context_->GetPath();
     network_context_params->http_cache_path =
@@ -263,6 +261,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (!url_request_context_) {
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
+
+    // Enable file:// support.
+    builder->set_file_enabled(true);
+
     auto network_delegate = std::make_unique<AtomNetworkDelegate>();
     network_delegate_ = network_delegate.get();
     builder->set_network_delegate(std::move(network_delegate));

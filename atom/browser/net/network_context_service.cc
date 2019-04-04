@@ -80,9 +80,6 @@ NetworkContextService::CreateNetworkContextParams(bool in_memory,
   network_context_params->enable_ftp_url_support = true;
 #endif  // !BUILDFLAG(DISABLE_FTP_SUPPORT)
 
-  // Needed for PAC scripts that use data URLs.
-  network_context_params->enable_data_url_support = true;
-
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params.get());
 
   BrowserProcessImpl::ApplyProxyModeFromCommandLine(

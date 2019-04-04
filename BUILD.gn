@@ -2,6 +2,7 @@ import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
+import("//printing/buildflags/buildflags.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -75,15 +76,7 @@ npm_action("atom_browserify_sandbox") {
     ":build_electron_definitions",
   ]
 
-  inputs = [
-    # FIXME(zcbenz): The dependencies of these files are not listed here, so
-    # the generated file will be out-dated when dependencies are modified.
-    # Use a script to generate all dependencies and put them here.
-    "lib/sandboxed_renderer/init.js",
-    "lib/sandboxed_renderer/api/exports/electron.js",
-    "tsconfig.electron.json",
-    "tsconfig.json",
-  ]
+  inputs = auto_filenames.sandbox_browserify_deps
 
   outputs = [
     "$target_gen_dir/js2c/preload_bundle.js",
@@ -112,11 +105,7 @@ npm_action("atom_browserify_isolated") {
     ":build_electron_definitions",
   ]
 
-  inputs = [
-    "lib/isolated_renderer/init.js",
-    "tsconfig.electron.json",
-    "tsconfig.json",
-  ]
+  inputs = auto_filenames.isolated_browserify_deps
 
   outputs = [
     "$target_gen_dir/js2c/isolated_bundle.js",
@@ -143,11 +132,7 @@ npm_action("atom_browserify_content_script") {
     ":build_electron_definitions",
   ]
 
-  inputs = [
-    "lib/content_script/init.js",
-    "tsconfig.electron.json",
-    "tsconfig.json",
-  ]
+  inputs = auto_filenames.context_script_browserify_deps
 
   outputs = [
     "$target_gen_dir/js2c/content_script_bundle.js",
@@ -351,6 +336,30 @@ if (is_linux) {
   }
 }
 
+source_set("manifests") {
+  sources = [
+    "//electron/atom/app/manifests.cc",
+    "//electron/atom/app/manifests.h",
+  ]
+
+  include_dirs = [ "//electron" ]
+
+  deps = [
+    "//electron/atom/common/api:mojo",
+    "//printing/buildflags",
+    "//services/proxy_resolver/public/cpp:manifest",
+    "//services/service_manager/public/cpp",
+  ]
+
+  if (enable_basic_printing) {
+    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
+  }
+
+  if (enable_print_preview) {
+    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
+  }
+}
+
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -359,10 +368,11 @@ static_library("electron_lib") {
 
   deps = [
     ":atom_js2c",
+    ":manifests",
     ":resources",
+    "atom/common/api:mojo",
     "buildflags",
     "chromium_src:chrome",
-    "manifests",
     "native_mate",
     "//base:base_static",
     "//base/allocator:buildflags",
@@ -406,6 +416,7 @@ static_library("electron_lib") {
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:init_webrtc",
     "//third_party/widevine/cdm:headers",
+    "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
     "//ui/native_theme",

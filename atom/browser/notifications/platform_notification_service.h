@@ -49,6 +49,10 @@ class PlatformNotificationService
   void RecordNotificationUkmEvent(
       content::BrowserContext* browser_context,
       const content::NotificationDatabaseData& data) override;
+  void ScheduleTrigger(content::BrowserContext* browser_context,
+                       base::Time timestamp) override;
+  base::Time ReadNextTriggerTimestamp(
+      content::BrowserContext* browser_context) override;
 
  private:
   AtomBrowserClient* browser_client_;

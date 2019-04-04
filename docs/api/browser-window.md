@@ -308,7 +308,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `textAreasAreResizable` Boolean (optional) - Make TextArea elements resizable. Default
       is `true`.
     * `webgl` Boolean (optional) - Enables WebGL support. Default is `true`.
-    * `webaudio` Boolean (optional) - Enables WebAudio support. Default is `true`.
     * `plugins` Boolean (optional) - Whether plugins should be enabled. Default is `false`.
     * `experimentalFeatures` Boolean (optional) - Enables Chromium's experimental features.
       Default is `false`.

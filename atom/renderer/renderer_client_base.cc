@@ -15,6 +15,7 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
+#include "atom/renderer/electron_api_service_impl.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
@@ -27,6 +28,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -218,6 +220,18 @@ void RendererClientBase::RenderFrameCreated(
   new printing::PrintRenderFrameHelper(
       render_frame, std::make_unique<atom::PrintRenderFrameHelperDelegate>());
 #endif
+
+  // TODO(nornagon): it might be possible for an IPC message sent to this
+  // service to trigger v8 context creation before the page has begun loading.
+  // However, it's unclear whether such a timing is possible to trigger, and we
+  // don't have any test to confirm it. Add a test that confirms that a
+  // main->renderer IPC can't cause the preload script to be executed twice. If
+  // it is possible to trigger the preload script before the document is ready
+  // through this interface, we should delay adding it to the registry until
+  // the document is ready.
+  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
+      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
+                          render_frame, this));
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.

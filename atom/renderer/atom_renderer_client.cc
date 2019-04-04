@@ -41,18 +41,10 @@ AtomRendererClient::~AtomRendererClient() {
   asar::ClearArchives();
 }
 
-void AtomRendererClient::RenderThreadStarted() {
-  RendererClientBase::RenderThreadStarted();
-}
-
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
-}
-
-void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomRendererClient::RunScriptsAtDocumentStart(

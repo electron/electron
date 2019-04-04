@@ -9,6 +9,8 @@
 
 #include "atom/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
+#include "base/logging.h"
+
 namespace atom {
 
 class DesktopNotificationController::Toast {
@@ -42,7 +44,7 @@ class DesktopNotificationController::Toast {
     return ease_in_active_ || ease_out_active_ || IsStackCollapseActive();
   }
   bool IsHighlighted() const {
-    _ASSERT(!(is_highlighted_ && !IsWindowVisible(hwnd_)));
+    DCHECK(!(is_highlighted_ && !IsWindowVisible(hwnd_)));
     return is_highlighted_;
   }
 
