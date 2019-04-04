@@ -10,6 +10,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 #include "atom/common/node_includes.h"
@@ -20,12 +21,10 @@ namespace api {
 
 constexpr static int kMaxFrameRate = 30;
 
-FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
-                                 content::WebContents* web_contents,
+FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
                                  const FrameCaptureCallback& callback,
                                  bool only_dirty)
     : content::WebContentsObserver(web_contents),
-      isolate_(isolate),
       callback_(callback),
       only_dirty_(only_dirty),
       weak_ptr_factory_(this) {
@@ -149,26 +148,23 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())
     return;
 
-  v8::Locker locker(isolate_);
-  v8::HandleScope handle_scope(isolate_);
-
-  const_cast<SkBitmap&>(frame).setAlphaType(kPremul_SkAlphaType);
   const SkBitmap& bitmap = only_dirty_ ? SkBitmapOperations::CreateTiledBitmap(
                                              frame, damage.x(), damage.y(),
                                              damage.width(), damage.height())
                                        : frame;
 
-  size_t rgb_row_size = bitmap.width() * bitmap.bytesPerPixel();
-  auto* source = static_cast<const char*>(bitmap.getPixels());
+  // Copying SkBitmap does not copy the internal pixels, we have to manually
+  // allocate and write pixels otherwise crash may happen when the original
+  // frame is modified.
+  SkBitmap copy;
+  copy.allocPixels(SkImageInfo::Make(bitmap.width(), bitmap.height(),
+                                     kRGBA_8888_SkColorType,
+                                     kPremul_SkAlphaType));
+  SkPixmap pixmap;
+  bool success = bitmap.peekPixels(&pixmap) && copy.writePixels(pixmap, 0, 0);
+  CHECK(success);
 
-  v8::MaybeLocal<v8::Object> buffer =
-      node::Buffer::Copy(isolate_, source, rgb_row_size * bitmap.height());
-  auto local_buffer = buffer.ToLocalChecked();
-
-  v8::Local<v8::Value> damage_rect =
-      mate::Converter<gfx::Rect>::ToV8(isolate_, damage);
-
-  callback_.Run(local_buffer, damage_rect);
+  callback_.Run(gfx::Image::CreateFrom1xBitmap(copy), damage);
 }
 
 }  // namespace api
