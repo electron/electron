@@ -32,10 +32,10 @@ index 04e48714a6f4fcf980f91d75e319667dc0ee18a4..0ec60a0bf9f903de67f69422f22b674b
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index ce4fb4ca4f04c5668795c56ce536b4be292aa278..a6fec64c65f5916896e627473b0f8645a867a5ce 100644
+index 78041fcb9647f740c6a142ec65f2418712c6286c..04e75ac40c38a38bdec634d1aa645854cb1a80d6 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
-@@ -20,6 +20,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
+@@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
    RendererSettings(const RendererSettings& other);
    ~RendererSettings();
  
@@ -44,10 +44,10 @@ index ce4fb4ca4f04c5668795c56ce536b4be292aa278..a6fec64c65f5916896e627473b0f8645
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index ee1f83f4d3db713f64c4175615be816198ea44a1..446df2e9b84565677ae63893391291877661a267 100644
+index 5d06436069bc7ecc04f3794a873e6f7f22d55042..c5176776562d3506eef384e5e2c4d5a6e89aba63 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
-@@ -11,6 +11,7 @@
+@@ -12,6 +12,7 @@
  #include "components/viz/common/display/renderer_settings.h"
  #include "components/viz/common/features.h"
  #include "ui/base/ui_base_switches.h"
@@ -55,7 +55,7 @@ index ee1f83f4d3db713f64c4175615be816198ea44a1..446df2e9b84565677ae6389339129187
  
  #if defined(OS_MACOSX)
  #include "ui/base/cocoa/remote_layer_api.h"
-@@ -43,6 +44,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
+@@ -48,6 +49,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
  RendererSettings CreateRendererSettings() {
    RendererSettings renderer_settings;
    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -203,7 +203,7 @@ index 9e0979a93d698665b08623ad7cbc11939d7f4ff8..93f99b09250ab1f515e13de3ac80cea1
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index e43e5f6bb667a62e7e1205e8da6073de6179e79f..027a552cfbfce3f4f8fe5670bec7db45ad19e57a 100644
+index 6a288270e96b2288a1c7a53bba94f21ee41e0707..e7010b8cd6d3dc4c6479fbbabff131fb59a9d3c4 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -192,6 +192,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -215,10 +215,10 @@ index e43e5f6bb667a62e7e1205e8da6073de6179e79f..027a552cfbfce3f4f8fe5670bec7db45
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b5a8bc48d92a6b2f7fc031ca7ee662db26941008..7805ce82b11be1eaed59aae1fe76f6fd13e901a5 100644
+index e600dd4b1599d7aa0e02c2bab2644c6ee8703140..6b188f8d94a6f372f59ef6a0f6438ef63dfd541f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -220,6 +220,7 @@
+@@ -219,6 +219,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -226,7 +226,7 @@ index b5a8bc48d92a6b2f7fc031ca7ee662db26941008..7805ce82b11be1eaed59aae1fe76f6fd
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  
-@@ -2953,6 +2954,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2939,6 +2940,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,10 +235,10 @@ index b5a8bc48d92a6b2f7fc031ca7ee662db26941008..7805ce82b11be1eaed59aae1fe76f6fd
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index e4e8117be4b425e82b58e7e58ce0008a353e4fba..ede9225f944796d4375a704b944b79c47750f8f2 100644
+index dd7a1cb4d0c303ac03e612b6702c8731882ca88d..22939ad3934b64ac8018663b56d788eeacde61f7 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2771,6 +2771,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2805,6 +2805,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

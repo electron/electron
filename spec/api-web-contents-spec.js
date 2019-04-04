@@ -141,28 +141,6 @@ describe('webContents module', () => {
     })
   })
 
-  describe('getAllWebContents() API', () => {
-    it('returns an array of web contents', (done) => {
-      w.webContents.on('devtools-opened', () => {
-        const all = webContents.getAllWebContents().sort((a, b) => {
-          return a.id - b.id
-        })
-
-        assert.ok(all.length >= 4)
-        assert.strictEqual(all[0].getType(), 'window')
-        assert.strictEqual(all[all.length - 2].getType(), 'webview')
-        assert.strictEqual(all[all.length - 1].getType(), 'remote')
-
-        done()
-      })
-
-      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
-      w.webContents.on('did-attach-webview', () => {
-        w.webContents.openDevTools()
-      })
-    })
-  })
-
   describe('getFocusedWebContents() API', () => {
     it('returns the focused web contents', (done) => {
       if (isCi) return done()

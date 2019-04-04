@@ -13,6 +13,7 @@
 #include <uxtheme.h>
 #include <windowsx.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 
 #include "atom/browser/notifications/win/win32_desktop_notifications/common.h"

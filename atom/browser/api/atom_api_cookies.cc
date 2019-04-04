@@ -303,8 +303,12 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                  EXCLUDE_FAILURE_TO_STORE);
     return;
   }
+  net::CookieOptions options;
+  if (http_only) {
+    options.set_include_httponly();
+  }
   GetCookieStore(getter)->SetCanonicalCookieAsync(
-      std::move(canonical_cookie), url.scheme(), http_only,
+      std::move(canonical_cookie), url.scheme(), options,
       std::move(completion_callback));
 }
 

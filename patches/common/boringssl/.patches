@@ -1,3 +1,2 @@
 expose_ripemd160.patch
 expose_aes-cfb.patch
-handle_pub_key_null_in_ec_key_set_public_key.patch

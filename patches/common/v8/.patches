@@ -4,3 +4,4 @@ build_gn.patch
 expose_mksnapshot.patch
 deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
+fixme_revert_heap_api_remove_deprecated_apis.patch

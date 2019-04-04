@@ -18,7 +18,7 @@ class DelayedNativeViewHost : public views::NativeViewHost {
 
   // views::View:
   void ViewHierarchyChanged(
-      const ViewHierarchyChangedDetails& details) override;
+      const views::ViewHierarchyChangedDetails& details) override;
 
  private:
   gfx::NativeView native_view_;

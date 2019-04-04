@@ -19,9 +19,11 @@ Object.setPrototypeOf(App.prototype, EventEmitter.prototype)
 EventEmitter.call(app as any)
 
 Object.assign(app, {
+  // TODO(codebytere): remove in 7.0
   setApplicationMenu (menu: Electron.Menu | null) {
     return Menu.setApplicationMenu(menu)
   },
+  // TODO(codebytere): remove in 7.0
   getApplicationMenu () {
     return Menu.getApplicationMenu()
   },
@@ -37,6 +39,17 @@ Object.assign(app, {
 })
 
 app.getFileIcon = deprecate.promisify(app.getFileIcon)
+
+// we define this here because it'd be overly complicated to
+// do in native land
+Object.defineProperty(app, 'applicationMenu', {
+  get () {
+    return Menu.getApplicationMenu()
+  },
+  set (menu: Electron.Menu | null) {
+    return Menu.setApplicationMenu(menu)
+  }
+})
 
 app.isPackaged = (() => {
   const execFile = path.basename(process.execPath).toLowerCase()

@@ -94,21 +94,24 @@
     }
 
     const runner = mocha.run(() => {
-      if (isCi && runner.hasOnly) {
-        try {
-          throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
-        } catch (error) {
-          console.error(error.stack || error)
+      // Ensure the callback is called after runner is defined
+      setTimeout(() => {
+        if (isCi && runner.hasOnly) {
+          try {
+            throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+          } catch (error) {
+            console.error(error.stack || error)
+          }
+          ipcRenderer.send('process.exit', 1)
+          return
         }
-        ipcRenderer.send('process.exit', 1)
-        return
-      }
 
-      Mocha.utils.highlightTags('code')
+        Mocha.utils.highlightTags('code')
 
-      if (isCi) {
-        ipcRenderer.send('process.exit', runner.failures)
-      }
+        if (isCi) {
+          ipcRenderer.send('process.exit', runner.failures)
+        }
+      }, 0)
     })
   })
 })()

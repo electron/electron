@@ -7,7 +7,7 @@ This is used by editors to obtain the filesystem path from a dragged file. See
 documentation at https://electronjs.org/docs/api/file-object
 
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
-index 6ae1e8ed179717d630518eeddd1a6c453139605d..a7167220fa0bc93ee845bb1a48a65c49f137e6fe 100644
+index 3abff1a1e4de7978e01587cc1bf2b3deb4318161..5213d1c46dcc25de84c4b882454b1f7d079f237f 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
 @@ -202,6 +202,9 @@ class CORE_EXPORT File final : public Blob {
@@ -19,7 +19,7 @@ index 6ae1e8ed179717d630518eeddd1a6c453139605d..a7167220fa0bc93ee845bb1a48a65c49
 +
    // Getter for the lastModified IDL attribute,
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
-   long long lastModified() const;
+   int64_t lastModified() const;
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
 index 940f8e62ce228beaf71f5a4be88539a431415ab1..0cf315636afe0e5e1533b3372cdfe2c09ec581e1 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
