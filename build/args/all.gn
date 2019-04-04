@@ -7,6 +7,7 @@ v8_typed_array_max_size_in_heap = 0
 v8_embedder_string = "-electron.0"
 
 enable_cdm_host_verification = false
+enable_vulkan = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
