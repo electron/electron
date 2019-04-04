@@ -782,7 +782,10 @@ provided by the main process modules may be dangerous in the hands of
 malicious code running in a compromised renderer process. By limiting
 the set of accessible modules to the minimum that your app needs and
 filtering out the others, you reduce the toolset that malicious code
-can use to attack the system.
+can use to attack the system. Note that you'll still be vulnerable to
+"prototype pollution" attacks on the remote module internal mechanism,
+so [disabling it fully](#15-disable-the-remote-module) is always the
+safest option.
 
 ### How?
 
