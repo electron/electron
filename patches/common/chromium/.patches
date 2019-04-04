@@ -97,3 +97,4 @@ set_proper_permissions_for_package_s_framework_directory.patch
 intersection-observer.patch
 keyboard-lock-service-impl.patch
 make_--explicitly-allowed-ports_work_with_networkservice.patch
+fix_crashes_in_renderframeimpl_onselectpopupmenuitem_s.patch
