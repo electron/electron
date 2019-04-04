@@ -23,7 +23,6 @@
 #include "chrome/browser/predictors/loading_predictor_factory.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/profiles/profile_manager.h"
 #include "components/network_hints/common/network_hints_common.h"
 #include "components/network_hints/common/network_hints_messages.h"
 #include "content/public/browser/browser_task_traits.h"
