@@ -447,7 +447,6 @@ void WebContents::InitWithSessionAndOptions(
   bindings_.set_connection_error_handler(base::BindRepeating(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
 
-
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
 
