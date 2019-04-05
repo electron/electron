@@ -155,7 +155,7 @@ const { app, Menu } = require('electron')
 const template = [
   // { role: 'appMenu' }
   ...(process.platform === 'darwin' ? [{
-    label: app.getName(),
+    label: app.name,
     submenu: [
       { role: 'about' },
       { type: 'separator' },

@@ -20,7 +20,7 @@ const skip = process.platform !== 'linux' ||
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
   let mock, Notification, getCalls, reset
-  const realAppName = app.getName()
+  const realAppName = app.name
   const realAppVersion = app.getVersion()
   const appName = 'api-notification-dbus-spec'
   const serviceName = 'org.freedesktop.Notifications'

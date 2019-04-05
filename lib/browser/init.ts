@@ -143,7 +143,7 @@ if (packageJson.productName != null) {
 if (packageJson.desktopName != null) {
   app.setDesktopName(packageJson.desktopName)
 } else {
-  app.setDesktopName((app.getName()) + '.desktop')
+  app.setDesktopName(`${app.name}.desktop`)
 }
 
 // Set v8 flags

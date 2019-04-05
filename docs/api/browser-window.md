@@ -1318,7 +1318,7 @@ Change to indeterminate mode when progress > 1.
 
 On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `app.getName().desktop`.
+it will assume `app.name.desktop`.
 
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
