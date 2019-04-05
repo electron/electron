@@ -450,7 +450,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const MediaPlayerInfo& video_type,
       const MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
-  void DidChangeThemeColor(SkColor theme_color) override;
+  void DidChangeThemeColor(base::Optional<SkColor> theme_color) override;
   void OnInterfaceRequestFromFrame(
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
