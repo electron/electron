@@ -31,7 +31,7 @@ ULONG DesktopNotificationController::Toast::UIAutomationInterface::Release() {
     delete this;
     return 0;
   }
-  _ASSERT(ret > 0);
+  DCHECK_GT(ret, 0);
   return ret;
 }
 

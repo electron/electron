@@ -634,9 +634,15 @@ describe('app module', () => {
     })
   })
 
-  describe('isAccessibilitySupportEnabled API', () => {
+  describe('accessibilitySupportEnabled property', () => {
+    if (process.platform === 'linux') return
+
     it('returns whether the Chrome has accessibility APIs enabled', () => {
-      expect(app.isAccessibilitySupportEnabled()).to.be.a('boolean')
+      expect(app.accessibilitySupportEnabled).to.be.a('boolean')
+
+      //TODO(codebytere): remove when propertyification is complete
+      expect(app.isAccessibilitySupportEnabled).to.be.a('function')
+      expect(app.setAccessibilitySupportEnabled).to.be.a('function')
     })
   })
 
@@ -1229,6 +1235,12 @@ describe('app module', () => {
     it('becomes fulfilled if the app is already ready', async () => {
       expect(app.isReady()).to.equal(true)
       await expect(app.whenReady()).to.be.eventually.fulfilled.equal(undefined)
+    })
+  })
+
+  describe('app.applicationMenu', () => {
+    it('has the applicationMenu property', () => {
+      expect(app).to.have.property('applicationMenu')
     })
   })
 

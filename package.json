@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "6.0.0-nightly.20190311",
+  "version": "6.0.0-nightly.20190404",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -102,6 +102,10 @@
   "lint-staged": {
     "*.{js,ts}": [
       "node script/lint.js --js --fix --only --",
+      "git add"
+    ],
+    "*.{js,ts,d.ts}": [
+      "node script/gen-filenames.js",
       "git add"
     ],
     "*.{cc,mm,c,h}": [

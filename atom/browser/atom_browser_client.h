@@ -173,7 +173,12 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       ui::PageTransition page_transition,
       bool has_user_gesture,
       const std::string& method,
-      const net::HttpRequestHeaders& headers) override;
+      const net::HttpRequestHeaders& headers,
+      network::mojom::URLLoaderFactoryRequest* factory_request,
+      // clang-format off
+      network::mojom::URLLoaderFactory*& out_factory)  // NOLINT
+      // clang-format on
+      override;
 
  private:
   struct ProcessPreferences {

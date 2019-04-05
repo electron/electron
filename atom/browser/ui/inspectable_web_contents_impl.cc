@@ -429,7 +429,7 @@ void InspectableWebContentsImpl::CallClientFunction(
   }
   javascript.append(");");
   GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-      base::UTF8ToUTF16(javascript));
+      base::UTF8ToUTF16(javascript), base::NullCallback());
 }
 
 gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
@@ -476,7 +476,8 @@ void InspectableWebContentsImpl::LoadCompleted() {
     }
     base::string16 javascript = base::UTF8ToUTF16(
         "Components.dockController.setDockSide(\"" + dock_state_ + "\");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+        javascript, base::NullCallback());
   }
 
   if (view_->GetDelegate())
@@ -738,7 +739,8 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
   if (message.length() < kMaxMessageChunkSize) {
     base::string16 javascript =
         base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + message + ");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+        javascript, base::NullCallback());
     return;
   }
 
@@ -887,7 +889,8 @@ void InspectableWebContentsImpl::DidFinishNavigation(
                                    base::GenerateGUID().c_str());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
-  frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script));
+  frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),
+                                   base::NullCallback());
 }
 
 void InspectableWebContentsImpl::SendMessageAck(int request_id,

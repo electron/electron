@@ -27,7 +27,7 @@ bool XDGUtilV(const std::vector<std::string>& argv, const bool wait_for_exit) {
   // to a command that needs a terminal.  Set the environment variable telling
   // it that we definitely don't have a terminal available and that it should
   // bring up a new terminal if necessary.  See "man mailcap".
-  options.environ["MM_NOTTTY"] = "1";
+  options.environment["MM_NOTTTY"] = "1";
 
   base::Process process = base::LaunchProcess(argv, options);
   if (!process.IsValid())

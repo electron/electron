@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,11 +20,14 @@
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/binder_registry.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -73,7 +77,8 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
 // Wrapper around the content::WebContents.
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
-                    public content::WebContentsObserver {
+                    public content::WebContentsObserver,
+                    public mojom::ElectronBrowser {
  public:
   enum Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
@@ -289,8 +294,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
 
-  bool TakeHeapSnapshot(const base::FilePath& file_path,
-                        const std::string& channel);
+  void TakeHeapSnapshot(const base::FilePath& file_path,
+                        base::Callback<void(bool)>);
 
   // Properties.
   int32_t ID() const;
@@ -411,6 +416,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              content::RenderViewHost* new_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void DocumentLoadedInFrame(
       content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -445,6 +451,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(SkColor theme_color) override;
+  void OnInterfaceRequestFromFrame(
+      content::RenderFrameHost* render_frame_host,
+      const std::string& interface_name,
+      mojo::ScopedMessagePipeHandle* interface_pipe) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
@@ -465,6 +475,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   struct FrameDispatchHelper;
   AtomBrowserContext* GetBrowserContext() const;
 
+  // Binds the given request for the ElectronBrowser API. When the
+  // RenderFrameHost is destroyed, all related bindings will be removed.
+  void BindElectronBrowser(mojom::ElectronBrowserRequest request,
+                           content::RenderFrameHost* render_frame_host);
+  void OnElectronBrowserConnectionError();
+
   uint32_t GetNextRequestId() { return ++request_id_; }
 
 #if BUILDFLAG(ENABLE_OSR)
@@ -472,34 +488,23 @@ class WebContents : public mate::TrackableObject<WebContents>,
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
 
+  // mojom::ElectronBrowser
+  void Message(bool internal,
+               const std::string& channel,
+               base::Value arguments) override;
+  void MessageSync(bool internal,
+                   const std::string& channel,
+                   base::Value arguments,
+                   MessageSyncCallback callback) override;
+  void MessageTo(bool internal,
+                 bool send_to_all,
+                 int32_t web_contents_id,
+                 const std::string& channel,
+                 base::Value arguments) override;
+  void MessageHost(const std::string& channel, base::Value arguments) override;
+
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
-
-  // Called when received a message from renderer.
-  void OnRendererMessage(content::RenderFrameHost* frame_host,
-                         bool internal,
-                         const std::string& channel,
-                         const base::ListValue& args);
-
-  // Called when received a synchronous message from renderer.
-  void OnRendererMessageSync(content::RenderFrameHost* frame_host,
-                             bool internal,
-                             const std::string& channel,
-                             const base::ListValue& args,
-                             IPC::Message* message);
-
-  // Called when received a message from renderer to be forwarded.
-  void OnRendererMessageTo(content::RenderFrameHost* frame_host,
-                           bool internal,
-                           bool send_to_all,
-                           int32_t web_contents_id,
-                           const std::string& channel,
-                           const base::ListValue& args);
-
-  // Called when received a message from renderer to host.
-  void OnRendererMessageHost(content::RenderFrameHost* frame_host,
-                             const std::string& channel,
-                             const base::ListValue& args);
 
   // Called when received a synchronous message from renderer to
   // set temporary zoom level.
@@ -547,6 +552,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // The ID of the process of the currently committed RenderViewHost.
   // -1 means no speculative RVH has been committed yet.
   int currently_committed_process_id_ = -1;
+
+  service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
+  mojo::BindingSet<mojom::ElectronBrowser, content::RenderFrameHost*> bindings_;
+  std::map<content::RenderFrameHost*, std::vector<mojo::BindingId>>
+      frame_to_bindings_map_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

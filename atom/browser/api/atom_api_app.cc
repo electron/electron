@@ -1360,6 +1360,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX) || defined(OS_WIN)
       .SetMethod("showEmojiPanel",
                  base::Bind(&Browser::ShowEmojiPanel, browser))
+      .SetProperty("accessibilitySupportEnabled",
+                   &App::IsAccessibilitySupportEnabled,
+                   &App::SetAccessibilitySupportEnabled)
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
@@ -1384,9 +1387,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("requestSingleInstanceLock", &App::RequestSingleInstanceLock)
       .SetMethod("releaseSingleInstanceLock", &App::ReleaseSingleInstanceLock)
       .SetMethod("relaunch", &App::Relaunch)
-      .SetMethod("isAccessibilitySupportEnabled",
+      .SetMethod("_isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
-      .SetMethod("setAccessibilitySupportEnabled",
+      .SetMethod("_setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)

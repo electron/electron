@@ -1568,7 +1568,6 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             sandbox: true,
             preload
           }
@@ -1586,7 +1585,6 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             sandbox: true,
             preload: preloadSpecialChars
           }
@@ -1594,12 +1592,24 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
       })
 
+      it('exposes "loaded" event to preload script', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        ipcMain.once('process-loaded', () => done())
+        w.loadURL('about:blank')
+      })
+
       it('exposes "exit" event to preload script', function (done) {
         w.destroy()
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             sandbox: true,
             preload
           }
@@ -1622,7 +1632,6 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             sandbox: true,
             preload
           }
@@ -1826,29 +1835,6 @@ describe('BrowserWindow module', () => {
           }, 100)
         })
         w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
-      })
-
-      // TODO(alexeykuzmin): `GetProcessMemoryInfo()` is not available starting Ch67.
-      xit('releases memory after popup is closed', (done) => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            preload,
-            sandbox: true
-          }
-        })
-        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'allocate-memory' })
-        ipcMain.once('answer', function (event, { bytesBeforeOpen, bytesAfterOpen, bytesAfterClose }) {
-          const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
-          const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
-          // decreased memory should be less than increased due to factors we
-          // can't control, but given the amount of memory allocated in the
-          // fixture, we can reasonably expect decrease to be at least 70% of
-          // increase
-          assert(memoryDecreaseByClose > memoryIncreaseByOpen * 0.7)
-          done()
-        })
       })
 
       // see #9387
@@ -2524,13 +2510,6 @@ describe('BrowserWindow module', () => {
   })
 
   describe('beginFrameSubscription method', () => {
-    before(function () {
-      // FIXME These specs crash on Linux when run in a docker container
-      if (isCI && process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
     it('does not crash when callback returns nothing', (done) => {
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
       w.webContents.on('dom-ready', () => {
@@ -2560,13 +2539,14 @@ describe('BrowserWindow module', () => {
         })
       })
     })
+
     it('subscribes to frame updates (only dirty rectangle)', (done) => {
       let called = false
       let gotInitialFullSizeFrame = false
       const [contentWidth, contentHeight] = w.getContentSize()
       w.webContents.on('did-finish-load', () => {
-        w.webContents.beginFrameSubscription(true, (data, rect) => {
-          if (data.length === 0) {
+        w.webContents.beginFrameSubscription(true, (image, rect) => {
+          if (image.isEmpty()) {
             // Chromium sometimes sends a 0x0 frame at the beginning of the
             // page load.
             return
@@ -2587,13 +2567,14 @@ describe('BrowserWindow module', () => {
           // assert(rect.width < contentWidth || rect.height < contentHeight)
           called = true
 
-          expect(data.length).to.equal(rect.width * rect.height * 4)
+          expect(image.getBitmap().length).to.equal(rect.width * rect.height * 4)
           w.webContents.endFrameSubscription()
           done()
         })
       })
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
     })
+
     it('throws error when subscriber is not well defined', (done) => {
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
       try {
