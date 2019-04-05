@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raul Tambre <raul@tambre.ee>
+Date: Thu, 4 Apr 2019 15:03:34 +0000
+Subject: Fix duplicate definition of g_load_succeeded in jumbo build
+
+Example error on a Windows x64 jumbo build:
+../../third_party/llvm-build/Release+Asserts/bin/clang-cl.exe /nologo /showIncludes "-imsvc..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Tools\MSVC\14.20.27508\ATLMFC\include" "-imsvc..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Tools\MSVC\14.20.27508\include" "-imsvc..\..\..\..\..\Program Files (x86)\Windows Kits\10\include\10.0.17763.0\ucrt" "-imsvc..\..\..\..\..\Program Files (x86)\Windows Kits\10\include\10.0.17763.0\shared" "-imsvc..\..\..\..\..\Program Files (x86)\Windows Kits\10\include\10.0.17763.0\um" "-imsvc..\..\..\..\..\Program Files (x86)\Windows Kits\10\include\10.0.17763.0\winrt" "-imsvc..\..\..\..\..\Program Files (x86)\Windows Kits\10\include\10.0.17763.0\cppwinrt" -DUSE_AURA=1 -DNO_TCMALLOC -DFULL_SAFE_BROWSING -DSAFE_BROWSING_CSD -DSAFE_BROWSING_DB_LOCAL -DCHROMIUM_BUILD "-DCR_CLANG_REVISION=\"356356-3\"" -D_HAS_NODISCARD -D_HAS_EXCEPTIONS=0 -DCOMPONENT_BUILD -D__STD_C -D_CRT_RAND_S -D_CRT_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_DEPRECATE -D_ATL_NO_OPENGL -D_WINDOWS -DCERT_CHAIN_PARA_HAS_EXTRA_FIELDS -DPSAPI_VERSION=2 -DWIN32 -D_SECURE_ATL -D_USING_V110_SDK71_ -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_UNICODE -DUNICODE -DNTDDI_VERSION=NTDDI_WIN10_RS2 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00 -D_DEBUG -DDYNAMIC_ANNOTATIONS_ENABLED=1 -DWTF_USE_DYNAMIC_ANNOTATIONS=1 -D_HAS_ITERATOR_DEBUGGING=0 -DBASE_IMPLEMENTATION -I. -I../.. -Igen -fcolor-diagnostics -fmerge-all-constants -fcrash-diagnostics-dir=../../tools/clang/crashreports -Xclang -mllvm -Xclang -instcombine-lower-dbg-declare=0 -fcomplete-member-pointers /Gy /FS /bigobj /utf-8 /Zc:sizedDealloc- /X -fmsc-version=1911 /guard:cf,nochecks /Zc:dllexportInlines- -m64 /Brepro -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__= -no-canonical-prefixes /W4 -Wimplicit-fallthrough -Wthread-safety -Wextra-semi /WX /wd4091 /wd4127 /wd4251 /wd4275 /wd4312 /wd4324 /wd4351 /wd4355 /wd4503 /wd4589 /wd4611 /wd4100 /wd4121 /wd4244 /wd4505 /wd4510 /wd4512 /wd4610 /wd4838 /wd4995 /wd4996 /wd4456 /wd4457 /wd4458 /wd4459 /wd4200 /wd4201 /wd4204 /wd4221 /wd4245 /wd4267 /wd4305 /wd4389 /wd4702 /wd4701 /wd4703 /wd4661 /wd4706 /wd4715 /wd4702 -Wno-missing-field-initializers -Wno-unused-parameter -Wno-c++11-narrowing -Wno-unneeded-internal-declaration -Wno-undefined-var-template -Wno-nonportable-include-path -Wno-ignored-pragma-optimize /Od /Ob0 /GF /MDd -Xclang -add-plugin -Xclang find-bad-constructs -Wheader-hygiene -Wstring-conversion -Wtautological-overlap-compare -Wno-char-subscripts -Wglobal-constructors -Wexit-time-destructors /FIbuild/precompile.h -Wshadow -Wno-shorten-64-to-32 -Wexit-time-destructors /Fpobj/base/base_cc.pch /Yubuild/precompile.h -Wno-undefined-bool-conversion -Wno-tautological-undefined-compare /TP /wd4577 /GR- /c gen/base/base_jumbo_8.cc /Foobj/base/base/base_jumbo_8.obj /Fd"obj/base/base_cc.pdb"
+In file included from gen/base/base_jumbo_8.cc:28:
+.\../../base/win/scoped_hstring.cc(18,13): error: redefinition of 'g_load_succeeded'
+static bool g_load_succeeded = false;
+            ^
+.\../../base/win/hstring_reference.cc(18,6): note: previous definition is here
+bool g_load_succeeded = false;
+     ^
+1 error generated.
+
+Change-Id: I25bcdc80a69768ac99d373d41fd98080ccd63aa1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1552852
+Commit-Queue: Raul Tambre <raul@tambre.ee>
+Commit-Queue: Greg Thompson <grt@chromium.org>
+Auto-Submit: Raul Tambre <raul@tambre.ee>
+Reviewed-by: Greg Thompson <grt@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#647735}
+
+diff --git a/base/win/hstring_reference.cc b/base/win/hstring_reference.cc
+index 785618f55b03381c15c53de3ba01ac3d854fbf28..0ba5b301512a89d45e9e4f4f184b242a6815c989 100644
+--- a/base/win/hstring_reference.cc
++++ b/base/win/hstring_reference.cc
+@@ -15,7 +15,7 @@
+ namespace base {
+ namespace {
+ 
+-bool g_load_succeeded = false;
++bool g_winrt_string_loaded = false;
+ 
+ decltype(&::WindowsCreateStringReference) GetWindowsCreateStringReference() {
+   static auto const create_string_reference_func =
+@@ -36,12 +36,12 @@ namespace win {
+ 
+ // static
+ bool HStringReference::ResolveCoreWinRTStringDelayload() {
+-  g_load_succeeded = GetWindowsCreateStringReference() != nullptr;
+-  return g_load_succeeded;
++  g_winrt_string_loaded = GetWindowsCreateStringReference() != nullptr;
++  return g_winrt_string_loaded;
+ }
+ 
+ HStringReference::HStringReference(const wchar_t* str, size_t length) {
+-  DCHECK(g_load_succeeded);
++  DCHECK(g_winrt_string_loaded);
+   // String must be null terminated for WindowsCreateStringReference.
+   // nullptr str is OK so long as the length is 0.
+   DCHECK(str ? str[length] == L'\0' : length == 0);
