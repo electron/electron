@@ -819,9 +819,9 @@ void WebContents::MediaStoppedPlaying(
   Emit("media-paused");
 }
 
-void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  if (theme_color != SK_ColorTRANSPARENT) {
-    Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
+void WebContents::DidChangeThemeColor(base::Optional<SkColor> theme_color) {
+  if (theme_color) {
+    Emit("did-change-theme-color", atom::ToRGBHex(theme_color.value()));
   } else {
     Emit("did-change-theme-color", nullptr);
   }
