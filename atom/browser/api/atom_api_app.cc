@@ -1375,6 +1375,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("badgeCount",
                    base::BindRepeating(&Browser::GetBadgeCount, browser),
                    base::BindRepeating(&Browser::SetBadgeCount, browser))
+      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
+                   base::BindRepeating(&Browser::SetName, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
