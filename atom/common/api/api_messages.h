@@ -18,7 +18,7 @@
 // The message starter should be declared in ipc/ipc_message_start.h. Since
 // we don't want to patch Chromium, we just pretend to be Content Shell.
 
-#define IPC_MESSAGE_START ShellMsgStart
+#define IPC_MESSAGE_START ElectronMsgStart
 
 IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(draggable)
