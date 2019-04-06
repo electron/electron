@@ -73,3 +73,4 @@ fix_disable_usage_of_setapplicationisdaemon_and.patch
 ipc_message_start.patch
 disable_network_services_by_default.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
+disable_ensure_gn_version_gclient_hook.patch
