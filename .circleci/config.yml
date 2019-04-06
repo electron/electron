@@ -840,7 +840,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=check_gn_version=False'
     <<: *steps-checkout
 
   # Layer 2: Builds.
