@@ -807,13 +807,13 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
-                                      const MediaPlayerId& id) {
+                                      const content::MediaPlayerId& id) {
   Emit("media-started-playing");
 }
 
 void WebContents::MediaStoppedPlaying(
     const MediaPlayerInfo& video_type,
-    const MediaPlayerId& id,
+    const content::MediaPlayerId& id,
     content::WebContentsObserver::MediaStoppedReason reason) {
   Emit("media-paused");
 }
