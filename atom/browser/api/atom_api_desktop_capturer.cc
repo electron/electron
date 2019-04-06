@@ -180,13 +180,13 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         const int64_t device_id =
             display::win::DisplayInfo::DeviceIdFromDeviceName(
                 wide_device_name.c_str());
-        source.display_id = base::Int64ToString(device_id);
+        source.display_id = base::NumberToString(device_id);
       }
     }
 #elif defined(OS_MACOSX)
     // On Mac, the IDs across the APIs match.
     for (auto& source : screen_sources) {
-      source.display_id = base::Int64ToString(source.media_list_source.id.id);
+      source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
 #endif  // defined(OS_WIN)
     // TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome

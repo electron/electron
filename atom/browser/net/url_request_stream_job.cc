@@ -48,7 +48,7 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
     status_code = 200;
   }
   std::string status("HTTP/1.1 ");
-  status.append(base::IntToString(status_code));
+  status.append(base::NumberToString(status_code));
   status.append(" ");
   status.append(
       net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code)));
