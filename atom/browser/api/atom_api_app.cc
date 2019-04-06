@@ -1035,7 +1035,7 @@ Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
 
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(const base::DictionaryValue& options,
-                            const net::CompletionCallback& callback) {
+                            base::Callback<void(int)> callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     auto copy = base::DictionaryValue::From(
@@ -1043,22 +1043,23 @@ void App::ImportCertificate(const base::DictionaryValue& options,
     CertificateManagerModel::Create(
         browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,
-                   base::Unretained(this), base::Passed(&copy), callback));
+                   base::Unretained(this), base::Passed(&copy),
+                   std::move(callback)));
     return;
   }
 
   int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
-  callback.Run(rv);
+  std::move(callback).Run(rv);
 }
 
 void App::OnCertificateManagerModelCreated(
     std::unique_ptr<base::DictionaryValue> options,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
   int rv =
       ImportIntoCertStore(certificate_manager_model_.get(), *(options.get()));
-  callback.Run(rv);
+  std::move(callback).Run(rv);
 }
 #endif
 
