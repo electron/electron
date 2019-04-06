@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sat, 6 Apr 2019 22:56:31 +0530
+Subject: Disable ensure_gn_version gclient hook
+
+The script can't execute the right executable on our mac CI because the
+checkout happens on a linux machine.
+
+diff --git a/DEPS b/DEPS
+index 31a459e2c3233b05c5eb0dc25afc4e0a568fc8ab..d4acf688584b5302b96b1d73355695a9ca8993a9 100644
+--- a/DEPS
++++ b/DEPS
+@@ -34,6 +34,7 @@ gclient_gn_args = [
+   'checkout_ios_webkit',
+   'checkout_nacl',
+   'checkout_oculus_sdk',
++  'check_gn_version',
+ ]
+ 
+ 
+@@ -95,6 +96,8 @@ vars = {
+   'checkout_traffic_annotation_tools': 'checkout_configuration != "small"',
+   'checkout_instrumented_libraries': 'checkout_linux and checkout_configuration != "small"',
+ 
++  'check_gn_version': True,
++
+   # By default, do not check out WebKit for iOS, as it is not needed unless
+   # running against ToT WebKit rather than system WebKit. This can be overridden
+   # e.g. with custom_vars.
+@@ -2281,6 +2284,7 @@ hooks = [
+     # have the right binary more carefully and we no longer need this.
+     'name': 'ensure_gn_version',
+     'pattern': '.',
++    'condition': 'check_gn_version',
+     'action': [
+       'python',
+       'src/buildtools/ensure_gn_version.py',
