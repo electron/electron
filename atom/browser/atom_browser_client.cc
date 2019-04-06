@@ -867,7 +867,8 @@ NotificationPresenter* AtomBrowserClient::GetNotificationPresenter() {
 }
 
 content::PlatformNotificationService*
-AtomBrowserClient::GetPlatformNotificationService() {
+AtomBrowserClient::GetPlatformNotificationService(
+    content::BrowserContext* browser_context) {
   if (!notification_service_) {
     notification_service_.reset(new PlatformNotificationService(this));
   }
