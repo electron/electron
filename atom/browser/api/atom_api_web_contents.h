@@ -445,10 +445,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
-                           const MediaPlayerId& id) override;
+                           const content::MediaPlayerId& id) override;
   void MediaStoppedPlaying(
       const MediaPlayerInfo& video_type,
-      const MediaPlayerId& id,
+      const content::MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(base::Optional<SkColor> theme_color) override;
   void OnInterfaceRequestFromFrame(
