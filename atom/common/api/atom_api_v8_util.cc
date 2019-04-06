@@ -11,7 +11,7 @@
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
-#include "base/hash.h"
+#include "base/hash/hash.h"
 #include "native_mate/dictionary.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
