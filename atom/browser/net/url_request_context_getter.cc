@@ -296,7 +296,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     const auto& custom_standard_schemes = atom::api::GetStandardSchemes();
     cookie_schemes.insert(cookie_schemes.end(), custom_standard_schemes.begin(),
                           custom_standard_schemes.end());
-    cookie_monster->SetCookieableSchemes(cookie_schemes);
+    cookie_monster->SetCookieableSchemes(cookie_schemes, base::NullCallback());
 
     // Setup handlers for custom job factory.
     top_job_factory_.reset(new AtomURLRequestJobFactory);
