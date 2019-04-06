@@ -144,8 +144,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   net::NetLog* GetNetLog() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
-  content::PlatformNotificationService* GetPlatformNotificationService()
-      override;
+  content::PlatformNotificationService* GetPlatformNotificationService(
+      content::BrowserContext* browser_context) override;
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   base::FilePath GetDefaultDownloadDirectory() override;
