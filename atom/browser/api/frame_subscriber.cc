@@ -11,6 +11,7 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
+#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
 
@@ -43,10 +44,9 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
     return;
 
   // Create and configure the video capturer.
+  gfx::Size size = GetRenderViewSize();
   video_capturer_ = host_->GetView()->CreateVideoCapturer();
-  video_capturer_->SetResolutionConstraints(
-      host_->GetView()->GetViewBounds().size(),
-      host_->GetView()->GetViewBounds().size(), true);
+  video_capturer_->SetResolutionConstraints(size, size, true);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
@@ -87,9 +87,9 @@ void FrameSubscriber::OnFrameCaptured(
     ::media::mojom::VideoFrameInfoPtr info,
     const gfx::Rect& content_rect,
     viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) {
-  gfx::Size view_size = host_->GetView()->GetViewBounds().size();
-  if (view_size != content_rect.size()) {
-    video_capturer_->SetResolutionConstraints(view_size, view_size, true);
+  gfx::Size size = GetRenderViewSize();
+  if (size != content_rect.size()) {
+    video_capturer_->SetResolutionConstraints(size, size, true);
     video_capturer_->RequestRefreshFrame();
     return;
   }
@@ -163,6 +163,13 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   CHECK(success);
 
   callback_.Run(gfx::Image::CreateFrom1xBitmap(copy), damage);
+}
+
+gfx::Size FrameSubscriber::GetRenderViewSize() const {
+  content::RenderWidgetHostView* view = host_->GetView();
+  gfx::Size size = view->GetViewBounds().size();
+  return gfx::ToRoundedSize(
+      gfx::ScaleSize(gfx::SizeF(size), view->GetDeviceScaleFactor()));
 }
 
 }  // namespace api
