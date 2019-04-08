@@ -14,6 +14,7 @@
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/atom_gpu_client.h"
 #include "atom/browser/feature_list.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/options_switches.h"
@@ -260,6 +261,11 @@ void AtomMainDelegate::PreCreateMainMessageLoop() {
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
   browser_client_.reset(new AtomBrowserClient);
   return browser_client_.get();
+}
+
+content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
+  gpu_client_.reset(new AtomGpuClient);
+  return gpu_client_.get();
 }
 
 content::ContentRendererClient*
