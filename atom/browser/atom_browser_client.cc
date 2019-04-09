@@ -916,6 +916,15 @@ std::string AtomBrowserClient::GetUserAgent() const {
   return GetApplicationUserAgent();
 }
 
+void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
+    int frame_tree_node_id,
+    NonNetworkURLLoaderFactoryMap* factories) {
+  content::WebContents* web_contents =
+      content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
+  LOG(ERROR) << "RegisterNonNetworkNavigationURLLoaderFactories: "
+             << web_contents << " " << factories;
+}
+
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();
