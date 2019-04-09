@@ -14,6 +14,7 @@
 #include "atom/app/manifests.h"
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
+#include "atom/browser/api/atom_api_protocol_ns.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -921,8 +922,10 @@ void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
-  LOG(ERROR) << "RegisterNonNetworkNavigationURLLoaderFactories: "
-             << web_contents << " " << factories;
+  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+  if (protocol)
+    protocol->RegisterURLLoaderFactories(factories);
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
