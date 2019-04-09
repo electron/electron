@@ -208,8 +208,7 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   // Can be reenabled when our site instance policy is aligned with chromium
   // when node integration is enabled.
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name +
-      std::string(",") + network::features::kNetworkService.name;
+      std::string(",") + features::kSpareRendererForSitePerProcess.name;
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
