@@ -22,6 +22,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     sudo \
     vim-nox \
     wget \
+    lsof \
   && /setup/install-build-deps.sh --syms --no-prompt --no-chromeos-fonts --lib32 --arm \
   && rm -rf /var/lib/apt/lists/*
 
