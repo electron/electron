@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Tue, 9 April 2019 14:57:02 -0700
+Subject: disable_network_services_by_default.patch
+
+Disable NetworkService by default.
+
+This allows us to enable NetworkService with command line flags, which makes it
+easier to work on NetworkService migration.
+
+We should remove this patch after all Electron's code has been migrated to the
+NetworkService.
+
+diff --git a/services/network/public/cpp/features.cc b/services/network/public/cpp/features.cc
+index 5276ed9798d9..9d4d6421c75a 100644
+--- a/services/network/public/cpp/features.cc
++++ b/services/network/public/cpp/features.cc
+@@ -21,7 +21,7 @@ const base::Feature kNetworkService {
+   "NetworkService",
+ #if defined(OS_WIN) || defined(OS_MACOSX) || \
+     (defined(OS_LINUX) && !defined(IS_CHROMECAST))
+-      base::FEATURE_ENABLED_BY_DEFAULT
++      base::FEATURE_DISABLED_BY_DEFAULT
+ };
+ #else
+       base::FEATURE_DISABLED_BY_DEFAULT
