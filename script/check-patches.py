@@ -7,17 +7,23 @@ import sys
 
 from lib import git
 from lib.util import index_of_first
-from lib.patches import patch_filenames_for_dir, guess_base_commit, format_patch, split_patches, get_file_name
+from lib.patches import (
+  patch_filenames_for_dir,
+  guess_base_commit,
+  format_patch,
+  split_patches,
+  get_file_name,
+)
 
 def print_in_a_frame(message, padding = 2):
   size = len(message)
   padding_str = ' ' * padding * 2
 
   print('#' * (size + 2 + padding * 2 * 2))
-  for i in range(padding):
+  for _ in range(padding):
     print('#{}{}{}#'.format(padding_str, ' ' * size, padding_str))
   print('#{}{}{}#'.format(padding_str, message, padding_str))
-  for i in range(padding):
+  for _ in range(padding):
     print('#{}{}{}#'.format(padding_str, ' ' * size, padding_str))
   print('#' * (size + 2 + padding * 2 * 2))
 
@@ -66,11 +72,10 @@ def get_patches_from_git(root, dirs):
   get_patch_diffs() to make things easier to compare"""
   patch_map = {}
 
-  for patch, repo in dirs.iteritems():
-    patch_dir = os.path.normpath(os.path.join(root, patch))
+  for _, repo in dirs.iteritems():
     repo_dir = os.path.normpath(os.path.join(root, repo))
 
-    patch_range, num_patches = guess_base_commit(repo_dir)
+    patch_range = guess_base_commit(repo_dir)[0]
     patch_data = format_patch(repo_dir, patch_range)
     patches = split_patches(patch_data)
 
@@ -94,7 +99,7 @@ def compare_diffs(a, b):
       for i in range(0, len(a[diff])):
         if a[diff][i].strip() != b[diff][i].strip():
           return False
-  except Exception as e:
+  except:
     return False
 
   return True
@@ -104,13 +109,13 @@ def check_patches(root, dirs, inputs):
   equivalent to the ones already applied"""
   patches_from_git = get_patches_from_git(root, dirs)
 
-  for input in inputs:
-    patch_relative_path = os.path.relpath(input, root)
+  for patch in inputs:
+    patch_relative_path = os.path.relpath(patch, root)
     patch_dir = os.path.dirname(patch_relative_path).replace('\\', '/')
 
-    patch_name = os.path.join(dirs[patch_dir], os.path.basename(input))
+    patch_name = os.path.join(dirs[patch_dir], os.path.basename(patch))
 
-    with open(input) as f:
+    with open(patch) as f:
       patch_from_file = get_patch_diffs(f.readlines())
       if not compare_diffs(patch_from_file, patches_from_git[patch_name]):
         return False
@@ -131,10 +136,10 @@ def main():
 
   root_dir = os.path.normpath(os.path.join(os.getcwd(), "../.."))
   patchfiles = []
-  for root, dirs, files in os.walk(os.path.join(os.getcwd(), "patches/common")):
-    for file in files:
-      if file.endswith('.patches'):
-        with open(os.path.join(root, file)) as f:
+  for root, _, files in os.walk(os.path.join(os.getcwd(), "patches/common")):
+    for filename in files:
+      if filename.endswith('.patches'):
+        with open(os.path.join(root, filename)) as f:
           for line in f.readlines():
             patchfiles.append(os.path.join(root, line.strip()))
 

@@ -57,7 +57,8 @@ def format_patch(repo, since):
     '-C',
     repo,
     '-c',
-    'core.attributesfile=' + os.path.join(os.path.dirname(os.path.realpath(__file__)), '.electron.attributes'),
+    'core.attributesfile=' + os.path.join(os.path.dirname( \
+                          os.path.realpath(__file__)), '.electron.attributes'),
     # Ensure it is not possible to match anything
     # Disabled for now as we have consistent chunk headers
     # '-c',
@@ -119,8 +120,10 @@ def remove_patch_filename(patch):
   force_keep_next_line = False
   for i, l in enumerate(patch):
     is_patchfilename = l.startswith('Patch-Filename: ')
-    next_is_patchfilename = i < len(patch) - 1 and patch[i+1].startswith('Patch-Filename: ')
-    if not force_keep_next_line and (is_patchfilename or (next_is_patchfilename and len(l.rstrip()) == 0)):
+    next_is_patchfilename = i < len(patch) - 1 and \
+                            patch[i+1].startswith('Patch-Filename: ')
+    if not force_keep_next_line and \
+       (is_patchfilename or (next_is_patchfilename and len(l.rstrip()) == 0)):
       pass # drop this line
     else:
       yield l
