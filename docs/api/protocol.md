@@ -35,16 +35,16 @@ const { session, app, protocol } = require('electron')
 const path = require('path')
 
 app.on('ready', () => {
-  const partition = "persist:example"
+  const partition = 'persist:example'
   const ses = session.fromPartition(partition)
-  
+
   ses.protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
   }, (error) => {
     if (error) console.error('Failed to register protocol')
-  });
-  
+  })
+
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
