@@ -241,3 +241,9 @@ def get_electron_exec():
 
   raise Exception(
       "get_electron_exec: unexpected platform '{0}'".format(sys.platform))
+
+def index_of_first(lst, pred):
+  for i,v in enumerate(lst):
+    if pred(v):
+      return i
+  return None
