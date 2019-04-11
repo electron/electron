@@ -24,6 +24,38 @@ app.on('ready', () => {
 **Note:** All methods unless specified can only be used after the `ready` event
 of the `app` module gets emitted.
 
+## Using `protocol` with a `partition` in `webPreferences`
+
+A protocol is registered to the default Electron session. If you define a `partition` on your `browserWindow`'s `webPreferences`, then that partition will use a different session and your custom protocol will not work.
+
+To have your custom protocol work in combination with a partition, you need to register it to the session of that partition:
+
+```javascript
+const { session, app, protocol } = require('electron')
+const path = require('path')
+
+app.on('ready', () => {
+  const partition = "persist:example"
+  const ses = session.fromPartition(partition)
+  
+  ses.protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
+    callback({ path: path.normalize(`${__dirname}/${url}`) })
+  }, (error) => {
+    if (error) console.error('Failed to register protocol')
+  });
+  
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      partition: partition
+    }
+  })
+})
+```
+Using `protocol.registerStandardSchemes` without the session will still register your custom protocol as a standard scheme.
+
 ## Methods
 
 The `protocol` module has the following methods:
