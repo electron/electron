@@ -99,7 +99,7 @@ def compare_diffs(a, b):
       for i in range(0, len(a[diff])):
         if a[diff][i].strip() != b[diff][i].strip():
           return False
-  except:
+  except Exception:
     return False
 
   return True
