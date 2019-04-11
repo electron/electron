@@ -27,6 +27,7 @@
         hasHang: typeof process.hang === 'function',
         creationTime: invoke(() => process.getCreationTime()),
         heapStatistics: invoke(() => process.getHeapStatistics()),
+        blinkMemoryInfo: invoke(() => process.getBlinkMemoryInfo()),
         processMemoryInfo: invoke(() => process.getProcessMemoryInfo()),
         systemMemoryInfo: invoke(() => process.getSystemMemoryInfo()),
         systemVersion: invoke(() => process.getSystemVersion()),

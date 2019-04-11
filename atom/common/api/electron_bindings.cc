@@ -29,6 +29,7 @@
 #include "native_mate/dictionary.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
+#include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 namespace atom {
 
@@ -68,6 +69,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("log", &Log);
   process->SetMethod("getCreationTime", &GetCreationTime);
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
+  process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
   process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
   process->SetMethod("getSystemVersion",
@@ -250,6 +252,21 @@ v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
                          std::move(context), std::move(promise)));
   return handle;
+}
+
+// static
+v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
+    v8::Isolate* isolate) {
+  auto allocated = blink::ProcessHeap::TotalAllocatedObjectSize();
+  auto marked = blink::ProcessHeap::TotalMarkedObjectSize();
+  auto total = blink::ProcessHeap::TotalAllocatedSpace();
+
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
+  dict.Set("allocated", static_cast<double>(allocated >> 10));
+  dict.Set("marked", static_cast<double>(marked >> 10));
+  dict.Set("total", static_cast<double>(total >> 10));
+  return dict.GetHandle();
 }
 
 // static
