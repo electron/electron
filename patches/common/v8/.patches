@@ -1,4 +1,3 @@
-deps_backport_detailed_line_info_for_cpu_profiler.patch
 add_realloc.patch
 build_gn.patch
 expose_mksnapshot.patch
