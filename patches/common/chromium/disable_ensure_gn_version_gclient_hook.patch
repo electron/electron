@@ -7,7 +7,7 @@ The script can't execute the right executable on our mac CI because the
 checkout happens on a linux machine.
 
 diff --git a/DEPS b/DEPS
-index 31a459e2c3233b05c5eb0dc25afc4e0a568fc8ab..d4acf688584b5302b96b1d73355695a9ca8993a9 100644
+index cee1cd0e3e0af1d558161455e589c80a71a1e087..444dd0e39d9416a4fc3c16c641f5efb4f1fe59e8 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -34,6 +34,7 @@ gclient_gn_args = [
@@ -18,7 +18,7 @@ index 31a459e2c3233b05c5eb0dc25afc4e0a568fc8ab..d4acf688584b5302b96b1d73355695a9
  ]
  
  
-@@ -95,6 +96,8 @@ vars = {
+@@ -94,6 +95,8 @@ vars = {
    'checkout_traffic_annotation_tools': 'checkout_configuration != "small"',
    'checkout_instrumented_libraries': 'checkout_linux and checkout_configuration != "small"',
  
@@ -27,7 +27,7 @@ index 31a459e2c3233b05c5eb0dc25afc4e0a568fc8ab..d4acf688584b5302b96b1d73355695a9
    # By default, do not check out WebKit for iOS, as it is not needed unless
    # running against ToT WebKit rather than system WebKit. This can be overridden
    # e.g. with custom_vars.
-@@ -2281,6 +2284,7 @@ hooks = [
+@@ -2280,6 +2283,7 @@ hooks = [
      # have the right binary more carefully and we no longer need this.
      'name': 'ensure_gn_version',
      'pattern': '.',
