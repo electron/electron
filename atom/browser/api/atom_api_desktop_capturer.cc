@@ -163,6 +163,10 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
           &device_names);
       int device_name_index = 0;
       for (auto& source : screen_sources) {
+        if (device_name_index >= device_names.size()) {
+          LOG(ERROR) << "not enough device_names, skip setting display_id";
+          break;
+        }
         const auto& device_name = device_names[device_name_index++];
         std::wstring wide_device_name;
         base::UTF8ToWide(device_name.c_str(), device_name.size(),
