@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_LOGIN_HANDLER_H_
 #define ATOM_BROWSER_LOGIN_HANDLER_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
