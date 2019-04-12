@@ -7,7 +7,7 @@ Dont compare RC.exe and RC.py output.
 FIXME: It has to be reverted once the script is fixed.
 
 diff --git a/build/toolchain/win/tool_wrapper.py b/build/toolchain/win/tool_wrapper.py
-index f173adb20333998e22c5b937a3e7ce1b62e7ef1e..1b884b7a4badf9096a92068261f3e132181785f9 100644
+index 926086670dac3ccf85f4085b513740aec1ebe9e5..cbb32f1143420d47af23f1ad92ee8656543a93e0 100644
 --- a/build/toolchain/win/tool_wrapper.py
 +++ b/build/toolchain/win/tool_wrapper.py
 @@ -224,7 +224,11 @@ class WinTool(object):
