@@ -105,8 +105,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
       const std::string& method,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers);
-  void OnAuthenticationRequired(
-      scoped_refptr<const net::AuthChallengeInfo> auth_info);
+  void OnAuthenticationRequired(const net::AuthChallengeInfo& auth_info);
   void OnResponseStarted(
       scoped_refptr<net::HttpResponseHeaders> response_headers);
   void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);

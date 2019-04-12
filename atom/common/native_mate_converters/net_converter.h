@@ -24,9 +24,9 @@ struct CertPrincipal;
 namespace mate {
 
 template <>
-struct Converter<const net::AuthChallengeInfo*> {
+struct Converter<net::AuthChallengeInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::AuthChallengeInfo* val);
+                                   const net::AuthChallengeInfo& val);
 };
 
 template <>
