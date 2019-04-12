@@ -235,10 +235,10 @@ index ae80202ea061d3cd1eff7b5523c32ca6f31407c5..f0fba5768fa5d5ec66aea436b9e29fd5
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 9fb5ae6624be0c28454cf2dd30d2456d8af92d7d..d4153a24eec725e19f6d758e07981fffc0753263 100644
+index 4d3da78750cf499fd4bc31f6b4d834b34fca62ab..1e1965c91e7281322a75e60fb698e2626d5f90f9 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2805,6 +2805,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2815,6 +2815,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -249,7 +249,7 @@ index 9fb5ae6624be0c28454cf2dd30d2456d8af92d7d..d4153a24eec725e19f6d758e07981fff
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index d12f8a42cb6af501dad92483b957dcf33d76a6c9..fbc0ab37aef36b46a54c7afc54945161ce973834 100644
+index 88ec94963569588ed2882193a28197879dcb1090..eae37577bc9b1872c0162f55de218553eed61587 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -16,6 +16,7 @@
