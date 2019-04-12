@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: libcc-20-vs2017-15.7.4
+image: libcc-20-vs2017-15.9
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   DISABLE_CRASH_REPORTER_TESTS: true
