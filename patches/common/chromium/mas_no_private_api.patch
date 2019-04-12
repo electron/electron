@@ -38,7 +38,7 @@ index d38fa48b8b890d90f2911995a2a51c249005c827..5fe68c71fe101a307ef565013a91b109
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 864129f86c9a290527ce455f58d168dfe4e1da16..2de7323a14105c1d3076eac8485071849cee51a7 100644
+index 575957842225a102337a71fe2a4a10625505a647..01ee760aa0853517631add692e7e8279cada714c 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -141,6 +141,7 @@
@@ -181,10 +181,10 @@ index 864129f86c9a290527ce455f58d168dfe4e1da16..2de7323a14105c1d3076eac848507184
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index a66ff87026f6b83174abc6165efc735aa7672b16..fb9af9151ae04d6ed0e1aff25d052ae25ca0c2d6 100644
+index eb2f9c29b30b016eff979e06a432f804c4318503..a76f1aa4e24346dabb94089c77a260c9b6b19243 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -482,6 +482,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -484,6 +484,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -192,7 +192,7 @@ index a66ff87026f6b83174abc6165efc735aa7672b16..fb9af9151ae04d6ed0e1aff25d052ae2
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -489,6 +490,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -491,6 +492,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -277,7 +277,7 @@ index fe0b73b51492ca08cbebf3aec74ea0a7caf44aef..fb8b362097f18d947219af36f84b9bea
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index dbc89abd64d5dae45b239482804ecdabbf7086f6..aba6eb679303fc7fb033ddf05fc941cf27ce8439 100644
+index cb7a5305c2d6cbe7b3aa13efdfe6dcc6dfd857e9..e3f3ee7fee0a8f9cf7b3c1b6bed7c2a6cf443954 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -180,6 +180,12 @@ source_set("audio") {
@@ -294,10 +294,10 @@ index dbc89abd64d5dae45b239482804ecdabbf7086f6..aba6eb679303fc7fb033ddf05fc941cf
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index a1091960873dad8bb1b0129d20a552bf8a51739f..50bb186d1474fd4c90723ac97ac93b1d271e7a3b 100644
+index 11cc3843f58174b8f234517359bab3c973ccf622..078e97d62f269777ec6b065de064de6dd081860b 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -877,7 +877,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -882,7 +882,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -307,7 +307,7 @@ index a1091960873dad8bb1b0129d20a552bf8a51739f..50bb186d1474fd4c90723ac97ac93b1d
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index c7961d2072459009639ae908dee38587d470256f..b87dadc22508949c80946f0d7b00549714efd764 100644
+index 6e45b8031b6373b3979f2cc8dd89ae3c3b12f535..6e1a3c7c3ddd3e7c2d2cd2b38680479e50ee5340 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -245,6 +245,7 @@ class DnsConfigServicePosix::Watcher {
