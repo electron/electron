@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: libcc-20-vs2017-15.7.4
+image: libcc-20-vs2017-15.9
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   DISABLE_CRASH_REPORTER_TESTS: true
@@ -38,7 +38,7 @@ build_script:
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - md src
+  - ps: if (Test-Path src\electron) { Remove-Item src\electron -Recurse }
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
@@ -52,7 +52,7 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags
+  - gclient sync --with_branch_heads --with_tags --reset
   - cd src
   - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
