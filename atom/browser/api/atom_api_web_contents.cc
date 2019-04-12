@@ -1193,7 +1193,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     return;
   }
 
-  const auto* render_view_host = contents->GetRenderViewHost();
+  auto* render_view_host = contents->GetRenderViewHost();
   if (!render_view_host) {
     return;
   }
