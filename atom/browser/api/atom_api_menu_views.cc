@@ -52,7 +52,7 @@ void MenuViews::PopupAt(TopLevelWindow* window,
       std::make_unique<MenuRunner>(model(), flags, close_callback);
   menu_runners_[window_id]->RunMenuAt(
       native_window->widget(), NULL, gfx::Rect(location, gfx::Size()),
-      views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE);
+      views::MenuAnchorPosition::kTopLeft, ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {
