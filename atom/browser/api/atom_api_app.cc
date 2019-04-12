@@ -671,7 +671,7 @@ void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
   if (web_contents) {
     prevent_default = Emit(
         "login", WebContents::FromOrCreate(isolate(), web_contents),
-        request_details, login_handler->auth_info(),
+        request_details, *login_handler->auth_info(),
         base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
   }
 

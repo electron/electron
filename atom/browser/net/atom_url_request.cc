@@ -353,7 +353,7 @@ void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&AtomURLRequest::InformDelegateAuthenticationRequired,
-                     this, scoped_refptr<net::AuthChallengeInfo>(auth_info)));
+                     this, auth_info));
 }
 
 void AtomURLRequest::OnResponseStarted(net::URLRequest* request,
@@ -468,7 +468,7 @@ void AtomURLRequest::InformDelegateReceivedRedirect(
 }
 
 void AtomURLRequest::InformDelegateAuthenticationRequired(
-    scoped_refptr<net::AuthChallengeInfo> auth_info) const {
+    const net::AuthChallengeInfo& auth_info) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (delegate_)
     delegate_->OnAuthenticationRequired(auth_info);
