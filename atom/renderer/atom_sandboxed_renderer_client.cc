@@ -44,7 +44,8 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 }
 
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
-  mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
+  auto context = isolate->GetCurrentContext();
+  mate::Dictionary global(isolate, context->Global());
   v8::Local<v8::Value> cache;
 
   if (!global.GetHidden(kModuleCacheKey, &cache)) {
@@ -52,7 +53,7 @@ v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
     global.SetHidden(kModuleCacheKey, cache);
   }
 
-  return cache->ToObject(isolate);
+  return cache->ToObject(context).ToLocalChecked();
 }
 
 // adapted from node.cc
@@ -95,7 +96,9 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
                           const std::string& hidden_key,
                           const std::string& callback_name) {
   auto* isolate = context->GetIsolate();
-  auto binding_key = mate::ConvertToV8(isolate, hidden_key)->ToString(isolate);
+  auto binding_key = mate::ConvertToV8(isolate, hidden_key)
+                         ->ToString(context)
+                         .ToLocalChecked();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
   v8::Local<v8::Value> value;
@@ -103,9 +106,10 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
     return;
   if (value.IsEmpty() || !value->IsObject())
     return;
-  auto binding = value->ToObject(isolate);
-  auto callback_key =
-      mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
+  auto binding = value->ToObject(context).ToLocalChecked();
+  auto callback_key = mate::ConvertToV8(isolate, callback_name)
+                          ->ToString(context)
+                          .ToLocalChecked();
   auto callback_value = binding->Get(callback_key);
   DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
   auto callback = v8::Handle<v8::Function>::Cast(callback_value);
