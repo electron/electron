@@ -347,7 +347,7 @@ void AtomURLRequest::OnReceivedRedirect(net::URLRequest* request,
 }
 
 void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
-                                    net::AuthChallengeInfo* auth_info) {
+                                    const net::AuthChallengeInfo& auth_info) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   base::PostTaskWithTraits(
