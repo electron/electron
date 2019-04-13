@@ -255,7 +255,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
+void MenuBar::OnMenuButtonClicked(views::Button* source,
                                   const gfx::Point& point,
                                   const ui::Event* event) {
   // Hide the accelerator when a submenu is activated.
