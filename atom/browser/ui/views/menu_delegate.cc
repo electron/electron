@@ -22,7 +22,7 @@ MenuDelegate::MenuDelegate(MenuBar* menu_bar)
 MenuDelegate::~MenuDelegate() {}
 
 void MenuDelegate::RunMenu(AtomMenuModel* model,
-                           views::MenuButton* button,
+                           views::Button* button,
                            ui::MenuSourceType source_type) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
@@ -43,9 +43,9 @@ void MenuDelegate::RunMenu(AtomMenuModel* model,
   menu_runner_.reset(new views::MenuRunner(
       item,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
-  menu_runner_->RunMenuAt(button->GetWidget()->GetTopLevelWidget(), button,
-                          bounds, views::MenuAnchorPosition::kTopRight,
-                          source_type);
+  menu_runner_->RunMenuAt(button->GetWidget()->GetTopLevelWidget(),
+                          static_cast<views::MenuButton*>(button), bounds,
+                          views::MenuAnchorPosition::kTopRight, source_type);
 }
 
 void MenuDelegate::ExecuteCommand(int id) {
