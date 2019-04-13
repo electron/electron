@@ -22,7 +22,7 @@ MenuDelegate::MenuDelegate(MenuBar* menu_bar)
 MenuDelegate::~MenuDelegate() {}
 
 void MenuDelegate::RunMenu(AtomMenuModel* model,
-                           views::MenuButton* button,
+                           views::Button* button,
                            ui::MenuSourceType source_type) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
