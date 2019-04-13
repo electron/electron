@@ -89,7 +89,7 @@ env-enable-goma: &env-enable-goma
   GOMA_SERVER_HOST: 'goma.ionicpineapple.com'
   GOMA_SERVER_PORT: '443'
   GOMA_ARBITRARY_TOOLCHAIN_SUPPORT: 'true'
-  NUMBER_OF_NINJA_PROCESSES: 100
+  NUMBER_OF_NINJA_PROCESSES: 400
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
