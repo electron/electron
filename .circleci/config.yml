@@ -85,6 +85,7 @@ env-enable-sccache: &env-enable-sccache
 
 env-enable-goma: &env-enable-goma
   USE_GOMA: true
+  GN_GOMA_ARGS: 'use_goma=true'
   GOMA_SERVER_HOST: 'goma.ionicpineapple.com'
   GOMA_SERVER_PORT: '443'
   GOMA_ARBITRARY_TOOLCHAIN_SUPPORT: 'true'
@@ -179,7 +180,7 @@ step-setup-env-for-build: &step-setup-env-for-build
       # TODO: Ensure we install the correct platform
       if [ "$USE_GOMA" == "true" ]; then
         cipd install infra/goma/client/linux-amd64 -root ${HOME}/goma
-        echo $GOMA_CONFIG >> $HOME/.goma_client_oauth2_config
+        echo $RAW_GOMA_CONFIG >> $HOME/.goma_client_oauth2_config
         $HOME/goma/goma_ctl.py ensure_start
       fi
 
@@ -242,7 +243,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_GOMA_ARGS"
 
 step-gn-check: &step-gn-check
   run:

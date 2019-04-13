@@ -23,7 +23,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     vim-nox \
     wget \
     lsof \
-    gcc-multilib \ 
+    gcc-multilib \
     g++-multilib \
   && /setup/install-build-deps.sh --syms --no-prompt --no-chromeos-fonts --lib32 --arm \
   && rm -rf /var/lib/apt/lists/*
