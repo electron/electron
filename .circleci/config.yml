@@ -83,6 +83,13 @@ env-mas: &env-mas
 env-enable-sccache: &env-enable-sccache
   USE_SCCACHE: true
 
+env-enable-goma: &env-enable-goma
+  USE_GOMA: true
+  GOMA_SERVER_HOST: 'goma.ionicpineapple.com'
+  GOMA_SERVER_PORT: '443'
+  GOMA_ARBITRARY_TOOLCHAIN_SUPPORT: 'true'
+  NUMBER_OF_NINJA_PROCESSES: 100
+
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
 
@@ -167,6 +174,13 @@ step-setup-env-for-build: &step-setup-env-for-build
           echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
         fi
+      fi
+
+      # TODO: Ensure we install the correct platform
+      if [ "$USE_GOMA" == "true" ]; then
+        cipd install infra/goma/client/linux-amd64 -root ${HOME}/goma
+        echo $GOMA_CONFIG >> $HOME/.goma_client_oauth2_config
+        $HOME/goma/goma_ctl.py ensure_start
       fi
 
 step-restore-brew-cache: &step-restore-brew-cache
@@ -849,7 +863,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-debug-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
     <<: *steps-electron-build
 
   linux-x64-debug-gn-check:
@@ -864,7 +878,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
     <<: *steps-electron-build-for-tests
 
   linux-x64-testing-gn-check:
@@ -879,7 +893,7 @@ jobs:
     environment:
       <<: *env-linux-medium
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
@@ -888,7 +902,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
@@ -906,7 +920,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-ia32
       <<: *env-debug-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
     <<: *steps-electron-build
 
   linux-ia32-testing:
@@ -915,7 +929,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-ia32
       <<: *env-testing-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
     <<: *steps-electron-build-for-tests
 
   linux-ia32-chromedriver:
@@ -924,7 +938,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-ia32
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
@@ -934,7 +948,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-ia32
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
@@ -953,7 +967,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-arm
       <<: *env-debug-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
     <<: *steps-electron-build
 
   linux-arm-testing:
@@ -962,7 +976,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-arm
       <<: *env-testing-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
@@ -972,7 +986,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-arm
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
@@ -982,7 +996,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-arm
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
@@ -1001,7 +1015,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-arm64
       <<: *env-debug-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
     <<: *steps-electron-build
 
   linux-arm64-debug-gn-check:
@@ -1018,7 +1032,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-arm64
       <<: *env-testing-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
@@ -1036,7 +1050,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-arm64
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
@@ -1046,7 +1060,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-arm64
       <<: *env-release-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
@@ -1164,7 +1178,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-unittests
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-headless-testing
     <<: *steps-native-tests
 
@@ -1173,7 +1187,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-unittests
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-headless-testing
       TESTS_ARGS: '--only-disabled-tests'
     <<: *steps-native-tests
@@ -1183,7 +1197,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge
       <<: *env-unittests
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-headless-testing
       TESTS_ARGS: '--include-disabled-tests'
     <<: *steps-native-tests
@@ -1194,7 +1208,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-browsertests
       <<: *env-testing-build
-      <<: *env-enable-sccache
+      <<: *env-enable-goma
       <<: *env-headless-testing
     <<: *steps-native-tests
 
