@@ -102,7 +102,7 @@ void Erase(T* container, typename T::iterator iter) {
 
 #if defined(OS_WIN)
 // gfx::Font callbacks
-void AdjustUIFont(gfx::PlatformFontWin::FontAdjustment* font_adjustment) {
+void AdjustUIFont(gfx::win::FontAdjustment* font_adjustment) {
   l10n_util::NeedOverrideDefaultUIFont(&font_adjustment->font_family_override,
                                        &font_adjustment->font_scale);
   font_adjustment->font_scale *= display::win::GetAccessibilityFontScale();
@@ -392,8 +392,8 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(OS_WIN)
-  gfx::PlatformFontWin::SetAdjustFontCallback(&AdjustUIFont);
-  gfx::PlatformFontWin::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
+  gfx::win::SetAdjustFontCallback(&AdjustUIFont);
+  gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 
   wchar_t module_name[MAX_PATH] = {0};
   if (GetModuleFileName(NULL, module_name, MAX_PATH))
