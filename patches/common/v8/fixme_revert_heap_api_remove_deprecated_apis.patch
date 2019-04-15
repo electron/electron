@@ -72,7 +72,7 @@ index ee00b47eed90fb68a373515ef26cee0d8d73b18d..7416f24ff548e4477311d13b88fda65d
  bool PersistentBase<T>::IsWeak() const {
    typedef internal::Internals I;
 diff --git a/src/api.cc b/src/api.cc
-index b360cad05b0d156dddcf9824e50af6d3e4d12f1a..da7e85ada2f1b712d62efb3c63f5d9de027688b1 100644
+index 9c0d66f091e508d39eccd343d01c1d2fbd245268..ebd2629eedd340402be9d253dff97f2d5e9316d9 100644
 --- a/src/api.cc
 +++ b/src/api.cc
 @@ -8981,6 +8981,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
@@ -141,7 +141,7 @@ index 6b8ca0c93fa344ed0155106fef3a0aabf13bdf44..f5f51bb00761f37b7182e0be5e878383
    static bool IsWeak(Address* location);
  
 diff --git a/test/cctest/heap/test-heap.cc b/test/cctest/heap/test-heap.cc
-index 5a92a90ea1107e5761a5ed08759ad3dc149eab5f..4f17bf010c6f2cf4b990442422e766e8eac4479c 100644
+index 50ac47a7ab0453f35a68932b63c33c352758302f..13a3fc9047760d1065d073f3423c0d44344a58f2 100644
 --- a/test/cctest/heap/test-heap.cc
 +++ b/test/cctest/heap/test-heap.cc
 @@ -531,9 +531,14 @@ TEST(WeakGlobalHandlesScavenge) {
