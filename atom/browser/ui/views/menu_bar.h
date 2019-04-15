@@ -16,8 +16,9 @@
 #include "ui/views/view.h"
 
 namespace views {
+class Button;
 class MenuButton;
-}
+}  // namespace views
 
 namespace atom {
 
