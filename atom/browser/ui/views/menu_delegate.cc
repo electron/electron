@@ -44,7 +44,8 @@ void MenuDelegate::RunMenu(AtomMenuModel* model,
       item,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
   menu_runner_->RunMenuAt(button->GetWidget()->GetTopLevelWidget(), button,
-                          bounds, views::MENU_ANCHOR_TOPRIGHT, source_type);
+                          bounds, views::MenuAnchorPosition::kTopRight,
+                          source_type);
 }
 
 void MenuDelegate::ExecuteCommand(int id) {
