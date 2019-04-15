@@ -547,6 +547,7 @@ static_library("electron_lib") {
     deps += [
       "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
+      "//ui/views_bridge_mac",
     ]
     sources += [
       "atom/browser/ui/views/autofill_popup_view.cc",
