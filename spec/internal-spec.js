@@ -9,6 +9,7 @@ describe('feature-string parsing', () => {
       parseFeaturesString(string, (k, v) => { features[k] = v })
       expect(features).to.deep.equal(parsed)
     }
+
     checkParse('a=yes,c=d', { a: true, c: 'd' })
     checkParse('a=yes ,c=d', { a: true, c: 'd' })
     checkParse('a=yes, c=d', { a: true, c: 'd' })
@@ -19,5 +20,13 @@ describe('feature-string parsing', () => {
     checkParse(' a = yes , c =d', { a: true, c: 'd' })
     checkParse(' a = yes , c = d', { a: true, c: 'd' })
     checkParse(' a = yes , c = d ', { a: true, c: 'd' })
+    checkParse('a=1, c=d, additionalArguments=[--name=name test,--title=title]', {
+      additionalArguments: ['--name=name test', '--title=title'],
+      a: true,
+      c: 'd'
+    })
+    checkParse(' additionalArguments = [--title=title] ', {
+      additionalArguments: ['--title=title']
+    })
   })
 })
