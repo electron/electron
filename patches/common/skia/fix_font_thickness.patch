@@ -3,12 +3,15 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Mon, 22 Oct 2018 10:45:53 -0700
 Subject: fix_font_thickness.patch
 
-Backports https://skia-review.googlesource.com/c/157566/ to
-fix an issue whereby font rendering weight was too thin compared
+Fix an issue whereby font rendering weight was too thin compared
 to other fonts present on MacOS Mojave.
 
+Backports:
+- https://skia-review.googlesource.com/c/skia/+/157566
+- https://skia-review.googlesource.com/c/skia/+/177880
+
 diff --git a/src/ports/SkFontHost_mac.cpp b/src/ports/SkFontHost_mac.cpp
-index 18d09b4ec06a23f8c046d4f08a51296b77e37d8b..fc3902156b65b5875d231ff52101764d7b068f91 100644
+index 18d09b4ec06a23f8c046d4f08a51296b77e37d8b..8be3f306c1b8b1bf6609d14798860ca763f824b1 100644
 --- a/src/ports/SkFontHost_mac.cpp
 +++ b/src/ports/SkFontHost_mac.cpp
 @@ -380,17 +380,28 @@ static constexpr const uint8_t kSpiderSymbol_ttf[] = {
@@ -136,7 +139,7 @@ index 18d09b4ec06a23f8c046d4f08a51296b77e37d8b..fc3902156b65b5875d231ff52101764d
 -        (glyph.fMaskFormat == SkMask::kA8_Format && supports_LCD() && generateA8FromLCD))
 +        (glyph.fMaskFormat == SkMask::kA8_Format
 +         && requestSmooth
-+         && smooth_behavior() == SmoothBehavior::subpixel))
++         && smooth_behavior() != SmoothBehavior::none))
      {
          const uint8_t* linear = gLinearCoverageFromCGLCDValue.data();
  
