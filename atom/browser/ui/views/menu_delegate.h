@@ -13,7 +13,8 @@
 
 namespace views {
 class MenuRunner;
-}
+class Button;
+}  // namespace views
 
 namespace atom {
 
