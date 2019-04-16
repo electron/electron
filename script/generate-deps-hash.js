@@ -12,7 +12,7 @@ const filesToHash = [
 ]
 
 const addAllFiles = (dir) => {
-  for (const child of fs.readdirSync(dir)) {
+  for (const child of fs.readdirSync(dir).sort()) {
     const childPath = path.resolve(dir, child)
     if (fs.statSync(childPath).isDirectory()) {
       addAllFiles(childPath)
