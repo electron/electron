@@ -550,7 +550,7 @@ steps-checkout: &steps-checkout
         paths:
           - ./src
         keys:
-          - v2-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+          - v3-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
         name: Restoring src cache
     - restore_cache:
         paths:
@@ -596,7 +596,7 @@ steps-checkout: &steps-checkout
     - save_cache:
         paths:
           - ./src
-        key: v2-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+        key: v3-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
         name: Persisting src cache
     - save_cache:
         paths:
