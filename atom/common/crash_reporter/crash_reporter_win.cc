@@ -133,12 +133,14 @@ bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
                              reinterpret_cast<DWORD64>(start));
 }
 
+/*
 void UnregisterNonABICompliantCodeRange(void* start) {
   ExceptionHandlerRecord* record =
       reinterpret_cast<ExceptionHandlerRecord*>(start);
 
   RtlDeleteFunctionTable(&record->runtime_function);
 }
+*/
 #endif  // _WIN64
 
 }  // namespace
