@@ -2,6 +2,7 @@ is_electron_build = true
 use_jumbo_build = true
 root_extra_deps = [ "//electron" ]
 
+# Registry of NMVs --> https://github.com/nodejs/node/pull/24114/files
 node_module_version = 70
 
 v8_promise_internal_field_count = 1
