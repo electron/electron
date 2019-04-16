@@ -5,21 +5,19 @@ Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..4ad7672e9383a90fffbdeee0d415e6b1f09cdcfe 100644
+index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..2eaf127202b9e5ce5bac59d994f34402d91d5cdc 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -3198,6 +3198,10 @@ v8_source_set("v8_base_without_compiler") {
      ":v8_maybe_icu",
    ]
  
-+  if (is_electron_build) {
-+    defines += [ "BUILDING_V8_SHARED" ]
-+  }
-+
-   if (v8_enable_i18n_support) {
-     if (is_win) {
-       deps += [ "//third_party/icu:icudata" ]
-@@ -3676,6 +3680,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+-  if (is_component_build) {
++  if (is_component_build || is_electron_build) {
+     defines += [ "BUILDING_V8_SHARED" ]
+   }
+ }
+@@ -3676,6 +3676,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  
@@ -28,14 +26,3 @@ index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..4ad7672e9383a90fffbdeee0d415e6b1
      deps = [
        ":v8_base_without_compiler",
        ":v8_compiler_for_mksnapshot",
-@@ -3839,6 +3845,10 @@ if (is_component_build) {
-       ":v8_maybe_snapshot",
-     ]
- 
-+    if (is_electron_build) {
-+      defines = [ "BUILDING_V8_SHARED" ]
-+    }
-+
-     configs = [ ":internal_config" ]
- 
-     public_configs = [ ":external_config" ]
