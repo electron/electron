@@ -151,10 +151,7 @@ if (packageJson.v8Flags != null) {
   v8.setFlagsFromString(packageJson.v8Flags)
 }
 
-// Set the user path according to application's name.
-app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
-app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
-app.setAppPath(packagePath)
+app._setDefaultAppPaths(packagePath)
 
 // Load the chrome devtools support.
 require('@electron/internal/browser/chrome-devtools')

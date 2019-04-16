@@ -10,6 +10,7 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
 import("build/asar.gni")
+import("build/js_wrap.gni")
 import("build/npm.gni")
 import("build/tsc.gni")
 import("buildflags/buildflags.gni")
@@ -70,7 +71,7 @@ npm_action("build_electron_definitions") {
   ]
 }
 
-npm_action("atom_browserify_sandbox") {
+npm_action("atom_browserify_sandbox_unwrapped") {
   script = "browserify"
   deps = [
     ":build_electron_definitions",
@@ -79,7 +80,7 @@ npm_action("atom_browserify_sandbox") {
   inputs = auto_filenames.sandbox_browserify_deps
 
   outputs = [
-    "$target_gen_dir/js2c/preload_bundle.js",
+    "$target_gen_dir/js2c/preload_bundle_unwrapped.js",
   ]
 
   args = [
@@ -94,12 +95,14 @@ npm_action("atom_browserify_sandbox") {
     "-p",
     "tsconfig.electron.json",
     "]",
+    "--standalone",
+    "sandboxed_preload",
     "-o",
     rebase_path(outputs[0]),
   ]
 }
 
-npm_action("atom_browserify_isolated") {
+npm_action("atom_browserify_isolated_unwrapped") {
   script = "browserify"
   deps = [
     ":build_electron_definitions",
@@ -108,7 +111,7 @@ npm_action("atom_browserify_isolated") {
   inputs = auto_filenames.isolated_browserify_deps
 
   outputs = [
-    "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/isolated_bundle_unwrapped.js",
   ]
 
   args = [
@@ -121,12 +124,14 @@ npm_action("atom_browserify_isolated") {
     "-p",
     "tsconfig.electron.json",
     "]",
+    "--standalone",
+    "isolated_preload",
     "-o",
     rebase_path(outputs[0]),
   ]
 }
 
-npm_action("atom_browserify_content_script") {
+npm_action("atom_browserify_content_script_unwrapped") {
   script = "browserify"
   deps = [
     ":build_electron_definitions",
@@ -135,7 +140,7 @@ npm_action("atom_browserify_content_script") {
   inputs = auto_filenames.context_script_browserify_deps
 
   outputs = [
-    "$target_gen_dir/js2c/content_script_bundle.js",
+    "$target_gen_dir/js2c/content_script_bundle_unwrapped.js",
   ]
 
   args = [
@@ -148,8 +153,52 @@ npm_action("atom_browserify_content_script") {
     "-p",
     "tsconfig.electron.json",
     "]",
+    "--standalone",
+    "content_script_preload",
     "-o",
     rebase_path(outputs[0]),
+  ]
+}
+
+js_wrap("atom_browserify_content_script") {
+  deps = [
+    ":atom_browserify_content_script_unwrapped",
+  ]
+
+  inputs = [
+    "$target_gen_dir/js2c/content_script_bundle_unwrapped.js",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/content_script_bundle.js",
+  ]
+}
+
+js_wrap("atom_browserify_isolated") {
+  deps = [
+    ":atom_browserify_isolated_unwrapped",
+  ]
+
+  inputs = [
+    "$target_gen_dir/js2c/isolated_bundle_unwrapped.js",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/isolated_bundle.js",
+  ]
+}
+
+js_wrap("atom_browserify_sandbox") {
+  deps = [
+    ":atom_browserify_sandbox_unwrapped",
+  ]
+
+  inputs = [
+    "$target_gen_dir/js2c/preload_bundle_unwrapped.js",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/preload_bundle.js",
   ]
 }
 
