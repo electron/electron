@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Francois Doray <fdoray@chromium.org>
+Date: Mon, 8 Apr 2019 15:44:07 +0000
+Subject: Launch child unsandboxed processes in "Kill on Job Close" job.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the --no-sandbox flag is used, hanging child processes can outlive
+a browser process that gets killed. This results in leftover processes
+on bots when the process launcher sequence is made CONTINUE_ON_SHUTDOWN
+(see https://crbug.com/830954#c18).
+
+With this CL, all child processes are part of a "Kill on Job Close" job
+and are guaranteed not to outlive the browser process.
+
+This is a prerequisite to make the process launcher sequence
+CONTINUE_ON_SHUTDOWN, which will fix ~12% of shutdown hangs on Windows.
+
+Bug: 830954
+Change-Id: Ieec2b0a4cfc7db93dfffde947cae9fdb46fedb02
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1548839
+Reviewed-by: Will Harris <wfh@chromium.org>
+Commit-Queue: François Doray <fdoray@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#648686}
+
+diff --git a/services/service_manager/sandbox/win/sandbox_win.cc b/services/service_manager/sandbox/win/sandbox_win.cc
+index f4c3eeda228573ce92b71d3e4e4090e8e26d8bfd..7127a6f2a138fa97e29571e6469a4c97973c38dc 100644
+--- a/services/service_manager/sandbox/win/sandbox_win.cc
++++ b/services/service_manager/sandbox/win/sandbox_win.cc
+@@ -862,13 +862,12 @@ sandbox::ResultCode SandboxWin::StartSandboxedProcess(
+     options.handles_to_inherit = handles_to_inherit;
+     BOOL in_job = true;
+     // Prior to Windows 8 nested jobs aren't possible.
+-    if (sandbox_type == SANDBOX_TYPE_NETWORK &&
+-        (base::win::GetVersion() >= base::win::VERSION_WIN8 ||
+-         (::IsProcessInJob(::GetCurrentProcess(), nullptr, &in_job) &&
+-          !in_job))) {
+-      // Launch the process in a job to ensure that the network process doesn't
+-      // outlive the browser. This could happen if there is a lot of I/O on
+-      // process shutdown, in which case TerminateProcess would fail.
++    if (base::win::GetVersion() >= base::win::VERSION_WIN8 ||
++        (::IsProcessInJob(::GetCurrentProcess(), nullptr, &in_job) &&
++         !in_job)) {
++      // Launch the process in a job to ensure that it doesn't outlive the
++      // browser. This could happen if there is a lot of I/O on process
++      // shutdown, in which case TerminateProcess would fail.
+       // https://crbug.com/820996
+       if (!g_job_object_handle) {
+         sandbox::Job job_obj;
