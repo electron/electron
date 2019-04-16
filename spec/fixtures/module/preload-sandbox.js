@@ -4,6 +4,11 @@
   window.ipcRenderer = ipcRenderer
   window.setImmediate = setImmediate
   window.require = require
+
+  process.once('loaded', () => {
+    ipcRenderer.send('process-loaded')
+  })
+
   if (location.protocol === 'file:') {
     window.test = 'preload'
     window.process = process
