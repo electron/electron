@@ -115,6 +115,8 @@ void CocoaNotification::Dismiss() {
   NotificationDismissed();
 
   this->LogAction("dismissed");
+
+  notification_.reset(nil);
 }
 
 void CocoaNotification::NotificationDisplayed() {
