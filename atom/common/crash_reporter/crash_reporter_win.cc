@@ -193,8 +193,9 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
     if (code_range && size &&
         RegisterNonABICompliantCodeRange(code_range, size)) {
-      gin::Debug::SetCodeRangeDeletedCallback(
-          UnregisterNonABICompliantCodeRange);
+      // FIXME(nornagon): This broke with https://crrev.com/c/1474703
+      // gin::Debug::SetCodeRangeDeletedCallback(
+      //    UnregisterNonABICompliantCodeRange);
     }
   }
 #endif
