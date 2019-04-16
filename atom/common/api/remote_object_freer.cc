@@ -34,6 +34,14 @@ void RemoteObjectFreer::BindTo(v8::Isolate* isolate,
   new RemoteObjectFreer(isolate, target, context_id, object_id);
 }
 
+// static
+void RemoteObjectFreer::AddRef(const std::string& context_id, int object_id) {
+  ref_mapper_[context_id][object_id]++;
+}
+
+// static
+std::map<std::string, std::map<int, int>> RemoteObjectFreer::ref_mapper_;
+
 RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
                                      v8::Local<v8::Object> target,
                                      const std::string& context_id,
@@ -61,6 +69,12 @@ void RemoteObjectFreer::RunDestructor() {
   args.AppendString("ELECTRON_BROWSER_DEREFERENCE");
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
+  args.AppendInteger(ref_mapper_[context_id_][object_id_]);
+  // Reset our local ref count in case we are in a GC race condition and will
+  // get more references in an inbound IPC message
+  ref_mapper_[context_id_].erase(object_id_);
+  if (ref_mapper_[context_id_].empty())
+    ref_mapper_.erase(context_id_);
   render_frame->Send(new AtomFrameHostMsg_Message(render_frame->GetRoutingID(),
                                                   channel, args));
 }

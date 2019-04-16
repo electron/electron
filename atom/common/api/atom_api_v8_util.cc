@@ -115,6 +115,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
+  dict.SetMethod("addRemoteObjectRef", &atom::RemoteObjectFreer::AddRef);
   dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod(
       "createDoubleIDWeakMap",
