@@ -185,6 +185,12 @@ The `hslShift` is applied to the image with the following rules
 This means that `[-1, 0, 1]` will make the image completely white and
 `[-1, 1, 0]` will make the image completely black.
 
+In some cases, the `NSImageName` doesn't match its string representation; one example of this is `NSFolderImageName`, whose string representation would actually be `NSFolder`. Therefore, you'll need to determine the correct string representation for your image before passing it in. This can be done with the following:
+
+`echo -e '#import <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); }' | clang -otest -x objective-c -framework Cocoa - && ./test`
+
+where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](https://developer.apple.com/documentation/appkit/nsimagename?language=objc).
+
 ## Class: NativeImage
 
 > Natively wrap images such as tray, dock, and application icons.
