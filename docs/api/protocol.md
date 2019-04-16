@@ -28,7 +28,7 @@ of the `app` module gets emitted.
 
 A protocol is registered to the default Electron session. If you define a `partition` on your `browserWindow`'s `webPreferences`, then that partition will use a different session and your custom protocol will not work.
 
-To have your custom protocol work in combination with a partition, you need to register it to the session of that partition:
+To have your custom protocol work in combination with a custom session, you need to register it to that session explicitly.
 
 ```javascript
 const { session, app, protocol } = require('electron')
