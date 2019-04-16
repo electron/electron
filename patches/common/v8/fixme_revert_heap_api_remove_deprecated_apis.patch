@@ -21,7 +21,7 @@ index cbdce1c3f60eed53f67968e6b89755f418aecc3f..9254f7c9a2f3cf7dc92421e2863109b4
    static const int kNodeIsActiveShift = 4;
  
 diff --git a/include/v8.h b/include/v8.h
-index ee00b47eed90fb68a373515ef26cee0d8d73b18d..7416f24ff548e4477311d13b88fda65de2366dd9 100644
+index 4757ef851b6bb6f0606686c30312d6c38e2d3fb8..aeadbbe3e4341eb1f7242f68ac5accb502585e70 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -577,6 +577,10 @@ template <class T> class PersistentBase {
@@ -35,7 +35,7 @@ index ee00b47eed90fb68a373515ef26cee0d8d73b18d..7416f24ff548e4477311d13b88fda65d
    /** Returns true if the handle's reference is weak.  */
    V8_INLINE bool IsWeak() const;
  
-@@ -8570,6 +8574,17 @@ class V8_EXPORT Isolate {
+@@ -8571,6 +8575,17 @@ class V8_EXPORT Isolate {
     */
    void VisitHandlesWithClassIds(PersistentHandleVisitor* visitor);
  
@@ -53,7 +53,7 @@ index ee00b47eed90fb68a373515ef26cee0d8d73b18d..7416f24ff548e4477311d13b88fda65d
    /**
     * Iterates through all the persistent handles in the current isolate's heap
     * that have class_ids and are weak to be marked as inactive if there is no
-@@ -9837,6 +9852,17 @@ bool PersistentBase<T>::IsIndependent() const {
+@@ -9838,6 +9853,17 @@ bool PersistentBase<T>::IsIndependent() const {
                          I::kNodeIsIndependentShift);
  }
  
@@ -72,10 +72,10 @@ index ee00b47eed90fb68a373515ef26cee0d8d73b18d..7416f24ff548e4477311d13b88fda65d
  bool PersistentBase<T>::IsWeak() const {
    typedef internal::Internals I;
 diff --git a/src/api.cc b/src/api.cc
-index 9c0d66f091e508d39eccd343d01c1d2fbd245268..ebd2629eedd340402be9d253dff97f2d5e9316d9 100644
+index e2d409057aa0f333b61e3d6e03f2358feab2081f..d360e5009a52b0ce131ef15fc25636c25349210c 100644
 --- a/src/api.cc
 +++ b/src/api.cc
-@@ -8981,6 +8981,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
+@@ -8982,6 +8982,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
    isolate->global_handles()->IterateAllRootsWithClassIds(visitor);
  }
  
