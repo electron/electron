@@ -85,7 +85,7 @@ env-enable-sccache: &env-enable-sccache
 
 env-enable-goma: &env-enable-goma
   USE_GOMA: true
-  GN_GOMA_ARGS: 'use_goma=true'
+  GN_GOMA_ARGS: 'use_goma=true use_jumbo_build=false'
   GOMA_SERVER_HOST: 'goma.ionicpineapple.com'
   GOMA_SERVER_PORT: '443'
   GOMA_ARBITRARY_TOOLCHAIN_SUPPORT: 'true'
