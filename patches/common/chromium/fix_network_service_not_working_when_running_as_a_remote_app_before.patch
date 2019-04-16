@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Abd-El-Malek <jam@chromium.org>
+Date: Wed, 28 Nov 2018 20:37:49 +0000
+Subject: Fix network service not working when running as a remote app before
+ Windows 8.
+
+r562058 made the network process always run in a job object to try to avoid it outliving the browser process. This was added to make the network process quit sooner if there was a lot of pending I/O, which happened with layout tests. Windows before version 8 doesn't support nested job objects though, so we need to stop this mitigation for those old versions.
+
+Bug: 904361
+Change-Id: If75fc933052b1b7d4ef3d3e90664f777624c04d7
+Reviewed-on: https://chromium-review.googlesource.com/c/1350977
+Commit-Queue: John Abd-El-Malek <jam@chromium.org>
+Reviewed-by: Julian Pastarmov <pastarmovj@chromium.org>
+Reviewed-by: James Forshaw <forshaw@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#611856}
+
+diff --git a/services/service_manager/sandbox/win/sandbox_win.cc b/services/service_manager/sandbox/win/sandbox_win.cc
+index 7beb41460e7d1a7340cca8ebc98a114ec41b3e44..474035f8612816d1be000e5f7d4796005943b158 100644
+--- a/services/service_manager/sandbox/win/sandbox_win.cc
++++ b/services/service_manager/sandbox/win/sandbox_win.cc
+@@ -831,7 +831,12 @@ sandbox::ResultCode SandboxWin::StartSandboxedProcess(
+           service_manager::switches::kNoSandbox)) {
+     base::LaunchOptions options;
+     options.handles_to_inherit = handles_to_inherit;
+-    if (sandbox_type == SANDBOX_TYPE_NETWORK) {
++    BOOL in_job = true;
++    // Prior to Windows 8 nested jobs aren't possible.
++    if (sandbox_type == SANDBOX_TYPE_NETWORK &&
++        (base::win::GetVersion() >= base::win::VERSION_WIN8 ||
++         (::IsProcessInJob(::GetCurrentProcess(), nullptr, &in_job) &&
++          !in_job))) {
+       // Launch the process in a job to ensure that the network process doesn't
+       // outlive the browser. This could happen if there is a lot of I/O on
+       // process shutdown, in which case TerminateProcess would fail.
