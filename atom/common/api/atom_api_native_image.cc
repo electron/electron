@@ -652,4 +652,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_native_image, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_native_image, Initialize)

@@ -1231,6 +1231,10 @@ describe('asar package', function () {
       })
       child.send('message')
     })
+
+    it('can be used with streams', () => {
+      originalFs.createReadStream(path.join(fixtures, 'asar', 'a.asar'))
+    })
   })
 
   describe('graceful-fs module', function () {

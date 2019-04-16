@@ -68,7 +68,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
     return exports;
   }
 
-  auto* mod = node::binding::get_builtin_module(module_key.c_str());
+  auto* mod = node::binding::get_linked_module(module_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
@@ -220,7 +220,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("binding", GetBinding);
+  process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
