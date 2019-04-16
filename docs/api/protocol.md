@@ -26,7 +26,7 @@ of the `app` module gets emitted.
 
 ## Using `protocol` with a custom `partition` or `session`
 
-A protocol is registered to a specific Electron [`session`](./session.md) object. If you define a `partition` or `session` on your `browserWindow`'s `webPreferences`, then that window will use a different session and your custom protocol will not work if you just use `electron.protocol.XXX`.
+A protocol is registered to a specific Electron [`session`](./session.md) object. If you don't specify a session, then your `protocol` will be applied to the default session that Electron uses. However, if you define a `partition` or `session` on your `browserWindow`'s `webPreferences`, then that window will use a different session and your custom protocol will not work if you just use `electron.protocol.XXX`.
 
 To have your custom protocol work in combination with a custom session, you need to register it to that session explicitly.
 
