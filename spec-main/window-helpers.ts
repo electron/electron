@@ -14,7 +14,13 @@ export const closeWindow = async (
   }
 
   if (assertNotWindows) {
-    expect(BrowserWindow.getAllWindows()).to.have.lengthOf(0)
+    const windows = BrowserWindow.getAllWindows()
+    for (const win of windows) {
+      const closePromise = emittedOnce(win, 'closed')
+      win.close()
+      await closePromise
+    }
+    expect(windows).to.have.lengthOf(0)
   }
 }
 
