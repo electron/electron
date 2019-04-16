@@ -8,6 +8,7 @@ v8_embedder_string = "-electron.0"
 
 enable_cdm_host_verification = false
 enable_extensions = false
+enable_vulkan = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
