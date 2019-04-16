@@ -232,6 +232,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   // Execute the function with proper arguments
   ignore_result(
       func->Call(context, v8::Null(isolate), node::arraysize(args), args));
+
+  InvokeIpcCallback(context, "onLoaded", std::vector<v8::Local<v8::Value>>());
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(

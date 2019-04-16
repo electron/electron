@@ -1527,6 +1527,19 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
       })
 
+      it('exposes "loaded" event to preload script', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        ipcMain.once('process-loaded', () => done())
+        w.loadURL('about:blank')
+      })
+
       it('exposes "exit" event to preload script', function (done) {
         w.destroy()
         w = new BrowserWindow({
