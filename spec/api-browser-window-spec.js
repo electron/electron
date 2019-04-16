@@ -391,7 +391,7 @@ describe('BrowserWindow module', () => {
       w.loadURL(`${server.url}/302`)
     })
 
-    it('can be prevented', (done) => {
+    it.skip('can be prevented', (done) => {
       ipcRenderer.send('prevent-will-redirect', w.id)
       w.webContents.on('will-navigate', (e, url) => {
         expect(url).to.equal(`${server.url}/302`)
