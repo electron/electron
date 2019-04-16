@@ -8,6 +8,12 @@ including rendering, navigation, and event routing. We currently recommend to no
 use the `webview` tag and to consider alternatives, like `iframe`, Electron's `BrowserView`,
 or an architecture that avoids embedded content altogether.
 
+## Enabling
+
+By default the `webview` tag is disabled in Electron >= 5.  You need to enable the tag by
+setting the `webviewTag` webPreferences option when constructing your `BrowserWindow`. For
+more information see the [BrowserWindow constructor docs](browser-window.md).
+
 ## Overview
 
 > Display external web content in an isolated frame and process.
