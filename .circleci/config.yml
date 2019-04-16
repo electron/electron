@@ -143,13 +143,16 @@ step-gclient-sync: &step-gclient-sync
   run:
     name: Gclient sync
     command: |
-      gclient config \
-        --name "src/electron" \
-        --unmanaged \
-        $GCLIENT_EXTRA_ARGS \
-        "$CIRCLE_REPOSITORY_URL"
+      # If we did not restore a complete sync then we need to sync for realz
+      if [ ! -s "src/electron/.circle-sync-done" ]; then
+        gclient config \
+          --name "src/electron" \
+          --unmanaged \
+          $GCLIENT_EXTRA_ARGS \
+          "$CIRCLE_REPOSITORY_URL"
 
-      gclient sync --with_branch_heads --with_tags
+        gclient sync --with_branch_heads --with_tags
+      fi
 
 step-setup-env-for-build: &step-setup-env-for-build
   run:
@@ -537,12 +540,25 @@ steps-checkout: &steps-checkout
     - *step-restore-brew-cache
     - *step-install-gnutar-on-mac
 
+    - run:
+        name: Generate DEPS Hash
+        command: node src/electron/script/generate-deps-hash.js
+    - run:
+        name: Touch Sync Done
+        command: touch src/electron/.circle-sync-done
+    - restore_cache:
+        paths:
+          - ./src
+        keys:
+          - v2-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+        name: Restoring src cache
     - restore_cache:
         paths:
           - ~/.gclient-cache
         keys:
-          - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
-          - v1-gclient-cache-{{ arch }}-
+          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
+        name: Conditionally restoring git cache
     - run:
         name: Set GIT_CACHE_PATH to make gclient to use the cache
         command: |
@@ -553,18 +569,40 @@ steps-checkout: &steps-checkout
     - save_cache:
         paths:
           - ~/.gclient-cache
-        key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+        key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+        name: Persisting git cache
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - run:
+        name: Generate DEPS Hash
+        command: node src/electron/script/generate-deps-hash.js
+    - run:
+        name: Mark Sync Done
+        command: echo DONE > src/electron/.circle-sync-done
+    - run:
+        name: Remove some unused data to avoid storing it in the workspace/cache
+        command: |
+          rm -rf src/android_webview
+          rm -rf src/ios
+          rm -rf src/third_party/blink/web_tests
+          rm -rf src/third_party/blink/perf_tests
+          rm -rf src/third_party/catapult/tracing/test_data
+          rm -rf src/third_party/electron_node/deps/v8
+          rm -rf src/third_party/hunspell_dictionaries
+          rm -rf src/third_party/swiftshader/tests
+          rm -rf src/third_party/WebKit/LayoutTests
+    - save_cache:
+        paths:
+          - ./src
+        key: v2-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+        name: Persisting src cache
     - save_cache:
         paths:
           - /usr/local/Homebrew
         key: v1-brew-cache-{{ arch }}
-
-    - run:
-        name: Remove some unused data to avoid storing it in the workspace
-        command: |
-          rm -rf src/android_webview
-          rm -rf src/ios
-          rm -rf src/third_party/WebKit/LayoutTests
+        name: Persisting brew cache
     - persist_to_workspace:
         root: .
         paths:
