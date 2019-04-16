@@ -24,7 +24,7 @@ app.on('ready', () => {
 **Note:** All methods unless specified can only be used after the `ready` event
 of the `app` module gets emitted.
 
-## Using `protocol` with a `partition` in `webPreferences`
+## Using `protocol` with a custom `partition` or `session`
 
 A protocol is registered to the default Electron session. If you define a `partition` on your `browserWindow`'s `webPreferences`, then that partition will use a different session and your custom protocol will not work.
 
