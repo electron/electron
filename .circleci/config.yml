@@ -550,7 +550,7 @@ steps-checkout: &steps-checkout
         paths:
           - ./src
         keys:
-          - v3-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+          - v4-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
         name: Restoring src cache
     - restore_cache:
         paths:
@@ -588,15 +588,13 @@ steps-checkout: &steps-checkout
           rm -rf src/ios
           rm -rf src/third_party/blink/web_tests
           rm -rf src/third_party/blink/perf_tests
-          rm -rf src/third_party/catapult/tracing/test_data
           rm -rf src/third_party/electron_node/deps/v8
           rm -rf src/third_party/hunspell_dictionaries
-          rm -rf src/third_party/swiftshader/tests
           rm -rf src/third_party/WebKit/LayoutTests
     - save_cache:
         paths:
           - ./src
-        key: v3-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+        key: v4-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
         name: Persisting src cache
     - save_cache:
         paths:
