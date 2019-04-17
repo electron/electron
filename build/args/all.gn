@@ -13,3 +13,6 @@ ffmpeg_branding = "Chrome"
 enable_basic_printing = true
 
 is_cfi = false
+
+# https://crbug.com/953815
+arm_use_neon = false
