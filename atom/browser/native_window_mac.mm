@@ -233,7 +233,10 @@ namespace atom {
 namespace {
 
 bool IsFramelessWindow(NSView* view) {
-  NativeWindow* window = [static_cast<AtomNSWindow*>([view window]) shell];
+  NSWindow* nswindow = [view window];
+  if (![nswindow respondsToSelector:@selector(shell)])
+    return false;
+  NativeWindow* window = [static_cast<AtomNSWindow*>(nswindow) shell];
   return window && !window->has_frame();
 }
 
