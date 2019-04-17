@@ -263,7 +263,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("binding", GetBinding);
+  process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
