@@ -570,6 +570,12 @@ Hides all application windows without minimizing them.
 Shows application windows after they were hidden. Does not automatically focus
 them.
 
+### `app.setAppLogsPath()`
+
+Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(newPath)`.
+
+On _macOS_, this directory will be set to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
+
 ### `app.getAppPath()`
 
 Returns `String` - The current application directory.
@@ -618,8 +624,8 @@ Fetches a path's associated icon.
 
 On _Windows_, there are 2 kinds of icons:
 
-- Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
-- Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
+* Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
+* Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
 
 On _Linux_ and _macOS_, icons depend on the application associated with file mime type.
 
@@ -640,8 +646,8 @@ Fetches a path's associated icon.
 
 On _Windows_, there a 2 kinds of icons:
 
-- Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
-- Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
+* Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
+* Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
 
 On _Linux_ and _macOS_, icons depend on the application associated with file mime type.
 
@@ -694,6 +700,7 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 **Note:** On Windows, you have to call it after the `ready` events gets emitted.
 
 ### `app.getLocaleCountryCode()`
+
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
 
 **Note:** When unable to detect locale country code, it returns empty string.
@@ -752,7 +759,6 @@ Returns `Boolean` - Whether the call succeeded.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
-
 
 ### `app.isDefaultProtocolClient(protocol[, path, args])`
 

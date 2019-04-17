@@ -88,7 +88,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
  private:
   void InitializeFeatureList();
-  void OverrideAppLogsPath();
   void PreMainMessageLoopStartCommon();
 
 #if defined(OS_POSIX)

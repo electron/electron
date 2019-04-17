@@ -214,17 +214,6 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   base::FeatureList::SetInstance(std::move(feature_list));
 }
 
-#if !defined(OS_MACOSX)
-void AtomBrowserMainParts::OverrideAppLogsPath() {
-  base::FilePath path;
-  if (base::PathService::Get(DIR_APP_DATA, &path)) {
-    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    base::PathService::Override(DIR_APP_LOGS, path);
-  }
-}
-#endif
-
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
@@ -284,7 +273,6 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 int AtomBrowserMainParts::PreEarlyInitialization() {
   InitializeFeatureList();
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
-  OverrideAppLogsPath();
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
