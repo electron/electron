@@ -7,7 +7,6 @@ blink_local_frame.patch
 blink_world_context.patch
 browser_compositor_mac.patch
 can_create_window.patch
-compositor_delegate.patch
 disable_hidden.patch
 dom_storage_limits.patch
 frame_host_manager.patch
@@ -74,3 +73,4 @@ disable_custom_libcxx_on_windows.patch
 fix_retain_compatibility_with_msvc.patch
 disable_network_services_by_default.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
+viz_osr.patch
