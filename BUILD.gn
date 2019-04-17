@@ -80,7 +80,7 @@ npm_action("atom_browserify_sandbox_unwrapped") {
   inputs = auto_filenames.sandbox_browserify_deps
 
   outputs = [
-    "$target_gen_dir/js2c/preload_bundle_unwrapped.js",
+    "$target_gen_dir/js2c/sandbox_bundle_unwrapped.js",
   ]
 
   args = [
@@ -194,11 +194,11 @@ js_wrap("atom_browserify_sandbox") {
   ]
 
   inputs = [
-    "$target_gen_dir/js2c/preload_bundle_unwrapped.js",
+    "$target_gen_dir/js2c/sandbox_bundle_unwrapped.js",
   ]
 
   outputs = [
-    "$target_gen_dir/js2c/preload_bundle.js",
+    "$target_gen_dir/js2c/sandbox_bundle.js",
   ]
 }
 
@@ -223,7 +223,7 @@ action("atom_js2c") {
   browserify_sources = [
     "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
-    "$target_gen_dir/js2c/preload_bundle.js",
+    "$target_gen_dir/js2c/sandbox_bundle.js",
   ]
 
   sources = browserify_sources + [
