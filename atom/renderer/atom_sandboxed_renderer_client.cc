@@ -218,14 +218,14 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   InitializeBindings(binding, context, render_frame->IsMainFrame());
   AddRenderBindings(isolate, binding);
 
-  std::vector<v8::Local<v8::String>> preload_bundle_params = {
+  std::vector<v8::Local<v8::String>> sandbox_preload_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "binding")};
 
-  std::vector<v8::Local<v8::Value>> preload_bundle_args = {binding};
+  std::vector<v8::Local<v8::Value>> sandbox_preload_bundle_args = {binding};
 
   node::per_process::native_module_loader.CompileAndCall(
-      isolate->GetCurrentContext(), "electron/js2c/preload_bundle",
-      &preload_bundle_params, &preload_bundle_args, nullptr);
+      isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
+      &sandbox_preload_bundle_params, &sandbox_preload_bundle_args, nullptr);
 
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
