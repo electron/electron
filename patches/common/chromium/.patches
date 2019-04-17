@@ -72,4 +72,5 @@ fix_disable_usage_of_setapplicationisdaemon_and.patch
 disable_custom_libcxx_on_windows.patch
 fix_retain_compatibility_with_msvc.patch
 disable_network_services_by_default.patch
+unsandboxed_ppapi_processes_skip_zygote.patch
 viz_osr.patch
