@@ -88,10 +88,6 @@ void DesktopCapturer::StartHandling(bool capture_window,
   capture_screen_ = capture_screen;
 
   {
-    // Remove this once
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=795340 is fixed.
-    base::ScopedAllowBaseSyncPrimitivesForTesting
-        scoped_allow_base_sync_primitives;
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
