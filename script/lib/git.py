@@ -102,6 +102,12 @@ def get_head_commit(repo):
   return subprocess.check_output(args).strip()
 
 
+def update_ref(repo, ref, newvalue):
+  args = ['git', '-C', repo, 'update-ref', ref, newvalue]
+
+  return subprocess.check_call(args)
+
+
 def reset(repo):
   args = ['git', '-C', repo, 'reset']
 
