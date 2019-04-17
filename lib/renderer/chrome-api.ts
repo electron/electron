@@ -7,9 +7,16 @@ const Event = require('@electron/internal/renderer/extensions/event')
 
 class Tab {
   public id: number
+  public url: string = ''
 
   constructor (tabId: number) {
     this.id = tabId
+  }
+
+  static fromURL = (opts: { id: number, url: string }) => {
+    const t = new Tab(opts.id)
+    t.url = opts.url
+    return t
   }
 }
 
@@ -163,6 +170,14 @@ export function injectTo (extensionId: string, context: any) {
   }
 
   chrome.tabs = {
+    // https://developer.chrome.com/extensions/tabs#method-query
+    query (
+      _options: any,
+      resultCallback: Function
+    ) {
+      ipcRendererUtils.invoke('CHROME_TABS_QUERY')
+        .then((result: any) => resultCallback(result.map(Tab.fromURL)))
+    },
     // https://developer.chrome.com/extensions/tabs#method-executeScript
     executeScript (
       tabId: number,

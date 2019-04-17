@@ -70,19 +70,28 @@ void AtomRendererClient::DidCreateScriptContext(
     content::RenderFrame* render_frame) {
   RendererClientBase::DidCreateScriptContext(context, render_frame);
 
+  auto env = base::Environment::Create();
+  // NOTE: This should never be used in production, it is designed to be used
+  // for testing purposes
+  bool unsafely_allow_node_in_child_windows =
+      env->HasVar("ELECTRON_UNSAFELY_ALLOW_NODE_IN_CHILD_WINDOWS");
+
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
   // Do not load node if we're aren't a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
-  bool is_main_frame =
-      render_frame->IsMainFrame() && !render_frame->GetWebFrame()->Opener();
+  bool is_child_window = render_frame->GetWebFrame()->Opener();
+  bool is_main_frame = render_frame->IsMainFrame();
+  bool should_load_node_into_frame =
+      is_main_frame &&
+      (!is_child_window || unsafely_allow_node_in_child_windows);
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes =
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);
   bool should_load_node =
-      is_main_frame || is_devtools || allow_node_in_subframes;
+      should_load_node_into_frame || is_devtools || allow_node_in_subframes;
   if (!should_load_node) {
     return;
   }
