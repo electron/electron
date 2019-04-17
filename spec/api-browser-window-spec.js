@@ -1315,6 +1315,48 @@ describe('BrowserWindow module', () => {
     afterEach(() => { ipcMain.removeAllListeners('answer') })
 
     describe('"preload" option', () => {
+      const doesNotLeakSpec = (name, webPrefs) => {
+        it(name, async function () {
+          w.destroy()
+          w = new BrowserWindow({
+            webPreferences: {
+              ...webPrefs,
+              preload: path.resolve(fixtures, 'module', 'empty.js')
+            },
+            show: false
+          })
+          const leakResult = emittedOnce(ipcMain, 'leak-result')
+          w.loadFile(path.join(fixtures, 'api', 'no-leak.html'))
+          const [, result] = await leakResult
+          console.log(result)
+          expect(result).to.have.property('require', 'undefined')
+          expect(result).to.have.property('exports', 'undefined')
+          expect(result).to.have.property('windowExports', 'undefined')
+          expect(result).to.have.property('windowPreload', 'undefined')
+          expect(result).to.have.property('windowRequire', 'undefined')
+        })
+      }
+      doesNotLeakSpec('does not leak require', {
+        nodeIntegration: false,
+        sandbox: false,
+        contextIsolation: false
+      })
+      doesNotLeakSpec('does not leak require when sandbox is enabled', {
+        nodeIntegration: false,
+        sandbox: true,
+        contextIsolation: false
+      })
+      doesNotLeakSpec('does not leak require when context isolation is enabled', {
+        nodeIntegration: false,
+        sandbox: false,
+        contextIsolation: true
+      })
+      doesNotLeakSpec('does not leak require when context isolation and sandbox are enabled', {
+        nodeIntegration: false,
+        sandbox: true,
+        contextIsolation: true
+      })
+
       it('loads the script before other scripts in window', async () => {
         const preload = path.join(fixtures, 'module', 'set-global.js')
         w.destroy()
