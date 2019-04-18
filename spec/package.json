@@ -11,7 +11,7 @@
     "bluebird": "^3.5.3",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "coffee-script": "1.12.7",
+    "coffeescript": "^2.4.1",
     "dbus-native": "github:nornagon/dbus-native#master",
     "dirty-chai": "^2.0.1",
     "echo": "file:fixtures/native-addon/echo",

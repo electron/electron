@@ -81,10 +81,10 @@ describe('modules support', () => {
       })
     })
 
-    describe('coffee-script', () => {
+    describe('coffeescript', () => {
       it('can be registered and used to require .coffee files', () => {
         assert.doesNotThrow(() => {
-          require('coffee-script').register()
+          require('coffeescript').register()
         })
         assert.strictEqual(require('./fixtures/module/test.coffee'), true)
       })
