@@ -85,11 +85,14 @@ env-enable-sccache: &env-enable-sccache
 
 env-enable-goma: &env-enable-goma
   USE_GOMA: true
-  GN_GOMA_ARGS: 'use_goma=true use_jumbo_build=false'
+  GN_GOMA_ARGS: 'use_goma=true'
   GOMA_SERVER_HOST: 'goma.ionicpineapple.com'
   GOMA_SERVER_PORT: '443'
   GOMA_ARBITRARY_TOOLCHAIN_SUPPORT: 'true'
-  SUPER_NUMBER_OF_NINJA_PROCESSES: 1000
+  SUPER_NUMBER_OF_NINJA_PROCESSES: 400
+  GOMA_PROVIDE_INFO: false
+  GOMA_FALLBACK: false
+  GOMA_USE_LOCAL: false
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
