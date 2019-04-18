@@ -890,27 +890,10 @@ AtomBrowserClient::GetSystemSharedURLLoaderFactory() {
 
 void AtomBrowserClient::OnNetworkServiceCreated(
     network::mojom::NetworkService* network_service) {
-  if (!g_browser_process ||
-      !base::FeatureList::IsEnabled(network::features::kNetworkService))
+  if (!g_browser_process)
     return;
-
   g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
       network_service);
-}
-
-bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
-  // This is called on the network thread.
-  base::AutoLock auto_lock(process_preferences_lock_);
-  auto it = process_preferences_.find(render_process_id);
-  return it != process_preferences_.end() && !it->second.web_security;
-}
-
-std::string AtomBrowserClient::GetProduct() const {
-  return "Chrome/" CHROME_VERSION_STRING;
-}
-
-std::string AtomBrowserClient::GetUserAgent() const {
-  return GetApplicationUserAgent();
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
