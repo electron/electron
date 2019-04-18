@@ -135,7 +135,7 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
 
   SkBitmap bitmap;
   bitmap.allocN32Pixels(width, height, false);
-  bitmap.setPixels(const_cast<void*>(reinterpret_cast<const void*>(data)));
+  bitmap.writePixels({info, data, bitmap.rowBytes()});
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
