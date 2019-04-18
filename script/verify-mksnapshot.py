@@ -24,10 +24,11 @@ def main():
   try:
     with scoped_cwd(app_path):
       if args.snapshot_files_dir is None:
-        mkargs = [ get_binary_path('mksnapshot', app_path), \
-                    SNAPSHOT_SOURCE, '--startup_blob', 'snapshot_blob.bin', \
-                    '--turbo_instruction_scheduling' ]
-        subprocess.check_call(mkargs)
+        mkargs = subprocess.check_output(
+            [ 'gn', 'desc', args.build_dir,
+              'v8:run_mksnapshot_default', 'args' ],
+            cwd=source_root).split('\n')[:-1]
+        subprocess.check_call(mkargs + [ SNAPSHOT_SOURCE ], cwd=args.build_dir)
         print 'ok mksnapshot successfully created snapshot_blob.bin.'
         context_snapshot = 'v8_context_snapshot.bin'
         context_snapshot_path = os.path.join(app_path, context_snapshot)
