@@ -8,7 +8,7 @@ needs to register on an isolate so that it can be used later
 down in the initialization process of an isolate.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index c8d5b58d711012bf9761ce073af00f30f803081b..ec61b873d4e2dcdca833c8503beabb88d0798f2d 100644
+index 2514f591208372d6654ff9c5be50a51a39a881cb..4dd48f6a871cccb374c58adacb8ad9a80da89a5a 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -52,7 +52,8 @@ IsolateHolder::IsolateHolder(

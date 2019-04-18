@@ -67,10 +67,10 @@ index cbac30fa7a12db927ba6a15173ba1181e03e0723..4d26fd795a7ce1ffd046c4a0f2ec1779
          mojo::MakeRequest(&notification_service_ptr_));
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 6ea6657c02a7cc4e97cab750da1498259f151d1c..f4c679d01254571587428113722124a2b0a32d7e 100644
+index d0b32520a30c1807117a3dc02d5d55bcb3d7b995..f868d3c40f78fa105477d7f22e47a75c5281de14 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -197,12 +197,13 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -199,12 +199,13 @@ void PlatformNotificationContextImpl::Shutdown() {
  }
  
  void PlatformNotificationContextImpl::CreateService(
@@ -87,7 +87,7 @@ index 6ea6657c02a7cc4e97cab750da1498259f151d1c..f4c679d01254571587428113722124a2
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 868d7da4ad7517ce9313a5262a8e3565e16bbd0a..ad8163262c88c671498563bb10ae81c7973c39a1 100644
+index 11eed749075c7c17d4beb86674c253b5f296d82d..8a7c7f3f7a069e2339a4234a21dd4536fcf0c6a1 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -24,6 +24,7 @@

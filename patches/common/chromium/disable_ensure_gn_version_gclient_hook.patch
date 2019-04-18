@@ -7,7 +7,7 @@ The script can't execute the right executable on our mac CI because the
 checkout happens on a linux machine.
 
 diff --git a/DEPS b/DEPS
-index cee1cd0e3e0af1d558161455e589c80a71a1e087..444dd0e39d9416a4fc3c16c641f5efb4f1fe59e8 100644
+index 8c45326f0ef9a21468b7df7455c5bc1d691cfc91..5bc32f570ada43dcfa9adb7b097d92f446e41efd 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -34,6 +34,7 @@ gclient_gn_args = [
@@ -27,7 +27,7 @@ index cee1cd0e3e0af1d558161455e589c80a71a1e087..444dd0e39d9416a4fc3c16c641f5efb4
    # By default, do not check out WebKit for iOS, as it is not needed unless
    # running against ToT WebKit rather than system WebKit. This can be overridden
    # e.g. with custom_vars.
-@@ -2280,6 +2283,7 @@ hooks = [
+@@ -2291,6 +2294,7 @@ hooks = [
      # have the right binary more carefully and we no longer need this.
      'name': 'ensure_gn_version',
      'pattern': '.',
