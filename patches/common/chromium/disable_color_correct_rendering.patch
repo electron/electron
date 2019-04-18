@@ -215,7 +215,7 @@ index ac2ae6d208efc00ac54b2683ade13152a4d7e94f..947d708284ab7efeb58295eb71e62ed8
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ae80202ea061d3cd1eff7b5523c32ca6f31407c5..f0fba5768fa5d5ec66aea436b9e29fd583b55ce1 100644
+index dcf8be56e100913be619119525fd0321181c279d..741688ef8e440140843c4c12ef5ab1a9dfd23a29 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -220,6 +220,7 @@
@@ -226,7 +226,7 @@ index ae80202ea061d3cd1eff7b5523c32ca6f31407c5..f0fba5768fa5d5ec66aea436b9e29fd5
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  
-@@ -2939,6 +2940,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2936,6 +2937,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,10 +235,10 @@ index ae80202ea061d3cd1eff7b5523c32ca6f31407c5..f0fba5768fa5d5ec66aea436b9e29fd5
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 4d3da78750cf499fd4bc31f6b4d834b34fca62ab..1e1965c91e7281322a75e60fb698e2626d5f90f9 100644
+index 970bdf426edcb0ffbd89ccdee69cf35ad37d3d9f..989eab3f13938888c335a1ebbc2a033ee5ee5414 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2815,6 +2815,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2818,6 +2818,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
