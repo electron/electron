@@ -89,7 +89,7 @@ env-enable-goma: &env-enable-goma
   GOMA_SERVER_HOST: 'goma.ionicpineapple.com'
   GOMA_SERVER_PORT: '443'
   GOMA_ARBITRARY_TOOLCHAIN_SUPPORT: 'true'
-  NUMBER_OF_NINJA_PROCESSES: 1000
+  SUPER_NUMBER_OF_NINJA_PROCESSES: 1000
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
@@ -261,7 +261,7 @@ step-electron-build: &step-electron-build
     no_output_timeout: 30m
     command: |
       cd src
-      ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron -j ${SUPER_NUMBER_OF_NINJA_PROCESSES:-$NUMBER_OF_NINJA_PROCESSES}
 
 step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
@@ -289,7 +289,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default chrome/test/chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default chrome/test/chromedriver -j ${SUPER_NUMBER_OF_NINJA_PROCESSES:-$NUMBER_OF_NINJA_PROCESSES}
       electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
       ninja -C out/Default electron:electron_chromedriver_zip
 
@@ -368,7 +368,7 @@ step-ffmpeg-build: &step-ffmpeg-build
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j ${SUPER_NUMBER_OF_NINJA_PROCESSES:-$NUMBER_OF_NINJA_PROCESSES}
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -427,7 +427,7 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
         fi
       fi
-      ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron:electron_mksnapshot_zip -j ${SUPER_NUMBER_OF_NINJA_PROCESSES:-$NUMBER_OF_NINJA_PROCESSES}
 
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
