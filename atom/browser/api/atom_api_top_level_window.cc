@@ -651,7 +651,7 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   mate::Handle<Menu> menu;
   v8::Local<v8::Object> object;
-  if (value->ToObject(context).ToLocal(&object) &&
+  if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::V8ToString(isolate, object->GetConstructorName()) == "Menu" &&
       mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
