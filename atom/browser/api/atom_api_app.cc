@@ -832,12 +832,21 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 #if !defined(OS_MACOSX)
-void App::SetAppLogsPath() {
-  base::FilePath path;
-  if (base::PathService::Get(DIR_USER_DATA, &path)) {
-    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    base::PathService::Override(DIR_APP_LOGS, path);
+void App::SetAppLogsPath(mate::Arguments* args) {
+  base::FilePath custom_path;
+  if (args->GetNext(&custom_path)) {
+    if (!custom_path.IsAbsolute()) {
+      args->ThrowError("Path must be absolute");
+      return;
+    }
+    base::PathService::Override(DIR_APP_LOGS, custom_path);
+  } else {
+    base::FilePath path;
+    if (base::PathService::Get(DIR_USER_DATA, &path)) {
+      path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+      base::PathService::Override(DIR_APP_LOGS, path);
+    }
   }
 }
 #endif
