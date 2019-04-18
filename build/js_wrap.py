@@ -6,7 +6,7 @@ out_start = sys.argv.index("--out") + 1
 in_bundles = sys.argv[in_start:out_start - 1]
 out_bundles = sys.argv[out_start:]
 
-if len(in_bundles) is not len(out_bundles):
+if len(in_bundles) != len(out_bundles):
   print("--out and --in must provide the same number of arguments")
   sys.exit(1)
 
