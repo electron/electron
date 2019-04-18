@@ -13,6 +13,7 @@
 #include <memory>
 #include <string>
 
+#include "atom/browser/io_thread.h"
 #include "atom/browser/net/system_network_context_manager.h"
 #include "base/command_line.h"
 #include "base/macros.h"
@@ -44,6 +45,7 @@ class BrowserProcessImpl : public BrowserProcess {
 
   void PostEarlyInitialization();
   void PreCreateThreads(const base::CommandLine& command_line);
+  void PostDestroyThreads();
   void PostMainMessageLoopRun();
 
   void ResourceDispatcherHostCreated() override {}
@@ -118,6 +120,8 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
   std::unique_ptr<PrefService> local_state_;
+  std::unique_ptr<IOThread> io_thread_;
+  std::unique_ptr<net_log::ChromeNetLog> net_log_;
   std::unique_ptr<SystemNetworkContextManager> system_network_context_manager_;
   std::string locale_;
 

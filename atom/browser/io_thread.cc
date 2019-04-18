@@ -21,9 +21,34 @@
 
 using content::BrowserThread;
 
-IOThread::IOThread(net_log::ChromeNetLog* net_log,
-                   SystemNetworkContextManager* system_network_context_manager)
-    : net_log_(net_log) {
+namespace {
+
+network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
+  network::mojom::HttpAuthStaticParamsPtr auth_static_params =
+      network::mojom::HttpAuthStaticParams::New();
+
+  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
+                                           "negotiate"};
+
+  return auth_static_params;
+}
+
+network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
+    const base::CommandLine& command_line) {
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+
+  auth_dynamic_params->server_whitelist =
+      command_line.GetSwitchValueASCII(atom::switches::kAuthServerWhitelist);
+  auth_dynamic_params->delegate_whitelist = command_line.GetSwitchValueASCII(
+      atom::switches::kAuthNegotiateDelegateWhitelist);
+
+  return auth_dynamic_params;
+}
+
+}  // namespace
+
+IOThread::IOThread(net_log::ChromeNetLog* net_log) : net_log_(net_log) {
   BrowserThread::SetIOThreadDelegate(this);
 
   system_network_context_manager->SetUp(
