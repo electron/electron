@@ -40,7 +40,7 @@ environment by the release scripts.
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
 notes. The notes generated should help you determine if this is a major, minor,
 patch, or beta version change. Read the
-[Version Change Rules](../tutorial/electron-versioning.md#semver) for more information.
+[Version Change Rules](../electron-versioning.md#semver) for more information.
 
 **NB:** If releasing from a branch, e.g. 1-8-x, check out the branch with
 `git checkout 1-8-x` rather than `git checkout -b remotes/origin/1-8-x`.

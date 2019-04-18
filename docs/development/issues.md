@@ -1,7 +1,5 @@
 # Issues In Electron
 
-# Issues
-
 * [How to Contribute in Issues](#how-to-contribute-in-issues)
 * [Asking for General Help](#asking-for-general-help)
 * [Submitting a Bug Report](#submitting-a-bug-report)
@@ -26,7 +24,7 @@ contribute:
 
 ## Asking for General Help
 
-["Finding Support"](../tutorial/support.md#finding-support) has a
+["Finding Support"](../support.md#finding-support) has a
 list of resources for getting programming help, reporting security issues,
 contributing, and more. Please use the issue tracker for bugs only!
 
