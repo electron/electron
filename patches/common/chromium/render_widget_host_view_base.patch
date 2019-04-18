@@ -5,7 +5,7 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 17f244b380c34a2bbccb9f5c63d40ca13e86b5c4..71d06f86f17f3c37c272975c13d907162ded65d4 100644
+index 6986a9b55908f989275115ba8bd290f9e1d40ace..90c51ca81795547f7ec116e6c57af7043c162599 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -666,6 +666,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
