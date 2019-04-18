@@ -405,6 +405,14 @@ step-show-sccache-stats: &step-show-sccache-stats
         $SCCACHE_PATH -s
       fi
 
+step-show-goma-stats: &step-show-goma-stats
+  run:
+    name: Check goma stats after build
+    command: |
+      if [ "$USE_GOMA" == "true" ]; then
+        $HOME/goma/goma_ctl.py stat
+      fi
+
 step-mksnapshot-build: &step-mksnapshot-build
   run:
     name: mksnapshot build
@@ -613,6 +621,7 @@ steps-electron-build: &steps-electron-build
     - *step-nodejs-headers-store
 
     - *step-show-sccache-stats
+    - *step-show-goma-stats
 
 steps-electron-build-for-tests: &steps-electron-build-for-tests
   steps:
@@ -636,6 +645,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-nodejs-headers-store
 
     - *step-show-sccache-stats
+    - *step-show-goma-stats
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -730,6 +740,7 @@ steps-native-tests: &steps-native-tests
           cd src
           ninja -C out/Default $BUILD_TARGET
     - *step-show-sccache-stats
+    - *step-show-goma-stats
 
     - *step-setup-linux-for-headless-testing
     - run:
