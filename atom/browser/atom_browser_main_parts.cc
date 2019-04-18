@@ -367,7 +367,24 @@ int AtomBrowserMainParts::PreCreateThreads() {
   ui::InitIdleMonitor();
 #endif
 
-  fake_browser_process_->PreCreateThreads(main_function_params_.command_line);
+  net_log_ = std::make_unique<net_log::ChromeNetLog>();
+  auto& command_line = main_function_params_.command_line;
+  // start net log trace if --log-net-log is passed in the command line.
+  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
+    base::FilePath log_file =
+        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
+    if (!log_file.empty()) {
+      net_log_->StartWritingToFile(
+          log_file, GetNetCaptureModeFromCommandLine(command_line),
+          command_line.GetCommandLineString(), std::string());
+    }
+  }
+  // Initialize net log file exporter.
+  net_log_->net_export_file_writer()->Initialize();
+
+  fake_browser_process_->PreCreateThreads(command_line);
+  // Manage global state of net and other IO thread related.
+  io_thread_ = std::make_unique<IOThread>(net_log_.get());
 
   return 0;
 }

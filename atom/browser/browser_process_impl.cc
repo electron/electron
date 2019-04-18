@@ -6,10 +6,8 @@
 
 #include <utility>
 
-#include "chrome/browser/net/chrome_net_log_helper.h"
+#include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/net_log/chrome_net_log.h"
-#include "components/net_log/net_export_file_writer.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
@@ -23,7 +21,6 @@
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
-#include "services/network/public/cpp/network_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -47,22 +44,19 @@ void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (command_line->HasSwitch(switches::kNoProxyServer)) {
-    pref_store->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect()),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+    pref_store->SetValue(proxy_config::prefs::kProxy,
+                         ProxyConfigDictionary::CreateDirect(),
+                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else if (command_line->HasSwitch(switches::kProxyPacUrl)) {
     std::string pac_script_url =
         command_line->GetSwitchValueASCII(switches::kProxyPacUrl);
-    pref_store->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
-            pac_script_url, false /* pac_mandatory */)),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+    pref_store->SetValue(proxy_config::prefs::kProxy,
+                         ProxyConfigDictionary::CreatePacScript(
+                             pac_script_url, false /* pac_mandatory */),
+                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else if (command_line->HasSwitch(switches::kProxyAutoDetect)) {
     pref_store->SetValue(proxy_config::prefs::kProxy,
-                         std::make_unique<base::Value>(
-                             ProxyConfigDictionary::CreateAutoDetect()),
+                         ProxyConfigDictionary::CreateAutoDetect(),
                          WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else if (command_line->HasSwitch(switches::kProxyServer)) {
     std::string proxy_server =
@@ -71,8 +65,7 @@ void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
         command_line->GetSwitchValueASCII(switches::kProxyBypassList);
     pref_store->SetValue(
         proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateFixedServers(
-            proxy_server, bypass_list)),
+        ProxyConfigDictionary::CreateFixedServers(proxy_server, bypass_list),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   }
 }
@@ -95,38 +88,13 @@ void BrowserProcessImpl::PreCreateThreads(
   // Must be created before the IOThread.
   // Once IOThread class is no longer needed,
   // this can be created on first use.
-  if (!SystemNetworkContextManager::GetInstance())
-    SystemNetworkContextManager::CreateInstance(local_state_.get());
-
-  net_log_ = std::make_unique<net_log::ChromeNetLog>();
-  // start net log trace if --log-net-log is passed in the command line.
-  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
-    base::FilePath log_file =
-        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
-    if (!log_file.empty()) {
-      net_log_->StartWritingToFile(
-          log_file, GetNetCaptureModeFromCommandLine(command_line),
-          command_line.GetCommandLineString(), std::string());
-    }
-  }
-  // Initialize net log file exporter.
-  system_network_context_manager()->GetNetExportFileWriter()->Initialize();
-
-  // Manage global state of net and other IO thread related.
-  io_thread_ = std::make_unique<IOThread>(
-      net_log_.get(), SystemNetworkContextManager::GetInstance());
-}
-
-void BrowserProcessImpl::PostDestroyThreads() {
-  io_thread_.reset();
+  system_network_context_manager_ =
+      std::make_unique<SystemNetworkContextManager>();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
-  if (local_state_)
-    local_state_->CommitPendingWrite();
-
   // This expects to be destroyed before the task scheduler is torn down.
-  SystemNetworkContextManager::DeleteInstance();
+  system_network_context_manager_.reset();
 }
 
 bool BrowserProcessImpl::IsShuttingDown() {
@@ -192,8 +160,8 @@ IOThread* BrowserProcessImpl::io_thread() {
 
 SystemNetworkContextManager*
 BrowserProcessImpl::system_network_context_manager() {
-  DCHECK(SystemNetworkContextManager::GetInstance());
-  return SystemNetworkContextManager::GetInstance();
+  DCHECK(system_network_context_manager_.get());
+  return system_network_context_manager_.get();
 }
 
 network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {

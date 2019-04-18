@@ -22,15 +22,15 @@
 #include "atom/browser/net/system_network_context_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
-#include "base/task/post_task.h"
+#include "base/task_scheduler/post_task.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/pref_names.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "components/prefs/value_map_pref_store.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/resource_context.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
@@ -144,8 +144,7 @@ URLRequestContextGetter::Handle::GetNetworkContext() {
 network::mojom::NetworkContextParamsPtr
 URLRequestContextGetter::Handle::CreateNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
-      SystemNetworkContextManager::GetInstance()
-          ->CreateDefaultNetworkContextParams();
+      SystemNetworkContextManager::CreateDefaultNetworkContextParams();
 
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
@@ -155,6 +154,8 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           AtomBrowserClient::Get()->GetApplicationLocale());
+
+  network_context_params->enable_data_url_support = false;
 
   if (!browser_context_->IsOffTheRecord()) {
     auto base_path = browser_context_->GetPath();
@@ -166,11 +167,10 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
         base_path.Append(chrome::kNetworkPersistentStateFilename);
     network_context_params->cookie_path =
         base_path.Append(chrome::kCookieFilename);
+    network_context_params->channel_id_path =
+        base_path.Append(chrome::kChannelIDFilename);
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
-    // TODO(deepak1556): Matches the existing behavior https://git.io/fxHMl,
-    // enable encryption as a followup.
-    network_context_params->enable_encrypted_cookies = false;
   }
 
   // TODO(deepak1556): Decide the stand on chrome ct policy and

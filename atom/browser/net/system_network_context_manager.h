@@ -23,10 +23,6 @@ class URLLoaderFactory;
 class SharedURLLoaderFactory;
 }  // namespace network
 
-namespace net_log {
-class NetExportFileWriter;
-}
-
 // Responsible for creating and managing access to the system NetworkContext.
 // Lives on the UI thread. The NetworkContext this owns is intended for requests
 // not associated with a session. It stores no data on disk, and has no HTTP
@@ -40,20 +36,12 @@ class NetExportFileWriter;
 // using the actual network service.
 class SystemNetworkContextManager {
  public:
+  SystemNetworkContextManager();
   ~SystemNetworkContextManager();
 
-  // Creates the global instance of SystemNetworkContextManager. If an
-  // instance already exists, this will cause a DCHECK failure.
-  static SystemNetworkContextManager* CreateInstance(PrefService* pref_service);
-
-  // Gets the global SystemNetworkContextManager instance.
-  static SystemNetworkContextManager* GetInstance();
-
-  // Destroys the global SystemNetworkContextManager instance.
-  static void DeleteInstance();
-
   // Returns default set of parameters for configuring the network service.
-  network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams();
+  static network::mojom::NetworkContextParamsPtr
+  CreateDefaultNetworkContextParams();
 
   // Initializes |network_context_params| as needed to set up a system
   // NetworkContext. If the network service is disabled,
@@ -62,11 +50,8 @@ class SystemNetworkContextManager {
   // help set up the IOThread's in-process URLRequestContext.
   //
   // Must be called before the system NetworkContext is first used.
-  void SetUp(
-      network::mojom::NetworkContextRequest* network_context_request,
-      network::mojom::NetworkContextParamsPtr* network_context_params,
-      network::mojom::HttpAuthStaticParamsPtr* http_auth_static_params,
-      network::mojom::HttpAuthDynamicParamsPtr* http_auth_dynamic_params);
+  void SetUp(network::mojom::NetworkContextRequest* network_context_request,
+             network::mojom::NetworkContextParamsPtr* network_context_params);
 
   // Returns the System NetworkContext. May only be called after SetUp(). Does
   // any initialization of the NetworkService that may be needed when first
@@ -83,17 +68,12 @@ class SystemNetworkContextManager {
   // that is backed by the SystemNetworkContext.
   scoped_refptr<network::SharedURLLoaderFactory> GetSharedURLLoaderFactory();
 
-  // Returns a shared global NetExportFileWriter instance.
-  net_log::NetExportFileWriter* GetNetExportFileWriter();
-
   // Called when content creates a NetworkService. Creates the
   // SystemNetworkContext, if the network service is enabled.
   void OnNetworkServiceCreated(network::mojom::NetworkService* network_service);
 
  private:
   class URLLoaderFactoryForSystem;
-
-  explicit SystemNetworkContextManager(PrefService* pref_service);
 
   // Creates parameters for the NetworkContext. May only be called once, since
   // it initializes some class members.
@@ -114,9 +94,6 @@ class SystemNetworkContextManager {
   // consumers don't all need to create their own factory.
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
   network::mojom::URLLoaderFactoryPtr url_loader_factory_;
-
-  // Initialized on first access.
-  std::unique_ptr<net_log::NetExportFileWriter> net_export_file_writer_;
 
   DISALLOW_COPY_AND_ASSIGN(SystemNetworkContextManager);
 };

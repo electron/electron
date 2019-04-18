@@ -8,12 +8,9 @@
 #include <utility>
 
 #include "atom/browser/io_thread.h"
-#include "atom/common/application_info.h"
-#include "atom/common/options_switches.h"
-#include "base/command_line.h"
+#include "base/lazy_instance.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
-#include "components/net_log/net_export_file_writer.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
@@ -26,35 +23,8 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "url/gurl.h"
 
-namespace {
-
-// The global instance of the SystemNetworkContextmanager.
-SystemNetworkContextManager* g_system_network_context_manager = nullptr;
-
-network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
-  network::mojom::HttpAuthStaticParamsPtr auth_static_params =
-      network::mojom::HttpAuthStaticParams::New();
-
-  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
-                                           "negotiate"};
-
-  return auth_static_params;
-}
-
-network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
-      network::mojom::HttpAuthDynamicParams::New();
-
-  auth_dynamic_params->server_whitelist =
-      command_line->GetSwitchValueASCII(atom::switches::kAuthServerWhitelist);
-  auth_dynamic_params->delegate_whitelist = command_line->GetSwitchValueASCII(
-      atom::switches::kAuthNegotiateDelegateWhitelist);
-
-  return auth_dynamic_params;
-}
-
-}  // namespace
+base::LazyInstance<SystemNetworkContextManager>::Leaky
+    g_system_network_context_manager = LAZY_INSTANCE_INITIALIZER;
 
 // SharedURLLoaderFactory backed by a SystemNetworkContextManager and its
 // network context. Transparently handles crashes.
@@ -62,11 +32,10 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
     : public network::SharedURLLoaderFactory {
  public:
   explicit URLLoaderFactoryForSystem(SystemNetworkContextManager* manager)
-      : manager_(manager) {
-    DETACH_FROM_SEQUENCE(sequence_checker_);
-  }
+      : manager_(manager) {}
 
   // mojom::URLLoaderFactory implementation:
+
   void CreateLoaderAndStart(network::mojom::URLLoaderRequest request,
                             int32_t routing_id,
                             int32_t request_id,
@@ -75,7 +44,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
                             network::mojom::URLLoaderClientPtr client,
                             const net::MutableNetworkTrafficAnnotationTag&
                                 traffic_annotation) override {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     if (!manager_)
       return;
     manager_->GetURLLoaderFactory()->CreateLoaderAndStart(
@@ -91,7 +60,6 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 
   // SharedURLLoaderFactory implementation:
   std::unique_ptr<network::SharedURLLoaderFactoryInfo> Clone() override {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     return std::make_unique<network::CrossThreadSharedURLLoaderFactoryInfo>(
         this);
@@ -103,7 +71,6 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
   friend class base::RefCounted<URLLoaderFactoryForSystem>;
   ~URLLoaderFactoryForSystem() override {}
 
-  SEQUENCE_CHECKER(sequence_checker_);
   SystemNetworkContextManager* manager_;
 
   DISALLOW_COPY_AND_ASSIGN(URLLoaderFactoryForSystem);
@@ -151,14 +118,7 @@ SystemNetworkContextManager::GetSharedURLLoaderFactory() {
   return shared_url_loader_factory_;
 }
 
-net_log::NetExportFileWriter*
-SystemNetworkContextManager::GetNetExportFileWriter() {
-  if (!net_export_file_writer_) {
-    net_export_file_writer_ = std::make_unique<net_log::NetExportFileWriter>();
-  }
-  return net_export_file_writer_.get();
-}
-
+// static
 network::mojom::NetworkContextParamsPtr
 SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
@@ -177,9 +137,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 
 void SystemNetworkContextManager::SetUp(
     network::mojom::NetworkContextRequest* network_context_request,
-    network::mojom::NetworkContextParamsPtr* network_context_params,
-    network::mojom::HttpAuthStaticParamsPtr* http_auth_static_params,
-    network::mojom::HttpAuthDynamicParamsPtr* http_auth_dynamic_params) {
+    network::mojom::NetworkContextParamsPtr* network_context_params) {
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
     *network_context_request = mojo::MakeRequest(&io_thread_network_context_);
     *network_context_params = CreateNetworkContextParams();
@@ -188,33 +146,10 @@ void SystemNetworkContextManager::SetUp(
     // CreateNetworkContextParams() can only be called once.
     *network_context_params = CreateDefaultNetworkContextParams();
   }
-  *http_auth_static_params = CreateHttpAuthStaticParams();
-  *http_auth_dynamic_params = CreateHttpAuthDynamicParams();
 }
 
-// static
-SystemNetworkContextManager* SystemNetworkContextManager::CreateInstance(
-    PrefService* pref_service) {
-  DCHECK(!g_system_network_context_manager);
-  g_system_network_context_manager =
-      new SystemNetworkContextManager(pref_service);
-  return g_system_network_context_manager;
-}
-
-// static
-SystemNetworkContextManager* SystemNetworkContextManager::GetInstance() {
-  return g_system_network_context_manager;
-}
-
-// static
-void SystemNetworkContextManager::DeleteInstance() {
-  DCHECK(g_system_network_context_manager);
-  delete g_system_network_context_manager;
-}
-
-SystemNetworkContextManager::SystemNetworkContextManager(
-    PrefService* pref_service)
-    : proxy_config_monitor_(pref_service) {
+SystemNetworkContextManager::SystemNetworkContextManager()
+    : proxy_config_monitor_(g_browser_process->local_state()) {
   shared_url_loader_factory_ = new URLLoaderFactoryForSystem(this);
 }
 
@@ -227,8 +162,8 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
     return;
 
-  network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-  network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
+  // network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
+  // network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.
@@ -245,10 +180,13 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
 
   network_context_params->context_name = std::string("system");
 
-  network_context_params->user_agent = atom::GetApplicationUserAgent();
-
   network_context_params->http_cache_enabled = false;
 
+  // These are needed for PAC scripts that use file or data URLs (Or FTP URLs?).
+  // TODO(crbug.com/839566): remove file support for all cases.
+  network_context_params->enable_data_url_support = true;
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
+    network_context_params->enable_file_url_support = true;
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;
 #endif
