@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Benjamin <davidben@google.com>
+Date: Sun, 14 Oct 2018 11:01:40 -0500
+Subject: Add a compatibility EVP_CIPH_OCB_MODE value.
+
+Node references it these days. Also replace the no-op modes with negative
+numbers rather than zero. Stream ciphers like RC4 report a "mode" of zero, so
+code comparing the mode to a dummy value will get confused.
+
+(I came across https://github.com/nodejs/node/pull/23635, though we'd have run
+into it sooner or later anyway. Better to just define the value and avoid ifdef
+proliferation.)
+
+Change-Id: I223f25663e138480ad83f35aa16f5218f1425563
+Reviewed-on: https://boringssl-review.googlesource.com/c/32464
+Reviewed-by: Adam Langley <agl@google.com>
+Commit-Queue: Adam Langley <agl@google.com>
+CQ-Verified: CQ bot account: commit-bot@chromium.org <commit-bot@chromium.org>
+
+diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
+index e2ab9449275a62ee8a93bd48284b39e8df88a14f..7d4d78b3730022fb61ae63c6d3a86a61cb0c91e2 100644
+--- a/include/openssl/cipher.h
++++ b/include/openssl/cipher.h
+@@ -425,8 +425,9 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_256_cfb128(void);
+ 
+ // The following flags do nothing and are included only to make it easier to
+ // compile code with BoringSSL.
+-#define EVP_CIPH_CCM_MODE 0
+-#define EVP_CIPH_WRAP_MODE 0
++#define EVP_CIPH_CCM_MODE (-1)
++#define EVP_CIPH_OCB_MODE (-2)
++#define EVP_CIPH_WRAP_MODE (-3)
+ #define EVP_CIPHER_CTX_FLAG_WRAP_ALLOW 0
+ 
+ // EVP_CIPHER_CTX_set_flags does nothing.

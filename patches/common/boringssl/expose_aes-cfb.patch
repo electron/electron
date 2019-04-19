@@ -71,7 +71,7 @@ index acc4719b7e9c4c4461fc6142f2ae9156b407915b..8b008a401ec2f2d0673f6876609dd578
    callback(EVP_aes_256_ecb(), "aes-256-ecb", NULL, arg);
    callback(EVP_aes_256_ofb(), "aes-256-ofb", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index 59634138cb60237f008eb99e7d8df54da7629c1a..b30b8434b301fb5b8630ae954698b6fee255df77 100644
+index 7d99d49ba7ae2d8a4eb80681cbd9b41eee86bac7..e2ab9449275a62ee8a93bd48284b39e8df88a14f 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
 @@ -421,6 +421,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_192_ofb(void);

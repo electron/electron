@@ -14,10 +14,10 @@ Commit-Queue: David Benjamin <davidben@google.com>
 CQ-Verified: CQ bot account: commit-bot@chromium.org <commit-bot@chromium.org>
 
 diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
-index ae8b8385fc73701a4346202f213b5974af4e2aed..0f3d1747173ffb09eafd5c7d5d692ae3c35c9874 100644
+index f693030a8a7c4bf79dd791e1abd0e94f8e97a292..3fee95c0a89dc4a25da527e2ac9cc50bab9c35a6 100644
 --- a/include/openssl/ssl.h
 +++ b/include/openssl/ssl.h
-@@ -4268,6 +4268,14 @@ OPENSSL_EXPORT int OPENSSL_init_ssl(uint64_t opts,
+@@ -4293,6 +4293,14 @@ OPENSSL_EXPORT int OPENSSL_init_ssl(uint64_t opts,
  // Use |SSL_enable_ocsp_stapling| instead.
  OPENSSL_EXPORT int SSL_set_tlsext_status_type(SSL *ssl, int type);
  
@@ -33,10 +33,10 @@ index ae8b8385fc73701a4346202f213b5974af4e2aed..0f3d1747173ffb09eafd5c7d5d692ae3
  // success and zero on error. On success, |ssl| takes ownership of |resp|, which
  // must have been allocated by |OPENSSL_malloc|.
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index 9c16de4958ef29d638e05e0f90b9b15b11b15cac..1f648658b8cb6ae7b82132b276b927e8fb11a47a 100644
+index c68968a514b76717d4c42448ef4b9c440c330fb2..547be0229e2c60c8aefb4644bc84e96f5a17c7f3 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
-@@ -2751,6 +2751,19 @@ int SSL_set_tlsext_status_type(SSL *ssl, int type) {
+@@ -2896,6 +2896,19 @@ int SSL_set_tlsext_status_type(SSL *ssl, int type) {
    return 1;
  }
  
