@@ -75,3 +75,4 @@ unsandboxed_ppapi_processes_skip_zygote.patch
 viz_osr.patch
 disable_ensure_gn_version_gclient_hook.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
+partially_revert_fb4ab3be3fc0024d00358d5b7816d3215a8ff20c.patch
