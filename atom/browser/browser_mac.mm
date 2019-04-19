@@ -36,8 +36,15 @@ void Browser::Hide() {
   [[AtomApplication sharedApplication] hide:nil];
 }
 
-void Browser::Show() {
-  [[AtomApplication sharedApplication] unhide:nil];
+void Browser::Show(mate::Arguments* args) {
+  bool should_activate;
+  args->GetNext(&should_activate);
+
+  if (should_activate) {
+    [[AtomApplication sharedApplication] unhide:nil];
+  } else {
+    [[AtomApplication sharedApplication] unhideWithoutActivation:nil];
+  }
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {

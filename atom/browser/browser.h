@@ -118,7 +118,7 @@ class Browser : public WindowListObserver {
   void Hide();
 
   // Show the application.
-  void Show();
+  void Show(mate::Arguments* args);
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
