@@ -33,7 +33,7 @@ const char* ResourceTypeToString(content::ResourceType type) {
       return "mainFrame";
     case content::ResourceType::kSubFrame:
       return "subFrame";
-    case content::ResourceType::kStyleSheet:
+    case content::ResourceType::kStylesheet:
       return "stylesheet";
     case content::ResourceType::kScript:
       return "script";
