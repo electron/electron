@@ -534,7 +534,7 @@ std::string AtomBrowserClient::GetGeolocationApiKey() {
   return api_key;
 }
 
-content::QuotaPermissionContext*
+scoped_refptr<content::QuotaPermissionContext>
 AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
 }
