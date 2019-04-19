@@ -32,7 +32,7 @@ index 644305bc4259de680c0589d8d572e2145bf5318e..711efdc623ff3bbca9a9e21161d3385e
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 78041fcb9647f740c6a142ec65f2418712c6286c..04e75ac40c38a38bdec634d1aa645854cb1a80d6 100644
+index fc3bd4e31a24fa9135381959c8729a5e13368d48..5ab9b8c63128a5b964457eed2100316e777f542e 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -203,7 +203,7 @@ index 336484b6fdf407aeba78fb94d28ad35cec8c39cc..2f7ca3493e4e1d8a6bcc7e3aa48b0512
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index ac2ae6d208efc00ac54b2683ade13152a4d7e94f..947d708284ab7efeb58295eb71e62ed8ed205c03 100644
+index 53fc82c1f2cc0cfb7a6ce909fea6c025dff26b43..ec00a673df6a8f1c372fc8dff7cf508502c3767b 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -192,6 +192,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -215,7 +215,7 @@ index ac2ae6d208efc00ac54b2683ade13152a4d7e94f..947d708284ab7efeb58295eb71e62ed8
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index dcf8be56e100913be619119525fd0321181c279d..741688ef8e440140843c4c12ef5ab1a9dfd23a29 100644
+index 721ea34bcd930dece08173366375ace0a16bc7d0..1c5d5acd48cfb42d6cd41d24f21fc025f25f6de7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -220,6 +220,7 @@
@@ -226,7 +226,7 @@ index dcf8be56e100913be619119525fd0321181c279d..741688ef8e440140843c4c12ef5ab1a9
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  
-@@ -2936,6 +2937,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2935,6 +2936,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

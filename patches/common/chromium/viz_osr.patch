@@ -110,7 +110,7 @@ index bc3f8a7ee8e1ad4d3aa23baf85638eff48158987..e6610ac4289997386ff17b1adeab8067
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/gpu_display_provider.cc b/components/viz/service/display_embedder/gpu_display_provider.cc
-index b2dc18e31e58dac0c19280889403f9556e6133a8..123eab963f6a02f6fd7971e2d5eb45e23c252aef 100644
+index 1c79ef0c20e611eaf547dabd9936a59c954c0bb8..a9bf01500052bc1e4fbacc133a7feacd68bf6057 100644
 --- a/components/viz/service/display_embedder/gpu_display_provider.cc
 +++ b/components/viz/service/display_embedder/gpu_display_provider.cc
 @@ -19,6 +19,7 @@
@@ -121,7 +121,7 @@ index b2dc18e31e58dac0c19280889403f9556e6133a8..123eab963f6a02f6fd7971e2d5eb45e2
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -274,6 +275,19 @@ GpuDisplayProvider::CreateSoftwareOutputDeviceForPlatform(
+@@ -282,6 +283,19 @@ GpuDisplayProvider::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -479,10 +479,10 @@ index a339eaa4dc9ccec292b3df9f31adf1ad45119a77..33146bbe7bb01fbe24cea10d79cad274
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
 diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index 4c29f4ec2cde99749d4642928ff52ad3d4842f4a..5db220422bbc0ec6384c98681c245502a6442d6d 100644
+index 997b82c91539a947fefde5671f898ee97b72f3b8..78b70b490fcc92f0d14e1cde08d3eddf7fa1e562 100644
 --- a/services/viz/privileged/interfaces/compositing/display_private.mojom
 +++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
-@@ -58,12 +58,14 @@ interface DisplayPrivate {
+@@ -62,12 +62,14 @@ interface DisplayPrivate {
  };
  
  interface DisplayClient {

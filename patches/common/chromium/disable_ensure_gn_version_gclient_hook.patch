@@ -7,7 +7,7 @@ The script can't execute the right executable on our mac CI because the
 checkout happens on a linux machine.
 
 diff --git a/DEPS b/DEPS
-index 8c45326f0ef9a21468b7df7455c5bc1d691cfc91..5bc32f570ada43dcfa9adb7b097d92f446e41efd 100644
+index 10529c56e9455f9fa623f2738043dd5d6bb508fd..f1b566072d72d1c3956885ffd2767e25e448224a 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -34,6 +34,7 @@ gclient_gn_args = [
