@@ -1064,8 +1064,7 @@ void App::ImportCertificate(const base::DictionaryValue& options,
     CertificateManagerModel::Create(
         browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,
-                   base::Unretained(this), base::Passed(&copy),
-                   callback));
+                   base::Unretained(this), base::Passed(&copy), callback));
     return;
   }
 
