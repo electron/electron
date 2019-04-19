@@ -23,6 +23,10 @@
 # https://www.appveyor.com/docs/build-configuration/#secure-variables
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
+# Uncomment these lines to enable RDP
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
 version: 1.0.{build}
 build_cloud: libcc-20
 image: libcc-20-vs2017-15.9
@@ -31,10 +35,6 @@ environment:
   DISABLE_CRASH_REPORTER_TESTS: true
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
