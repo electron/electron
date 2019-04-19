@@ -28,6 +28,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_once_callback.h"
+#include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
 
 #if defined(USE_NSS_CERTS)
