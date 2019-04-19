@@ -147,6 +147,23 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
+  // If this is a <webview> tag, and the embedder is offscreen-rendered, then
+  // this WebContents is also offscreen-rendered.
+  int guest_instance_id = 0;
+  if (web_preferences.Get(options::kGuestInstanceID, &guest_instance_id)) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        auto* embedder_preferences = WebContentsPreferences::From(embedder);
+        if (embedder_preferences &&
+            embedder_preferences->IsEnabled(options::kOffscreen)) {
+          preference_.SetKey(options::kOffscreen, base::Value(true));
+        }
+      }
+    }
+  }
+
   last_preference_ = preference_.Clone();
 }
 
@@ -307,6 +324,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     // For non-OSR WebContents, we expect to have white background, see
     // https://github.com/electron/electron/issues/13764 for more.
     command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
+  }
+
+  // --offscreen
+  if (IsEnabled(options::kOffscreen)) {
+    command_line->AppendSwitch(options::kOffscreen);
   }
 
   // --guest-instance-id, which is used to identify guest WebContents.

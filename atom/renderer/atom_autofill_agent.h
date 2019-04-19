@@ -9,7 +9,6 @@
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "content/public/renderer/render_view_observer.h"
 #include "third_party/blink/public/web/web_autofill_client.h"
 #include "third_party/blink/public/web/web_form_control_element.h"
 #include "third_party/blink/public/web/web_input_element.h"

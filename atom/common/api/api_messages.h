@@ -25,8 +25,6 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
 
-IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
-
 IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
                     gfx::RectF /* bounds */,
                     std::vector<base::string16> /* values */,
