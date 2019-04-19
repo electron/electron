@@ -199,7 +199,7 @@ class App : public AtomBrowserClient::Delegate,
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
-                         base::Callback<void(int)> callback);
+                         net::CompletionRepeatingCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
                                      mate::Arguments* args);
