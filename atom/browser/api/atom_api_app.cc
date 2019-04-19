@@ -16,6 +16,7 @@
 #include "atom/browser/atom_paths.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/relauncher.h"
+#include "atom/common/application_info.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -830,6 +831,26 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
+#if !defined(OS_MACOSX)
+void App::SetAppLogsPath(mate::Arguments* args) {
+  base::FilePath custom_path;
+  if (args->GetNext(&custom_path)) {
+    if (!custom_path.IsAbsolute()) {
+      args->ThrowError("Path must be absolute");
+      return;
+    }
+    base::PathService::Override(DIR_APP_LOGS, custom_path);
+  } else {
+    base::FilePath path;
+    if (base::PathService::Get(DIR_USER_DATA, &path)) {
+      path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+      base::PathService::Override(DIR_APP_LOGS, path);
+    }
+  }
+}
+#endif
+
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -1377,6 +1398,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
+      .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)

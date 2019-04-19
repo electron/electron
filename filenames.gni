@@ -127,6 +127,7 @@ filenames = {
     "atom/app/command_line_args.h",
     "atom/app/uv_task_runner.cc",
     "atom/app/uv_task_runner.h",
+    "atom/browser/api/atom_api_app_mac.mm",
     "atom/browser/api/atom_api_app.cc",
     "atom/browser/font_defaults.cc",
     "atom/browser/font_defaults.h",
