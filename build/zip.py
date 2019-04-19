@@ -61,7 +61,10 @@ def main(argv):
             for file in files:
               z.write(os.path.join(root, file))
         else:
-          z.write(dep)
+          basename = os.path.basename(dep)
+          dirname = os.path.dirname(dep)
+          arcname = os.path.join(dirname, 'chrome-sandbox') if basename == 'chrome_sandbox' else dep
+          z.write(dep, arcname)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

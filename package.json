@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "5.0.0-beta.2",
+  "version": "5.0.0-beta.9",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -14,7 +14,7 @@
     "dotenv-safe": "^4.0.4",
     "dugite": "^1.45.0",
     "electron-docs-linter": "^2.4.0",
-    "electron-typescript-definitions": "^6.0.0",
+    "electron-typescript-definitions": "^7.0.0",
     "eslint": "^5.6.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-mocha": "^5.2.0",
@@ -53,7 +53,7 @@
     "lint:docs-relative-links": "python ./script/check-relative-doc-links.py",
     "lint:js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
-    "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts",
+    "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts && node spec/ts-smoke/runner.js",
     "preinstall": "node -e 'process.exit(0)'",
     "precommit": "lint-staged",
     "prepack": "check-for-leaks",

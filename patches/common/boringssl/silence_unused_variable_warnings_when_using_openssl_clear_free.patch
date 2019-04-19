@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Mon, 4 Mar 2019 11:09:13 -0800
+Subject: silence unused variable warnings when using OPENSSL_clear_free
+
+e.g. here: https://github.com/nodejs/node/blob/adbe3b837e8a2285238ec0fcba89c20882eb4cdb/src/node_crypto.cc#L3439
+
+Change-Id: I2d43a3439d6a56c8eee3636b3c1f5ba615b233ba
+Reviewed-on: https://boringssl-review.googlesource.com/c/boringssl/+/35144
+Reviewed-by: Adam Langley <agl@google.com>
+Commit-Queue: Adam Langley <agl@google.com>
+
+diff --git a/crypto/mem.c b/crypto/mem.c
+index a06061b49a0753aad4c567e94bb1587e2c6d49ea..6af532eee13c0c783122f3bd20d4d7e1eed66333 100644
+--- a/crypto/mem.c
++++ b/crypto/mem.c
+@@ -153,6 +153,10 @@ void OPENSSL_cleanse(void *ptr, size_t len) {
+ #endif  // !OPENSSL_NO_ASM
+ }
+ 
++void OPENSSL_clear_free(void *ptr, size_t unused) {
++  OPENSSL_free(ptr);
++}
++
+ int CRYPTO_memcmp(const void *in_a, const void *in_b, size_t len) {
+   const uint8_t *a = in_a;
+   const uint8_t *b = in_b;
+diff --git a/include/openssl/mem.h b/include/openssl/mem.h
+index 4e1c2ca64dd4225d08cc6ab3c1379baac075d1c6..2e25f52a7fdc4c9973dc9aa4128cbdc47f27e3d7 100644
+--- a/include/openssl/mem.h
++++ b/include/openssl/mem.h
+@@ -138,7 +138,7 @@ OPENSSL_EXPORT int BIO_vsnprintf(char *buf, size_t n, const char *format,
+ 
+ // OPENSSL_clear_free calls |OPENSSL_free|. BoringSSL automatically clears all
+ // allocations on free, but we define |OPENSSL_clear_free| for compatibility.
+-#define OPENSSL_clear_free(ptr, len) OPENSSL_free(ptr)
++OPENSSL_EXPORT void OPENSSL_clear_free(void *ptr, size_t len);
+ 
+ 
+ #if defined(__cplusplus)

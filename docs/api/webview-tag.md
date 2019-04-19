@@ -8,6 +8,12 @@ including rendering, navigation, and event routing. We currently recommend to no
 use the `webview` tag and to consider alternatives, like `iframe`, Electron's `BrowserView`,
 or an architecture that avoids embedded content altogether.
 
+## Enabling
+
+By default the `webview` tag is disabled in Electron >= 5.  You need to enable the tag by
+setting the `webviewTag` webPreferences option when constructing your `BrowserWindow`. For
+more information see the [BrowserWindow constructor docs](browser-window.md).
+
 ## Overview
 
 > Display external web content in an isolated frame and process.
@@ -125,6 +131,17 @@ When this attribute is present the guest page in `webview` will have node
 integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
+
+### `nodeintegrationinsubframes`
+
+```html
+<webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
+```
+
+Experimental option for enabling NodeJS support in sub-frames such as iframes
+inside the `webview`. All your preloads will load for every iframe, you can
+use `process.isMainFrame` to determine if you are in the main frame or not.
+This option is disabled by default in the guest page.
 
 ### `enableremotemodule`
 

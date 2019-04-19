@@ -68,7 +68,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
     return exports;
   }
 
-  auto* mod = node::binding::get_builtin_module(module_key.c_str());
+  auto* mod = node::binding::get_linked_module(module_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
@@ -209,6 +209,10 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   node::per_process::native_module_loader.CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/preload_bundle",
       &preload_bundle_params, &preload_bundle_args, nullptr);
+
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  InvokeIpcCallback(context, "onLoaded", std::vector<v8::Local<v8::Value>>());
 }
 
 void AtomSandboxedRendererClient::SetupMainWorldOverrides(
@@ -220,7 +224,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("binding", GetBinding);
+  process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),

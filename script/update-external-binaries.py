@@ -11,7 +11,6 @@ from lib.util import add_exec_bit, download, extract_zip, rm_rf, \
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-
 def parse_args():
   parser = argparse.ArgumentParser(
       description='Download binaries for Electron build')

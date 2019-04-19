@@ -45,13 +45,14 @@ The following methods are available on instances of `WebRequest`:
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
@@ -72,13 +73,14 @@ The `callback` has to be called with an `response` object.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `requestHeaders` Object
   * `callback` Function
@@ -98,13 +100,14 @@ The `callback` has to be called with an `response` object.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `requestHeaders` Object
 
@@ -117,13 +120,14 @@ response are visible by the time this listener is fired.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `statusLine` String
     * `statusCode` Integer
@@ -147,13 +151,14 @@ The `callback` has to be called with an `response` object.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `responseHeaders` Object
     * `fromCache` Boolean - Indicates whether the response was fetched from disk
@@ -170,13 +175,14 @@ and response headers are available.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `redirectURL` String
     * `statusCode` Integer
@@ -193,7 +199,7 @@ redirect is about to occur.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
@@ -215,13 +221,14 @@ completed.
 * `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the
         requests that do not match the URL patterns.
-* `listener` Function
+* `listener` Function | null
   * `details` Object
     * `id` Integer
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
     * `resourceType` String
+    * `referrer` String
     * `timestamp` Double
     * `fromCache` Boolean
     * `error` String - The error description.

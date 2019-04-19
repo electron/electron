@@ -87,7 +87,6 @@
 #include "ui/events/base_event_utils.h"
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_output_device.h"
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/osr/osr_web_contents_view.h"
 #endif
@@ -256,12 +255,11 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 }
 
 // Called when CapturePage is done.
-void OnCapturePageDone(scoped_refptr<util::Promise> promise,
-                       const SkBitmap& bitmap) {
+void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   // TODO(nitsakh) Remove hack once fixed in chromium
   const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
-  promise->Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 }  // namespace
@@ -725,7 +723,7 @@ void WebContents::FindReply(content::WebContents* web_contents,
 bool WebContents::CheckMediaAccessPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& security_origin,
-    content::MediaStreamType type) {
+    blink::MediaStreamType type) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto* permission_helper =
@@ -1012,8 +1010,7 @@ void WebContents::DevToolsOpened() {
 
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = managed_web_contents()->GetDevToolsWebContents();
-  bool has_window =
-      devtools->GetUserData(NativeWindowRelay::kNativeWindowRelayUserDataKey);
+  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
   if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
 
@@ -1139,7 +1136,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     return;
   }
 
-  const auto* render_process_host = render_view_host->GetProcess();
+  auto* render_process_host = render_view_host->GetProcess();
   if (!render_process_host) {
     return;
   }
@@ -1216,6 +1213,9 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
+  // Discord non-committed entries to ensure that we don't re-use a pending
+  // entry
+  web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
 
   // Set the background color of RenderWidgetHostView.
@@ -1485,7 +1485,7 @@ bool WebContents::IsCurrentlyAudible() {
 
 #if BUILDFLAG(ENABLE_PRINTING)
 void WebContents::Print(mate::Arguments* args) {
-  bool silent, print_background = false;
+  bool silent = false, print_background = false;
   base::string16 device_name;
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
@@ -1672,13 +1672,24 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            const std::string& channel,
                                            const base::ListValue& args,
                                            int32_t sender_id) {
-  auto* frame_host = web_contents()->GetMainFrame();
-  if (frame_host) {
-    return frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(),
-                                                     internal, send_to_all,
-                                                     channel, args, sender_id));
+  std::vector<content::RenderFrameHost*> target_hosts;
+  if (!send_to_all) {
+    auto* frame_host = web_contents()->GetMainFrame();
+    if (frame_host) {
+      target_hosts.push_back(frame_host);
+    }
+  } else {
+    target_hosts = web_contents()->GetAllFrames();
   }
-  return false;
+
+  bool handled = false;
+  for (auto* frame_host : target_hosts) {
+    handled = frame_host->Send(
+                  new AtomFrameMsg_Message(frame_host->GetRoutingID(), internal,
+                                           false, channel, args, sender_id)) ||
+              handled;
+  }
+  return handled;
 }
 
 bool WebContents::SendIPCMessageToFrame(bool internal,
@@ -1803,15 +1814,16 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
 v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
   args->GetNext(&rect);
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    promise->Resolve(gfx::Image());
-    return promise->GetHandle();
+    promise.Resolve(gfx::Image());
+    return handle;
   }
 
   // Capture full page if user doesn't specify a |rect|.
@@ -1830,8 +1842,8 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::BindOnce(&OnCapturePageDone, promise));
-  return promise->GetHandle();
+                        base::BindOnce(&OnCapturePageDone, std::move(promise)));
+  return handle;
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
@@ -2297,4 +2309,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_web_contents, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_web_contents, Initialize)

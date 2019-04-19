@@ -12,6 +12,8 @@
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
@@ -21,6 +23,7 @@
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
+#include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_draggable_region.h"
@@ -95,9 +98,18 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  if (renderer_client_->isolated_world() && IsMainWorld(world_id) &&
-      // Only the top window's main frame has isolated world.
-      render_frame_->IsMainFrame() && !render_frame_->GetWebFrame()->Opener()) {
+  bool use_context_isolation = renderer_client_->isolated_world();
+  bool is_main_world = IsMainWorld(world_id);
+  bool is_main_frame = render_frame_->IsMainFrame();
+  bool is_not_opened = !render_frame_->GetWebFrame()->Opener();
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  bool should_create_isolated_context =
+      use_context_isolation && is_main_world &&
+      (is_main_frame || allow_node_in_sub_frames) && is_not_opened;
+
+  if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
     renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
@@ -131,16 +143,14 @@ void AtomRenderFrameObserver::OnDestruct() {
 
 void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
   auto* frame = render_frame_->GetWebFrame();
-
+  blink::WebIsolatedWorldInfo info;
   // This maps to the name shown in the context combo box in the Console tab
   // of the dev tools.
-  frame->SetIsolatedWorldHumanReadableName(
-      World::ISOLATED_WORLD,
-      blink::WebString::FromUTF8("Electron Isolated Context"));
-
+  info.human_readable_name =
+      blink::WebString::FromUTF8("Electron Isolated Context");
   // Setup document's origin policy in isolated world
-  frame->SetIsolatedWorldSecurityOrigin(
-      World::ISOLATED_WORLD, frame->GetDocument().GetSecurityOrigin());
+  info.security_origin = frame->GetDocument().GetSecurityOrigin();
+  frame->SetIsolatedWorldInfo(World::ISOLATED_WORLD, info);
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
@@ -156,7 +166,11 @@ bool AtomRenderFrameObserver::IsIsolatedWorld(int world_id) {
 }
 
 bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  if (renderer_client_->isolated_world() && render_frame_->IsMainFrame())
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  if (renderer_client_->isolated_world() &&
+      (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
     return IsIsolatedWorld(world_id);
   else
     return IsMainWorld(world_id);
@@ -193,6 +207,7 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool internal,
   EmitIPCEvent(frame, internal, channel, args, sender_id);
 
   // Also send the message to all sub-frames.
+  // TODO(MarshallOfSound): Completely move this logic to the main process
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())

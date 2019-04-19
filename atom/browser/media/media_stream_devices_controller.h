@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 
 #include "content/public/browser/web_contents_delegate.h"
+#include "third_party/blink/public/common/mediastream/media_stream_request.h"
 
 namespace atom {
 
@@ -21,7 +22,7 @@ class MediaStreamDevicesController {
 
   // Explicitly accept or deny the request.
   void Accept();
-  void Deny(content::MediaStreamRequestResult result);
+  void Deny(blink::MediaStreamRequestResult result);
 
  private:
   // Handle the request of desktop or tab screen cast.

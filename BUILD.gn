@@ -2,7 +2,6 @@ import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
-import("//services/service_manager/public/service_manifest.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -10,6 +9,7 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
 import("build/asar.gni")
+import("build/js_wrap.gni")
 import("build/npm.gni")
 import("buildflags/buildflags.gni")
 import("electron_paks.gni")
@@ -53,7 +53,7 @@ config("branding") {
   ]
 }
 
-npm_action("atom_browserify_sandbox") {
+npm_action("atom_browserify_sandbox_unwrapped") {
   script = "browserify"
 
   inputs = [
@@ -65,7 +65,7 @@ npm_action("atom_browserify_sandbox") {
   ]
 
   outputs = [
-    "$target_gen_dir/js2c/preload_bundle.js",
+    "$target_gen_dir/js2c/preload_bundle_unwrapped.js",
   ]
 
   args = [
@@ -74,12 +74,14 @@ npm_action("atom_browserify_sandbox") {
     "./lib/sandboxed_renderer/api/exports/electron.js:electron",
     "-t",
     "aliasify",
+    "--standalone",
+    "sandboxed_preload",
     "-o",
     rebase_path(outputs[0]),
   ]
 }
 
-npm_action("atom_browserify_isolated") {
+npm_action("atom_browserify_isolated_unwrapped") {
   script = "browserify"
 
   inputs = [
@@ -87,15 +89,45 @@ npm_action("atom_browserify_isolated") {
   ]
 
   outputs = [
-    "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/isolated_bundle_unwrapped.js",
   ]
 
   args = [
     "lib/isolated_renderer/init.js",
     "-t",
     "aliasify",
+    "--standalone",
+    "isolated_preload",
     "-o",
     rebase_path(outputs[0]),
+  ]
+}
+
+js_wrap("atom_browserify_isolated") {
+  deps = [
+    ":atom_browserify_isolated_unwrapped",
+  ]
+
+  inputs = [
+    "$target_gen_dir/js2c/isolated_bundle_unwrapped.js",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/isolated_bundle.js",
+  ]
+}
+
+js_wrap("atom_browserify_sandbox") {
+  deps = [
+    ":atom_browserify_sandbox_unwrapped",
+  ]
+
+  inputs = [
+    "$target_gen_dir/js2c/preload_bundle_unwrapped.js",
+  ]
+
+  outputs = [
+    "$target_gen_dir/js2c/preload_bundle.js",
   ]
 }
 
@@ -187,7 +219,6 @@ grit("resources") {
 
   deps = [
     ":copy_shell_devtools_discovery_page",
-    ":electron_content_manifest_overlays",
   ]
 
   output_dir = "$target_gen_dir"
@@ -236,6 +267,7 @@ static_library("electron_lib") {
     ":atom_js2c",
     "buildflags",
     "chromium_src:chrome",
+    "manifests",
     "native_mate",
     "//base",
     "//base:base_static",
@@ -425,11 +457,13 @@ static_library("electron_lib") {
 
   if (enable_osr) {
     sources += [
-      "atom/browser/osr/osr_output_device.cc",
-      "atom/browser/osr/osr_output_device.h",
+      "atom/browser/osr/osr_host_display_client.cc",
+      "atom/browser/osr/osr_host_display_client.h",
+      "atom/browser/osr/osr_host_display_client_mac.mm",
       "atom/browser/osr/osr_render_widget_host_view.cc",
       "atom/browser/osr/osr_render_widget_host_view.h",
-      "atom/browser/osr/osr_render_widget_host_view_mac.mm",
+      "atom/browser/osr/osr_video_consumer.cc",
+      "atom/browser/osr/osr_video_consumer.h",
       "atom/browser/osr/osr_view_proxy.cc",
       "atom/browser/osr/osr_view_proxy.h",
       "atom/browser/osr/osr_web_contents_view.cc",
@@ -603,6 +637,11 @@ if (is_mac) {
       "ServiceManagement.framework",
       "StoreKit.framework",
     ]
+
+    if (enable_osr) {
+      libs += [ "IOSurface.framework" ]
+    }
+
     ldflags = [
       "-F",
       rebase_path("external_binaries", root_build_dir),
@@ -622,8 +661,10 @@ if (is_mac) {
     output_name = electron_helper_name
     deps = [
       ":electron_framework+link",
-      "//sandbox/mac:seatbelt",
     ]
+    if (!is_mas_build) {
+      deps += [ "//sandbox/mac:seatbelt" ]
+    }
     defines = [ "HELPER_EXECUTABLE" ]
     sources = filenames.app_sources
     include_dirs = [ "." ]
@@ -918,6 +959,9 @@ dist_zip("electron_dist_zip") {
     ":licenses",
     ":electron_version",
   ]
+  if (is_linux) {
+    data_deps += [ "//sandbox/linux:chrome_sandbox" ]
+  }
   outputs = [
     "$root_build_dir/dist.zip",
   ]
@@ -957,27 +1001,4 @@ group("electron") {
   public_deps = [
     ":electron_app",
   ]
-}
-
-group("electron_content_manifest_overlays") {
-  deps = [
-    ":electron_content_browser_manifest_overlay",
-    ":electron_content_packaged_services_manifest_overlay",
-  ]
-}
-
-service_manifest("electron_content_packaged_services_manifest_overlay") {
-  source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
-  packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
-
-  if (enable_basic_printing) {
-    packaged_services += [
-      "//chrome/services/printing:manifest",
-      "//components/services/pdf_compositor:pdf_compositor_manifest",
-    ]
-  }
-}
-
-service_manifest("electron_content_browser_manifest_overlay") {
-  source = "//electron/manifests/electron_content_browser_manifest_overlay.json"
 }

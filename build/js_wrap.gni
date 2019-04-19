@@ -1,0 +1,19 @@
+template("js_wrap") {
+  assert(defined(invoker.inputs), "Need input JS script")
+  assert(defined(invoker.outputs), "Need output JS script")
+
+  action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "sources",
+                             "inputs",
+                             "outputs",
+                           ])
+
+    script = "//electron/build/js_wrap.py"
+    args = [ "--in" ] + rebase_path(invoker.inputs) + [ "--out" ] +
+           rebase_path(invoker.outputs)
+  }
+}

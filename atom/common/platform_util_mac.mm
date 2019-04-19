@@ -26,11 +26,8 @@ namespace {
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef ref = nil;
-  if (@available(macOS 10.10, *)) {
-    ref = LSCopyDefaultApplicationURLForURL(base::mac::NSToCFCast(ns_url),
-                                            kLSRolesAll, nullptr);
-  }
+  CFURLRef ref = LSCopyDefaultApplicationURLForURL(
+      base::mac::NSToCFCast(ns_url), kLSRolesAll, nullptr);
 
   // If no application could be found, NULL is returned and outError
   // (if not NULL) is populated with kLSApplicationNotFoundErr.
@@ -106,19 +103,19 @@ bool OpenExternal(const GURL& url, const OpenExternalOptions& options) {
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
-                  const OpenExternalCallback& callback) {
+                  OpenExternalCallback callback) {
   NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
-    callback.Run("Invalid URL");
+    std::move(callback).Run("Invalid URL");
     return;
   }
 
-  __block OpenExternalCallback c = callback;
+  __block OpenExternalCallback c = std::move(callback);
   dispatch_async(
       dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         __block std::string error = OpenURL(ns_url, options.activate);
         dispatch_async(dispatch_get_main_queue(), ^{
-          c.Run(error);
+          std::move(c).Run(error);
         });
       });
 }
@@ -141,8 +138,11 @@ void Beep() {
 
 bool GetLoginItemEnabled() {
   BOOL enabled = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   // SMJobCopyDictionary does not work in sandbox (see rdar://13626319)
   CFArrayRef jobs = SMCopyAllJobDictionaries(kSMDomainUserLaunchd);
+#pragma clang diagnostic pop
   NSArray* jobs_ = CFBridgingRelease(jobs);
   NSString* identifier = GetLoginHelperBundleIdentifier();
   if (jobs_ && [jobs_ count] > 0) {

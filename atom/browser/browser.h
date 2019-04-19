@@ -253,7 +253,7 @@ class Browser : public WindowListObserver {
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
-  util::Promise* WhenReady(v8::Isolate* isolate);
+  const util::Promise& WhenReady(v8::Isolate* isolate);
 
  protected:
   // Returns the version of application bundle or executable file.
@@ -292,7 +292,7 @@ class Browser : public WindowListObserver {
 
   int badge_count_ = 0;
 
-  util::Promise* ready_promise_ = nullptr;
+  std::unique_ptr<util::Promise> ready_promise_;
 
 #if defined(OS_LINUX) || defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;

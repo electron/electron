@@ -103,7 +103,7 @@ bool DownloadItem::IsPaused() const {
 }
 
 void DownloadItem::Resume() {
-  download_item_->Resume();
+  download_item_->Resume(true /* user_gesture */);
 }
 
 bool DownloadItem::CanResume() const {
@@ -251,4 +251,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_download_item, Initialize);
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_download_item, Initialize);

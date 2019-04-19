@@ -111,7 +111,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
       settings.parent_window = window;
     if (settings.title.size() == 0)
       settings.title = item->GetURL().spec();
-    if (!settings.default_path.empty())
+    if (settings.default_path.empty())
       settings.default_path = default_path;
 
     auto* web_preferences = WebContentsPreferences::From(web_contents);

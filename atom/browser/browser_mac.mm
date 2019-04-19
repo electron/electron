@@ -147,13 +147,9 @@ void Browser::SetUserActivity(const std::string& type,
 }
 
 std::string Browser::GetCurrentActivityType() {
-  if (@available(macOS 10.10, *)) {
-    NSUserActivity* userActivity =
-        [[AtomApplication sharedApplication] getCurrentActivity];
-    return base::SysNSStringToUTF8(userActivity.activityType);
-  } else {
-    return std::string();
-  }
+  NSUserActivity* userActivity =
+      [[AtomApplication sharedApplication] getCurrentActivity];
+  return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
 void Browser::InvalidateCurrentActivity() {
@@ -231,9 +227,10 @@ LSSharedFileListItemRef GetLoginItemForApp() {
   for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
     LSSharedFileListItemRef item =
         reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-    CFURLRef item_url_ref = NULL;
-    if (LSSharedFileListItemResolve(item, 0, &item_url_ref, NULL) == noErr &&
-        item_url_ref) {
+    base::ScopedCFTypeRef<CFErrorRef> error;
+    CFURLRef item_url_ref =
+        LSSharedFileListItemCopyResolvedURL(item, 0, error.InitializeInto());
+    if (!error && item_url_ref) {
       base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
       if (CFEqual(item_url, url)) {
         CFRetain(item);
@@ -264,9 +261,10 @@ void RemoveFromLoginItems() {
     for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
       LSSharedFileListItemRef item =
           reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-      CFURLRef url_ref = NULL;
-      if (LSSharedFileListItemResolve(item, 0, &url_ref, NULL) == noErr &&
-          item) {
+      base::ScopedCFTypeRef<CFErrorRef> error;
+      CFURLRef url_ref =
+          LSSharedFileListItemCopyResolvedURL(item, 0, error.InitializeInto());
+      if (!error && url_ref) {
         base::ScopedCFTypeRef<CFURLRef> url(url_ref);
         if ([[base::mac::CFToNSCast(url.get()) path]
                 hasPrefix:[[NSBundle mainBundle] bundlePath]])

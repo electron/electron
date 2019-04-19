@@ -66,6 +66,14 @@ steps:
     DISPLAY: ":99.0"
 
 - bash: |
+   cd src
+   ./out/Default/electron electron/spec --ci --enable-logging
+  displayName: 'Run Electron tests'
+  timeoutInMinutes: 10
+  env:
+    ELECTRON_DISABLE_SANDBOX: 1
+
+- bash: |
     cd src
     python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
   displayName: Verify non proprietary ffmpeg
@@ -80,14 +88,7 @@ steps:
   timeoutInMinutes: 5
   env:
     ELECTRON_DISABLE_SANDBOX: 1
-
-- bash: |
-   cd src
-   ./out/Default/electron electron/spec --ci
-  displayName: 'Run Electron tests'
-  timeoutInMinutes: 10
-  env:
-    ELECTRON_DISABLE_SANDBOX: 1
+  condition: and(succeeded(), eq(variables['RUN_NATIVE_MKSNAPSHOT'], 'true'))
 
 - task: PublishTestResults@2
   displayName: 'Publish Test Results'

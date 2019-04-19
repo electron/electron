@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+      "module": "commonjs",
+      "lib": [
+          "es6",
+          "dom"
+      ],
+      "noImplicitAny": true,
+      "noImplicitThis": true,
+      "strictNullChecks": false,
+      "noEmit": true,
+      "forceConsistentCasingInFileNames": true
+  },
+  "files": [
+    "electron/main.ts",
+    "electron/renderer.ts",
+    "../../electron.d.ts"
+  ]
+}

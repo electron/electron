@@ -257,6 +257,34 @@ describe('node feature', () => {
       child.stdout.on('data', outDataHandler)
     })
 
+    it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
+      child = ChildProcess.spawn(process.execPath, ['--inspect=17364', path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
+        env: {
+          ELECTRON_RUN_AS_NODE: true
+        }
+      })
+
+      let output = ''
+      function cleanup () {
+        child.stderr.removeListener('data', errorDataListener)
+        child.stdout.removeListener('data', outDataHandler)
+      }
+      function errorDataListener (data) {
+        output += data
+        if (output.trim().startsWith('Debugger listening on ws://')) {
+          expect(output.trim()).to.contain(':17364', 'should be listening on port 17364')
+          cleanup()
+          done()
+        }
+      }
+      function outDataHandler (data) {
+        cleanup()
+        done(new Error(`Unexpected output: ${data.toString()}`))
+      }
+      child.stderr.on('data', errorDataListener)
+      child.stdout.on('data', outDataHandler)
+    })
+
     it('does not start the v8 inspector when --inspect is after a -- argument', (done) => {
       child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'noop.js'), '--', '--inspect'])
 
@@ -449,6 +477,38 @@ describe('node feature', () => {
 
     it('should be able to create an aes-256-cfb cipher', () => {
       require('crypto').createCipheriv('aes-256-cfb', '0123456789abcdef0123456789abcdef', '0123456789abcdef')
+    })
+
+    it('should list des-ede-cbc in getCiphers', () => {
+      expect(require('crypto').getCiphers()).to.include('des-ede-cbc')
+    })
+
+    it('should be able to create an des-ede-cbc cipher', () => {
+      const key = Buffer.from('0123456789abcdeff1e0d3c2b5a49786', 'hex')
+      const iv = Buffer.from('fedcba9876543210', 'hex')
+      require('crypto').createCipheriv('des-ede-cbc', key, iv)
+    })
+
+    it('should not crash when getting an ECDH key', () => {
+      const ecdh = require('crypto').createECDH('prime256v1')
+      expect(ecdh.generateKeys()).to.be.an.instanceof(Buffer)
+      expect(ecdh.getPrivateKey()).to.be.an.instanceof(Buffer)
+    })
+
+    it('should not crash when generating DH keys or fetching DH fields', () => {
+      const dh = require('crypto').createDiffieHellman('modp15')
+      expect(dh.generateKeys()).to.be.an.instanceof(Buffer)
+      expect(dh.getPublicKey()).to.be.an.instanceof(Buffer)
+      expect(dh.getPrivateKey()).to.be.an.instanceof(Buffer)
+      expect(dh.getPrime()).to.be.an.instanceof(Buffer)
+      expect(dh.getGenerator()).to.be.an.instanceof(Buffer)
+    })
+
+    it('should not crash when creating an ECDH cipher', () => {
+      const crypto = require('crypto')
+      const dh = crypto.createECDH('prime256v1')
+      dh.generateKeys()
+      dh.setPrivateKey(dh.getPrivateKey())
     })
   })
 

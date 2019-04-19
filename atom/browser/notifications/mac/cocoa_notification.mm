@@ -13,8 +13,6 @@
 
 namespace atom {
 
-int g_identifier_ = 1;
-
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
     : Notification(delegate, presenter) {}
@@ -29,7 +27,9 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
 
   NSString* identifier =
-      [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
+      [NSString stringWithFormat:@"%@:notification:%@",
+                                 [[NSBundle mainBundle] bundleIdentifier],
+                                 [[[NSUUID alloc] init] UUIDString]];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
@@ -72,24 +72,18 @@ void CocoaNotification::Show(const NotificationOptions& options) {
         // All of the rest are appended to the list of additional actions
         NSString* actionIdentifier =
             [NSString stringWithFormat:@"%@Action%d", identifier, i];
-        if (@available(macOS 10.10, *)) {
-          NSUserNotificationAction* notificationAction =
-              [NSUserNotificationAction
-                  actionWithIdentifier:actionIdentifier
-                                 title:base::SysUTF16ToNSString(action.text)];
-          [additionalActions addObject:notificationAction];
-          additional_action_indices_.insert(
-              std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
-        }
+        NSUserNotificationAction* notificationAction = [NSUserNotificationAction
+            actionWithIdentifier:actionIdentifier
+                           title:base::SysUTF16ToNSString(action.text)];
+        [additionalActions addObject:notificationAction];
+        additional_action_indices_.insert(
+            std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
       }
     }
     i++;
   }
-  if ([additionalActions count] > 0 &&
-      [notification_ respondsToSelector:@selector(setAdditionalActions:)]) {
-    if (@available(macOS 10.10, *)) {
-      [notification_ setAdditionalActions:additionalActions];
-    }
+  if ([additionalActions count] > 0) {
+    [notification_ setAdditionalActions:additionalActions];
   }
 
   if (options.has_reply) {
@@ -115,6 +109,8 @@ void CocoaNotification::Dismiss() {
   NotificationDismissed();
 
   this->LogAction("dismissed");
+
+  notification_.reset(nil);
 }
 
 void CocoaNotification::NotificationDisplayed() {

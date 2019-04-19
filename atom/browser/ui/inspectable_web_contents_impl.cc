@@ -16,6 +16,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/metrics/histogram.h"
+#include "base/stl_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -109,7 +110,7 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 
 double GetNextZoomLevel(double level, bool out) {
   double factor = content::ZoomLevelToZoomFactor(level);
-  size_t size = arraysize(kPresetZoomFactors);
+  size_t size = base::size(kPresetZoomFactors);
   for (size_t i = 0; i < size; ++i) {
     if (!content::ZoomValuesEqual(kPresetZoomFactors[i], factor))
       continue;
@@ -320,8 +321,8 @@ void InspectableWebContentsImpl::ShowDevTools(bool activate) {
 
   // Show devtools only after it has done loading, this is to make sure the
   // SetIsDocked is called *BEFORE* ShowDevTools.
-  embedder_message_dispatcher_.reset(
-      DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
+  embedder_message_dispatcher_ =
+      DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this);
 
   if (!external_devtools_web_contents_) {  // no external devtools
     managed_devtools_web_contents_ = content::WebContents::Create(
@@ -731,10 +732,10 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
     return;
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+  frontend_host_ = content::DevToolsFrontendHost::Create(
       new_host,
       base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                 weak_factory_.GetWeakPtr())));
+                 weak_factory_.GetWeakPtr()));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
@@ -835,11 +836,11 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
         frontend_host_) {
       return;
     }
-    frontend_host_.reset(content::DevToolsFrontendHost::Create(
+    frontend_host_ = content::DevToolsFrontendHost::Create(
         web_contents()->GetMainFrame(),
         base::Bind(
             &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-            base::Unretained(this))));
+            base::Unretained(this)));
     return;
   }
 }

@@ -214,8 +214,7 @@ describe('contentTracing', () => {
       expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath)
     })
 
-    // FIXME(alexeykuzmin): https://github.com/electron/electron/issues/16019
-    xit('creates a temporary file when an empty string is passed', async function () {
+    it('creates a temporary file when an empty string is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '')
       expect(resultFilePath).to.be.a('string').that.is.not.empty()
     })

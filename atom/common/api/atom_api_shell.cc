@@ -44,12 +44,12 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
-void OnOpenExternalFinished(scoped_refptr<atom::util::Promise> promise,
+void OnOpenExternalFinished(atom::util::Promise promise,
                             const std::string& error) {
   if (error.empty())
-    promise->Resolve();
+    promise.Resolve();
   else
-    promise->RejectWithErrorMessage(error.c_str());
+    promise.RejectWithErrorMessage(error.c_str());
 }
 
 bool OpenExternalSync(
@@ -78,8 +78,7 @@ v8::Local<v8::Promise> OpenExternal(
     const GURL& url,
 #endif
     mate::Arguments* args) {
-  scoped_refptr<atom::util::Promise> promise =
-      new atom::util::Promise(args->isolate());
+  atom::util::Promise promise(args->isolate());
 
   platform_util::OpenExternalOptions options;
   if (args->Length() >= 2) {
@@ -90,10 +89,11 @@ v8::Local<v8::Promise> OpenExternal(
     }
   }
 
-  platform_util::OpenExternal(url, options,
-                              base::Bind(&OnOpenExternalFinished, promise));
-
-  return promise->GetHandle();
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  platform_util::OpenExternal(
+      url, options,
+      base::BindOnce(&OnOpenExternalFinished, std::move(promise)));
+  return handle;
 }
 
 #if defined(OS_WIN)
@@ -170,4 +170,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_shell, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_shell, Initialize)

@@ -10,9 +10,9 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '72.0.3626.102',
+    '73.0.3683.119',
   'node_version':
-    'ad2c89ec3be0f5db3ea02b0f591d36a5d84c51ad',
+    '696d8fb66d6f65fc82869d390e0d2078970b1eb4',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',

@@ -65,6 +65,8 @@ class PrintPreviewMessageHandler
 
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
 
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
+
   DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };
 

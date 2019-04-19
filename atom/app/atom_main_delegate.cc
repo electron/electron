@@ -237,10 +237,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess(command_line))
     return;
 
-  // Disable setuid sandbox since it is not longer required on
-  // linux (namespace sandbox is available on most distros).
-  command_line->AppendSwitch(service_manager::switches::kDisableSetuidSandbox);
-
   // Allow file:// URIs to read other file:// URIs by default.
   command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 

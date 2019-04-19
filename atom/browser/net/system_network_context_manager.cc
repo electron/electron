@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "atom/browser/io_thread.h"
+#include "atom/common/application_info.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/lazy_instance.h"
@@ -221,6 +222,8 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
       CreateDefaultNetworkContextParams();
 
   network_context_params->context_name = std::string("system");
+
+  network_context_params->user_agent = atom::GetApplicationUserAgent();
 
   network_context_params->http_cache_enabled = false;
 

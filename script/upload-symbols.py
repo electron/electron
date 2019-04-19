@@ -29,6 +29,11 @@ def main():
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
   else:
     files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+
+  # The file upload needs to be atom-shell/symbols/:symbol_name/:hash/:symbol
+  os.chdir(SYMBOLS_DIR)
+  files = [os.path.relpath(f, os.getcwd()) for f in files]
+
   # The symbol server needs lowercase paths, it will fail otherwise
   # So lowercase all the file paths here
   files = [f.lower() for f in files]

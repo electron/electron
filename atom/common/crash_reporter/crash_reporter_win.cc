@@ -93,8 +93,13 @@ bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
 
   // All addresses are 32bit relative offsets to start.
   record->runtime_function.BeginAddress = 0;
+#if defined(_M_ARM64)
+  record->runtime_function.FunctionLength =
+      base::checked_cast<DWORD>(size_in_bytes);
+#else
   record->runtime_function.EndAddress =
       base::checked_cast<DWORD>(size_in_bytes);
+#endif
   record->runtime_function.UnwindData =
       offsetof(ExceptionHandlerRecord, unwind_info);
 

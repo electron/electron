@@ -177,21 +177,22 @@ bool IsProtocolHandledInIO(
   return is_handled;
 }
 
-void PromiseCallback(scoped_refptr<util::Promise> promise, bool handled) {
-  promise->Resolve(handled);
+void PromiseCallback(util::Promise promise, bool handled) {
+  promise.Resolve(handled);
 }
 
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
-  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   auto* getter = static_cast<URLRequestContextGetter*>(
       browser_context_->GetRequestContext());
 
   base::PostTaskWithTraitsAndReplyWithResult(
       FROM_HERE, {content::BrowserThread::IO},
-      base::Bind(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
-      base::Bind(&PromiseCallback, promise));
+      base::BindOnce(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
+      base::BindOnce(&PromiseCallback, std::move(promise)));
 
-  return promise->GetHandle();
+  return handle;
 }
 
 void Protocol::UninterceptProtocol(const std::string& scheme,
@@ -316,4 +317,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_protocol, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_protocol, Initialize)

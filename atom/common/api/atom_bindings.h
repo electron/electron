@@ -8,6 +8,7 @@
 #include <list>
 #include <memory>
 
+#include "atom/common/promise_util.h"
 #include "base/files/file_path.h"
 #include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
@@ -30,10 +31,6 @@ class Environment;
 }
 
 namespace atom {
-
-namespace util {
-class Promise;
-}
 
 class AtomBindings {
  public:
@@ -72,8 +69,8 @@ class AtomBindings {
   static void OnCallNextTick(uv_async_t* handle);
 
   static void DidReceiveMemoryDump(
-      const v8::Global<v8::Context>& context,
-      scoped_refptr<util::Promise> promise,
+      v8::Global<v8::Context> context,
+      util::Promise promise,
       bool success,
       std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
 

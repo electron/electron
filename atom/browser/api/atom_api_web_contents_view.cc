@@ -31,8 +31,12 @@ class WebContentsViewRelay
 
   atom::api::WebContentsView* view_ = nullptr;
 
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
+
   DISALLOW_COPY_AND_ASSIGN(WebContentsViewRelay);
 };
+
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsViewRelay)
 
 }  // namespace
 
@@ -127,4 +131,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_web_contents_view, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_web_contents_view, Initialize)
