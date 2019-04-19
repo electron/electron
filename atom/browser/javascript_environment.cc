@@ -73,6 +73,7 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   DCHECK(microtasks_runner_);
   base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  platform_->DrainTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }
 
