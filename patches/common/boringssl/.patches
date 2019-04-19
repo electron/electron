@@ -1,4 +1,3 @@
-compatibility_evp_ciph_ocb_mode.patch
 implement_ssl_get_tlsext_status_type.patch
 expose_ripemd160.patch
 expose_aes-cfb.patch
