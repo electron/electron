@@ -234,7 +234,7 @@ export const windowSetup = (
     get: function () {
       return ipcRendererInternal.sendSync('ELECTRON_NAVIGATION_CONTROLLER_LENGTH')
     },
-    set() {}
+    set () {}
   })
 
   if (guestInstanceId != null) {
