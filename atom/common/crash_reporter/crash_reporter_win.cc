@@ -133,14 +133,13 @@ bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
                              reinterpret_cast<DWORD64>(start));
 }
 
-/*
 void UnregisterNonABICompliantCodeRange(void* start) {
   ExceptionHandlerRecord* record =
       reinterpret_cast<ExceptionHandlerRecord*>(start);
 
   RtlDeleteFunctionTable(&record->runtime_function);
 }
-*/
+
 #endif  // _WIN64
 
 }  // namespace
@@ -196,8 +195,8 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     if (code_range && size &&
         RegisterNonABICompliantCodeRange(code_range, size)) {
       // FIXME(nornagon): This broke with https://crrev.com/c/1474703
-      // gin::Debug::SetCodeRangeDeletedCallback(
-      //    UnregisterNonABICompliantCodeRange);
+      gin::Debug::SetCodeRangeDeletedCallback(
+          UnregisterNonABICompliantCodeRange);
     }
   }
 #endif
