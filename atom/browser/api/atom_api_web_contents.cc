@@ -86,6 +86,7 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
+#include "third_party/blink/public/platform/web_cursor_info.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
@@ -807,20 +808,20 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
-                                      const MediaPlayerId& id) {
+                                      const content::MediaPlayerId& id) {
   Emit("media-started-playing");
 }
 
 void WebContents::MediaStoppedPlaying(
     const MediaPlayerInfo& video_type,
-    const MediaPlayerId& id,
+    const content::MediaPlayerId& id,
     content::WebContentsObserver::MediaStoppedReason reason) {
   Emit("media-paused");
 }
 
-void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  if (theme_color != SK_ColorTRANSPARENT) {
-    Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
+void WebContents::DidChangeThemeColor(base::Optional<SkColor> theme_color) {
+  if (theme_color) {
+    Emit("did-change-theme-color", atom::ToRGBHex(theme_color.value()));
   } else {
     Emit("did-change-theme-color", nullptr);
   }
@@ -1192,7 +1193,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     return;
   }
 
-  const auto* render_view_host = contents->GetRenderViewHost();
+  auto* render_view_host = contents->GetRenderViewHost();
   if (!render_view_host) {
     return;
   }
@@ -1915,10 +1916,9 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  content::CursorInfo info;
-  cursor.GetCursorInfo(&info);
+  const content::CursorInfo& info = cursor.info();
 
-  if (cursor.IsCustom()) {
+  if (info.type == blink::WebCursorInfo::kTypeCustom) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,

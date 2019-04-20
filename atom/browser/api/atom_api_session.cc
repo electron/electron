@@ -48,6 +48,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/dns/host_cache.h"  // nogncheck
@@ -268,7 +269,7 @@ void DoCacheActionInIO(
   // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
   using BackendPtr = disk_cache::Backend*;
   auto** backend_ptr = new BackendPtr(nullptr);
-  net::CompletionCallback on_get_backend =
+  net::CompletionRepeatingCallback on_get_backend =
       base::Bind(&OnGetBackend, base::Owned(backend_ptr), action,
                  util::CopyablePromise(promise));
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
@@ -365,8 +366,9 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
   v8::HandleScope handle_scope(isolate);
   if (!global_handle.IsEmpty()) {
     v8::Local<v8::Value> local_handle = global_handle.Get(isolate);
-    if (local_handle->IsObject()) {
-      v8::Local<v8::Object> object = local_handle->ToObject(isolate);
+    v8::Local<v8::Object> object;
+    if (local_handle->IsObject() &&
+        local_handle->ToObject(isolate->GetCurrentContext()).ToLocal(&object)) {
       void* ptr = object->GetAlignedPointerFromInternalField(0);
       if (!ptr)
         return;

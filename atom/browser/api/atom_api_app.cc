@@ -672,7 +672,7 @@ void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
   if (web_contents) {
     prevent_default = Emit(
         "login", WebContents::FromOrCreate(isolate(), web_contents),
-        request_details, login_handler->auth_info(),
+        request_details, *login_handler->auth_info(),
         base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
   }
 
@@ -1056,7 +1056,7 @@ Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
 
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(const base::DictionaryValue& options,
-                            const net::CompletionCallback& callback) {
+                            net::CompletionRepeatingCallback callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     auto copy = base::DictionaryValue::From(
@@ -1069,17 +1069,17 @@ void App::ImportCertificate(const base::DictionaryValue& options,
   }
 
   int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
-  callback.Run(rv);
+  std::move(callback).Run(rv);
 }
 
 void App::OnCertificateManagerModelCreated(
     std::unique_ptr<base::DictionaryValue> options,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
   int rv =
       ImportIntoCertStore(certificate_manager_model_.get(), *(options.get()));
-  callback.Run(rv);
+  std::move(callback).Run(rv);
 }
 #endif
 

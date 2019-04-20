@@ -84,22 +84,22 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
   void SetBounds(const gfx::Rect&) override;
-  gfx::NativeView GetNativeView(void) const override;
+  gfx::NativeView GetNativeView(void) override;
   gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
   ui::TextInputClient* GetTextInputClient() override;
   void Focus(void) override;
-  bool HasFocus(void) const override;
+  bool HasFocus(void) override;
   uint32_t GetCaptureSequenceNumber() const override;
-  bool IsSurfaceAvailableForCopy(void) const override;
+  bool IsSurfaceAvailableForCopy(void) override;
   void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
   void EnsureSurfaceSynchronizedForWebTest() override;
-  gfx::Rect GetViewBounds(void) const override;
-  gfx::Size GetVisibleViewportSize() const override;
+  gfx::Rect GetViewBounds(void) override;
+  gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
-  base::Optional<SkColor> GetBackgroundColor() const override;
+  base::Optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
@@ -139,7 +139,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(content::ScreenInfo* results) const override;
+  void GetScreenInfo(content::ScreenInfo* results) override;
   void InitAsGuest(content::RenderWidgetHostView*,
                    content::RenderWidgetHostViewGuest*) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
@@ -149,7 +149,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   CreateSyntheticGestureTarget() override;
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
-  gfx::Size GetCompositorViewportPixelSize() const override;
+  gfx::Size GetCompositorViewportPixelSize() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
