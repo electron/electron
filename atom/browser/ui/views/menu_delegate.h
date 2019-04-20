@@ -13,7 +13,8 @@
 
 namespace views {
 class MenuRunner;
-}
+class Button;
+}  // namespace views
 
 namespace atom {
 
@@ -25,7 +26,7 @@ class MenuDelegate : public views::MenuDelegate {
   ~MenuDelegate() override;
 
   void RunMenu(AtomMenuModel* model,
-               views::MenuButton* button,
+               views::Button* button,
                ui::MenuSourceType source_type);
 
   class Observer {

@@ -31,13 +31,14 @@ const char kIpcKey[] = "ipcNative";
 // Gets the private object under kIpcKey
 v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
   auto* isolate = context->GetIsolate();
-  auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString(isolate);
+  auto binding_key =
+      mate::ConvertToV8(isolate, kIpcKey)->ToString(context).ToLocalChecked();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
   auto value =
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
   DCHECK(!value.IsEmpty() && value->IsObject());
-  return value->ToObject(isolate);
+  return value->ToObject(context).ToLocalChecked();
 }
 
 void InvokeIpcCallback(v8::Local<v8::Context> context,
@@ -56,8 +57,9 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
     callback_scope.reset(new node::CallbackScope(isolate, ipcNative, {0, 0}));
   }
 
-  auto callback_key =
-      mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
+  auto callback_key = mate::ConvertToV8(isolate, callback_name)
+                          ->ToString(context)
+                          .ToLocalChecked();
   auto callback_value = ipcNative->Get(callback_key);
   DCHECK(callback_value->IsFunction());  // set by init.ts
   auto callback = v8::Local<v8::Function>::Cast(callback_value);

@@ -29,19 +29,19 @@ namespace atom {
 
 const char* ResourceTypeToString(content::ResourceType type) {
   switch (type) {
-    case content::RESOURCE_TYPE_MAIN_FRAME:
+    case content::ResourceType::kMainFrame:
       return "mainFrame";
-    case content::RESOURCE_TYPE_SUB_FRAME:
+    case content::ResourceType::kSubFrame:
       return "subFrame";
-    case content::RESOURCE_TYPE_STYLESHEET:
+    case content::ResourceType::kStylesheet:
       return "stylesheet";
-    case content::RESOURCE_TYPE_SCRIPT:
+    case content::ResourceType::kScript:
       return "script";
-    case content::RESOURCE_TYPE_IMAGE:
+    case content::ResourceType::kImage:
       return "image";
-    case content::RESOURCE_TYPE_OBJECT:
+    case content::ResourceType::kObject:
       return "object";
-    case content::RESOURCE_TYPE_XHR:
+    case content::ResourceType::kXhr:
       return "xhr";
     default:
       return "other";

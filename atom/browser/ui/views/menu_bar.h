@@ -16,8 +16,9 @@
 #include "ui/views/view.h"
 
 namespace views {
+class Button;
 class MenuButton;
-}
+}  // namespace views
 
 namespace atom {
 
@@ -78,7 +79,7 @@ class MenuBar : public views::AccessiblePaneView,
   const char* GetClassName() const override;
 
   // views::MenuButtonListener:
-  void OnMenuButtonClicked(views::MenuButton* source,
+  void OnMenuButtonClicked(views::Button* source,
                            const gfx::Point& point,
                            const ui::Event* event) override;
   void OnNativeThemeChanged(const ui::NativeTheme* theme) override;

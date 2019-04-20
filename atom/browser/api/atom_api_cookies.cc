@@ -283,7 +283,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
       net::CanonicalCookie::CreateSanitizedCookie(
           url, name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
-          net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
+          net::CookieSameSite::NO_RESTRICTION, net::COOKIE_PRIORITY_DEFAULT));
   auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     std::move(completion_callback)
