@@ -1086,6 +1086,24 @@ describe('webContents module', () => {
     })
   })
 
+  describe('relative preload path', () => {
+    it('is resolved against app.getAppPath()', async () => {
+      const appPath = path.join(fixtures, 'api', 'relative-preload')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
+    })
+
+    it('is resolved against app.getAppPath() when sandboxed', async () => {
+      const appPath = path.join(fixtures, 'api', 'relative-preload')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath, '--sandbox-window'])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
+    })
+  })
+
   describe('preload-error event', () => {
     const generateSpecs = (description, sandbox) => {
       describe(description, () => {

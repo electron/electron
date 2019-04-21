@@ -183,10 +183,11 @@ const getAppPath = function () {
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
-    if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
+    const resolvedPath = path.resolve(appPath!, preloadScript)
+    if (!isParentDir(getAppPath(), fs.realpathSync(resolvedPath))) {
       throw new Error('Preload scripts outside of app path are not allowed')
     }
-    require(preloadScript)
+    require(resolvedPath)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
     console.error(`${error}`)

@@ -77,7 +77,7 @@ app.on('ready', () => {
   win = new BrowserWindow({
     webPreferences: {
       sandbox: true,
-      preload: path.join(app.getAppPath(), 'preload.js')
+      preload: 'preload.js'
     }
   })
   win.loadURL('http://google.com')

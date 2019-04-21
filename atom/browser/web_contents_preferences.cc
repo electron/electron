@@ -218,12 +218,8 @@ bool WebContentsPreferences::GetPreloadPath(
   DCHECK(path);
   base::FilePath::StringType preload;
   if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
-    if (base::FilePath(preload).IsAbsolute()) {
-      *path = std::move(preload);
-      return true;
-    } else {
-      LOG(ERROR) << "preload script must have absolute path.";
-    }
+    *path = std::move(preload);
+    return true;
   } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;

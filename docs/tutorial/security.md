@@ -195,7 +195,7 @@ const mainWindow = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false,
     nodeIntegrationInWorker: false,
-    preload: path.join(app.getAppPath(), 'preload.js')
+    preload: 'preload.js'
   }
 })
 
@@ -262,7 +262,7 @@ very small investment.
 const mainWindow = new BrowserWindow({
   webPreferences: {
     contextIsolation: true,
-    preload: path.join(app.getAppPath(), 'preload.js')
+    preload: 'preload.js'
   }
 })
 ```
