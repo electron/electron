@@ -210,6 +210,8 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(mate::Arguments* args);
+  void EnableSecureMode(mate::Arguments* args);
+  bool GetSecureModeEnabled();
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
 

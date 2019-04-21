@@ -43,6 +43,7 @@ auto_filenames = {
     "docs/api/remote.md",
     "docs/api/sandbox-option.md",
     "docs/api/screen.md",
+    "docs/api/secure-mode.md",
     "docs/api/session.md",
     "docs/api/shell.md",
     "docs/api/structures",

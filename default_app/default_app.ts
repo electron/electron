@@ -3,6 +3,8 @@ import * as path from 'path'
 
 let mainWindow: BrowserWindow | null = null
 
+app.enableSecureMode()
+
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   app.quit()
@@ -54,10 +56,7 @@ async function createWindow () {
     autoHideMenuBar: true,
     backgroundColor: '#FFFFFF',
     webPreferences: {
-      preload: path.resolve(__dirname, 'preload.js'),
-      contextIsolation: true,
-      sandbox: true,
-      enableRemoteModule: false
+      preload: path.resolve(__dirname, 'preload.js')
     },
     useContentSize: true,
     show: false

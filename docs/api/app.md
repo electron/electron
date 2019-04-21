@@ -1202,6 +1202,18 @@ stopAccessingSecurityScopedResource()
 
 Start accessing a security scoped resource. With this method Electron applications that are packaged for the Mac App Store may reach outside their sandbox to access files chosen by the user. See [Apple's documentation](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) for a description of how this system works.
 
+### `app.enableSecureMode([options])` _Experimental_
+
+* `options` Object (optional)
+  * `configurableSandbox` Boolean (optional)
+  * `configurableContextIsolation` Boolean (optional)
+  * `configurableNativeWindowOpen` Boolean (optional)
+  * `configurableRemoteModule` Boolean (optional)
+
+Enables [secure mode](secure-mode.md).
+
+This method can only be called before WebContents are created.
+
 ### `app.enableSandbox()` _Experimental_
 
 Enables full sandbox mode on the app.
@@ -1267,6 +1279,10 @@ dock on macOS.
 ### `app.isPackaged`
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
+
+### `app.secureModeEnabled`
+
+A `Boolean` property that returns `true` if [secure mode](secure-mode.md) is enabled, `false` otherwise.
 
 [dock-menu]:https://developer.apple.com/macos/human-interface-guidelines/menus/dock-menus/
 [tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks

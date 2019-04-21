@@ -1099,6 +1099,44 @@ describe('app module', () => {
     })
   })
 
+  describe('app.enableSecureMode', () => {
+    it('works', async () => {
+      const result = await runTestApp('secure-mode', '--enable-secure-mode')
+      expect(result.enablesSandbox).to.equal(true)
+      expect(result.enablesContextIsolation).to.equal(true)
+      expect(result.enablesNativeWindowOpen).to.equal(true)
+      expect(result.disablesRemoteModule).to.equal(true)
+      expect(result.disablesNodeIntegration).to.equal(true)
+      expect(result.disablesNodeIntegrationInWorker).to.equal(true)
+      expect(result.blocksNewWindow).to.equal(true)
+      expect(result.blocksWillAttachWebView).to.equal(true)
+      expect(result.blocksGetSources).to.equal(true)
+      expect(result.blocksRemoteRequire).to.equal(true)
+      expect(result.blocksRemoteGetGlobal).to.equal(true)
+      expect(result.blocksRemoteGetBuiltin).to.equal(true)
+      expect(result.blocksRemoteGetCurrentWindow).to.equal(true)
+      expect(result.blocksRemoteGetCurrentWebContents).to.equal(true)
+    })
+
+    it('does not have side-effects when not used', async () => {
+      const result = await runTestApp('secure-mode')
+      expect(result.enablesSandbox).to.equal(false)
+      expect(result.enablesContextIsolation).to.equal(false)
+      expect(result.enablesNativeWindowOpen).to.equal(false)
+      expect(result.disablesRemoteModule).to.equal(false)
+      expect(result.disablesNodeIntegration).to.equal(false)
+      expect(result.disablesNodeIntegrationInWorker).to.equal(false)
+      expect(result.blocksNewWindow).to.equal(false)
+      expect(result.blocksWillAttachWebView).to.equal(false)
+      expect(result.blocksGetSources).to.equal(false)
+      expect(result.blocksRemoteRequire).to.equal(false)
+      expect(result.blocksRemoteGetGlobal).to.equal(false)
+      expect(result.blocksRemoteGetBuiltin).to.equal(false)
+      expect(result.blocksRemoteGetCurrentWindow).to.equal(false)
+      expect(result.blocksRemoteGetCurrentWebContents).to.equal(false)
+    })
+  })
+
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {
       expect(() => {

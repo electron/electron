@@ -15,6 +15,7 @@
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/observer_list.h"
+#include "base/optional.h"
 #include "base/strings/string16.h"
 #include "base/values.h"
 #include "native_mate/arguments.h"
@@ -262,6 +263,16 @@ class Browser : public WindowListObserver {
   bool is_ready() const { return is_ready_; }
   const util::Promise& WhenReady(v8::Isolate* isolate);
 
+  struct SecureModeOptions {
+    bool configurable_sandbox = false;
+    bool configurable_context_isolation = false;
+    bool configurable_native_window_open = false;
+    bool configurable_remote_module = false;
+  };
+
+  base::Optional<SecureModeOptions> secure_mode() const { return secure_mode_; }
+  void EnableSecureMode(const SecureModeOptions& options);
+
  protected:
   // Returns the version of application bundle or executable file.
   std::string GetExecutableFileVersion() const;
@@ -293,6 +304,9 @@ class Browser : public WindowListObserver {
 
   // The browser is being shutdown.
   bool is_shutdown_ = false;
+
+  // Secure mode options.
+  base::Optional<SecureModeOptions> secure_mode_;
 
   // Null until/unless the default main message loop is running.
   base::OnceClosure quit_main_message_loop_;

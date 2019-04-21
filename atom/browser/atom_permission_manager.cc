@@ -9,6 +9,7 @@
 
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_controller.h"
@@ -155,9 +156,15 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     return content::PermissionController::kNoPendingOperation;
   }
 
+  bool secure_mode_enabled = Browser::Get()->secure_mode().has_value();
+
   if (request_handler_.is_null()) {
     std::vector<blink::mojom::PermissionStatus> statuses;
     for (auto permission : permissions) {
+      if (secure_mode_enabled) {
+        statuses.push_back(blink::mojom::PermissionStatus::DENIED);
+        continue;
+      }
       if (permission == content::PermissionType::MIDI_SYSEX) {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(
@@ -237,6 +244,9 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
     const GURL& requesting_origin,
     const base::DictionaryValue* details) const {
   if (check_handler_.is_null()) {
+    if (Browser::Get()->secure_mode()) {
+      return false;
+    }
     return true;
   }
   auto* web_contents =

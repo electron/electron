@@ -46,6 +46,7 @@ filenames = {
     "lib/browser/navigation-controller.js",
     "lib/browser/objects-registry.js",
     "lib/browser/rpc-server.js",
+    "lib/browser/secure-mode.ts",
     "lib/browser/utils.ts",
     "lib/common/api/clipboard.js",
     "lib/common/api/deprecate.ts",

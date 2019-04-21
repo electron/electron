@@ -353,6 +353,24 @@ struct Converter<content::CertificateRequestResultType> {
   }
 };
 
+template <>
+struct Converter<atom::Browser::SecureModeOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::Browser::SecureModeOptions* out) {
+    mate::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    options.Get("configurableSandbox", &out->configurable_sandbox);
+    options.Get("configurableContextIsolation",
+                &out->configurable_context_isolation);
+    options.Get("configurableNativeWindowOpen",
+                &out->configurable_native_window_open);
+    options.Get("configurableRemoteModule", &out->configurable_remote_module);
+    return true;
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -1274,6 +1292,24 @@ void App::EnableSandbox(mate::Arguments* args) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+void App::EnableSecureMode(mate::Arguments* args) {
+  if (mate::TrackableObject<WebContents>::GetCount() > 0) {
+    args->ThrowError(
+        "app.enableSecureMode() can only be called "
+        "before WebContents are created");
+    return;
+  }
+
+  Browser::SecureModeOptions options;
+  args->GetNext(&options);
+
+  Browser::Get()->EnableSecureMode(options);
+}
+
+bool App::GetSecureModeEnabled() {
+  return Browser::Get()->secure_mode().has_value();
+}
+
 void App::SetUserAgentFallback(const std::string& user_agent) {
   AtomBrowserClient::Get()->SetUserAgent(user_agent);
 }
@@ -1463,7 +1499,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
-      .SetMethod("enableSandbox", &App::EnableSandbox);
+      .SetMethod("enableSandbox", &App::EnableSandbox)
+      .SetMethod("enableSecureMode", &App::EnableSecureMode)
+      .SetProperty("secureModeEnabled", &App::GetSecureModeEnabled);
 }
 
 }  // namespace api

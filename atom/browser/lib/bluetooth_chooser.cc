@@ -69,7 +69,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
         event_handler_.Run(event, "");
       } else {
         bool prevent_default = api_web_contents_->Emit(
-            "select-bluetooth-device", GetDeviceList(),
+            "-select-bluetooth-device", GetDeviceList(),
             base::BindOnce(&OnDeviceChosen, event_handler_));
         if (!prevent_default) {
           auto it = device_map_.begin();
@@ -103,7 +103,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
     // Emit a select-bluetooth-device handler to allow for user to listen for
     // bluetooth device found.
     bool prevent_default = api_web_contents_->Emit(
-        "select-bluetooth-device", GetDeviceList(),
+        "-select-bluetooth-device", GetDeviceList(),
         base::BindOnce(&OnDeviceChosen, event_handler_));
 
     // If emit not implimented select first device that matches the filters

@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <meta http-equiv="content-security-policy" content="script-src 'self' 'unsafe-inline'" />
+  </head>
+  <body>
+    <script>
+      const worker = new Worker('worker.js')
+      worker.onmessage = function (event) {
+        electron.ipcRenderer.send('result', {
+          enablesNativeWindowOpen: String(window.open).includes('[native code]'),
+          disablesRemoteModule: typeof electron.remote === 'undefined',
+          disablesNodeIntegration: typeof require === 'undefined',
+          disablesNodeIntegrationInWorker: event.data.require === 'undefined'
+        })
+        worker.terminate()
+      }
+    </script>
+  </body>
+</html>
