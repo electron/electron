@@ -213,10 +213,13 @@ struct CustomCapturerSource : media::VideoCapturerSource {
       std::size_t framerate,
       base::RepeatingCallback<void(ControlObject*)> onStartCapture,
       base::RepeatingCallback<void()> onStopCapture)
-      : control_(ControlObject::create(isolate)),
-        format_(resolution, framerate, media::PIXEL_FORMAT_I420),
+      : format_(resolution, framerate, media::PIXEL_FORMAT_I420),
         onStartCapture_(std::move(onStartCapture)),
-        onStopCapture_(std::move(onStopCapture)) {}
+        onStopCapture_(std::move(onStopCapture)) {
+    auto handle = ControlObject::create(isolate);
+    control_wrapper_ = v8::Global<v8::Value>(isolate, handle.ToV8());
+    control_ = handle.get();
+  }
 
   media::VideoCaptureFormats GetPreferredFormats() override {
     return {format_};
@@ -229,7 +232,7 @@ struct CustomCapturerSource : media::VideoCapturerSource {
               << media::VideoCaptureFormat::ToString(params.requested_format)
               << std::endl;
 
-    control_.get()->deliver_ = frame_callback;
+    control_->deliver_ = frame_callback;
     running_callback.Run(true);
   }
 
@@ -237,7 +240,7 @@ struct CustomCapturerSource : media::VideoCapturerSource {
 
   void Resume() override {
     std::cerr << "Resume" << std::endl;
-    onStartCapture_.Run(control_.get());
+    onStartCapture_.Run(control_);
   }
 
   void MaybeSuspend() override {
@@ -245,7 +248,8 @@ struct CustomCapturerSource : media::VideoCapturerSource {
     onStopCapture_.Run();
   }
 
-  mate::Handle<ControlObject> control_;
+  v8::Global<v8::Value> control_wrapper_;
+  ControlObject* control_;
   media::VideoCaptureFormat format_;
   base::RepeatingCallback<void(ControlObject*)> onStartCapture_;
   base::RepeatingCallback<void()> onStopCapture_;
