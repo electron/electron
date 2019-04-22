@@ -21,7 +21,7 @@ index cbdce1c3f60eed53f67968e6b89755f418aecc3f..9254f7c9a2f3cf7dc92421e2863109b4
    static const int kNodeIsActiveShift = 4;
  
 diff --git a/include/v8.h b/include/v8.h
-index 6a91f2571d1c0c7e92bff288da90a9550e5568ba..caafc04a404ba96a2669ddcaf4e5b1bb91984c1a 100644
+index 4757ef851b6bb6f0606686c30312d6c38e2d3fb8..aeadbbe3e4341eb1f7242f68ac5accb502585e70 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -577,6 +577,10 @@ template <class T> class PersistentBase {
@@ -35,7 +35,7 @@ index 6a91f2571d1c0c7e92bff288da90a9550e5568ba..caafc04a404ba96a2669ddcaf4e5b1bb
    /** Returns true if the handle's reference is weak.  */
    V8_INLINE bool IsWeak() const;
  
-@@ -8565,6 +8569,17 @@ class V8_EXPORT Isolate {
+@@ -8571,6 +8575,17 @@ class V8_EXPORT Isolate {
     */
    void VisitHandlesWithClassIds(PersistentHandleVisitor* visitor);
  
@@ -53,7 +53,7 @@ index 6a91f2571d1c0c7e92bff288da90a9550e5568ba..caafc04a404ba96a2669ddcaf4e5b1bb
    /**
     * Iterates through all the persistent handles in the current isolate's heap
     * that have class_ids and are weak to be marked as inactive if there is no
-@@ -9818,6 +9833,17 @@ bool PersistentBase<T>::IsIndependent() const {
+@@ -9838,6 +9853,17 @@ bool PersistentBase<T>::IsIndependent() const {
                          I::kNodeIsIndependentShift);
  }
  
@@ -72,10 +72,10 @@ index 6a91f2571d1c0c7e92bff288da90a9550e5568ba..caafc04a404ba96a2669ddcaf4e5b1bb
  bool PersistentBase<T>::IsWeak() const {
    typedef internal::Internals I;
 diff --git a/src/api.cc b/src/api.cc
-index 8532ad08999316427add386696326b43dc1994d8..f2d26a3e7503fe09619259578606d2bc5bd16161 100644
+index e2d409057aa0f333b61e3d6e03f2358feab2081f..d360e5009a52b0ce131ef15fc25636c25349210c 100644
 --- a/src/api.cc
 +++ b/src/api.cc
-@@ -8967,6 +8967,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
+@@ -8982,6 +8982,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
    isolate->global_handles()->IterateAllRootsWithClassIds(visitor);
  }
  
@@ -127,10 +127,10 @@ index 350380b23ce6f4fe89e628285d2e69fb1cac88ee..5eb3d93f142ea4d6ec88a4468b6390ec
    return Node::FromLocation(location)->IsWeak();
  }
 diff --git a/src/global-handles.h b/src/global-handles.h
-index 8caa3c33ce72269ecd470328ad88260b2d6cb206..3604af1d28e5a899095335b033bca044a28b7d77 100644
+index 6b8ca0c93fa344ed0155106fef3a0aabf13bdf44..f5f51bb00761f37b7182e0be5e8783831bff3217 100644
 --- a/src/global-handles.h
 +++ b/src/global-handles.h
-@@ -73,6 +73,9 @@ class GlobalHandles final {
+@@ -73,6 +73,9 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
    // Clear the weakness of a global handle.
    static void* ClearWeakness(Address* location);
  
@@ -141,7 +141,7 @@ index 8caa3c33ce72269ecd470328ad88260b2d6cb206..3604af1d28e5a899095335b033bca044
    static bool IsWeak(Address* location);
  
 diff --git a/test/cctest/heap/test-heap.cc b/test/cctest/heap/test-heap.cc
-index fa3d5fe163fd1477c5bfba84d558172469e827f5..aae5f2d61f1b53389c8d4c3c511893010e49b59e 100644
+index 50ac47a7ab0453f35a68932b63c33c352758302f..13a3fc9047760d1065d073f3423c0d44344a58f2 100644
 --- a/test/cctest/heap/test-heap.cc
 +++ b/test/cctest/heap/test-heap.cc
 @@ -531,9 +531,14 @@ TEST(WeakGlobalHandlesScavenge) {
@@ -212,7 +212,7 @@ index fa3d5fe163fd1477c5bfba84d558172469e827f5..aae5f2d61f1b53389c8d4c3c51189301
  }
  
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index fc74e99dd45a57e8b8b88de6c666008074cdaeea..c2d796bb770432411e660c888a189685da474a41 100644
+index 59903ddd928b2ade29332b09b02fcd8343215b56..1d561debc0da00867949b1e09f3d5bed81fa61bb 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
 @@ -20472,6 +20472,43 @@ TEST(WrapperClassId) {

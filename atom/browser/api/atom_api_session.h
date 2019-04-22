@@ -15,7 +15,6 @@
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
-#include "net/base/completion_callback.h"
 
 class GURL;
 

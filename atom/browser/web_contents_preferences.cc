@@ -147,6 +147,23 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
+  // If this is a <webview> tag, and the embedder is offscreen-rendered, then
+  // this WebContents is also offscreen-rendered.
+  int guest_instance_id = 0;
+  if (web_preferences.Get(options::kGuestInstanceID, &guest_instance_id)) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        auto* embedder_preferences = WebContentsPreferences::From(embedder);
+        if (embedder_preferences &&
+            embedder_preferences->IsEnabled(options::kOffscreen)) {
+          preference_.SetKey(options::kOffscreen, base::Value(true));
+        }
+      }
+    }
+  }
+
   last_preference_ = preference_.Clone();
 }
 
@@ -309,17 +326,22 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
   }
 
+  // --offscreen
+  if (IsEnabled(options::kOffscreen)) {
+    command_line->AppendSwitch(options::kOffscreen);
+  }
+
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
-                                    base::IntToString(guest_instance_id));
+                                    base::NumberToString(guest_instance_id));
 
   // Pass the opener's window id.
   int opener_id;
   if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
     command_line->AppendSwitchASCII(switches::kOpenerID,
-                                    base::IntToString(opener_id));
+                                    base::NumberToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.

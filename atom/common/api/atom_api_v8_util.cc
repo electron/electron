@@ -11,7 +11,7 @@
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
-#include "base/hash.h"
+#include "base/hash/hash.h"
 #include "native_mate/dictionary.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
@@ -115,6 +115,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
+  dict.SetMethod("addRemoteObjectRef", &atom::RemoteObjectFreer::AddRef);
   dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod(
       "createDoubleIDWeakMap",

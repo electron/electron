@@ -1,14 +1,14 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Ales Pergl <alpergl@microsoft.com>
-Date: Mon, 22 Oct 2018 10:47:12 -0700
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 16 Apr 2019 10:43:04 -0700
 Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index b843e32765a93fe50ccc78427558daeb3447c2a8..1eefb5b89c8a91ee3a9eb9f4a5b22cc499d97539 100644
+index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..ade81276041c70e7e9198489e5e0cab41f279562 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -246,7 +246,7 @@ config("internal_config") {
+@@ -262,7 +262,7 @@ config("internal_config") {
      ":v8_header_features",
    ]
  
@@ -17,12 +17,21 @@ index b843e32765a93fe50ccc78427558daeb3447c2a8..1eefb5b89c8a91ee3a9eb9f4a5b22cc4
      defines += [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -3558,6 +3558,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3655,7 +3655,7 @@ if (current_toolchain == v8_generator_toolchain) {
+       "src/interpreter/bytecodes.h",
+     ]
+ 
+-    configs = [ ":internal_config" ]
++    configs = [ ":internal_config_base" ]
+ 
+     deps = [
+       ":v8_libbase",
+@@ -3676,6 +3676,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  
 +    configs += [ "//electron/build/config:build_time_executable" ]
 +
      deps = [
-       ":v8_base",
-       ":v8_init",
+       ":v8_base_without_compiler",
+       ":v8_compiler_for_mksnapshot",

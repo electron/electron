@@ -13,6 +13,7 @@ declare namespace Electron {
   }
 
   interface App {
+    _setDefaultAppPaths(packagePath: string | null): void;
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
@@ -76,7 +77,7 @@ declare namespace ElectronInternal {
     log(message: string): void;
     function(fn: Function, newName: string): Function;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
-    fnToProperty<A extends Function, B extends Function>(propName: string, getterFn: A, setterFn: B): [A, B];
+    fnToProperty(module: any, prop: string, getter: string, setter: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
 

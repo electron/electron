@@ -50,15 +50,15 @@ bool CertFromData(const std::string& data,
 }  // namespace
 
 // static
-v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
+v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
     v8::Isolate* isolate,
-    const net::AuthChallengeInfo* val) {
+    const net::AuthChallengeInfo& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("isProxy", val->is_proxy);
-  dict.Set("scheme", val->scheme);
-  dict.Set("host", val->challenger.host());
-  dict.Set("port", static_cast<uint32_t>(val->challenger.port()));
-  dict.Set("realm", val->realm);
+  dict.Set("isProxy", val.is_proxy);
+  dict.Set("scheme", val.scheme);
+  dict.Set("host", val.challenger.host());
+  dict.Set("port", static_cast<uint32_t>(val.challenger.port()));
+  dict.Set("realm", val.realm);
   return mate::ConvertToV8(isolate, dict);
 }
 

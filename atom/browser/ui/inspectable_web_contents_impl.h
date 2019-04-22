@@ -143,6 +143,8 @@ class InspectableWebContentsImpl
                                  int boundary_value) override {}
   void ReadyForTest() override {}
   void SetOpenNewWindowForPopups(bool value) override {}
+  void RecordPerformanceHistogram(const std::string& name,
+                                  double duration) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
