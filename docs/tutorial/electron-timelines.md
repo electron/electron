@@ -1,8 +1,10 @@
-## 5.0.0 Release Schedule
-Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5-0-timeline) for info about publicizing our release dates.
-#### Notes:
+# Electron Release Timelines
+### Notes: 
 - These dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
 - These are our scheduled beta releases, however we often release more betas than scheduled.
+
+## 5.0.0 Release Schedule
+Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5-0-timeline) for info about publicizing our release dates.
 
 | Date/Week Of    | Release      | Comments       |
 | --------------- | ------------ | -------------- |
@@ -24,9 +26,6 @@ Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5
 *Includes: Chromium M73 and Node v12.0*
 
 ## 6.0.0 Release Schedule
-#### Notes:
-- These dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
-- These are our scheduled beta releases, however we often release more betas than scheduled.
 
 | Date/Week Of    | Release      | Comments       |
 | --------------- | ------------ | -------------- |
