@@ -51,6 +51,14 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   int RegisterProtocol(const std::string& scheme,
                        const Handler& handler,
                        mate::Arguments* args);
+  void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
+  bool IsProtocolRegistered(const std::string& scheme);
+
+  // Old async version of IsProtocolRegistered.
+  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
+
+  // Be compatible with old interface, which accepts optional callback.
+  void HandleOptionalCallback(mate::Arguments* args, ProtocolError error);
 
   // scheme => handler.
   std::map<std::string, Handler> handlers_;

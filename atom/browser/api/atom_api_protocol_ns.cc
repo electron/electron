@@ -8,6 +8,7 @@
 #include "atom/browser/net/atom_url_loader_factory.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/promise_util.h"
 #include "base/stl_util.h"
 
 namespace atom {
@@ -53,12 +54,37 @@ int ProtocolNS::RegisterProtocol(const std::string& scheme,
                                  const Handler& handler,
                                  mate::Arguments* args) {
   ProtocolError error = PROTOCOL_OK;
-  if (base::ContainsKey(handlers_, scheme))
-    error = PROTOCOL_REGISTERED;
-  else
+  if (!base::ContainsKey(handlers_, scheme))
     handlers_[scheme] = handler;
+  else
+    error = PROTOCOL_REGISTERED;
+  HandleOptionalCallback(args, error);
+  return error;
+}
 
-  // Be compatible with old interface, which accepts optional callback.
+void ProtocolNS::UnregisterProtocol(const std::string& scheme,
+                                    mate::Arguments* args) {
+  ProtocolError error = PROTOCOL_OK;
+  if (base::ContainsKey(handlers_, scheme))
+    handlers_.erase(scheme);
+  else
+    error = PROTOCOL_NOT_REGISTERED;
+  HandleOptionalCallback(args, error);
+}
+
+bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
+  return base::ContainsKey(handlers_, scheme);
+}
+
+v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
+    const std::string& scheme) {
+  util::Promise promise(isolate());
+  promise.Resolve(IsProtocolRegistered(scheme));
+  return promise.GetHandle();
+}
+
+void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,
+                                        ProtocolError error) {
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
     if (error == PROTOCOL_OK)
@@ -67,7 +93,6 @@ int ProtocolNS::RegisterProtocol(const std::string& scheme,
       callback.Run(v8::Exception::Error(
           mate::StringToV8(isolate(), ErrorCodeToString(error))));
   }
-  return error;
 }
 
 // static
@@ -87,8 +112,9 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("registerFileProtocol", &ProtocolNS::RegisterProtocol)
       .SetMethod("registerHttpProtocol", &ProtocolNS::RegisterProtocol)
       .SetMethod("registerStreamProtocol", &ProtocolNS::RegisterProtocol)
-      .SetMethod("unregisterProtocol", &Noop)
-      .SetMethod("isProtocolHandled", &Noop)
+      .SetMethod("unregisterProtocol", &ProtocolNS::UnregisterProtocol)
+      .SetMethod("isProtocolRegistered", &ProtocolNS::IsProtocolRegistered)
+      .SetMethod("isProtocolHandled", &ProtocolNS::IsProtocolHandled)
       .SetMethod("interceptStringProtocol", &Noop)
       .SetMethod("interceptBufferProtocol", &Noop)
       .SetMethod("interceptFileProtocol", &Noop)
