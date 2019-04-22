@@ -157,6 +157,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() const override;
   std::string GetUserAgent() const override;
+  void RegisterNonNetworkNavigationURLLoaderFactories(
+      int frame_tree_node_id,
+      NonNetworkURLLoaderFactoryMap* factories) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
