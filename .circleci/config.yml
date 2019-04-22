@@ -546,12 +546,18 @@ steps-checkout: &steps-checkout
     - run:
         name: Touch Sync Done
         command: touch src/electron/.circle-sync-done
+    # Restore exact src cache based on the hash of DEPS and patches/*
+    # If no cache is matched EXACTLY then the .circle-sync-done file is empty
+    # If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
     - restore_cache:
         paths:
           - ./src
         keys:
           - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
         name: Restoring src cache
+    # Restore exact or closed git cache based on the hash of DEPS and .circle-sync-done
+    # If the src cache was restored above then this will match an empty cache
+    # If the src cache was not restored above then this will match a close git cache
     - restore_cache:
         paths:
           - ~/.gclient-cache
@@ -565,12 +571,16 @@ steps-checkout: &steps-checkout
           # CircleCI does not support interpolation when setting environment variables.
           # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
           echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+    # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
+    # Persist the git cache based on the hash of DEPS and .circle-sync-done
+    # If the src cache was restored above then this will persist an empty cache
     - save_cache:
         paths:
           - ~/.gclient-cache
         key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
         name: Persisting git cache
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
     - run:
         name: Wipe Electron
         command: rm -rf src/electron
@@ -581,9 +591,11 @@ steps-checkout: &steps-checkout
     - run:
         name: Generate DEPS Hash
         command: (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+    # Mark the sync as done for future cache saving
     - run:
         name: Mark Sync Done
         command: echo DONE > src/electron/.circle-sync-done
+    # Minimize the size of the cache
     - run:
         name: Remove some unused data to avoid storing it in the workspace/cache
         command: |
@@ -593,6 +605,7 @@ steps-checkout: &steps-checkout
           rm -rf src/third_party/blink/perf_tests
           rm -rf src/third_party/hunspell_dictionaries
           rm -rf src/third_party/WebKit/LayoutTests
+    # Save the src cache based on the deps hash
     - save_cache:
         paths:
           - ./src
