@@ -1,10 +1,10 @@
-From ae44d24aa7bb56e53dfa8a99234452ae586eec93 Mon Sep 17 00:00:00 2001
+From ad0b4ce18d5f21696746cff83da605d7b8d8af3f Mon Sep 17 00:00:00 2001
 From: Alexey Kuts <kruntuid@gmail.com>
-Date: Fri, 29 Mar 2019 21:00:59 +0300
-Subject: [PATCH] 	preconnect_support
+Date: Tue, 23 Apr 2019 00:27:38 +0300
+Subject: [PATCH] 	preconnect support
 
 ---
- chrome/browser/predictors/loading_predictor.cc     |  59 +--
+ chrome/browser/predictors/loading_predictor.cc     |  62 +--
  chrome/browser/predictors/loading_predictor.h      |  29 +-
  .../browser/predictors/loading_predictor_config.cc |   6 +-
  .../predictors/loading_predictor_factory.cc        |   4 +-
@@ -14,10 +14,10 @@ Subject: [PATCH] 	preconnect_support
  .../browser/predictors/resource_prefetch_common.h  |   1 -
  .../predictors/resource_prefetch_predictor.cc      | 435 ---------------------
  .../predictors/resource_prefetch_predictor.h       |   6 +
- 10 files changed, 41 insertions(+), 547 deletions(-)
+ 10 files changed, 44 insertions(+), 547 deletions(-)
 
 diff --git a/chrome/browser/predictors/loading_predictor.cc b/chrome/browser/predictors/loading_predictor.cc
-index f2ae6c5..24e6f45 100644
+index f2ae6c5..0ce1190 100644
 --- a/chrome/browser/predictors/loading_predictor.cc
 +++ b/chrome/browser/predictors/loading_predictor.cc
 @@ -25,22 +25,23 @@ const base::TimeDelta kMinDelayBetweenPreconnectRequests =
@@ -64,7 +64,7 @@ index f2ae6c5..24e6f45 100644
        weak_factory_(this) {}
  
  LoadingPredictor::~LoadingPredictor() {
-@@ -69,13 +61,13 @@ LoadingPredictor::~LoadingPredictor() {
+@@ -69,27 +61,28 @@ LoadingPredictor::~LoadingPredictor() {
  
  void LoadingPredictor::PrepareForPageLoad(const GURL& url,
                                            HintOrigin origin,
@@ -80,7 +80,11 @@ index f2ae6c5..24e6f45 100644
      return;
    }
  
-@@ -84,12 +76,10 @@ void LoadingPredictor::PrepareForPageLoad(const GURL& url,
++  if (num_sockets_to_preconnect <= 0)
++    return;
++
+   if (active_hints_.find(url) != active_hints_.end())
+     return;
  
    bool has_preconnect_prediction = false;
    PreconnectPrediction prediction;
@@ -94,7 +98,7 @@ index f2ae6c5..24e6f45 100644
  
    if (!has_preconnect_prediction)
      return;
-@@ -110,16 +100,6 @@ void LoadingPredictor::CancelPageLoadHint(const GURL& url) {
+@@ -110,16 +103,6 @@ void LoadingPredictor::CancelPageLoadHint(const GURL& url) {
  void LoadingPredictor::StartInitialization() {
    if (shutdown_)
      return;
@@ -111,7 +115,7 @@ index f2ae6c5..24e6f45 100644
  }
  
  PreconnectManager* LoadingPredictor::preconnect_manager() {
-@@ -136,18 +116,18 @@ PreconnectManager* LoadingPredictor::preconnect_manager() {
+@@ -136,18 +119,18 @@ PreconnectManager* LoadingPredictor::preconnect_manager() {
  
  void LoadingPredictor::Shutdown() {
    DCHECK(!shutdown_);
@@ -134,7 +138,7 @@ index f2ae6c5..24e6f45 100644
  }
  
  void LoadingPredictor::OnNavigationFinished(
-@@ -157,8 +137,6 @@ void LoadingPredictor::OnNavigationFinished(
+@@ -157,8 +140,6 @@ void LoadingPredictor::OnNavigationFinished(
    if (shutdown_)
      return;
  
@@ -143,7 +147,7 @@ index f2ae6c5..24e6f45 100644
    active_navigations_.erase(old_navigation_id);
    CancelPageLoadHint(old_navigation_id.main_frame_url);
  }
-@@ -190,18 +168,6 @@ void LoadingPredictor::CleanupAbandonedHintsAndNavigations(
+@@ -190,18 +171,6 @@ void LoadingPredictor::CleanupAbandonedHintsAndNavigations(
        ++it;
      }
    }
@@ -162,7 +166,7 @@ index f2ae6c5..24e6f45 100644
  }
  
  void LoadingPredictor::MaybeAddPreconnect(
-@@ -252,7 +218,6 @@ void LoadingPredictor::PreconnectFinished(
+@@ -252,7 +221,6 @@ void LoadingPredictor::PreconnectFinished(
  
    DCHECK(stats);
    active_hints_.erase(stats->url);
@@ -277,7 +281,7 @@ index 1166d85..57e9cdd 100644
    if (!IsLoadingPredictorEnabled(profile))
      return nullptr;
 diff --git a/chrome/browser/predictors/loading_predictor_tab_helper.cc b/chrome/browser/predictors/loading_predictor_tab_helper.cc
-index 7983afcc..6ff0a71 100644
+index 7983afcc..bd715a0 100644
 --- a/chrome/browser/predictors/loading_predictor_tab_helper.cc
 +++ b/chrome/browser/predictors/loading_predictor_tab_helper.cc
 @@ -29,9 +29,9 @@ bool IsHandledNavigation(content::NavigationHandle* navigation_handle) {
@@ -288,7 +292,7 @@ index 7983afcc..6ff0a71 100644
 -  auto* predictor = LoadingPredictorFactory::GetForProfile(
 -      Profile::FromBrowserContext(web_contents->GetBrowserContext()));
 +    : content::WebContentsObserver(web_contents), 
-+      num_sockets_to_preconnect_(1) {
++      num_sockets_to_preconnect_(0) {
 +  auto* predictor = LoadingPredictorFactory::GetForProfile((Profile *)web_contents->GetBrowserContext());
    if (predictor)
      predictor_ = predictor->GetWeakPtr();

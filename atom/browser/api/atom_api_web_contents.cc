@@ -432,12 +432,14 @@ void WebContents::InitWithSessionAndOptions(
   int num_sockets_to_preconnect;
   if (options.Get(options::kNumSocketsToPreconnect,
                   &num_sockets_to_preconnect)) {
-    const int kMinSocketsToPreconnect = 1;
-    const int kMaxSocketsToPreconnect = 6;
-    num_sockets_to_preconnect =
-        std::max(num_sockets_to_preconnect, kMinSocketsToPreconnect);
-    num_sockets_to_preconnect =
-        std::min(num_sockets_to_preconnect, kMaxSocketsToPreconnect);
+    if (num_sockets_to_preconnect > 0) {
+      const int kMinSocketsToPreconnect = 1;
+      const int kMaxSocketsToPreconnect = 6;
+      num_sockets_to_preconnect =
+          std::max(num_sockets_to_preconnect, kMinSocketsToPreconnect);
+      num_sockets_to_preconnect =
+          std::min(num_sockets_to_preconnect, kMaxSocketsToPreconnect);
+    }
     predictors::LoadingPredictorTabHelper::FromWebContents(web_contents())
         ->SetNumSocketsToPreconnect(num_sockets_to_preconnect);
   }
