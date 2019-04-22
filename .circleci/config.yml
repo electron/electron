@@ -555,7 +555,7 @@ steps-checkout: &steps-checkout
         keys:
           - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
         name: Restoring src cache
-    # Restore exact or closed git cache based on the hash of DEPS and .circle-sync-done
+    # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
     # If the src cache was restored above then this will match an empty cache
     # If the src cache was not restored above then this will match a close git cache
     - restore_cache:
