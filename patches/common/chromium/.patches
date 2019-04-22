@@ -76,3 +76,4 @@ fix_disable_usage_of_setapplicationisdaemon_and.patch
 viz_osr.patch
 video_capturer_dirty_rect.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
+autofill_size_calculation.patch

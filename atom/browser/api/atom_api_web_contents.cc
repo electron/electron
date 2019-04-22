@@ -597,7 +597,7 @@ void WebContents::SetContentsBounds(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
   HideAutofillPopup();
 #endif
   if (managed_web_contents())
@@ -1025,7 +1025,7 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
 void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
                                     const gfx::RectF& bounds,
                                     const std::vector<base::string16>& values,
@@ -1072,7 +1072,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
                                     FrameDispatchHelper::OnGetZoomLevel)
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
 #endif
