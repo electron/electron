@@ -4,6 +4,9 @@
 
 #include "atom/browser/net/atom_url_loader_factory.h"
 
+#include <string>
+#include <utility>
+
 #include "content/public/browser/browser_thread.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader.mojom.h"

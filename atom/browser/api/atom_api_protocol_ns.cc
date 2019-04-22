@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_protocol_ns.h"
 
+#include <memory>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_loader_factory.h"
 #include "atom/common/native_mate_converters/callback.h"

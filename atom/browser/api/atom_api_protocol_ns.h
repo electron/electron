@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
 #define ATOM_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
 
+#include <map>
+#include <string>
+
 #include "atom/browser/api/trackable_object.h"
 #include "content/public/browser/content_browser_client.h"
 #include "native_mate/dictionary.h"
