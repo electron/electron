@@ -26,7 +26,6 @@ Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5
 *Includes: Chromium M73 and Node v12.0*
 
 ## 6.0.0 Release Schedule
-
 | Date/Week Of    | Release      | Comments       |
 | --------------- | ------------ | -------------- |
 | Thu, 2019-Apr-25 | 6.0.0-beta.1 | 🔥 |
