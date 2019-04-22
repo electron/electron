@@ -128,10 +128,10 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
-  SetDefaultBoolIfUndefined("javascript", true);
-  SetDefaultBoolIfUndefined("images", true);
-  SetDefaultBoolIfUndefined("textAreasAreResizable", true);
-  SetDefaultBoolIfUndefined("webgl", true);
+  SetDefaultBoolIfUndefined(options::kJavaScript, true);
+  SetDefaultBoolIfUndefined(options::kImages, true);
+  SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
+  SetDefaultBoolIfUndefined(options::kWebGL, true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
@@ -405,19 +405,20 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebPreferences* prefs) {
-  prefs->javascript_enabled = IsEnabled("javascript", true /* default_value */);
-  prefs->images_enabled = IsEnabled("images", true /* default_value */);
+  prefs->javascript_enabled =
+      IsEnabled(options::kJavaScript, true /* default_value */);
+  prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
   prefs->text_areas_are_resizable =
-      IsEnabled("textAreasAreResizable", true /* default_value */);
+      IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
   prefs->navigate_on_drag_drop =
-      IsEnabled("navigateOnDragDrop", false /* default_value */);
+      IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
     prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
   }
 
   // Check if webgl should be enabled.
-  bool is_webgl_enabled = IsEnabled("webgl", true /* default_value */);
+  bool is_webgl_enabled = IsEnabled(options::kWebGL, true /* default_value */);
   prefs->webgl1_enabled = is_webgl_enabled;
   prefs->webgl2_enabled = is_webgl_enabled;
 
