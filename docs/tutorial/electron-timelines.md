@@ -1,5 +1,5 @@
 # Electron Release Timelines
-### Notes: 
+### Notes:
 - These dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
 - These are our scheduled beta releases, however we often release more betas than scheduled.
 
