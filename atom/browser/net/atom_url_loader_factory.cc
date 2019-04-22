@@ -15,7 +15,9 @@ using content::BrowserThread;
 
 namespace atom {
 
-AtomURLLoaderFactory::AtomURLLoaderFactory() {}
+AtomURLLoaderFactory::AtomURLLoaderFactory(ProtocolType type,
+                                           const ProtocolHandler& handler)
+    : type_(type), handler_(handler) {}
 
 AtomURLLoaderFactory::~AtomURLLoaderFactory() = default;
 

@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/atom_url_loader_factory.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/promise_util.h"
@@ -48,19 +47,20 @@ ProtocolNS::~ProtocolNS() = default;
 
 void ProtocolNS::RegisterURLLoaderFactories(
     content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
-  for (const auto& it : handlers_)
-    factories->emplace(it.first, std::make_unique<AtomURLLoaderFactory>());
+  for (const auto& it : handlers_) {
+    factories->emplace(it.first, std::make_unique<AtomURLLoaderFactory>(
+                                     it.second.first, it.second.second));
+  }
 }
 
-int ProtocolNS::RegisterProtocol(const std::string& scheme,
-                                 const Handler& handler,
-                                 mate::Arguments* args) {
+ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
+                                           const std::string& scheme,
+                                           const ProtocolHandler& handler) {
   ProtocolError error = PROTOCOL_OK;
   if (!base::ContainsKey(handlers_, scheme))
-    handlers_[scheme] = handler;
+    handlers_[scheme] = std::make_pair(type, handler);
   else
     error = PROTOCOL_REGISTERED;
-  HandleOptionalCallback(args, error);
   return error;
 }
 
@@ -109,11 +109,16 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Protocol"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("registerStringProtocol", &ProtocolNS::RegisterProtocol)
-      .SetMethod("registerBufferProtocol", &ProtocolNS::RegisterProtocol)
-      .SetMethod("registerFileProtocol", &ProtocolNS::RegisterProtocol)
-      .SetMethod("registerHttpProtocol", &ProtocolNS::RegisterProtocol)
-      .SetMethod("registerStreamProtocol", &ProtocolNS::RegisterProtocol)
+      .SetMethod("registerStringProtocol",
+                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kString>)
+      .SetMethod("registerBufferProtocol",
+                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kBuffer>)
+      .SetMethod("registerFileProtocol",
+                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kFile>)
+      .SetMethod("registerHttpProtocol",
+                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kHttp>)
+      .SetMethod("registerStreamProtocol",
+                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kStream>)
       .SetMethod("unregisterProtocol", &ProtocolNS::UnregisterProtocol)
       .SetMethod("isProtocolRegistered", &ProtocolNS::IsProtocolRegistered)
       .SetMethod("isProtocolHandled", &ProtocolNS::IsProtocolHandled)

@@ -8,13 +8,27 @@
 #include "mojo/public/cpp/bindings/binding_set.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "v8/include/v8.h"
 
 namespace atom {
+
+// Old Protocol API can only serve one type of response for one scheme.
+enum class ProtocolType {
+  kBuffer,
+  kString,
+  kFile,
+  kHttp,
+  kStream,
+  kFree,  // special type for returning arbitrary type of response.
+};
+
+using ProtocolHandler =
+    base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
 
 // Implementation of URLLoaderFactory.
 class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
  public:
-  AtomURLLoaderFactory();
+  AtomURLLoaderFactory(ProtocolType type, const ProtocolHandler& handler);
   ~AtomURLLoaderFactory() override;
 
   // network::mojom::URLLoaderFactory:
@@ -33,6 +47,9 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   // but I don't know what it actually does, find out the meanings of |Clone|
   // and |bindings_| and add comments for them.
   mojo::BindingSet<network::mojom::URLLoaderFactory> bindings_;
+
+  ProtocolType type_;
+  ProtocolHandler handler_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLLoaderFactory);
 };
