@@ -312,17 +312,6 @@ protocol.registerStreamProtocol('atom', (request, callback) => {
 
 Unregisters the custom protocol of `scheme`.
 
-### `protocol.isProtocolHandled(scheme, callback)`
-
-* `scheme` String
-* `callback` Function
-  * `handled` Boolean
-
-The `callback` will be called with a boolean that indicates whether there is
-already a handler for `scheme`.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 ### `protocol.isProtocolHandled(scheme)`
 
 * `scheme` String

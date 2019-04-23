@@ -381,22 +381,6 @@ Returns `String` - The user agent for guest page.
 
 Injects CSS into the guest page.
 
-### `<webview>.executeJavaScript(code[, userGesture, callback])`
-
-* `code` String
-* `userGesture` Boolean (optional) - Default `false`.
-* `callback` Function (optional) - Called after script has been executed.
-  * `result` Any
-
-Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
-
-Evaluates `code` in page. If `userGesture` is set, it will create the user
-gesture context in the page. HTML APIs like `requestFullScreen`, which require
-user action, can take advantage of this option for automation.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 ### `<webview>.executeJavaScript(code[, userGesture])`
 
 * `code` String
@@ -549,25 +533,6 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
 
 Prints `webview`'s web page. Same as `webContents.print([options])`.
 
-### `<webview>.printToPDF(options, callback)`
-
-* `options` Object
-  * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
-    default margin, 1 for no margin, and 2 for minimum margin.
-  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
-    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
-    and `width` in microns.
-  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
-  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
-* `callback` Function
-  * `error` Error
-  * `data` Buffer
-
-Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, callback)`.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 ### `<webview>.printToPDF(options)`
 
 * `options` Object
@@ -583,18 +548,6 @@ Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, cal
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
 Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options)`.
-
-### `<webview>.capturePage([rect, ]callback)`
-
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
-* `callback` Function
-  * `image` [NativeImage](native-image.md)
-
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of [NativeImage](native-image.md)
-that stores data of the snapshot. Omitting `rect` will capture the whole visible page.
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 ### `<webview>.capturePage([rect])`
 

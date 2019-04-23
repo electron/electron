@@ -957,31 +957,6 @@ contents.on('did-finish-load', function () {
 })
 ```
 
-#### `contents.executeJavaScript(code[, userGesture, callback])`
-
-* `code` String
-* `userGesture` Boolean (optional) - Default is `false`.
-* `callback` Function (optional) - Called after script has been executed.
-  * `result` Any
-
-Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
-
-Evaluates `code` in page.
-
-In the browser window some HTML APIs like `requestFullScreen` can only be
-invoked by a gesture from the user. Setting `userGesture` to `true` will remove
-this limitation.
-
-```js
-contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
-  .then((result) => {
-    console.log(result) // Will be the JSON object from the fetch call
-  })
-```
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `contents.executeJavaScript(code[, userGesture])`
 
 * `code` String
@@ -1169,18 +1144,6 @@ const requestId = webContents.findInPage('api')
 console.log(requestId)
 ```
 
-#### `contents.capturePage([rect, ]callback)`
-
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
-* `callback` Function
-  * `image` [NativeImage](native-image.md)
-
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of [NativeImage](native-image.md)
-that stores data of the snapshot. Omitting `rect` will capture the whole visible page.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `contents.capturePage([rect])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
@@ -1213,29 +1176,6 @@ Calling `window.print()` in web page is equivalent to calling
 `webContents.print({ silent: false, printBackground: false, deviceName: '' })`.
 
 Use `page-break-before: always; ` CSS style to force to print to a new page.
-
-#### `contents.printToPDF(options, callback)`
-
-* `options` Object
-  * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
-    default margin, 1 for no margin, and 2 for minimum margin.
-  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
-    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
-    and `width` in microns.
-  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
-  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
-* `callback` Function
-  * `error` Error
-  * `data` Buffer
-
-Prints window's web page as PDF with Chromium's preview printing custom
-settings.
-
-The `callback` will be called with `callback(error, data)` on completion. The
-`data` is a `Buffer` that contains the generated PDF data.
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 #### `contents.printToPDF(options)`
 
