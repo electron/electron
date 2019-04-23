@@ -70,5 +70,5 @@ void IOThread::CleanUp() {
     system_request_context_->proxy_resolution_service()->OnShutdown();
 
   if (net_log_)
-    net_log_->ShutDownBeforeTaskScheduler();
+    net_log_->ShutDownBeforeThreadPool();
 }

@@ -354,7 +354,7 @@ void URLRequest::OnReceivedRedirect(
 }
 
 void URLRequest::OnAuthenticationRequired(
-    scoped_refptr<const net::AuthChallengeInfo> auth_info) {
+    const net::AuthChallengeInfo& auth_info) {
   if (request_state_.Canceled() || request_state_.Closed()) {
     return;
   }
@@ -364,7 +364,7 @@ void URLRequest::OnAuthenticationRequired(
     return;
   }
 
-  Emit("login", auth_info.get(),
+  Emit("login", auth_info,
        base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 

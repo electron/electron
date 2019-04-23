@@ -15,8 +15,9 @@ struct Converter<base::string16> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::string16& val) {
     return v8::String::NewFromTwoByte(
-        isolate, reinterpret_cast<const uint16_t*>(val.data()),
-        v8::String::kNormalString, val.size());
+               isolate, reinterpret_cast<const uint16_t*>(val.data()),
+               v8::NewStringType::kNormal, val.size())
+        .ToLocalChecked();
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
