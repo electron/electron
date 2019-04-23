@@ -5,7 +5,7 @@ Subject: handle pub_key == null in EC_KEY_set_public_key
 
 
 diff --git a/crypto/fipsmodule/ec/ec_key.c b/crypto/fipsmodule/ec/ec_key.c
-index 4bc12a073650f66f5ae8ba2beabb9a6fb2b21878..7e86ccb0d76c66f32fc05c7093c870d5da7b9994 100644
+index a6d469767adfad1c9095cc58c567b10c71e95cfa..d1f754afeba102208c668f3678f64abed666cd64 100644
 --- a/crypto/fipsmodule/ec/ec_key.c
 +++ b/crypto/fipsmodule/ec/ec_key.c
 @@ -267,7 +267,7 @@ int EC_KEY_set_public_key(EC_KEY *key, const EC_POINT *pub_key) {
