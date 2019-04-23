@@ -578,20 +578,6 @@ describe('webContents module', () => {
       }
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('can set the correct zoom level (callback)', async () => {
-      try {
-        await w.loadURL('about:blank')
-        const zoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))
-        expect(zoomLevel).to.eql(0.0)
-        w.webContents.setZoomLevel(0.5)
-        const newZoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))
-        expect(newZoomLevel).to.eql(0.5)
-      } finally {
-        w.webContents.setZoomLevel(0)
-      }
-    })
-
     it('can persist zoom level across navigation', (done) => {
       let finalNavigation = false
       ipcMain.on('set-zoom', (e, host) => {
@@ -1066,24 +1052,6 @@ describe('webContents module', () => {
       const result = await w.webContents.executeJavaScript('37 + 5')
       assert.strictEqual(result, 42)
     })
-
-    // TODO(miniak): remove when promisification is complete
-    it('responds to executeJavaScript (callback)', (done) => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true
-        }
-      })
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.executeJavaScript('37 + 5', (result) => {
-          assert.strictEqual(result, 42)
-          done()
-        })
-      })
-      w.loadURL('about:blank')
-    })
   })
 
   describe('preload-error event', () => {
@@ -1305,26 +1273,6 @@ describe('webContents module', () => {
       const data = await w.webContents.printToPDF({})
       assert.strictEqual(data instanceof Buffer, true)
       assert.notStrictEqual(data.length, 0)
-    })
-
-    // TODO(miniak): remove when promisification is complete
-    it('can print to PDF (callback)', (done) => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true
-        }
-      })
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.printToPDF({}, function (error, data) {
-          assert.strictEqual(error, null)
-          assert.strictEqual(data instanceof Buffer, true)
-          assert.notStrictEqual(data.length, 0)
-          done()
-        })
-      })
-      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
     })
   })
 })
