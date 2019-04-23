@@ -124,18 +124,18 @@ webFrame.setIsolatedWorldInfo(
 ```
 
 ## `webFrame.setSpellCheckProvider`
-`autoCorrectWord` parameter does not exists anymore.
+The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter does not exists anymore.
 ```js
 // Deprecated
-webFrame.setSpellCheckProvider('en-US', false, {
-  spellCheck: (words, callback) => {
-    callback(words)
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck: (text) => {
+    return !spellchecker.isMisspelled(text);
   }
 })
 // Replace with
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck: (words, callback) => {
-    callback(words)
+    callback(words.filter(text => spellchecker.isMisspelled(text)));
   }
 })
 ```
