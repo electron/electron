@@ -123,6 +123,23 @@ webFrame.setIsolatedWorldInfo(
   })
 ```
 
+## `webFrame.setSpellCheckProvider`
+`autoCorrectWord` parameter does not exists anymore.
+```js
+// Deprecated
+webFrame.setSpellCheckProvider('en-US', false, {
+  spellCheck: (words, callback) => {
+    callback(words)
+  }
+})
+// Replace with
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck: (words, callback) => {
+    callback(words)
+  }
+})
+```
+
 # Planned Breaking API Changes (4.0)
 
 The following list includes the breaking API changes made in Electron 4.0.
