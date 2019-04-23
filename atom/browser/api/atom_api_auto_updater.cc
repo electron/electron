@@ -91,7 +91,8 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& url) {
   Emit("update-downloaded", release_notes, release_name, release_date, url,
        // Keep compatibility with old APIs.
-       base::Bind(&AutoUpdater::QuitAndInstall, base::Unretained(this)));
+       base::BindRepeating(&AutoUpdater::QuitAndInstall,
+                           base::Unretained(this)));
 }
 
 void AutoUpdater::OnWindowAllClosed() {

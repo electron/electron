@@ -1183,7 +1183,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  TopLevelWindow::SetConstructor(isolate, base::Bind(&TopLevelWindow::New));
+  TopLevelWindow::SetConstructor(isolate,
+                                 base::BindRepeating(&TopLevelWindow::New));
 
   mate::Dictionary constructor(isolate, TopLevelWindow::GetConstructor(isolate)
                                             ->GetFunction(context)
