@@ -125,6 +125,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<NodeEnvironment> node_env_;
   std::unique_ptr<NodeDebugger> node_debugger_;
   std::unique_ptr<IconManager> icon_manager_;
+  std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
   base::RepeatingTimer gc_timer_;
 
