@@ -129,13 +129,13 @@ The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter d
 // Deprecated
 webFrame.setSpellCheckProvider('en-US', true, {
   spellCheck: (text) => {
-    return !spellchecker.isMisspelled(text);
+    return !spellchecker.isMisspelled(text)
   }
 })
 // Replace with
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck: (words, callback) => {
-    callback(words.filter(text => spellchecker.isMisspelled(text)));
+    callback(words.filter(text => spellchecker.isMisspelled(text)))
   }
 })
 ```
