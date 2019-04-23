@@ -146,20 +146,16 @@ describe('session module', () => {
     })
 
     it('should overwrite previous cookies', async () => {
-      let error
-      try {
-        const { cookies } = session.defaultSession
-        const name = 'DidOverwrite'
-        for (const value of [ 'No', 'Yes' ]) {
-          await cookies.set({ url, name, value })
-          const list = await cookies.get({ url })
+      const { cookies } = session.defaultSession
+      const name = 'DidOverwrite'
+      for (const value of [ 'No', 'Yes' ]) {
+        await cookies.set({ url, name, value, expirationDate: (+new Date()) + 10000 })
+        const list = await cookies.get({ url })
 
-          assert(list.some(cookie => cookie.name === name && cookie.value === value))
-        }
-      } catch (e) {
-        error = e
+        console.log(list)
+        console.log(await cookies.get({ }))
+        assert(list.some(cookie => cookie.name === name && cookie.value === value))
       }
-      expect(error).to.be.undefined(error)
     })
 
     it('should remove cookies with promises', async () => {
@@ -596,7 +592,7 @@ describe('session module', () => {
   describe('ses.protocol', () => {
     const partitionName = 'temp'
     const protocolName = 'sp'
-    const partitionProtocol = session.fromPartition(partitionName).protocol
+    let customSession = null
     const protocol = session.defaultSession.protocol
     const handler = (ignoredError, callback) => {
       callback({ data: 'test', mimeType: 'text/html' })
@@ -610,20 +606,22 @@ describe('session module', () => {
           partition: partitionName
         }
       })
-      partitionProtocol.registerStringProtocol(protocolName, handler, (error) => {
+      customSession = session.fromPartition(partitionName)
+      customSession.protocol.registerStringProtocol(protocolName, handler, (error) => {
         done(error != null ? error : undefined)
       })
     })
 
     afterEach((done) => {
-      partitionProtocol.unregisterProtocol(protocolName, () => done())
+      customSession.protocol.unregisterProtocol(protocolName, () => done())
+      customSession = null
     })
 
     it('does not affect defaultSession', async () => {
       const result1 = await protocol.isProtocolHandled(protocolName)
       assert.strictEqual(result1, false)
 
-      const result2 = await partitionProtocol.isProtocolHandled(protocolName)
+      const result2 = await customSession.protocol.isProtocolHandled(protocolName)
       assert.strictEqual(result2, true)
     })
 
