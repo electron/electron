@@ -32,7 +32,7 @@ const isStable = v => {
 const makeVersion = (components, delim, pre = preType.NONE) => {
   let version = [components.major, components.minor, components.patch].join(delim)
   if (pre === preType.PARTIAL) {
-    version += `${delim}${components.pre[1]}`
+    version += `${delim}${components.pre[1] || 0}`
   } else if (pre === preType.FULL) {
     version += `-${components.pre[0]}${delim}${components.pre[1]}`
   }
