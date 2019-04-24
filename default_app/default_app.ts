@@ -81,7 +81,7 @@ async function createWindow () {
       cancelId: 1
     }
 
-    dialog.showMessageBox(mainWindow!, options).then(response => {
+    dialog.showMessageBox(mainWindow!, options).then(({ response }) => {
       done(response === 0)
     })
   })
