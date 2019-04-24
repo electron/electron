@@ -22,7 +22,7 @@ win.loadURL('https://github.com')
 ```
 
 **Note:** For the reverse (access the renderer process from the main process),
-you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture-callback).
+you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture).
 
 **Note:** The remote module can be disabled for security reasons in the following contexts:
 - [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.

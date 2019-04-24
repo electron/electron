@@ -118,7 +118,7 @@ Returns `Promise<void>` - resolves when the storage data has been cleared.
 
 #### `ses.flushStorageData()`
 
-Writes any unwritten DOMStorage data to disk.s
+Writes any unwritten DOMStorage data to disk.
 
 #### `ses.setProxy(config)`
 
