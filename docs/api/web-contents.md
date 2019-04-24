@@ -378,7 +378,7 @@ Emitted when the window leaves a full-screen state triggered by HTML API.
 
 Returns:
 * `event` Event
-* `zoomedIn` Boolean - true if the user is trying to zoom in, false if the user is trying to zoom out
+* `zoomDirection` String - Can be `in` or `out`.
 
 Emitted when the user is requesting to change the zoom level using the mouse wheel.
 

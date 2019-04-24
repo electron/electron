@@ -358,8 +358,8 @@ describe('webContents module', () => {
       w.webContents.once('did-finish-load', () => {
         const testZoomChanged = (opts) => {
           return new Promise((resolve, reject) => {
-            w.webContents.once('zoom-changed', (event, zoomingIn) => {
-              assert.strictEqual(zoomingIn, opts.zoomingIn)
+            w.webContents.once('zoom-changed', (event, zoomDirection) => {
+              assert.strictEqual(zoomDirection, opts.zoomingIn ? 'in' : 'out')
               resolve()
             })
 
