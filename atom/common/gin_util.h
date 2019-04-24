@@ -2,6 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef ATOM_COMMON_GIN_UTIL_H_
+#define ATOM_COMMON_GIN_UTIL_H_
+
 #include "gin/converter.h"
 #include "gin/function_template.h"
 
@@ -19,3 +22,5 @@ bool SetMethod(v8::Local<v8::Object> recv,
 }
 
 }  // namespace gin_util
+
+#endif  // ATOM_COMMON_GIN_UTIL_H_
