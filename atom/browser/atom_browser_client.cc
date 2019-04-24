@@ -539,7 +539,7 @@ std::string AtomBrowserClient::GetGeolocationApiKey() {
   return api_key;
 }
 
-content::QuotaPermissionContext*
+scoped_refptr<content::QuotaPermissionContext>
 AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
 }
@@ -872,7 +872,8 @@ NotificationPresenter* AtomBrowserClient::GetNotificationPresenter() {
 }
 
 content::PlatformNotificationService*
-AtomBrowserClient::GetPlatformNotificationService() {
+AtomBrowserClient::GetPlatformNotificationService(
+    content::BrowserContext* browser_context) {
   if (!notification_service_) {
     notification_service_.reset(new PlatformNotificationService(this));
   }

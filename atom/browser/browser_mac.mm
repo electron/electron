@@ -131,7 +131,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetBadgeCount(int count) {
-  DockSetBadgeText(count != 0 ? base::IntToString(count) : "");
+  DockSetBadgeText(count != 0 ? base::NumberToString(count) : "");
   badge_count_ = count;
   return true;
 }

@@ -18,14 +18,12 @@
 // The message starter should be declared in ipc/ipc_message_start.h. Since
 // we don't want to patch Chromium, we just pretend to be Content Shell.
 
-#define IPC_MESSAGE_START ShellMsgStart
+#define IPC_MESSAGE_START ElectronMsgStart
 
 IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(draggable)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
-
-IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 
 IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
                     gfx::RectF /* bounds */,

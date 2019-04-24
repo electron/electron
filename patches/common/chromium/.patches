@@ -7,7 +7,6 @@ blink_local_frame.patch
 blink_world_context.patch
 browser_compositor_mac.patch
 can_create_window.patch
-compositor_delegate.patch
 disable_hidden.patch
 dom_storage_limits.patch
 frame_host_manager.patch
@@ -71,5 +70,9 @@ fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_mas.patch
 fix_disable_usage_of_setapplicationisdaemon_and.patch
 preconnect_support.patch
-disable_custom_libcxx_on_windows.patch
-fix_retain_compatibility_with_msvc.patch
+ipc_message_start.patch
+disable_network_services_by_default.patch
+unsandboxed_ppapi_processes_skip_zygote.patch
+viz_osr.patch
+patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
+revert_roll_clang_356356_357569.patch

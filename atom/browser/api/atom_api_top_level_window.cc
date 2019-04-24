@@ -648,10 +648,11 @@ void TopLevelWindow::SetFocusable(bool focusable) {
 }
 
 void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  auto context = isolate->GetCurrentContext();
   mate::Handle<Menu> menu;
-  if (value->IsObject() &&
-      gin::V8ToString(
-          isolate, value->ToObject(isolate)->GetConstructorName()) == "Menu" &&
+  v8::Local<v8::Object> object;
+  if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
+      gin::V8ToString(isolate, object->GetConstructorName()) == "Menu" &&
       mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());

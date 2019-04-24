@@ -383,6 +383,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
       prevent the window from resizing when entering HTML Fullscreen. Default
       is `false`.
+    * `numSocketsToPreconnect:` Integer (optional) - Defaults to `0`. Number of sockets
+      to preconnect to url-origin on LoadURL(url).
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -1237,7 +1239,7 @@ that stores data of the snapshot. Omitting `rect` will capture the whole visible
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 
-* Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
+Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 

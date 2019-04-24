@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 1ca339cf487763237d45b7ce2cead2459ecd7e93..754821b54f7c8e6b1653e201ca36bd26db842329 100644
+index aef4333e3d769d26b71822294d5f2fcedf3141c5..fe3d44e33213daa89f6ea5f4f84103686db6aece 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -12,10 +12,12 @@
@@ -43,7 +43,7 @@ index 1ca339cf487763237d45b7ce2cead2459ecd7e93..754821b54f7c8e6b1653e201ca36bd26
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -161,6 +167,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
+@@ -149,6 +155,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
      UMA_HISTOGRAM_BOOLEAN("interstitial.ssl.visited_site_after_warning", true);
    }
  
@@ -51,7 +51,7 @@ index 1ca339cf487763237d45b7ce2cead2459ecd7e93..754821b54f7c8e6b1653e201ca36bd26
    // Security indicator UI study (https://crbug.com/803501): Show a message in
    // the console to reduce developer confusion about the experimental UI
    // treatments for HTTPS pages with EV certificates.
-@@ -188,6 +195,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
+@@ -176,6 +183,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
            "Validation is still valid.");
      }
    }
@@ -59,7 +59,7 @@ index 1ca339cf487763237d45b7ce2cead2459ecd7e93..754821b54f7c8e6b1653e201ca36bd26
  }
  
  void SecurityStateTabHelper::DidChangeVisibleSecurityState() {
-@@ -211,6 +219,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -199,6 +207,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -67,7 +67,7 @@ index 1ca339cf487763237d45b7ce2cead2459ecd7e93..754821b54f7c8e6b1653e201ca36bd26
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -278,6 +287,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -266,6 +275,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }
@@ -75,7 +75,7 @@ index 1ca339cf487763237d45b7ce2cead2459ecd7e93..754821b54f7c8e6b1653e201ca36bd26
    return security_state::MALICIOUS_CONTENT_STATUS_NONE;
  }
  
-@@ -285,16 +295,20 @@ std::vector<std::string> SecurityStateTabHelper::GetSecureOriginsAndPatterns()
+@@ -273,16 +283,20 @@ std::vector<std::string> SecurityStateTabHelper::GetSecureOriginsAndPatterns()
      const {
    const base::CommandLine& command_line =
        *base::CommandLine::ForCurrentProcess();

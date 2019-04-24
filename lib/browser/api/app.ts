@@ -38,8 +38,6 @@ Object.assign(app, {
   }
 })
 
-app.getFileIcon = deprecate.promisify(app.getFileIcon)
-
 // we define this here because it'd be overly complicated to
 // do in native land
 Object.defineProperty(app, 'applicationMenu', {
@@ -59,6 +57,21 @@ app.isPackaged = (() => {
   return execFile !== 'electron'
 })()
 
+app._setDefaultAppPaths = (packagePath) => {
+  // Set the user path according to application's name.
+  app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
+  app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
+  app.setAppPath(packagePath)
+
+  // Add support for --user-data-dir=
+  const userDataDirFlag = '--user-data-dir='
+  const userDataArg = process.argv.find(arg => arg.startsWith(userDataDirFlag))
+  if (userDataArg) {
+    const userDataDir = userDataArg.substr(userDataDirFlag.length)
+    if (path.isAbsolute(userDataDir)) app.setPath('userData', userDataDir)
+  }
+}
+
 if (process.platform === 'darwin') {
   const setDockMenu = app.dock.setMenu
   app.dock.setMenu = (menu) => {
@@ -75,6 +88,12 @@ for (const name of events) {
     webContents.emit(name, event, ...args)
   })
 }
+
+// Function Deprecations
+app.getFileIcon = deprecate.promisify(app.getFileIcon)
+
+// Property Deprecations
+deprecate.fnToProperty(app, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
 
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')
