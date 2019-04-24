@@ -1051,6 +1051,16 @@ describe('app module', () => {
     })
   })
 
+  describe('getTrackableObjectInstances()', () => {
+    it('returns the list of instances, where count > 0', () => {
+      const result = app.getTrackableObjectInstances();
+      expect(result).to.be.an('object')
+      for (const key of Object.keys(result)) {
+        expect(result[key]).to.be.greaterThan(0)
+      }
+    })
+  })
+
   describe('sandbox options', () => {
     let appProcess: cp.ChildProcess = null as any
     let server: net.Server = null as any

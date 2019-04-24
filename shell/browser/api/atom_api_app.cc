@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/atom_api_app.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -30,9 +31,24 @@
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "shell/browser/api/atom_api_browser_view.h"
+#include "shell/browser/api/atom_api_cookies.h"
+#include "shell/browser/api/atom_api_debugger.h"
+#include "shell/browser/api/atom_api_desktop_capturer.h"
+#include "shell/browser/api/atom_api_download_item.h"
+#include "shell/browser/api/atom_api_global_shortcut.h"
 #include "shell/browser/api/atom_api_menu.h"
+#include "shell/browser/api/atom_api_net_log.h"
+#include "shell/browser/api/atom_api_notification.h"
+#include "shell/browser/api/atom_api_power_monitor.h"
+#include "shell/browser/api/atom_api_power_save_blocker.h"
+#include "shell/browser/api/atom_api_protocol.h"
+#include "shell/browser/api/atom_api_protocol_ns.h"
 #include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/api/atom_api_top_level_window.h"
+#include "shell/browser/api/atom_api_tray.h"
 #include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/atom_api_web_request.h"
 #include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
@@ -54,6 +70,10 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
+#if BUILDFLAG(ENABLE_VIEW_API)
+#include "shell/browser/api/atom_api_view.h"
+#include "shell/browser/api/views/atom_api_layout_manager.h"
+#endif
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/win/jump_list.h"
@@ -1309,6 +1329,41 @@ bool App::CanBrowserClientUseCustomSiteInstance() {
   return AtomBrowserClient::Get()->CanUseCustomSiteInstance();
 }
 
+v8::Local<v8::Value> App::GetTrackableObjectInstances(v8::Isolate* isolate) {
+  std::map<std::string, size_t> counts = {
+    {"BrowserView", mate::TrackableObject<BrowserView>::GetCount()},
+    {"Cookies", mate::TrackableObject<Cookies>::GetCount()},
+    {"Debugger", mate::TrackableObject<Debugger>::GetCount()},
+    {"DesktopCapturer", mate::TrackableObject<DesktopCapturer>::GetCount()},
+    {"DownloadItem", mate::TrackableObject<DownloadItem>::GetCount()},
+    {"GlobalShortcut", mate::TrackableObject<GlobalShortcut>::GetCount()},
+    {"Menu", mate::TrackableObject<Menu>::GetCount()},
+    {"NetLog", mate::TrackableObject<NetLog>::GetCount()},
+    {"Notification", mate::TrackableObject<Notification>::GetCount()},
+    {"PowerMonitor", mate::TrackableObject<PowerMonitor>::GetCount()},
+    {"PowerSaveBlocker", mate::TrackableObject<PowerSaveBlocker>::GetCount()},
+    {"ProtocolNS", mate::TrackableObject<ProtocolNS>::GetCount()},
+    {"Protocol", mate::TrackableObject<Protocol>::GetCount()},
+    {"Session", mate::TrackableObject<Session>::GetCount()},
+    {"TopLevelWindow", mate::TrackableObject<TopLevelWindow>::GetCount()},
+    {"Tray", mate::TrackableObject<Tray>::GetCount()},
+    {"WebContents", mate::TrackableObject<WebContents>::GetCount()},
+    {"WebRequest", mate::TrackableObject<WebRequest>::GetCount()},
+#if BUILDFLAG(ENABLE_VIEW_API)
+    {"View", mate::TrackableObject<View>::GetCount()},
+    {"LayoutManager", mate::TrackableObject<LayoutManager>::GetCount()},
+#endif
+  };
+
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  for (auto&& it : counts) {
+    if (it.second > 0) {
+      dict.Set(it.first, it.second);
+    }
+  }
+  return dict.GetHandle();
+}
+
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(mate::Arguments* args) {
   return ui::cocoa::AtomBundleMover::Move(args);
@@ -1483,6 +1538,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("getGPUInfo", &App::GetGPUInfo)
+      .SetMethod("getTrackableObjectInstances",
+                 &App::GetTrackableObjectInstances)
 #if defined(MAS_BUILD)
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)

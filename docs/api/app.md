@@ -1057,6 +1057,10 @@ machineModelVersion: '11.5' }
 
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
 
+### `app.getTrackableObjectInstances()`
+
+Returns `Record<string, number>`- The number of instances per object type, which can be useful for debugging memory leaks.
+
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 
 * `count` Integer
