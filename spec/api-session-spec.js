@@ -111,17 +111,11 @@ describe('session module', () => {
     })
 
     it('sets cookies with promises', async () => {
-      let error
-      try {
-        const { cookies } = session.defaultSession
-        const name = '1'
-        const value = '1'
+      const { cookies } = session.defaultSession
+      const name = '1'
+      const value = '1'
 
-        await cookies.set({ url, name, value })
-      } catch (e) {
-        error = e
-      }
-      expect(error).to.be.undefined(error)
+      await cookies.set({ url, name, value })
     })
 
     it('sets cookies with callbacks', (done) => {
@@ -146,38 +140,26 @@ describe('session module', () => {
     })
 
     it('should overwrite previous cookies', async () => {
-      let error
-      try {
-        const { cookies } = session.defaultSession
-        const name = 'DidOverwrite'
-        for (const value of [ 'No', 'Yes' ]) {
-          await cookies.set({ url, name, value })
-          const list = await cookies.get({ url })
+      const { cookies } = session.defaultSession
+      const name = 'DidOverwrite'
+      for (const value of [ 'No', 'Yes' ]) {
+        await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
+        const list = await cookies.get({ url })
 
-          assert(list.some(cookie => cookie.name === name && cookie.value === value))
-        }
-      } catch (e) {
-        error = e
+        assert(list.some(cookie => cookie.name === name && cookie.value === value))
       }
-      expect(error).to.be.undefined(error)
     })
 
     it('should remove cookies with promises', async () => {
-      let error
-      try {
-        const { cookies } = session.defaultSession
-        const name = '2'
-        const value = '2'
+      const { cookies } = session.defaultSession
+      const name = '2'
+      const value = '2'
 
-        await cookies.set({ url, name, value })
-        await cookies.remove(url, name)
-        const list = await cookies.get({ url })
+      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
+      await cookies.remove(url, name)
+      const list = await cookies.get({ url })
 
-        assert(!list.some(cookie => cookie.name === name && cookie.value === value))
-      } catch (e) {
-        error = e
-      }
-      expect(error).to.be.undefined(error)
+      assert(!list.some(cookie => cookie.name === name && cookie.value === value))
     })
 
     it('should remove cookies with callbacks', (done) => {
@@ -185,7 +167,7 @@ describe('session module', () => {
       const name = '2'
       const value = '2'
 
-      cookies.set({ url, name, value }, (error) => {
+      cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 }, (error) => {
         if (error) return done(error)
         cookies.remove(url, name, (error) => {
           if (error) return done(error)
@@ -199,72 +181,53 @@ describe('session module', () => {
     })
 
     it('should set cookie for standard scheme', async () => {
-      let error
-      try {
-        const { cookies } = session.defaultSession
-        const standardScheme = remote.getGlobal('standardScheme')
-        const domain = 'fake-host'
-        const url = `${standardScheme}://${domain}`
-        const name = 'custom'
-        const value = '1'
+      const { cookies } = session.defaultSession
+      const standardScheme = remote.getGlobal('standardScheme')
+      const domain = 'fake-host'
+      const url = `${standardScheme}://${domain}`
+      const name = 'custom'
+      const value = '1'
 
-        await cookies.set({ url, name, value })
-        const list = await cookies.get({ url })
+      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
+      const list = await cookies.get({ url })
 
-        expect(list).to.have.lengthOf(1)
-        expect(list[0]).to.have.property('name', name)
-        expect(list[0]).to.have.property('value', value)
-        expect(list[0]).to.have.property('domain', domain)
-      } catch (e) {
-        error = e
-      }
-
-      expect(error).to.be.undefined(error)
+      expect(list).to.have.lengthOf(1)
+      expect(list[0]).to.have.property('name', name)
+      expect(list[0]).to.have.property('value', value)
+      expect(list[0]).to.have.property('domain', domain)
     })
 
     it('emits a changed event when a cookie is added or removed', async () => {
-      let error
       const changes = []
 
-      try {
-        const { cookies } = session.fromPartition('cookies-changed')
-        const name = 'foo'
-        const value = 'bar'
-        const eventName = 'changed'
-        const listener = (event, cookie, cause, removed) => { changes.push({ cookie, cause, removed }) }
+      const { cookies } = session.fromPartition('cookies-changed')
+      const name = 'foo'
+      const value = 'bar'
+      const eventName = 'changed'
+      const listener = (event, cookie, cause, removed) => { changes.push({ cookie, cause, removed }) }
 
-        cookies.on(eventName, listener)
-        await cookies.set({ url, name, value })
-        await cookies.remove(url, name)
-        cookies.off(eventName, listener)
+      cookies.on(eventName, listener)
+      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
+      await cookies.remove(url, name)
+      cookies.off(eventName, listener)
 
-        expect(changes).to.have.lengthOf(2)
-        expect(changes.every(change => change.cookie.name === name))
-        expect(changes.every(change => change.cookie.value === value))
-        expect(changes.every(change => change.cause === 'explicit'))
-        expect(changes[0].removed).to.be.false()
-        expect(changes[1].removed).to.be.true()
-      } catch (e) {
-        error = e
-      }
-      expect(error).to.be.undefined(error)
+      expect(changes).to.have.lengthOf(2)
+      expect(changes.every(change => change.cookie.name === name))
+      expect(changes.every(change => change.cookie.value === value))
+      expect(changes.every(change => change.cause === 'explicit'))
+      expect(changes[0].removed).to.eql(false)
+      expect(changes[1].removed).to.eql(true)
     })
 
     describe('ses.cookies.flushStore()', async () => {
       describe('flushes the cookies to disk and invokes the callback when done', async () => {
         it('with promises', async () => {
-          let error
-          try {
-            const name = 'foo'
-            const value = 'bar'
-            const { cookies } = session.defaultSession
+          const name = 'foo'
+          const value = 'bar'
+          const { cookies } = session.defaultSession
 
-            await cookies.set({ url, name, value })
-            await cookies.flushStore()
-          } catch (e) {
-            error = e
-          }
-          expect(error).to.be.undefined(error)
+          await cookies.set({ url, name, value })
+          await cookies.flushStore()
         })
 
         it('with callbacks', (done) => {
@@ -596,7 +559,7 @@ describe('session module', () => {
   describe('ses.protocol', () => {
     const partitionName = 'temp'
     const protocolName = 'sp'
-    const partitionProtocol = session.fromPartition(partitionName).protocol
+    let customSession = null
     const protocol = session.defaultSession.protocol
     const handler = (ignoredError, callback) => {
       callback({ data: 'test', mimeType: 'text/html' })
@@ -610,20 +573,22 @@ describe('session module', () => {
           partition: partitionName
         }
       })
-      partitionProtocol.registerStringProtocol(protocolName, handler, (error) => {
+      customSession = session.fromPartition(partitionName)
+      customSession.protocol.registerStringProtocol(protocolName, handler, (error) => {
         done(error != null ? error : undefined)
       })
     })
 
     afterEach((done) => {
-      partitionProtocol.unregisterProtocol(protocolName, () => done())
+      customSession.protocol.unregisterProtocol(protocolName, () => done())
+      customSession = null
     })
 
     it('does not affect defaultSession', async () => {
       const result1 = await protocol.isProtocolHandled(protocolName)
       assert.strictEqual(result1, false)
 
-      const result2 = await partitionProtocol.isProtocolHandled(protocolName)
+      const result2 = await customSession.protocol.isProtocolHandled(protocolName)
       assert.strictEqual(result2, true)
     })
 

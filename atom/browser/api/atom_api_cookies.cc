@@ -12,12 +12,12 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "base/task/post_task.h"
 #include "base/time/time.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/cookies/canonical_cookie.h"
@@ -113,203 +113,60 @@ bool MatchesDomain(std::string filter, const std::string& domain) {
 }
 
 // Returns whether |cookie| matches |filter|.
-bool MatchesCookie(const base::DictionaryValue* filter,
+bool MatchesCookie(const base::Value& filter,
                    const net::CanonicalCookie& cookie) {
-  std::string str;
-  bool b;
-  if (filter->GetString("name", &str) && str != cookie.Name())
+  const std::string* str;
+  if ((str = filter.FindStringKey("name")) && *str != cookie.Name())
     return false;
-  if (filter->GetString("path", &str) && str != cookie.Path())
+  if ((str = filter.FindStringKey("path")) && *str != cookie.Path())
     return false;
-  if (filter->GetString("domain", &str) && !MatchesDomain(str, cookie.Domain()))
+  if ((str = filter.FindStringKey("domain")) &&
+      !MatchesDomain(*str, cookie.Domain()))
     return false;
-  if (filter->GetBoolean("secure", &b) && b != cookie.IsSecure())
+  base::Optional<bool> secure_filter = filter.FindBoolKey("secure");
+  if (secure_filter && *secure_filter == cookie.IsSecure())
     return false;
-  if (filter->GetBoolean("session", &b) && b != !cookie.IsPersistent())
+  base::Optional<bool> session_filter = filter.FindBoolKey("session");
+  if (session_filter && *session_filter != !cookie.IsPersistent())
     return false;
   return true;
 }
 
-// Helper to returns the CookieStore.
-inline net::CookieStore* GetCookieStore(
-    scoped_refptr<net::URLRequestContextGetter> getter) {
-  return getter->GetURLRequestContext()->cookie_store();
-}
-
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
-void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
+void FilterCookies(const base::Value& filter,
                    util::Promise promise,
                    const net::CookieList& list,
                    const net::CookieStatusList& excluded_list) {
   net::CookieList result;
   for (const auto& cookie : list) {
-    if (MatchesCookie(filter.get(), cookie))
+    if (MatchesCookie(filter, cookie))
       result.push_back(cookie);
   }
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(util::Promise::ResolvePromise<const net::CookieList&>,
-                     std::move(promise), std::move(result)));
+  promise.Resolve(result);
 }
 
-// Receives cookies matching |filter| in IO thread.
-void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                    std::unique_ptr<base::DictionaryValue> filter,
-                    util::Promise promise) {
-  std::string url;
-  filter->GetString("url", &url);
-
-  auto filtered_callback =
-      base::BindOnce(FilterCookies, std::move(filter), std::move(promise));
-
-  // Empty url will match all url cookies.
-  if (url.empty())
-    GetCookieStore(getter)->GetAllCookiesAsync(std::move(filtered_callback));
-  else
-    GetCookieStore(getter)->GetAllCookiesForURLAsync(
-        GURL(url), std::move(filtered_callback));
-}
-
-// Removes cookie with |url| and |name| in IO thread.
-void RemoveCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                      const GURL& url,
-                      const std::string& name,
-                      util::Promise promise) {
-  net::CookieDeletionInfo cookie_info;
-  cookie_info.url = url;
-  cookie_info.name = name;
-  GetCookieStore(getter)->DeleteAllMatchingInfoAsync(
-      std::move(cookie_info),
-      base::BindOnce(
-          [](util::Promise promise, uint32_t num_deleted) {
-            util::Promise::ResolveEmptyPromise(std::move(promise));
-          },
-          std::move(promise)));
-}
-
-// Callback of SetCookie.
-void OnSetCookie(util::Promise promise,
-                 net::CanonicalCookie::CookieInclusionStatus status) {
-  std::string errmsg;
+std::string InclusionStatusToString(
+    net::CanonicalCookie::CookieInclusionStatus status) {
   switch (status) {
     case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_HTTP_ONLY:
-      errmsg = "Failed to create httponly cookie";
-      break;
+      return "Failed to create httponly cookie";
     case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_SECURE_ONLY:
-      errmsg = "Cannot create a secure cookie from an insecure URL";
-      break;
+      return "Cannot create a secure cookie from an insecure URL";
     case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE:
-      errmsg = "Failed to parse cookie";
-      break;
+      return "Failed to parse cookie";
     case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN:
-      errmsg = "Failed to get cookie domain";
-      break;
+      return "Failed to get cookie domain";
     case net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX:
-      errmsg = "Failed because the cookie violated prefix rules.";
-      break;
+      return "Failed because the cookie violated prefix rules.";
     case net::CanonicalCookie::CookieInclusionStatus::
         EXCLUDE_NONCOOKIEABLE_SCHEME:
-      errmsg = "Cannot set cookie for current scheme";
-      break;
+      return "Cannot set cookie for current scheme";
     case net::CanonicalCookie::CookieInclusionStatus::INCLUDE:
-      errmsg = "";
-      break;
+      return "";
     default:
-      errmsg = "Setting cookie failed";
-      break;
+      return "Setting cookie failed";
   }
-  if (errmsg.empty()) {
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
-  } else {
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(util::Promise::RejectPromise, std::move(promise),
-                       std::move(errmsg)));
-  }
-}
-
-// Flushes cookie store in IO thread.
-void FlushCookieStoreOnIOThread(
-    scoped_refptr<net::URLRequestContextGetter> getter,
-    util::Promise promise) {
-  GetCookieStore(getter)->FlushStore(
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
-}
-
-// Sets cookie with |details| in IO thread.
-void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                   std::unique_ptr<base::DictionaryValue> details,
-                   util::Promise promise) {
-  std::string url_string, name, value, domain, path;
-  bool secure = false;
-  bool http_only = false;
-  double creation_date;
-  double expiration_date;
-  double last_access_date;
-  details->GetString("url", &url_string);
-  details->GetString("name", &name);
-  details->GetString("value", &value);
-  details->GetString("domain", &domain);
-  details->GetString("path", &path);
-  details->GetBoolean("secure", &secure);
-  details->GetBoolean("httpOnly", &http_only);
-
-  base::Time creation_time;
-  if (details->GetDouble("creationDate", &creation_date)) {
-    creation_time = (creation_date == 0)
-                        ? base::Time::UnixEpoch()
-                        : base::Time::FromDoubleT(creation_date);
-  }
-
-  base::Time expiration_time;
-  if (details->GetDouble("expirationDate", &expiration_date)) {
-    expiration_time = (expiration_date == 0)
-                          ? base::Time::UnixEpoch()
-                          : base::Time::FromDoubleT(expiration_date);
-  }
-
-  base::Time last_access_time;
-  if (details->GetDouble("lastAccessDate", &last_access_date)) {
-    last_access_time = (last_access_date == 0)
-                           ? base::Time::UnixEpoch()
-                           : base::Time::FromDoubleT(last_access_date);
-  }
-
-  GURL url(url_string);
-  std::unique_ptr<net::CanonicalCookie> canonical_cookie(
-      net::CanonicalCookie::CreateSanitizedCookie(
-          url, name, value, domain, path, creation_time, expiration_time,
-          last_access_time, secure, http_only,
-          net::CookieSameSite::NO_RESTRICTION, net::COOKIE_PRIORITY_DEFAULT));
-  auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
-  if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
-    std::move(completion_callback)
-        .Run(net::CanonicalCookie::CookieInclusionStatus::
-                 EXCLUDE_FAILURE_TO_STORE);
-    return;
-  }
-  if (url.is_empty()) {
-    std::move(completion_callback)
-        .Run(net::CanonicalCookie::CookieInclusionStatus::
-                 EXCLUDE_INVALID_DOMAIN);
-    return;
-  }
-  if (name.empty()) {
-    std::move(completion_callback)
-        .Run(net::CanonicalCookie::CookieInclusionStatus::
-                 EXCLUDE_FAILURE_TO_STORE);
-    return;
-  }
-  net::CookieOptions options;
-  if (http_only) {
-    options.set_include_httponly();
-  }
-  GetCookieStore(getter)->SetCanonicalCookieAsync(
-      std::move(canonical_cookie), url.scheme(), options,
-      std::move(completion_callback));
 }
 
 }  // namespace
@@ -328,13 +185,33 @@ v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
   util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto copy = base::DictionaryValue::From(
-      base::Value::ToUniquePtrValue(filter.Clone()));
-  auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), std::move(copy),
-                     std::move(promise)));
+  std::string url_string;
+  filter.GetString("url", &url_string);
+  GURL url(url_string);
+
+  auto callback =
+      base::BindOnce(FilterCookies, filter.Clone(), std::move(promise));
+
+  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
+      browser_context_.get());
+  auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
+
+  if (url.is_empty()) {
+    // GetAllCookies has a different callback signature than GetCookieList, but
+    // can be treated as the same, just returning no excluded cookies.
+    // |AddCookieStatusList| takes a |GetCookieListCallback| and returns a
+    // callback that calls the input callback with an empty excluded list.
+    manager->GetAllCookies(
+        net::cookie_util::AddCookieStatusList(std::move(callback)));
+  } else {
+    net::CookieOptions options;
+    options.set_include_httponly();
+    options.set_same_site_cookie_context(
+        net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
+    options.set_do_not_update_access_time();
+
+    manager->GetCookieList(url, options, std::move(callback));
+  }
 
   return handle;
 }
@@ -344,11 +221,21 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(RemoveCookieOnIO, base::RetainedRef(getter), url, name,
-                     std::move(promise)));
+  auto cookie_deletion_filter = network::mojom::CookieDeletionFilter::New();
+  cookie_deletion_filter->url = url;
+  cookie_deletion_filter->cookie_name = name;
+
+  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
+      browser_context_.get());
+  auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
+
+  manager->DeleteCookies(
+      std::move(cookie_deletion_filter),
+      base::BindOnce(
+          [](util::Promise promise, uint32_t num_deleted) {
+            util::Promise::ResolveEmptyPromise(std::move(promise));
+          },
+          std::move(promise)));
 
   return handle;
 }
@@ -357,13 +244,72 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
   util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto copy = base::DictionaryValue::From(
-      base::Value::ToUniquePtrValue(details.Clone()));
-  auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
-                     std::move(promise)));
+  const std::string* url_string = details.FindStringKey("url");
+  const std::string* name = details.FindStringKey("name");
+  const std::string* value = details.FindStringKey("value");
+  const std::string* domain = details.FindStringKey("domain");
+  const std::string* path = details.FindStringKey("path");
+  bool secure = details.FindBoolKey("secure").value_or(false);
+  bool http_only = details.FindBoolKey("httpOnly").value_or(false);
+  base::Optional<double> creation_date = details.FindDoubleKey("creationDate");
+  base::Optional<double> expiration_date =
+      details.FindDoubleKey("expirationDate");
+  base::Optional<double> last_access_date =
+      details.FindDoubleKey("lastAccessDate");
+
+  base::Time creation_time = creation_date
+                                 ? base::Time::FromDoubleT(*creation_date)
+                                 : base::Time::UnixEpoch();
+  base::Time expiration_time = expiration_date
+                                   ? base::Time::FromDoubleT(*expiration_date)
+                                   : base::Time::UnixEpoch();
+  base::Time last_access_time = last_access_date
+                                    ? base::Time::FromDoubleT(*last_access_date)
+                                    : base::Time::UnixEpoch();
+
+  GURL url(url_string ? *url_string : "");
+  if (url.is_empty()) {
+    promise.RejectWithErrorMessage(InclusionStatusToString(
+        net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN));
+    return handle;
+  }
+
+  if (!name || name->empty()) {
+    promise.RejectWithErrorMessage(InclusionStatusToString(
+        net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE));
+    return handle;
+  }
+
+  auto canonical_cookie = net::CanonicalCookie::CreateSanitizedCookie(
+      url, *name, value ? *value : "", domain ? *domain : "", path ? *path : "",
+      creation_time, expiration_time, last_access_time, secure, http_only,
+      net::CookieSameSite::NO_RESTRICTION, net::COOKIE_PRIORITY_DEFAULT);
+  if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    promise.RejectWithErrorMessage(InclusionStatusToString(
+        net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE));
+    return handle;
+  }
+  net::CookieOptions options;
+  if (http_only) {
+    options.set_include_httponly();
+  }
+
+  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
+      browser_context_.get());
+  auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
+  manager->SetCanonicalCookie(
+      *canonical_cookie, url.scheme(), options,
+      base::BindOnce(
+          [](util::Promise promise,
+             net::CanonicalCookie::CookieInclusionStatus status) {
+            auto errmsg = InclusionStatusToString(status);
+            if (errmsg.empty()) {
+              promise.Resolve();
+            } else {
+              promise.RejectWithErrorMessage(errmsg);
+            }
+          },
+          std::move(promise)));
 
   return handle;
 }
@@ -372,11 +318,12 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* getter = browser_context_->GetRequestContext();
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(FlushCookieStoreOnIOThread, base::RetainedRef(getter),
-                     std::move(promise)));
+  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
+      browser_context_.get());
+  auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
+
+  manager->FlushCookieStore(
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
 
   return handle;
 }
