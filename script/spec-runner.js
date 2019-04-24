@@ -25,6 +25,9 @@ const utils = require('./lib/utils')
 
 const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+// KEEP IN SYNC WITH DEPS FILE
+const NPM_VERSION = '6.8.0'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
@@ -143,7 +146,7 @@ async function installSpecModules () {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'
   })
-  const { status } = childProcess.spawnSync(NPM_CMD, ['install'], {
+  const { status } = childProcess.spawnSync(NPX_CMD, [`npm@${NPM_VERSION}`, 'install'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
