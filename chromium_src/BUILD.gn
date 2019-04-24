@@ -185,6 +185,12 @@ static_library("chrome") {
 
   if (enable_pdf_viewer) {
     sources += [
+      "//chrome/browser/extensions/chrome_extension_browser_constants.h",
+      "//chrome/browser/ui/pdf/chrome_pdf_web_contents_helper_client.h",
+      "//chrome/browser/ui/webui/extensions/extensions_ui.h",
+      "//chrome/browser/ui/webui/localized_string.h",
+      "//chrome/browser/ui/webui/metrics_handler.h",
+      "//components/google/core/common/google_util.h",
       "//content/public/browser/web_contents.h",
       "//content/public/browser/web_ui.h",
       "//extensions/shell/browser/shell_display_info_provider.cc",

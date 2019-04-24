@@ -36,6 +36,8 @@ class AtomExtensionLoader : public ExtensionRegistrar::Delegate {
   // extension on success, or nullptr otherwise.
   const Extension* LoadExtension(const base::FilePath& extension_dir);
 
+  const Extension* RegisterExtension(scoped_refptr<const Extension> extension);
+
   // Starts reloading the extension. A keep-alive is maintained until the
   // reload succeeds/fails. If the extension is an app, it will be launched upon
   // reloading.

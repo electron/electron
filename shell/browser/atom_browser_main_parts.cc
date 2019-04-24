@@ -101,6 +101,17 @@
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "base/files/file_path.h"
+#include "base/json/json_string_value_serializer.h"
+#include "base/mac/bundle_locations.h"
+#include "base/values.h"
+#include "electron/grit/electron_resources.h"
+#include "extensions/common/extension.h"
+#include "extensions/common/manifest.h"
+#include "ui/base/resource/resource_bundle.h"
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
 namespace electron {
 
 namespace {
@@ -520,6 +531,45 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
         extensions::ExtensionSystem::Get(browser_context_.get()));
     extension_system->LoadExtension(extension_path);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::string manifest_contents = ui::ResourceBundle::GetSharedInstance()
+                                      .GetRawDataResource(IDR_PDF_MANIFEST)
+                                      .as_string();
+
+  // Tags in the manifest to be replaced.
+  const char kNameTag[] = "<NAME>";
+  base::ReplaceFirstSubstringAfterOffset(&manifest_contents, 0, kNameTag,
+                                         "Chromium PDF Viewer");
+
+  JSONStringValueDeserializer deserializer(manifest_contents);
+  std::unique_ptr<base::Value> manifest = deserializer.Deserialize(NULL, NULL);
+  if (!manifest.get() || !manifest->is_dict()) {
+    LOG(ERROR) << "Failed to parse extension manifest.";
+  } else {
+    LOG(ERROR) << "PARSED extension manifest.";
+  }
+  std::unique_ptr<base::DictionaryValue> manifestDict =
+      base::DictionaryValue::From(std::move(manifest));
+
+  int flags = extensions::Extension::REQUIRE_KEY;
+  std::string utf8_error;
+
+  // Load other resource files.
+  base::FilePath pdf_dir;
+
+#if defined(OS_MACOSX)
+  pdf_dir = base::mac::FrameworkBundlePath();
+  pdf_dir = pdf_dir.Append(FILE_PATH_LITERAL("Resources"));
+#else
+  base::PathService::Get(base::DIR_MODULE, &pdf_dir);
+  pdf_dir = pdf_dir.Append(FILE_PATH_LITERAL("resources"));
+#endif
+  pdf_dir = pdf_dir.Append(FILE_PATH_LITERAL("pdf"));
+  scoped_refptr<extensions::Extension> pdfExtension =
+      extensions::Extension::Create(pdf_dir, extensions::Manifest::COMPONENT,
+                                    *manifestDict, flags, &utf8_error);
 #endif
 }
 

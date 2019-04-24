@@ -41,6 +41,10 @@ class AtomExtensionSystem : public ExtensionSystem {
   // success, or nullptr otherwise.
   const Extension* LoadExtension(const base::FilePath& extension_dir);
 
+  // Register an existing extension with the extension system. Returns the
+  // extension on success, or nullptr otherwise.
+  const Extension* RegisterExtension(scoped_refptr<const Extension> extension);
+
   // Loads an unpacked platform app from a directory. Returns the extension on
   // success, or nullptr otherwise.
   // Currently this just calls LoadExtension, as apps are not loaded differently

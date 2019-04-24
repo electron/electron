@@ -53,6 +53,11 @@ const Extension* AtomExtensionSystem::LoadApp(const base::FilePath& app_dir) {
   return nullptr;
 }
 
+const Extension* AtomExtensionSystem::RegisterExtension(
+    scoped_refptr<const Extension> extension) {
+  return extension_loader_->RegisterExtension(extension);
+}
+
 void AtomExtensionSystem::FinishInitialization() {
   // Inform the rest of the extensions system to start.
   ready_.Signal();

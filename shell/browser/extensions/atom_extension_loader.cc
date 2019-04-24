@@ -77,6 +77,12 @@ const Extension* AtomExtensionLoader::LoadExtension(
   return extension.get();
 }
 
+const Extension* AtomExtensionLoader::RegisterExtension(
+    scoped_refptr<const Extension> extension) {
+  extension_registrar_.AddExtension(extension);
+  return extension.get();
+}
+
 void AtomExtensionLoader::ReloadExtension(ExtensionId extension_id) {
   const Extension* extension = ExtensionRegistry::Get(browser_context_)
                                    ->GetInstalledExtension(extension_id);
