@@ -19,6 +19,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_navigation_throttle.h"
+#include "atom/browser/atom_paths.h"
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
@@ -900,6 +901,15 @@ void AtomBrowserClient::OnNetworkServiceCreated(
 
   g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
       network_service);
+}
+
+std::vector<base::FilePath>
+AtomBrowserClient::GetNetworkContextsParentDirectory() {
+  base::FilePath user_data_dir;
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  DCHECK(!user_data_dir.empty());
+
+  return {user_data_dir};
 }
 
 bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
