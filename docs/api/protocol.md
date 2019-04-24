@@ -54,7 +54,6 @@ app.on('ready', () => {
   })
 })
 ```
-Using `protocol.registerStandardSchemes` without the session will still register your custom protocol as a standard scheme.
 
 ## Methods
 
@@ -158,9 +157,7 @@ specified. For the available error numbers you can use, please see the
 [net error list][net-error].
 
 By default the `scheme` is treated like `http:`, which is parsed differently
-than protocols that follow the "generic URI syntax" like `file:`, so you
-probably want to call `protocol.registerStandardSchemes` to have your scheme
-treated as a standard scheme.
+than protocols that follow the "generic URI syntax" like `file:`.
 
 ### `protocol.registerBufferProtocol(scheme, handler[, completion])`
 
