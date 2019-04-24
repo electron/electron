@@ -10,7 +10,7 @@ from lib.patches import patch_from_dir
 
 def apply_patches(dirs):
   for patch_dir, repo in dirs.iteritems():
-    git.am(repo=repo, patch_data=patch_from_dir(patch_dir),
+    git.import_patches(repo=repo, patch_data=patch_from_dir(patch_dir),
       committer_name="Electron Scripts", committer_email="scripts@electron")
 
 

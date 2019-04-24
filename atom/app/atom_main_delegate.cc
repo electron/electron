@@ -14,6 +14,7 @@
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/feature_list.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
@@ -247,6 +248,10 @@ void AtomMainDelegate::PreSandboxStartup() {
 }
 
 void AtomMainDelegate::PreCreateMainMessageLoop() {
+  // This is initialized early because the service manager reads some feature
+  // flags and we need to make sure the feature list is initialized before the
+  // service manager reads the features.
+  InitializeFeatureList();
 #if defined(OS_MACOSX)
   RegisterAtomCrApp();
 #endif

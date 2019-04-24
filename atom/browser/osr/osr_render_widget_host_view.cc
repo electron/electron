@@ -351,7 +351,7 @@ void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
   SetSize(new_bounds.size());
 }
 
-gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() const {
+gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() {
   return gfx::NativeView();
 }
 
@@ -366,11 +366,11 @@ ui::TextInputClient* OffScreenRenderWidgetHostView::GetTextInputClient() {
 
 void OffScreenRenderWidgetHostView::Focus() {}
 
-bool OffScreenRenderWidgetHostView::HasFocus() const {
+bool OffScreenRenderWidgetHostView::HasFocus() {
   return false;
 }
 
-bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
+bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
   return GetDelegatedFrameHost()->CanCopyFromCompositingSurface();
 }
 
@@ -411,7 +411,7 @@ void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
   SynchronizeVisualProperties();
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
+gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() {
   if (IsPopupWidget())
     return popup_position_;
 
@@ -429,8 +429,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor()
-    const {
+base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
@@ -438,7 +437,7 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {
   NOTREACHED();
 }
 
-gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
+gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
   return size_;
 }
 
@@ -580,7 +579,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
 }
 
 void OffScreenRenderWidgetHostView::GetScreenInfo(
-    content::ScreenInfo* screen_info) const {
+    content::ScreenInfo* screen_info) {
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
@@ -621,8 +620,7 @@ void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
     const gfx::Range&,
     const std::vector<gfx::Rect>&) {}
 
-gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize()
-    const {
+gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),
                                 current_device_scale_factor_);
 }

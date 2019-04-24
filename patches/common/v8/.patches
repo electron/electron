@@ -1,7 +1,8 @@
-deps_backport_detailed_line_info_for_cpu_profiler.patch
 add_realloc.patch
 build_gn.patch
 expose_mksnapshot.patch
 deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
 fixme_revert_heap_api_remove_deprecated_apis.patch
+revert_cctest_add_v8_export_private_to_arm_arm64_ports.patch
+export_symbols_needed_for_windows_build.patch

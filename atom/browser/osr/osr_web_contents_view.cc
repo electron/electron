@@ -151,10 +151,6 @@ void OffScreenWebContentsView::RenderViewCreated(
     content::RenderViewHost* host) {
   if (GetView())
     GetView()->InstallTransparency();
-
-#if defined(OS_MACOSX)
-  host->Send(new AtomViewMsg_Offscreen(host->GetRoutingID()));
-#endif
 }
 
 void OffScreenWebContentsView::RenderViewReady() {}

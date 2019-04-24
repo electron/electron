@@ -27,7 +27,8 @@
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "net/base/completion_callback.h"
+#include "net/base/completion_once_callback.h"
+#include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
 
 #if defined(USE_NSS_CERTS)
@@ -78,7 +79,7 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
       std::unique_ptr<base::DictionaryValue> options,
-      const net::CompletionCallback& callback,
+      net::CompletionOnceCallback callback,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
 
@@ -175,6 +176,8 @@ class App : public AtomBrowserClient::Delegate,
   void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
   void ChildProcessDisconnected(base::ProcessId pid);
 
+  void SetAppLogsPath(mate::Arguments* args);
+
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
   void SetPath(mate::Arguments* args,
@@ -197,7 +200,7 @@ class App : public AtomBrowserClient::Delegate,
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
-                         const net::CompletionCallback& callback);
+                         net::CompletionRepeatingCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
                                      mate::Arguments* args);
