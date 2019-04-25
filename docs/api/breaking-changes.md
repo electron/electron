@@ -111,9 +111,9 @@ E.g. Re-enabling the webviewTag
 ```js
 const w = new BrowserWindow({
   webPreferences: {
-    webviewTag: true,
-  },
-});
+    webviewTag: true
+  }
+})
 ```
 
 ## `nativeWindowOpen`
