@@ -184,15 +184,13 @@ describe('webContents module', () => {
   })
 
   describe('setDevToolsWebContents() API', () => {
-    it('sets arbitry webContents as devtools', (done) => {
+    it('sets arbitrary webContents as devtools', () => {
       const devtools = new BrowserWindow({ show: false })
-      devtools.webContents.once('dom-ready', () => {
-        assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
-        devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
-          assert.ok(name, 'InspectorFrontendHostImpl')
-          devtools.destroy()
-          done()
-        })
+      devtools.webContents.once('dom-ready', async () => {
+        expect(devtools.getURL()).to.start.with('chrome-devtools://devtools')
+        const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name')
+        expect(result).to.equal('InspectorFrontendHostImpl')
+        devtools.destroy()
       })
       w.webContents.setDevToolsWebContents(devtools.webContents)
       w.webContents.openDevTools()
@@ -478,20 +476,16 @@ describe('webContents module', () => {
     })
   })
 
-  it('supports inserting CSS', (done) => {
+  it('supports inserting CSS', async () => {
     w.loadURL('about:blank')
     w.webContents.insertCSS('body { background-repeat: round; }')
-    w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")', (result) => {
-      assert.strictEqual(result, 'round')
-      done()
-    })
+    const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+    expect(result).to.equal('round')
   })
 
   it('supports inspecting an element in the devtools', (done) => {
     w.loadURL('about:blank')
-    w.webContents.once('devtools-opened', () => {
-      done()
-    })
+    w.webContents.once('devtools-opened', () => { done() })
     w.webContents.inspectElement(10, 10)
   })
 

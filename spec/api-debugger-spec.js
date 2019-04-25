@@ -179,7 +179,7 @@ describe('debugger module', () => {
         if (method === 'Network.loadingFinished') {
           w.webContents.debugger.sendCommand('Network.getResponseBody', {
             requestId: params.requestId
-          }, (_, data) => {
+          }).then(data => {
             expect(data.body).to.equal('\u0024')
             done()
           })

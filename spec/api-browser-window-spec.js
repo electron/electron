@@ -3059,13 +3059,14 @@ describe('BrowserWindow module', () => {
       w.destroy()
       w = new BrowserWindow()
       w.webContents.once('did-finish-load', () => {
-        w.once('enter-full-screen', () => {
-          w.once('leave-html-full-screen', () => {
-            done()
+        w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true).then(() => {
+          w.once('enter-full-screen', () => {
+            w.once('leave-html-full-screen', () => {
+              done()
+            })
+            w.setFullScreen(false)
           })
-          w.setFullScreen(false)
         })
-        w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true)
       })
       w.loadURL('about:blank')
     })
@@ -3228,7 +3229,7 @@ describe('BrowserWindow module', () => {
             const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
             UI.inspectorView.showPanel(lastPanelId)
           }
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false, () => {
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
             showPanelTimeoutId = setTimeout(show, 100)
           })
         }
@@ -3440,7 +3441,7 @@ describe('BrowserWindow module', () => {
         done()
       })
     })
-    it('returns result if the code returns an asyncronous promise', (done) => {
+    it('returns result if the code returns an asynchronous promise', (done) => {
       ipcRenderer.send('executeJavaScript', asyncCode, true)
       ipcRenderer.once('executeJavaScript-response', (event, result) => {
         assert.strictEqual(result, expected)
@@ -3486,6 +3487,7 @@ describe('BrowserWindow module', () => {
         })
       }
     })
+
     it('works after page load and during subframe load', (done) => {
       w.webContents.once('did-finish-load', () => {
         // initiate a sub-frame load, then try and execute script during it
@@ -3493,23 +3495,25 @@ describe('BrowserWindow module', () => {
           var iframe = document.createElement('iframe')
           iframe.src = '${server.url}/slow'
           document.body.appendChild(iframe)
-        `, () => {
-          w.webContents.executeJavaScript('console.log(\'hello\')', () => {
+        `).then(() => {
+          w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
             done()
           })
         })
       })
       w.loadURL(server.url)
     })
+
     it('executes after page load', (done) => {
-      w.webContents.executeJavaScript(code, (result) => {
+      w.webContents.executeJavaScript(code).then(result => {
         assert.strictEqual(result, expected)
         done()
       })
       w.loadURL(server.url)
     })
+
     it('works with result objects that have DOM class prototypes', (done) => {
-      w.webContents.executeJavaScript('document.location', (result) => {
+      w.webContents.executeJavaScript('document.location').then(result => {
         assert.strictEqual(result.origin, server.url)
         assert.strictEqual(result.protocol, 'http:')
         done()
