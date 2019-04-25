@@ -7,8 +7,8 @@
 #include <memory>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/promise_util.h"
 #include "base/stl_util.h"
 

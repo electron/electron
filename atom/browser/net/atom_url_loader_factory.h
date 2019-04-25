@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_
 #define ATOM_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_
 
+#include <string>
+
+#include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/binding_set.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -22,8 +25,9 @@ enum class ProtocolType {
   kFree,  // special type for returning arbitrary type of response.
 };
 
+using SendResponseCallback = base::OnceCallback<void(v8::Local<v8::Value>)>;
 using ProtocolHandler =
-    base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
+    base::Callback<void(const network::ResourceRequest&, SendResponseCallback)>;
 
 // Implementation of URLLoaderFactory.
 class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
@@ -43,6 +47,22 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   void Clone(network::mojom::URLLoaderFactoryRequest request) override;
 
  private:
+  void SendResponseBuffer(network::mojom::URLLoaderClientPtr client,
+                          v8::Isolate* isolate,
+                          v8::Local<v8::Value> response);
+  void SendResponseString(network::mojom::URLLoaderClientPtr client,
+                          v8::Isolate* isolate,
+                          v8::Local<v8::Value> response);
+
+  bool HandleError(network::mojom::URLLoaderClientPtr* client,
+                   v8::Isolate* isolate,
+                   v8::Local<v8::Value> response);
+  void SendContents(network::mojom::URLLoaderClientPtr client,
+                    std::string mime_type,
+                    std::string charset,
+                    const char* data,
+                    size_t size);
+
   // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
   // but I don't know what it actually does, find out the meanings of |Clone|
   // and |bindings_| and add comments for them.
@@ -50,6 +70,8 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
 
   ProtocolType type_;
   ProtocolHandler handler_;
+
+  base::WeakPtrFactory<AtomURLLoaderFactory> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLLoaderFactory);
 };
