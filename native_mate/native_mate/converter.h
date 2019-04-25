@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "base/strings/string_piece.h"
@@ -302,6 +303,12 @@ struct Converter<std::map<std::string, T>> {
 template <typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, const T& input) {
   return Converter<T>::ToV8(isolate, input);
+}
+
+template <typename T>
+v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+  return Converter<typename std::remove_reference<T>::type>::ToV8(
+      isolate, std::move(input));
 }
 
 inline v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate,
