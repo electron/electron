@@ -78,6 +78,11 @@ extern const char kAllowRunningInsecureContent[];
 extern const char kOffscreen[];
 extern const char kNodeIntegrationInSubFrames[];
 extern const char kDisableHtmlFullscreenWindowResize[];
+extern const char kJavaScript[];
+extern const char kImages[];
+extern const char kTextAreasAreResizable[];
+extern const char kWebGL[];
+extern const char kNavigateOnDragDrop[];
 
 }  // namespace options
 

@@ -163,6 +163,22 @@ const char kNodeIntegrationInSubFrames[] = "nodeIntegrationInSubFrames";
 const char kDisableHtmlFullscreenWindowResize[] =
     "disableHtmlFullscreenWindowResize";
 
+// Enables JavaScript support.
+const char kJavaScript[] = "javascript";
+
+// Enables image support.
+const char kImages[] = "images";
+
+// Make TextArea elements resizable.
+const char kTextAreasAreResizable[] = "textAreasAreResizable";
+
+// Enables WebGL support.
+const char kWebGL[] = "webgl";
+
+// Whether dragging and dropping a file or link onto the page causes a
+// navigation.
+const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
+
 }  // namespace options
 
 namespace switches {

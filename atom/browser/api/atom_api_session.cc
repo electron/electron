@@ -14,6 +14,7 @@
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_net_log.h"
 #include "atom/browser/api/atom_api_protocol.h"
+#include "atom/browser/api/atom_api_protocol_ns.h"
 #include "atom/browser/api/atom_api_web_request.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -59,6 +60,7 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "services/network/public/cpp/features.h"
 #include "ui/base/l10n/l10n_util.h"
 
 using content::BrowserThread;
@@ -283,20 +285,6 @@ void SetCertVerifyProcInIO(
   auto* request_context = context_getter->GetURLRequestContext();
   static_cast<AtomCertVerifier*>(request_context->cert_verifier())
       ->SetVerifyProc(proc);
-}
-
-void ClearHostResolverCacheInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  auto* cache = request_context->host_resolver()->GetHostCache();
-  if (cache) {
-    cache->clear();
-    DCHECK_EQ(0u, cache->size());
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
-  }
 }
 
 void ClearAuthCacheInIO(
@@ -608,11 +596,15 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
   util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&ClearHostResolverCacheInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     std::move(promise)));
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHostCache(
+          nullptr, base::BindOnce(
+                       [](util::Promise promise) {
+                         util::Promise::ResolveEmptyPromise(std::move(promise));
+                       },
+                       std::move(promise)));
+
   return handle;
 }
 
@@ -728,8 +720,12 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
   if (protocol_.IsEmpty()) {
-    auto handle = atom::api::Protocol::Create(isolate, browser_context());
-    protocol_.Reset(isolate, handle.ToV8());
+    v8::Local<v8::Value> handle;
+    if (base::FeatureList::IsEnabled(network::features::kNetworkService))
+      handle = ProtocolNS::Create(isolate, browser_context()).ToV8();
+    else
+      handle = Protocol::Create(isolate, browser_context()).ToV8();
+    protocol_.Reset(isolate, handle);
   }
   return v8::Local<v8::Value>::New(isolate, protocol_);
 }

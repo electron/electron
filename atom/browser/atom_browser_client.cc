@@ -14,10 +14,12 @@
 #include "atom/app/manifests.h"
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
+#include "atom/browser/api/atom_api_protocol_ns.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_navigation_throttle.h"
+#include "atom/browser/atom_paths.h"
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
@@ -906,6 +908,15 @@ void AtomBrowserClient::OnNetworkServiceCreated(
       network_service);
 }
 
+std::vector<base::FilePath>
+AtomBrowserClient::GetNetworkContextsParentDirectory() {
+  base::FilePath user_data_dir;
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  DCHECK(!user_data_dir.empty());
+
+  return {user_data_dir};
+}
+
 bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
   // This is called on the network thread.
   base::AutoLock auto_lock(process_preferences_lock_);
@@ -919,6 +930,17 @@ std::string AtomBrowserClient::GetProduct() const {
 
 std::string AtomBrowserClient::GetUserAgent() const {
   return GetApplicationUserAgent();
+}
+
+void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
+    int frame_tree_node_id,
+    NonNetworkURLLoaderFactoryMap* factories) {
+  content::WebContents* web_contents =
+      content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
+  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+  if (protocol)
+    protocol->RegisterURLLoaderFactories(factories);
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {

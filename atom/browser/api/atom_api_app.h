@@ -219,7 +219,7 @@ class App : public AtomBrowserClient::Delegate,
 #endif
 
 #if defined(MAS_BUILD)
-  base::Callback<void()> StartAccessingSecurityScopedResource(
+  base::RepeatingCallback<void()> StartAccessingSecurityScopedResource(
       mate::Arguments* args);
 #endif
 

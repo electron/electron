@@ -31,4 +31,10 @@ KeyedService* NetworkContextServiceFactory::BuildServiceInstanceFor(
   return new NetworkContextService(static_cast<AtomBrowserContext*>(context));
 }
 
+content::BrowserContext* NetworkContextServiceFactory::GetBrowserContextToUse(
+    content::BrowserContext* context) const {
+  // Create separate service for temporary sessions.
+  return context;
+}
+
 }  // namespace atom
