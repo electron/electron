@@ -7,9 +7,12 @@
 #include <string>
 #include <utility>
 
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/file_url_loader.h"
 #include "gin/dictionary.h"
+#include "net/base/filename_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
@@ -40,8 +43,6 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Context::Scope context_scope(context);
-  if (HandleError(&client, isolate, response))
-    return;
 
   switch (type_) {
     case ProtocolType::kBuffer:
@@ -55,6 +56,12 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
                    base::BindOnce(&AtomURLLoaderFactory::SendResponseString,
                                   weak_factory_.GetWeakPtr(), std::move(client),
                                   isolate));
+      break;
+    case ProtocolType::kFile:
+      handler_.Run(request,
+                   base::BindOnce(&AtomURLLoaderFactory::SendResponseFile,
+                                  weak_factory_.GetWeakPtr(), std::move(loader),
+                                  request, std::move(client), isolate));
       break;
     default: {
       std::string contents = "Not Implemented";
@@ -73,6 +80,9 @@ void AtomURLLoaderFactory::SendResponseBuffer(
     network::mojom::URLLoaderClientPtr client,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
+  if (HandleError(&client, isolate, response))
+    return;
+
   std::string mime_type = "text/html";
   std::string charset = "utf-8";
   v8::Local<v8::Value> buffer;
@@ -104,6 +114,9 @@ void AtomURLLoaderFactory::SendResponseString(
     network::mojom::URLLoaderClientPtr client,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
+  if (HandleError(&client, isolate, response))
+    return;
+
   std::string mime_type = "text/html";
   std::string charset = "utf-8";
   std::string contents;
@@ -119,6 +132,28 @@ void AtomURLLoaderFactory::SendResponseString(
   }
   SendContents(std::move(client), std::move(mime_type), std::move(charset),
                contents.data(), contents.size());
+}
+
+void AtomURLLoaderFactory::SendResponseFile(
+    network::mojom::URLLoaderRequest loader,
+    network::ResourceRequest request,
+    network::mojom::URLLoaderClientPtr client,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> response) {
+  if (HandleError(&client, isolate, response))
+    return;
+
+  base::FilePath path;
+  if (!mate::ConvertFromV8(isolate, response, &path)) {
+    network::URLLoaderCompletionStatus status;
+    status.error_code = net::ERR_NOT_IMPLEMENTED;
+    client->OnComplete(status);
+    return;
+  }
+
+  request.url = net::FilePathToFileURL(path);
+  content::CreateFileURLLoader(request, std::move(loader), std::move(client),
+                               nullptr, false);
 }
 
 bool AtomURLLoaderFactory::HandleError(
