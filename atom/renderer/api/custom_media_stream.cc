@@ -393,10 +393,9 @@ struct CustomCapturerSource : media::VideoCapturerSource {
 
   ~CustomCapturerSource() override {
     std::cerr << "~CustomCapturerSource" << std::endl;
-    control_wrapper_.ClearWeak();
+    onStartCapture_ = base::RepeatingCallback<void(ControlObject*)>();
+    onStopCapture_ = base::RepeatingCallback<void()>();
     control_wrapper_.Reset();
-
-    control_->wrapper_.ClearWeak();
   }
 
   media::VideoCaptureFormats GetPreferredFormats() override {
@@ -439,6 +438,14 @@ blink::MediaStreamComponent* createTrack(
     int framerate,
     base::RepeatingCallback<void(ControlObject*)> onStartCapture,
     base::RepeatingCallback<void()> onStopCapture) {
+  // auto s = v8::String::NewFromUtf8(isolate, "Test Test Test",
+  // v8::NewStringType::kNormal).ToLocalChecked();
+  auto s = v8::Array::New(isolate, 10);
+
+  std::cout << *s << std::endl;
+
+  std::cout << s->Length() << std::endl;
+
   std::unique_ptr<CustomCapturerSource> source{new CustomCapturerSource(
       isolate, resolution, framerate, onStartCapture, onStopCapture)};
 
