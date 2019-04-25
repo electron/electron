@@ -53,7 +53,7 @@ struct Converter<base::trace_event::TraceConfig> {
 
 namespace {
 
-using CompletionCallback = base::Callback<void(const base::FilePath&)>;
+using CompletionCallback = base::RepeatingCallback<void(const base::FilePath&)>;
 
 scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
     const base::FilePath& path,
@@ -68,7 +68,7 @@ scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
     LOG(ERROR) << "Creating temporary file failed";
 
   return TracingController::CreateFileEndpoint(
-      result_file_path, base::Bind(callback, result_file_path));
+      result_file_path, base::BindRepeating(callback, result_file_path));
 }
 
 v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
@@ -79,9 +79,10 @@ v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
   // TODO(zcbenz): Remove the use of CopyablePromise when the
   // CreateFileEndpoint API accepts OnceCallback.
   TracingController::GetInstance()->StopTracing(GetTraceDataEndpoint(
-      path, base::Bind(atom::util::CopyablePromise::ResolveCopyablePromise<
-                           const base::FilePath&>,
-                       atom::util::CopyablePromise(promise))));
+      path,
+      base::BindRepeating(atom::util::CopyablePromise::ResolveCopyablePromise<
+                              const base::FilePath&>,
+                          atom::util::CopyablePromise(promise))));
   return handle;
 }
 
