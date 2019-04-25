@@ -859,7 +859,7 @@ Returns `Boolean` - Whether the window is in normal state (not maximized, not mi
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
 * `extraSize` [Size](structures/size.md) - The extra size not to be included while,
-maintaining the aspect ratio. this pamameter is not worked on _Windows_ OS
+maintaining the aspect ratio. _macOS_
 
 This will make a window maintain an aspect ratio. The extra size allows a
 developer to have space, specified in pixels, not included within the aspect
