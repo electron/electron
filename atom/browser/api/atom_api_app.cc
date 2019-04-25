@@ -1354,20 +1354,26 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
                  base::Bind(&Browser::SetAppUserModelID, browser))
-      .SetMethod("isDefaultProtocolClient",
-                 base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))
-      .SetMethod("setAsDefaultProtocolClient",
-                 base::BindRepeating(&Browser::SetAsDefaultProtocolClient, browser))
-      .SetMethod("removeAsDefaultProtocolClient",
-                 base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
-      .SetMethod("_setBadgeCount", base::BindRepeating(&Browser::SetBadgeCount, browser))
-      .SetMethod("_getBadgeCount", base::BindRepeating(&Browser::GetBadgeCount, browser))
+      .SetMethod(
+          "isDefaultProtocolClient",
+          base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))
+      .SetMethod(
+          "setAsDefaultProtocolClient",
+          base::BindRepeating(&Browser::SetAsDefaultProtocolClient, browser))
+      .SetMethod(
+          "removeAsDefaultProtocolClient",
+          base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
+      .SetMethod("_setBadgeCount",
+                 base::BindRepeating(&Browser::SetBadgeCount, browser))
+      .SetMethod("_getBadgeCount",
+                 base::BindRepeating(&Browser::GetBadgeCount, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
       .SetMethod("isEmojiPanelSupported",
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
-      .SetProperty("badgeCount", base::BindRepeating(&Browser::GetBadgeCount, browser),
+      .SetProperty("badgeCount",
+                   base::BindRepeating(&Browser::GetBadgeCount, browser),
                    base::BindRepeating(&Browser::SetBadgeCount, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))

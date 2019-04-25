@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_
 #define ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_
 
+#include <utility>
 #include <vector>
 
 #include "atom/common/native_mate_converters/string16_converter.h"
