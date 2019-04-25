@@ -150,7 +150,7 @@ void AutofillPopupView::OnSelectedRowChanged(
 
   if (current_row_selection) {
     int selected = current_row_selection.value_or(-1);
-    if (selected == -1 || selected >= children().size())
+    if (selected == -1 || static_cast<size_t>(selected) >= children().size())
       return;
     child_at(selected)->NotifyAccessibilityEvent(ax::mojom::Event::kSelection,
                                                  true);
@@ -232,7 +232,8 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
 }
 
 void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
-  if (!popup_ || popup_->GetLineCount() != children().size())
+  if (!popup_ ||
+      static_cast<size_t>(popup_->GetLineCount()) != children().size())
     return;
   gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
