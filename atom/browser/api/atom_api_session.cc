@@ -287,20 +287,6 @@ void SetCertVerifyProcInIO(
       ->SetVerifyProc(proc);
 }
 
-void ClearHostResolverCacheInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  auto* cache = request_context->host_resolver()->GetHostCache();
-  if (cache) {
-    cache->clear();
-    DCHECK_EQ(0u, cache->size());
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
-  }
-}
-
 void ClearAuthCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const ClearAuthCacheOptions& options,
@@ -610,11 +596,15 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
   util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&ClearHostResolverCacheInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     std::move(promise)));
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHostCache(
+          nullptr, base::BindOnce(
+                       [](util::Promise promise) {
+                         util::Promise::ResolveEmptyPromise(std::move(promise));
+                       },
+                       std::move(promise)));
+
   return handle;
 }
 
