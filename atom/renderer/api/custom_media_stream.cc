@@ -2,11 +2,15 @@
 #include <memory>
 #include <utility>
 
+#define INSIDE_BLINK \
+  1  // we need to be able to convert WebMediaStreamTrack to
+     // MediaStreamComponent*
+#include <third_party/blink/public/platform/web_media_stream_track.h>
+#undef INSIDE_BLINK
+
 #include <base/base64.h>
 #include <base/rand_util.h>
 #include <base/strings/utf_string_conversions.h>
-
-#define INSIDE_BLINK 1
 
 #include <content/public/renderer/render_thread.h>
 #include <content/renderer/media/stream/media_stream_video_capturer_source.h>
@@ -36,9 +40,9 @@ struct ControlObject;
 
 namespace mate {
 template <>
-struct Converter<blink::MediaStreamComponent*> {
+struct Converter<blink::WebMediaStreamTrack> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   blink::MediaStreamComponent* track) {
+                                   blink::WebMediaStreamTrack track) {
     return blink::ToV8(
         blink::MediaStreamTrack::Create(
             blink::ToExecutionContext(isolate->GetCurrentContext()), track),
