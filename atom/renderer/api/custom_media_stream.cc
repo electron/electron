@@ -432,22 +432,14 @@ struct CustomCapturerSource : media::VideoCapturerSource {
   base::RepeatingCallback<void()> onStopCapture_;
 };
 
-blink::MediaStreamComponent* createTrack(
+blink::WebMediaStreamTrack createTrack(
     v8::Isolate* isolate,
     gfx::Size resolution,
     int framerate,
     base::RepeatingCallback<void(ControlObject*)> onStartCapture,
     base::RepeatingCallback<void()> onStopCapture) {
-  // auto s = v8::String::NewFromUtf8(isolate, "Test Test Test",
-  // v8::NewStringType::kNormal).ToLocalChecked();
-  auto s = v8::Array::New(isolate, 10);
-
-  std::cout << *s << std::endl;
-
-  std::cout << s->Length() << std::endl;
-
-  std::unique_ptr<CustomCapturerSource> source{new CustomCapturerSource(
-      isolate, resolution, framerate, onStartCapture, onStopCapture)};
+  auto source = std::make_unique<CustomCapturerSource>(
+      isolate, resolution, framerate, onStartCapture, onStopCapture);
 
   std::string str_track_id;
   base::Base64Encode(base::RandBytesAsString(64), &str_track_id);
