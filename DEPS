@@ -113,7 +113,7 @@ hooks = [
     'action': [
       'python',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "npm@' + (Var("npm_version")) + '", "install"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "npm@' + (Var("npm_version")) + '", "ci"]);',
     ],
   },
   {
