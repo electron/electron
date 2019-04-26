@@ -422,7 +422,10 @@ struct CustomCapturerSource : media::VideoCapturerSource {
 
   void MaybeSuspend() override {
     std::cerr << "MaybeSuspend" << std::endl;
-    onStopCapture_.Run();
+    if (!blink::ScriptForbiddenScope::
+            IsScriptForbidden())  // in some circumstances this can be called
+                                  // from Document::Shutdown
+      onStopCapture_.Run();
   }
 
   v8::Global<v8::Value> control_wrapper_;
