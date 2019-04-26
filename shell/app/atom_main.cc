@@ -13,6 +13,7 @@
 #include <windows.h>  // windows.h must be included first
 
 #include <atlbase.h>  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
+#include <io.h>
 #include <shellapi.h>
 #include <shellscalingapi.h>
 #include <tchar.h>
@@ -81,6 +82,37 @@ void FixStdioStreams() {
 }
 #endif
 
+#if defined(OS_WIN)
+void DisableStdioInheritance() {
+  // base::RouteStdioToConsole opens four new handles to console.
+  // These handles are created with HANDLE_FLAG_INHERIT flag
+  // which causes them to be inherited by child processes.
+  // uv_disable_stdio_inheritance tries to clear this flag,
+  // but only from handles it gets from GetStdHandle function.
+  HANDLE handle;
+
+  handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(stdout)));
+  if (handle != NULL && handle != INVALID_HANDLE_VALUE) {
+    SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0);
+  }
+
+  handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(stderr)));
+  if (handle != NULL && handle != INVALID_HANDLE_VALUE) {
+    SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0);
+  }
+
+  handle = reinterpret_cast<HANDLE>(_get_osfhandle(1));
+  if (handle != NULL && handle != INVALID_HANDLE_VALUE) {
+    SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0);
+  }
+
+  handle = reinterpret_cast<HANDLE>(_get_osfhandle(2));
+  if (handle != NULL && handle != INVALID_HANDLE_VALUE) {
+    SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0);
+  }
+}
+#endif
+
 }  // namespace
 
 #if defined(OS_WIN)
@@ -131,8 +163,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #endif
 
   // Make sure the output is printed to console.
-  if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
+  if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE")) {
     base::RouteStdioToConsole(false);
+    DisableStdioInheritance();
+  }
 
 #ifndef DEBUG
   // Chromium has its own TLS subsystem which supports automatic destruction
