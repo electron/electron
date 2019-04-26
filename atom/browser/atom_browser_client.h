@@ -154,9 +154,13 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   GetSystemSharedURLLoaderFactory() override;
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
+  std::vector<base::FilePath> GetNetworkContextsParentDirectory() override;
   bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() const override;
   std::string GetUserAgent() const override;
+  void RegisterNonNetworkNavigationURLLoaderFactories(
+      int frame_tree_node_id,
+      NonNetworkURLLoaderFactoryMap* factories) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

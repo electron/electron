@@ -87,7 +87,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   void PostDestroyThreads() override;
 
  private:
-  void InitializeFeatureList();
   void PreMainMessageLoopStartCommon();
 
 #if defined(OS_POSIX)

@@ -41,8 +41,26 @@ void AtomBrowserMainParts::InitializeMainNib() {
   auto application = [principalClass sharedApplication];
 
   NSString* mainNibName = [infoDictionary objectForKey:@"NSMainNibFile"];
-  auto mainNib = [[NSNib alloc] initWithNibNamed:mainNibName
-                                          bundle:base::mac::FrameworkBundle()];
+
+  NSNib* mainNib;
+
+  @try {
+    mainNib = [[NSNib alloc] initWithNibNamed:mainNibName
+                                       bundle:base::mac::FrameworkBundle()];
+    // Handle failure of initWithNibNamed on SMB shares
+    // TODO(codebytere): Remove when
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=932935 is fixed
+  } @catch (NSException* exception) {
+    NSString* nibPath =
+        [NSString stringWithFormat:@"Resources/%@.nib", mainNibName];
+    nibPath = [base::mac::FrameworkBundle().bundlePath
+        stringByAppendingPathComponent:nibPath];
+
+    NSData* data = [NSData dataWithContentsOfFile:nibPath];
+    mainNib = [[NSNib alloc] initWithNibData:data
+                                      bundle:base::mac::FrameworkBundle()];
+  }
+
   [mainNib instantiateWithOwner:application topLevelObjects:nil];
   [mainNib release];
 }
