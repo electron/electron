@@ -161,7 +161,7 @@ browserWindow.loadURL('https://example.com')
 
 ## 2) Do not enable Node.js Integration for Remote Content
 
-_Recommendation is Electron's default_
+_This recommendation is the default behavior in Electron since 5.0.0._
 
 It is paramount that you do not enable Node.js integration in any renderer
 ([`BrowserWindow`][browser-window], [`BrowserView`][browser-view], or
