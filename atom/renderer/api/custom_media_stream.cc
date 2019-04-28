@@ -493,4 +493,4 @@ v8::Local<v8::Value> mate::Converter<ControlObject*>::ToV8(v8::Isolate* isolate,
 }
 gin::WrapperInfo ControlObject::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_renderer_custom_media_stream, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_renderer_custom_media_stream, Initialize)
