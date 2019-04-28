@@ -22,11 +22,13 @@ struct Timestamp {
 };
 
 struct VideoFrameCallback {
-  virtual VideoFrame* allocateFrame(Timestamp ts, Format const* format) = 0;
+  virtual VideoFrame* allocateFrame(Timestamp ts,
+                                    Format const* format = nullptr) = 0;
   virtual void queueFrame(Timestamp ts, VideoFrame* frame) = 0;
+  virtual void releaseFrame(VideoFrame* frame) = 0;
 };
 
-VideoFrameCallback* unwrapCallback(v8::Handle<v8::Value> value) {
+inline VideoFrameCallback* unwrapCallback(v8::Handle<v8::Value> value) {
   if (!value->IsObject())
     return nullptr;
   v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(value);

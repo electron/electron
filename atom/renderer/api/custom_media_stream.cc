@@ -368,6 +368,11 @@ struct ControlObject final
     delete f;
   }
 
+  void releaseFrame(CustomMediaStream::VideoFrame* frame) override {
+    NonGCFrame* f = static_cast<NonGCFrame*>(frame);
+    delete f;
+  }
+
   v8::Isolate* isolate_;
   v8::Global<v8::Object> wrapper_;  // Weak
 
