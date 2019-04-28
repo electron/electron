@@ -550,6 +550,10 @@ app.exit(0)
 
 Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
+### `app.isDoingImportantThings()`
+
+Returns `Boolean` - `true` if Electron is doing stuff.
+
 ### `app.whenReady()`
 
 Returns `Promise<void>` - fulfilled when Electron is initialized.
