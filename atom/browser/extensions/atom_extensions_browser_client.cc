@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/extensions/api/runtime/atom_runtime_api_delegate.h"
 #include "atom/browser/extensions/atom_extension_host_delegate.h"
@@ -16,7 +17,6 @@
 #include "base/memory/ptr_util.h"
 #include "base/task/post_task.h"
 #include "build/build_config.h"
-#include "chrome/browser/browser_process.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -87,7 +87,7 @@ bool AtomExtensionsBrowserClient::HasOffTheRecordContext(
 BrowserContext* AtomExtensionsBrowserClient::GetOffTheRecordContext(
     BrowserContext* context) {
   // app_shell only supports a single context.
-  return NULL;
+  return nullptr;
 }
 
 BrowserContext* AtomExtensionsBrowserClient::GetOriginalContext(
@@ -307,12 +307,11 @@ bool AtomExtensionsBrowserClient::IsLockScreenContext(
 }
 
 std::string AtomExtensionsBrowserClient::GetApplicationLocale() {
-  return g_browser_process->GetApplicationLocale();
+  return AtomBrowserClient::Get()->GetApplicationLocale();
 }
 
 std::string AtomExtensionsBrowserClient::GetUserAgent() const {
-  return content::BuildUserAgentFromProduct(
-      version_info::GetProductNameAndVersionForUserAgent());
+  return static_cast<AtomBrowserContext*>(browser_context_)->GetUserAgent();
 }
 
 void AtomExtensionsBrowserClient::InitWithBrowserContext(
