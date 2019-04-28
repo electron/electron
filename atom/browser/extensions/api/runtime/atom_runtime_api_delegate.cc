@@ -39,11 +39,11 @@ bool AtomRuntimeAPIDelegate::CheckForUpdates(
 
 void AtomRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
 
-bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info)
+bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
 #if defined(OS_LINUX)
-    info->os = api::runtime::PLATFORM_OS_LINUX;
+  info->os = api::runtime::PLATFORM_OS_LINUX;
 #endif
-return true;
+  return true;
 }  // namespace extensions
 
 bool AtomRuntimeAPIDelegate::RestartDevice(std::string* error_message) {

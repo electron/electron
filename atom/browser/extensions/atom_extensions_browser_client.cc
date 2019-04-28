@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include "atom/browser/atom_browser_client.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/extensions/api/runtime/atom_runtime_api_delegate.h"
 #include "atom/browser/extensions/atom_extension_host_delegate.h"
 #include "atom/browser/extensions/atom_extension_system_factory.h"
@@ -14,6 +16,7 @@
 #include "base/memory/ptr_util.h"
 #include "base/task/post_task.h"
 #include "build/build_config.h"
+#include "chrome/browser/browser_process.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -57,7 +60,7 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
 AtomExtensionsBrowserClient::~AtomExtensionsBrowserClient() {}
 
 bool AtomExtensionsBrowserClient::IsShuttingDown() {
-  return atom::Browser::Get()->IsShuttingDown();
+  return atom::Browser::Get()->is_shutting_down();
 }
 
 bool AtomExtensionsBrowserClient::AreExtensionsDisabled(
@@ -304,8 +307,7 @@ bool AtomExtensionsBrowserClient::IsLockScreenContext(
 }
 
 std::string AtomExtensionsBrowserClient::GetApplicationLocale() {
-  // TODO(michaelpg): Use system locale.
-  return "en-US";
+  return g_browser_process->GetApplicationLocale();
 }
 
 std::string AtomExtensionsBrowserClient::GetUserAgent() const {

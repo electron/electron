@@ -70,6 +70,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void SetCanUseCustomSiteInstance(bool should_disable);
   bool CanUseCustomSiteInstance() override;
 
+  net::NetLog* GetNetLog() override;
+
  protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,
@@ -149,7 +151,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
   std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
-  net::NetLog* GetNetLog() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(

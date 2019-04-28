@@ -146,7 +146,7 @@ void AtomExtensionSystem::UnregisterExtensionWithRequestContexts(
     const std::string& extension_id,
     const UnloadedExtensionReason reason) {}
 
-const OneShotEvent& AtomExtensionSystem::ready() const {
+const base::OneShotEvent& AtomExtensionSystem::ready() const {
   return ready_;
 }
 
