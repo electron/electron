@@ -57,7 +57,7 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
 AtomExtensionsBrowserClient::~AtomExtensionsBrowserClient() {}
 
 bool AtomExtensionsBrowserClient::IsShuttingDown() {
-  return false;
+  return atom::Browser::Get()->IsShuttingDown();
 }
 
 bool AtomExtensionsBrowserClient::AreExtensionsDisabled(
