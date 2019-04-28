@@ -70,8 +70,12 @@ bool AtomExtensionsBrowserClient::AreExtensionsDisabled(
 }
 
 bool AtomExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
-  DCHECK(browser_context_);
-  return context == browser_context_;
+  auto context_map = AtomBrowserContext::browser_context_map();
+  for (auto const& entry : context_map) {
+    if (entry.second && entry.second.get() == context)
+      return true;
+  }
+  return false;
 }
 
 bool AtomExtensionsBrowserClient::IsSameContext(BrowserContext* first,
@@ -163,8 +167,7 @@ bool AtomExtensionsBrowserClient::AllowCrossRendererResourceLoad(
 
 PrefService* AtomExtensionsBrowserClient::GetPrefServiceForContext(
     BrowserContext* context) {
-  DCHECK(pref_service_);
-  return pref_service_;
+  return static_cast<AtomBrowserContext*>(context)->prefs();
 }
 
 void AtomExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
@@ -249,8 +252,13 @@ void AtomExtensionsBrowserClient::BroadcastEventToRenderers(
 
   std::unique_ptr<extensions::Event> event(
       new extensions::Event(histogram_value, event_name, std::move(args)));
-  extensions::EventRouter::Get(browser_context_)
-      ->BroadcastEvent(std::move(event));
+  auto context_map = AtomBrowserContext::browser_context_map();
+  for (auto const& entry : context_map) {
+    if (entry.second) {
+      extensions::EventRouter::Get(entry.second.get())
+          ->BroadcastEvent(std::move(event));
+    }
+  }
 }
 
 net::NetLog* AtomExtensionsBrowserClient::GetNetLog() {
@@ -311,16 +319,7 @@ std::string AtomExtensionsBrowserClient::GetApplicationLocale() {
 }
 
 std::string AtomExtensionsBrowserClient::GetUserAgent() const {
-  return static_cast<AtomBrowserContext*>(browser_context_)->GetUserAgent();
-}
-
-void AtomExtensionsBrowserClient::InitWithBrowserContext(
-    content::BrowserContext* context,
-    PrefService* pref_service) {
-  DCHECK(!browser_context_);
-  DCHECK(!pref_service_);
-  browser_context_ = context;
-  pref_service_ = pref_service;
+  return AtomBrowserClient::Get()->GetUserAgent();
 }
 
 }  // namespace atom

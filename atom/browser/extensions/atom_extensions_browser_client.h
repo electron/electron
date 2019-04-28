@@ -134,14 +134,6 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
   void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
 
  private:
-  // The single BrowserContext for app_shell. Not owned. Must be initialized
-  // when ready by calling InitWithBrowserContext().
-  content::BrowserContext* browser_context_ = nullptr;
-
-  // The PrefService for |browser_context_|. Not owned. Must be initialized when
-  // ready by calling InitWithBrowserContext().
-  PrefService* pref_service_ = nullptr;
-
   // Support for extension APIs.
   std::unique_ptr<extensions::ExtensionsAPIClient> api_client_;
 

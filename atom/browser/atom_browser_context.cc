@@ -45,13 +45,21 @@
 #include "services/network/public/cpp/features.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "atom/browser/extensions/atom_browser_context_keyed_service_factories.h"
+#include "atom/browser/extensions/atom_extension_system.h"
+#include "atom/browser/extensions/atom_extension_system_factory.h"
+#include "atom/browser/extensions/atom_extensions_browser_client.h"
+#include "atom/common/extensions/atom_extensions_client.h"
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/user_prefs/user_prefs.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/pref_names.h"
-#endif
+#include "extensions/common/extension_api.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 using content::BrowserThread;
 
@@ -113,6 +121,16 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
+      this);
+
+  extension_system_ = static_cast<extensions::AtomExtensionSystem*>(
+      extensions::ExtensionSystem::Get(this));
+  extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+  extension_system_->FinishInitialization();
+#endif
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -129,6 +147,11 @@ AtomBrowserContext::~AtomBrowserContext() {
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // TODO: Why?
+  extension_system_ = nullptr;
+#endif
 }
 
 void AtomBrowserContext::InitPrefs() {

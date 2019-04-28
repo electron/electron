@@ -28,12 +28,6 @@ class WMState;
 }
 #endif
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-namespace extensions {
-class AtomExtensionSystem;
-}
-#endif
-
 namespace atom {
 
 class AtomBrowserContext;
@@ -104,10 +98,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   void OverrideAppLogsPath();
   void PreMainMessageLoopStartCommon();
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  void InitializeExtensionSystem();
-#endif
-
 #if defined(OS_POSIX)
   // Set signal handlers.
   void HandleSIGCHLD();
@@ -149,10 +139,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<AtomExtensionsClient> extensions_client_;
   std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
-  scoped_refptr<AtomBrowserContext> browser_context_;
-
-  // Owned by the KeyedService system.
-  extensions::AtomExtensionSystem* extension_system_;
 #endif
 
   base::RepeatingTimer gc_timer_;
