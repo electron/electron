@@ -173,9 +173,8 @@ AtomExtensionsBrowserClient::GetProcessManagerDelegate() const {
   return NULL;
 }
 
-std::unique_ptr<extensions::ExtensionHostDelegate>
-AtomExtensionsBrowserClient::CreateExtensionHostDelegate() {
-  // TODO(samuelmaddock):
+std::unique_ptr<extensions::ExtensionHostDelegate> AtomExtensionsBrowserClient::
+    CreateExtensionHostDelegate() {  // TODO(samuelmaddock):
   return base::WrapUnique(new extensions::AtomExtensionHostDelegate);
 }
 
@@ -210,9 +209,7 @@ bool AtomExtensionsBrowserClient::IsLoggedInAsPublicAccount() {
 
 extensions::ExtensionSystemProvider*
 AtomExtensionsBrowserClient::GetExtensionSystemFactory() {
-  // TODO(samuelmaddock):
   return extensions::AtomExtensionSystemFactory::GetInstance();
-  // return extensions::ExtensionSystemFactory::GetInstance();
 }
 
 void AtomExtensionsBrowserClient::RegisterExtensionInterfaces(
@@ -226,7 +223,6 @@ void AtomExtensionsBrowserClient::RegisterExtensionInterfaces(
 std::unique_ptr<extensions::RuntimeAPIDelegate>
 AtomExtensionsBrowserClient::CreateRuntimeAPIDelegate(
     content::BrowserContext* context) const {
-  // TODO(samuelmaddock):
   return std::make_unique<extensions::AtomRuntimeAPIDelegate>(context);
 }
 
@@ -279,7 +275,6 @@ void AtomExtensionsBrowserClient::SetAPIClientForTest(
 extensions::ExtensionWebContentsObserver*
 AtomExtensionsBrowserClient::GetExtensionWebContentsObserver(
     content::WebContents* web_contents) {
-  // TODO(samuelmaddock):
   return extensions::AtomExtensionWebContentsObserver::FromWebContents(
       web_contents);
 }
