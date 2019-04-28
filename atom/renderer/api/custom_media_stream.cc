@@ -153,7 +153,7 @@ struct Frame : mate::Wrappable<Frame> {
       case media::VideoFrame::kVPlane:
         return frame_->stride(plane);
       default:
-        return -1;
+        return 0;
     }
   }
 
@@ -220,7 +220,7 @@ struct NonGCFrame final : CustomMediaStream::VideoFrame {
       case CustomMediaStream::Plane::V:
         return frame_->stride(media::VideoFrame::kVPlane);
       default:
-        return -1;
+        return 0;
     }
   }
 
@@ -233,7 +233,7 @@ struct NonGCFrame final : CustomMediaStream::VideoFrame {
       case CustomMediaStream::Plane::V:
         return frame_->rows(media::VideoFrame::kVPlane);
       default:
-        return -1;
+        return 0;
     }
   }
 
