@@ -1373,6 +1373,15 @@ On macOS, setting this with any nonzero integer shows on the dock icon. On Linux
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
+### `app.userAgentFallback`
+
+A `String` which is the user agent string Electron will use as a global fallback.
+
+This is the user agent that will be used when no user agent is set at the
+`webContents` or `session` level.  Useful for ensuring your entire
+app has the same user agent.  Set to a custom value as early as possible
+in your apps initialization to ensure that your overridden value is used.
+
 ### `app.isPackaged`
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.

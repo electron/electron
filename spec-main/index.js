@@ -80,6 +80,6 @@ app.whenReady().then(() => {
         process.exit(runner.failures)
       })
     }
-    const runner = (isCI) ? mocha.run(cb) : mocha.forbidOnly().run(cb) 
+    const runner = (isCI) ? mocha.forbidOnly().run(cb) : mocha.run(cb)
   })
 })

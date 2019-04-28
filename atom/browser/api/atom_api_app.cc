@@ -1456,8 +1456,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX)
       .SetProperty("dock", &App::GetDockAPI)
 #endif
-      .SetMethod("setUserAgentFallback", &App::SetUserAgentFallback)
-      .SetMethod("getUserAgentFallback", &App::GetUserAgentFallback)
+      .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
+                   &App::SetUserAgentFallback)
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
