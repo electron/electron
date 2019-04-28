@@ -1271,6 +1271,14 @@ void App::EnableSandbox(mate::Arguments* args) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+void App::SetUserAgentFallback(const std::string& user_agent) {
+  AtomBrowserClient::Get()->SetUserAgent(user_agent);
+}
+
+std::string App::GetUserAgentFallback() {
+  return AtomBrowserClient::Get()->GetUserAgent();
+}
+
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(mate::Arguments* args) {
   return ui::cocoa::AtomBundleMover::Move(args);
@@ -1448,6 +1456,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX)
       .SetProperty("dock", &App::GetDockAPI)
 #endif
+      .SetMethod("setUserAgentFallback", &App::SetUserAgentFallback)
+      .SetMethod("getUserAgentFallback", &App::GetUserAgentFallback)
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
