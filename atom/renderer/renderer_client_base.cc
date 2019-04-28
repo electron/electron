@@ -67,12 +67,12 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "atom/common/extensions/atom_extensions_client.h"
 #include "atom/renderer/extensions/atom_extensions_renderer_client.h"
-#include "extensions/common/extensions_client.h"         // nogncheck
-#include "extensions/renderer/dispatcher.h"              // nogncheck
-#include "extensions/renderer/extension_frame_helper.h"  // nogncheck
-#include "extensions/renderer/guest_view/extensions_guest_view_container.h"  // nogncheck
-#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"  // nogncheck
-#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"  // nogncheck
+#include "extensions/common/extensions_client.h"
+#include "extensions/renderer/dispatcher.h"
+#include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
+#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace atom {

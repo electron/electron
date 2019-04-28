@@ -386,7 +386,14 @@ static_library("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
+
+    # TODO: Confirm we want these as public deps
+    "//components/pref_registry:pref_registry",
+    "//components/user_prefs:user_prefs",
     "//content/public/app:both",
+    "//extensions/browser",
+    "//extensions/common",
+    "//extensions/renderer",
   ]
 
   include_dirs = [
