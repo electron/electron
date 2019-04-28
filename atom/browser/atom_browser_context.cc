@@ -50,7 +50,6 @@
 #include "atom/browser/extensions/atom_extension_system_factory.h"
 #include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "atom/common/extensions/atom_extensions_client.h"
-#include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/user_prefs/user_prefs.h"
 #include "extensions/browser/browser_context_keyed_service_factories.h"
@@ -149,7 +148,7 @@ AtomBrowserContext::~AtomBrowserContext() {
       this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // TODO: Why?
+  // TODO(MarshallOfSound): Why?
   extension_system_ = nullptr;
 #endif
 }
