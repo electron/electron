@@ -33,7 +33,7 @@ AtomExtensionHostDelegate::GetJavaScriptDialogManager() {
   // TODO(jamescook): Create a JavaScriptDialogManager or reuse the one from
   // content_shell.
   NOTREACHED();
-  return NULL;
+  return nullptr;
 }
 
 void AtomExtensionHostDelegate::CreateTab(

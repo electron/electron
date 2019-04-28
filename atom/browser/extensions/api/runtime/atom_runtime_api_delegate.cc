@@ -10,11 +10,6 @@
 #include "build/build_config.h"
 #include "extensions/common/api/runtime.h"
 
-#if defined(OS_CHROMEOS)
-#include "chromeos/dbus/power_manager_client.h"
-#include "third_party/cros_system_api/dbus/service_constants.h"
-#endif
-
 using extensions::api::runtime::PlatformInfo;
 
 namespace extensions {
@@ -44,25 +39,16 @@ bool AtomRuntimeAPIDelegate::CheckForUpdates(
 
 void AtomRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
 
-bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
-#if defined(OS_CHROMEOS)
-  info->os = api::runtime::PLATFORM_OS_CROS;
-#elif defined(OS_LINUX)
-  info->os = api::runtime::PLATFORM_OS_LINUX;
+bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info)
+#if defined(OS_LINUX)
+    info->os = api::runtime::PLATFORM_OS_LINUX;
 #endif
-  return true;
-}
+return true;
+}  // namespace extensions
 
 bool AtomRuntimeAPIDelegate::RestartDevice(std::string* error_message) {
-// We allow chrome.runtime.restart() to request a device restart on ChromeOS.
-#if defined(OS_CHROMEOS)
-  chromeos::PowerManagerClient::Get()->RequestRestart(
-      power_manager::REQUEST_RESTART_OTHER, "AppShell chrome.runtime API");
-  return true;
-#else
-  *error_message = "Restart is only supported on ChromeOS.";
+  *error_message = "Restart is not supported in Electron";
   return false;
-#endif
 }
 
 }  // namespace extensions
