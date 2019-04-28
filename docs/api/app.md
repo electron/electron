@@ -552,7 +552,7 @@ Returns `Boolean` - `true` if Electron has finished initializing, `false` otherw
 
 ### `app.isDoingImportantThings()`
 
-Returns `Boolean` - `true` if Electron is doing stuff.
+Returns `Boolean` - `true` if Electron is doing stuff otherwise false.
 
 ### `app.whenReady()`
 
