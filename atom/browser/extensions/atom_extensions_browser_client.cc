@@ -251,7 +251,7 @@ void AtomExtensionsBrowserClient::BroadcastEventToRenderers(
 }
 
 net::NetLog* AtomExtensionsBrowserClient::GetNetLog() {
-  return NULL;
+  return AtomBrowserClient::Get()->GetNetLog();
 }
 
 extensions::ExtensionCache* AtomExtensionsBrowserClient::GetExtensionCache() {
