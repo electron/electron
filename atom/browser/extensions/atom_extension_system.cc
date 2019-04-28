@@ -49,7 +49,8 @@ const Extension* AtomExtensionSystem::LoadExtension(
 }
 
 const Extension* AtomExtensionSystem::LoadApp(const base::FilePath& app_dir) {
-  return LoadExtension(app_dir);
+  CHECK(false);  // Should never call LoadApp
+  return nullptr;
 }
 
 void AtomExtensionSystem::FinishInitialization() {
