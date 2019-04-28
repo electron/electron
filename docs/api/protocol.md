@@ -98,8 +98,8 @@ going to be created with `scheme`. `completion` will be called with
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
 `callback({ path: filePath })`. The object may also have a `headers` property
-which gives a list of strings for the response headers, e.g.
-`callback({ path: filePath, headers: ["Content-Security-Policy: default-src 'none'"]})`.
+which gives a map of headers to values for the response headers, e.g.
+`callback({ path: filePath, headers: {"Content-Security-Policy": "default-src 'none'"]})`.
 
 When `callback` is called with nothing, a number, or an object that has an
 `error` property, the `request` will fail with the `error` number you
