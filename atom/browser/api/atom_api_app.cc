@@ -529,9 +529,9 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(util::Promise promise, gfx::Image* icon) {
-  if (icon && !icon->IsEmpty()) {
-    promise.Resolve(*icon);
+void OnIconDataAvailable(util::Promise promise, gfx::Image icon) {
+  if (!icon.IsEmpty()) {
+    promise.Resolve(icon);
   } else {
     promise.RejectWithErrorMessage("Failed to get file icon.");
   }

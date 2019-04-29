@@ -96,7 +96,7 @@ void Browser::Focus() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  if (base::win::GetVersion() < base::win::VERSION_WIN7)
+  if (base::win::GetVersion() < base::win::Version::WIN7)
     return;
 
   CComPtr<IShellItem> item;
@@ -346,7 +346,7 @@ std::string Browser::GetExecutableFileProductName() const {
 
 bool Browser::IsEmojiPanelSupported() {
   // emoji picker is supported on Windows 10's Spring 2018 update & above.
-  return base::win::GetVersion() >= base::win::Version::VERSION_WIN10_RS4;
+  return base::win::GetVersion() >= base::win::Version::WIN10_RS4;
 }
 
 void Browser::ShowEmojiPanel() {
