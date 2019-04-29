@@ -1,5 +1,6 @@
 workflow "Clerk" {
-  on = "pull_request"
+  #TODO(codebytere): make this work properly on pull_request
+  on = "repository_dispatch"
   resolves = "Check release notes"
 }
 
