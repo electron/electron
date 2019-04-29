@@ -315,7 +315,8 @@ describe('node feature', () => {
     })
 
     it('does does not crash when quitting with the inspector connected', function (done) {
-      this.timeout(240000)
+      // IPC Electron child process not supported on Windows
+      if (process.platform === 'win32') return this.skip()
       child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       })
