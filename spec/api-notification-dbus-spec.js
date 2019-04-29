@@ -27,7 +27,7 @@ const skip = process.platform !== 'linux' ||
 
   before(async () => {
     // init app
-    app.setName(appName)
+    app.name = appName
     app.setDesktopName(`${appName}.desktop`)
     // init dbus
     const path = '/org/freedesktop/Notifications'
