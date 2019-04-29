@@ -9,9 +9,11 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/file_url_loader.h"
@@ -66,7 +68,7 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
       handler_.Run(request,
                    base::BindOnce(&AtomURLLoaderFactory::SendResponseFile,
                                   weak_factory_.GetWeakPtr(), std::move(loader),
-                                  std::move(client), isolate));
+                                  request, std::move(client), isolate));
       break;
     case ProtocolType::kHttp:
       handler_.Run(
@@ -148,6 +150,7 @@ void AtomURLLoaderFactory::SendResponseString(
 
 void AtomURLLoaderFactory::SendResponseFile(
     network::mojom::URLLoaderRequest loader,
+    network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
@@ -155,17 +158,33 @@ void AtomURLLoaderFactory::SendResponseFile(
     return;
 
   base::FilePath path;
-  if (!mate::ConvertFromV8(isolate, response, &path)) {
+  scoped_refptr<net::HttpResponseHeaders> response_headers;
+  if (mate::ConvertFromV8(isolate, response, &path)) {
+    request.url = net::FilePathToFileURL(path);
+  } else if (response->IsObject()) {
+    mate::Dictionary dict(
+        isolate,
+        response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+    dict.Get("referrer", &request.referrer);
+    if (dict.Get("path", &path))
+      request.url = net::FilePathToFileURL(path);
+    base::DictionaryValue headers;
+    if (dict.Get("headers", &headers)) {
+      response_headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+      response_headers->AddHeader(kCORSHeader);
+      for (const auto& iter : headers.DictItems())
+        response_headers->AddHeader(iter.first + ": " +
+                                    iter.second.GetString());
+    }
+  } else {
     network::URLLoaderCompletionStatus status;
     status.error_code = net::ERR_NOT_IMPLEMENTED;
     client->OnComplete(status);
     return;
   }
 
-  network::ResourceRequest request;
-  request.url = net::FilePathToFileURL(path);
   content::CreateFileURLLoader(request, std::move(loader), std::move(client),
-                               nullptr, false);
+                               nullptr, false, response_headers);
 }
 
 void AtomURLLoaderFactory::SendResponseHttp(
@@ -246,6 +265,8 @@ void AtomURLLoaderFactory::SendContents(
   network::ResourceResponseHead head;
   head.mime_type = std::move(mime_type);
   head.charset = std::move(charset);
+  head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+  head.headers->AddHeader(kCORSHeader);
   client->OnReceiveResponse(head);
   client->OnStartLoadingResponseBody(std::move(pipe.consumer_handle));
   client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
