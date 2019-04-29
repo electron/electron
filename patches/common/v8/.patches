@@ -1,6 +1,7 @@
 add_realloc.patch
 build_gn.patch
 expose_mksnapshot.patch
+revert_api_remove_deprecated_conversion_functions.patch
 deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
 fixme_revert_heap_api_remove_deprecated_apis.patch
