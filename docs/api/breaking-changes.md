@@ -124,7 +124,7 @@ webFrame.setIsolatedWorldInfo(
 ```
 
 ## `webFrame.setSpellCheckProvider`
-The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter does not exists anymore.
+The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
 ```js
 // Deprecated
 webFrame.setSpellCheckProvider('en-US', true, {
