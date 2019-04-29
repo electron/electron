@@ -46,13 +46,13 @@ void MenuViews::PopupAt(TopLevelWindow* window,
 
   // Show the menu.
   int32_t window_id = window->weak_map_id();
-  auto close_callback = base::Bind(
+  auto close_callback = base::BindRepeating(
       &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
   menu_runners_[window_id] =
       std::make_unique<MenuRunner>(model(), flags, close_callback);
   menu_runners_[window_id]->RunMenuAt(
       native_window->widget(), NULL, gfx::Rect(location, gfx::Size()),
-      views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE);
+      views::MenuAnchorPosition::kTopLeft, ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {

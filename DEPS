@@ -10,9 +10,9 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '75.0.3740.3',
+    '1e9f9a24aa12bea9cf194a82a7e249bd1242ec4f',
   'node_version':
-    '2dc0f8811b2b295c08d797b8a11b030234c98502',
+    '696d8fb66d6f65fc82869d390e0d2078970b1eb4',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -40,6 +40,9 @@ vars = {
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
 
+  # To allow running hooks without parsing the DEPS tree
+  'process_deps': True,
+
   # It is always needed for normal Electron builds,
   # but might be impossible for custom in-house builds.
   'download_external_binaries': True,
@@ -61,30 +64,30 @@ vars = {
 deps = {
   'src': {
     'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
-    'condition': 'checkout_chromium',
+    'condition': 'checkout_chromium and process_deps',
   },
   'src/third_party/electron_node': {
     'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
-    'condition': 'checkout_node',
+    'condition': 'checkout_node and process_deps',
   },
   'src/electron/vendor/pyyaml': {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
-    'condition': 'checkout_pyyaml',
+    'condition': 'checkout_pyyaml and process_deps',
   },
   'src/electron/vendor/boto': {
     'url': Var('boto_git') + '/boto.git' + '@' +  Var('boto_version'),
-    'condition': 'checkout_boto',
+    'condition': 'checkout_boto and process_deps',
   },
   'src/electron/vendor/requests': {
     'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
-    'condition': 'checkout_requests',
+    'condition': 'checkout_requests and process_deps',
   },
 }
 
 hooks = [
   {
     'name': 'patch_chromium',
-    'condition': 'checkout_chromium and apply_patches',
+    'condition': '(checkout_chromium and apply_patches) and process_deps',
     'pattern': 'src/electron',
     'action': [
       'python',
@@ -113,7 +116,7 @@ hooks = [
   {
     'name': 'setup_boto',
     'pattern': 'src/electron',
-    'condition': 'checkout_boto',
+    'condition': 'checkout_boto and process_deps',
     'action': [
       'python',
       '-c',
@@ -123,7 +126,7 @@ hooks = [
   {
     'name': 'setup_requests',
     'pattern': 'src/electron',
-    'condition': 'checkout_requests',
+    'condition': 'checkout_requests and process_deps',
     'action': [
       'python',
       '-c',

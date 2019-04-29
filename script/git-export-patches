@@ -9,14 +9,35 @@ import sys
 
 def guess_base_commit(repo):
   """Guess which commit the patches might be based on"""
-  args = [
-    'git',
-    '-C',
-    repo,
-    'describe',
-    '--tags',
-  ]
-  return subprocess.check_output(args).rsplit('-', 2)[0:2]
+  try:
+    args = [
+      'git',
+      '-C',
+      repo,
+      'rev-parse',
+      '--verify',
+      'refs/patches/upstream-head',
+    ]
+    upstream_head = subprocess.check_output(args).strip()
+    args = [
+      'git',
+      '-C',
+      repo,
+      'rev-list',
+      '--count',
+      upstream_head + '..',
+    ]
+    num_commits = subprocess.check_output(args).strip()
+    return [upstream_head, num_commits]
+  except subprocess.CalledProcessError:
+    args = [
+      'git',
+      '-C',
+      repo,
+      'describe',
+      '--tags',
+    ]
+    return subprocess.check_output(args).rsplit('-', 2)[0:2]
 
 
 def format_patch(repo, since):

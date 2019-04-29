@@ -10,7 +10,7 @@
 #include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
-#include "base/task/task_scheduler/initialization_util.h"
+#include "base/task/thread_pool/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
@@ -73,6 +73,7 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   DCHECK(microtasks_runner_);
   base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  platform_->DrainTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }
 

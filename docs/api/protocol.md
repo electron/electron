@@ -24,6 +24,37 @@ app.on('ready', () => {
 **Note:** All methods unless specified can only be used after the `ready` event
 of the `app` module gets emitted.
 
+## Using `protocol` with a custom `partition` or `session`
+
+A protocol is registered to a specific Electron [`session`](./session.md) object. If you don't specify a session, then your `protocol` will be applied to the default session that Electron uses. However, if you define a `partition` or `session` on your `browserWindow`'s `webPreferences`, then that window will use a different session and your custom protocol will not work if you just use `electron.protocol.XXX`.
+
+To have your custom protocol work in combination with a custom session, you need to register it to that session explicitly.
+
+```javascript
+const { session, app, protocol } = require('electron')
+const path = require('path')
+
+app.on('ready', () => {
+  const partition = 'persist:example'
+  const ses = session.fromPartition(partition)
+
+  ses.protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
+    callback({ path: path.normalize(`${__dirname}/${url}`) })
+  }, (error) => {
+    if (error) console.error('Failed to register protocol')
+  })
+
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      partition: partition
+    }
+  })
+})
+```
+
 ## Methods
 
 The `protocol` module has the following methods:
@@ -126,9 +157,7 @@ specified. For the available error numbers you can use, please see the
 [net error list][net-error].
 
 By default the `scheme` is treated like `http:`, which is parsed differently
-than protocols that follow the "generic URI syntax" like `file:`, so you
-probably want to call `protocol.registerStandardSchemes` to have your scheme
-treated as a standard scheme.
+than protocols that follow the "generic URI syntax" like `file:`.
 
 ### `protocol.registerBufferProtocol(scheme, handler[, completion])`
 

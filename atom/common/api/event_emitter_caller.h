@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_
 #define ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_
 
+#include <utility>
 #include <vector>
 
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -42,10 +43,10 @@ template <typename StringType, typename... Args>
 v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                v8::Local<v8::Object> obj,
                                const StringType& name,
-                               const Args&... args) {
+                               Args&&... args) {
   internal::ValueVector converted_args = {
       StringToV8(isolate, name),
-      ConvertToV8(isolate, args)...,
+      ConvertToV8(isolate, std::forward<Args>(args))...,
   };
   return internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
 }
@@ -55,9 +56,9 @@ template <typename... Args>
 v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
                                 v8::Local<v8::Object> object,
                                 const char* custom_emit,
-                                const Args&... args) {
+                                Args&&... args) {
   internal::ValueVector converted_args = {
-      ConvertToV8(isolate, args)...,
+      ConvertToV8(isolate, std::forward<Args>(args))...,
   };
   return internal::CallMethodWithArgs(isolate, object, custom_emit,
                                       &converted_args);

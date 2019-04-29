@@ -32,19 +32,6 @@ void AtomBrowserMainParts::FreeAppDelegate() {
   [NSApp setDelegate:nil];
 }
 
-void AtomBrowserMainParts::OverrideAppLogsPath() {
-  base::FilePath path;
-  NSString* bundleName =
-      [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
-  NSString* logsPath =
-      [NSString stringWithFormat:@"Library/Logs/%@", bundleName];
-  NSString* libraryPath =
-      [NSHomeDirectory() stringByAppendingPathComponent:logsPath];
-
-  base::PathService::Override(DIR_APP_LOGS,
-                              base::FilePath([libraryPath UTF8String]));
-}
-
 // Replicates NSApplicationMain, but doesn't start a run loop.
 void AtomBrowserMainParts::InitializeMainNib() {
   auto infoDictionary = base::mac::OuterBundle().infoDictionary;
@@ -54,8 +41,26 @@ void AtomBrowserMainParts::InitializeMainNib() {
   auto application = [principalClass sharedApplication];
 
   NSString* mainNibName = [infoDictionary objectForKey:@"NSMainNibFile"];
-  auto mainNib = [[NSNib alloc] initWithNibNamed:mainNibName
-                                          bundle:base::mac::FrameworkBundle()];
+
+  NSNib* mainNib;
+
+  @try {
+    mainNib = [[NSNib alloc] initWithNibNamed:mainNibName
+                                       bundle:base::mac::FrameworkBundle()];
+    // Handle failure of initWithNibNamed on SMB shares
+    // TODO(codebytere): Remove when
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=932935 is fixed
+  } @catch (NSException* exception) {
+    NSString* nibPath =
+        [NSString stringWithFormat:@"Resources/%@.nib", mainNibName];
+    nibPath = [base::mac::FrameworkBundle().bundlePath
+        stringByAppendingPathComponent:nibPath];
+
+    NSData* data = [NSData dataWithContentsOfFile:nibPath];
+    mainNib = [[NSNib alloc] initWithNibData:data
+                                      bundle:base::mac::FrameworkBundle()];
+  }
+
   [mainNib instantiateWithOwner:application topLevelObjects:nil];
   [mainNib release];
 }

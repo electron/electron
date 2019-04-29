@@ -136,7 +136,7 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
 
   SkBitmap bitmap;
   bitmap.allocN32Pixels(width, height, false);
-  bitmap.setPixels(const_cast<void*>(reinterpret_cast<const void*>(data)));
+  bitmap.writePixels({info, data, bitmap.rowBytes()});
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
@@ -568,7 +568,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
 
   SkBitmap bitmap;
   bitmap.allocN32Pixels(width, height, false);
-  bitmap.setPixels(node::Buffer::Data(buffer));
+  bitmap.writePixels({info, node::Buffer::Data(buffer), bitmap.rowBytes()});
 
   gfx::ImageSkia image_skia;
   image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));

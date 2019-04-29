@@ -391,7 +391,7 @@ describe('BrowserWindow module', () => {
       w.loadURL(`${server.url}/302`)
     })
 
-    it('can be prevented', (done) => {
+    it.skip('can be prevented', (done) => {
       ipcRenderer.send('prevent-will-redirect', w.id)
       w.webContents.on('will-navigate', (e, url) => {
         expect(url).to.equal(`${server.url}/302`)
@@ -1357,6 +1357,48 @@ describe('BrowserWindow module', () => {
     afterEach(() => { ipcMain.removeAllListeners('answer') })
 
     describe('"preload" option', () => {
+      const doesNotLeakSpec = (name, webPrefs) => {
+        it(name, async function () {
+          w.destroy()
+          w = new BrowserWindow({
+            webPreferences: {
+              ...webPrefs,
+              preload: path.resolve(fixtures, 'module', 'empty.js')
+            },
+            show: false
+          })
+          const leakResult = emittedOnce(ipcMain, 'leak-result')
+          w.loadFile(path.join(fixtures, 'api', 'no-leak.html'))
+          const [, result] = await leakResult
+          console.log(result)
+          expect(result).to.have.property('require', 'undefined')
+          expect(result).to.have.property('exports', 'undefined')
+          expect(result).to.have.property('windowExports', 'undefined')
+          expect(result).to.have.property('windowPreload', 'undefined')
+          expect(result).to.have.property('windowRequire', 'undefined')
+        })
+      }
+      doesNotLeakSpec('does not leak require', {
+        nodeIntegration: false,
+        sandbox: false,
+        contextIsolation: false
+      })
+      doesNotLeakSpec('does not leak require when sandbox is enabled', {
+        nodeIntegration: false,
+        sandbox: true,
+        contextIsolation: false
+      })
+      doesNotLeakSpec('does not leak require when context isolation is enabled', {
+        nodeIntegration: false,
+        sandbox: false,
+        contextIsolation: true
+      })
+      doesNotLeakSpec('does not leak require when context isolation and sandbox are enabled', {
+        nodeIntegration: false,
+        sandbox: true,
+        contextIsolation: true
+      })
+
       it('loads the script before other scripts in window', async () => {
         const preload = path.join(fixtures, 'module', 'set-global.js')
         w.destroy()
@@ -3660,11 +3702,15 @@ describe('BrowserWindow module', () => {
       w.webContents.once('paint', function (event, rect, data) {
         assert.notStrictEqual(data.length, 0)
         const size = data.getSize()
-        const scale = process.platform === 'darwin' ? devicePixelRatio : 1
-        assertWithinDelta(size.width, 100 * scale, 2, 'width')
-        assertWithinDelta(size.height, 100 * scale, 2, 'height')
+        assertWithinDelta(size.width, 100 * devicePixelRatio, 2, 'width')
+        assertWithinDelta(size.height, 100 * devicePixelRatio, 2, 'height')
         done()
       })
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+    })
+
+    it('does not crash after navigation', () => {
+      w.webContents.loadURL('about:blank')
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
     })
 

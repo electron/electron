@@ -86,6 +86,17 @@ def apply_patch(repo, patch_path, directory=None, index=False, reverse=False):
   return applied_successfully
 
 
+def import_patches(repo, **kwargs):
+  """same as am(), but we save the upstream HEAD so we can refer to it when we
+  later export patches"""
+  update_ref(
+      repo=repo,
+      ref='refs/patches/upstream-head',
+      newvalue='HEAD'
+  )
+  am(repo=repo, **kwargs)
+
+
 def get_patch(repo, commit_hash):
   args = ['git', '-C', repo, 'diff-tree',
           '-p',
@@ -100,6 +111,12 @@ def get_head_commit(repo):
   args = ['git', '-C', repo, 'rev-parse', 'HEAD']
 
   return subprocess.check_output(args).strip()
+
+
+def update_ref(repo, ref, newvalue):
+  args = ['git', '-C', repo, 'update-ref', ref, newvalue]
+
+  return subprocess.check_call(args)
 
 
 def reset(repo):

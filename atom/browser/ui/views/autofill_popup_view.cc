@@ -56,7 +56,11 @@ AutofillPopupView::~AutofillPopupView() {
 }
 
 void AutofillPopupView::Show() {
-  if (!popup_ || !parent_widget_->IsVisible() || parent_widget_->IsClosed())
+  bool visible = parent_widget_->IsVisible();
+#if BUILDFLAG(ENABLE_OSR)
+  visible = visible || view_proxy_;
+#endif
+  if (!popup_ || !visible || parent_widget_->IsClosed())
     return;
 
   const bool initialize_widget = !GetWidget();

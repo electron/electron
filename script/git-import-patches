@@ -17,7 +17,7 @@ def main(argv):
       help="use 3-way merge to resolve conflicts")
   args = parser.parse_args(argv)
 
-  git.am(
+  git.import_patches(
       repo='.',
       patch_data=patch_from_dir(args.patch_dir),
       threeway=args.threeway

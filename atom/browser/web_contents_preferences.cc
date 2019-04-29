@@ -128,10 +128,10 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
-  SetDefaultBoolIfUndefined("javascript", true);
-  SetDefaultBoolIfUndefined("images", true);
-  SetDefaultBoolIfUndefined("textAreasAreResizable", true);
-  SetDefaultBoolIfUndefined("webgl", true);
+  SetDefaultBoolIfUndefined(options::kJavaScript, true);
+  SetDefaultBoolIfUndefined(options::kImages, true);
+  SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
+  SetDefaultBoolIfUndefined(options::kWebGL, true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
@@ -146,6 +146,23 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
+
+  // If this is a <webview> tag, and the embedder is offscreen-rendered, then
+  // this WebContents is also offscreen-rendered.
+  int guest_instance_id = 0;
+  if (web_preferences.Get(options::kGuestInstanceID, &guest_instance_id)) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        auto* embedder_preferences = WebContentsPreferences::From(embedder);
+        if (embedder_preferences &&
+            embedder_preferences->IsEnabled(options::kOffscreen)) {
+          preference_.SetKey(options::kOffscreen, base::Value(true));
+        }
+      }
+    }
+  }
 
   last_preference_ = preference_.Clone();
 }
@@ -309,17 +326,22 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
   }
 
+  // --offscreen
+  if (IsEnabled(options::kOffscreen)) {
+    command_line->AppendSwitch(options::kOffscreen);
+  }
+
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
-                                    base::IntToString(guest_instance_id));
+                                    base::NumberToString(guest_instance_id));
 
   // Pass the opener's window id.
   int opener_id;
   if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
     command_line->AppendSwitchASCII(switches::kOpenerID,
-                                    base::IntToString(opener_id));
+                                    base::NumberToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.
@@ -383,19 +405,20 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebPreferences* prefs) {
-  prefs->javascript_enabled = IsEnabled("javascript", true /* default_value */);
-  prefs->images_enabled = IsEnabled("images", true /* default_value */);
+  prefs->javascript_enabled =
+      IsEnabled(options::kJavaScript, true /* default_value */);
+  prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
   prefs->text_areas_are_resizable =
-      IsEnabled("textAreasAreResizable", true /* default_value */);
+      IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
   prefs->navigate_on_drag_drop =
-      IsEnabled("navigateOnDragDrop", false /* default_value */);
+      IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
     prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
   }
 
   // Check if webgl should be enabled.
-  bool is_webgl_enabled = IsEnabled("webgl", true /* default_value */);
+  bool is_webgl_enabled = IsEnabled(options::kWebGL, true /* default_value */);
   prefs->webgl1_enabled = is_webgl_enabled;
   prefs->webgl2_enabled = is_webgl_enabled;
 

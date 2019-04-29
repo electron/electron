@@ -35,7 +35,6 @@
 #include "atom/common/color_util.h"
 #include "atom/common/mouse_util.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -43,6 +42,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/network_converter.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
@@ -86,12 +86,12 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
+#include "third_party/blink/public/platform/web_cursor_info.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_output_device.h"
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/osr/osr_web_contents_view.h"
 #endif
@@ -808,20 +808,20 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
-                                      const MediaPlayerId& id) {
+                                      const content::MediaPlayerId& id) {
   Emit("media-started-playing");
 }
 
 void WebContents::MediaStoppedPlaying(
     const MediaPlayerInfo& video_type,
-    const MediaPlayerId& id,
+    const content::MediaPlayerId& id,
     content::WebContentsObserver::MediaStoppedReason reason) {
   Emit("media-paused");
 }
 
-void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  if (theme_color != SK_ColorTRANSPARENT) {
-    Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
+void WebContents::DidChangeThemeColor(base::Optional<SkColor> theme_color) {
+  if (theme_color) {
+    Emit("did-change-theme-color", atom::ToRGBHex(theme_color.value()));
   } else {
     Emit("did-change-theme-color", nullptr);
   }
@@ -1193,7 +1193,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     return;
   }
 
-  const auto* render_view_host = contents->GetRenderViewHost();
+  auto* render_view_host = contents->GetRenderViewHost();
   if (!render_view_host) {
     return;
   }
@@ -1804,6 +1804,19 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
             mouse_wheel_event);
 #endif
       } else {
+        // Chromium expects phase info in wheel events (and applies a
+        // DCHECK to verify it). See: https://crbug.com/756524.
+        mouse_wheel_event.phase = blink::WebMouseWheelEvent::kPhaseBegan;
+        mouse_wheel_event.dispatch_type = blink::WebInputEvent::kBlocking;
+        rwh->ForwardWheelEvent(mouse_wheel_event);
+
+        // Send a synthetic wheel event with phaseEnded to finish scrolling.
+        mouse_wheel_event.has_synthetic_phase = true;
+        mouse_wheel_event.delta_x = 0;
+        mouse_wheel_event.delta_y = 0;
+        mouse_wheel_event.phase = blink::WebMouseWheelEvent::kPhaseEnded;
+        mouse_wheel_event.dispatch_type =
+            blink::WebInputEvent::kEventNonBlocking;
         rwh->ForwardWheelEvent(mouse_wheel_event);
       }
       return;
@@ -1903,10 +1916,9 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  content::CursorInfo info;
-  cursor.GetCursorInfo(&info);
+  const content::CursorInfo& info = cursor.info();
 
-  if (cursor.IsCustom()) {
+  if (info.type == blink::WebCursorInfo::kTypeCustom) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,
