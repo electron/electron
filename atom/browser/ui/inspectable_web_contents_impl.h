@@ -145,6 +145,7 @@ class InspectableWebContentsImpl
   void SetOpenNewWindowForPopups(bool value) override {}
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
+  void RecordUserMetricsAction(const std::string& name) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
