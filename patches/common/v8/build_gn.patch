@@ -5,7 +5,7 @@ Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..ade81276041c70e7e9198489e5e0cab41f279562 100644
+index 1e0793e3c8fa6b79a67c285a089e4542058e334a..e6744c69561d2b0121cc1e399840f331d23bf5f0 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -262,7 +262,7 @@ config("internal_config") {
@@ -17,7 +17,7 @@ index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..ade81276041c70e7e9198489e5e0cab4
      defines += [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -3655,7 +3655,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -3702,7 +3702,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
  
@@ -26,7 +26,7 @@ index a8aa8d820e88ad056b5b72861f35f640acdc9ff4..ade81276041c70e7e9198489e5e0cab4
  
      deps = [
        ":v8_libbase",
-@@ -3676,6 +3676,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3723,6 +3723,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  
