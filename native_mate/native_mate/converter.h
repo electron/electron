@@ -207,8 +207,12 @@ struct Converter<std::vector<T>> {
                                    const std::vector<T>& val) {
     v8::Local<v8::Array> result(
         v8::Array::New(isolate, static_cast<int>(val.size())));
+    auto context = isolate->GetCurrentContext();
     for (size_t i = 0; i < val.size(); ++i) {
-      result->Set(static_cast<int>(i), Converter<T>::ToV8(isolate, val[i]));
+      result
+          ->Set(context, static_cast<int>(i),
+                Converter<T>::ToV8(isolate, val[i]))
+          .Check();
     }
     return result;
   }
@@ -219,12 +223,14 @@ struct Converter<std::vector<T>> {
     if (!val->IsArray())
       return false;
 
+    auto context = isolate->GetCurrentContext();
     std::vector<T> result;
     v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
       T item;
-      if (!Converter<T>::FromV8(isolate, array->Get(i), &item))
+      if (!Converter<T>::FromV8(isolate,
+                                array->Get(context, i).ToLocalChecked(), &item))
         return false;
       result.push_back(item);
     }
@@ -240,10 +246,11 @@ struct Converter<std::set<T>> {
                                    const std::set<T>& val) {
     v8::Local<v8::Array> result(
         v8::Array::New(isolate, static_cast<int>(val.size())));
+    auto context = isolate->GetCurrentContext();
     typename std::set<T>::const_iterator it;
     int i;
     for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)
-      result->Set(i, Converter<T>::ToV8(isolate, *it));
+      result->Set(context, i, Converter<T>::ToV8(isolate, *it)).Check();
     return result;
   }
 
@@ -253,12 +260,14 @@ struct Converter<std::set<T>> {
     if (!val->IsArray())
       return false;
 
+    auto context = isolate->GetCurrentContext();
     std::set<T> result;
     v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
       T item;
-      if (!Converter<T>::FromV8(isolate, array->Get(i), &item))
+      if (!Converter<T>::FromV8(isolate,
+                                array->Get(context, i).ToLocalChecked(), &item))
         return false;
       result.insert(item);
     }
@@ -281,9 +290,10 @@ struct Converter<std::map<std::string, T>> {
     v8::Local<v8::Array> keys =
         dict->GetOwnPropertyNames(context).ToLocalChecked();
     for (uint32_t i = 0; i < keys->Length(); ++i) {
-      v8::Local<v8::Value> key = keys->Get(i);
+      v8::Local<v8::Value> key = keys->Get(context, i).ToLocalChecked();
       T value;
-      if (Converter<T>::FromV8(isolate, dict->Get(key), &value))
+      if (Converter<T>::FromV8(
+              isolate, dict->Get(context, key).ToLocalChecked(), &value))
         (*out)[gin::V8ToString(isolate, key)] = std::move(value);
     }
     return true;
@@ -291,9 +301,12 @@ struct Converter<std::map<std::string, T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const std::map<std::string, T>& val) {
     v8::Local<v8::Object> result = v8::Object::New(isolate);
+    auto context = isolate->GetCurrentContext();
     for (auto i = val.begin(); i != val.end(); i++) {
-      result->Set(Converter<T>::ToV8(isolate, i->first),
-                  Converter<T>::ToV8(isolate, i->second));
+      result
+          ->Set(context, Converter<T>::ToV8(isolate, i->first),
+                Converter<T>::ToV8(isolate, i->second))
+          .Check();
     }
     return result;
   }
