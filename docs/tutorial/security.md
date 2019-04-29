@@ -70,7 +70,7 @@ This is not bulletproof, but at the least, you should follow these steps to
 improve the security of your application.
 
 1. [Only load secure content](#1-only-load-secure-content)
-2. [Disable the Node.js integration in all renderers that display remote content](#2-disable-nodejs-integration-for-remote-content)
+2. [Disable the Node.js integration in all renderers that display remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
 3. [Enable context isolation in all renderers that display remote content](#3-enable-context-isolation-for-remote-content)
 4. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#4-handle-session-permission-requests-from-remote-content)
 5. [Do not disable `webSecurity`](#5-do-not-disable-websecurity)
@@ -123,9 +123,11 @@ browserWindow.loadURL('https://my-website.com')
 ```
 
 
-## 2) Disable Node.js Integration for Remote Content
+## 2) Do not enable Node.js Integration for Remote Content
 
-It is paramount that you disable Node.js integration in any renderer
+_This recommendation is the default behavior in Electron since 5.0.0._
+
+It is paramount that you do not enable Node.js integration in any renderer
 ([`BrowserWindow`][browser-window], [`BrowserView`][browser-view], or
 [`<webview>`][webview-tag]) that loads remote content. The goal is to limit the
 powers you grant to remote content, thus making it dramatically more difficult
@@ -149,7 +151,13 @@ so-called "Remote Code Execution" (RCE) attack.
 
 ```js
 // Bad
-const mainWindow = new BrowserWindow()
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    nodeIntegration: true,
+    nodeIntegrationInWorker: true
+  }
+})
+
 mainWindow.loadURL('https://my-website.com')
 ```
 
@@ -157,7 +165,6 @@ mainWindow.loadURL('https://my-website.com')
 // Good
 const mainWindow = new BrowserWindow({
   webPreferences: {
-    nodeIntegration: false,
     preload: './preload.js'
   }
 })
