@@ -184,16 +184,16 @@ describe('webContents module', () => {
   })
 
   describe('setDevToolsWebContents() API', () => {
-    it('sets arbitrary webContents as devtools', () => {
+    it('sets arbitrary webContents as devtools', async () => {
       const devtools = new BrowserWindow({ show: false })
-      devtools.webContents.once('dom-ready', async () => {
-        expect(devtools.getURL()).to.start.with('chrome-devtools://devtools')
-        const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name')
-        expect(result).to.equal('InspectorFrontendHostImpl')
-        devtools.destroy()
-      })
+      const promise = emittedOnce(devtools.webContents, 'dom-ready')
       w.webContents.setDevToolsWebContents(devtools.webContents)
       w.webContents.openDevTools()
+      await promise
+      expect(devtools.getURL().startsWith('chrome-devtools://devtools')).to.be.true()
+      const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name')
+      expect(result).to.equal('InspectorFrontendHostImpl')
+      devtools.destroy()
     })
   })
 
