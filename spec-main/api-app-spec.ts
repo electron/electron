@@ -412,7 +412,7 @@ describe('app module', () => {
       await w.loadURL('about:blank')
 
       const promise = emittedOnce(app, 'desktop-capturer-get-sources')
-      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
+      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`)
 
       const [, webContents] = await promise
       expect(webContents).to.equal(w.webContents)

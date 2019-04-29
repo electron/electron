@@ -712,7 +712,7 @@ describe('webContents module', () => {
       `
       w.webContents.on('did-finish-load', () => {
         if (initialNavigation) {
-          w.webContents.executeJavaScript(source, () => {})
+          w.webContents.executeJavaScript(source)
         } else {
           const zoomLevel = w.webContents.getZoomLevel()
           assert.strictEqual(zoomLevel, 0)

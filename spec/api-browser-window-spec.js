@@ -3430,47 +3430,22 @@ describe('BrowserWindow module', () => {
       URIError
     ])
 
-    it('doesnt throw when no calback is provided', () => {
-      const result = ipcRenderer.sendSync('executeJavaScript', code, false)
-      assert.strictEqual(result, 'success')
-    })
-    it('returns result when calback is provided', (done) => {
-      ipcRenderer.send('executeJavaScript', code, true)
-      ipcRenderer.once('executeJavaScript-response', function (event, result) {
-        assert.strictEqual(result, expected)
-        done()
-      })
-    })
-    it('returns result if the code returns an asynchronous promise', (done) => {
-      ipcRenderer.send('executeJavaScript', asyncCode, true)
-      ipcRenderer.once('executeJavaScript-response', (event, result) => {
-        assert.strictEqual(result, expected)
-        done()
-      })
-    })
-    it('resolves the returned promise with the result when a callback is specified', (done) => {
-      ipcRenderer.send('executeJavaScript', code, true)
-      ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
-        assert.strictEqual(result, expected)
-        done()
-      })
-    })
-    it('resolves the returned promise with the result when no callback is specified', (done) => {
-      ipcRenderer.send('executeJavaScript', code, false)
+    it('resolves the returned promise with the result', (done) => {
+      ipcRenderer.send('executeJavaScript', code)
       ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
         assert.strictEqual(result, expected)
         done()
       })
     })
     it('resolves the returned promise with the result if the code returns an asyncronous promise', (done) => {
-      ipcRenderer.send('executeJavaScript', asyncCode, true)
+      ipcRenderer.send('executeJavaScript', asyncCode)
       ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
         assert.strictEqual(result, expected)
         done()
       })
     })
     it('rejects the returned promise if an async error is thrown', (done) => {
-      ipcRenderer.send('executeJavaScript', badAsyncCode, true)
+      ipcRenderer.send('executeJavaScript', badAsyncCode)
       ipcRenderer.once('executeJavaScript-promise-error', (event, error) => {
         assert.strictEqual(error, expectedErrorMsg)
         done()
@@ -3479,7 +3454,7 @@ describe('BrowserWindow module', () => {
     it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
       for (const error in errorTypes) {
         await new Promise((resolve) => {
-          ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`, true)
+          ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`)
           ipcRenderer.once('executeJavaScript-promise-error-name', (event, name) => {
             assert.strictEqual(name, error.name)
             resolve()
