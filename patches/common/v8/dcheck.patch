@@ -5,10 +5,10 @@ Subject: dcheck.patch
 
 
 diff --git a/src/api.cc b/src/api.cc
-index 0b5cb5c21105314954e9496aad0902a7c538f805..00c88fadc90b5ed34e29752404f5cb35a4d8f70c 100644
+index 0b822a55dbac57378531a93a1f9909582f1c44b9..ad847ddd6a2e944b0097eb9f473922b68a31cc37 100644
 --- a/src/api.cc
 +++ b/src/api.cc
-@@ -8598,7 +8598,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
+@@ -8632,7 +8632,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
  
  
  void Isolate::RunMicrotasks() {

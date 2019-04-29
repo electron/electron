@@ -55,7 +55,7 @@ index 29d813e4274d16939b77e5e1d13f097c5e08b0af..24962607076f780105365700d5aff103
  class PersistentValueMap : public PersistentValueMapBase<K, V, Traits> {
   public:
 diff --git a/include/v8.h b/include/v8.h
-index 2a6ab24a904dadeca6188d8449f06ff81cf56963..c6cb516551f6a0ed6150177be29a01a0fb331f0a 100644
+index 8fc02d509801f005e0ddb60374c86d022807ddbe..161568fcbd08f4cbdbcbb66e3790705c32348594 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -545,6 +545,38 @@ template <class T> class PersistentBase {
@@ -97,7 +97,7 @@ index 2a6ab24a904dadeca6188d8449f06ff81cf56963..c6cb516551f6a0ed6150177be29a01a0
    /** Returns true if the handle's reference is weak.  */
    V8_INLINE bool IsWeak() const;
  
-@@ -8844,6 +8876,9 @@ class V8_EXPORT V8 {
+@@ -8860,6 +8892,9 @@ class V8_EXPORT V8 {
                                       const char* label);
    static Value* Eternalize(Isolate* isolate, Value* handle);
  
@@ -107,7 +107,7 @@ index 2a6ab24a904dadeca6188d8449f06ff81cf56963..c6cb516551f6a0ed6150177be29a01a0
    template <class K, class V, class T>
    friend class PersistentValueMapBase;
  
-@@ -9790,6 +9825,14 @@ void Persistent<T, M>::Copy(const Persistent<S, M2>& that) {
+@@ -9806,6 +9841,14 @@ void Persistent<T, M>::Copy(const Persistent<S, M2>& that) {
    M::Copy(that, this);
  }
  
@@ -122,7 +122,7 @@ index 2a6ab24a904dadeca6188d8449f06ff81cf56963..c6cb516551f6a0ed6150177be29a01a0
  template <class T>
  bool PersistentBase<T>::IsWeak() const {
    typedef internal::Internals I;
-@@ -9856,6 +9899,31 @@ void PersistentBase<T>::AnnotateStrongRetainer(const char* label) {
+@@ -9872,6 +9915,31 @@ void PersistentBase<T>::AnnotateStrongRetainer(const char* label) {
                               label);
  }
  
@@ -155,7 +155,7 @@ index 2a6ab24a904dadeca6188d8449f06ff81cf56963..c6cb516551f6a0ed6150177be29a01a0
  void PersistentBase<T>::SetWrapperClassId(uint16_t class_id) {
    typedef internal::Internals I;
 diff --git a/src/api.cc b/src/api.cc
-index 00c88fadc90b5ed34e29752404f5cb35a4d8f70c..5a2db69191a9e1928250f04175da3f2274f88660 100644
+index ad847ddd6a2e944b0097eb9f473922b68a31cc37..f1c7213c7192e8298cf7918e910c5f011e1688b2 100644
 --- a/src/api.cc
 +++ b/src/api.cc
 @@ -1049,6 +1049,11 @@ void V8::MoveTracedGlobalReference(internal::Address** from,
