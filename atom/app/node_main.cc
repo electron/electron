@@ -96,6 +96,7 @@ int NodeMain(int argc, char* argv[]) {
       }
     } while (more == true);
 
+    node_debugger.Stop();
     exit_code = node::EmitExit(env);
     node::RunAtExit(env);
     gin_env.platform()->DrainTasks(env->isolate());
