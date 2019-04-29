@@ -205,6 +205,7 @@ base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
 }
 
 void NodeBindings::Initialize() {
+  TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = browser_env_ == BROWSER;
   node::g_upstream_node_mode = false;
