@@ -10,7 +10,7 @@ This doesn't mean Electron is a JavaScript binding to graphical user interface
 see it as a minimal Chromium browser, controlled by JavaScript.
 
 **Note**: This example is also available as a repository you can
-[download and run immediately](#trying-this-example).
+[download and run immediately](https://github.com/electron/electron-quick-start).
 
 As far as development is concerned, an Electron application is essentially a
 Node.js application. The starting point is a `package.json` that is identical
