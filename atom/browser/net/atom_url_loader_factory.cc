@@ -194,7 +194,7 @@ void AtomURLLoaderFactory::SendResponseHttp(
     int32_t routing_id,
     int32_t request_id,
     uint32_t options,
-    network::ResourceRequest request,
+    const network::ResourceRequest& original_request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     v8::Isolate* isolate,
@@ -229,9 +229,13 @@ void AtomURLLoaderFactory::SendResponseHttp(
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory =
       content::BrowserContext::GetDefaultStoragePartition(browser_context.get())
           ->GetURLLoaderFactoryForBrowserProcess();
+  network::ResourceRequest request;
+  request.headers = original_request.headers;
+  request.cors_exempt_headers = original_request.cors_exempt_headers;
   dict.Get("url", &request.url);
   dict.Get("referrer", &request.referrer);
-  dict.Get("method", &request.method);
+  if (!dict.Get("method", &request.method))
+    request.method = original_request.method;
   url_loader_factory->CreateLoaderAndStart(
       std::move(loader), routing_id, request_id, options, std::move(request),
       std::move(client), traffic_annotation);
