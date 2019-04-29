@@ -262,10 +262,9 @@ struct ControlObject final
     auto templ = GetConstructor(isolate);
 
     v8::Local<v8::Object> wrapper;
-    if (!templ->InstanceTemplate()
-             ->NewInstance(isolate->GetCurrentContext())
-             .ToLocal(&wrapper))
-      std::terminate();
+    CHECK(templ->InstanceTemplate()
+              ->NewInstance(isolate->GetCurrentContext())
+              .ToLocal(&wrapper));
 
     wrapper_.Reset(isolate, wrapper);
     wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
