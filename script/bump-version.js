@@ -111,7 +111,7 @@ async function updateVersion (version) {
 
 // update package metadata files with new version
 async function updatePackageJSON (version) {
-  ['package.json', 'package-lock.json'].forEach(async fileName => {
+  ['package.json'].forEach(async fileName => {
     const filePath = path.resolve(__dirname, '..', fileName)
     const file = require(filePath)
     file.version = version

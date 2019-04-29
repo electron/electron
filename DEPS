@@ -25,7 +25,7 @@ vars = {
   'yaml_git': 'https://github.com/yaml',
 
   # KEEP IN SYNC WITH spec-runner FILE
-  'npm_version': '6.8.0',
+  'yarn_version': '1.15.2',
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
@@ -113,7 +113,7 @@ hooks = [
     'action': [
       'python',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "npm@' + (Var("npm_version")) + '", "ci"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "npm@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
     ],
   },
   {

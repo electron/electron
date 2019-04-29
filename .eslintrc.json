@@ -16,7 +16,8 @@
     }],
     "prefer-const": ["error", {
       "destructuring": "all"
-    }]
+    }],
+    "node/no-deprecated-api": 0
   },
   "parserOptions": {
     "ecmaVersion": 6,
