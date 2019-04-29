@@ -37,11 +37,11 @@ namespace api {
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if defined(OS_LINUX)
-  SetShutdownHandler(
-      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
+  SetShutdownHandler(base::BindRepeating(&PowerMonitor::ShouldShutdown,
+                                         base::Unretained(this)));
 #elif defined(OS_MACOSX)
-  Browser::Get()->SetShutdownHandler(
-      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
+  Browser::Get()->SetShutdownHandler(base::BindRepeating(
+      &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);

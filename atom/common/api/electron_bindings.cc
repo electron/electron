@@ -73,8 +73,9 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getSystemVersion",
                      &base::SysInfo::OperatingSystemVersion);
   process->SetMethod("getIOCounters", &GetIOCounters);
-  process->SetMethod("getCPUUsage", base::Bind(&ElectronBindings::GetCPUUsage,
-                                               base::Unretained(metrics)));
+  process->SetMethod("getCPUUsage",
+                     base::BindRepeating(&ElectronBindings::GetCPUUsage,
+                                         base::Unretained(metrics)));
 
 #if defined(MAS_BUILD)
   process->SetReadOnly("mas", true);
@@ -97,8 +98,9 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
 #endif
-  dict.SetMethod("activateUvLoop", base::Bind(&ElectronBindings::ActivateUVLoop,
-                                              base::Unretained(this)));
+  dict.SetMethod("activateUvLoop",
+                 base::BindRepeating(&ElectronBindings::ActivateUVLoop,
+                                     base::Unretained(this)));
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
