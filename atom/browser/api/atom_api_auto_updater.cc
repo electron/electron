@@ -64,11 +64,17 @@ void AutoUpdater::OnError(const std::string& message,
   auto errorObject =
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked();
 
+  auto context = isolate()->GetCurrentContext();
+
   // add two new params for better error handling
-  errorObject->Set(mate::StringToV8(isolate(), "code"),
-                   v8::Integer::New(isolate(), code));
-  errorObject->Set(mate::StringToV8(isolate(), "domain"),
-                   mate::StringToV8(isolate(), domain));
+  errorObject
+      ->Set(context, mate::StringToV8(isolate(), "code"),
+            v8::Integer::New(isolate(), code))
+      .Check();
+  errorObject
+      ->Set(context, mate::StringToV8(isolate(), "domain"),
+            mate::StringToV8(isolate(), domain))
+      .Check();
 
   mate::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
 }
