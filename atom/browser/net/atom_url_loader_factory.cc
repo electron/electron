@@ -7,11 +7,16 @@
 #include <string>
 #include <utility>
 
+#include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/file_url_loader.h"
-#include "gin/dictionary.h"
+#include "content/public/browser/storage_partition.h"
+#include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
@@ -61,7 +66,14 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
       handler_.Run(request,
                    base::BindOnce(&AtomURLLoaderFactory::SendResponseFile,
                                   weak_factory_.GetWeakPtr(), std::move(loader),
-                                  request, std::move(client), isolate));
+                                  std::move(client), isolate));
+      break;
+    case ProtocolType::kHttp:
+      handler_.Run(
+          request,
+          base::BindOnce(&AtomURLLoaderFactory::SendResponseHttp,
+                         weak_factory_.GetWeakPtr(), std::move(loader),
+                         std::move(client), traffic_annotation, isolate));
       break;
     default: {
       std::string contents = "Not Implemented";
@@ -89,7 +101,7 @@ void AtomURLLoaderFactory::SendResponseBuffer(
   if (node::Buffer::HasInstance(response)) {
     buffer = response;
   } else if (response->IsObject()) {
-    gin::Dictionary dict(
+    mate::Dictionary dict(
         isolate,
         response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
     dict.Get("mimeType", &mime_type);
@@ -123,7 +135,7 @@ void AtomURLLoaderFactory::SendResponseString(
   if (response->IsString()) {
     contents = gin::V8ToString(isolate, response);
   } else if (response->IsObject()) {
-    gin::Dictionary dict(
+    mate::Dictionary dict(
         isolate,
         response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
     dict.Get("mimeType", &mime_type);
@@ -136,7 +148,6 @@ void AtomURLLoaderFactory::SendResponseString(
 
 void AtomURLLoaderFactory::SendResponseFile(
     network::mojom::URLLoaderRequest loader,
-    network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
@@ -151,9 +162,55 @@ void AtomURLLoaderFactory::SendResponseFile(
     return;
   }
 
+  network::ResourceRequest request;
   request.url = net::FilePathToFileURL(path);
   content::CreateFileURLLoader(request, std::move(loader), std::move(client),
                                nullptr, false);
+}
+
+void AtomURLLoaderFactory::SendResponseHttp(
+    network::mojom::URLLoaderRequest loader,
+    network::mojom::URLLoaderClientPtr client,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> response) {
+  if (HandleError(&client, isolate, response))
+    return;
+
+  if (!response->IsObject()) {
+    network::URLLoaderCompletionStatus status;
+    status.error_code = net::ERR_NOT_IMPLEMENTED;
+    client->OnComplete(status);
+    return;
+  }
+
+  scoped_refptr<AtomBrowserContext> browser_context =
+      AtomBrowserContext::From("", false);
+  mate::Dictionary dict(
+      isolate,
+      response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  v8::Local<v8::Value> value;
+  if (dict.Get("session", &value)) {
+    if (value->IsNull()) {
+      browser_context = AtomBrowserContext::From(base::GenerateGUID(), true);
+    } else {
+      mate::Handle<api::Session> session;
+      if (mate::ConvertFromV8(isolate, value, &session) && !session.IsEmpty()) {
+        browser_context = session->browser_context();
+      }
+    }
+  }
+
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context.get())
+          ->GetURLLoaderFactoryForBrowserProcess();
+  network::ResourceRequest request;
+  dict.Get("url", &request.url);
+  dict.Get("method", &request.method);
+  url_loader_factory->CreateLoaderAndStart(
+      std::move(loader), 0 /* routing_id */, 0 /* request_id */,
+      0 /* options */, std::move(request), std::move(client),
+      traffic_annotation);
 }
 
 bool AtomURLLoaderFactory::HandleError(
@@ -165,7 +222,7 @@ bool AtomURLLoaderFactory::HandleError(
   v8::Local<v8::Object> obj =
       response->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
   network::URLLoaderCompletionStatus status;
-  if (!gin::Dictionary(isolate, obj).Get("error", &status.error_code))
+  if (!mate::Dictionary(isolate, obj).Get("error", &status.error_code))
     return false;
   std::move(*client)->OnComplete(status);
   return true;
