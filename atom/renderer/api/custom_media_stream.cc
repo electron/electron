@@ -283,7 +283,6 @@ struct ControlObject final
   v8::Isolate* isolate() const { return isolate_; }
 
   ~ControlObject() {
-    std::cerr << "~ControlObject" << std::endl;
     if (wrapper_.IsEmpty())
       return;
 
@@ -401,7 +400,6 @@ struct CustomCapturerSource : media::VideoCapturerSource {
   }
 
   ~CustomCapturerSource() override {
-    std::cerr << "~CustomCapturerSource" << std::endl;
     onStartCapture_ = base::RepeatingCallback<void(ControlObject*)>();
     onStopCapture_ = base::RepeatingCallback<void()>();
     control_wrapper_.Reset();
@@ -414,23 +412,15 @@ struct CustomCapturerSource : media::VideoCapturerSource {
   void StartCapture(const media::VideoCaptureParams& params,
                     const VideoCaptureDeliverFrameCB& frame_callback,
                     const RunningCallback& running_callback) override {
-    std::cerr << "StartCapture"
-              << media::VideoCaptureFormat::ToString(params.requested_format)
-              << std::endl;
-
     control_->deliver_ = frame_callback;
     running_callback.Run(true);
   }
 
-  void StopCapture() override { std::cerr << "StopCapture" << std::endl; }
+  void StopCapture() override {}
 
-  void Resume() override {
-    std::cerr << "Resume" << std::endl;
-    onStartCapture_.Run(control_);
-  }
+  void Resume() override { onStartCapture_.Run(control_); }
 
   void MaybeSuspend() override {
-    std::cerr << "MaybeSuspend" << std::endl;
     if (!blink::ScriptForbiddenScope::
             IsScriptForbidden())  // in some circumstances this can be called
                                   // from Document::Shutdown
