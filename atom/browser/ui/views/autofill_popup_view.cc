@@ -93,8 +93,8 @@ void AutofillPopupView::Show() {
   if (initialize_widget)
     views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
 
-  keypress_callback_ = base::Bind(&AutofillPopupView::HandleKeyPressEvent,
-                                  base::Unretained(this));
+  keypress_callback_ = base::BindRepeating(
+      &AutofillPopupView::HandleKeyPressEvent, base::Unretained(this));
   auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
@@ -294,8 +294,8 @@ void AutofillPopupView::OnMouseExited(const ui::MouseEvent& event) {
   // OnMouseExited event. Pressing return should activate the current selection
   // via AcceleratorPressed, so we need to let that run first.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(&AutofillPopupView::ClearSelection,
-                            weak_ptr_factory_.GetWeakPtr()));
+      FROM_HERE, base::BindOnce(&AutofillPopupView::ClearSelection,
+                                weak_ptr_factory_.GetWeakPtr()));
 }
 
 void AutofillPopupView::OnMouseMoved(const ui::MouseEvent& event) {
