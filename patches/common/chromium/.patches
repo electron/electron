@@ -74,3 +74,4 @@ disable_network_services_by_default.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
 viz_osr.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
+build_add_electron_tracing_category.patch
