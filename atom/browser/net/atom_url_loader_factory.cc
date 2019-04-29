@@ -75,6 +75,7 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
           request,
           base::BindOnce(&AtomURLLoaderFactory::SendResponseHttp,
                          weak_factory_.GetWeakPtr(), std::move(loader),
+                         routing_id, request_id, options, request,
                          std::move(client), traffic_annotation, isolate));
       break;
     default: {
@@ -166,6 +167,7 @@ void AtomURLLoaderFactory::SendResponseFile(
         isolate,
         response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
     dict.Get("referrer", &request.referrer);
+    dict.Get("method", &request.method);
     if (dict.Get("path", &path))
       request.url = net::FilePathToFileURL(path);
     base::DictionaryValue headers;
@@ -189,6 +191,10 @@ void AtomURLLoaderFactory::SendResponseFile(
 
 void AtomURLLoaderFactory::SendResponseHttp(
     network::mojom::URLLoaderRequest loader,
+    int32_t routing_id,
+    int32_t request_id,
+    uint32_t options,
+    network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     v8::Isolate* isolate,
@@ -223,13 +229,12 @@ void AtomURLLoaderFactory::SendResponseHttp(
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory =
       content::BrowserContext::GetDefaultStoragePartition(browser_context.get())
           ->GetURLLoaderFactoryForBrowserProcess();
-  network::ResourceRequest request;
   dict.Get("url", &request.url);
+  dict.Get("referrer", &request.referrer);
   dict.Get("method", &request.method);
   url_loader_factory->CreateLoaderAndStart(
-      std::move(loader), 0 /* routing_id */, 0 /* request_id */,
-      0 /* options */, std::move(request), std::move(client),
-      traffic_annotation);
+      std::move(loader), routing_id, request_id, options, std::move(request),
+      std::move(client), traffic_annotation);
 }
 
 bool AtomURLLoaderFactory::HandleError(

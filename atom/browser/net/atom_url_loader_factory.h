@@ -60,6 +60,10 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                         v8::Local<v8::Value> response);
   void SendResponseHttp(
       network::mojom::URLLoaderRequest loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      network::ResourceRequest request,
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       v8::Isolate* isolate,
