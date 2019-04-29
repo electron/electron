@@ -58,4 +58,13 @@ void NodeDebugger::Start() {
     DCHECK(env_->inspector_agent()->IsListening());
 }
 
+void NodeDebugger::Stop() {
+  auto* inspector = env_->inspector_agent();
+  if (inspector == nullptr)
+    return;
+
+  if (inspector->IsListening())
+    inspector->Stop();
+}
+
 }  // namespace atom
