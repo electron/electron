@@ -349,6 +349,9 @@ void NativeWindowViews::Show() {
 
   widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
+  // explicitly focus the window
+  widget()->Activate();
+
   NotifyWindowShow();
 
 #if defined(USE_X11)
