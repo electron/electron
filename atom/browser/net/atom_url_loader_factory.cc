@@ -209,11 +209,20 @@ void AtomURLLoaderFactory::SendResponseHttp(
     return;
   }
 
-  scoped_refptr<AtomBrowserContext> browser_context =
-      AtomBrowserContext::From("", false);
+  network::ResourceRequest request;
+  request.headers = original_request.headers;
+  request.cors_exempt_headers = original_request.cors_exempt_headers;
+
   mate::Dictionary dict(
       isolate,
       response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  dict.Get("url", &request.url);
+  dict.Get("referrer", &request.referrer);
+  if (!dict.Get("method", &request.method))
+    request.method = original_request.method;
+
+  scoped_refptr<AtomBrowserContext> browser_context =
+      AtomBrowserContext::From("", false);
   v8::Local<v8::Value> value;
   if (dict.Get("session", &value)) {
     if (value->IsNull()) {
@@ -229,13 +238,6 @@ void AtomURLLoaderFactory::SendResponseHttp(
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory =
       content::BrowserContext::GetDefaultStoragePartition(browser_context.get())
           ->GetURLLoaderFactoryForBrowserProcess();
-  network::ResourceRequest request;
-  request.headers = original_request.headers;
-  request.cors_exempt_headers = original_request.cors_exempt_headers;
-  dict.Get("url", &request.url);
-  dict.Get("referrer", &request.referrer);
-  if (!dict.Get("method", &request.method))
-    request.method = original_request.method;
   url_loader_factory->CreateLoaderAndStart(
       std::move(loader), routing_id, request_id, options, std::move(request),
       std::move(client), traffic_annotation);
