@@ -396,8 +396,8 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresponsive_closure_.IsCancelled())
     return;
 
-  window_unresponsive_closure_.Reset(
-      base::Bind(&BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
+  window_unresponsive_closure_.Reset(base::BindRepeating(
+      &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
@@ -478,8 +478,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", mate::CreateConstructor<BrowserWindow>(
-                                isolate, base::Bind(&BrowserWindow::New)));
+  dict.Set("BrowserWindow",
+           mate::CreateConstructor<BrowserWindow>(
+               isolate, base::BindRepeating(&BrowserWindow::New)));
 }
 
 }  // namespace

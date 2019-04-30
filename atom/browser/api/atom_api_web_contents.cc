@@ -2173,21 +2173,23 @@ void WebContents::GrantOriginAccess(const GURL& url) {
       url::Origin::Create(url));
 }
 
-void WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
-                                   base::Callback<void(bool)> callback) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
+    const base::FilePath& file_path) {
+  util::Promise promise(isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
   if (!file.IsValid()) {
-    std::move(callback).Run(false);
-    return;
+    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    return handle;
   }
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (!frame_host) {
-    std::move(callback).Run(false);
-    return;
+    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    return handle;
   }
 
   // This dance with `base::Owned` is to ensure that the interface stays alive
@@ -2199,10 +2201,17 @@ void WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
   auto* raw_ptr = electron_ptr.get();
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
-      base::BindOnce([](mojom::ElectronRendererAssociatedPtr* ep,
-                        base::Callback<void(bool)> callback,
-                        bool success) { callback.Run(success); },
-                     base::Owned(std::move(electron_ptr)), callback));
+      base::BindOnce(
+          [](mojom::ElectronRendererAssociatedPtr* ep, util::Promise promise,
+             bool success) {
+            if (success) {
+              promise.Resolve();
+            } else {
+              promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+            }
+          },
+          base::Owned(std::move(electron_ptr)), std::move(promise)));
+  return handle;
 }
 
 // static
@@ -2308,7 +2317,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
-      .SetMethod("_takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
+      .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

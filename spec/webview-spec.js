@@ -1000,23 +1000,6 @@ describe('<webview> tag', function () {
       const result = await webview.executeJavaScript(jsScript)
       assert.strictEqual(result, expectedResult)
     })
-
-    // TODO(miniak): remove when promisification is complete
-    it('can return the result of the executed script (callback)', async () => {
-      await loadWebView(webview, {
-        src: 'about:blank'
-      })
-
-      const jsScript = "'4'+2"
-      const expectedResult = '42'
-
-      const result = await new Promise((resolve) => {
-        webview.executeJavaScript(jsScript, false, (result) => {
-          resolve(result)
-        })
-      })
-      assert.strictEqual(result, expectedResult)
-    })
   })
 
   describe('sendInputEvent', () => {
@@ -1271,21 +1254,6 @@ describe('<webview> tag', function () {
       const data = await webview.printToPDF({})
       assert.strictEqual(data instanceof Buffer, true)
       assert.notStrictEqual(data.length, 0)
-    })
-
-    // TODO(miniak): remove when promisification is complete
-    it('can print to PDF (callback)', (done) => {
-      webview.addEventListener('did-finish-load', () => {
-        webview.printToPDF({}, function (error, data) {
-          assert.strictEqual(error, null)
-          assert.strictEqual(data instanceof Buffer, true)
-          assert.notStrictEqual(data.length, 0)
-          done()
-        })
-      })
-
-      webview.src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E'
-      document.body.appendChild(webview)
     })
   })
 

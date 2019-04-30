@@ -124,8 +124,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("WebContentsView", mate::CreateConstructor<WebContentsView>(
-                                  isolate, base::Bind(&WebContentsView::New)));
+  dict.Set("WebContentsView",
+           mate::CreateConstructor<WebContentsView>(
+               isolate, base::BindRepeating(&WebContentsView::New)));
 }
 
 }  // namespace
