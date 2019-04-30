@@ -144,7 +144,7 @@ async function updateVersionH (components) {
   const filePath = path.resolve(__dirname, '..', 'atom', 'common', 'atom_version.h')
   const data = await readFile(filePath, 'utf8')
   const arr = data.split('\n')
-  const pre = components.pre != null ? `-${components.pre[0]}.${components.pre[1]}` : null
+  const pre = components.pre && components.pre.length >= 2 ? `-${components.pre[0]}.${components.pre[1]}` : null
 
   arr.forEach((item, idx) => {
     if (item.includes('#define ATOM_MAJOR_VERSION')) {
