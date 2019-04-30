@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/memory/shared_memory.h"
 #include "components/viz/common/resources/resource_format.h"
 #include "components/viz/common/resources/resource_sizes.h"
 #include "mojo/public/cpp/system/platform_handle.h"
