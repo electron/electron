@@ -23,7 +23,7 @@
 #include "net/base/filename_util.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
-#include "services/network/public/mojom/url_loader.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
 
 #include "atom/common/node_includes.h"
 
@@ -263,15 +263,14 @@ void AtomURLLoaderFactory::SendResponseStream(
   int status_code = 200;
   dict.Get("statusCode", &status_code);
 
-  scoped_refptr<net::HttpResponseHeaders> response_headers =
-      new net::HttpResponseHeaders(base::StringPrintf(
-          "HTTP/1.1 %d %s", status_code,
-          net::GetHttpReasonPhrase(
-              static_cast<net::HttpStatusCode>(status_code))));
+  network::ResourceResponseHead head;
+  head.headers = new net::HttpResponseHeaders(base::StringPrintf(
+      "HTTP/1.1 %d %s", status_code,
+      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
   v8::Local<v8::Value> headers;
   if (dict.Get("headers", &headers))
     mate::Converter<net::HttpResponseHeaders*>::FromV8(isolate, headers,
-                                                       response_headers.get());
+                                                       head.headers.get());
 
   v8::Local<v8::Value> stream;
   if (!dict.Get("data", &stream)) {
@@ -280,8 +279,6 @@ void AtomURLLoaderFactory::SendResponseStream(
   } else if (stream->IsNullOrUndefined()) {
     // "data" was explicitly passed as null or undefined, assume the user wants
     // to send an empty body.
-    network::ResourceResponseHead head;
-    head.headers = response_headers;
     client->OnReceiveResponse(head);
     client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
@@ -290,14 +287,17 @@ void AtomURLLoaderFactory::SendResponseStream(
     return;
   }
 
-  mate::Dictionary data(
-      isolate, stream->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  v8::Local<v8::Object> obj =
+      stream->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
+  mate::Dictionary data(isolate, obj);
   v8::Local<v8::Value> method;
   if (!data.Get("on", &method) || !method->IsFunction() ||
       !data.Get("removeListener", &method) || !method->IsFunction()) {
     client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
+
+  new NodeStreamLoader(std::move(head), std::move(client), isolate, obj);
 }
 
 bool AtomURLLoaderFactory::HandleError(
