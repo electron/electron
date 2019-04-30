@@ -58,6 +58,16 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                         network::mojom::URLLoaderClientPtr client,
                         v8::Isolate* isolate,
                         v8::Local<v8::Value> response);
+  void SendResponseHttp(
+      network::mojom::URLLoaderRequest loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& original_request,
+      network::mojom::URLLoaderClientPtr client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> response);
 
   bool HandleError(network::mojom::URLLoaderClientPtr* client,
                    v8::Isolate* isolate,
