@@ -17,5 +17,6 @@ proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
 enable_basic_printing = true
+angle_enable_vulkan_validation_layers = false
 
 is_cfi = false
