@@ -43,11 +43,13 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   using gin_util::SetMethod;
   auto reporter = base::Unretained(CrashReporter::GetInstance());
-  SetMethod(exports, "start", base::BindRepeating(&CrashReporter::Start, reporter));
+  SetMethod(exports, "start",
+            base::BindRepeating(&CrashReporter::Start, reporter));
   SetMethod(exports, "addExtraParameter",
             base::BindRepeating(&CrashReporter::AddExtraParameter, reporter));
-  SetMethod(exports, "removeExtraParameter",
-            base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
+  SetMethod(
+      exports, "removeExtraParameter",
+      base::BindRepeating(&CrashReporter::RemoveExtraParameter, reporter));
   SetMethod(exports, "getParameters",
             base::BindRepeating(&CrashReporter::GetParameters, reporter));
   SetMethod(exports, "getUploadedReports",
