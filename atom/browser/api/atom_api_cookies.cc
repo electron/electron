@@ -176,7 +176,8 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
   Init(isolate);
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
-          base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
+          base::BindRepeating(&Cookies::OnCookieChanged,
+                              base::Unretained(this)));
 }
 
 Cookies::~Cookies() {}

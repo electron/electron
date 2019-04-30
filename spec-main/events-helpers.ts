@@ -1,4 +1,4 @@
-import { EventEmitter } from "electron";
+import { EventEmitter } from 'electron';
 
 /**
  * @fileoverview A set of helper functions to make it easier to work

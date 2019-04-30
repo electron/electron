@@ -58,7 +58,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("TextField", mate::CreateConstructor<TextField>(
-                            isolate, base::Bind(&TextField::New)));
+                            isolate, base::BindRepeating(&TextField::New)));
 }
 
 }  // namespace

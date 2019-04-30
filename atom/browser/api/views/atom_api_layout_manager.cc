@@ -53,8 +53,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("LayoutManager", mate::CreateConstructor<LayoutManager>(
-                                isolate, base::Bind(&LayoutManager::New)));
+  dict.Set("LayoutManager",
+           mate::CreateConstructor<LayoutManager>(
+               isolate, base::BindRepeating(&LayoutManager::New)));
 }
 
 }  // namespace

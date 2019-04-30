@@ -116,9 +116,9 @@ auto_filenames = {
     "lib/common/api/is-promise.js",
     "lib/common/api/module-list.js",
     "lib/common/api/native-image.js",
-    "lib/common/atom-binding-setup.ts",
     "lib/common/buffer-utils.js",
     "lib/common/crash-reporter.js",
+    "lib/common/electron-binding-setup.ts",
     "lib/common/error-utils.js",
     "lib/common/web-view-methods.js",
     "lib/renderer/api/crash-reporter.js",
@@ -152,7 +152,7 @@ auto_filenames = {
   ]
 
   isolated_browserify_deps = [
-    "lib/common/atom-binding-setup.ts",
+    "lib/common/electron-binding-setup.ts",
     "lib/isolated_renderer/init.js",
     "lib/renderer/ipc-renderer-internal.ts",
     "lib/renderer/web-view/web-view-element.ts",
@@ -163,7 +163,7 @@ auto_filenames = {
   ]
 
   context_script_browserify_deps = [
-    "lib/common/atom-binding-setup.ts",
+    "lib/common/electron-binding-setup.ts",
     "lib/common/error-utils.js",
     "lib/content_script/init.js",
     "lib/renderer/chrome-api.ts",
