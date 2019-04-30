@@ -163,7 +163,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("createScreen", base::Bind(&Screen::Create, isolate));
+  dict.Set("createScreen", base::BindRepeating(&Screen::Create, isolate));
   dict.Set(
       "Screen",
       Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

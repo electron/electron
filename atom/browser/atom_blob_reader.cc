@@ -81,8 +81,8 @@ void AtomBlobReader::BlobReadHelper::Read() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   storage::BlobReader::Status size_status = blob_reader_->CalculateSize(
-      base::Bind(&AtomBlobReader::BlobReadHelper::DidCalculateSize,
-                 base::Unretained(this)));
+      base::BindOnce(&AtomBlobReader::BlobReadHelper::DidCalculateSize,
+                     base::Unretained(this)));
   if (size_status != storage::BlobReader::Status::IO_PENDING)
     DidCalculateSize(net::OK);
 }
@@ -100,8 +100,8 @@ void AtomBlobReader::BlobReadHelper::DidCalculateSize(int result) {
   scoped_refptr<net::IOBuffer> blob_data =
       new net::IOBuffer(static_cast<size_t>(total_size));
   auto callback =
-      base::Bind(&AtomBlobReader::BlobReadHelper::DidReadBlobData,
-                 base::Unretained(this), base::RetainedRef(blob_data));
+      base::BindRepeating(&AtomBlobReader::BlobReadHelper::DidReadBlobData,
+                          base::Unretained(this), base::RetainedRef(blob_data));
   storage::BlobReader::Status read_status =
       blob_reader_->Read(blob_data.get(), total_size, &bytes_read, callback);
   if (read_status != storage::BlobReader::Status::IO_PENDING)
