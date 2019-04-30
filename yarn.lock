@@ -2217,7 +2217,7 @@ ee-first@1.1.1:
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
   integrity sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=
 
-electron-docs-linter@^3.0.0, electron-docs-linter@^3.0.1:
+electron-docs-linter@^3.0.0, electron-docs-linter@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/electron-docs-linter/-/electron-docs-linter-3.0.3.tgz#7da49f9b94e113f9ee8321818d9205220bc19975"
   integrity sha512-65HmaIH/i/jyxK6a+TPz1IBlUunnNtEb2juYNXrnP0bPusQyWvkkiyExwn5D5mukfkbobwqfIzTxu78xEGHSbQ==
