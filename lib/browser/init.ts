@@ -134,16 +134,16 @@ if (packageJson.version != null) {
 
 // Set application's name.
 if (packageJson.productName != null) {
-  app.setName(`${packageJson.productName}`.trim())
+  app.name = `${packageJson.productName}`.trim()
 } else if (packageJson.name != null) {
-  app.setName(`${packageJson.name}`.trim())
+  app.name = `${packageJson.name}`.trim()
 }
 
 // Set application's desktop name.
 if (packageJson.desktopName != null) {
   app.setDesktopName(packageJson.desktopName)
 } else {
-  app.setDesktopName((app.getName()) + '.desktop')
+  app.setDesktopName(`${app.name}.desktop`)
 }
 
 // Set v8 flags

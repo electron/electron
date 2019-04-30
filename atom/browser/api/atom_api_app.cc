@@ -1344,8 +1344,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::GetVersion, browser))
       .SetMethod("setVersion",
                  base::BindRepeating(&Browser::SetVersion, browser))
-      .SetMethod("getName", base::BindRepeating(&Browser::GetName, browser))
-      .SetMethod("setName", base::BindRepeating(&Browser::SetName, browser))
+      .SetMethod("_getName", base::BindRepeating(&Browser::GetName, browser))
+      .SetMethod("_setName", base::BindRepeating(&Browser::SetName, browser))
       .SetMethod("isReady", base::BindRepeating(&Browser::is_ready, browser))
       .SetMethod("whenReady", base::BindRepeating(&Browser::WhenReady, browser))
       .SetMethod("addRecentDocument",
@@ -1375,6 +1375,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("badgeCount",
                    base::BindRepeating(&Browser::GetBadgeCount, browser),
                    base::BindRepeating(&Browser::SetBadgeCount, browser))
+      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
+                   base::BindRepeating(&Browser::SetName, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))

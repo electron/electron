@@ -246,7 +246,7 @@ describe('MenuItems', () => {
         'minimize': 'Minimize',
         'paste': 'Paste',
         'pasteandmatchstyle': 'Paste and Match Style',
-        'quit': (process.platform === 'darwin') ? `Quit ${app.getName()}` : (process.platform === 'win32') ? 'Exit' : 'Quit',
+        'quit': (process.platform === 'darwin') ? `Quit ${app.name}` : (process.platform === 'win32') ? 'Exit' : 'Quit',
         'redo': 'Redo',
         'reload': 'Reload',
         'resetzoom': 'Actual Size',
@@ -316,7 +316,7 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'appMenu' })
 
-      expect(item.label).to.equal(app.getName())
+      expect(item.label).to.equal(app.name)
       expect(item.submenu.items[0].role).to.equal('about')
       expect(item.submenu.items[1].type).to.equal('separator')
       expect(item.submenu.items[2].role).to.equal('services')
@@ -335,7 +335,7 @@ describe('MenuItems', () => {
           role: 'close'
         }]
       })
-      expect(item.label).to.equal(app.getName())
+      expect(item.label).to.equal(app.name)
       expect(item.submenu.items[0].role).to.equal('close')
     })
   })
