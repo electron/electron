@@ -226,7 +226,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("desktopCapturer", atom::api::DesktopCapturer::Create(isolate));
+  dict.SetMethod("createDesktopCapturer", &atom::api::DesktopCapturer::Create);
 }
 
 }  // namespace
