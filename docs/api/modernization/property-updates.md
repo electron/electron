@@ -30,8 +30,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `DownloadItem` class
   * `savePath`
   * `paused`
-* `NativeImage`
-  * `templateImage`
 * `Session` module
   * `preloads`
 * `SystemPreferences` module
@@ -58,3 +56,5 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `applicationMenu`
   * `badgeCount`
   * `name`
+* `NativeImage`
+  * `templateImage`

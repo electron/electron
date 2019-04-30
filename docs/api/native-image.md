@@ -276,9 +276,13 @@ Returns [`Size`](structures/size.md)
 
 Marks the image as a template image.
 
+**[Deprecated Soon](modernization/property-updates.md)**
+
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - Whether the image is a template image.
+
+**[Deprecated Soon](modernization/property-updates.md)**
 
 #### `image.crop(rect)`
 
@@ -324,3 +328,9 @@ to explicitly add different scale factor representations to an image. This
 can be called on empty images.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+
+## Properties
+
+### `nativeImage.templateImage`
+
+A `Boolean` property that determines whether the image is a template image.

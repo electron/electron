@@ -105,6 +105,14 @@ describe('nativeImage module', () => {
     return matchingImage
   }
 
+  describe('templateImage property', () => {
+    it('returns whether the image is a template image', () => {
+      const empty = nativeImage.createEmpty()
+
+      expect(empty.templateImage).to.be.a('boolean')
+    })
+  })
+
   describe('createEmpty()', () => {
     it('returns an empty image', () => {
       const empty = nativeImage.createEmpty()
