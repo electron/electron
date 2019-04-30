@@ -1333,7 +1333,6 @@ describe('BrowserWindow module', () => {
           const leakResult = emittedOnce(ipcMain, 'leak-result')
           w.loadFile(path.join(fixtures, 'api', 'no-leak.html'))
           const [, result] = await leakResult
-          console.log(result)
           expect(result).to.have.property('require', 'undefined')
           expect(result).to.have.property('exports', 'undefined')
           expect(result).to.have.property('windowExports', 'undefined')
