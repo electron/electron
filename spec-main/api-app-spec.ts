@@ -412,7 +412,7 @@ describe('app module', () => {
       await w.loadURL('about:blank')
 
       const promise = emittedOnce(app, 'desktop-capturer-get-sources')
-      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
+      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`)
 
       const [, webContents] = await promise
       expect(webContents).to.equal(w.webContents)
@@ -856,33 +856,12 @@ describe('app module', () => {
       expect(icon.isEmpty()).to.equal(false)
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('fetches a non-empty icon (callback)', (done) => {
-      app.getFileIcon(iconPath, (error, icon) => {
-        expect(error).to.equal(null)
-        expect(icon.isEmpty()).to.equal(false)
-        done()
-      })
-    })
-
     it('fetches normal icon size by default', async () => {
       const icon = await app.getFileIcon(iconPath)
       const size = icon.getSize()
 
       expect(size.height).to.equal(sizes.normal)
       expect(size.width).to.equal(sizes.normal)
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('fetches normal icon size by default (callback)', (done) => {
-      app.getFileIcon(iconPath, (error, icon) => {
-        expect(error).to.equal(null)
-        const size = icon.getSize()
-
-        expect(size.height).to.equal(sizes.normal)
-        expect(size.width).to.equal(sizes.normal)
-        done()
-      })
     })
 
     describe('size option', () => {
@@ -900,18 +879,6 @@ describe('app module', () => {
 
         expect(size.height).to.equal(sizes.normal)
         expect(size.width).to.equal(sizes.normal)
-      })
-
-      // TODO(codebytere): remove when promisification is complete
-      it('fetches a normal icon (callback)', (done) => {
-        app.getFileIcon(iconPath, { size: 'normal' }, (error, icon) => {
-          expect(error).to.equal(null)
-          const size = icon.getSize()
-
-          expect(size.height).to.equal(sizes.normal)
-          expect(size.width).to.equal(sizes.normal)
-          done()
-        })
       })
 
       it('fetches a large icon', async () => {

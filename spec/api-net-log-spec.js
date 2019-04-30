@@ -78,27 +78,6 @@ describe('netLog module', () => {
     expect(fs.existsSync(dumpFileDynamic)).to.be.true()
   })
 
-  // TODO(miniak): remove when promisification is complete
-  it('should begin and end logging to file when .startLogging() and .stopLogging() is called (callback)', done => {
-    expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
-
-    netLog.startLogging(dumpFileDynamic)
-
-    expect(netLog.currentlyLogging).to.be.true()
-    expect(netLog.currentlyLoggingPath).to.equal(dumpFileDynamic)
-
-    netLog.stopLogging((path) => {
-      expect(netLog.currentlyLogging).to.be.false()
-      expect(netLog.currentlyLoggingPath).to.equal('')
-
-      expect(path).to.equal(dumpFileDynamic)
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true()
-
-      done()
-    })
-  })
-
   it('should silence when .stopLogging() is called without calling .startLogging()', async () => {
     expect(netLog.currentlyLogging).to.be.false()
     expect(netLog.currentlyLoggingPath).to.equal('')
@@ -109,21 +88,6 @@ describe('netLog module', () => {
     expect(netLog.currentlyLoggingPath).to.equal('')
 
     expect(path).to.equal('')
-  })
-
-  // TODO(miniak): remove when promisification is complete
-  it('should silence when .stopLogging() is called without calling .startLogging() (callback)', done => {
-    expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
-
-    netLog.stopLogging(path => {
-      expect(netLog.currentlyLogging).to.be.false()
-      expect(netLog.currentlyLoggingPath).to.equal('')
-
-      expect(path).to.equal('')
-
-      done()
-    })
   })
 
   it('should begin and end logging automatically when --log-net-log is passed', done => {
