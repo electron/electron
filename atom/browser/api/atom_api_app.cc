@@ -1353,7 +1353,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
-                 base::Bind(&Browser::SetAppUserModelID, browser))
+                 base::BindRepeating(&Browser::SetAppUserModelID, browser))
       .SetMethod(
           "isDefaultProtocolClient",
           base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))
