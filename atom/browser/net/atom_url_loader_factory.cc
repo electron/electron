@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/node_stream_loader.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -20,6 +21,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
+#include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
@@ -78,6 +80,12 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
                          routing_id, request_id, options, request,
                          std::move(client), traffic_annotation, isolate));
       break;
+    case ProtocolType::kStream:
+      handler_.Run(request,
+                   base::BindOnce(&AtomURLLoaderFactory::SendResponseStream,
+                                  weak_factory_.GetWeakPtr(), std::move(client),
+                                  isolate));
+      break;
     default: {
       std::string contents = "Not Implemented";
       SendContents(std::move(client), "text/html", "utf-8", contents.data(),
@@ -115,9 +123,7 @@ void AtomURLLoaderFactory::SendResponseBuffer(
   }
 
   if (buffer.IsEmpty()) {
-    network::URLLoaderCompletionStatus status;
-    status.error_code = net::ERR_NOT_IMPLEMENTED;
-    client->OnComplete(status);
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -179,9 +185,7 @@ void AtomURLLoaderFactory::SendResponseFile(
                                     iter.second.GetString());
     }
   } else {
-    network::URLLoaderCompletionStatus status;
-    status.error_code = net::ERR_NOT_IMPLEMENTED;
-    client->OnComplete(status);
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -203,9 +207,7 @@ void AtomURLLoaderFactory::SendResponseHttp(
     return;
 
   if (!response->IsObject()) {
-    network::URLLoaderCompletionStatus status;
-    status.error_code = net::ERR_NOT_IMPLEMENTED;
-    client->OnComplete(status);
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
@@ -241,6 +243,61 @@ void AtomURLLoaderFactory::SendResponseHttp(
   url_loader_factory->CreateLoaderAndStart(
       std::move(loader), routing_id, request_id, options, std::move(request),
       std::move(client), traffic_annotation);
+}
+
+void AtomURLLoaderFactory::SendResponseStream(
+    network::mojom::URLLoaderClientPtr client,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> response) {
+  if (HandleError(&client, isolate, response))
+    return;
+
+  if (!response->IsObject()) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
+
+  mate::Dictionary dict(
+      isolate,
+      response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  int status_code = 200;
+  dict.Get("statusCode", &status_code);
+
+  scoped_refptr<net::HttpResponseHeaders> response_headers =
+      new net::HttpResponseHeaders(base::StringPrintf(
+          "HTTP/1.1 %d %s", status_code,
+          net::GetHttpReasonPhrase(
+              static_cast<net::HttpStatusCode>(status_code))));
+  v8::Local<v8::Value> headers;
+  if (dict.Get("headers", &headers))
+    mate::Converter<net::HttpResponseHeaders*>::FromV8(isolate, headers,
+                                                       response_headers.get());
+
+  v8::Local<v8::Value> stream;
+  if (!dict.Get("data", &stream)) {
+    // Assume the opts is already a stream.
+    stream = dict.GetHandle();
+  } else if (stream->IsNullOrUndefined()) {
+    // "data" was explicitly passed as null or undefined, assume the user wants
+    // to send an empty body.
+    network::ResourceResponseHead head;
+    head.headers = response_headers;
+    client->OnReceiveResponse(head);
+    client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
+    return;
+  } else if (!stream->IsObject()) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
+
+  mate::Dictionary data(
+      isolate, stream->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  v8::Local<v8::Value> method;
+  if (!data.Get("on", &method) || !method->IsFunction() ||
+      !data.Get("removeListener", &method) || !method->IsFunction()) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
 }
 
 bool AtomURLLoaderFactory::HandleError(

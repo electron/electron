@@ -68,6 +68,9 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       v8::Isolate* isolate,
       v8::Local<v8::Value> response);
+  void SendResponseStream(network::mojom::URLLoaderClientPtr client,
+                          v8::Isolate* isolate,
+                          v8::Local<v8::Value> response);
 
   bool HandleError(network::mojom::URLLoaderClientPtr* client,
                    v8::Isolate* isolate,
