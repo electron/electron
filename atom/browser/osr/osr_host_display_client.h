@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/callback.h"
-#include "base/memory/shared_memory.h"
+#include "base/memory/shared_memory_mapping.h"
 #include "components/viz/host/host_display_client.h"
 #include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
 #include "third_party/skia/include/core/SkBitmap.h"
