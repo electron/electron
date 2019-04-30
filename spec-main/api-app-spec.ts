@@ -386,7 +386,10 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
-    it('should emit renderer-process-crashed event when renderer crashes', async () => {
+    it('should emit renderer-process-crashed event when renderer crashes', async function() {
+      // FIXME: re-enable this test on win32.
+      if (process.platform === 'win32')
+        return this.skip()
       w = new BrowserWindow({
         show: false,
         webPreferences: {
