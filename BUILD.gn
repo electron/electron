@@ -64,7 +64,7 @@ config("branding") {
 npm_action("build_electron_definitions") {
   script = "gn-typescript-definitions"
   args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-  inputs = auto_filenames.api_docs + [ "package-lock.json" ]
+  inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
   outputs = [
     "$target_gen_dir/tsc/typings/electron.d.ts",

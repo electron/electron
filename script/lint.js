@@ -144,7 +144,9 @@ async function findChangedFiles (top) {
 async function findMatchingFiles (top, test) {
   return new Promise((resolve, reject) => {
     const matches = []
-    klaw(top)
+    klaw(top, {
+      filter: f => path.basename(f) !== '.bin'
+    })
       .on('end', () => resolve(matches))
       .on('data', item => {
         if (test(item.path)) {

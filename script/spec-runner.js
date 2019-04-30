@@ -25,6 +25,9 @@ const utils = require('./lib/utils')
 
 const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+// KEEP IN SYNC WITH DEPS FILE
+const YARN_VERSION = '1.15.2'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
@@ -143,7 +146,7 @@ async function installSpecModules () {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'
   })
-  const { status } = childProcess.spawnSync(NPM_CMD, ['install'], {
+  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
@@ -158,7 +161,7 @@ function getSpecHash () {
     (async () => {
       const hasher = crypto.createHash('SHA256')
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')))
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package-lock.json')))
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')))
       return hasher.digest('hex')
     })(),
     (async () => {
