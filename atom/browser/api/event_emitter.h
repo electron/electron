@@ -46,6 +46,9 @@ class EventEmitter : public Wrappable<T> {
   v8::Local<v8::Object> GetWrapper() const {
     return Wrappable<T>::GetWrapper();
   }
+  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const {
+    return Wrappable<T>::GetWrapper(isolate);
+  }
 
   // this.emit(name, event, args...);
   template <typename... Args>
