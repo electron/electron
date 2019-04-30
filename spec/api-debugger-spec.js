@@ -116,28 +116,6 @@ describe('debugger module', () => {
       w.webContents.debugger.detach()
     })
 
-    // TODO(miniak): remove when promisification is complete
-    it('returns response (callback)', done => {
-      w.webContents.loadURL('about:blank')
-      try {
-        w.webContents.debugger.attach()
-      } catch (err) {
-        return done(`unexpected error : ${err}`)
-      }
-
-      const callback = (err, res) => {
-        expect(err).to.be.null()
-        expect(res.wasThrown).to.be.undefined()
-        expect(res.result.value).to.equal(6)
-
-        w.webContents.debugger.detach()
-        done()
-      }
-
-      const params = { 'expression': '4+2' }
-      w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
-    })
-
     it('returns response when devtools is opened', async () => {
       w.webContents.loadURL('about:blank')
       w.webContents.debugger.attach()
@@ -153,28 +131,6 @@ describe('debugger module', () => {
       expect(res.result.value).to.equal(6)
 
       w.webContents.debugger.detach()
-    })
-
-    // TODO(miniak): remove when promisification is complete
-    it('returns response when devtools is opened (callback)', done => {
-      w.webContents.loadURL('about:blank')
-      try {
-        w.webContents.debugger.attach()
-      } catch (err) {
-        return done(`unexpected error : ${err}`)
-      }
-      const callback = (err, res) => {
-        expect(err).to.be.null()
-        expect(res.wasThrown).to.be.undefined()
-        expect(res.result.value).to.equal(6)
-        w.webContents.debugger.detach()
-        done()
-      }
-      w.webContents.openDevTools()
-      w.webContents.once('devtools-opened', () => {
-        const params = { 'expression': '4+2' }
-        w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
-      })
     })
 
     it('fires message event', done => {
@@ -212,22 +168,6 @@ describe('debugger module', () => {
       w.webContents.debugger.detach()
     })
 
-    // TODO(miniak): remove when promisification is complete
-    it('returns error message when command fails (callback)', done => {
-      w.webContents.loadURL('about:blank')
-      try {
-        w.webContents.debugger.attach()
-      } catch (err) {
-        done(`unexpected error : ${err}`)
-      }
-
-      w.webContents.debugger.sendCommand('Test', (err, res) => {
-        expect(err).to.be.an.instanceOf(Error).with.property('message', "'Test' wasn't found")
-        w.webContents.debugger.detach()
-        done()
-      })
-    })
-
     it('handles valid unicode characters in message', (done) => {
       try {
         w.webContents.debugger.attach()
@@ -239,7 +179,7 @@ describe('debugger module', () => {
         if (method === 'Network.loadingFinished') {
           w.webContents.debugger.sendCommand('Network.getResponseBody', {
             requestId: params.requestId
-          }, (_, data) => {
+          }).then(data => {
             expect(data.body).to.equal('\u0024')
             done()
           })

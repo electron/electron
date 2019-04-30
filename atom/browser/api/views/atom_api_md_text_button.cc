@@ -47,8 +47,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("MdTextButton", mate::CreateConstructor<MdTextButton>(
-                               isolate, base::Bind(&MdTextButton::New)));
+  dict.Set("MdTextButton",
+           mate::CreateConstructor<MdTextButton>(
+               isolate, base::BindRepeating(&MdTextButton::New)));
 }
 
 }  // namespace

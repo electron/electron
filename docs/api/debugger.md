@@ -48,20 +48,6 @@ Returns `Boolean` - Whether a debugger is attached to the `webContents`.
 
 Detaches the debugger from the `webContents`.
 
-#### `debugger.sendCommand(method[, commandParams, callback])`
-
-* `method` String - Method name, should be one of the methods defined by the
-   [remote debugging protocol][rdp].
-* `commandParams` Object (optional) - JSON object with request parameters.
-* `callback` Function (optional) - Response
-  * `error` Object - Error message indicating the failure of the command.
-  * `result` Any - Response defined by the 'returns' attribute of
-     the command description in the remote debugging protocol.
-
-Send given command to the debugging target.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `debugger.sendCommand(method[, commandParams])`
 
 * `method` String - Method name, should be one of the methods defined by the

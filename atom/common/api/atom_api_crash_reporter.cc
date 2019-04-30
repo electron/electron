@@ -52,16 +52,19 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   auto reporter = base::Unretained(CrashReporter::GetInstance());
-  dict.SetMethod("start", base::Bind(&CrashReporter::Start, reporter));
+  dict.SetMethod("start", base::BindRepeating(&CrashReporter::Start, reporter));
   dict.SetMethod("addExtraParameter", &AddExtraParameter);
   dict.SetMethod("removeExtraParameter", &RemoveExtraParameter);
   dict.SetMethod("getParameters", &GetParameters);
-  dict.SetMethod("getUploadedReports",
-                 base::Bind(&CrashReporter::GetUploadedReports, reporter));
-  dict.SetMethod("setUploadToServer",
-                 base::Bind(&CrashReporter::SetUploadToServer, reporter));
-  dict.SetMethod("getUploadToServer",
-                 base::Bind(&CrashReporter::GetUploadToServer, reporter));
+  dict.SetMethod(
+      "getUploadedReports",
+      base::BindRepeating(&CrashReporter::GetUploadedReports, reporter));
+  dict.SetMethod(
+      "setUploadToServer",
+      base::BindRepeating(&CrashReporter::SetUploadToServer, reporter));
+  dict.SetMethod(
+      "getUploadToServer",
+      base::BindRepeating(&CrashReporter::GetUploadToServer, reporter));
 }
 
 }  // namespace

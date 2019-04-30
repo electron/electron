@@ -610,29 +610,6 @@ You can request the following paths by the name:
 * `logs` Directory for your app's log folder.
 * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
-### `app.getFileIcon(path[, options], callback)`
-
-* `path` String
-* `options` Object (optional)
-  * `size` String
-    * `small` - 16x16
-    * `normal` - 32x32
-    * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
-* `callback` Function
-  * `error` Error
-  * `icon` [NativeImage](native-image.md)
-
-Fetches a path's associated icon.
-
-On _Windows_, there are 2 kinds of icons:
-
-* Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
-* Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
-
-On _Linux_ and _macOS_, icons depend on the application associated with file mime type.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 ### `app.getFileIcon(path[, options])`
 
 * `path` String
@@ -1064,6 +1041,7 @@ gpuDevice:
 machineModelName: 'MacBookPro',
 machineModelVersion: '11.5' }
 ```
+
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
 
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
@@ -1080,9 +1058,13 @@ On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
+**[Deprecated Soon](modernization/property-updates.md)**
+
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
 Returns `Integer` - The current value displayed in the counter badge.
+
+**[Deprecated Soon](modernization/property-updates.md)**
 
 ### `app.isUnityRunning()` _Linux_
 
@@ -1344,11 +1326,6 @@ Sets the `image` associated with this dock icon.
 
 ## Properties
 
-### `app.applicationMenu`
-
-A `Menu` property that return [`Menu`](menu.md) if one has been set and `null` otherwise.
-Users can pass a [Menu](menu.md) to set this property.
-
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_
 
 A `Boolean` property that's `true` if Chrome's accessibility support is enabled, `false` otherwise. This property will be `true` if the use of assistive technologies, such as screen readers, has been detected. Setting this property to `true` manually enables Chrome's accessibility support, allowing developers to expose accessibility switch to users in application settings.
@@ -1358,6 +1335,20 @@ See [Chromium's accessibility docs](https://www.chromium.org/developers/design-d
 This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+
+### `app.applicationMenu`
+
+A `Menu` property that return [`Menu`](menu.md) if one has been set and `null` otherwise.
+Users can pass a [Menu](menu.md) to set this property.
+
+### `app.badgeCount` _Linux_ _macOS_
+
+An `Integer` property that returns the badge count for current app. Setting the count to `0` will hide the badge.
+
+On macOS, setting this with any nonzero integer shows on the dock icon. On Linux, this property only works for Unity launcher.
+
+**Note:** Unity launcher requires the existence of a `.desktop` file to work,
+for more information please read [Desktop Environment Integration][unity-requirement].
 
 ### `app.isPackaged`
 

@@ -217,18 +217,8 @@ app.on('ready', function () {
     event.returnValue = null
   })
 
-  ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
-    let promise
-
-    if (hasCallback) {
-      promise = window.webContents.executeJavaScript(code, (result) => {
-        window.webContents.send('executeJavaScript-response', result)
-      })
-    } else {
-      promise = window.webContents.executeJavaScript(code)
-    }
-
-    promise.then((result) => {
+  ipcMain.on('executeJavaScript', function (event, code) {
+    window.webContents.executeJavaScript(code).then((result) => {
       window.webContents.send('executeJavaScript-promise-response', result)
     }).catch((error) => {
       window.webContents.send('executeJavaScript-promise-error', error)
@@ -237,10 +227,6 @@ app.on('ready', function () {
         window.webContents.send('executeJavaScript-promise-error-name', error.name)
       }
     })
-
-    if (!hasCallback) {
-      event.returnValue = 'success'
-    }
   })
 })
 

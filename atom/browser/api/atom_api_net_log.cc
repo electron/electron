@@ -110,7 +110,7 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
     for (auto& promise : stop_callback_queue_) {
       // TODO(zcbenz): Remove the use of CopyablePromise when the
       // GetFilePathToCompletedLog API accepts OnceCallback.
-      net_log_writer_->GetFilePathToCompletedLog(base::Bind(
+      net_log_writer_->GetFilePathToCompletedLog(base::BindRepeating(
           util::CopyablePromise::ResolveCopyablePromise<const base::FilePath&>,
           util::CopyablePromise(promise)));
     }

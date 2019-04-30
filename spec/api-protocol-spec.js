@@ -686,25 +686,9 @@ describe('protocol module', () => {
       assert.strictEqual(result, true)
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for about: (callback)', (done) => {
-      protocol.isProtocolHandled('about', (result) => {
-        assert.strictEqual(result, true)
-        done()
-      })
-    })
-
     it('returns true for file:', async () => {
       const result = await protocol.isProtocolHandled('file')
       assert.strictEqual(result, true)
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for file: (callback)', (done) => {
-      protocol.isProtocolHandled('file', (result) => {
-        assert.strictEqual(result, true)
-        done()
-      })
     })
 
     it('returns true for http:', async () => {
@@ -732,18 +716,6 @@ describe('protocol module', () => {
       })
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for custom protocol (callback)', (done) => {
-      const emptyHandler = (request, callback) => callback()
-      protocol.registerStringProtocol(protocolName, emptyHandler, (error) => {
-        assert.strictEqual(error, null)
-        protocol.isProtocolHandled(protocolName, (result) => {
-          assert.strictEqual(result, true)
-          done()
-        })
-      })
-    })
-
     it('returns true for intercepted protocol', (done) => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, async (error) => {
@@ -751,18 +723,6 @@ describe('protocol module', () => {
         const result = await protocol.isProtocolHandled('http')
         assert.strictEqual(result, true)
         done()
-      })
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for intercepted protocol (callback)', (done) => {
-      const emptyHandler = (request, callback) => callback()
-      protocol.interceptStringProtocol('http', emptyHandler, (error) => {
-        assert.strictEqual(error, null)
-        protocol.isProtocolHandled('http', (result) => {
-          assert.strictEqual(result, true)
-          done()
-        })
       })
     })
   })

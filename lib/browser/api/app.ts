@@ -86,11 +86,9 @@ for (const name of events) {
   })
 }
 
-// Function Deprecations
-app.getFileIcon = deprecate.promisify(app.getFileIcon)
-
 // Property Deprecations
 deprecate.fnToProperty(app, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
+deprecate.fnToProperty(app, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
 
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')

@@ -412,7 +412,7 @@ describe('app module', () => {
       await w.loadURL('about:blank')
 
       const promise = emittedOnce(app, 'desktop-capturer-get-sources')
-      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
+      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`)
 
       const [, webContents] = await promise
       expect(webContents).to.equal(w.webContents)
@@ -502,51 +502,31 @@ describe('app module', () => {
     })
   })
 
-  describe('app.setBadgeCount', () => {
+  describe('app.badgeCount', () => {
     const platformIsNotSupported =
         (process.platform === 'win32') ||
         (process.platform === 'linux' && !app.isUnityRunning())
     const platformIsSupported = !platformIsNotSupported
 
     const expectedBadgeCount = 42
-    let returnValue: boolean | null = null
 
-    beforeEach(() => { returnValue = app.setBadgeCount(expectedBadgeCount) })
-
-    after(() => {
-      // Remove the badge.
-      app.setBadgeCount(0)
-    })
+    after(() => { app.badgeCount = 0 })
 
     describe('on supported platform', () => {
-      before(function () {
-        if (platformIsNotSupported) {
-          this.skip()
-        }
-      })
+      it('sets a badge count', function () {
+        if (platformIsNotSupported) return this.skip()
 
-      it('returns true', () => {
-        expect(returnValue).to.equal(true)
-      })
-
-      it('sets a badge count', () => {
-        expect(app.getBadgeCount()).to.equal(expectedBadgeCount)
+        app.badgeCount = expectedBadgeCount
+        expect(app.badgeCount).to.equal(expectedBadgeCount)
       })
     })
 
     describe('on unsupported platform', () => {
-      before(function () {
-        if (platformIsSupported) {
-          this.skip()
-        }
-      })
+      it('does not set a badge count', function () {
+        if (platformIsSupported) return this.skip()
 
-      it('returns false', () => {
-        expect(returnValue).to.equal(false)
-      })
-
-      it('does not set a badge count', () => {
-        expect(app.getBadgeCount()).to.equal(0)
+        app.badgeCount = 9999
+        expect(app.badgeCount).to.equal(0)
       })
     })
   })
@@ -876,33 +856,12 @@ describe('app module', () => {
       expect(icon.isEmpty()).to.equal(false)
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('fetches a non-empty icon (callback)', (done) => {
-      app.getFileIcon(iconPath, (error, icon) => {
-        expect(error).to.equal(null)
-        expect(icon.isEmpty()).to.equal(false)
-        done()
-      })
-    })
-
     it('fetches normal icon size by default', async () => {
       const icon = await app.getFileIcon(iconPath)
       const size = icon.getSize()
 
       expect(size.height).to.equal(sizes.normal)
       expect(size.width).to.equal(sizes.normal)
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('fetches normal icon size by default (callback)', (done) => {
-      app.getFileIcon(iconPath, (error, icon) => {
-        expect(error).to.equal(null)
-        const size = icon.getSize()
-
-        expect(size.height).to.equal(sizes.normal)
-        expect(size.width).to.equal(sizes.normal)
-        done()
-      })
     })
 
     describe('size option', () => {
@@ -920,18 +879,6 @@ describe('app module', () => {
 
         expect(size.height).to.equal(sizes.normal)
         expect(size.width).to.equal(sizes.normal)
-      })
-
-      // TODO(codebytere): remove when promisification is complete
-      it('fetches a normal icon (callback)', (done) => {
-        app.getFileIcon(iconPath, { size: 'normal' }, (error, icon) => {
-          expect(error).to.equal(null)
-          const size = icon.getSize()
-
-          expect(size.height).to.equal(sizes.normal)
-          expect(size.width).to.equal(sizes.normal)
-          done()
-        })
       })
 
       it('fetches a large icon', async () => {
