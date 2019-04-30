@@ -531,8 +531,7 @@ void OffScreenRenderWidgetHostView::TextInputStateChanged(
 
 void OffScreenRenderWidgetHostView::ImeCancelComposition() {}
 
-void OffScreenRenderWidgetHostView::RenderProcessGone(base::TerminationStatus,
-                                                      int) {
+void OffScreenRenderWidgetHostView::RenderProcessGone() {
   Destroy();
 }
 
