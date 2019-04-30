@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Slack, Inc.
+// Copyright (c) 2018 Slack Technologies, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
