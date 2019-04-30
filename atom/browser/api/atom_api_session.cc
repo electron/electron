@@ -350,9 +350,8 @@ v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   args->GetNext(&url);
 
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
-      url, base::BindRepeating(
-               util::CopyablePromise::ResolveCopyablePromise<std::string>,
-               util::CopyablePromise(promise)));
+      url, base::BindOnce(util::Promise::ResolvePromise<std::string>,
+                          std::move(promise)));
 
   return handle;
 }
@@ -496,11 +495,11 @@ void Session::DisableNetworkEmulation() {
 }
 
 void WrapVerifyProc(
-    base::OnceCallback<void(const VerifyRequestParams& request,
-                            base::RepeatingCallback<void(int)>)> proc,
+    base::RepeatingCallback<void(const VerifyRequestParams& request,
+                                 base::RepeatingCallback<void(int)>)> proc,
     const VerifyRequestParams& request,
     base::OnceCallback<void(int)> cb) {
-  std::move(proc).Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
+  proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
