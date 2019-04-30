@@ -6,7 +6,7 @@ Subject: Revert "[api] Remove deprecated conversion functions"
 This reverts commit c76f377a990343b18953123c2726337b38c59812.
 
 diff --git a/include/v8.h b/include/v8.h
-index 34157b1badc67f013c11e129ee7539f687d68d9b..34b8691a95036586064fb71f19d010c4ba6adee0 100644
+index 0e21793b1214c681770b72f64b9f0d6188c6a385..4a3b94897f01f7d770770abc26b030f54060d3de 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -2489,6 +2489,9 @@ class V8_EXPORT Value : public Data {
@@ -47,7 +47,7 @@ index 34157b1badc67f013c11e129ee7539f687d68d9b..34b8691a95036586064fb71f19d010c4
    V8_WARN_UNUSED_RESULT Maybe<int64_t> IntegerValue(
        Local<Context> context) const;
 diff --git a/src/api.cc b/src/api.cc
-index df74c3f4e84a7c110448c395aebe98148b18b998..e75e5bea45a28ead4b88fe8f3bbb8453b42e1503 100644
+index c2fc1fc9827f896c521606a75baecef6c60e8f8a..9124d03fa6195269eaf851591bb95125c2081e2f 100644
 --- a/src/api.cc
 +++ b/src/api.cc
 @@ -3537,6 +3537,12 @@ MaybeLocal<String> Value::ToString(Local<Context> context) const {

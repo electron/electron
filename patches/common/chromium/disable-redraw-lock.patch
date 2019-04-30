@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index fb8e820175ac06b5eb8adee5a106491cff03d77b..ec954beab8861f569f48242c52ca249635e89bf4 100644
+index 9e686fc3ec97bbb4a67b391f344dc8eb7aad2fbd..566929def5c8a9de82b5f7238cc50657521249d9 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -284,6 +284,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
