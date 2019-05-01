@@ -28,6 +28,34 @@
 
 using content::BrowserThread;
 
+namespace mate {
+
+template <>
+struct Converter<atom::ProtocolType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::ProtocolType* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "buffer")
+      *out = atom::ProtocolType::kBuffer;
+    else if (type == "string")
+      *out = atom::ProtocolType::kString;
+    else if (type == "file")
+      *out = atom::ProtocolType::kFile;
+    else if (type == "http")
+      *out = atom::ProtocolType::kHttp;
+    else if (type == "stream")
+      *out = atom::ProtocolType::kStream;
+    else  // note "free" is internal type, not allowed to be passed from user
+      return false;
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace {
@@ -36,6 +64,7 @@ bool ResponseMustBeObject(ProtocolType type) {
   switch (type) {
     case ProtocolType::kString:
     case ProtocolType::kFile:
+    case ProtocolType::kFree:
       return false;
     default:
       return true;
@@ -98,12 +127,11 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  handler_.Run(
-      request,
-      base::BindOnce(&AtomURLLoaderFactory::SendResponse,
-                     weak_factory_.GetWeakPtr(), std::move(loader), routing_id,
-                     request_id, options, request, std::move(client),
-                     traffic_annotation, type_, v8::Isolate::GetCurrent()));
+  handler_.Run(request,
+               base::BindOnce(&AtomURLLoaderFactory::SendResponse,
+                              weak_factory_.GetWeakPtr(), std::move(loader),
+                              routing_id, request_id, options, request,
+                              std::move(client), traffic_annotation, type_));
 }
 
 void AtomURLLoaderFactory::Clone(
@@ -120,10 +148,10 @@ void AtomURLLoaderFactory::SendResponse(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     ProtocolType type,
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> response) {
+    v8::Local<v8::Value> response,
+    mate::Arguments* args) {
   // Parse {error} object.
-  mate::Dictionary dict = ToDict(isolate, response);
+  mate::Dictionary dict = ToDict(args->isolate(), response);
   if (HandleError(&client, dict))
     return;
 
@@ -133,16 +161,16 @@ void AtomURLLoaderFactory::SendResponse(
     return;
   }
 
-  switch (type_) {
+  switch (type) {
     case ProtocolType::kBuffer:
       SendResponseBuffer(std::move(client), dict);
       break;
     case ProtocolType::kString:
-      SendResponseString(std::move(client), dict, isolate, response);
+      SendResponseString(std::move(client), dict, args->isolate(), response);
       break;
     case ProtocolType::kFile:
       SendResponseFile(std::move(loader), request, std::move(client), dict,
-                       isolate, response);
+                       args->isolate(), response);
       break;
     case ProtocolType::kHttp:
       SendResponseHttp(std::move(loader), routing_id, request_id, options,
@@ -151,11 +179,19 @@ void AtomURLLoaderFactory::SendResponse(
     case ProtocolType::kStream:
       SendResponseStream(std::move(client), dict);
       break;
-    default: {
-      std::string contents = "Not Implemented";
-      SendContents(std::move(client), ToResponseHead(mate::Dictionary()),
-                   contents.data(), contents.size());
-    }
+    case ProtocolType::kFree:
+      ProtocolType type;
+      v8::Local<v8::Value> extra_arg;
+      if (!mate::ConvertFromV8(args->isolate(), response, &type) ||
+          !args->GetNext(&extra_arg)) {
+        client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        args->ThrowError("Invalid args, must pass (type, options)");
+        return;
+      }
+      SendResponse(std::move(loader), routing_id, request_id, options, request,
+                   std::move(client), traffic_annotation, type, extra_arg,
+                   args);
+      break;
   }
 }
 

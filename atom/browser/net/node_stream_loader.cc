@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/node_stream_loader.h"
 
+#include <utility>
+
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
 

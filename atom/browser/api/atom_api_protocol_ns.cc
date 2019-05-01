@@ -119,6 +119,8 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
                  &ProtocolNS::RegisterProtocolFor<ProtocolType::kHttp>)
       .SetMethod("registerStreamProtocol",
                  &ProtocolNS::RegisterProtocolFor<ProtocolType::kStream>)
+      .SetMethod("registerProtocol",
+                 &ProtocolNS::RegisterProtocolFor<ProtocolType::kFree>)
       .SetMethod("unregisterProtocol", &ProtocolNS::UnregisterProtocol)
       .SetMethod("isProtocolRegistered", &ProtocolNS::IsProtocolRegistered)
       .SetMethod("isProtocolHandled", &ProtocolNS::IsProtocolHandled)

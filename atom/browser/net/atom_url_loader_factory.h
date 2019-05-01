@@ -25,7 +25,8 @@ enum class ProtocolType {
   kFree,  // special type for returning arbitrary type of response.
 };
 
-using SendResponseCallback = base::OnceCallback<void(v8::Local<v8::Value>)>;
+using SendResponseCallback =
+    base::OnceCallback<void(v8::Local<v8::Value>, mate::Arguments*)>;
 using ProtocolHandler =
     base::Callback<void(const network::ResourceRequest&, SendResponseCallback)>;
 
@@ -56,8 +57,8 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       ProtocolType type,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> response);
+      v8::Local<v8::Value> response,
+      mate::Arguments* args);
   void SendResponseBuffer(network::mojom::URLLoaderClientPtr client,
                           const mate::Dictionary& dict);
   void SendResponseString(network::mojom::URLLoaderClientPtr client,
