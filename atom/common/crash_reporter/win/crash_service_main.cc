@@ -4,21 +4,20 @@
 
 #include "atom/common/crash_reporter/win/crash_service_main.h"
 
+#include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/crash_reporter/win/crash_service.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
+#include "third_party/crashpad/crashpad/handler/handler_main.h"
 
 namespace crash_service {
 
 namespace {
 
-const char kApplicationName[] = "application-name";
-const char kCrashesDirectory[] = "crashes-directory";
-
-const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 const wchar_t kStandardLogFile[] = L"operation_log.txt";
 
 void InvalidParameterHandler(const wchar_t*,
@@ -37,37 +36,30 @@ bool CreateCrashServiceDirectory(const base::FilePath& temp_dir) {
   return true;
 }
 
+void RemoveArgs(std::vector<char*>& args) {
+  args.erase(std::remove_if(args.begin(), args.end(), [](std::string str) {
+    return base::StartsWith(str, "--type", base::CompareCase::SENSITIVE) ||
+           base::StartsWith(
+               str, std::string("--") + crash_reporter::kCrashesDirectoryKey,
+               base::CompareCase::INSENSITIVE_ASCII);
+  }));
+}
+
 }  // namespace.
 
-int Main(const wchar_t* cmd) {
+int Main(std::vector<char*>& args) {
   // Ignore invalid parameter errors.
   _set_invalid_parameter_handler(InvalidParameterHandler);
 
   // Initialize all Chromium things.
   base::AtExitManager exit_manager;
-  base::CommandLine::Init(0, NULL);
-  base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
-
-  // Use the application's name as pipe name and output directory.
-  if (!cmd_line.HasSwitch(kApplicationName)) {
-    LOG(ERROR) << "Application's name must be specified with --"
-               << kApplicationName;
-    return 1;
-  }
-  std::wstring application_name =
-      cmd_line.GetSwitchValueNative(kApplicationName);
-
-  if (!cmd_line.HasSwitch(kCrashesDirectory)) {
-    LOG(ERROR) << "Crashes directory path must be specified with --"
-               << kCrashesDirectory;
-    return 1;
-  }
-
+  base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
   // We use/create a directory under the user's temp folder, for logging.
   base::FilePath operating_dir(
-      cmd_line.GetSwitchValueNative(kCrashesDirectory));
+      cmd_line->GetSwitchValueNative(crash_reporter::kCrashesDirectoryKey));
   CreateCrashServiceDirectory(operating_dir);
-  base::FilePath log_file = operating_dir.Append(kStandardLogFile);
+  base::FilePath log_file =
+      operating_dir.Append(base::FilePath(kStandardLogFile));
 
   // Logging to stderr (to help with debugging failures on the
   // buildbots) and to a file.
@@ -78,27 +70,9 @@ int Main(const wchar_t* cmd) {
   // Logging with pid, tid and timestamp.
   logging::SetLogItems(true, true, true, false);
 
-  VLOG(1) << "Session start. cmdline is [" << cmd << "]";
-
-  // Setting the crash reporter.
-  base::string16 pipe_name =
-      base::ReplaceStringPlaceholders(kPipeNameFormat, application_name, NULL);
-  cmd_line.AppendSwitch("no-window");
-  cmd_line.AppendSwitchASCII("max-reports", "128");
-  cmd_line.AppendSwitchASCII("reporter", ATOM_PROJECT_NAME "-crash-service");
-  cmd_line.AppendSwitchNative("pipe-name", pipe_name);
-
-  breakpad::CrashService crash_service;
-  if (!crash_service.Initialize(application_name, operating_dir, operating_dir))
-    return 2;
-
-  VLOG(1) << "Ready to process crash requests";
-
-  // Enter the message loop.
-  int retv = crash_service.ProcessingLoop();
-  // Time to exit.
-  VLOG(1) << "Session end. return code is " << retv;
-  return retv;
+  // Crashpad cannot handle unknown arguments, so we need to remove it
+  RemoveArgs(args);
+  return crashpad::HandlerMain(args.size(), args.data(), nullptr);
 }
 
 }  // namespace crash_service

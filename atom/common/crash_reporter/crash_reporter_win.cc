@@ -4,149 +4,43 @@
 
 #include "atom/common/crash_reporter/crash_reporter_win.h"
 
-#include <string>
+#include <memory>
 
-#include "base/files/file_util.h"
-#include "base/logging.h"
+#include "base/environment.h"
 #include "base/memory/singleton.h"
+#include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "content/public/common/result_codes.h"
+#include "crashpad/client/crashpad_client.h"
+#include "crashpad/client/crashpad_info.h"
+#if defined(_WIN64)
 #include "gin/public/debug.h"
-#include "sandbox/win/src/nt_internals.h"
-
-#pragma intrinsic(_AddressOfReturnAddress)
-#pragma intrinsic(_ReturnAddress)
-
-#ifdef _WIN64
-// See http://msdn.microsoft.com/en-us/library/ddssxxy8.aspx
-typedef struct _UNWIND_INFO {
-  unsigned char Version : 3;
-  unsigned char Flags : 5;
-  unsigned char SizeOfProlog;
-  unsigned char CountOfCodes;
-  unsigned char FrameRegister : 4;
-  unsigned char FrameOffset : 4;
-  ULONG ExceptionHandler;
-} UNWIND_INFO, *PUNWIND_INFO;
 #endif
-
-namespace crash_reporter {
-
 namespace {
 
-// Minidump with stacks, PEB, TEB, and unloaded module list.
-const MINIDUMP_TYPE kSmallDumpType = static_cast<MINIDUMP_TYPE>(
-    MiniDumpWithProcessThreadData |  // Get PEB and TEB.
-    MiniDumpWithUnloadedModules);    // Get unloaded modules when available.
-
-const wchar_t kWaitEventFormat[] = L"$1CrashServiceWaitEvent";
-const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
-
-// Matches breakpad/src/client/windows/common/ipc_protocol.h.
-const int kNameMaxLength = 64;
-const int kValueMaxLength = 64;
-
-typedef NTSTATUS(WINAPI* NtTerminateProcessPtr)(HANDLE ProcessHandle,
-                                                NTSTATUS ExitStatus);
-char* g_real_terminate_process_stub = NULL;
-
-void TerminateProcessWithoutDump() {
-  // Patched stub exists based on conditions (See InitCrashReporter).
-  // As a side note this function also gets called from
-  // WindowProcExceptionFilter.
-  if (g_real_terminate_process_stub == NULL) {
-    ::TerminateProcess(::GetCurrentProcess(), content::RESULT_CODE_KILLED);
-  } else {
-    NtTerminateProcessPtr real_terminate_proc =
-        reinterpret_cast<NtTerminateProcessPtr>(
-            static_cast<char*>(g_real_terminate_process_stub));
-    real_terminate_proc(::GetCurrentProcess(), content::RESULT_CODE_KILLED);
-  }
+#if defined(_WIN64)
+int CrashForException(EXCEPTION_POINTERS* info) {
+  auto* reporter = crash_reporter::CrashReporterWin::GetInstance();
+  if (reporter->IsInitialized())
+    reporter->GetCrashpadClient().DumpAndCrash(info);
+  return EXCEPTION_CONTINUE_SEARCH;
 }
-
-#ifdef _WIN64
-int CrashForExceptionInNonABICompliantCodeRange(
-    PEXCEPTION_RECORD ExceptionRecord,
-    ULONG64 EstablisherFrame,
-    PCONTEXT ContextRecord,
-    PDISPATCHER_CONTEXT DispatcherContext) {
-  EXCEPTION_POINTERS info = {ExceptionRecord, ContextRecord};
-  if (!CrashReporter::GetInstance())
-    return EXCEPTION_CONTINUE_SEARCH;
-  return static_cast<CrashReporterWin*>(CrashReporter::GetInstance())
-      ->CrashForException(&info);
-}
-
-struct ExceptionHandlerRecord {
-  RUNTIME_FUNCTION runtime_function;
-  UNWIND_INFO unwind_info;
-  unsigned char thunk[12];
-};
-
-bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
-  ExceptionHandlerRecord* record =
-      reinterpret_cast<ExceptionHandlerRecord*>(start);
-
-  // We assume that the first page of the code range is executable and
-  // committed and reserved for breakpad. What could possibly go wrong?
-
-  // All addresses are 32bit relative offsets to start.
-  record->runtime_function.BeginAddress = 0;
-#if defined(_M_ARM64)
-  record->runtime_function.FunctionLength =
-      base::checked_cast<DWORD>(size_in_bytes);
-#else
-  record->runtime_function.EndAddress =
-      base::checked_cast<DWORD>(size_in_bytes);
 #endif
-  record->runtime_function.UnwindData =
-      offsetof(ExceptionHandlerRecord, unwind_info);
-
-  // Create unwind info that only specifies an exception handler.
-  record->unwind_info.Version = 1;
-  record->unwind_info.Flags = UNW_FLAG_EHANDLER;
-  record->unwind_info.SizeOfProlog = 0;
-  record->unwind_info.CountOfCodes = 0;
-  record->unwind_info.FrameRegister = 0;
-  record->unwind_info.FrameOffset = 0;
-  record->unwind_info.ExceptionHandler =
-      offsetof(ExceptionHandlerRecord, thunk);
-
-  // Hardcoded thunk.
-  // mov imm64, rax
-  record->thunk[0] = 0x48;
-  record->thunk[1] = 0xb8;
-  void* handler =
-      reinterpret_cast<void*>(&CrashForExceptionInNonABICompliantCodeRange);
-  memcpy(&record->thunk[2], &handler, 8);
-
-  // jmp rax
-  record->thunk[10] = 0xff;
-  record->thunk[11] = 0xe0;
-
-  // Protect reserved page against modifications.
-  DWORD old_protect;
-  return VirtualProtect(start, sizeof(ExceptionHandlerRecord),
-                        PAGE_EXECUTE_READ, &old_protect) &&
-         RtlAddFunctionTable(&record->runtime_function, 1,
-                             reinterpret_cast<DWORD64>(start));
-}
-
-void UnregisterNonABICompliantCodeRange(void* start) {
-  ExceptionHandlerRecord* record =
-      reinterpret_cast<ExceptionHandlerRecord*>(start);
-
-  RtlDeleteFunctionTable(&record->runtime_function);
-}
-
-#endif  // _WIN64
+const char kPipeNameVar[] = "ELECTRON_CRASHPAD_PIPE_NAME";
 
 }  // namespace
+
+namespace crash_reporter {
 
 CrashReporterWin::CrashReporterWin() {}
 
 CrashReporterWin::~CrashReporterWin() {}
+
+#if defined(_WIN64)
+void CrashReporterWin::SetUnhandledExceptionFilter() {
+  gin::Debug::SetUnhandledExceptionCallback(&CrashForException);
+}
+#endif
 
 void CrashReporterWin::InitBreakpad(const std::string& product_name,
                                     const std::string& version,
@@ -155,125 +49,58 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
                                     const base::FilePath& crashes_dir,
                                     bool upload_to_server,
                                     bool skip_system_crash_handler) {
-  skip_system_crash_handler_ = skip_system_crash_handler;
+  // check whether crashpad has been initialized.
+  // Only need to initialize once.
+  if (simple_string_dictionary_)
+    return;
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  if (is_browser_) {
+    base::FilePath handler_path;
+    base::PathService::Get(base::FILE_EXE, &handler_path);
 
-  base::string16 pipe_name = base::ReplaceStringPlaceholders(
-      kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);
-  base::string16 wait_name = base::ReplaceStringPlaceholders(
-      kWaitEventFormat, base::UTF8ToUTF16(product_name), NULL);
-
-  // Wait until the crash service is started.
-  HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, wait_name.c_str());
-  if (wait_event != NULL) {
-    WaitForSingleObject(wait_event, 1000);
-    CloseHandle(wait_event);
-  }
-
-  // ExceptionHandler() attaches our handler and ~ExceptionHandler() detaches
-  // it, so we must explicitly reset *before* we instantiate our new handler
-  // to allow any previous handler to detach in the correct order.
-  breakpad_.reset();
-
-  breakpad_.reset(new google_breakpad::ExceptionHandler(
-      crashes_dir.DirName().value(), FilterCallback, MinidumpCallback, this,
-      google_breakpad::ExceptionHandler::HANDLER_ALL, kSmallDumpType,
-      pipe_name.c_str(),
-      GetCustomInfo(product_name, version, company_name, upload_to_server)));
-
-  if (!breakpad_->IsOutOfProcess())
-    LOG(ERROR) << "Cannot initialize out-of-process crash handler";
-
-#ifdef _WIN64
-  // Hook up V8 to breakpad.
-  if (!code_range_registered_) {
-    code_range_registered_ = true;
-    // gin::Debug::SetCodeRangeCreatedCallback only runs the callback when
-    // Isolate is just created, so we have to manually run following code here.
-    void* code_range = nullptr;
-    size_t size = 0;
-    v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
-    if (code_range && size &&
-        RegisterNonABICompliantCodeRange(code_range, size)) {
-      // FIXME(nornagon): This broke with https://crrev.com/c/1474703
-      gin::Debug::SetCodeRangeDeletedCallback(
-          UnregisterNonABICompliantCodeRange);
+    std::vector<std::string> args = {
+        "--no-rate-limit",
+        "--no-upload-gzip",  // not all servers accept gzip
+    };
+    std::string process_arg = "--type=$1";
+    args.push_back(
+        base::ReplaceStringPlaceholders(process_arg, {kCrashpadProcess}, NULL));
+    std::string crashes_dir_arg = "--$1=$2";
+    args.push_back(base::ReplaceStringPlaceholders(
+        crashes_dir_arg,
+        {kCrashesDirectoryKey, base::UTF16ToASCII(crashes_dir.value())}, NULL));
+    crashpad_client_.StartHandler(handler_path, crashes_dir, crashes_dir,
+                                  submit_url, StringMap(), args, true, false);
+    env->SetVar(kPipeNameVar,
+                base::UTF16ToUTF8(GetCrashpadClient().GetHandlerIPCPipe()));
+  } else {
+    std::string pipe_name_utf8;
+    if (env->GetVar(kPipeNameVar, &pipe_name_utf8)) {
+      crashpad_client_.SetHandlerIPCPipe(base::UTF8ToUTF16(pipe_name_utf8));
     }
   }
-#endif
+  crashpad::CrashpadInfo* crashpad_info =
+      crashpad::CrashpadInfo::GetCrashpadInfo();
+  if (skip_system_crash_handler) {
+    crashpad_info->set_system_crash_reporter_forwarding(
+        crashpad::TriState::kDisabled);
+  }
+  simple_string_dictionary_.reset(new crashpad::SimpleStringDictionary());
+  crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
+
+  SetInitialCrashKeyValues(version);
+  if (is_browser_) {
+    database_ = crashpad::CrashReportDatabase::Initialize(crashes_dir);
+    SetUploadToServer(upload_to_server);
+  }
 }
 
 void CrashReporterWin::SetUploadParameters() {
   upload_parameters_["platform"] = "win32";
 }
 
-int CrashReporterWin::CrashForException(EXCEPTION_POINTERS* info) {
-  if (breakpad_) {
-    breakpad_->WriteMinidumpForException(info);
-    if (skip_system_crash_handler_)
-      TerminateProcessWithoutDump();
-    else
-      RaiseFailFastException(info->ExceptionRecord, info->ContextRecord, 0);
-  }
-  return EXCEPTION_CONTINUE_SEARCH;
-}
-
-// static
-bool CrashReporterWin::FilterCallback(void* context,
-                                      EXCEPTION_POINTERS* exinfo,
-                                      MDRawAssertionInfo* assertion) {
-  return true;
-}
-
-// static
-bool CrashReporterWin::MinidumpCallback(const wchar_t* dump_path,
-                                        const wchar_t* minidump_id,
-                                        void* context,
-                                        EXCEPTION_POINTERS* exinfo,
-                                        MDRawAssertionInfo* assertion,
-                                        bool succeeded) {
-  CrashReporterWin* self = static_cast<CrashReporterWin*>(context);
-  if (succeeded && self->skip_system_crash_handler_)
-    return true;
-  else
-    return false;
-}
-
-google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
-    const std::string& product_name,
-    const std::string& version,
-    const std::string& company_name,
-    bool upload_to_server) {
-  custom_info_entries_.clear();
-  custom_info_entries_.reserve(3 + upload_parameters_.size());
-
-  custom_info_entries_.push_back(
-      google_breakpad::CustomInfoEntry(L"prod", L"Electron"));
-  custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
-      L"ver", base::UTF8ToWide(version).c_str()));
-  if (!upload_to_server) {
-    custom_info_entries_.push_back(
-        google_breakpad::CustomInfoEntry(L"skip_upload", L"1"));
-  }
-
-  for (StringMap::const_iterator iter = upload_parameters_.begin();
-       iter != upload_parameters_.end(); ++iter) {
-    // breakpad has hardcoded the length of name/value, and doesn't truncate
-    // the values itself, so we have to truncate them here otherwise weird
-    // things may happen.
-    std::wstring name = base::UTF8ToWide(iter->first);
-    std::wstring value = base::UTF8ToWide(iter->second);
-    if (name.length() > kNameMaxLength - 1)
-      name.resize(kNameMaxLength - 1);
-    if (value.length() > kValueMaxLength - 1)
-      value.resize(kValueMaxLength - 1);
-
-    custom_info_entries_.push_back(
-        google_breakpad::CustomInfoEntry(name.c_str(), value.c_str()));
-  }
-
-  custom_info_.entries = &custom_info_entries_.front();
-  custom_info_.count = custom_info_entries_.size();
-  return &custom_info_;
+crashpad::CrashpadClient& CrashReporterWin::GetCrashpadClient() {
+  return crashpad_client_;
 }
 
 // static

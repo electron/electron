@@ -5,10 +5,12 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_MAIN_H_
 #define ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_MAIN_H_
 
+#include <vector>
+
 namespace crash_service {
 
 // Program entry, should be called by main();
-int Main(const wchar_t* cmd_line);
+int Main(std::vector<char*>& args);
 
 }  // namespace crash_service
 

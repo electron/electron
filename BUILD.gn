@@ -505,12 +505,25 @@ static_library("electron_lib") {
     deps += [
       "//third_party/breakpad:breakpad_handler",
       "//third_party/breakpad:breakpad_sender",
+      "//third_party/crashpad/crashpad/client",
       "//ui/native_theme:native_theme_browser",
+      "//ui/views/controls/webview",
+      "//ui/wm",
       "//ui/wm/public",
     ]
+    public_deps += [
+      "//third_party/crashpad/crashpad/handler"
+    ]
+    include_dirs += [
+      # NOTE(nornagon): other chromium files use the full path to include
+      # crashpad; this is just here for compatibility between GN and GYP, so that
+      # the #includes can be agnostic about where crashpad is vendored.
+      "//third_party/crashpad"
+    ]
+
     public_deps += [ "//sandbox/win:sandbox" ]
   }
-  if (is_linux || is_win) {
+  if (is_linux) {
     deps += [
       "//third_party/breakpad:client",
       "//ui/views/controls/webview",

@@ -4,6 +4,7 @@
 
 #include "atom/app/atom_main.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <memory>
 #include <vector>
@@ -86,6 +87,11 @@ void FixStdioStreams() {
 }  // namespace
 
 #if defined(OS_WIN)
+
+namespace crash_reporter {
+extern const char kCrashpadProcess[];
+}
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   struct Arguments {
     int argc = 0;
@@ -148,13 +154,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   atexit([]() { OnThreadExit(nullptr, DLL_THREAD_DETACH, nullptr); });
 #endif
 
+  std::vector<char*> argv(arguments.argc);
+  std::transform(arguments.argv, arguments.argv + arguments.argc, argv.begin(),
+                 [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (run_as_node) {
-    std::vector<char*> argv(arguments.argc);
-    std::transform(
-        arguments.argv, arguments.argv + arguments.argc, argv.begin(),
-        [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
-
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     auto ret = atom::NodeMain(argv.size(), argv.data());
@@ -163,8 +167,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   }
 #endif
 
-  if (IsEnvSet("ELECTRON_INTERNAL_CRASH_SERVICE")) {
-    return crash_service::Main(cmd);
+  base::CommandLine::Init(argv.size(), argv.data());
+  const base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
+  if (cmd_line.GetSwitchValueASCII("type") ==
+      crash_reporter::kCrashpadProcess) {
+    return crash_service::Main(argv);
   }
 
   if (!atom::CheckCommandLineArguments(arguments.argc, arguments.argv))
