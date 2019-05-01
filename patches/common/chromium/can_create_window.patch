@@ -5,7 +5,7 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 6a42afb61eadb92a18c7506254aa015b2e7092e3..ed3f60d9230ae7ca902ba28caf8193ad895fe497 100644
+index 5eb0746e4d69a72b083d1632bb66882888b6b7f1..e99ea17700d6e0c240e07984748983e65fc61425 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -3669,6 +3669,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -17,7 +17,7 @@ index 6a42afb61eadb92a18c7506254aa015b2e7092e3..ed3f60d9230ae7ca902ba28caf8193ad
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 88471bc49cd5b00a9494cc3998ba9c44c2c87088..b78d5facf5fad5385d205f5cdc40f3609efa3741 100644
+index 68cb13c4e2bd144a81546edb99ba993e36cf09ff..67b676e6c58f2e27e47c9064980e2bfca39c7d3b 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -289,6 +289,10 @@ struct CreateNewWindowParams {

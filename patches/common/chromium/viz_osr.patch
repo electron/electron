@@ -97,11 +97,11 @@ index 93c52d2b928cba6e98723e19b005fb7bd7089a58..4dc645e770a2a039ed8e4ff4de555767
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index b87dda651d12d8b6bd1c58bc323ec06667418794..58aaf1bb6692d7365fbd4fe2f4d6daa86886e126 100644
+index 21345740188ebc13aefae524c9fe065168ccaf27..f56d94f8810063d36ee161b87dccfecbe6e3ab85 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -116,6 +116,8 @@ viz_component("service") {
-     "display_embedder/in_process_gpu_memory_buffer_manager.h",
+     "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
 +    "display_embedder/software_output_device_proxy.cc",
@@ -109,11 +109,11 @@ index b87dda651d12d8b6bd1c58bc323ec06667418794..58aaf1bb6692d7365fbd4fe2f4d6daa8
      "display_embedder/software_output_surface.cc",
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
-diff --git a/components/viz/service/display_embedder/gpu_display_provider.cc b/components/viz/service/display_embedder/gpu_display_provider.cc
-index e57ba4becd8453d8fc452df7b571d4a0794c4b74..b8ef7e9410f172ff09b90087655ea85f89a748eb 100644
---- a/components/viz/service/display_embedder/gpu_display_provider.cc
-+++ b/components/viz/service/display_embedder/gpu_display_provider.cc
-@@ -19,6 +19,7 @@
+diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
+index 264c56995171182940b223da06b809eebf78e918..cafc117436bdfb5600e5dfbcd2edf21fe505eeea 100644
+--- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
++++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
+@@ -18,6 +18,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl_non_ddl.h"
@@ -121,7 +121,7 @@ index e57ba4becd8453d8fc452df7b571d4a0794c4b74..b8ef7e9410f172ff09b90087655ea85f
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -277,6 +278,19 @@ GpuDisplayProvider::CreateSoftwareOutputDeviceForPlatform(
+@@ -240,6 +241,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  

@@ -5,7 +5,7 @@ Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_cocoa.mm b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-index 03ee233d5e07fd59f07227d5f925590a08935049..c9ca2bd46987a56901fb0d15969e1b29b69f42ce 100644
+index 5f6728312a5676285eebcb120a59b2e76a11d8bc..b7a1a16c1b282f7739638d8375117192da77b5e7 100644
 --- a/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 @@ -142,6 +142,11 @@ void ExtractUnderlines(NSAttributedString* string,
