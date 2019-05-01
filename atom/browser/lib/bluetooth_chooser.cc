@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/lib/bluetooth_chooser.h"
-#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
 
@@ -70,7 +70,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
       } else {
         bool prevent_default = api_web_contents_->Emit(
             "select-bluetooth-device", GetDeviceList(),
-            base::Bind(&OnDeviceChosen, event_handler_));
+            base::BindOnce(&OnDeviceChosen, event_handler_));
         if (!prevent_default) {
           auto it = device_map_.begin();
           auto device_id = it->first;
@@ -102,9 +102,9 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
   if (changed) {
     // Emit a select-bluetooth-device handler to allow for user to listen for
     // bluetooth device found.
-    bool prevent_default =
-        api_web_contents_->Emit("select-bluetooth-device", GetDeviceList(),
-                                base::Bind(&OnDeviceChosen, event_handler_));
+    bool prevent_default = api_web_contents_->Emit(
+        "select-bluetooth-device", GetDeviceList(),
+        base::BindOnce(&OnDeviceChosen, event_handler_));
 
     // If emit not implimented select first device that matches the filters
     //  provided.
