@@ -924,7 +924,13 @@ std::string AtomBrowserClient::GetProduct() const {
 }
 
 std::string AtomBrowserClient::GetUserAgent() const {
-  return GetApplicationUserAgent();
+  if (user_agent_override_.empty())
+    return GetApplicationUserAgent();
+  return user_agent_override_;
+}
+
+void AtomBrowserClient::SetUserAgent(const std::string& user_agent) {
+  user_agent_override_ = user_agent;
 }
 
 void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
