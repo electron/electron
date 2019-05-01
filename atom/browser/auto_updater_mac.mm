@@ -10,11 +10,11 @@
 #import <Squirrel/Squirrel.h>
 
 #include "atom/browser/browser.h"
+#include "atom/common/native_mate_converters/map_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/time/time.h"
-#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 
 namespace auto_updater {
