@@ -95,10 +95,10 @@ class Arguments {
   v8::Isolate* isolate() const { return isolate_; }
 
  private:
-  v8::Isolate* isolate_;
-  const v8::FunctionCallbackInfo<v8::Value>* info_;
-  int next_;
-  bool insufficient_arguments_;
+  v8::Isolate* isolate_ = nullptr;
+  const v8::FunctionCallbackInfo<v8::Value>* info_ = nullptr;
+  int next_ = 0;
+  bool insufficient_arguments_ = false;
 };
 
 }  // namespace mate
