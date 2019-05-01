@@ -22,12 +22,12 @@ class AtomBrowserContext;
 namespace api {
 
 // Possible errors.
-enum ProtocolError {
-  PROTOCOL_OK,  // no error
-  PROTOCOL_REGISTERED,
-  PROTOCOL_NOT_REGISTERED,
-  PROTOCOL_INTERCEPTED,
-  PROTOCOL_NOT_INTERCEPTED,
+enum class ProtocolError {
+  OK,  // no error
+  REGISTERED,
+  NOT_REGISTERED,
+  INTERCEPTED,
+  NOT_INTERCEPTED,
 };
 
 // Protocol implementation based on network services.

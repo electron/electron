@@ -56,13 +56,13 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
  private:
   // Possible errors.
-  enum ProtocolError {
-    PROTOCOL_OK,    // no error
-    PROTOCOL_FAIL,  // operation failed, should never occur
-    PROTOCOL_REGISTERED,
-    PROTOCOL_NOT_REGISTERED,
-    PROTOCOL_INTERCEPTED,
-    PROTOCOL_NOT_INTERCEPTED,
+  enum class ProtocolError {
+    OK,    // no error
+    FAIL,  // operation failed, should never occur
+    REGISTERED,
+    NOT_REGISTERED,
+    INTERCEPTED,
+    NOT_INTERCEPTED,
   };
 
   // The protocol handler that will create a protocol handler for certain
@@ -118,13 +118,13 @@ class Protocol : public mate::TrackableObject<Protocol> {
       const Handler& handler) {
     auto* job_factory = request_context_getter->job_factory();
     if (job_factory->IsHandledProtocol(scheme))
-      return PROTOCOL_REGISTERED;
+      return ProtocolError::REGISTERED;
     auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
         isolate, request_context_getter.get(), handler);
     if (job_factory->SetProtocolHandler(scheme, std::move(protocol_handler)))
-      return PROTOCOL_OK;
+      return ProtocolError::OK;
     else
-      return PROTOCOL_FAIL;
+      return ProtocolError::FAIL;
   }
 
   // Unregister the protocol handler that handles |scheme|.
@@ -159,15 +159,15 @@ class Protocol : public mate::TrackableObject<Protocol> {
       const Handler& handler) {
     auto* job_factory = request_context_getter->job_factory();
     if (!job_factory->IsHandledProtocol(scheme))
-      return PROTOCOL_NOT_REGISTERED;
+      return ProtocolError::NOT_REGISTERED;
     // It is possible a protocol is handled but can not be intercepted.
     if (!job_factory->HasProtocolHandler(scheme))
-      return PROTOCOL_FAIL;
+      return ProtocolError::FAIL;
     auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
         isolate, request_context_getter.get(), handler);
     if (!job_factory->InterceptProtocol(scheme, std::move(protocol_handler)))
-      return PROTOCOL_INTERCEPTED;
-    return PROTOCOL_OK;
+      return ProtocolError::INTERCEPTED;
+    return ProtocolError::OK;
   }
 
   // Restore the |scheme| to its original protocol handler.
