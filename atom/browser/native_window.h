@@ -164,12 +164,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual NativeWindowHandle GetNativeWindowHandle() const = 0;
 
   // Taskbar/Dock APIs.
-  enum ProgressState {
-    PROGRESS_NONE,           // no progress, no marking
-    PROGRESS_INDETERMINATE,  // progress, indeterminate
-    PROGRESS_ERROR,          // progress, errored (red)
-    PROGRESS_PAUSED,         // progress, paused (yellow)
-    PROGRESS_NORMAL,         // progress, not marked (green)
+  enum class ProgressState {
+    kNone,           // no progress, no marking
+    kIndeterminate,  // progress, indeterminate
+    kError,          // progress, errored (red)
+    kPaused,         // progress, paused (yellow)
+    kNormal,         // progress, not marked (green)
   };
 
   virtual void SetProgressBar(double progress, const ProgressState state) = 0;
