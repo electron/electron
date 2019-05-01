@@ -47,15 +47,27 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   void Clone(network::mojom::URLLoaderFactoryRequest request) override;
 
  private:
+  void SendResponse(
+      network::mojom::URLLoaderRequest loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      network::mojom::URLLoaderClientPtr client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+      ProtocolType type,
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> response);
   void SendResponseBuffer(network::mojom::URLLoaderClientPtr client,
-                          v8::Isolate* isolate,
-                          v8::Local<v8::Value> response);
+                          const mate::Dictionary& dict);
   void SendResponseString(network::mojom::URLLoaderClientPtr client,
+                          const mate::Dictionary& dict,
                           v8::Isolate* isolate,
                           v8::Local<v8::Value> response);
   void SendResponseFile(network::mojom::URLLoaderRequest loader,
                         network::ResourceRequest request,
                         network::mojom::URLLoaderClientPtr client,
+                        const mate::Dictionary& dict,
                         v8::Isolate* isolate,
                         v8::Local<v8::Value> response);
   void SendResponseHttp(
@@ -66,11 +78,9 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const network::ResourceRequest& original_request,
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> response);
+      const mate::Dictionary& dict);
   void SendResponseStream(network::mojom::URLLoaderClientPtr client,
-                          v8::Isolate* isolate,
-                          v8::Local<v8::Value> response);
+                          const mate::Dictionary& dict);
 
   bool HandleError(network::mojom::URLLoaderClientPtr* client,
                    const mate::Dictionary& dict);
