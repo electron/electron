@@ -9,9 +9,9 @@
 
 #include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/binding_set.h"
+#include "native_mate/dictionary.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "v8/include/v8.h"
 
 namespace atom {
 
@@ -73,8 +73,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                           v8::Local<v8::Value> response);
 
   bool HandleError(network::mojom::URLLoaderClientPtr* client,
-                   v8::Isolate* isolate,
-                   v8::Local<v8::Value> response);
+                   const mate::Dictionary& dict);
   void SendContents(network::mojom::URLLoaderClientPtr client,
                     network::ResourceResponseHead head,
                     const char* data,
