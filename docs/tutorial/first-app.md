@@ -138,7 +138,7 @@ let win
 
 function createWindow () {
   // Create the browser window.
-  let win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
