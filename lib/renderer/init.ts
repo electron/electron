@@ -166,7 +166,7 @@ if (nodeIntegration) {
 
   // Redirect window.onerror to uncaughtException.
   window.onerror = function (_message, _filename, _lineno, _colno, error) {
-    if (global.process.listeners('uncaughtException').length > 0) {
+    if (global.process.listenerCount('uncaughtException') > 0) {
       // We do not want to add `uncaughtException` to our definitions
       // because we don't want anyone else (anywhere) to throw that kind
       // of error.
