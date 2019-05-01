@@ -15,10 +15,13 @@ bool SetMethod(v8::Local<v8::Object> recv,
                const base::StringPiece& key,
                const T& callback) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  return recv->Set(gin::StringToV8(isolate, key),
-                   gin::CreateFunctionTemplate(isolate, callback)
-                       ->GetFunction(isolate->GetCurrentContext())
-                       .ToLocalChecked());
+  auto context = isolate->GetCurrentContext();
+  return recv
+      ->Set(context, gin::StringToV8(isolate, key),
+            gin::CreateFunctionTemplate(isolate, callback)
+                ->GetFunction(context)
+                .ToLocalChecked())
+      .ToChecked();
 }
 
 }  // namespace gin_util
