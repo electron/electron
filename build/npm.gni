@@ -6,7 +6,7 @@ template("npm_action") {
   action("npm_pre_flight_" + target_name) {
     inputs = [
       "package.json",
-      "package-lock.json",
+      "yarn.lock",
     ]
     script = "//electron/build/npm-run.py"
 
