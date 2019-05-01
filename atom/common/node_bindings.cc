@@ -158,7 +158,7 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_(browser_env), weak_factory_(this) {
-  if (browser_env == WORKER) {
+  if (browser_env == BrowserEnvironment::WORKER) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
   } else {
@@ -207,12 +207,12 @@ base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_standalone_mode = browser_env_ == BROWSER;
+  node::g_standalone_mode = browser_env_ == BrowserEnvironment::BROWSER;
   node::g_upstream_node_mode = false;
 
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     AtomCommandLine::InitializeFromCommandLine();
 #endif
 
@@ -286,7 +286,8 @@ void NodeBindings::Initialize() {
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
-  if (browser_env_ == BROWSER || env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
+  if (browser_env_ == BrowserEnvironment::BROWSER ||
+      env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
@@ -308,17 +309,18 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Feed node the path to initialization script.
   base::FilePath::StringType process_type;
   switch (browser_env_) {
-    case BROWSER:
+    case BrowserEnvironment::BROWSER:
       process_type = FILE_PATH_LITERAL("browser");
       break;
-    case RENDERER:
+    case BrowserEnvironment::RENDERER:
       process_type = FILE_PATH_LITERAL("renderer");
       break;
-    case WORKER:
+    case BrowserEnvironment::WORKER:
       process_type = FILE_PATH_LITERAL("worker");
       break;
   }
-  base::FilePath resources_path = GetResourcesPath(browser_env_ == BROWSER);
+  base::FilePath resources_path =
+      GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
   base::FilePath script_path =
       resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
           .Append(process_type)
@@ -330,7 +332,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
 
-  if (browser_env_ == BROWSER) {
+  if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
     // so instead call it here to match expected node behavior
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
@@ -344,7 +346,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
   // Do not set DOM globals for renderer process.
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     process.Set("_noBrowserGlobals", resources_path);
   // The path to helper app.
   base::FilePath helper_exec_path;
@@ -397,13 +399,13 @@ void NodeBindings::UvRunOnce() {
   v8::MicrotasksScope script_scope(env->isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
 
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
   if (r == 0)

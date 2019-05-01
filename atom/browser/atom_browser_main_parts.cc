@@ -205,7 +205,8 @@ AtomBrowserMainParts::AtomBrowserMainParts(
     const content::MainFunctionParams& params)
     : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
-      node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
+      node_bindings_(
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
       electron_bindings_(new ElectronBindings(uv_default_loop())),
       main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";

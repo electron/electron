@@ -25,7 +25,7 @@ namespace atom {
 
 class NodeBindings {
  public:
-  enum BrowserEnvironment {
+  enum class BrowserEnvironment {
     BROWSER,
     RENDERER,
     WORKER,
