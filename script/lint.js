@@ -43,7 +43,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['atom'],
+  roots: ['atom', 'native_mate'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_DICTIONARY_H_
-#define NATIVE_MATE_DICTIONARY_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_
+#define NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_
 
 #include "native_mate/converter.h"
 #include "native_mate/object_template_builder.h"
@@ -141,4 +141,4 @@ struct Converter<Dictionary> {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_DICTIONARY_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_

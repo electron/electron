@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_CONVERTER_H_
-#define NATIVE_MATE_CONVERTER_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_CONVERTER_H_
+#define NATIVE_MATE_NATIVE_MATE_CONVERTER_H_
 
 #include <map>
 #include <set>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "base/strings/string_piece.h"
@@ -56,11 +57,12 @@ struct Converter<bool> {
 
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
 template <>
-struct Converter<unsigned long> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, unsigned long val);
+struct Converter<unsigned long> {  // NOLINT(runtime/int)
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   unsigned long val);  // NOLINT(runtime/int)
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     unsigned long* out);
+                     unsigned long* out);  // NOLINT(runtime/int)
 };
 #endif
 
@@ -382,4 +384,4 @@ inline v8::Local<v8::String> StringToV8(v8::Isolate* isolate,
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_CONVERTER_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_CONVERTER_H_

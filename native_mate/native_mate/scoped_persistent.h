@@ -2,8 +2,8 @@
 // Use of this source code is governed by MIT license that can be found in the
 // LICENSE file.
 
-#ifndef NATIVE_MATE_SCOPED_PERSISTENT_H_
-#define NATIVE_MATE_SCOPED_PERSISTENT_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_SCOPED_PERSISTENT_H_
+#define NATIVE_MATE_NATIVE_MATE_SCOPED_PERSISTENT_H_
 
 #include "base/memory/ref_counted.h"
 #include "native_mate/converter.h"
@@ -99,4 +99,4 @@ struct Converter<ScopedPersistent<T>> {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_SCOPED_PERSISTENT_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_SCOPED_PERSISTENT_H_

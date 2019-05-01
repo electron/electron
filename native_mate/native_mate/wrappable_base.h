@@ -1,5 +1,9 @@
-#ifndef NATIVE_MATE_WRAPPABLE_BASE_H_
-#define NATIVE_MATE_WRAPPABLE_BASE_H_
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE.chromium file.
+
+#ifndef NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
+#define NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
 
 namespace mate {
 
@@ -59,4 +63,4 @@ class WrappableBase {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_WRAPPABLE_BASE_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_

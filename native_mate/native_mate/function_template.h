@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_FUNCTION_TEMPLATE_H_
-#define NATIVE_MATE_FUNCTION_TEMPLATE_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
+#define NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_
 
 #include "base/callback.h"
 #include "base/logging.h"
@@ -285,4 +285,4 @@ void CreateFunctionHandler(v8::Isolate* isolate,
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_FUNCTION_TEMPLATE_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_FUNCTION_TEMPLATE_H_

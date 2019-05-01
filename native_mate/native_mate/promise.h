@@ -2,8 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef NATIVE_MATE_PROMISE_H_
-#define NATIVE_MATE_PROMISE_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_PROMISE_H_
+#define NATIVE_MATE_NATIVE_MATE_PROMISE_H_
+
+#include <string>
 
 #include "native_mate/converter.h"
 
@@ -12,7 +14,7 @@ namespace mate {
 class Promise {
  public:
   Promise();
-  Promise(v8::Isolate* isolate);
+  explicit Promise(v8::Isolate* isolate);
   virtual ~Promise();
 
   static Promise Create(v8::Isolate* isolate);
@@ -53,4 +55,4 @@ struct Converter<Promise> {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_PROMISE_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_PROMISE_H_
