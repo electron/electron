@@ -57,10 +57,14 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
   v8::HandleScope handle_scope(isolate_);
 
   // emitter.on(event, callback)
-  auto fn = mate::CallbackToV8(isolate_, std::move(callback));
-  mate::EmitEvent(isolate_, emitter_.Get(isolate_), "on", event, fn);
+  v8::Local<v8::Value> args[] = {
+      mate::StringToV8(isolate_, event),
+      mate::CallbackToV8(isolate_, std::move(callback)),
+  };
+  node::MakeCallback(isolate_, emitter_.Get(isolate_), "on",
+                     node::arraysize(args), args, {0, 0});
 
-  handlers_[event].Reset(isolate_, fn);
+  handlers_[event].Reset(isolate_, args[1]);
 }
 
 void NodeStreamLoader::OnData(mate::Arguments* args) {
