@@ -152,7 +152,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
 };
 
 AtomCertVerifier::AtomCertVerifier(RequireCTDelegate* ct_delegate)
-    : default_cert_verifier_(net::CertVerifier::CreateDefault()),
+    : default_cert_verifier_(net::CertVerifier::CreateDefault(nullptr)),
       ct_delegate_(ct_delegate) {}
 
 AtomCertVerifier::~AtomCertVerifier() {}

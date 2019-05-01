@@ -41,6 +41,7 @@
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "third_party/blink/public/common/logging/logging_utils.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
@@ -779,11 +780,13 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
 
 bool InspectableWebContentsImpl::DidAddMessageToConsole(
     content::WebContents* source,
-    int32_t level,
+    blink::mojom::ConsoleMessageLevel level,
     const base::string16& message,
     int32_t line_no,
     const base::string16& source_id) {
-  logging::LogMessage("CONSOLE", line_no, level).stream()
+  logging::LogMessage("CONSOLE", line_no,
+                      blink::ConsoleMessageLevelToLogSeverity(level))
+          .stream()
       << "\"" << message << "\", source: " << source_id << " (" << line_no
       << ")";
   return true;

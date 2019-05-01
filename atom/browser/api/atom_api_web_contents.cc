@@ -491,12 +491,14 @@ void WebContents::DestroyWebContents(bool async) {
   ResetManagedWebContents(async);
 }
 
-bool WebContents::DidAddMessageToConsole(content::WebContents* source,
-                                         int32_t level,
-                                         const base::string16& message,
-                                         int32_t line_no,
-                                         const base::string16& source_id) {
-  return Emit("console-message", level, message, line_no, source_id);
+bool WebContents::DidAddMessageToConsole(
+    content::WebContents* source,
+    blink::mojom::ConsoleMessageLevel level,
+    const base::string16& message,
+    int32_t line_no,
+    const base::string16& source_id) {
+  return Emit("console-message", static_cast<int32_t>(level), message, line_no,
+              source_id);
 }
 
 void WebContents::OnCreateWindow(
