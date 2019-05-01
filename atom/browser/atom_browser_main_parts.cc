@@ -481,6 +481,7 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
+  node_debugger_->Stop();
   js_env_->OnMessageLoopDestroying();
 
 #if defined(OS_MACOSX)

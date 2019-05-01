@@ -8,6 +8,8 @@ const os = require('os')
 const { ipcRenderer, remote } = require('electron')
 const features = process.atomBinding('features')
 
+const { emittedOnce } = require('./events-helpers')
+
 const isCI = remote.getGlobal('isCi')
 chai.use(dirtyChai)
 
@@ -219,6 +221,7 @@ describe('node feature', () => {
 
   describe('inspector', () => {
     let child = null
+    let exitPromise = null
 
     beforeEach(function () {
       if (!features.isRunAsNodeEnabled()) {
@@ -226,8 +229,14 @@ describe('node feature', () => {
       }
     })
 
-    afterEach(() => {
-      if (child !== null) child.kill()
+    afterEach(async () => {
+      if (child && exitPromise) {
+        const [code, signal] = await exitPromise
+        expect(signal).to.equal(null)
+        expect(code).to.equal(0)
+      } else if (child) {
+        child.kill()
+      }
     })
 
     it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
@@ -263,6 +272,7 @@ describe('node feature', () => {
           ELECTRON_RUN_AS_NODE: true
         }
       })
+      exitPromise = emittedOnce(child, 'exit')
 
       let output = ''
       function cleanup () {
@@ -287,6 +297,7 @@ describe('node feature', () => {
 
     it('does not start the v8 inspector when --inspect is after a -- argument', (done) => {
       child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'noop.js'), '--', '--inspect'])
+      exitPromise = emittedOnce(child, 'exit')
 
       let output = ''
       function dataListener (data) {
@@ -303,6 +314,35 @@ describe('node feature', () => {
       })
     })
 
+    it('does does not crash when quitting with the inspector connected', function (done) {
+      // IPC Electron child process not supported on Windows
+      if (process.platform === 'win32') return this.skip()
+      child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'delay-exit'), '--inspect=0'], {
+        stdio: ['ipc']
+      })
+      exitPromise = emittedOnce(child, 'exit')
+
+      let output = ''
+      function dataListener (data) {
+        output += data
+
+        if (output.trim().startsWith('Debugger listening on ws://') && output.endsWith('\n')) {
+          const socketMatch = output.trim().match(/(ws:\/\/.+:[0-9]+\/.+?)\n/gm)
+          if (socketMatch && socketMatch[0]) {
+            child.stderr.removeListener('data', dataListener)
+            child.stdout.removeListener('data', dataListener)
+            const connection = new WebSocket(socketMatch[0])
+            connection.onopen = () => {
+              child.send('plz-quit')
+              done()
+            }
+          }
+        }
+      }
+      child.stderr.on('data', dataListener)
+      child.stdout.on('data', dataListener)
+    })
+
     it('supports js binding', (done) => {
       child = ChildProcess.spawn(process.execPath, ['--inspect', path.join(__dirname, 'fixtures', 'module', 'inspector-binding.js')], {
         env: {
@@ -310,6 +350,7 @@ describe('node feature', () => {
         },
         stdio: ['ipc']
       })
+      exitPromise = emittedOnce(child, 'exit')
 
       child.on('message', ({ cmd, debuggerEnabled, success }) => {
         if (cmd === 'assert') {
