@@ -31,6 +31,44 @@ using content::BrowserThread;
 
 namespace atom {
 
+namespace {
+
+network::ResourceResponseHead ToResponseHead(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> value) {
+  network::ResourceResponseHead head;
+  head.mime_type = "text/html";
+  head.charset = "utf-8";
+  if (!value->IsObject())
+    return head;
+
+  mate::Dictionary dict(
+      isolate, value->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+
+  int status_code = 200;
+  dict.Get("statusCode", &status_code);
+  head.headers = new net::HttpResponseHeaders(base::StringPrintf(
+      "HTTP/1.1 %d %s", status_code,
+      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
+
+  base::DictionaryValue headers;
+  if (dict.Get("headers", &headers)) {
+    if (!head.headers)
+      head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+    for (const auto& iter : headers.DictItems()) {
+      head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+      // Some apps are passing content-type via headers, which is not accepted
+      // in NetworkService.
+      if (iter.first == "content-type")
+        head.mime_type = iter.second.GetString();
+    }
+  }
+  dict.Get("mimeType", &head.mime_type);
+  dict.Get("charset", &head.charset);
+  return head;
+}
+
+}  // namespace
+
 AtomURLLoaderFactory::AtomURLLoaderFactory(ProtocolType type,
                                            const ProtocolHandler& handler)
     : type_(type), handler_(handler), weak_factory_(this) {}
@@ -88,7 +126,10 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
       break;
     default: {
       std::string contents = "Not Implemented";
-      SendContents(std::move(client), "text/html", "utf-8", contents.data(),
+      network::ResourceResponseHead head;
+      head.mime_type = "text/html";
+      head.charset = "utf-8";
+      SendContents(std::move(client), std::move(head), contents.data(),
                    contents.size());
     }
   }
@@ -106,8 +147,6 @@ void AtomURLLoaderFactory::SendResponseBuffer(
   if (HandleError(&client, isolate, response))
     return;
 
-  std::string mime_type = "text/html";
-  std::string charset = "utf-8";
   v8::Local<v8::Value> buffer;
   if (node::Buffer::HasInstance(response)) {
     buffer = response;
@@ -115,8 +154,6 @@ void AtomURLLoaderFactory::SendResponseBuffer(
     mate::Dictionary dict(
         isolate,
         response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
-    dict.Get("mimeType", &mime_type);
-    dict.Get("charset", &charset);
     dict.Get("data", &buffer);
     if (!node::Buffer::HasInstance(response))
       buffer = v8::Local<v8::Value>();
@@ -127,7 +164,7 @@ void AtomURLLoaderFactory::SendResponseBuffer(
     return;
   }
 
-  SendContents(std::move(client), std::move(mime_type), std::move(charset),
+  SendContents(std::move(client), ToResponseHead(isolate, response),
                node::Buffer::Data(buffer), node::Buffer::Length(buffer));
 }
 
@@ -138,8 +175,6 @@ void AtomURLLoaderFactory::SendResponseString(
   if (HandleError(&client, isolate, response))
     return;
 
-  std::string mime_type = "text/html";
-  std::string charset = "utf-8";
   std::string contents;
   if (response->IsString()) {
     contents = gin::V8ToString(isolate, response);
@@ -147,11 +182,9 @@ void AtomURLLoaderFactory::SendResponseString(
     mate::Dictionary dict(
         isolate,
         response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
-    dict.Get("mimeType", &mime_type);
-    dict.Get("charset", &charset);
     dict.Get("data", &contents);
   }
-  SendContents(std::move(client), std::move(mime_type), std::move(charset),
+  SendContents(std::move(client), ToResponseHead(isolate, response),
                contents.data(), contents.size());
 }
 
@@ -165,7 +198,6 @@ void AtomURLLoaderFactory::SendResponseFile(
     return;
 
   base::FilePath path;
-  scoped_refptr<net::HttpResponseHeaders> response_headers;
   if (mate::ConvertFromV8(isolate, response, &path)) {
     request.url = net::FilePathToFileURL(path);
   } else if (response->IsObject()) {
@@ -176,21 +208,15 @@ void AtomURLLoaderFactory::SendResponseFile(
     dict.Get("method", &request.method);
     if (dict.Get("path", &path))
       request.url = net::FilePathToFileURL(path);
-    base::DictionaryValue headers;
-    if (dict.Get("headers", &headers)) {
-      response_headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
-      response_headers->AddHeader(kCORSHeader);
-      for (const auto& iter : headers.DictItems())
-        response_headers->AddHeader(iter.first + ": " +
-                                    iter.second.GetString());
-    }
   } else {
     client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
+  network::ResourceResponseHead head = ToResponseHead(isolate, response);
+  head.headers->AddHeader(kCORSHeader);
   content::CreateFileURLLoader(request, std::move(loader), std::move(client),
-                               nullptr, false, response_headers);
+                               nullptr, false, head.headers);
 }
 
 void AtomURLLoaderFactory::SendResponseHttp(
@@ -260,17 +286,8 @@ void AtomURLLoaderFactory::SendResponseStream(
   mate::Dictionary dict(
       isolate,
       response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
-  int status_code = 200;
-  dict.Get("statusCode", &status_code);
 
-  network::ResourceResponseHead head;
-  head.headers = new net::HttpResponseHeaders(base::StringPrintf(
-      "HTTP/1.1 %d %s", status_code,
-      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
-  v8::Local<v8::Value> headers;
-  if (dict.Get("headers", &headers))
-    mate::Converter<net::HttpResponseHeaders*>::FromV8(isolate, headers,
-                                                       head.headers.get());
+  network::ResourceResponseHead head = ToResponseHead(isolate, response);
 
   v8::Local<v8::Value> stream;
   if (!dict.Get("data", &stream)) {
@@ -317,8 +334,7 @@ bool AtomURLLoaderFactory::HandleError(
 
 void AtomURLLoaderFactory::SendContents(
     network::mojom::URLLoaderClientPtr client,
-    std::string mime_type,
-    std::string charset,
+    network::ResourceResponseHead head,
     const char* data,
     size_t ssize) {
   uint32_t size = base::saturated_cast<uint32_t>(ssize);
@@ -330,10 +346,6 @@ void AtomURLLoaderFactory::SendContents(
     return;
   }
 
-  network::ResourceResponseHead head;
-  head.mime_type = std::move(mime_type);
-  head.charset = std::move(charset);
-  head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
   head.headers->AddHeader(kCORSHeader);
   client->OnReceiveResponse(head);
   client->OnStartLoadingResponseBody(std::move(pipe.consumer_handle));

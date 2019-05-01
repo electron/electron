@@ -76,8 +76,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                    v8::Isolate* isolate,
                    v8::Local<v8::Value> response);
   void SendContents(network::mojom::URLLoaderClientPtr client,
-                    std::string mime_type,
-                    std::string charset,
+                    network::ResourceResponseHead head,
                     const char* data,
                     size_t size);
 
