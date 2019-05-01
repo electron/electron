@@ -350,9 +350,8 @@ v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   args->GetNext(&url);
 
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
-      url,
-      base::Bind(util::CopyablePromise::ResolveCopyablePromise<std::string>,
-                 util::CopyablePromise(promise)));
+      url, base::BindOnce(util::Promise::ResolvePromise<std::string>,
+                          std::move(promise)));
 
   return handle;
 }
@@ -413,8 +412,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(mate::Arguments* args) {
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin, base::Time(),
       base::Time::Max(),
-      base::Bind(util::CopyablePromise::ResolveEmptyCopyablePromise,
-                 util::CopyablePromise(promise)));
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
   return handle;
 }
 
@@ -496,17 +494,18 @@ void Session::DisableNetworkEmulation() {
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
 
-void WrapVerifyProc(base::Callback<void(const VerifyRequestParams& request,
-                                        base::Callback<void(int)>)> proc,
-                    const VerifyRequestParams& request,
-                    base::OnceCallback<void(int)> cb) {
+void WrapVerifyProc(
+    base::RepeatingCallback<void(const VerifyRequestParams& request,
+                                 base::RepeatingCallback<void(int)>)> proc,
+    const VerifyRequestParams& request,
+    base::OnceCallback<void(int)> cb) {
   proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  base::Callback<void(const VerifyRequestParams& request,
-                      base::Callback<void(int)>)>
+  base::RepeatingCallback<void(const VerifyRequestParams& request,
+                               base::RepeatingCallback<void(int)>)>
       proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
@@ -517,7 +516,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&SetCertVerifyProcInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
-                     base::Bind(&WrapVerifyProc, proc)));
+                     base::BindRepeating(&WrapVerifyProc, proc)));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -645,7 +644,7 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   }
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
-  download_manager->GetDelegate()->GetNextId(base::Bind(
+  download_manager->GetDelegate()->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
