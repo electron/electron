@@ -44,14 +44,14 @@ void WebContentsZoomController::SetEmbedderZoomController(
 void WebContentsZoomController::SetZoomLevel(double level) {
   if (!web_contents()->GetRenderViewHost()->IsRenderViewLive() ||
       content::ZoomValuesEqual(GetZoomLevel(), level) ||
-      zoom_mode_ == ZOOM_MODE_DISABLED)
+      zoom_mode_ == ZoomMode::DISABLED)
     return;
 
   int render_process_id =
       web_contents()->GetRenderViewHost()->GetProcess()->GetID();
   int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
 
-  if (zoom_mode_ == ZOOM_MODE_MANUAL) {
+  if (zoom_mode_ == ZoomMode::MANUAL) {
     zoom_level_ = level;
 
     for (Observer& observer : observers_)
@@ -62,7 +62,7 @@ void WebContentsZoomController::SetZoomLevel(double level) {
 
   content::HostZoomMap* zoom_map =
       content::HostZoomMap::GetForWebContents(web_contents());
-  if (zoom_mode_ == ZOOM_MODE_ISOLATED ||
+  if (zoom_mode_ == ZoomMode::ISOLATED ||
       zoom_map->UsesTemporaryZoomLevel(render_process_id, render_view_id)) {
     zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id, level);
     // Notify observers of zoom level changes.
@@ -78,7 +78,7 @@ void WebContentsZoomController::SetZoomLevel(double level) {
 }
 
 double WebContentsZoomController::GetZoomLevel() {
-  return zoom_mode_ == ZOOM_MODE_MANUAL
+  return zoom_mode_ == ZoomMode::MANUAL
              ? zoom_level_
              : content::HostZoomMap::GetZoomLevel(web_contents());
 }
@@ -120,7 +120,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
   double original_zoom_level = GetZoomLevel();
 
   switch (new_mode) {
-    case ZOOM_MODE_DEFAULT: {
+    case ZoomMode::DEFAULT: {
       content::NavigationEntry* entry =
           web_contents()->GetController().GetLastCommittedEntry();
 
@@ -148,11 +148,11 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       zoom_map->ClearTemporaryZoomLevel(render_process_id, render_view_id);
       break;
     }
-    case ZOOM_MODE_ISOLATED: {
-      // Unless the zoom mode was |ZOOM_MODE_DISABLED| before this call, the
+    case ZoomMode::ISOLATED: {
+      // Unless the zoom mode was |ZoomMode::DISABLED| before this call, the
       // page needs an initial isolated zoom back to the same level it was at
       // in the other mode.
-      if (zoom_mode_ != ZOOM_MODE_DISABLED) {
+      if (zoom_mode_ != ZoomMode::DISABLED) {
         zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
                                         original_zoom_level);
       } else {
@@ -164,11 +164,11 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       }
       break;
     }
-    case ZOOM_MODE_MANUAL: {
-      // Unless the zoom mode was |ZOOM_MODE_DISABLED| before this call, the
+    case ZoomMode::MANUAL: {
+      // Unless the zoom mode was |ZoomMode::DISABLED| before this call, the
       // page needs to be resized to the default zoom. While in manual mode,
       // the zoom level is handled independently.
-      if (zoom_mode_ != ZOOM_MODE_DISABLED) {
+      if (zoom_mode_ != ZoomMode::DISABLED) {
         zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
                                         GetDefaultZoomLevel());
         zoom_level_ = original_zoom_level;
@@ -181,7 +181,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       }
       break;
     }
-    case ZOOM_MODE_DISABLED: {
+    case ZoomMode::DISABLED: {
       // The page needs to be zoomed back to default before disabling the zoom
       zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
                                       GetDefaultZoomLevel());
@@ -194,7 +194,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
 
 void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
     const GURL& url) {
-  if (zoom_mode_ != ZOOM_MODE_ISOLATED && zoom_mode_ != ZOOM_MODE_MANUAL)
+  if (zoom_mode_ != ZoomMode::ISOLATED && zoom_mode_ != ZoomMode::MANUAL)
     return;
 
   int render_process_id =
@@ -208,7 +208,7 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   for (Observer& observer : observers_)
     observer.OnZoomLevelChanged(web_contents(), new_zoom_level, false);
   zoom_map->ClearTemporaryZoomLevel(render_process_id, render_view_id);
-  zoom_mode_ = ZOOM_MODE_DEFAULT;
+  zoom_mode_ = ZoomMode::DEFAULT;
 }
 
 void WebContentsZoomController::DidFinishNavigation(
