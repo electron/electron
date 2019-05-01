@@ -31,17 +31,6 @@ using content::BrowserThread;
 namespace gin {
 
 template <>
-struct Converter<atom::api::Cookies::Error> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::api::Cookies::Error val) {
-    if (val == atom::api::Cookies::SUCCESS)
-      return v8::Null(isolate);
-    else
-      return v8::Exception::Error(StringToV8(isolate, "Setting cookie failed"));
-  }
-};
-
-template <>
 struct Converter<net::CanonicalCookie> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CanonicalCookie& val) {

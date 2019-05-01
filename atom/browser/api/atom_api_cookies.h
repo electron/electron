@@ -31,11 +31,6 @@ namespace api {
 
 class Cookies : public mate::TrackableObject<Cookies> {
  public:
-  enum Error {
-    SUCCESS,
-    FAILED,
-  };
-
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      AtomBrowserContext* browser_context);
 
