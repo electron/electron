@@ -8,6 +8,7 @@
 #include <objc/objc-runtime.h>
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/native_browser_view_mac.h"
 #include "atom/browser/ui/cocoa/atom_native_widget_mac.h"

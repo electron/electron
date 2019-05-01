@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_app.h"
 
+#include <string>
+
 #import <Cocoa/Cocoa.h>
 
 #include "base/strings/sys_string_conversions.h"
@@ -59,6 +61,6 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
                              bookmarkUrl);
 }
 
-}  // namespace atom
-
 }  // namespace api
+
+}  // namespace atom

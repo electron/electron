@@ -4,6 +4,10 @@
 
 #import "atom/browser/mac/atom_application.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "atom/browser/browser.h"
 #import "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"

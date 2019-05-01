@@ -4,6 +4,9 @@
 
 #include "atom/browser/api/atom_api_browser_window.h"
 
+#include <memory>
+#include <vector>
+
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/native_browser_view.h"

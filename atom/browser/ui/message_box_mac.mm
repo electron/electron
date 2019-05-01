@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/message_box.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/native_window.h"

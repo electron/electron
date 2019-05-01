@@ -4,6 +4,8 @@
 
 #import "atom/common/application_info.h"
 
+#include <string>
+
 #import "atom/common/mac/main_application_bundle.h"
 #import "base/mac/foundation_util.h"
 #import "base/strings/sys_string_conversions.h"

@@ -4,6 +4,9 @@
 
 #import "atom/browser/mac/atom_application_delegate.h"
 
+#include <memory>
+#include <string>
+
 #include "atom/browser/browser.h"
 #import "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
@@ -24,7 +27,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 @end
 @implementation OOMDisabledIMKInputSession
 - (void)_coreAttributesFromRange:(NSRange)range
-                 whichAttributes:(long long)attributes
+                 whichAttributes:(long long)attributes  // NOLINT(runtime/int)
                completionHandler:(void (^)(void))block {
   // The allocator flag is per-process, so other threads may temporarily
   // not have fatal OOM occur while this method executes, but it is better

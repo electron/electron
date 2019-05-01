@@ -4,6 +4,8 @@
 
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
 
+#include <algorithm>
+
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_mac.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"

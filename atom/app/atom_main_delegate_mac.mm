@@ -4,6 +4,8 @@
 
 #include "atom/app/atom_main_delegate.h"
 
+#include <string>
+
 #include "atom/browser/mac/atom_application.h"
 #include "atom/common/application_info.h"
 #include "atom/common/mac/main_application_bundle.h"

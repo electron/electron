@@ -4,6 +4,8 @@
 
 #include "atom/browser/auto_updater.h"
 
+#include <string>
+
 #import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
 #import <ReactiveCocoa/RACCommand.h>
 #import <ReactiveCocoa/RACSignal.h>
@@ -29,7 +31,7 @@ SQRLUpdater* g_updater = nil;
 namespace {
 
 bool g_update_available = false;
-std::string update_url_ = "";
+std::string update_url_ = "";  // NOLINT(runtime/string)
 
 }  // namespace
 

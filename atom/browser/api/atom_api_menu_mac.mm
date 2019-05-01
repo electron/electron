@@ -4,6 +4,9 @@
 
 #import "atom/browser/api/atom_api_menu_mac.h"
 
+#include <string>
+#include <utility>
+
 #include "atom/browser/native_window.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/common/node_includes.h"

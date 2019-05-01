@@ -4,6 +4,10 @@
 
 #include "atom/browser/mac/dict_util.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "base/json/json_writer.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"

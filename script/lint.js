@@ -41,6 +41,21 @@ function spawnAndCheckExitCode (cmd, args, opts) {
   if (status) process.exit(status)
 }
 
+function cpplint (args) {
+  const result = childProcess.spawnSync('cpplint.py', args, { encoding: 'utf8' })
+  // cpplint.py writes EVERYTHING to stderr, including status messages
+  if (result.stderr) {
+    for (const line of result.stderr.split(/[\r\n]+/)) {
+      if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
+        console.warn(line)
+      }
+    }
+  }
+  if (result.status) {
+    process.exit(result.status)
+  }
+}
+
 const LINTERS = [ {
   key: 'c++',
   roots: ['atom'],
@@ -51,18 +66,25 @@ const LINTERS = [ {
     } else {
       spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
     }
-    const result = childProcess.spawnSync('cpplint.py', filenames, { encoding: 'utf8' })
-    // cpplint.py writes EVERYTHING to stderr, including status messages
-    if (result.stderr) {
-      for (const line of result.stderr.split(/[\r\n]+/)) {
-        if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
-          console.warn(line)
-        }
-      }
+    cpplint(filenames)
+  }
+}, {
+  key: 'objc',
+  roots: ['atom'],
+  test: filename => filename.endsWith('.mm'),
+  run: (opts, filenames) => {
+    if (opts.fix) {
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames])
+    } else {
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
     }
-    if (result.status) {
-      process.exit(result.status)
-    }
+    const filter = [
+      '-readability/casting',
+      '-whitespace/braces',
+      '-whitespace/indent',
+      '-whitespace/parens'
+    ]
+    cpplint(['--extensions=mm', `--filter=${filter.join(',')}`, ...filenames])
   }
 }, {
   key: 'python',
@@ -119,7 +141,7 @@ const LINTERS = [ {
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'c++', 'javascript', 'python', 'gn', 'help', 'changed', 'fix', 'verbose', 'only' ],
+    boolean: [ 'c++', 'objc', 'javascript', 'python', 'gn', 'help', 'changed', 'fix', 'verbose', 'only' ],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
     unknown: arg => { help = true }
   })

@@ -5,6 +5,9 @@
 #include "atom/browser/api/atom_api_system_preferences.h"
 
 #include <map>
+#include <memory>
+#include <string>
+#include <utility>
 
 #import <AVFoundation/AVFoundation.h>
 #import <Cocoa/Cocoa.h>
