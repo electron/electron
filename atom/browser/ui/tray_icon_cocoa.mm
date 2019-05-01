@@ -326,9 +326,9 @@ const CGFloat kVerticalTitleMargin = 2;
 - (void)popUpContextMenu:(atom::AtomMenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
-    base::scoped_nsobject<AtomMenuController> menuController([
-        [AtomMenuController alloc] initWithModel:menu_model
-                           useDefaultAccelerator:NO]);
+    base::scoped_nsobject<AtomMenuController> menuController(
+        [[AtomMenuController alloc] initWithModel:menu_model
+                            useDefaultAccelerator:NO]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController menu]];

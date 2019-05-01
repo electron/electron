@@ -140,8 +140,8 @@
 
     if (product.priceLocale != nil) {
       productStruct.formattedPrice =
-          [[self formatPrice:product.price withLocal:product.priceLocale]
-              UTF8String];
+          [[self formatPrice:product.price
+                   withLocal:product.priceLocale] UTF8String];
     }
   }
 

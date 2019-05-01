@@ -24,8 +24,8 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
   std::string data;
   args->GetNext(&data);
   NSString* base64str = base::SysUTF8ToNSString(data);
-  NSData* bookmarkData =
-      [[NSData alloc] initWithBase64EncodedString:base64str options:0];
+  NSData* bookmarkData = [[NSData alloc] initWithBase64EncodedString:base64str
+                                                             options:0];
 
   // Create bookmarkUrl from NSData.
   BOOL isStale = false;
