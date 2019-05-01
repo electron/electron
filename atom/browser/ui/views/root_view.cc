@@ -92,10 +92,10 @@ void RootView::SetMenuBarVisibility(bool visible) {
 
   menu_bar_visible_ = visible;
   if (visible) {
-    DCHECK_EQ(child_count(), 1);
+    DCHECK_EQ(children().size(), 1ul);
     AddChildView(menu_bar_.get());
   } else {
-    DCHECK_EQ(child_count(), 2);
+    DCHECK_EQ(children().size(), 2ul);
     RemoveChildView(menu_bar_.get());
   }
 

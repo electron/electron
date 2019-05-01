@@ -341,7 +341,7 @@ bool MoveItemToTrash(const base::FilePath& path) {
   // Elevation prompt enabled for UAC protected files.  This overrides the
   // SILENT, NO_UI and NOERRORUI flags.
 
-  if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
+  if (base::win::GetVersion() >= base::win::Version::WIN8) {
     // Windows 8 introduces the flag RECYCLEONDELETE and deprecates the
     // ALLOWUNDO in favor of ADDUNDORECORD.
     if (FAILED(pfo->SetOperationFlags(

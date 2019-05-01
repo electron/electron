@@ -104,11 +104,12 @@ class Dictionary {
 
   template <typename T>
   bool SetMethod(const base::StringPiece& key, const T& callback) {
-    return GetHandle()->Set(
-        StringToV8(isolate_, key),
-        CallbackTraits<T>::CreateTemplate(isolate_, callback)
-            ->GetFunction(isolate_->GetCurrentContext())
-            .ToLocalChecked());
+    return GetHandle()
+        ->Set(isolate_->GetCurrentContext(), StringToV8(isolate_, key),
+              CallbackTraits<T>::CreateTemplate(isolate_, callback)
+                  ->GetFunction(isolate_->GetCurrentContext())
+                  .ToLocalChecked())
+        .ToChecked();
   }
 
   bool Delete(const base::StringPiece& key) {
