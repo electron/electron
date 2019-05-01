@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://github.com/electron/electron-frameworks/releases/download",
+  "baseUrl": "https://github.com/electron/electron-frameworks/releases/download",
   "version": "v1.4.0",
   "binaries": [
     {
