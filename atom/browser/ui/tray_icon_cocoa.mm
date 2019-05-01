@@ -425,12 +425,13 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)shouldHighlight {
+  using HighlightMode = atom::TrayIcon::HighlightMode;
   switch (highlight_mode_) {
-    case atom::TrayIcon::HighlightMode::ALWAYS:
+    case HighlightMode::ALWAYS:
       return true;
-    case atom::TrayIcon::HighlightMode::NEVER:
+    case HighlightMode::NEVER:
       return false;
-    case atom::TrayIcon::HighlightMode::SELECTION:
+    case HighlightMode::SELECTION:
       BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
       return forceHighlight_ || inMouseEventSequence_ || isMenuOpen;
   }
