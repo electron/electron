@@ -223,7 +223,7 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 #### `image.toJPEG(quality)`
 
-* `quality` Integer (**required**) - Between 0 - 100.
+* `quality` Integer - Between 0 - 100.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 

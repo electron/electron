@@ -465,17 +465,17 @@ Emitted when media is paused or done playing.
 
 #### Event: 'did-change-theme-color'
 
+Returns:
+
+* `event` Event
+* `color` (String | null) - Theme color is in format of '#rrggbb'. It is `null` when no theme color is set.
+
 Emitted when a page's theme color changes. This is usually due to encountering
 a meta tag:
 
 ```html
 <meta name='theme-color' content='#ff0000'>
 ```
-
-Returns:
-
-* `event` Event
-* `color` (String | null) - Theme color is in format of '#rrggbb'. It is `null` when no theme color is set.
 
 #### Event: 'update-target-url'
 
@@ -1525,7 +1525,7 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String or `files` Array - The path(s) to the file(s) being dragged.
+  * `file` String[] | String - The path(s) to the file(s) being dragged.
   * `icon` [NativeImage](native-image.md) - The image must be non-empty on
     macOS.
 
@@ -1674,6 +1674,6 @@ when the DevTools has been closed.
 
 #### `contents.debugger`
 
-A [Debugger](debugger.md) instance for this webContents.
+A [`Debugger`](debugger.md) instance for this webContents.
 
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent

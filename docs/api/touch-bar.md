@@ -20,6 +20,44 @@ removed in future Electron releases.
 [Touch Bar Simulator](https://github.com/sindresorhus/touch-bar-simulator)
 to test Touch Bar usage in your app.
 
+### Static Properties
+
+#### `TouchBarButton`
+
+A [`typeof TouchBarButton`](./touch-bar-button.md) reference to the `TouchBarButton` class.
+
+#### `TouchBarColorPicker`
+
+A [`typeof TouchBarColorPicker`](./touch-bar-color-picker.md) reference to the `TouchBarColorPicker` class.
+
+#### `TouchBarGroup`
+
+A [`typeof TouchBarGroup`](./touch-bar-group.md) reference to the `TouchBarGroup` class.
+
+#### `TouchBarLabel`
+
+A [`typeof TouchBarLabel`](./touch-bar-label.md) reference to the `TouchBarLabel` class.
+
+#### `TouchBarPopover`
+
+A [`typeof TouchBarPopover`](./touch-bar-popover.md) reference to the `TouchBarPopover` class.
+
+#### `TouchBarScrubber`
+
+A [`typeof TouchBarScrubber`](./touch-bar-scrubber.md) reference to the `TouchBarScrubber` class.
+
+#### `TouchBarSegmentedControl`
+
+A [`typeof TouchBarSegmentedControl`](./touch-bar-segmented-control.md) reference to the `TouchBarSegmentedControl` class.
+
+#### `TouchBarSlider`
+
+A [`typeof TouchBarSlider`](./touch-bar-slider.md) reference to the `TouchBarSlider` class.
+
+#### `TouchBarSpacer`
+
+A [`typeof TouchBarSpacer`](./touch-bar-spacer.md) reference to the `TouchBarSpacer` class.
+
 ### Instance Properties
 
 The following properties are available on instances of `TouchBar`:
