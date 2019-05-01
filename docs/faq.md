@@ -179,7 +179,10 @@ Sub-pixel anti-aliasing needs a non-transparent background of the layer containi
 To achieve this goal, set the background in the constructor for [BrowserWindow][browser-window]:
 
 ```javascript
-new BrowserWindow({backgroundColor: '#fff'});
+const { BrowserWindow } = require('electron')
+let win = new BrowserWindow({
+  backgroundColor: '#fff'
+})
 ```
 
 The effect is visible only on (some?) LCD screens. Even if you dont see a difference, some of your users may. It is best to always set the background this way, unless you have reasons not to do so.
