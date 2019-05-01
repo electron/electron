@@ -77,7 +77,7 @@ class NodeBindings {
   void WakeupEmbedThread();
 
   // Which environment we are running.
-  BrowserEnvironment browser_env_;
+  const BrowserEnvironment browser_env_;
 
   // Current thread's MessageLoop.
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
