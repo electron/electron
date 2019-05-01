@@ -9,20 +9,20 @@ namespace mate {
 ObjectTemplateBuilder::ObjectTemplateBuilder(
     v8::Isolate* isolate,
     v8::Local<v8::ObjectTemplate> templ)
-    : isolate_(isolate), template_(templ) {
-}
+    : isolate_(isolate), template_(templ) {}
 
-ObjectTemplateBuilder::~ObjectTemplateBuilder() {
-}
+ObjectTemplateBuilder::~ObjectTemplateBuilder() {}
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetImpl(
-    const base::StringPiece& name, v8::Local<v8::Data> val) {
+    const base::StringPiece& name,
+    v8::Local<v8::Data> val) {
   template_->Set(StringToSymbol(isolate_, name), val);
   return *this;
 }
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
-    const base::StringPiece& name, v8::Local<v8::FunctionTemplate> getter,
+    const base::StringPiece& name,
+    v8::Local<v8::FunctionTemplate> getter,
     v8::Local<v8::FunctionTemplate> setter) {
   template_->SetAccessorProperty(StringToSymbol(isolate_, name), getter,
                                  setter);

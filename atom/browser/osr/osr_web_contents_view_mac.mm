@@ -20,8 +20,8 @@
       [NSDictionary dictionaryWithObject:paragraphStyle
                                   forKey:NSParagraphStyleAttributeName];
   NSAttributedString* text =
-      [[[NSAttributedString alloc] initWithString:str attributes:attributes]
-          autorelease];
+      [[[NSAttributedString alloc] initWithString:str
+                                       attributes:attributes] autorelease];
   NSRect frame = NSMakeRect(0, (self.frame.size.height - text.size.height) / 2,
                             self.frame.size.width, text.size.height);
   [str drawInRect:frame withAttributes:attributes];

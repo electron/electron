@@ -851,9 +851,9 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
   if (newLevel >= minWindowLevel && newLevel <= maxWindowLevel) {
     [window_ setLevel:newLevel];
   } else {
-    *error = std::string([
-        [NSString stringWithFormat:@"relativeLevel must be between %d and %d",
-                                   minWindowLevel, maxWindowLevel] UTF8String]);
+    *error = std::string([[NSString
+        stringWithFormat:@"relativeLevel must be between %d and %d",
+                         minWindowLevel, maxWindowLevel] UTF8String]);
   }
 }
 
@@ -1102,7 +1102,7 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
   }
 
   [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-          removeFromSuperview];
+      removeFromSuperview];
   remove_browser_view(view);
 
   [CATransaction commit];

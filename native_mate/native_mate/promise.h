@@ -22,12 +22,12 @@ class Promise {
 
   virtual v8::Local<v8::Object> GetHandle() const;
 
-  template<typename T>
+  template <typename T>
   void Resolve(T* value) {
     resolver_->Resolve(mate::ConvertToV8(isolate(), value));
   }
 
-  template<typename T>
+  template <typename T>
   void Reject(T* value) {
     resolver_->Reject(mate::ConvertToV8(isolate(), value));
   }
@@ -41,10 +41,9 @@ class Promise {
   v8::Local<v8::Promise::Resolver> resolver_;
 };
 
-template<>
+template <>
 struct Converter<Promise> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    Promise val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, Promise val);
   // TODO(MarshallOfSound): Implement FromV8 to allow promise chaining
   //                        in native land
   // static bool FromV8(v8::Isolate* isolate,

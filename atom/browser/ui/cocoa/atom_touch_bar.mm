@@ -104,8 +104,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     item_id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
     return [self makeLabelForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
-    item_id =
-        [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
+    item_id = [self idFromIdentifier:identifier
+                          withPrefix:ColorPickerIdentifier];
     return [self makeColorPickerForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:SliderIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
@@ -238,8 +238,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)colorPickerAction:(id)sender {
   NSString* identifier = ((NSColorPickerTouchBarItem*)sender).identifier;
-  NSString* item_id =
-      [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
+  NSString* item_id = [self idFromIdentifier:identifier
+                                  withPrefix:ColorPickerIdentifier];
   NSColor* color = ((NSColorPickerTouchBarItem*)sender).color;
   std::string hex_color = atom::ToRGBHex(skia::NSDeviceColorToSkColor(color));
   base::DictionaryValue details;
@@ -249,8 +249,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)sliderAction:(id)sender {
   NSString* identifier = ((NSSliderTouchBarItem*)sender).identifier;
-  NSString* item_id =
-      [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
+  NSString* item_id = [self idFromIdentifier:identifier
+                                  withPrefix:SliderIdentifier];
   base::DictionaryValue details;
   details.SetInteger("value",
                      [((NSSliderTouchBarItem*)sender).slider intValue]);
