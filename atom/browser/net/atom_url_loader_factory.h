@@ -82,8 +82,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   static void SendResponseStream(network::mojom::URLLoaderClientPtr client,
                                  const mate::Dictionary& dict);
 
-  static bool HandleError(network::mojom::URLLoaderClientPtr* client,
-                          const mate::Dictionary& dict);
+  // Helper to send string as response.
   static void SendContents(network::mojom::URLLoaderClientPtr client,
                            network::ResourceResponseHead head,
                            const char* data,

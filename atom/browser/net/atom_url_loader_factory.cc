@@ -156,8 +156,13 @@ void AtomURLLoaderFactory::SendResponse(
     mate::Arguments* args) {
   // Parse {error} object.
   mate::Dictionary dict = ToDict(args->isolate(), response);
-  if (HandleError(&client, dict))
-    return;
+  if (!dict.IsEmpty()) {
+    int error_code;
+    if (dict.Get("error", &error_code)) {
+      client->OnComplete(network::URLLoaderCompletionStatus(error_code));
+      return;
+    }
+  }
 
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
@@ -225,6 +230,7 @@ void AtomURLLoaderFactory::SendResponseString(
     contents = gin::V8ToString(isolate, response);
   else if (!dict.IsEmpty())
     dict.Get("data", &contents);
+
   SendContents(std::move(client), ToResponseHead(dict), contents.data(),
                contents.size());
 }
@@ -328,19 +334,6 @@ void AtomURLLoaderFactory::SendResponseStream(
 
   new NodeStreamLoader(std::move(head), std::move(client), data.isolate(),
                        data.GetHandle());
-}
-
-// static
-bool AtomURLLoaderFactory::HandleError(
-    network::mojom::URLLoaderClientPtr* client,
-    const mate::Dictionary& dict) {
-  if (dict.IsEmpty())
-    return false;
-  network::URLLoaderCompletionStatus status;
-  if (!dict.Get("error", &status.error_code))
-    return false;
-  std::move(*client)->OnComplete(status);
-  return true;
 }
 
 // static
