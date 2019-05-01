@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/binding_set.h"
 #include "native_mate/dictionary.h"
 #include "net/url_request/url_request_job_factory.h"
@@ -48,7 +47,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   void Clone(network::mojom::URLLoaderFactoryRequest request) override;
 
  private:
-  void SendResponse(
+  static void SendResponse(
       network::mojom::URLLoaderRequest loader,
       int32_t routing_id,
       int32_t request_id,
@@ -59,19 +58,19 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       ProtocolType type,
       v8::Local<v8::Value> response,
       mate::Arguments* args);
-  void SendResponseBuffer(network::mojom::URLLoaderClientPtr client,
-                          const mate::Dictionary& dict);
-  void SendResponseString(network::mojom::URLLoaderClientPtr client,
-                          const mate::Dictionary& dict,
-                          v8::Isolate* isolate,
-                          v8::Local<v8::Value> response);
-  void SendResponseFile(network::mojom::URLLoaderRequest loader,
-                        network::ResourceRequest request,
-                        network::mojom::URLLoaderClientPtr client,
-                        const mate::Dictionary& dict,
-                        v8::Isolate* isolate,
-                        v8::Local<v8::Value> response);
-  void SendResponseHttp(
+  static void SendResponseBuffer(network::mojom::URLLoaderClientPtr client,
+                                 const mate::Dictionary& dict);
+  static void SendResponseString(network::mojom::URLLoaderClientPtr client,
+                                 const mate::Dictionary& dict,
+                                 v8::Isolate* isolate,
+                                 v8::Local<v8::Value> response);
+  static void SendResponseFile(network::mojom::URLLoaderRequest loader,
+                               network::ResourceRequest request,
+                               network::mojom::URLLoaderClientPtr client,
+                               const mate::Dictionary& dict,
+                               v8::Isolate* isolate,
+                               v8::Local<v8::Value> response);
+  static void SendResponseHttp(
       network::mojom::URLLoaderRequest loader,
       int32_t routing_id,
       int32_t request_id,
@@ -80,15 +79,15 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       const mate::Dictionary& dict);
-  void SendResponseStream(network::mojom::URLLoaderClientPtr client,
-                          const mate::Dictionary& dict);
+  static void SendResponseStream(network::mojom::URLLoaderClientPtr client,
+                                 const mate::Dictionary& dict);
 
-  bool HandleError(network::mojom::URLLoaderClientPtr* client,
-                   const mate::Dictionary& dict);
-  void SendContents(network::mojom::URLLoaderClientPtr client,
-                    network::ResourceResponseHead head,
-                    const char* data,
-                    size_t size);
+  static bool HandleError(network::mojom::URLLoaderClientPtr* client,
+                          const mate::Dictionary& dict);
+  static void SendContents(network::mojom::URLLoaderClientPtr client,
+                           network::ResourceResponseHead head,
+                           const char* data,
+                           size_t size);
 
   // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
   // but I don't know what it actually does, find out the meanings of |Clone|
@@ -97,8 +96,6 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
 
   ProtocolType type_;
   ProtocolHandler handler_;
-
-  base::WeakPtrFactory<AtomURLLoaderFactory> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLLoaderFactory);
 };

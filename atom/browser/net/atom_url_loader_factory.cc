@@ -60,6 +60,7 @@ namespace atom {
 
 namespace {
 
+// Determine whether a protocol type can accept non-object response.
 bool ResponseMustBeObject(ProtocolType type) {
   switch (type) {
     case ProtocolType::kString:
@@ -71,6 +72,7 @@ bool ResponseMustBeObject(ProtocolType type) {
   }
 }
 
+// Helper to convert value to Dictionary.
 mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   if (value->IsObject())
     return mate::Dictionary(
@@ -80,6 +82,7 @@ mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     return mate::Dictionary();
 }
 
+// Parse headers from response object.
 network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   network::ResourceResponseHead head;
   head.mime_type = "text/html";
@@ -114,7 +117,7 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
 
 AtomURLLoaderFactory::AtomURLLoaderFactory(ProtocolType type,
                                            const ProtocolHandler& handler)
-    : type_(type), handler_(handler), weak_factory_(this) {}
+    : type_(type), handler_(handler) {}
 
 AtomURLLoaderFactory::~AtomURLLoaderFactory() = default;
 
@@ -127,11 +130,11 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  handler_.Run(request,
-               base::BindOnce(&AtomURLLoaderFactory::SendResponse,
-                              weak_factory_.GetWeakPtr(), std::move(loader),
-                              routing_id, request_id, options, request,
-                              std::move(client), traffic_annotation, type_));
+  handler_.Run(
+      request,
+      base::BindOnce(&AtomURLLoaderFactory::SendResponse, std::move(loader),
+                     routing_id, request_id, options, request,
+                     std::move(client), traffic_annotation, type_));
 }
 
 void AtomURLLoaderFactory::Clone(
@@ -139,6 +142,7 @@ void AtomURLLoaderFactory::Clone(
   bindings_.AddBinding(this, std::move(request));
 }
 
+// static
 void AtomURLLoaderFactory::SendResponse(
     network::mojom::URLLoaderRequest loader,
     int32_t routing_id,
@@ -195,6 +199,7 @@ void AtomURLLoaderFactory::SendResponse(
   }
 }
 
+// static
 void AtomURLLoaderFactory::SendResponseBuffer(
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict) {
@@ -209,6 +214,7 @@ void AtomURLLoaderFactory::SendResponseBuffer(
                node::Buffer::Data(buffer), node::Buffer::Length(buffer));
 }
 
+// static
 void AtomURLLoaderFactory::SendResponseString(
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict,
@@ -223,6 +229,7 @@ void AtomURLLoaderFactory::SendResponseString(
                contents.size());
 }
 
+// static
 void AtomURLLoaderFactory::SendResponseFile(
     network::mojom::URLLoaderRequest loader,
     network::ResourceRequest request,
@@ -249,6 +256,7 @@ void AtomURLLoaderFactory::SendResponseFile(
                                nullptr, false, head.headers);
 }
 
+// static
 void AtomURLLoaderFactory::SendResponseHttp(
     network::mojom::URLLoaderRequest loader,
     int32_t routing_id,
@@ -290,6 +298,7 @@ void AtomURLLoaderFactory::SendResponseHttp(
       std::move(client), traffic_annotation);
 }
 
+// static
 void AtomURLLoaderFactory::SendResponseStream(
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict) {
@@ -321,6 +330,7 @@ void AtomURLLoaderFactory::SendResponseStream(
                        data.GetHandle());
 }
 
+// static
 bool AtomURLLoaderFactory::HandleError(
     network::mojom::URLLoaderClientPtr* client,
     const mate::Dictionary& dict) {
@@ -333,6 +343,7 @@ bool AtomURLLoaderFactory::HandleError(
   return true;
 }
 
+// static
 void AtomURLLoaderFactory::SendContents(
     network::mojom::URLLoaderClientPtr client,
     network::ResourceResponseHead head,
