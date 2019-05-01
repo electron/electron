@@ -132,7 +132,7 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   handler_.Run(
       request,
-      base::BindOnce(&AtomURLLoaderFactory::SendResponse, std::move(loader),
+      base::BindOnce(&AtomURLLoaderFactory::StartLoading, std::move(loader),
                      routing_id, request_id, options, request,
                      std::move(client), traffic_annotation, type_));
 }
@@ -143,7 +143,7 @@ void AtomURLLoaderFactory::Clone(
 }
 
 // static
-void AtomURLLoaderFactory::SendResponse(
+void AtomURLLoaderFactory::StartLoading(
     network::mojom::URLLoaderRequest loader,
     int32_t routing_id,
     int32_t request_id,
@@ -172,21 +172,21 @@ void AtomURLLoaderFactory::SendResponse(
 
   switch (type) {
     case ProtocolType::kBuffer:
-      SendResponseBuffer(std::move(client), dict);
+      StartLoadingBuffer(std::move(client), dict);
       break;
     case ProtocolType::kString:
-      SendResponseString(std::move(client), dict, args->isolate(), response);
+      StartLoadingString(std::move(client), dict, args->isolate(), response);
       break;
     case ProtocolType::kFile:
-      SendResponseFile(std::move(loader), request, std::move(client), dict,
+      StartLoadingFile(std::move(loader), request, std::move(client), dict,
                        args->isolate(), response);
       break;
     case ProtocolType::kHttp:
-      SendResponseHttp(std::move(loader), routing_id, request_id, options,
+      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
                        request, std::move(client), traffic_annotation, dict);
       break;
     case ProtocolType::kStream:
-      SendResponseStream(std::move(client), dict);
+      StartLoadingStream(std::move(client), dict);
       break;
     case ProtocolType::kFree:
       ProtocolType type;
@@ -197,7 +197,7 @@ void AtomURLLoaderFactory::SendResponse(
         args->ThrowError("Invalid args, must pass (type, options)");
         return;
       }
-      SendResponse(std::move(loader), routing_id, request_id, options, request,
+      StartLoading(std::move(loader), routing_id, request_id, options, request,
                    std::move(client), traffic_annotation, type, extra_arg,
                    args);
       break;
@@ -205,7 +205,7 @@ void AtomURLLoaderFactory::SendResponse(
 }
 
 // static
-void AtomURLLoaderFactory::SendResponseBuffer(
+void AtomURLLoaderFactory::StartLoadingBuffer(
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict) {
   v8::Local<v8::Value> buffer = dict.GetHandle();
@@ -220,7 +220,7 @@ void AtomURLLoaderFactory::SendResponseBuffer(
 }
 
 // static
-void AtomURLLoaderFactory::SendResponseString(
+void AtomURLLoaderFactory::StartLoadingString(
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict,
     v8::Isolate* isolate,
@@ -236,7 +236,7 @@ void AtomURLLoaderFactory::SendResponseString(
 }
 
 // static
-void AtomURLLoaderFactory::SendResponseFile(
+void AtomURLLoaderFactory::StartLoadingFile(
     network::mojom::URLLoaderRequest loader,
     network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
@@ -263,7 +263,7 @@ void AtomURLLoaderFactory::SendResponseFile(
 }
 
 // static
-void AtomURLLoaderFactory::SendResponseHttp(
+void AtomURLLoaderFactory::StartLoadingHttp(
     network::mojom::URLLoaderRequest loader,
     int32_t routing_id,
     int32_t request_id,
@@ -305,7 +305,7 @@ void AtomURLLoaderFactory::SendResponseHttp(
 }
 
 // static
-void AtomURLLoaderFactory::SendResponseStream(
+void AtomURLLoaderFactory::StartLoadingStream(
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict) {
   network::ResourceResponseHead head = ToResponseHead(dict);
