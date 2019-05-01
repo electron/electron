@@ -66,6 +66,7 @@ DesktopCapturer::~DesktopCapturer() {}
 
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
+                                    bool capture_tab,
                                     const gfx::Size& thumbnail_size,
                                     bool fetch_window_icons) {
   fetch_window_icons_ = fetch_window_icons;
@@ -85,6 +86,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
   // Start listening for captured sources.
   capture_window_ = capture_window;
   capture_screen_ = capture_screen;
+  capture_tab_ = capture_tab;
 
   {
     // Initialize the source list.
@@ -105,6 +107,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
       screen_capturer_->SetThumbnailSize(thumbnail_size);
       screen_capturer_->AddObserver(this);
       screen_capturer_->StartUpdating();
+    }
+
+    if (capture_tab) {
+      tab_capturer_.reset(new TabDesktopMediaList());
+      tab_capturer_->SetThumbnailSize(thumbnail_size);
+      tab_capturer_->AddObserver(this);
+      tab_capturer_->StartUpdating();
     }
   }
 }
@@ -196,7 +205,21 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
               std::back_inserter(captured_sources_));
   }
 
-  if (!capture_window_ && !capture_screen_)
+  if (capture_tab_ &&
+      list->GetMediaListType() == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
+    capture_tab_ = false;
+    const auto& media_list_sources = list->GetSources();
+    std::vector<DesktopCapturer::Source> tab_sources;
+    tab_sources.reserve(media_list_sources.size());
+    for (const auto& media_list_source : media_list_sources) {
+      tab_sources.emplace_back(
+          DesktopCapturer::Source{media_list_sources, std::string()});
+    }
+    std::move(tab_sources.begin(), tab_sources.end(),
+              std::back_inserter(captured_sources_));
+  }
+
+  if (!capture_window_ && !capture_screen_ && !capture_tab_)
     Emit("finished", captured_sources_, fetch_window_icons_);
 }
 

@@ -12,6 +12,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
+#include "chrome/browser/media/webrtc/tab_desktop_media_list.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -37,6 +38,7 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
 
   void StartHandling(bool capture_window,
                      bool capture_screen,
+                     bool capture_tab,
                      const gfx::Size& thumbnail_size,
                      bool fetch_window_icons);
 
@@ -60,9 +62,11 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
 
   std::unique_ptr<DesktopMediaList> window_capturer_;
   std::unique_ptr<DesktopMediaList> screen_capturer_;
+  std::unique_str<DesktopMediaList> tab_capturer_;
   std::vector<DesktopCapturer::Source> captured_sources_;
   bool capture_window_ = false;
   bool capture_screen_ = false;
+  bool capture_tab_ = false;
   bool fetch_window_icons_ = false;
 #if defined(OS_WIN)
   bool using_directx_capturer_ = false;
