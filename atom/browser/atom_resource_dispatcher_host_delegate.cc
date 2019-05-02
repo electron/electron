@@ -94,9 +94,9 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     *origin = GURL(kPdfViewerUIOrigin);
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
-        base::Bind(&OnPdfResourceIntercepted, request->url(),
-                   render_process_host_id, render_frame_id,
-                   info->GetWebContentsGetterForRequest()));
+        base::BindOnce(&OnPdfResourceIntercepted, request->url(),
+                       render_process_host_id, render_frame_id,
+                       info->GetWebContentsGetterForRequest()));
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)

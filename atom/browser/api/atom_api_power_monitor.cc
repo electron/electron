@@ -140,7 +140,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("createPowerMonitor", base::Bind(&PowerMonitor::Create, isolate));
+  dict.Set("createPowerMonitor",
+           base::BindRepeating(&PowerMonitor::Create, isolate));
   dict.Set("PowerMonitor", PowerMonitor::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());

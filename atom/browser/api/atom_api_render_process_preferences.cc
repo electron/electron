@@ -64,9 +64,9 @@ void RenderProcessPreferences::BuildPrototype(
 // static
 mate::Handle<RenderProcessPreferences>
 RenderProcessPreferences::ForAllWebContents(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate,
-                            new RenderProcessPreferences(
-                                isolate, base::Bind(&IsWebContents, isolate)));
+  return mate::CreateHandle(
+      isolate, new RenderProcessPreferences(
+                   isolate, base::BindRepeating(&IsWebContents, isolate)));
 }
 
 }  // namespace api
