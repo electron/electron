@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
