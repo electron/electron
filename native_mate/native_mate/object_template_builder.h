@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
-#define NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
+#define NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
 
 #include "base/bind.h"
 #include "base/callback.h"
@@ -13,8 +13,6 @@
 #include "v8/include/v8.h"
 
 namespace mate {
-
-namespace {
 
 // Base template - used only for non-member function pointers. Other types
 // either go to one of the below specializations, or go here and fail to compile
@@ -61,8 +59,6 @@ struct CallbackTraits<v8::Local<v8::FunctionTemplate>> {
     return templ;
   }
 };
-
-}  // namespace
 
 // ObjectTemplateBuilder provides a handy interface to creating
 // v8::ObjectTemplate instances with various sorts of properties.
@@ -124,4 +120,4 @@ class ObjectTemplateBuilder {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_OBJECT_TEMPLATE_BUILDER_H_
