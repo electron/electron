@@ -20,7 +20,7 @@ Electron versions *< 2.0* did not conform to the [semver](http://semver.org) spe
 
 Here is an example of the 1.x strategy:
 
-![](images/versioning-sketch-0.png)
+![](../images/versioning-sketch-0.png)
 
 An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
 
@@ -55,12 +55,12 @@ Note that most Chromium updates will be considered breaking. Fixes that can be b
 
 Stabilization branches are branches that run parallel to master, taking in only cherry-picked commits that are related to security or stability. These branches are never merged back to master.
 
-![](images/versioning-sketch-1.png)
+![](../images/versioning-sketch-1.png)
 
 Stabilization branches are always either **major** or **minor** version lines, and named against the following template `$MAJOR-$MINOR-x` e.g. `2-0-x`.
 
 We allow for multiple stabilization branches to exist simultaneously, and intend to support at least two in parallel at all times, backporting security fixes as necessary.
-![](images/versioning-sketch-2.png)
+![](../images/versioning-sketch-2.png)
 
 Older lines will not be supported by GitHub, but other groups can take ownership and backport stability and security fixes on their own. We discourage this, but recognize that it makes life easier for many app developers.
 
@@ -105,17 +105,17 @@ For each major and minor bump, you should expect to see something like the follo
 An example lifecycle in pictures:
 
 * A new release branch is created that includes the latest set of features. It is published as `2.0.0-beta.1`.
-![](images/versioning-sketch-3.png)
+![](../images/versioning-sketch-3.png)
 * A bug fix comes into master that can be backported to the release branch. The patch is applied, and a new beta is published as `2.0.0-beta.2`.
-![](images/versioning-sketch-4.png)
+![](../images/versioning-sketch-4.png)
 * The beta is considered _generally stable_ and it is published again as a non-beta under `2.0.0`.
-![](images/versioning-sketch-5.png)
+![](../images/versioning-sketch-5.png)
 * Later, a zero-day exploit is revealed and a fix is applied to master. We backport the fix to the `2-0-x` line and release `2.0.1`.
-![](images/versioning-sketch-6.png)
+![](../images/versioning-sketch-6.png)
 
 A few examples of how various semver ranges will pick up new releases:
 
-![](images/versioning-sketch-7.png)
+![](../images/versioning-sketch-7.png)
 
 # Missing Features: Alphas
 Our strategy has a few tradeoffs, which for now we feel are appropriate. Most importantly that new features in master may take a while before reaching a stable release line. If you want to try a new feature immediately, you will have to build Electron yourself.

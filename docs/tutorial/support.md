@@ -3,7 +3,7 @@
 ## Finding Support
 
 If you have a security concern,
-please see the [security document](../SECURITY.md).
+please see the [security document](../../SECURITY.md).
 
 If you're looking for programming help,
 for answers to questions,
@@ -22,10 +22,10 @@ forums
 - [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 If you'd like to contribute to Electron,
-see the [contributing document](../CONTRIBUTING.md).
+see the [contributing document](../../CONTRIBUTING.md).
 
 If you've found a bug in a [supported version](#supported-versions) of Electron,
-please report it with the [issue tracker](development/issues.md).
+please report it with the [issue tracker](../development/issues.md).
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 is a community-maintained list of useful example apps,
