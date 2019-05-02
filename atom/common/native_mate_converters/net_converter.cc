@@ -210,7 +210,8 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     if (localVal->IsArray()) {
       auto values = v8::Local<v8::Array>::Cast(localVal);
       for (uint32_t j = 0; j < values->Length(); j++) {
-        if (!addHeaderFromValue(key, values->Get(j))) {
+        if (!addHeaderFromValue(key,
+                                values->Get(context, j).ToLocalChecked())) {
           return false;
         }
       }

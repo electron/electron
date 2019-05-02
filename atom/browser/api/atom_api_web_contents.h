@@ -337,7 +337,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
-                              int32_t level,
+                              blink::mojom::ConsoleMessageLevel level,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;

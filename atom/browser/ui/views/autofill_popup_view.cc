@@ -152,8 +152,8 @@ void AutofillPopupView::OnSelectedRowChanged(
     int selected = current_row_selection.value_or(-1);
     if (selected == -1 || static_cast<size_t>(selected) >= children().size())
       return;
-    child_at(selected)->NotifyAccessibilityEvent(ax::mojom::Event::kSelection,
-                                                 true);
+    children().at(selected)->NotifyAccessibilityEvent(
+        ax::mojom::Event::kSelection, true);
   }
 }
 
