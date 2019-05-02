@@ -30,6 +30,7 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
@@ -46,6 +47,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -177,17 +179,6 @@ void SetCertVerifyProcInIO(
       ->SetVerifyProc(proc);
 }
 
-void AllowNTLMCredentialsForDomainsInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    const std::string& domains) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  auto* auth_handler = request_context->http_auth_handler_factory();
-  if (auth_handler) {
-    auto* auth_preferences = const_cast<net::HttpAuthPreferences*>(
-        auth_handler->http_auth_preferences());
-    if (auth_preferences)
-      auth_preferences->SetServerWhitelist(domains);
-  }
 }
 
 void DownloadIdCallback(content::DownloadManager* download_manager,
@@ -503,11 +494,13 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&AllowNTLMCredentialsForDomainsInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     domains));
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  auto auth_params = ::network::mojom::HttpAuthDynamicParams::New();
+  auth_params->server_whitelist = domains;
+  auth_params->delegate_whitelist = command_line->GetSwitchValueASCII(
+      atom::switches::kAuthNegotiateDelegateWhitelist);
+  content::GetNetworkService()->ConfigureHttpAuthPrefs(std::move(auth_params));
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
