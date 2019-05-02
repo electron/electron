@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_blob_reader.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_download_manager_delegate.h"
@@ -42,6 +43,7 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/content_client.h"
 #include "content/public/common/user_agent.h"
 #include "net/base/escape.h"
 
@@ -50,14 +52,6 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
-
-std::string RemoveWhitespace(const std::string& str) {
-  std::string trimmed;
-  if (base::RemoveChars(str, " ", &trimmed))
-    return trimmed;
-  else
-    return str;
-}
 
 // Convert string to lower case and escape it.
 std::string MakePartitionName(const std::string& input) {
@@ -78,19 +72,9 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
-  // Construct user agent string.
-  Browser* browser = Browser::Get();
-  std::string name = RemoveWhitespace(browser->GetName());
-  std::string user_agent;
-  if (name == ATOM_PRODUCT_NAME) {
-    user_agent = "Chrome/" CHROME_VERSION_STRING " " ATOM_PRODUCT_NAME
-                 "/" ATOM_VERSION_STRING;
-  } else {
-    user_agent = base::StringPrintf(
-        "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
-        name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
-  }
-  user_agent_ = content::BuildUserAgentFromProduct(user_agent);
+  AtomContentClient* client =
+      static_cast<AtomContentClient*>(content::GetContentClient());
+  user_agent_ = client->GetUserAgent();
 
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();

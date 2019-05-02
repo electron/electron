@@ -205,6 +205,8 @@ class App : public AtomBrowserClient::Delegate,
                                     const std::string& info_type);
   void EnableSandbox(mate::Arguments* args);
   void EnableMixedSandbox(mate::Arguments* args);
+  void SetUserAgentFallback(const std::string& user_agent);
+  std::string GetUserAgentFallback();
 
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(mate::Arguments* args);

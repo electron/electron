@@ -20,20 +20,12 @@ std::string GetProductInternal() {
                             GetApplicationVersion().c_str());
 }
 
-std::string GetBrightrayUserAgent() {
-  return content::BuildUserAgentFromProduct(GetProductInternal());
-}
-
 ContentClient::ContentClient() {}
 
 ContentClient::~ContentClient() {}
 
 std::string ContentClient::GetProduct() const {
   return GetProductInternal();
-}
-
-std::string ContentClient::GetUserAgent() const {
-  return GetBrightrayUserAgent();
 }
 
 base::string16 ContentClient::GetLocalizedString(int message_id) const {

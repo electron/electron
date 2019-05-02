@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/app/atom_content_client.h"
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -43,6 +44,7 @@
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/common/content_client.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
 #include "native_mate/object_template_builder.h"
@@ -1236,6 +1238,18 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
   command_line->AppendSwitch(switches::kEnableMixedSandbox);
 }
 
+void App::SetUserAgentFallback(const std::string& user_agent) {
+  AtomContentClient* client =
+      static_cast<AtomContentClient*>(content::GetContentClient());
+  client->SetUserAgent(user_agent);
+}
+
+std::string App::GetUserAgentFallback() {
+  AtomContentClient* client =
+      static_cast<AtomContentClient*>(content::GetContentClient());
+  return client->GetUserAgent();
+}
+
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(mate::Arguments* args) {
   return ui::cocoa::AtomBundleMover::Move(args);
@@ -1342,6 +1356,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
+      .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
+                   &App::SetUserAgentFallback)
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }

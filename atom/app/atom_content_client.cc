@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/browser.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
@@ -14,8 +15,10 @@
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
 #include "electron/buildflags/buildflags.h"
@@ -173,6 +176,27 @@ void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
                              base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
+std::string RemoveWhitespace(const std::string& str) {
+  std::string trimmed;
+  if (base::RemoveChars(str, " ", &trimmed))
+    return trimmed;
+  else
+    return str;
+}
+
+bool IsBrowserProcess() {
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  return process_type.empty();
+}
+
+std::string BuildDefaultUserAgent() {
+  return "Chrome/" CHROME_VERSION_STRING " " ATOM_PRODUCT_NAME
+         "/" ATOM_VERSION_STRING;
+}
+
 }  // namespace
 
 AtomContentClient::AtomContentClient() {}
@@ -184,9 +208,35 @@ std::string AtomContentClient::GetProduct() const {
 }
 
 std::string AtomContentClient::GetUserAgent() const {
-  return content::BuildUserAgentFromProduct("Chrome/" CHROME_VERSION_STRING
-                                            " " ATOM_PRODUCT_NAME
-                                            "/" ATOM_VERSION_STRING);
+  if (IsBrowserProcess()) {
+    if (user_agent_override_.empty()) {
+      auto* browser = Browser::Get();
+      std::string name = RemoveWhitespace(browser->GetName());
+      std::string user_agent;
+      if (name == ATOM_PRODUCT_NAME) {
+        user_agent = BuildDefaultUserAgent();
+      } else {
+        user_agent = base::StringPrintf(
+            "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
+            name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
+      }
+      return content::BuildUserAgentFromProduct(user_agent);
+    }
+    return user_agent_override_;
+  }
+  // In a renderer process the user agent should be provided on the CLI
+  // If it's not we just fallback to the default one, this should never happen
+  // but we want to handle it gracefully
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string cli_user_agent = command_line->GetSwitchValueASCII("user-agent");
+  if (cli_user_agent.empty())
+    return BuildDefaultUserAgent();
+  return cli_user_agent;
+}
+
+void AtomContentClient::SetUserAgent(const std::string& user_agent) {
+  user_agent_override_ = user_agent;
 }
 
 base::string16 AtomContentClient::GetLocalizedString(int message_id) const {

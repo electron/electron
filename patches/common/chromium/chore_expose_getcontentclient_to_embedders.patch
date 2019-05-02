@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 1 May 2019 18:04:41 -0700
+Subject: chore: expose GetContentClient to embedders
+
+
+diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
+index 528fd6abf6a623b8076803fddf5616d88f0978e8..e03bfeff5dabd55fe548ba828ae30065ba3f42d6 100644
+--- a/content/public/common/content_client.h
++++ b/content/public/common/content_client.h
+@@ -58,10 +58,10 @@ struct PepperPluginInfo;
+ // content code is called.
+ CONTENT_EXPORT void SetContentClient(ContentClient* client);
+ 
+-#if defined(CONTENT_IMPLEMENTATION)
++//#if defined(CONTENT_IMPLEMENTATION)
+ // Content's embedder API should only be used by content.
+-ContentClient* GetContentClient();
+-#endif
++CONTENT_EXPORT ContentClient* GetContentClient();
++//#endif
+ 
+ // Used for tests to override the relevant embedder interfaces. Each method
+ // returns the old value.
