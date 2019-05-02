@@ -147,7 +147,7 @@ item's submenu, if present.
 
 #### `menuItem.type`
 
-A `String` indicating the type of the item.
+A `String` indicating the type of the item. Can be `normal`, `separator`, `submenu`, `checkbox` or `radio`.
 
 #### `menuItem.role`
 
@@ -155,7 +155,7 @@ A `String` (optional) indicating the item's role, if set.
 
 #### `menuItem.accelerator`
 
-A `String` (optional) indicating the item's accelerator, if set.
+A `Accelerator` (optional) indicating the item's accelerator, if set.
 
 #### `menuItem.icon`
 

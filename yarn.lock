@@ -26,9 +26,9 @@
     regenerator-runtime "^0.12.0"
 
 "@electron/docs-parser@^0.1.1":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.1.3.tgz#fae208bf2438bc870c6be69ec71be3edcf84b230"
-  integrity sha512-Xnpp8pYjKSvedkua8klgmzDVmQCqi0Zf4k4C/y2T6fJyGdWGMwjYcnx5ywaIOS1DrSEWFuc2ZzcvnF0tHQtjJw==
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.1.5.tgz#e6c05ed200b4c155986fb0f46178dede71a5e078"
+  integrity sha512-A4H7KbZ2zzT+pCkN8P6w1jR37kiS6O4ryo6Mj9RKGOESy0ucscSzVMH7a3Ag+71XkXYZR+uFBlXfYPiND1dJ9w==
   dependencies:
     "@types/markdown-it" "^0.0.7"
     chai "^4.2.0"
@@ -41,9 +41,9 @@
     pretty-ms "^5.0.0"
 
 "@electron/typescript-definitions@^8.3.1":
-  version "8.3.2"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.3.2.tgz#6cfc464719ce22bd0cd962da565e63a674ec4784"
-  integrity sha512-UOCEPLAV2MCCbM7DujWkTA6tH2SgTbL/K9Kgnnr/+T50K9D4B/yXPfw0KT74S3jWbHqXDXN6hmN1wp8oaOE4WQ==
+  version "8.3.3"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.3.3.tgz#e84d4ee7e7f3d09796ebcd1d17db6eca6f393719"
+  integrity sha512-qnlNZ7vmTJDuOEM2xUqnm9l8xu1mC1PPZS1lCIJOEbdIHrXaYiXRGmiee2ktpP6YE4PuXaKadgyNRGhxOSppeQ==
   dependencies:
     "@electron/docs-parser" "^0.1.1"
     "@types/node" "^11.13.7"
@@ -193,7 +193,7 @@
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-5.2.6.tgz#b8622d50557dd155e9f2f634b7d68fd38de5e94b"
   integrity sha512-1axi39YdtBI7z957vdqXI4Ac25e7YihYQtJa+Clnxg1zTJEaIRbndt71O3sP4GAMgiAm0pY26/b9BrY4MR/PMw==
 
-"@types/node@*", "@types/node@^11.13.7":
+"@types/node@*":
   version "11.13.8"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.8.tgz#e5d71173c95533be9842b2c798978f095f912aab"
   integrity sha512-szA3x/3miL90ZJxUCzx9haNbK5/zmPieGraZEe4WI+3srN0eGLiT22NXeMHmyhNEopn+IrxqMc7wdVwvPl8meg==
@@ -202,6 +202,11 @@
   version "10.14.6"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.14.6.tgz#9cbfcb62c50947217f4d88d4d274cc40c22625a9"
   integrity sha512-Fvm24+u85lGmV4hT5G++aht2C5I4Z4dYlWZIh62FAfFO/TfzXtPpoLI6I7AuBWkIFqZCnhFOoTT7RjjaIL5Fjg==
+
+"@types/node@^11.13.7":
+  version "11.13.9"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.9.tgz#f80697caca7f7fb2526527a5c5a2743487f05ccc"
+  integrity sha512-NJ4yuEVw5podZbINp3tEqUIImMSAEHaCXRiWCf3KC32l6hIKf0iPJEh2uZdT0fELfRYk310yLmMXqy2leZQUbg==
 
 "@types/range-parser@*":
   version "1.2.3"

@@ -1,5 +1,3 @@
-import { EventEmitter } from 'electron';
-
 /**
  * @fileoverview A set of helper functions to make it easier to work
  * with events in async/await manner.
@@ -21,11 +19,11 @@ export const waitForEvent = (target: EventTarget, eventName: string) => {
  * @param {string} eventName
  * @return {!Promise<!Array>} With Event as the first item.
  */
-export const emittedOnce = (emitter: EventEmitter, eventName: string) => {
+export const emittedOnce = (emitter: NodeJS.EventEmitter, eventName: string) => {
   return emittedNTimes(emitter, eventName, 1).then(([result]) => result)
 }
 
-export const emittedNTimes = (emitter: EventEmitter, eventName: string, times: number) => {
+export const emittedNTimes = (emitter: NodeJS.EventEmitter, eventName: string, times: number) => {
   const events: any[][] = []
   return new Promise<any[][]>(resolve => {
     const handler = (...args: any[]) => {
