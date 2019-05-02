@@ -92,9 +92,9 @@ void PlatformNotificationService::DisplayNotification(
   if (notification) {
     browser_client_->WebNotificationAllowed(
         render_process_host->GetID(),
-        base::Bind(&OnWebNotificationAllowed, notification,
-                   notification_resources.notification_icon,
-                   notification_data));
+        base::BindRepeating(&OnWebNotificationAllowed, notification,
+                            notification_resources.notification_icon,
+                            notification_data));
   }
 }
 

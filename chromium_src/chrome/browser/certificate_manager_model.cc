@@ -28,7 +28,7 @@ net::NSSCertDatabase* g_nss_cert_database = nullptr;
 
 net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     content::ResourceContext* context,
-    const base::Callback<void(net::NSSCertDatabase*)>& callback) {
+    base::OnceCallback<void(net::NSSCertDatabase*)> callback) {
   // This initialization is not thread safe. This CHECK ensures that this code
   // is only run on a single thread.
   CHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
@@ -75,8 +75,8 @@ void CertificateManagerModel::Create(content::BrowserContext* browser_context,
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
-      base::Bind(&CertificateManagerModel::GetCertDBOnIOThread,
-                 browser_context->GetResourceContext(), callback));
+      base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
+                     browser_context->GetResourceContext(), callback));
 }
 
 CertificateManagerModel::CertificateManagerModel(
@@ -148,8 +148,8 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
   bool is_user_db_available = !!cert_db->GetPublicSlot();
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
-      base::Bind(&CertificateManagerModel::DidGetCertDBOnUIThread, cert_db,
-                 is_user_db_available, callback));
+      base::BindOnce(&CertificateManagerModel::DidGetCertDBOnUIThread, cert_db,
+                     is_user_db_available, callback));
 }
 
 // static
@@ -158,8 +158,8 @@ void CertificateManagerModel::GetCertDBOnIOThread(
     const CreationCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
-      context,
-      base::Bind(&CertificateManagerModel::DidGetCertDBOnIOThread, callback));
+      context, base::BindOnce(&CertificateManagerModel::DidGetCertDBOnIOThread,
+                              callback));
   if (cert_db)
     DidGetCertDBOnIOThread(callback, cert_db);
 }

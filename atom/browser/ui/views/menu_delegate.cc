@@ -132,8 +132,8 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     if (!switch_in_progress) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
-          base::Bind(&views::MenuRunner::Cancel,
-                     base::Unretained(menu_runner_.get())));
+          base::BindOnce(&views::MenuRunner::Cancel,
+                         base::Unretained(menu_runner_.get())));
     }
   }
 
