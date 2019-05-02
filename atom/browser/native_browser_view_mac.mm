@@ -4,6 +4,8 @@
 
 #include "atom/browser/native_browser_view_mac.h"
 
+#include <vector>
+
 #include "atom/browser/ui/inspectable_web_contents.h"
 #include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "skia/ext/skia_utils_mac.h"

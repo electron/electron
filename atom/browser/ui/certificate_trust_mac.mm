@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/certificate_trust.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #import <Cocoa/Cocoa.h>
 #import <SecurityInterface/SFCertificateTrustPanel.h>
 

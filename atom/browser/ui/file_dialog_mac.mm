@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/file_dialog.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
 

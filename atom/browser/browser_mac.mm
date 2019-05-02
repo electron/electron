@@ -4,6 +4,9 @@
 
 #include "atom/browser/browser.h"
 
+#include <string>
+#include <utility>
+
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
@@ -282,9 +285,9 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
     LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
   }
 #else
-  if (settings.open_at_login)
+  if (settings.open_at_login) {
     base::mac::AddToLoginItems(settings.open_as_hidden);
-  else {
+  } else {
     RemoveFromLoginItems();
   }
 #endif

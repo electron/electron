@@ -4,6 +4,9 @@
 
 #include "atom/common/platform_util.h"
 
+#include <string>
+#include <utility>
+
 #import <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 #import <ServiceManagement/ServiceManagement.h>

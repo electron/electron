@@ -33,6 +33,6 @@ void App::SetAppLogsPath(mate::Arguments* args) {
   }
 }
 
-}  // namespace atom
-
 }  // namespace api
+
+}  // namespace atom

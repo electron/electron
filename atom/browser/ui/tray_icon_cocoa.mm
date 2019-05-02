@@ -4,6 +4,9 @@
 
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
+#include <string>
+#include <vector>
+
 #include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
 #include "base/strings/sys_string_conversions.h"
