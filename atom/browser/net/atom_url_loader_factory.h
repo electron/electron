@@ -79,7 +79,8 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       const mate::Dictionary& dict);
-  static void StartLoadingStream(network::mojom::URLLoaderClientPtr client,
+  static void StartLoadingStream(network::mojom::URLLoaderRequest loader,
+                                 network::mojom::URLLoaderClientPtr client,
                                  const mate::Dictionary& dict);
 
   // Helper to send string as response.

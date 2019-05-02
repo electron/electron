@@ -186,7 +186,7 @@ void AtomURLLoaderFactory::StartLoading(
                        request, std::move(client), traffic_annotation, dict);
       break;
     case ProtocolType::kStream:
-      StartLoadingStream(std::move(client), dict);
+      StartLoadingStream(std::move(loader), std::move(client), dict);
       break;
     case ProtocolType::kFree:
       ProtocolType type;
@@ -306,6 +306,7 @@ void AtomURLLoaderFactory::StartLoadingHttp(
 
 // static
 void AtomURLLoaderFactory::StartLoadingStream(
+    network::mojom::URLLoaderRequest loader,
     network::mojom::URLLoaderClientPtr client,
     const mate::Dictionary& dict) {
   network::ResourceResponseHead head = ToResponseHead(dict);
@@ -332,8 +333,8 @@ void AtomURLLoaderFactory::StartLoadingStream(
     return;
   }
 
-  new NodeStreamLoader(std::move(head), std::move(client), data.isolate(),
-                       data.GetHandle());
+  new NodeStreamLoader(std::move(head), std::move(loader), std::move(client),
+                       data.isolate(), data.GetHandle());
 }
 
 // static

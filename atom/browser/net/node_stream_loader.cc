@@ -14,13 +14,20 @@
 namespace atom {
 
 NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
+                                   network::mojom::URLLoaderRequest loader,
                                    network::mojom::URLLoaderClientPtr client,
                                    v8::Isolate* isolate,
                                    v8::Local<v8::Object> emitter)
-    : client_(std::move(client)),
+    : binding_(this),
+      client_(std::move(client)),
       isolate_(isolate),
       emitter_(isolate, emitter),
       weak_factory_(this) {
+  auto weak = weak_factory_.GetWeakPtr();
+  binding_.Bind(std::move(loader));
+  binding_.set_connection_error_handler(
+      base::BindOnce(&NodeStreamLoader::OnConnectionError, weak));
+
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer_, &consumer);
   if (rv != MOJO_RESULT_OK) {
@@ -31,10 +38,12 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
   client_->OnReceiveResponse(head);
   client_->OnStartLoadingResponseBody(std::move(consumer));
 
-  auto weak = weak_factory_.GetWeakPtr();
-  On("data", base::BindRepeating(&NodeStreamLoader::OnData, weak));
   On("end", base::BindRepeating(&NodeStreamLoader::OnEnd, weak));
   On("error", base::BindRepeating(&NodeStreamLoader::OnError, weak));
+  // Since every node::MakeCallback call has a micro scope itself, we have to
+  // subscribe |data| at last otherwise |end|'s listener won't be called when
+  // it is emitted in the same tick.
+  On("data", base::BindRepeating(&NodeStreamLoader::OnData, weak));
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
@@ -87,12 +96,24 @@ void NodeStreamLoader::OnData(mate::Arguments* args) {
 
 void NodeStreamLoader::OnEnd(mate::Arguments* args) {
   client_->OnComplete(network::URLLoaderCompletionStatus(net::OK));
-  delete this;
+  client_.reset();
+  MaybeDeleteSelf();
 }
 
 void NodeStreamLoader::OnError(mate::Arguments* args) {
   client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
-  delete this;
+  client_.reset();
+  MaybeDeleteSelf();
+}
+
+void NodeStreamLoader::OnConnectionError() {
+  binding_.Close();
+  MaybeDeleteSelf();
+}
+
+void NodeStreamLoader::MaybeDeleteSelf() {
+  if (!binding_.is_bound() && !client_.is_bound())
+    delete this;
 }
 
 }  // namespace atom
