@@ -1,6 +1,6 @@
 # API Contract
 
-Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](../electron-versioning.md#semver) before the change is made.
+Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](../tutorial/electron-versioning.md#semver) before the change is made.
 
 ## `FIXME` comments
 
