@@ -10,6 +10,7 @@
 
 #include "atom/common/api/locker.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -104,7 +105,8 @@ class Promise {
   }
 
   template <typename ReturnType, typename... ArgTypes>
-  v8::MaybeLocal<v8::Promise> Then(base::Callback<ReturnType(ArgTypes...)> cb) {
+  v8::MaybeLocal<v8::Promise> Then(
+      base::OnceCallback<ReturnType(ArgTypes...)> cb) {
     v8::HandleScope handle_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));

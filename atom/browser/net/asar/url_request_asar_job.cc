@@ -131,8 +131,8 @@ int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
 
   int rv = stream_->Read(
       dest, dest_size,
-      base::Bind(&URLRequestAsarJob::DidRead, weak_ptr_factory_.GetWeakPtr(),
-                 WrapRefCounted(dest)));
+      base::BindOnce(&URLRequestAsarJob::DidRead,
+                     weak_ptr_factory_.GetWeakPtr(), WrapRefCounted(dest)));
   if (rv >= 0) {
     remaining_bytes_ -= rv;
     DCHECK_GE(remaining_bytes_, 0);
@@ -257,9 +257,9 @@ void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
 
   int flags =
       base::File::FLAG_OPEN | base::File::FLAG_READ | base::File::FLAG_ASYNC;
-  int rv = stream_->Open(
-      meta_info_.file_path, flags,
-      base::Bind(&URLRequestAsarJob::DidOpen, weak_ptr_factory_.GetWeakPtr()));
+  int rv = stream_->Open(meta_info_.file_path, flags,
+                         base::BindOnce(&URLRequestAsarJob::DidOpen,
+                                        weak_ptr_factory_.GetWeakPtr()));
   if (rv != net::ERR_IO_PENDING)
     DidOpen(rv);
 }
@@ -297,9 +297,9 @@ void URLRequestAsarJob::DidOpen(int result) {
   seek_offset_ = byte_range_.first_byte_position() + read_offset;
 
   if (remaining_bytes_ > 0 && seek_offset_ != 0) {
-    int rv =
-        stream_->Seek(seek_offset_, base::Bind(&URLRequestAsarJob::DidSeek,
-                                               weak_ptr_factory_.GetWeakPtr()));
+    int rv = stream_->Seek(seek_offset_,
+                           base::BindOnce(&URLRequestAsarJob::DidSeek,
+                                          weak_ptr_factory_.GetWeakPtr()));
     if (rv != net::ERR_IO_PENDING) {
       // stream_->Seek() failed, so pass an intentionally erroneous value
       // into DidSeek().
