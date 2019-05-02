@@ -346,50 +346,41 @@ describe('webContents module', () => {
   })
 
   describe('zoom-changed', () => {
-    before(function () {
+    beforeEach(function () {
       // On Mac, zooming isn't done with the mouse wheel.
       if (process.platform === 'darwin') {
-        this.skip()
+        return closeWindow(w).then(() => {
+          w = null
+          this.skip()
+        })
       }
     })
 
-    it('is emitted with the correct zooming info', (done) => {
+    it('is emitted with the correct zooming info', async () => {
       w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-      w.webContents.once('did-finish-load', () => {
-        const testZoomChanged = (opts) => {
-          return new Promise((resolve, reject) => {
-            w.webContents.once('zoom-changed', (event, zoomDirection) => {
-              assert.strictEqual(zoomDirection, opts.zoomingIn ? 'in' : 'out')
-              resolve()
-            })
+      await emittedOnce(w.webContents, 'did-finish-load')
 
-            const modifiers = ['control', 'meta']
-            const inputEvent = {
-              type: 'mousewheel',
-              x: 300,
-              y: 300,
-              deltaX: 0,
-              deltaY: opts.zoomingIn ? 1 : -1,
-              wheelTicksX: 0,
-              wheelTicksY: opts.zoomingIn ? 1 : -1,
-              phase: 'began',
-              modifiers
-            }
+      const testZoomChanged = async ({ zoomingIn }) => {
+        const promise = emittedOnce(w.webContents, 'zoom-changed')
 
-            w.webContents.sendInputEvent(inputEvent)
-          })
-        }
+        w.webContents.sendInputEvent({
+          type: 'mousewheel',
+          x: 300,
+          y: 300,
+          deltaX: 0,
+          deltaY: zoomingIn ? 1 : -1,
+          wheelTicksX: 0,
+          wheelTicksY: zoomingIn ? 1 : -1,
+          phase: 'began',
+          modifiers: ['control', 'meta']
+        })
 
-        Promise.resolve().then(() => {
-          return testZoomChanged({
-            zoomingIn: true
-          })
-        }).then(() => {
-          return testZoomChanged({
-            zoomingIn: false
-          })
-        }).then(done).catch(done)
-      })
+        const [, zoomDirection] = await promise
+        expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out')
+      }
+
+      await testZoomChanged({ zoomingIn: true })
+      await testZoomChanged({ zoomingIn: false })
     })
   })
 
