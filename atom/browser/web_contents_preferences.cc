@@ -20,6 +20,7 @@
 #include "cc/base/switches.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/common/content_client.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
@@ -229,6 +230,9 @@ WebContentsPreferences* WebContentsPreferences::From(
 
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line) {
+  // Append UA Override
+  command_line->AppendSwitchASCII("user-agent",
+                                  content::GetContentClient()->GetUserAgent());
   // Check if plugins are enabled.
   if (IsEnabled(options::kPlugins))
     command_line->AppendSwitch(switches::kEnablePlugins);

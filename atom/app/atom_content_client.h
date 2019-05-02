@@ -18,10 +18,12 @@ class AtomContentClient : public brightray::ContentClient {
   AtomContentClient();
   ~AtomContentClient() override;
 
+  std::string GetUserAgent() const override;
+  void SetUserAgent(const std::string& user_agent);
+
  protected:
   // content::ContentClient:
   std::string GetProduct() const override;
-  std::string GetUserAgent() const override;
   base::string16 GetLocalizedString(int message_id) const override;
   void AddAdditionalSchemes(Schemes* schemes) override;
   void AddPepperPlugins(
@@ -31,6 +33,8 @@ class AtomContentClient : public brightray::ContentClient {
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
 
  private:
+  std::string user_agent_override_ = "";
+
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);
 };
 
