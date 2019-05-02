@@ -777,38 +777,39 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.GetProcess().Handle());
+  ChildProcessLaunched(data.process_type, data.GetProcess().Handle(),
+                       data.GetProcess().Pid());
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.GetProcess().Pid());
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.GetProcess().Pid());
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.GetProcess().Pid());
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
-                       host->GetProcess().Handle());
+                       host->GetProcess().Handle(), host->GetProcess().Pid());
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {
   ChildProcessDisconnected(host_pid);
 }
 
-void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
-  auto pid = base::GetProcId(handle);
-
+void App::ChildProcessLaunched(int process_type,
+                               base::ProcessHandle handle,
+                               base::ProcessId pid) {
 #if defined(OS_MACOSX)
   std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(
