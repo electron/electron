@@ -1291,9 +1291,9 @@ bool App::IsInApplicationsFolder() {
 int DockBounce(const std::string& type) {
   int request_id = -1;
   if (type == "critical")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
+    request_id = Browser::Get()->DockBounce(Browser::BounceType::CRITICAL);
   else if (type == "informational")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
+    request_id = Browser::Get()->DockBounce(Browser::BounceType::INFORMATIONAL);
   return request_id;
 }
 

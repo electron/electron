@@ -122,7 +122,7 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
 
   auto zoom_controller =
       WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
-  zoom_controller->SetZoomMode(WebContentsZoomController::ZOOM_MODE_MANUAL);
+  zoom_controller->SetZoomMode(WebContentsZoomController::ZoomMode::MANUAL);
   zoom_controller->SetZoomLevel(0);
 }
 

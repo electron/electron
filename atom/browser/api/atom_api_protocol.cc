@@ -164,9 +164,9 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
     const std::string& scheme) {
   auto* job_factory = request_context_getter->job_factory();
   if (!job_factory->HasProtocolHandler(scheme))
-    return PROTOCOL_NOT_REGISTERED;
+    return ProtocolError::NOT_REGISTERED;
   job_factory->SetProtocolHandler(scheme, nullptr);
-  return PROTOCOL_OK;
+  return ProtocolError::OK;
 }
 
 bool IsProtocolHandledInIO(
@@ -209,8 +209,8 @@ Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
     scoped_refptr<URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
   return request_context_getter->job_factory()->UninterceptProtocol(scheme)
-             ? PROTOCOL_OK
-             : PROTOCOL_NOT_INTERCEPTED;
+             ? ProtocolError::OK
+             : ProtocolError::NOT_INTERCEPTED;
 }
 
 void Protocol::OnIOCompleted(const CompletionCallback& callback,
@@ -222,7 +222,7 @@ void Protocol::OnIOCompleted(const CompletionCallback& callback,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
-  if (error == PROTOCOL_OK) {
+  if (error == ProtocolError::OK) {
     callback.Run(v8::Null(isolate()));
   } else {
     std::string str = ErrorCodeToString(error);
@@ -232,15 +232,15 @@ void Protocol::OnIOCompleted(const CompletionCallback& callback,
 
 std::string Protocol::ErrorCodeToString(ProtocolError error) {
   switch (error) {
-    case PROTOCOL_FAIL:
+    case ProtocolError::FAIL:
       return "Failed to manipulate protocol factory";
-    case PROTOCOL_REGISTERED:
+    case ProtocolError::REGISTERED:
       return "The scheme has been registered";
-    case PROTOCOL_NOT_REGISTERED:
+    case ProtocolError::NOT_REGISTERED:
       return "The scheme has not been registered";
-    case PROTOCOL_INTERCEPTED:
+    case ProtocolError::INTERCEPTED:
       return "The scheme has been intercepted";
-    case PROTOCOL_NOT_INTERCEPTED:
+    case ProtocolError::NOT_INTERCEPTED:
       return "The scheme has not been intercepted";
     default:
       return "Unexpected error";

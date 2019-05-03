@@ -146,7 +146,7 @@ class NativeWindowMac : public NativeWindow {
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
 
-  enum TitleBarStyle {
+  enum class TitleBarStyle {
     NORMAL,
     HIDDEN,
     HIDDEN_INSET,
@@ -200,7 +200,7 @@ class NativeWindowMac : public NativeWindow {
   NSApplicationPresentationOptions kiosk_options_;
 
   // The "titleBarStyle" option.
-  TitleBarStyle title_bar_style_ = NORMAL;
+  TitleBarStyle title_bar_style_ = TitleBarStyle::NORMAL;
 
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().

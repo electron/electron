@@ -139,18 +139,18 @@ bool TaskbarHost::SetProgressBar(HWND window,
     return false;
 
   bool success;
-  if (value > 1.0 || state == NativeWindow::PROGRESS_INDETERMINATE) {
+  if (value > 1.0 || state == NativeWindow::ProgressState::kIndeterminate) {
     success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_INDETERMINATE));
-  } else if (value < 0 || state == NativeWindow::PROGRESS_NONE) {
+  } else if (value < 0 || state == NativeWindow::ProgressState::kNone) {
     success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_NOPROGRESS));
   } else {
     // Unless SetProgressState set a blocking state (TBPF_ERROR, TBPF_PAUSED)
     // for the window, a call to SetProgressValue assumes the TBPF_NORMAL
     // state even if it is not explicitly set.
     // SetProgressValue overrides and clears the TBPF_INDETERMINATE state.
-    if (state == NativeWindow::PROGRESS_ERROR) {
+    if (state == NativeWindow::ProgressState::kError) {
       success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_ERROR));
-    } else if (state == NativeWindow::PROGRESS_PAUSED) {
+    } else if (state == NativeWindow::ProgressState::kPaused) {
       success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_PAUSED));
     } else {
       success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_NORMAL));

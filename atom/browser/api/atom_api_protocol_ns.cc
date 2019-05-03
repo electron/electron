@@ -20,13 +20,13 @@ namespace {
 // Convert error code to string.
 std::string ErrorCodeToString(ProtocolError error) {
   switch (error) {
-    case PROTOCOL_REGISTERED:
+    case ProtocolError::REGISTERED:
       return "The scheme has been registered";
-    case PROTOCOL_NOT_REGISTERED:
+    case ProtocolError::NOT_REGISTERED:
       return "The scheme has not been registered";
-    case PROTOCOL_INTERCEPTED:
+    case ProtocolError::INTERCEPTED:
       return "The scheme has been intercepted";
-    case PROTOCOL_NOT_INTERCEPTED:
+    case ProtocolError::NOT_INTERCEPTED:
       return "The scheme has not been intercepted";
     default:
       return "Unexpected error";
@@ -56,21 +56,21 @@ void ProtocolNS::RegisterURLLoaderFactories(
 ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
-  ProtocolError error = PROTOCOL_OK;
+  ProtocolError error = ProtocolError::OK;
   if (!base::ContainsKey(handlers_, scheme))
     handlers_[scheme] = std::make_pair(type, handler);
   else
-    error = PROTOCOL_REGISTERED;
+    error = ProtocolError::REGISTERED;
   return error;
 }
 
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
                                     mate::Arguments* args) {
-  ProtocolError error = PROTOCOL_OK;
+  ProtocolError error = ProtocolError::OK;
   if (base::ContainsKey(handlers_, scheme))
     handlers_.erase(scheme);
   else
-    error = PROTOCOL_NOT_REGISTERED;
+    error = ProtocolError::NOT_REGISTERED;
   HandleOptionalCallback(args, error);
 }
 
@@ -89,7 +89,7 @@ void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,
                                         ProtocolError error) {
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
-    if (error == PROTOCOL_OK)
+    if (error == ProtocolError::OK)
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(

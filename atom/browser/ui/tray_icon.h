@@ -40,7 +40,7 @@ class TrayIcon {
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
   // Sets the status icon highlight mode. This only works on macOS.
-  enum HighlightMode {
+  enum class HighlightMode {
     ALWAYS,    // Always highlight the tray icon
     NEVER,     // Never highlight the tray icon
     SELECTION  // Highlight the tray icon when clicked or the menu is opened

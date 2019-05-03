@@ -19,12 +19,12 @@ namespace atom {
 
 class NativeWindow;
 
-enum MessageBoxType {
-  MESSAGE_BOX_TYPE_NONE = 0,
-  MESSAGE_BOX_TYPE_INFORMATION,
-  MESSAGE_BOX_TYPE_WARNING,
-  MESSAGE_BOX_TYPE_ERROR,
-  MESSAGE_BOX_TYPE_QUESTION,
+enum class MessageBoxType {
+  kNone = 0,
+  kInformation,
+  kWarning,
+  kError,
+  kQuestion,
 };
 
 enum MessageBoxOptions {

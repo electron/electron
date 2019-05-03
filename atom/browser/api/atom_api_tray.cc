@@ -25,18 +25,19 @@ struct Converter<atom::TrayIcon::HighlightMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      atom::TrayIcon::HighlightMode* out) {
+    using HighlightMode = atom::TrayIcon::HighlightMode;
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "always") {
-        *out = atom::TrayIcon::HighlightMode::ALWAYS;
+        *out = HighlightMode::ALWAYS;
         return true;
       }
       if (mode == "selection") {
-        *out = atom::TrayIcon::HighlightMode::SELECTION;
+        *out = HighlightMode::SELECTION;
         return true;
       }
       if (mode == "never") {
-        *out = atom::TrayIcon::HighlightMode::NEVER;
+        *out = HighlightMode::NEVER;
         return true;
       }
     }

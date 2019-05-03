@@ -211,15 +211,16 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      atom::NativeWindowMac::TitleBarStyle* out) {
+    using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
     std::string title_bar_style;
     if (!ConvertFromV8(isolate, val, &title_bar_style))
       return false;
     if (title_bar_style == "hidden") {
-      *out = atom::NativeWindowMac::HIDDEN;
+      *out = TitleBarStyle::HIDDEN;
     } else if (title_bar_style == "hiddenInset") {
-      *out = atom::NativeWindowMac::HIDDEN_INSET;
+      *out = TitleBarStyle::HIDDEN_INSET;
     } else if (title_bar_style == "customButtonsOnHover") {
-      *out = atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER;
+      *out = TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER;
     } else {
       return false;
     }
@@ -319,7 +320,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   }
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
-  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
+  if (title_bar_style_ == TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER &&
       (!useStandardWindow || transparent() || !has_frame())) {
     styleMask = NSWindowStyleMaskFullSizeContentView;
   }
@@ -329,7 +330,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   if (closable) {
     styleMask |= NSWindowStyleMaskClosable;
   }
-  if (title_bar_style_ != NORMAL) {
+  if (title_bar_style_ != TitleBarStyle::NORMAL) {
     // The window without titlebar is treated the same with frameless window.
     set_has_frame(false);
   }
@@ -400,12 +401,12 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   }
 
   // Hide the title bar background
-  if (title_bar_style_ != NORMAL) {
+  if (title_bar_style_ != TitleBarStyle::NORMAL) {
     [window_ setTitlebarAppearsTransparent:YES];
   }
 
   // Hide the title bar.
-  if (title_bar_style_ == HIDDEN_INSET) {
+  if (title_bar_style_ == TitleBarStyle::HIDDEN_INSET) {
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
@@ -1235,7 +1236,7 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
 }
 
 bool NativeWindowMac::SetWindowButtonVisibility(bool visible) {
-  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
+  if (title_bar_style_ == TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER) {
     return false;
   }
 
@@ -1267,7 +1268,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
   transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
 
-  if (title_bar_style_ != NORMAL) {
+  if (title_bar_style_ != TitleBarStyle::NORMAL) {
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
@@ -1420,14 +1421,14 @@ void NativeWindowMac::AddContentViewLayers() {
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
-    if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
+    if (title_bar_style_ == TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER) {
       buttons_view_.reset(
           [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
       // NSWindowStyleMaskFullSizeContentView does not work with zoom button
       SetFullScreenable(false);
       [[window_ contentView] addSubview:buttons_view_];
     } else {
-      if (title_bar_style_ != NORMAL)
+      if (title_bar_style_ != TitleBarStyle::NORMAL)
         return;
 
       // Hide the window buttons.

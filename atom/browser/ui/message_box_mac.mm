@@ -38,11 +38,11 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   [alert setInformativeText:base::SysUTF8ToNSString(detail)];
 
   switch (type) {
-    case MESSAGE_BOX_TYPE_INFORMATION:
+    case MessageBoxType::kInformation:
       alert.alertStyle = NSInformationalAlertStyle;
       break;
-    case MESSAGE_BOX_TYPE_WARNING:
-    case MESSAGE_BOX_TYPE_ERROR:
+    case MessageBoxType::kWarning:
+    case MessageBoxType::kError:
       // NSWarningAlertStyle shows the app icon while NSCriticalAlertStyle
       // shows a warning icon with an app icon badge. Since there is no
       // error variant, lets just use NSCriticalAlertStyle.

@@ -80,7 +80,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     public content::WebContentsObserver,
                     public mojom::ElectronBrowser {
  public:
-  enum Type {
+  enum class Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
     BROWSER_WINDOW,   // Used by BrowserWindow.
     BROWSER_VIEW,     // Used by BrowserView.
@@ -534,7 +534,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   WebContentsZoomController* zoom_controller_ = nullptr;
 
   // The type of current WebContents.
-  Type type_ = BROWSER_WINDOW;
+  Type type_ = Type::BROWSER_WINDOW;
 
   // Request id used for findInPage request.
   uint32_t request_id_ = 0;
