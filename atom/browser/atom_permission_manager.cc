@@ -93,7 +93,7 @@ AtomPermissionManager::AtomPermissionManager() {}
 AtomPermissionManager::~AtomPermissionManager() {}
 
 void AtomPermissionManager::SetPermissionRequestHandler(
-    RequestHandler& handler) {
+    const RequestHandler& handler) {
   if (handler.is_null() && !pending_requests_.IsEmpty()) {
     for (PendingRequestsMap::iterator iter(&pending_requests_); !iter.IsAtEnd();
          iter.Advance()) {

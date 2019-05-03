@@ -39,7 +39,7 @@ class AtomPermissionManager : public content::PermissionControllerDelegate {
                                            const base::DictionaryValue&)>;
 
   // Handler to dispatch permission requests in JS.
-  void SetPermissionRequestHandler(RequestHandler& handler);
+  void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
 
   // content::PermissionControllerDelegate:
