@@ -289,6 +289,27 @@ describe('BrowserWindow module', () => {
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
+    it('should return a promise', () => {
+      const p = w.loadURL('about:blank')
+      expect(p).to.have.property('then')
+    })
+
+    it('should return a promise that resolves', async () => {
+      expect(w.loadURL('about:blank')).to.eventually.be.fulfilled()
+    })
+
+    it('should return a promise that rejects on a load failure', async () => {
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
+      const p = w.loadURL(`data:image/png;base64,${data}`)
+      await expect(p).to.eventually.be.rejected()
+    })
+
+    it('should return a promise that resolves even if pushState occurs during navigation', async () => {
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
+      const p = w.loadURL('data:text/html,<script>window.history.pushState({}, "/foo")</script>')
+      await expect(p).to.eventually.be.fulfilled()
+    })
+
     describe('POST navigations', () => {
       afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
 
