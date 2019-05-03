@@ -6,7 +6,7 @@ Subject: Revert "[cctest] Add V8_EXPORT_PRIVATE to arm/arm64 ports"
 This reverts commit 1a7d847cfac9a7363c59c980e47a7b7ff416e6da.
 
 diff --git a/src/arm/assembler-arm.h b/src/arm/assembler-arm.h
-index c62c6041775206a7f222febf2950d6829e0299b7..4528b8efb1712683adc9403e4cf74bcab5fb1bbe 100644
+index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad9a734ee7 100644
 --- a/src/arm/assembler-arm.h
 +++ b/src/arm/assembler-arm.h
 @@ -79,7 +79,7 @@ enum Coprocessor {
@@ -59,7 +59,7 @@ index c62c6041775206a7f222febf2950d6829e0299b7..4528b8efb1712683adc9403e4cf74bca
    explicit UseScratchRegisterScope(Assembler* assembler);
    ~UseScratchRegisterScope();
 diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index 7dd97809e3e3d4a43f6595bb0fb9a5b7b916d8be..586eff1241fed0a5f6a6fbc9b858981058a75feb 100644
+index 8db1a571b7d198c03a6cb6f1a8ab04597bea2776..8614975a1dbe54fe655f5e050742ccc76faa21da 100644
 --- a/src/arm64/assembler-arm64.h
 +++ b/src/arm64/assembler-arm64.h
 @@ -49,7 +49,7 @@ class Immediate {
