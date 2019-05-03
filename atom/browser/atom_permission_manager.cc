@@ -32,9 +32,9 @@ bool WebContentsDestroyed(int process_id) {
 }
 
 void PermissionRequestResponseCallbackWrapper(
-    const AtomPermissionManager::StatusCallback& callback,
+    AtomPermissionManager::StatusCallback callback,
     const std::vector<blink::mojom::PermissionStatus>& vector) {
-  callback.Run(vector[0]);
+  std::move(callback).Run(vector[0]);
 }
 
 }  // namespace
@@ -43,9 +43,9 @@ class AtomPermissionManager::PendingRequest {
  public:
   PendingRequest(content::RenderFrameHost* render_frame_host,
                  const std::vector<content::PermissionType>& permissions,
-                 const StatusesCallback& callback)
+                 StatusesCallback callback)
       : render_process_id_(render_frame_host->GetProcess()->GetID()),
-        callback_(callback),
+        callback_(std::move(callback)),
         permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
         remaining_results_(permissions.size()) {}
@@ -74,11 +74,15 @@ class AtomPermissionManager::PendingRequest {
 
   bool IsComplete() const { return remaining_results_ == 0; }
 
-  void RunCallback() const { callback_.Run(results_); }
+  void RunCallback() {
+    if (!callback_.is_null()) {
+      std::move(callback_).Run(results_);
+    }
+  }
 
  private:
   int render_process_id_;
-  const StatusesCallback callback_;
+  StatusesCallback callback_;
   std::vector<content::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
   size_t remaining_results_;
@@ -89,10 +93,10 @@ AtomPermissionManager::AtomPermissionManager() {}
 AtomPermissionManager::~AtomPermissionManager() {}
 
 void AtomPermissionManager::SetPermissionRequestHandler(
-    const RequestHandler& handler) {
+    RequestHandler& handler) {
   if (handler.is_null() && !pending_requests_.IsEmpty()) {
-    for (PendingRequestsMap::const_iterator iter(&pending_requests_);
-         !iter.IsAtEnd(); iter.Advance()) {
+    for (PendingRequestsMap::iterator iter(&pending_requests_); !iter.IsAtEnd();
+         iter.Advance()) {
       auto* request = iter.GetCurrentValue();
       if (!WebContentsDestroyed(request->render_process_id()))
         request->RunCallback();
@@ -112,11 +116,10 @@ int AtomPermissionManager::RequestPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const base::Callback<void(blink::mojom::PermissionStatus)>&
-        response_callback) {
+    StatusCallback response_callback) {
   return RequestPermissionWithDetails(permission, render_frame_host,
                                       requesting_origin, user_gesture, nullptr,
-                                      response_callback);
+                                      std::move(response_callback));
 }
 
 int AtomPermissionManager::RequestPermissionWithDetails(
@@ -125,11 +128,12 @@ int AtomPermissionManager::RequestPermissionWithDetails(
     const GURL& requesting_origin,
     bool user_gesture,
     const base::DictionaryValue* details,
-    const StatusCallback& response_callback) {
+    StatusCallback response_callback) {
   return RequestPermissionsWithDetails(
       std::vector<content::PermissionType>(1, permission), render_frame_host,
       requesting_origin, user_gesture, details,
-      base::Bind(&PermissionRequestResponseCallbackWrapper, response_callback));
+      base::BindOnce(PermissionRequestResponseCallbackWrapper,
+                     std::move(response_callback)));
 }
 
 int AtomPermissionManager::RequestPermissions(
@@ -137,10 +141,10 @@ int AtomPermissionManager::RequestPermissions(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const StatusesCallback& response_callback) {
+    StatusesCallback response_callback) {
   return RequestPermissionsWithDetails(permissions, render_frame_host,
                                        requesting_origin, user_gesture, nullptr,
-                                       response_callback);
+                                       std::move(response_callback));
 }
 
 int AtomPermissionManager::RequestPermissionsWithDetails(
@@ -149,9 +153,9 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const GURL& requesting_origin,
     bool user_gesture,
     const base::DictionaryValue* details,
-    const StatusesCallback& response_callback) {
+    StatusesCallback response_callback) {
   if (permissions.empty()) {
-    response_callback.Run(std::vector<blink::mojom::PermissionStatus>());
+    std::move(response_callback).Run({});
     return content::PermissionController::kNoPendingOperation;
   }
 
@@ -169,20 +173,20 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
       }
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
-    response_callback.Run(statuses);
+    std::move(response_callback).Run(statuses);
     return content::PermissionController::kNoPendingOperation;
   }
 
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
-      render_frame_host, permissions, response_callback));
+      render_frame_host, permissions, std::move(response_callback)));
 
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
     const auto callback =
-        base::Bind(&AtomPermissionManager::OnPermissionResponse,
-                   base::Unretained(this), request_id, i);
+        base::BindRepeating(&AtomPermissionManager::OnPermissionResponse,
+                            base::Unretained(this), request_id, i);
     if (details == nullptr) {
       request_handler_.Run(web_contents, permission, callback,
                            base::DictionaryValue());
@@ -224,7 +228,7 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
+    base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
   return -1;
 }
 
