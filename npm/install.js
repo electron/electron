@@ -15,6 +15,10 @@ try {
   // do nothing
 }
 
+if (process.env.ELECTRON_SKIP_BINARY_DOWNLOAD) {
+  process.exit(0)
+}
+
 var platformPath = getPlatformPath()
 
 var electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
