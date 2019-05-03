@@ -213,7 +213,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     tab_sources.reserve(media_list_sources.size());
     for (const auto& media_list_source : media_list_sources) {
       tab_sources.emplace_back(
-          DesktopCapturer::Source{media_list_sources, std::string()});
+          DesktopCapturer::Source{media_list_source, std::string()});
     }
     std::move(tab_sources.begin(), tab_sources.end(),
               std::back_inserter(captured_sources_));

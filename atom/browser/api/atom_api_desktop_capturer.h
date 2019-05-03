@@ -62,7 +62,7 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
 
   std::unique_ptr<DesktopMediaList> window_capturer_;
   std::unique_ptr<DesktopMediaList> screen_capturer_;
-  std::unique_str<DesktopMediaList> tab_capturer_;
+  std::unique_ptr<DesktopMediaList> tab_capturer_;
   std::vector<DesktopCapturer::Source> captured_sources_;
   bool capture_window_ = false;
   bool capture_screen_ = false;
