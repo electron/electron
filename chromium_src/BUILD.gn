@@ -76,6 +76,7 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/desktop_media_list_observer.h",
       "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
       "//chrome/browser/media/webrtc/native_desktop_media_list.h",
+      "//chrome/browser/media/webrtc/tab_desktop_media_list.cc",
       "//chrome/browser/media/webrtc/tab_desktop_media_list.h",
       "//chrome/browser/media/webrtc/window_icon_util.h",
     ]

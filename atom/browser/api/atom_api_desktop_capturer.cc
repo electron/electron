@@ -15,7 +15,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
-#include "chrome/browser/media/webrtc/tab_desktop_media_list.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
 #include "native_mate/dictionary.h"
