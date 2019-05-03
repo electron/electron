@@ -457,23 +457,28 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   using RequestHandler =
       base::Callback<void(content::WebContents*, content::PermissionType,
                           StatusCallback, const base::DictionaryValue&)>;
-  RequestHandler handler;
-  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+  auto* permission_manager = static_cast<AtomPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  if (val->IsNull()) {
+    permission_manager->SetPermissionRequestHandler(
+        AtomPermissionManager::RequestHandler());
+    return;
+  }
+  auto handler = std::make_unique<RequestHandler>();
+  if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowError("Must pass null or function");
     return;
   }
-  auto* permission_manager = static_cast<AtomPermissionManager*>(
-      browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](const RequestHandler& handler, content::WebContents* web_contents,
+      [](RequestHandler* handler, content::WebContents* web_contents,
          content::PermissionType permission_type,
          AtomPermissionManager::StatusCallback callback,
          const base::DictionaryValue& details) {
-        handler.Run(web_contents, permission_type,
-                    base::AdaptCallbackForRepeating(std::move(callback)),
-                    details);
+        handler->Run(web_contents, permission_type,
+                     base::AdaptCallbackForRepeating(std::move(callback)),
+                     details);
       },
-      base::Passed(std::move(handler))));
+      base::Owned(std::move(handler))));
 }
 
 void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
