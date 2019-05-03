@@ -72,15 +72,6 @@ struct ClearStorageDataOptions {
   uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
 
-struct ClearAuthCacheOptions {
-  std::string type;
-  GURL origin;
-  std::string realm;
-  base::string16 username;
-  base::string16 password;
-  net::HttpAuth::Scheme auth_scheme;
-};
-
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
@@ -121,18 +112,6 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-net::HttpAuth::Scheme GetAuthSchemeFromString(const std::string& scheme) {
-  if (scheme == "basic")
-    return net::HttpAuth::AUTH_SCHEME_BASIC;
-  if (scheme == "digest")
-    return net::HttpAuth::AUTH_SCHEME_DIGEST;
-  if (scheme == "ntlm")
-    return net::HttpAuth::AUTH_SCHEME_NTLM;
-  if (scheme == "negotiate")
-    return net::HttpAuth::AUTH_SCHEME_NEGOTIATE;
-  return net::HttpAuth::AUTH_SCHEME_MAX;
-}
-
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const std::string& accept_lang,
                       const std::string& user_agent) {
@@ -160,26 +139,6 @@ struct Converter<ClearStorageDataOptions> {
       out->storage_types = GetStorageMask(types);
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
-    return true;
-  }
-};
-
-template <>
-struct Converter<ClearAuthCacheOptions> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     ClearAuthCacheOptions* out) {
-    mate::Dictionary options;
-    if (!ConvertFromV8(isolate, val, &options))
-      return false;
-    options.Get("type", &out->type);
-    options.Get("origin", &out->origin);
-    options.Get("realm", &out->realm);
-    options.Get("username", &out->username);
-    options.Get("password", &out->password);
-    std::string scheme;
-    if (options.Get("scheme", &scheme))
-      out->auth_scheme = GetAuthSchemeFromString(scheme);
     return true;
   }
 };
@@ -216,34 +175,6 @@ void SetCertVerifyProcInIO(
   auto* request_context = context_getter->GetURLRequestContext();
   static_cast<AtomCertVerifier*>(request_context->cert_verifier())
       ->SetVerifyProc(proc);
-}
-
-void ClearAuthCacheInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    const ClearAuthCacheOptions& options,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  auto* network_session =
-      request_context->http_transaction_factory()->GetSession();
-  if (network_session) {
-    if (options.type == "password") {
-      auto* auth_cache = network_session->http_auth_cache();
-      if (!options.origin.is_empty()) {
-        auth_cache->Remove(
-            options.origin, options.realm, options.auth_scheme,
-            net::AuthCredentials(options.username, options.password));
-      } else {
-        auth_cache->ClearAllEntries();
-      }
-    } else if (options.type == "clientCertificate") {
-      auto* client_auth_cache = network_session->ssl_client_auth_cache();
-      client_auth_cache->Remove(net::HostPortPair::FromURL(options.origin));
-    }
-    network_session->CloseAllConnections();
-  }
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
 }
 
 void AllowNTLMCredentialsForDomainsInIO(
@@ -550,32 +481,24 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
 
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
       ->GetNetworkContext()
-      ->ClearHostCache(
-          nullptr, base::BindOnce(
-                       [](util::Promise promise) {
-                         util::Promise::ResolveEmptyPromise(std::move(promise));
-                       },
-                       std::move(promise)));
+      ->ClearHostCache(nullptr,
+                       base::BindOnce(util::Promise::ResolveEmptyPromise,
+                                      std::move(promise)));
 
   return handle;
 }
 
-v8::Local<v8::Promise> Session::ClearAuthCache(mate::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
+v8::Local<v8::Promise> Session::ClearAuthCache() {
+  auto* isolate = v8::Isolate::GetCurrent();
   util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  ClearAuthCacheOptions options;
-  if (!args->GetNext(&options)) {
-    promise.RejectWithErrorMessage("Must specify options object");
-    return handle;
-  }
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHttpAuthCache(base::Time(),
+                           base::BindOnce(util::Promise::ResolveEmptyPromise,
+                                          std::move(promise)));
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&ClearAuthCacheInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     options, std::move(promise)));
   return handle;
 }
 
