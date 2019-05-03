@@ -49,7 +49,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* tracing_controller = tracing_agent->GetTracingController();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   platform_ = node::CreatePlatform(
-      base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0),
+      base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
       tracing_controller);
 
   v8::V8::InitializePlatform(platform_);
