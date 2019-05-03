@@ -726,8 +726,8 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
   int id = 0;
   dict->GetInteger(kFrontendHostId, &id);
   embedder_message_dispatcher_->Dispatch(
-      base::Bind(&InspectableWebContentsImpl::SendMessageAck,
-                 weak_factory_.GetWeakPtr(), id),
+      base::BindRepeating(&InspectableWebContentsImpl::SendMessageAck,
+                          weak_factory_.GetWeakPtr(), id),
       method, params);
 }
 
@@ -763,8 +763,9 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
     return;
   frontend_host_ = content::DevToolsFrontendHost::Create(
       new_host,
-      base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                 weak_factory_.GetWeakPtr()));
+      base::BindRepeating(
+          &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+          weak_factory_.GetWeakPtr()));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
@@ -866,7 +867,7 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
     }
     frontend_host_ = content::DevToolsFrontendHost::Create(
         web_contents()->GetMainFrame(),
-        base::Bind(
+        base::BindRepeating(
             &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
             base::Unretained(this)));
     return;

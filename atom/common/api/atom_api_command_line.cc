@@ -51,8 +51,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("hasSwitch", &HasSwitch);
   dict.SetMethod("getSwitchValue", &GetSwitchValue);
   dict.SetMethod("appendSwitch", &AppendSwitch);
-  dict.SetMethod("appendArgument", base::Bind(&base::CommandLine::AppendArg,
-                                              base::Unretained(command_line)));
+  dict.SetMethod("appendArgument",
+                 base::BindRepeating(&base::CommandLine::AppendArg,
+                                     base::Unretained(command_line)));
 }
 
 }  // namespace

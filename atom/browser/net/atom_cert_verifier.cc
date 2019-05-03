@@ -82,8 +82,8 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
   void Start(const net::NetLogWithSource& net_log) {
     int error = cert_verifier_->default_verifier()->Verify(
         params_, &result_,
-        base::Bind(&CertVerifierRequest::OnDefaultVerificationDone,
-                   weak_ptr_factory_.GetWeakPtr()),
+        base::BindOnce(&CertVerifierRequest::OnDefaultVerificationDone,
+                       weak_ptr_factory_.GetWeakPtr()),
         &default_verifier_request_, net_log);
     if (error != net::ERR_IO_PENDING)
       OnDefaultVerificationDone(error);
@@ -96,20 +96,20 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     request->default_result = net::ErrorToString(error);
     request->error_code = error;
     request->certificate = params_.certificate();
-    auto response_callback = base::Bind(&CertVerifierRequest::OnResponseInUI,
-                                        weak_ptr_factory_.GetWeakPtr());
+    auto response_callback = base::BindOnce(
+        &CertVerifierRequest::OnResponseInUI, weak_ptr_factory_.GetWeakPtr());
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
         base::BindOnce(&CertVerifierRequest::OnVerifyRequestInUI,
                        cert_verifier_->verify_proc(), std::move(request),
-                       response_callback));
+                       std::move(response_callback)));
   }
 
   static void OnVerifyRequestInUI(
       const AtomCertVerifier::VerifyProc& verify_proc,
       std::unique_ptr<VerifyRequestParams> request,
-      const base::Callback<void(int)>& response_callback) {
-    verify_proc.Run(*(request.get()), response_callback);
+      base::OnceCallback<void(int)> response_callback) {
+    verify_proc.Run(*(request.get()), std::move(response_callback));
   }
 
   static void OnResponseInUI(base::WeakPtr<CertVerifierRequest> self,

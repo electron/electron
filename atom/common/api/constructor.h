@@ -22,7 +22,7 @@ v8::Local<v8::Function> CreateConstructor(v8::Isolate* isolate,
   called = true;
 #endif
   v8::Local<v8::FunctionTemplate> templ = CreateFunctionTemplate(
-      isolate, base::Bind(&mate::internal::InvokeNew<Sig>, func));
+      isolate, base::BindRepeating(&mate::internal::InvokeNew<Sig>, func));
   templ->InstanceTemplate()->SetInternalFieldCount(1);
   T::BuildPrototype(isolate, templ);
   return templ->GetFunction(isolate->GetCurrentContext()).ToLocalChecked();

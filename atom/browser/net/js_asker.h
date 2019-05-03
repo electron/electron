@@ -17,7 +17,7 @@ namespace atom {
 
 using JavaScriptHandler =
     base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
-using BeforeStartCallback = base::Callback<void(mate::Arguments* args)>;
+using BeforeStartCallback = base::OnceCallback<void(mate::Arguments* args)>;
 
 class JsAsker {
  public:
@@ -34,7 +34,7 @@ class JsAsker {
       v8::Isolate* isolate,
       const JavaScriptHandler& handler,
       std::unique_ptr<base::DictionaryValue> request_details,
-      const BeforeStartCallback& before_start);
+      BeforeStartCallback before_start);
 
   // Test whether the |options| means an error.
   static bool IsErrorOptions(base::Value* value, int* error);

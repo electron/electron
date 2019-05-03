@@ -346,7 +346,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_OSR)
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
-          false, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+          false,
+          base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
 
@@ -363,7 +364,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
-        transparent, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+        transparent,
+        base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
 
@@ -640,8 +642,9 @@ void WebContents::EnterFullscreenModeForTab(
     const blink::WebFullscreenOptions& options) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
-  auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
-                             base::Unretained(this), source, origin, options);
+  auto callback =
+      base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
+                          base::Unretained(this), source, origin, options);
   permission_helper->RequestFullscreenPermission(callback);
 }
 
@@ -680,8 +683,9 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost* render_frame_host,
                                     const content::ContextMenuParams& params) {
   if (params.custom_context.is_pepper_menu) {
     Emit("pepper-context-menu", std::make_pair(params, web_contents()),
-         base::Bind(&content::WebContents::NotifyContextMenuClosed,
-                    base::Unretained(web_contents()), params.custom_context));
+         base::BindOnce(&content::WebContents::NotifyContextMenuClosed,
+                        base::Unretained(web_contents()),
+                        params.custom_context));
   } else {
     Emit("context-menu", std::make_pair(params, web_contents()));
   }

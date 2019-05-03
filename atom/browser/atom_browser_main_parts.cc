@@ -151,7 +151,7 @@ void OverrideLinuxAppDataPath() {
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::Bind(&ui::LogErrorEventDescription, d, *error));
+        FROM_HERE, base::BindOnce(&ui::LogErrorEventDescription, d, *error));
   }
   return 0;
 }
@@ -394,8 +394,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   // Start idle gc.
   gc_timer_.Start(FROM_HERE, base::TimeDelta::FromMinutes(1),
-                  base::Bind(&v8::Isolate::LowMemoryNotification,
-                             base::Unretained(js_env_->isolate())));
+                  base::BindRepeating(&v8::Isolate::LowMemoryNotification,
+                                      base::Unretained(js_env_->isolate())));
 
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
