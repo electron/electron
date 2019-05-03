@@ -72,7 +72,7 @@ void URLRequestBufferJob::Start() {
       base::BindOnce(
           &JsAsker::AskForOptions, base::Unretained(isolate()), handler(),
           std::move(request_details),
-          base::BindRepeating(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
+          base::BindOnce(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
 }
 
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options,
