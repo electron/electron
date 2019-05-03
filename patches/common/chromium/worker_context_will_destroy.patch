@@ -5,7 +5,7 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index fad5f104f0113813133c69fe8a4392d73f153ba5..01c826ef12b4e04033377d4e5e50fcb871ca1e1d 100644
+index 16308aadc75efa0a0c8ebc33f72b552eba22194c..02173df5189e895204dc10fdd2c160be3d72d555 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -383,6 +383,11 @@ class CONTENT_EXPORT ContentRendererClient {
