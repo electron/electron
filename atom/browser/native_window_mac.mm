@@ -151,7 +151,7 @@
 
 #if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
-enum { NSWindowTabbingModeDisallowed = 2 };
+enum { NSWindowTabbingModeAutomatic = 0, NSWindowTabbingModeDisallowed = 2 };
 
 @interface NSWindow (SierraSDK)
 - (void)setTabbingMode:(NSInteger)mode;
@@ -1509,6 +1509,20 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
   SetMaximizable(was_maximizable);
+}
+
+const std::string NativeWindowMac::GetTabbingIdentifier() const {
+  if (@available(macOS 10.12, *)) {
+    NSString* current_identifier = [window_ tabbingIdentifier];
+    // If tabbing is disabled even though macOS has a default tabbingIdentifier
+    // we should return undefined here
+    if (current_identifier == nil ||
+        [window_ tabbingMode] == NSWindowTabbingModeDisallowed)
+      return "";
+
+    return base::SysNSStringToUTF8(current_identifier);
+  }
+  return "";
 }
 
 // static

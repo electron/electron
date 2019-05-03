@@ -1022,6 +1022,16 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
   parent->child_windows_.Remove(weak_map_id());
 }
 
+v8::Local<v8::Value> TopLevelWindow::GetTabbingIdentifier() {
+#if defined(OS_MACOSX)
+  std::string identifier = window_->GetTabbingIdentifier();
+  if (!identifier.empty()) {
+    return mate::ConvertToV8(isolate(), identifier);
+  }
+#endif
+  return v8::Undefined(isolate());
+}
+
 // static
 mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
   mate::Dictionary options;
@@ -1174,7 +1184,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setThumbnailToolTip", &TopLevelWindow::SetThumbnailToolTip)
       .SetMethod("setAppDetails", &TopLevelWindow::SetAppDetails)
 #endif
-      .SetProperty("id", &TopLevelWindow::GetID);
+      .SetProperty("id", &TopLevelWindow::GetID)
+      .SetProperty("tabbingIdentifier", &TopLevelWindow::GetTabbingIdentifier);
 }
 
 }  // namespace api

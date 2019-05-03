@@ -1314,6 +1314,32 @@ describe('BrowserWindow module', () => {
         frame: false
       })
     })
+
+    it('can be read off a window', () => {
+      expect(w.tabbingIdentifier).to.equal(undefined)
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group1',
+        show: false
+      })
+      expect(w.tabbingIdentifier).to.equal('group1')
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group2',
+        show: false
+      })
+      expect(w.tabbingIdentifier).to.equal('group2')
+    })
+
+    it('is ignored is the window is frameless', () => {
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group1',
+        show: false,
+        frame: false
+      })
+      expect(w.tabbingIdentifier).to.equal(undefined)
+    })
   })
 
   describe('"webPreferences" option', () => {

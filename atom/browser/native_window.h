@@ -235,6 +235,10 @@ class NativeWindow : public base::SupportsUserData,
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
 
+#if defined(OS_MACOSX)
+  virtual const std::string GetTabbingIdentifier() const = 0;
+#endif
+
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowRequestPreferredWith(int* width);

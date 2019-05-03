@@ -127,6 +127,7 @@ class NativeWindowMac : public NativeWindow {
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
+  const std::string GetTabbingIdentifier() const override;
 
   bool SetWindowButtonVisibility(bool visible) override;
 

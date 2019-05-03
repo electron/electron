@@ -728,29 +728,6 @@ console.log(installed)
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-### Instance Properties
-
-Objects created with `new BrowserWindow` have the following properties:
-
-```javascript
-const { BrowserWindow } = require('electron')
-// In this example `win` is our instance
-let win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('https://github.com')
-```
-
-#### `win.webContents`
-
-A `WebContents` object this window owns. All web page related events and
-operations will be done via it.
-
-See the [`webContents` documentation](web-contents.md) for its methods and
-events.
-
-#### `win.id`
-
-A `Integer` representing the unique ID of the window.
-
 ### Instance Methods
 
 Objects created with `new BrowserWindow` have the following instance methods:
@@ -1638,7 +1615,33 @@ removed in future Electron releases.
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 
-### Properties
+### Instance Properties
+
+Objects created with `new BrowserWindow` have the following properties:
+
+```javascript
+const { BrowserWindow } = require('electron')
+// In this example `win` is our instance
+let win = new BrowserWindow({ width: 800, height: 600 })
+win.loadURL('https://github.com')
+```
+
+#### `win.webContents`
+
+A `WebContents` object this window owns. All web page related events and
+operations will be done via it.
+
+See the [`webContents` documentation](web-contents.md) for its methods and
+events.
+
+#### `win.id`
+
+A `Integer` representing the unique ID of the window.
+
+#### `win.tabbingIdentififer` _macOS_ _readonly_
+
+A `String` (optional) property that is equal to the `tabbingIdentifier` you
+provided in the constructor.
 
 #### `win.excludedFromShownWindowsMenu` _macOS_
 
