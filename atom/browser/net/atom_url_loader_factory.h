@@ -7,11 +7,10 @@
 
 #include <string>
 
-#include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/binding_set.h"
+#include "native_mate/dictionary.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "v8/include/v8.h"
 
 namespace atom {
 
@@ -25,9 +24,10 @@ enum class ProtocolType {
   kFree,  // special type for returning arbitrary type of response.
 };
 
-using SendResponseCallback = base::OnceCallback<void(v8::Local<v8::Value>)>;
+using StartLoadingCallback =
+    base::OnceCallback<void(v8::Local<v8::Value>, mate::Arguments*)>;
 using ProtocolHandler =
-    base::Callback<void(const network::ResourceRequest&, SendResponseCallback)>;
+    base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
 
 // Implementation of URLLoaderFactory.
 class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
@@ -47,18 +47,30 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   void Clone(network::mojom::URLLoaderFactoryRequest request) override;
 
  private:
-  void SendResponseBuffer(network::mojom::URLLoaderClientPtr client,
-                          v8::Isolate* isolate,
-                          v8::Local<v8::Value> response);
-  void SendResponseString(network::mojom::URLLoaderClientPtr client,
-                          v8::Isolate* isolate,
-                          v8::Local<v8::Value> response);
-  void SendResponseFile(network::mojom::URLLoaderRequest loader,
-                        network::ResourceRequest request,
-                        network::mojom::URLLoaderClientPtr client,
-                        v8::Isolate* isolate,
-                        v8::Local<v8::Value> response);
-  void SendResponseHttp(
+  static void StartLoading(
+      network::mojom::URLLoaderRequest loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      network::mojom::URLLoaderClientPtr client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+      ProtocolType type,
+      v8::Local<v8::Value> response,
+      mate::Arguments* args);
+  static void StartLoadingBuffer(network::mojom::URLLoaderClientPtr client,
+                                 const mate::Dictionary& dict);
+  static void StartLoadingString(network::mojom::URLLoaderClientPtr client,
+                                 const mate::Dictionary& dict,
+                                 v8::Isolate* isolate,
+                                 v8::Local<v8::Value> response);
+  static void StartLoadingFile(network::mojom::URLLoaderRequest loader,
+                               network::ResourceRequest request,
+                               network::mojom::URLLoaderClientPtr client,
+                               const mate::Dictionary& dict,
+                               v8::Isolate* isolate,
+                               v8::Local<v8::Value> response);
+  static void StartLoadingHttp(
       network::mojom::URLLoaderRequest loader,
       int32_t routing_id,
       int32_t request_id,
@@ -66,17 +78,16 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const network::ResourceRequest& original_request,
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> response);
+      const mate::Dictionary& dict);
+  static void StartLoadingStream(network::mojom::URLLoaderRequest loader,
+                                 network::mojom::URLLoaderClientPtr client,
+                                 const mate::Dictionary& dict);
 
-  bool HandleError(network::mojom::URLLoaderClientPtr* client,
-                   v8::Isolate* isolate,
-                   v8::Local<v8::Value> response);
-  void SendContents(network::mojom::URLLoaderClientPtr client,
-                    std::string mime_type,
-                    std::string charset,
-                    const char* data,
-                    size_t size);
+  // Helper to send string as response.
+  static void SendContents(network::mojom::URLLoaderClientPtr client,
+                           network::ResourceResponseHead head,
+                           const char* data,
+                           size_t size);
 
   // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
   // but I don't know what it actually does, find out the meanings of |Clone|
@@ -85,8 +96,6 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
 
   ProtocolType type_;
   ProtocolHandler handler_;
-
-  base::WeakPtrFactory<AtomURLLoaderFactory> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLLoaderFactory);
 };

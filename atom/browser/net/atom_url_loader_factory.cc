@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/node_stream_loader.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -18,20 +19,105 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/storage_partition.h"
-#include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
+#include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
-#include "services/network/public/mojom/url_loader.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
 
 #include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 
+namespace mate {
+
+template <>
+struct Converter<atom::ProtocolType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::ProtocolType* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "buffer")
+      *out = atom::ProtocolType::kBuffer;
+    else if (type == "string")
+      *out = atom::ProtocolType::kString;
+    else if (type == "file")
+      *out = atom::ProtocolType::kFile;
+    else if (type == "http")
+      *out = atom::ProtocolType::kHttp;
+    else if (type == "stream")
+      *out = atom::ProtocolType::kStream;
+    else  // note "free" is internal type, not allowed to be passed from user
+      return false;
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
+
+namespace {
+
+// Determine whether a protocol type can accept non-object response.
+bool ResponseMustBeObject(ProtocolType type) {
+  switch (type) {
+    case ProtocolType::kString:
+    case ProtocolType::kFile:
+    case ProtocolType::kFree:
+      return false;
+    default:
+      return true;
+  }
+}
+
+// Helper to convert value to Dictionary.
+mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  if (value->IsObject())
+    return mate::Dictionary(
+        isolate,
+        value->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  else
+    return mate::Dictionary();
+}
+
+// Parse headers from response object.
+network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
+  network::ResourceResponseHead head;
+  head.mime_type = "text/html";
+  head.charset = "utf-8";
+  if (dict.IsEmpty())
+    return head;
+
+  int status_code = 200;
+  dict.Get("statusCode", &status_code);
+  head.headers = new net::HttpResponseHeaders(base::StringPrintf(
+      "HTTP/1.1 %d %s", status_code,
+      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
+
+  base::DictionaryValue headers;
+  if (dict.Get("headers", &headers)) {
+    if (!head.headers)
+      head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+    for (const auto& iter : headers.DictItems()) {
+      head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+      // Some apps are passing content-type via headers, which is not accepted
+      // in NetworkService.
+      if (iter.first == "content-type")
+        head.mime_type = iter.second.GetString();
+    }
+  }
+  dict.Get("mimeType", &head.mime_type);
+  dict.Get("charset", &head.charset);
+  return head;
+}
+
+}  // namespace
 
 AtomURLLoaderFactory::AtomURLLoaderFactory(ProtocolType type,
                                            const ProtocolHandler& handler)
-    : type_(type), handler_(handler), weak_factory_(this) {}
+    : type_(type), handler_(handler) {}
 
 AtomURLLoaderFactory::~AtomURLLoaderFactory() = default;
 
@@ -44,46 +130,11 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Context::Scope context_scope(context);
-
-  switch (type_) {
-    case ProtocolType::kBuffer:
-      handler_.Run(request,
-                   base::BindOnce(&AtomURLLoaderFactory::SendResponseBuffer,
-                                  weak_factory_.GetWeakPtr(), std::move(client),
-                                  isolate));
-      break;
-    case ProtocolType::kString:
-      handler_.Run(request,
-                   base::BindOnce(&AtomURLLoaderFactory::SendResponseString,
-                                  weak_factory_.GetWeakPtr(), std::move(client),
-                                  isolate));
-      break;
-    case ProtocolType::kFile:
-      handler_.Run(request,
-                   base::BindOnce(&AtomURLLoaderFactory::SendResponseFile,
-                                  weak_factory_.GetWeakPtr(), std::move(loader),
-                                  request, std::move(client), isolate));
-      break;
-    case ProtocolType::kHttp:
-      handler_.Run(
-          request,
-          base::BindOnce(&AtomURLLoaderFactory::SendResponseHttp,
-                         weak_factory_.GetWeakPtr(), std::move(loader),
-                         routing_id, request_id, options, request,
-                         std::move(client), traffic_annotation, isolate));
-      break;
-    default: {
-      std::string contents = "Not Implemented";
-      SendContents(std::move(client), "text/html", "utf-8", contents.data(),
-                   contents.size());
-    }
-  }
+  handler_.Run(
+      request,
+      base::BindOnce(&AtomURLLoaderFactory::StartLoading, std::move(loader),
+                     routing_id, request_id, options, request,
+                     std::move(client), traffic_annotation, type_));
 }
 
 void AtomURLLoaderFactory::Clone(
@@ -91,105 +142,128 @@ void AtomURLLoaderFactory::Clone(
   bindings_.AddBinding(this, std::move(request));
 }
 
-void AtomURLLoaderFactory::SendResponseBuffer(
+// static
+void AtomURLLoaderFactory::StartLoading(
+    network::mojom::URLLoaderRequest loader,
+    int32_t routing_id,
+    int32_t request_id,
+    uint32_t options,
+    const network::ResourceRequest& request,
     network::mojom::URLLoaderClientPtr client,
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> response) {
-  if (HandleError(&client, isolate, response))
-    return;
-
-  std::string mime_type = "text/html";
-  std::string charset = "utf-8";
-  v8::Local<v8::Value> buffer;
-  if (node::Buffer::HasInstance(response)) {
-    buffer = response;
-  } else if (response->IsObject()) {
-    mate::Dictionary dict(
-        isolate,
-        response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
-    dict.Get("mimeType", &mime_type);
-    dict.Get("charset", &charset);
-    dict.Get("data", &buffer);
-    if (!node::Buffer::HasInstance(response))
-      buffer = v8::Local<v8::Value>();
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    ProtocolType type,
+    v8::Local<v8::Value> response,
+    mate::Arguments* args) {
+  // Parse {error} object.
+  mate::Dictionary dict = ToDict(args->isolate(), response);
+  if (!dict.IsEmpty()) {
+    int error_code;
+    if (dict.Get("error", &error_code)) {
+      client->OnComplete(network::URLLoaderCompletionStatus(error_code));
+      return;
+    }
   }
 
-  if (buffer.IsEmpty()) {
-    network::URLLoaderCompletionStatus status;
-    status.error_code = net::ERR_NOT_IMPLEMENTED;
-    client->OnComplete(status);
+  // Some protocol accepts non-object responses.
+  if (dict.IsEmpty() && ResponseMustBeObject(type)) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
-  SendContents(std::move(client), std::move(mime_type), std::move(charset),
+  switch (type) {
+    case ProtocolType::kBuffer:
+      StartLoadingBuffer(std::move(client), dict);
+      break;
+    case ProtocolType::kString:
+      StartLoadingString(std::move(client), dict, args->isolate(), response);
+      break;
+    case ProtocolType::kFile:
+      StartLoadingFile(std::move(loader), request, std::move(client), dict,
+                       args->isolate(), response);
+      break;
+    case ProtocolType::kHttp:
+      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
+                       request, std::move(client), traffic_annotation, dict);
+      break;
+    case ProtocolType::kStream:
+      StartLoadingStream(std::move(loader), std::move(client), dict);
+      break;
+    case ProtocolType::kFree:
+      ProtocolType type;
+      v8::Local<v8::Value> extra_arg;
+      if (!mate::ConvertFromV8(args->isolate(), response, &type) ||
+          !args->GetNext(&extra_arg)) {
+        client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        args->ThrowError("Invalid args, must pass (type, options)");
+        return;
+      }
+      StartLoading(std::move(loader), routing_id, request_id, options, request,
+                   std::move(client), traffic_annotation, type, extra_arg,
+                   args);
+      break;
+  }
+}
+
+// static
+void AtomURLLoaderFactory::StartLoadingBuffer(
+    network::mojom::URLLoaderClientPtr client,
+    const mate::Dictionary& dict) {
+  v8::Local<v8::Value> buffer = dict.GetHandle();
+  dict.Get("data", &buffer);
+  if (!node::Buffer::HasInstance(buffer)) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
+
+  SendContents(std::move(client), ToResponseHead(dict),
                node::Buffer::Data(buffer), node::Buffer::Length(buffer));
 }
 
-void AtomURLLoaderFactory::SendResponseString(
+// static
+void AtomURLLoaderFactory::StartLoadingString(
     network::mojom::URLLoaderClientPtr client,
+    const mate::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
-  if (HandleError(&client, isolate, response))
-    return;
-
-  std::string mime_type = "text/html";
-  std::string charset = "utf-8";
   std::string contents;
-  if (response->IsString()) {
+  if (response->IsString())
     contents = gin::V8ToString(isolate, response);
-  } else if (response->IsObject()) {
-    mate::Dictionary dict(
-        isolate,
-        response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
-    dict.Get("mimeType", &mime_type);
-    dict.Get("charset", &charset);
+  else if (!dict.IsEmpty())
     dict.Get("data", &contents);
-  }
-  SendContents(std::move(client), std::move(mime_type), std::move(charset),
-               contents.data(), contents.size());
+
+  SendContents(std::move(client), ToResponseHead(dict), contents.data(),
+               contents.size());
 }
 
-void AtomURLLoaderFactory::SendResponseFile(
+// static
+void AtomURLLoaderFactory::StartLoadingFile(
     network::mojom::URLLoaderRequest loader,
     network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
+    const mate::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
-  if (HandleError(&client, isolate, response))
-    return;
-
   base::FilePath path;
-  scoped_refptr<net::HttpResponseHeaders> response_headers;
   if (mate::ConvertFromV8(isolate, response, &path)) {
     request.url = net::FilePathToFileURL(path);
-  } else if (response->IsObject()) {
-    mate::Dictionary dict(
-        isolate,
-        response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
+  } else if (!dict.IsEmpty()) {
     dict.Get("referrer", &request.referrer);
     dict.Get("method", &request.method);
     if (dict.Get("path", &path))
       request.url = net::FilePathToFileURL(path);
-    base::DictionaryValue headers;
-    if (dict.Get("headers", &headers)) {
-      response_headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
-      response_headers->AddHeader(kCORSHeader);
-      for (const auto& iter : headers.DictItems())
-        response_headers->AddHeader(iter.first + ": " +
-                                    iter.second.GetString());
-    }
   } else {
-    network::URLLoaderCompletionStatus status;
-    status.error_code = net::ERR_NOT_IMPLEMENTED;
-    client->OnComplete(status);
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
 
+  network::ResourceResponseHead head = ToResponseHead(dict);
+  head.headers->AddHeader(kCORSHeader);
   content::CreateFileURLLoader(request, std::move(loader), std::move(client),
-                               nullptr, false, response_headers);
+                               nullptr, false, head.headers);
 }
 
-void AtomURLLoaderFactory::SendResponseHttp(
+// static
+void AtomURLLoaderFactory::StartLoadingHttp(
     network::mojom::URLLoaderRequest loader,
     int32_t routing_id,
     int32_t request_id,
@@ -197,25 +271,11 @@ void AtomURLLoaderFactory::SendResponseHttp(
     const network::ResourceRequest& original_request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> response) {
-  if (HandleError(&client, isolate, response))
-    return;
-
-  if (!response->IsObject()) {
-    network::URLLoaderCompletionStatus status;
-    status.error_code = net::ERR_NOT_IMPLEMENTED;
-    client->OnComplete(status);
-    return;
-  }
-
+    const mate::Dictionary& dict) {
   network::ResourceRequest request;
   request.headers = original_request.headers;
   request.cors_exempt_headers = original_request.cors_exempt_headers;
 
-  mate::Dictionary dict(
-      isolate,
-      response->ToObject(isolate->GetCurrentContext()).ToLocalChecked());
   dict.Get("url", &request.url);
   dict.Get("referrer", &request.referrer);
   if (!dict.Get("method", &request.method))
@@ -229,7 +289,8 @@ void AtomURLLoaderFactory::SendResponseHttp(
       browser_context = AtomBrowserContext::From(base::GenerateGUID(), true);
     } else {
       mate::Handle<api::Session> session;
-      if (mate::ConvertFromV8(isolate, value, &session) && !session.IsEmpty()) {
+      if (mate::ConvertFromV8(dict.isolate(), value, &session) &&
+          !session.IsEmpty()) {
         browser_context = session->browser_context();
       }
     }
@@ -243,25 +304,43 @@ void AtomURLLoaderFactory::SendResponseHttp(
       std::move(client), traffic_annotation);
 }
 
-bool AtomURLLoaderFactory::HandleError(
-    network::mojom::URLLoaderClientPtr* client,
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> response) {
-  if (!response->IsObject())
-    return false;
-  v8::Local<v8::Object> obj =
-      response->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
-  network::URLLoaderCompletionStatus status;
-  if (!mate::Dictionary(isolate, obj).Get("error", &status.error_code))
-    return false;
-  std::move(*client)->OnComplete(status);
-  return true;
+// static
+void AtomURLLoaderFactory::StartLoadingStream(
+    network::mojom::URLLoaderRequest loader,
+    network::mojom::URLLoaderClientPtr client,
+    const mate::Dictionary& dict) {
+  network::ResourceResponseHead head = ToResponseHead(dict);
+  v8::Local<v8::Value> stream;
+  if (!dict.Get("data", &stream)) {
+    // Assume the opts is already a stream.
+    stream = dict.GetHandle();
+  } else if (stream->IsNullOrUndefined()) {
+    // "data" was explicitly passed as null or undefined, assume the user wants
+    // to send an empty body.
+    client->OnReceiveResponse(head);
+    client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
+    return;
+  } else if (!stream->IsObject()) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
+
+  mate::Dictionary data = ToDict(dict.isolate(), stream);
+  v8::Local<v8::Value> method;
+  if (!data.Get("on", &method) || !method->IsFunction() ||
+      !data.Get("removeListener", &method) || !method->IsFunction()) {
+    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
+
+  new NodeStreamLoader(std::move(head), std::move(loader), std::move(client),
+                       data.isolate(), data.GetHandle());
 }
 
+// static
 void AtomURLLoaderFactory::SendContents(
     network::mojom::URLLoaderClientPtr client,
-    std::string mime_type,
-    std::string charset,
+    network::ResourceResponseHead head,
     const char* data,
     size_t ssize) {
   uint32_t size = base::saturated_cast<uint32_t>(ssize);
@@ -273,10 +352,6 @@ void AtomURLLoaderFactory::SendContents(
     return;
   }
 
-  network::ResourceResponseHead head;
-  head.mime_type = std::move(mime_type);
-  head.charset = std::move(charset);
-  head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
   head.headers->AddHeader(kCORSHeader);
   client->OnReceiveResponse(head);
   client->OnStartLoadingResponseBody(std::move(pipe.consumer_handle));

@@ -340,6 +340,8 @@ filenames = {
     "atom/browser/net/network_context_service_factory.h",
     "atom/browser/net/network_context_service.cc",
     "atom/browser/net/network_context_service.h",
+    "atom/browser/net/node_stream_loader.cc",
+    "atom/browser/net/node_stream_loader.h",
     "atom/browser/net/require_ct_delegate.cc",
     "atom/browser/net/require_ct_delegate.h",
     "atom/browser/net/resolve_proxy_helper.cc",
