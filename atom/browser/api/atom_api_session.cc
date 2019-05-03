@@ -457,14 +457,18 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   using RequestHandler =
       base::Callback<void(content::WebContents*, content::PermissionType,
                           StatusCallback, const base::DictionaryValue&)>;
+  auto* permission_manager = static_cast<AtomPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  if (val->IsNull()) {
+    permission_manager->SetPermissionRequestHandler(
+        AtomPermissionManager::RequestHandler());
+    return;
+  }
   auto handler = std::make_unique<RequestHandler>();
-  if (!(val->IsNull() ||
-        mate::ConvertFromV8(args->isolate(), val, handler.get()))) {
+  if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowError("Must pass null or function");
     return;
   }
-  auto* permission_manager = static_cast<AtomPermissionManager*>(
-      browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
       [](RequestHandler* handler, content::WebContents* web_contents,
          content::PermissionType permission_type,
