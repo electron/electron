@@ -12,28 +12,27 @@ export const setDefaultApplicationMenu = () => {
     submenu: [
       {
         label: 'Learn More',
-        click () {
-          shell.openExternalSync('https://electronjs.org')
+        click: async () => {
+          await shell.openExternal('https://electronjs.org')
         }
       },
       {
         label: 'Documentation',
-        click () {
-          shell.openExternalSync(
-            `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
-          )
+        click: async () => {
+          const version = process.versions.electron
+          await shell.openExternal(`https://github.com/electron/electron/tree/v${version}/docs#readme`)
         }
       },
       {
         label: 'Community Discussions',
-        click () {
-          shell.openExternalSync('https://discuss.atom.io/c/electron')
+        click: async () => {
+          await shell.openExternal('https://discuss.atom.io/c/electron')
         }
       },
       {
         label: 'Search Issues',
-        click () {
-          shell.openExternalSync('https://github.com/electron/electron/issues')
+        click: async () => {
+          await shell.openExternal('https://github.com/electron/electron/issues')
         }
       }
     ]

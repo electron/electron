@@ -997,7 +997,7 @@ shell.moveItemToTrash('/home/user/Desktop/test.txt')
 
 shell.openExternal('https://github.com', {
   activate: false
-})
+}).then(() => {})
 
 shell.beep()
 

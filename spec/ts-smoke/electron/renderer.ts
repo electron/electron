@@ -218,7 +218,7 @@ app.on('ready', () => {
 // shell
 // https://github.com/atom/electron/blob/master/docs/api/shell.md
 
-shell.openExternal('https://github.com')
+shell.openExternal('https://github.com').then(() => {})
 
 // <webview>
 // https://github.com/atom/electron/blob/master/docs/api/web-view-tag.md
@@ -238,8 +238,9 @@ webview.addEventListener('found-in-page', function (e) {
 
 const requestId = webview.findInPage('test')
 
-webview.addEventListener('new-window', function (e) {
-  require('electron').shell.openExternal(e.url)
+webview.addEventListener('new-window', async e => {
+  const { shell } = require('electron')
+  await shell.openExternal(e.url)
 })
 
 webview.addEventListener('close', function () {
