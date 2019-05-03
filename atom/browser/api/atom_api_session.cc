@@ -457,8 +457,9 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   using RequestHandler =
       base::Callback<void(content::WebContents*, content::PermissionType,
                           StatusCallback, const base::DictionaryValue&)>;
-  RequestHandler handler;
-  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+  auto handler = std::make_unique<RequestHandler>();
+  if (!(val->IsNull() ||
+        mate::ConvertFromV8(args->isolate(), val, handler.get()))) {
     args->ThrowError("Must pass null or function");
     return;
   }
@@ -473,7 +474,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
                      base::AdaptCallbackForRepeating(std::move(callback)),
                      details);
       },
-      base::Owned(std::make_unique<RequestHandler>(handler))));
+      base::Owned(std::move(handler))));
 }
 
 void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
