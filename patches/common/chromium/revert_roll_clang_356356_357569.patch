@@ -8,19 +8,17 @@ This reverts commit a50f2f33843d26fd7c0d1f1a2331aa45a392c6cd.
 This roll broke ARM builds. Tracking bug: crbug.com/953815
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index ab0311650bffadf8d3cfe03f8a55cea319e15550..b9faaefcd3c5f978af9d72f08f1ba230d5a27b24 100755
+index 2cf7df5c44a4d8c5686e3a24a9b87b94baa2caed..71c0029f3730928a2e2f1bbbefaf58fc370cece9 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
-@@ -35,10 +35,10 @@ import zipfile
+@@ -37,8 +37,8 @@ import zipfile
  # Do NOT CHANGE this if you don't know what you're doing -- see
  # https://chromium.googlesource.com/chromium/src/+/master/docs/updating_clang.md
  # Reverting problematic clang rolls is safe, though.
 -CLANG_REVISION = '357692'
+-CLANG_SUB_REVISION = 1
 +CLANG_REVISION = '356356'
++CLANG_SUB_REVISION = 3
  
- # This is incremented when pushing a new build of Clang at the same revision.
--CLANG_SUB_REVISION=1
-+CLANG_SUB_REVISION=3
- 
- PACKAGE_VERSION = "%s-%s" % (CLANG_REVISION, CLANG_SUB_REVISION)
- 
+ PACKAGE_VERSION = '%s-%s' % (CLANG_REVISION, CLANG_SUB_REVISION)
+ RELEASE_VERSION = '9.0.0'

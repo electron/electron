@@ -5,7 +5,7 @@ Subject: blink_world_context.patch
 
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 641a24b04dcf6602f8da660e4d84d591bc38573a..f9f1871d73dce74375084dd1786dee2806f973fb 100644
+index 8f34337725ac16cea102030f852c5d8ab1d70fcc..7ff160ccf78f3fdca8c1f63f7c3bd53ab7396b91 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -355,6 +355,9 @@ class WebLocalFrame : public WebFrame {
@@ -19,10 +19,10 @@ index 641a24b04dcf6602f8da660e4d84d591bc38573a..f9f1871d73dce74375084dd1786dee28
    // that the script evaluated to with callback. Script execution can be
    // suspend.
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 412e7553b657077c4ed5587dd7763ad4f14dc649..295ccca27242d3583697e4cda3460476ea38b231 100644
+index bbeaed0122ba447891196852d815fac465040046..0f03d4c3a84afb5203da55a2fc2e2b16d3618710 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -868,6 +868,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+@@ -869,6 +869,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
    return MainWorldScriptContext()->Global();
  }
  
@@ -37,7 +37,7 @@ index 412e7553b657077c4ed5587dd7763ad4f14dc649..295ccca27242d3583697e4cda3460476
    return BindingSecurity::ShouldAllowAccessToFrame(
        CurrentDOMWindow(V8PerIsolateData::MainThreadIsolate()),
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index c6d881efbe2ecbb9170521020ac12590df3a74fd..a32f8cd49ab2f8ce9c462af04260453889ebcd92 100644
+index f7884356209f7c1be523de11ce5f97187c6e24d1..fae16b85298bb1086c3ea493ae754683528594a6 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -147,6 +147,8 @@ class CORE_EXPORT WebLocalFrameImpl final
