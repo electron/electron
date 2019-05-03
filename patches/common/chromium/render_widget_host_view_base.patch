@@ -5,7 +5,7 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 6986a9b55908f989275115ba8bd290f9e1d40ace..90c51ca81795547f7ec116e6c57af7043c162599 100644
+index 534eb188b875739afe1b1267358c86155a163fe1..717241fde2f0987a77fe12281e76936a454c1d96 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -666,6 +666,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
@@ -25,7 +25,7 @@ index 6986a9b55908f989275115ba8bd290f9e1d40ace..90c51ca81795547f7ec116e6c57af704
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index e8dadd66ca8b81638c198d6ce5490b43384116a9..82534c4d1cc44b0192fd0e9a5e082d7d01dfab41 100644
+index ce353fb6f6e6c1fef82a9295c336705bff87959a..aa26976864de74f1ebb151b384d33e8e805debc9 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -23,8 +23,10 @@
