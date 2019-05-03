@@ -107,9 +107,22 @@ describe('nativeImage module', () => {
 
   describe('templateImage property', () => {
     it('returns whether the image is a template image', () => {
-      const empty = nativeImage.createEmpty()
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
 
-      expect(empty.templateImage).to.be.a('boolean')
+      expect(image.templateImage).to.be.a('boolean')
+
+      expect(image.isTemplateImage).to.be.a('function')
+      expect(image.setTemplateImage).to.be.a('function')
+    })
+
+    it('sets a template image', function () {
+      if (process.platform !== 'darwin') this.skip()
+
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      expect(image.templateImage).to.be.false()
+
+      image.templateImage = true
+      expect(image.templateImage).to.be.true()
     })
   })
 

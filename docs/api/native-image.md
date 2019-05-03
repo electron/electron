@@ -71,7 +71,6 @@ images/
 └── icon@3x.png
 ```
 
-
 ```javascript
 const { Tray } = require('electron')
 let appIcon = new Tray('/Users/somebody/images/icon.png')
@@ -333,4 +332,6 @@ can be called on empty images.
 
 ### `nativeImage.templateImage`
 
-A `Boolean` property that determines whether the image is a template image.
+A `Boolean` property that determines whether the image is considered a [template image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
+
+Please note that this property only has an effect on macOS.
