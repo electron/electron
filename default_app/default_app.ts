@@ -30,7 +30,11 @@ function isTrustedSender (webContents: Electron.WebContents) {
   }
 
   const parsedUrl = new URL(webContents.getURL())
-  return parsedUrl.protocol === 'file:' && parsedUrl.pathname === indexPath
+  const urlPath = process.platform === 'win32'
+    // Strip the prefixed "/" that occurs on windows
+    ? path.resolve(parsedUrl.pathname.substr(1))
+    : parsedUrl.pathname
+  return parsedUrl.protocol === 'file:' && urlPath === indexPath
 }
 
 ipcMain.on('bootstrap', (event) => {
