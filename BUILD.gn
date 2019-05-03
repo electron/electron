@@ -545,9 +545,9 @@ static_library("electron_lib") {
 
   if (is_mac) {
     deps += [
+      "//components/remote_cocoa/app_shim",
       "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
-      "//ui/views_bridge_mac",
     ]
     sources += [
       "atom/browser/ui/views/autofill_popup_view.cc",
