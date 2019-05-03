@@ -11,7 +11,7 @@ const { app } = require('electron')
 app.commandLine.hasSwitch('disable-gpu')
 ```
 
-For more information on what kinds of flags and switches you can use check
+For more information on what kinds of flags and switches you can use, check
 out the [Chrome Command Line Switches](./chrome-command-line-switches.md)
 document.
 
