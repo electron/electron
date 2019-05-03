@@ -1242,7 +1242,7 @@ This API must be called after the `ready` event is emitted.
 
 ### `app.applicationMenu`
 
-A `Menu | null` property that return [`Menu`](menu.md) if one has been set and `null` otherwise.
+A `Menu | null` property that returns [`Menu`](menu.md) if one has been set and `null` otherwise.
 Users can pass a [Menu](menu.md) to set this property.
 
 ### `app.badgeCount` _Linux_ _macOS_
@@ -1257,11 +1257,11 @@ for more information please read [Desktop Environment Integration][unity-require
 ### `app.commandLine`
 
 A [`CommandLine`](./command-line.md) object that allows you to read and manipulate the
-command line arguments that chromium uses.
+command line arguments that Chromium uses.
 
 ### `app.dock` _macOS_
 
-A [`Dock`](./dock.md) object that allows you to perform actions on your app icon in the users
+A [`Dock`](./dock.md) object that allows you to perform actions on your app icon in the user's
 dock on macOS.
 
 ### `app.isPackaged`
@@ -1295,6 +1295,6 @@ preferred over `name` by Electron.
 A `String` which is the user agent string Electron will use as a global fallback.
 
 This is the user agent that will be used when no user agent is set at the
-`webContents` or `session` level.  Useful for ensuring your entire
+`webContents` or `session` level.  It is useful for ensuring that your entire
 app has the same user agent.  Set to a custom value as early as possible
-in your apps initialization to ensure that your overridden value is used.
+in your app's initialization to ensure that your overridden value is used.

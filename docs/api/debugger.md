@@ -41,7 +41,7 @@ Returns:
 * `event` Event
 * `reason` String - Reason for detaching debugger.
 
-Emitted when debugging session is terminated. This happens either when
+Emitted when the debugging session is terminated. This happens either when
 `webContents` is closed or devtools is invoked for the attached `webContents`.
 
 #### Event: 'message'
@@ -53,7 +53,7 @@ Returns:
 * `params` Object - Event parameters defined by the 'parameters'
    attribute in the remote debugging protocol.
 
-Emitted whenever debugging target issues instrumentation event.
+Emitted whenever the debugging target issues an instrumentation event.
 
 [rdp]: https://chromedevtools.github.io/devtools-protocol/
 [`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options

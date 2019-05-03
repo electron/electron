@@ -227,7 +227,7 @@ windows. Popups are disabled by default.
 <webview src="https://github.com" webpreferences="allowRunningInsecureContent, javascript=no"></webview>
 ```
 
-A `String` which is a comma seperated list of strings which specifies the web preferences to be set on the webview.
+A `String` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
 The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions).
 
 The string follows the same format as the features string in `window.open`.

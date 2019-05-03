@@ -198,7 +198,7 @@ The `filters` specifies an array of file types that can be displayed, see
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
   * `canceled` Boolean - whether or not the dialog was canceled.
-  * `filePath` String (optional) - If the dialog is canceled this will be `undefined`.
+  * `filePath` String (optional) - If the dialog is canceled, this will be `undefined`.
   * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
