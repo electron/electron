@@ -16,6 +16,7 @@
 
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
+#include "atom/browser/ui/cocoa/NSColor+Hex.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/mac/scoped_cftyperef.h"
@@ -112,21 +113,6 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
     default:
       return "unknown";
   }
-}
-
-// Convert color to RGBA value like "aabbccdd"
-std::string ToRGBA(NSColor* color) {
-  return base::StringPrintf(
-      "%02X%02X%02X%02X", (int)(color.redComponent * 0xFF),
-      (int)(color.greenComponent * 0xFF), (int)(color.blueComponent * 0xFF),
-      (int)(color.alphaComponent * 0xFF));
-}
-
-// Convert color to RGB hex value like "#ABCDEF"
-std::string ToRGBHex(NSColor* color) {
-  return base::StringPrintf("#%02X%02X%02X", (int)(color.redComponent * 0xFF),
-                            (int)(color.greenComponent * 0xFF),
-                            (int)(color.blueComponent * 0xFF));
 }
 
 }  // namespace
@@ -408,7 +394,7 @@ std::string SystemPreferences::GetAccentColor() {
   if (@available(macOS 10.14, *))
     sysColor = [NSColor controlAccentColor];
 
-  return ToRGBA(sysColor);
+  return base::SysNSStringToUTF8([sysColor RGBAValue]);
 }
 
 std::string SystemPreferences::GetSystemColor(const std::string& color,
@@ -437,7 +423,7 @@ std::string SystemPreferences::GetSystemColor(const std::string& color,
     return "";
   }
 
-  return ToRGBHex(sysColor);
+  return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
 }
 
 bool SystemPreferences::CanPromptTouchID() {
@@ -590,7 +576,7 @@ std::string SystemPreferences::GetColor(const std::string& color,
     return "";
   }
 
-  return ToRGBHex(sysColor);
+  return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
