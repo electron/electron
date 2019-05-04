@@ -79,6 +79,14 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/tab_desktop_media_list.cc",
       "//chrome/browser/media/webrtc/tab_desktop_media_list.h",
       "//chrome/browser/media/webrtc/window_icon_util.h",
+      "//chrome/browser/profiles/profile_manager.cc",
+      "//chrome/browser/profiles/profile_manager.h",
+      "//chrome/browser/ui/browser_list.cc",
+      "//chrome/browser/ui/browser_list.h",
+      "//chrome/browser/ui/tabs/tab_strip_model.cc",
+      "//chrome/browser/ui/tabs/tab_strip_model.h",
+      "//components/favicon/content/content_favicon_driver.cc",
+      "//components/favicon/content/content_favicon_driver.h",
     ]
     deps += [ "//ui/snapshot" ]
   }
