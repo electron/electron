@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Sat, 4 May 2019 19:59:22 +0200
+Subject: Revert "Revert crrev.com/c/1548839 and crrev.com/c/1549478"
+
+This reverts commit 8109367ae62a00103285a68fce8b19e470bb89ae.
+
+diff --git a/content/browser/child_process_launcher_helper.cc b/content/browser/child_process_launcher_helper.cc
+index 8cbede7e6fe2850f6bd276cc178e474da4b6aab1..956df48d7fe6bdc5639f6930d282fb9c83436806 100644
+--- a/content/browser/child_process_launcher_helper.cc
++++ b/content/browser/child_process_launcher_helper.cc
+@@ -227,13 +227,22 @@ base::SingleThreadTaskRunner* GetProcessLauncherTaskRunner() {
+       launcher_task_runner(
+           android::LauncherThread::GetMessageLoop()->task_runner());
+   return (*launcher_task_runner).get();
+-#else   // defined(OS_ANDROID)
++#else  // defined(OS_ANDROID)
++  constexpr base::TaskShutdownBehavior shutdown_behavior =
++#if defined(OS_WIN)
++      base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN;
++#else
++      // Linux could use CONTINUE_ON_SHUTDOWN if ZygoteHostImpl was leaked on
++      // shutdown. Mac could use CONTINUE_ON_SHUTDOWN if PluginServiceImpl was
++      // leaked on shutdown.
++      base::TaskShutdownBehavior::BLOCK_SHUTDOWN;
++#endif  // defined(OS_WIN)
+   // TODO(http://crbug.com/820200): Investigate whether we could use
+   // SequencedTaskRunner on platforms other than Windows.
+   static base::LazySingleThreadTaskRunner launcher_task_runner =
+       LAZY_SINGLE_THREAD_TASK_RUNNER_INITIALIZER(
+           base::TaskTraits({base::MayBlock(), base::TaskPriority::USER_BLOCKING,
+-                            base::TaskShutdownBehavior::BLOCK_SHUTDOWN}),
++                            shutdown_behavior}),
+           base::SingleThreadTaskRunnerThreadMode::DEDICATED);
+   return launcher_task_runner.Get().get();
+ #endif  // defined(OS_ANDROID)
+diff --git a/services/service_manager/sandbox/win/sandbox_win.cc b/services/service_manager/sandbox/win/sandbox_win.cc
+index 491ce8261aa3b7e518e85f7de8aa5cab062480bb..e702798d6046070e53df8815d9f869516f0b6c58 100644
+--- a/services/service_manager/sandbox/win/sandbox_win.cc
++++ b/services/service_manager/sandbox/win/sandbox_win.cc
+@@ -864,13 +864,12 @@ sandbox::ResultCode SandboxWin::StartSandboxedProcess(
+     options.handles_to_inherit = handles_to_inherit;
+     BOOL in_job = true;
+     // Prior to Windows 8 nested jobs aren't possible.
+-    if (sandbox_type == SANDBOX_TYPE_NETWORK &&
+-        (base::win::GetVersion() >= base::win::Version::WIN8 ||
+-         (::IsProcessInJob(::GetCurrentProcess(), nullptr, &in_job) &&
+-          !in_job))) {
+-      // Launch the process in a job to ensure that the network process doesn't
+-      // outlive the browser. This could happen if there is a lot of I/O on
+-      // process shutdown, in which case TerminateProcess would fail.
++    if (base::win::GetVersion() >= base::win::Version::WIN8 ||
++        (::IsProcessInJob(::GetCurrentProcess(), nullptr, &in_job) &&
++         !in_job)) {
++      // Launch the process in a job to ensure that it doesn't outlive the
++      // browser. This could happen if there is a lot of I/O on process
++      // shutdown, in which case TerminateProcess would fail.
+       // https://crbug.com/820996
+       if (!g_job_object_handle) {
+         sandbox::Job job_obj;
