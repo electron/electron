@@ -141,6 +141,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
     item.icon_path = task.icon_path;
     item.icon_index = task.icon_index;
     item.description = task.description;
+    item.working_dir = task.working_dir;
     category.items.push_back(item);
   }
 

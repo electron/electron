@@ -23,6 +23,7 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
   if (FAILED(link.CoCreateInstance(CLSID_ShellLink)) ||
       FAILED(link->SetPath(item.path.value().c_str())) ||
       FAILED(link->SetArguments(item.arguments.c_str())) ||
+      FAILED(link->SetWorkingDirectory(item.working_dir.value().c_str())) ||
       FAILED(link->SetDescription(item.description.c_str())))
     return false;
 
@@ -86,6 +87,8 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
   if (FAILED(shell_link->GetPath(path, MAX_PATH, nullptr, 0)))
     return false;
 
+  item->path = base::FilePath(path);
+
   CComQIPtr<IPropertyStore> property_store = shell_link;
   base::win::ScopedPropVariant prop;
   if (SUCCEEDED(
@@ -98,6 +101,9 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
       (prop.get().vt == VT_LPWSTR)) {
     item->title = prop.get().pwszVal;
   }
+
+  if (SUCCEEDED(shell_link->GetWorkingDirectory(path, base::size(path))))
+    item->working_dir = base::FilePath(path);
 
   int icon_index;
   if (SUCCEEDED(shell_link->GetIconLocation(path, MAX_PATH, &icon_index))) {

@@ -12,3 +12,4 @@
 * `iconIndex` Number - The icon index in the icon file. If an icon file
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
+* `workingDirectory` String (optional) - The working directory. Default is empty.
