@@ -84,6 +84,7 @@ struct Converter<Browser::UserTask> {
       return false;
     dict.Get("arguments", &(out->arguments));
     dict.Get("description", &(out->description));
+    dict.Get("workingDirectory", &(out->working_dir));
     return true;
   }
 };
@@ -157,6 +158,7 @@ struct Converter<JumpListItem> {
 
         dict.Get("args", &(out->arguments));
         dict.Get("description", &(out->description));
+        dict.Get("workingDirectory", &(out->working_dir));
         return true;
 
       case JumpListItem::Type::SEPARATOR:
@@ -183,6 +185,7 @@ struct Converter<JumpListItem> {
         dict.Set("iconPath", val.icon_path);
         dict.Set("iconIndex", val.icon_index);
         dict.Set("description", val.description);
+        dict.Set("workingDirectory", val.working_dir);
         break;
 
       case JumpListItem::Type::SEPARATOR:

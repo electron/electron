@@ -241,7 +241,8 @@ app.setUserTasks([
     iconPath: process.execPath,
     iconIndex: 0,
     title: 'New Window',
-    description: 'Create a new window'
+    description: 'Create a new window',
+    workingDirectory: path.dirname(process.execPath)
   }
 ])
 app.setUserTasks([])
@@ -265,7 +266,8 @@ app.setJumpList([
         args: '--run-tool-a',
         iconPath: process.execPath,
         iconIndex: 0,
-        description: 'Runs Tool A'
+        description: 'Runs Tool A',
+        workingDirectory: path.dirname(process.execPath)
       },
       {
         type: 'task',
@@ -274,7 +276,8 @@ app.setJumpList([
         args: '--run-tool-b',
         iconPath: process.execPath,
         iconIndex: 0,
-        description: 'Runs Tool B'
+        description: 'Runs Tool B',
+        workingDirectory: path.dirname(process.execPath)
       }]
   },
   {
