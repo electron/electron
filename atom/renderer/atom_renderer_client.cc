@@ -75,8 +75,7 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Do not load node if we're aren't a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
-  bool is_main_frame =
-      render_frame->IsMainFrame() && !render_frame->GetWebFrame()->Opener();
+  bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes =
       base::CommandLine::ForCurrentProcess()->HasSwitch(
