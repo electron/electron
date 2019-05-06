@@ -11,7 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
-#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
@@ -69,7 +69,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     ignore_result(handle->Then(
         context,
         v8::Local<v8::Function>::Cast(mate::ConvertToV8(
-            isolate, base::Bind(&FileSelectHelper::OnSaveDialogDone, this)))));
+            isolate,
+            base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this)))));
   }
 
   void OnDirectoryListerDone(std::vector<FileChooserFileInfoPtr> file_info,

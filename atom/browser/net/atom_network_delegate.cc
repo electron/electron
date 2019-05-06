@@ -484,8 +484,8 @@ int AtomNetworkDelegate::HandleResponseEvent(
   callbacks_[request->identifier()] = std::move(callback);
 
   ResponseCallback response =
-      base::Bind(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
-                 base::Unretained(this), request->identifier(), out);
+      base::BindRepeating(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
+                          base::Unretained(this), request->identifier(), out);
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(RunResponseListener, info.listener, std::move(details),

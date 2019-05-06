@@ -561,7 +561,7 @@ void AtomBrowserClient::AllowCertificateError(
     bool is_main_frame_request,
     bool strict_enforcement,
     bool expired_previous_decision,
-    const base::Callback<void(content::CertificateRequestResultType)>&
+    const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
     delegate_->AllowCertificateError(
@@ -758,7 +758,7 @@ void AtomBrowserClient::WebNotificationAllowed(
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::Bind(callback, web_contents->IsAudioMuted()));
+      base::BindRepeating(callback, web_contents->IsAudioMuted()));
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(
@@ -810,7 +810,7 @@ void HandleExternalProtocolInUI(
     return;
 
   GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
-  auto callback = base::Bind(&OnOpenExternal, escaped_url);
+  auto callback = base::BindRepeating(&OnOpenExternal, escaped_url);
   permission_helper->RequestOpenExternalPermission(callback, has_user_gesture,
                                                    url);
 }

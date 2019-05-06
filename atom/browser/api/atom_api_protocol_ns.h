@@ -48,7 +48,8 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   ~ProtocolNS() override;
 
   // Callback types.
-  using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
+  using CompletionCallback =
+      base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
   // JS APIs.
   ProtocolError RegisterProtocol(ProtocolType type,

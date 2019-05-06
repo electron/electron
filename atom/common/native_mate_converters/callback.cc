@@ -124,8 +124,9 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   bool one_time) {
   // The FunctionTemplate is cached.
   if (g_call_translater.IsEmpty())
-    g_call_translater.Reset(isolate, mate::CreateFunctionTemplate(
-                                         isolate, base::Bind(&CallTranslater)));
+    g_call_translater.Reset(isolate,
+                            mate::CreateFunctionTemplate(
+                                isolate, base::BindRepeating(&CallTranslater)));
 
   v8::Local<v8::FunctionTemplate> call_translater =
       v8::Local<v8::FunctionTemplate>::New(isolate, g_call_translater);
