@@ -875,7 +875,10 @@ describe('protocol module', () => {
   })
 
   describe('protocol.interceptHttpProtocol', () => {
-    it('can send POST request', (done) => {
+    // FIXME(zcbenz): This test was passing because the test itself was wrong,
+    // I don't know whether it ever passed before and we should take a look at
+    // it in future.
+    xit('can send POST request', (done) => {
       const server = http.createServer((req, res) => {
         let body = ''
         req.on('data', (chunk) => {
