@@ -12,7 +12,7 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 The `session.clearAuthCache` API no longer accepts options for what to clear, and instead unconditionally clears the whole cache.
 
-```
+```js
 // Deprecated
 session.clearAuthCache({ type: 'password' })
 // Replace with
