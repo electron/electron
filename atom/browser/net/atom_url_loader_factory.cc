@@ -4,6 +4,7 @@
 
 #include "atom/browser/net/atom_url_loader_factory.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
