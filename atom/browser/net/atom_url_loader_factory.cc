@@ -87,8 +87,10 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   network::ResourceResponseHead head;
   head.mime_type = "text/html";
   head.charset = "utf-8";
-  if (dict.IsEmpty())
+  if (dict.IsEmpty()) {
+    head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
     return head;
+  }
 
   int status_code = 200;
   dict.Get("statusCode", &status_code);
@@ -98,8 +100,6 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
 
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
-    if (!head.headers)
-      head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
     for (const auto& iter : headers.DictItems()) {
       head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
       // Some apps are passing content-type via headers, which is not accepted
