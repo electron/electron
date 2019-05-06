@@ -44,6 +44,8 @@ Returns `Boolean` - Whether an application was available to open the URL.
 
 Open the given external protocol URL in the desktop's default manner. (For example, mailto: URLs in the user's default mail agent).
 
+**Deprecated**
+
 ### `shell.openExternal(url[, options])`
 
 * `url` String - Max 2081 characters on windows.
