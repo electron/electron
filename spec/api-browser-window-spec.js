@@ -1987,7 +1987,10 @@ describe('BrowserWindow module', () => {
     })
 
     describe('nativeWindowOpen option', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
+        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
+        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
+
         w.destroy()
         w = new BrowserWindow({
           show: false,
@@ -1998,6 +2001,11 @@ describe('BrowserWindow module', () => {
             nodeIntegrationInSubFrames: true
           }
         })
+      })
+
+      afterEach(async () => {
+        await unregisterProtocol('foo')
+        await unregisterProtocol('bar')
       })
 
       it('opens window of about:blank with cross-scripting enabled', (done) => {
@@ -2079,9 +2087,6 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
       })
       it('retains the original web preferences when window.location is changed to a new origin', async () => {
-        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
-        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
-
         w.destroy()
         w = new BrowserWindow({
           show: true,
@@ -2102,9 +2107,6 @@ describe('BrowserWindow module', () => {
       })
 
       it('window.opener is not null when window.location is changed to a new origin', async () => {
-        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
-        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
-
         w.destroy()
         w = new BrowserWindow({
           show: true,
@@ -3815,6 +3817,18 @@ function serveFileFromProtocol (protocolName, filePath) {
         data: fs.readFileSync(filePath)
       })
     }, (error) => {
+      if (error != null) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
+function unregisterProtocol (protocolName) {
+  return new Promise((resolve, reject) => {
+    protocol.unregisterProtocol(protocolName, (error) => {
       if (error != null) {
         reject(error)
       } else {
