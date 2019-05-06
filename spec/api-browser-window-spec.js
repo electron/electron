@@ -2101,6 +2101,27 @@ describe('BrowserWindow module', () => {
         expect(typeofProcess).to.eql('undefined')
       })
 
+      it('window.opener is not null when window.location is changed to a new origin', async () => {
+        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
+        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
+
+        w.destroy()
+        w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
+          }
+        })
+
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', path.join(fixtures, 'api', 'window-open-preload.js'))
+        const p = emittedOnce(ipcMain, 'answer')
+        w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
+        const [, , , windowOpenerIsNull] = await p
+        expect(windowOpenerIsNull).to.be.false('window.opener is null')
+      })
+
       it('should have nodeIntegration disabled in child windows', async () => {
         w.destroy()
         w = new BrowserWindow({
