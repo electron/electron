@@ -14,7 +14,7 @@ const { clipboard } = require('electron')
 clipboard.writeText('Example String')
 ```
 
-On X Window systems, there is also a selection clipboard. To manipulate it
+On Linux, there is also a `selection` clipboard. To manipulate it
 you need to pass `selection` to each method:
 
 ```javascript
@@ -31,53 +31,53 @@ The `clipboard` module has the following methods:
 
 ### `clipboard.readText([type])`
 
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Returns `String` - The content in the clipboard as plain text.
 
 ### `clipboard.writeText(text[, type])`
 
 * `text` String
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Writes the `text` into the clipboard as plain text.
 
 ### `clipboard.readHTML([type])`
 
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Returns `String` - The content in the clipboard as markup.
 
 ### `clipboard.writeHTML(markup[, type])`
 
 * `markup` String
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Writes `markup` to the clipboard.
 
 ### `clipboard.readImage([type])`
 
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
 
 ### `clipboard.writeImage(image[, type])`
 
 * `image` [NativeImage](native-image.md)
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Writes `image` to the clipboard.
 
 ### `clipboard.readRTF([type])`
 
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Returns `String` - The content in the clipboard as RTF.
 
 ### `clipboard.writeRTF(text[, type])`
 
 * `text` String
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Writes the `text` into the clipboard in RTF.
 
@@ -96,7 +96,7 @@ bookmark is unavailable.
 
 * `title` String
 * `url` String
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Writes the `title` and `url` into the clipboard as a bookmark.
 
@@ -126,20 +126,20 @@ synchronous IPC when called from the renderer process.
 
 ### `clipboard.clear([type])`
 
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Clears the clipboard content.
 
 ### `clipboard.availableFormats([type])`
 
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Returns `String[]` - An array of supported formats for the clipboard `type`.
 
 ### `clipboard.has(format[, type])` _Experimental_
 
 * `format` String
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Returns `Boolean` - Whether the clipboard supports the specified `format`.
 
@@ -164,7 +164,7 @@ Returns `Buffer` - Reads `format` type from the clipboard.
 
 * `format` String
 * `buffer` Buffer
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 Writes the `buffer` into the clipboard as `format`.
 
@@ -176,7 +176,7 @@ Writes the `buffer` into the clipboard as `format`.
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` String (optional)
   * `bookmark` String (optional) - The title of the url at `text`.
-* `type` String (optional)
+* `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 ```javascript
 const { clipboard } = require('electron')
