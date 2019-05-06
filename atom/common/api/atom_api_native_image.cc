@@ -640,7 +640,7 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getSize", &NativeImage::GetSize)
       .SetMethod("_setTemplateImage", &NativeImage::SetTemplateImage)
       .SetMethod("_isTemplateImage", &NativeImage::IsTemplateImage)
-      .SetProperty("templateImage", &NativeImage::IsTemplateImage,
+      .SetProperty("isMacTemplateImage", &NativeImage::IsTemplateImage,
                    &NativeImage::SetTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)

@@ -105,24 +105,31 @@ describe('nativeImage module', () => {
     return matchingImage
   }
 
-  describe('templateImage property', () => {
+  describe('isMacTemplateImage property', () => {
+    before(function () {
+      if (process.platform !== 'darwin') this.skip()
+    })
+
     it('returns whether the image is a template image', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
 
-      expect(image.templateImage).to.be.a('boolean')
+      expect(image.isMacTemplateImage).to.be.a('boolean')
 
       expect(image.isTemplateImage).to.be.a('function')
       expect(image.setTemplateImage).to.be.a('function')
     })
 
+    it('correctly recognizes a template image', () => {
+      const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'))
+      expect(templateImage.isMacTemplateImage).to.be.true()
+    })
+
     it('sets a template image', function () {
-      if (process.platform !== 'darwin') this.skip()
-
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
-      expect(image.templateImage).to.be.false()
+      expect(image.isMacTemplateImage).to.be.false()
 
-      image.templateImage = true
-      expect(image.templateImage).to.be.true()
+      image.isMacTemplateImage = true
+      expect(image.isMacTemplateImage).to.be.true()
     })
   })
 

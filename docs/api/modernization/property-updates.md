@@ -57,4 +57,4 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `badgeCount`
   * `name`
 * `NativeImage`
-  * `templateImage`
+  * `isMacTemplateImage`

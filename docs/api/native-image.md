@@ -330,7 +330,7 @@ can be called on empty images.
 
 ## Properties
 
-### `nativeImage.templateImage`
+### `nativeImage.isMacTemplateImage`
 
 A `Boolean` property that determines whether the image is considered a [template image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
 
