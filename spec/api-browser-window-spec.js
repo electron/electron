@@ -1978,7 +1978,9 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // tests relies on preloads in opened windows
+            nodeIntegrationInSubFrames: true
           }
         })
       })
@@ -2027,7 +2029,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2044,7 +2048,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2065,7 +2071,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: true,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2079,6 +2087,14 @@ describe('BrowserWindow module', () => {
       })
 
       it('should have nodeIntegration disabled in child windows', async () => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nativeWindowOpen: true
+          }
+        })
         const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
         const [, typeofProcess] = await p
