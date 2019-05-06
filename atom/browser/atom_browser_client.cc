@@ -944,6 +944,10 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
     NonNetworkURLLoaderFactoryMap* factories) {
+  // Chromium may call this even when NetworkService is not enabled.
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
+    return;
+
   content::RenderFrameHost* frame_host =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   content::WebContents* web_contents =
