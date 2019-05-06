@@ -86,8 +86,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   // Helper to send string as response.
   static void SendContents(network::mojom::URLLoaderClientPtr client,
                            network::ResourceResponseHead head,
-                           const char* data,
-                           size_t size);
+                           std::string data);
 
   // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
   // but I don't know what it actually does, find out the meanings of |Clone|
