@@ -70,12 +70,12 @@ app._setDefaultAppPaths = (packagePath) => {
 }
 
 if (process.platform === 'darwin') {
-  const setDockMenu = app.dock.setMenu
-  app.dock.setMenu = (menu) => {
+  const setDockMenu = app.dock!.setMenu
+  app.dock!.setMenu = (menu) => {
     dockMenu = menu
     setDockMenu(menu)
   }
-  app.dock.getMenu = () => dockMenu
+  app.dock!.getMenu = () => dockMenu
 }
 
 // Routes the events to webContents.

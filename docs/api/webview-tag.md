@@ -100,7 +100,7 @@ The `webview` tag has the following attributes:
 <webview src="https://www.github.com/"></webview>
 ```
 
-Returns the visible URL. Writing to this attribute initiates top-level
+A `String` representing the visible URL. Writing to this attribute initiates top-level
 navigation.
 
 Assigning `src` its own value will reload the current page.
@@ -114,7 +114,7 @@ The `src` attribute can also accept data URLs, such as
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-When this attribute is present the guest page in `webview` will have node
+A `Boolean`. When this attribute is present the guest page in `webview` will have node
 integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
@@ -125,7 +125,7 @@ page.
 <webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
-Experimental option for enabling NodeJS support in sub-frames such as iframes
+A `Boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
 inside the `webview`. All your preloads will load for every iframe, you can
 use `process.isMainFrame` to determine if you are in the main frame or not.
 This option is disabled by default in the guest page.
@@ -136,7 +136,7 @@ This option is disabled by default in the guest page.
 <webview src="http://www.google.com/" enableremotemodule="false"></webview>
 ```
 
-When this attribute is `false` the guest page in `webview` will not have access
+A `Boolean`. When this attribute is `false` the guest page in `webview` will not have access
 to the [`remote`](remote.md) module. The remote module is available by default.
 
 ### `plugins`
@@ -145,7 +145,7 @@ to the [`remote`](remote.md) module. The remote module is available by default.
 <webview src="https://www.github.com/" plugins></webview>
 ```
 
-When this attribute is present the guest page in `webview` will be able to use
+A `Boolean`. When this attribute is present the guest page in `webview` will be able to use
 browser plugins. Plugins are disabled by default.
 
 ### `preload`
@@ -154,7 +154,7 @@ browser plugins. Plugins are disabled by default.
 <webview src="https://www.github.com/" preload="./test.js"></webview>
 ```
 
-Specifies a script that will be loaded before other scripts run in the guest
+A `String` that specifies a script that will be loaded before other scripts run in the guest
 page. The protocol of script's URL must be either `file:` or `asar:`, because it
 will be loaded by `require` in guest page under the hood.
 
@@ -174,7 +174,7 @@ the `webPreferences` specified to the `will-attach-webview` event.
 <webview src="https://www.github.com/" httpreferrer="http://cheng.guru"></webview>
 ```
 
-Sets the referrer URL for the guest page.
+A `String` that sets the referrer URL for the guest page.
 
 ### `useragent`
 
@@ -182,7 +182,7 @@ Sets the referrer URL for the guest page.
 <webview src="https://www.github.com/" useragent="Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko"></webview>
 ```
 
-Sets the user agent for the guest page before the page is navigated to. Once the
+A `String` that sets the user agent for the guest page before the page is navigated to. Once the
 page is loaded, use the `setUserAgent` method to change the user agent.
 
 ### `disablewebsecurity`
@@ -191,7 +191,7 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 <webview src="https://www.github.com/" disablewebsecurity></webview>
 ```
 
-When this attribute is present the guest page will have web security disabled.
+A `Boolean`. When this attribute is present the guest page will have web security disabled.
 Web security is enabled by default.
 
 ### `partition`
@@ -201,7 +201,7 @@ Web security is enabled by default.
 <webview src="https://electronjs.org" partition="electron"></webview>
 ```
 
-Sets the session used by the page. If `partition` starts with `persist:`, the
+A `String` that sets the session used by the page. If `partition` starts with `persist:`, the
 page will use a persistent session available to all pages in the app with the
 same `partition`. if there is no `persist:` prefix, the page will use an
 in-memory session. By assigning the same `partition`, multiple pages can share
@@ -218,7 +218,7 @@ value will fail with a DOM exception.
 <webview src="https://www.github.com/" allowpopups></webview>
 ```
 
-When this attribute is present the guest page will be allowed to open new
+A `Boolean`. When this attribute is present the guest page will be allowed to open new
 windows. Popups are disabled by default.
 
 ### `webpreferences`
@@ -227,7 +227,7 @@ windows. Popups are disabled by default.
 <webview src="https://github.com" webpreferences="allowRunningInsecureContent, javascript=no"></webview>
 ```
 
-A list of strings which specifies the web preferences to be set on the webview, separated by `,`.
+A `String` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
 The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions).
 
 The string follows the same format as the features string in `window.open`.
@@ -241,7 +241,7 @@ Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are i
 <webview src="https://www.github.com/" enableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
-A list of strings which specifies the blink features to be enabled separated by `,`.
+A `String` which is a list of strings which specifies the blink features to be enabled separated by `,`.
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
@@ -251,7 +251,7 @@ The full list of supported feature strings can be found in the
 <webview src="https://www.github.com/" disableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
-A list of strings which specifies the blink features to be disabled separated by `,`.
+A `String` which is a list of strings which specifies the blink features to be disabled separated by `,`.
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
@@ -632,7 +632,7 @@ it is therefore not available when this module is disabled.
 
 Returns `Number` - The WebContents ID of this `webview`.
 
-## DOM events
+## DOM Events
 
 The following DOM events are available to the `webview` tag:
 

@@ -32,6 +32,32 @@ win.webContents.debugger.on('message', (event, method, params) => {
 win.webContents.debugger.sendCommand('Network.enable')
 ```
 
+### Instance Events
+
+#### Event: 'detach'
+
+Returns:
+
+* `event` Event
+* `reason` String - Reason for detaching debugger.
+
+Emitted when the debugging session is terminated. This happens either when
+`webContents` is closed or devtools is invoked for the attached `webContents`.
+
+#### Event: 'message'
+
+Returns:
+
+* `event` Event
+* `method` String - Method name.
+* `params` Object - Event parameters defined by the 'parameters'
+   attribute in the remote debugging protocol.
+
+Emitted whenever the debugging target issues an instrumentation event.
+
+[rdp]: https://chromedevtools.github.io/devtools-protocol/
+[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options
+
 ### Instance Methods
 
 #### `debugger.attach([protocolVersion])`
@@ -59,25 +85,3 @@ the 'returns' attribute of the command description in the remote debugging proto
 or is rejected indicating the failure of the command.
 
 Send given command to the debugging target.
-
-### Instance Events
-
-#### Event: 'detach'
-
-* `event` Event
-* `reason` String - Reason for detaching debugger.
-
-Emitted when debugging session is terminated. This happens either when
-`webContents` is closed or devtools is invoked for the attached `webContents`.
-
-#### Event: 'message'
-
-* `event` Event
-* `method` String - Method name.
-* `params` Object - Event parameters defined by the 'parameters'
-   attribute in the remote debugging protocol.
-
-Emitted whenever debugging target issues instrumentation event.
-
-[rdp]: https://chromedevtools.github.io/devtools-protocol/
-[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options

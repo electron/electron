@@ -206,11 +206,9 @@ Returns `String` - The version of the host operating system.
 
 Examples:
 
-| Platform | Version |
-|----------|---------|
-| macOS | `10.13.6` |
-| Windows | `10.0.17763` |
-| Linux | `4.15.0-45-generic` |
+* `macOS` -> `10.13.6`
+* `Windows` -> `10.0.17763`
+* `Linux` -> `4.15.0-45-generic`
 
 **Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 

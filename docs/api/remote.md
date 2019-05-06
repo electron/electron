@@ -201,7 +201,7 @@ process.
 
 ### `remote.process`
 
-The `process` object in the main process. This is the same as
+A `NodeJS.Process` object.  The `process` object in the main process. This is the same as
 `remote.getGlobal('process')` but is cached.
 
 [rmi]: https://en.wikipedia.org/wiki/Java_remote_method_invocation

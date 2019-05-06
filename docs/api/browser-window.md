@@ -141,9 +141,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `options` Object (optional)
   * `width` Integer (optional) - Window's width in pixels. Default is `800`.
   * `height` Integer (optional) - Window's height in pixels. Default is `600`.
-  * `x` Integer (optional) (**required** if y is used) - Window's left offset from screen.
+  * `x` Integer (optional) - (**required** if y is used) Window's left offset from screen.
     Default is to center the window.
-  * `y` Integer (optional) (**required** if x is used) - Window's top offset from screen.
+  * `y` Integer (optional) - (**required** if x is used) Window's top offset from screen.
     Default is to center the window.
   * `useContentSize` Boolean (optional) - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
@@ -1604,7 +1604,7 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md). Attach browserView to win.
+* `browserView` [BrowserView](browser-view.md) - Attach browserView to win.
 If there is some other browserViews was attached they will be removed from
 this window.
 
