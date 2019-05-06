@@ -26,7 +26,7 @@ following projects:
 
 Or use a 3rd party hosted solution:
 
-* [Backtrace I/O](https://backtrace.io/electron/)
+* [Backtrace](https://backtrace.io/electron/)
 * [Sentry](https://docs.sentry.io/clients/electron)
 
 Crash reports are saved locally in an application-specific temp directory folder.
