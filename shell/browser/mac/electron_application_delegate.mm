@@ -17,6 +17,8 @@
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application.h"
 
+#import <UserNotifications/UserNotifications.h>
+
 #if BUILDFLAG(USE_ALLOCATOR_SHIM)
 // On macOS 10.12, the IME system attempts to allocate a 2^64 size buffer,
 // which would typically cause an OOM crash. To avoid this, the problematic
@@ -68,12 +70,26 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
-  NSUserNotification* user_notification =
-      [notify userInfo][(id) @"NSApplicationLaunchUserNotificationKey"];
+  NSObject* user_notification =
+    [notify userInfo][(id) @"NSApplicationLaunchUserNotificationKey"];
+  NSDictionary* notification_info = nil;
 
-  if (user_notification.userInfo) {
-    electron::Browser::Get()->DidFinishLaunching(
-        electron::NSDictionaryToDictionaryValue(user_notification.userInfo));
+  if (user_notification) {
+    if ([user_notification isKindOfClass:[NSUserNotification class]]) {
+      notification_info =
+        [(NSUserNotification *)user_notification userInfo];
+    } else if (@available(macOS 10.14, *)) {
+      if ([user_notification isKindOfClass:[UNNotificationResponse class]]) {
+        notification_info = atom::UNNotificationResponseToNSDictionary(
+          (UNNotificationResponse *)user_notification);
+      }
+    }
+  }
+
+  if (notification_info) {
+    std::unique_ptr<base::DictionaryValue> launch_info =
+        atom::NSDictionaryToDictionaryValue(notification_info);
+    electron::Browser::Get()->DidFinishLaunching(*launch_info);
   } else {
     electron::Browser::Get()->DidFinishLaunching(base::DictionaryValue());
   }

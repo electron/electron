@@ -104,4 +104,38 @@ base::DictionaryValue NSDictionaryToDictionaryValue(NSDictionary* dict) {
   return result;
 }
 
+NSDictionary* UNNotificationResponseToNSDictionary(
+    UNNotificationResponse* response) {
+  if (!response) {
+    return nil;
+  }
+
+  NSMutableDictionary* notification_response_dictionary =
+    [NSMutableDictionary new];
+  notification_response_dictionary[@"actionIdentifier"] =
+    [response actionIdentifier];
+
+  UNNotification* notification = [response notification];
+  if (notification) {
+    NSMutableDictionary* request_info = [NSMutableDictionary new];
+    UNNotificationRequest* request = [notification request];
+    if (request) {
+      request_info[@"identifier"] = [request identifier] ?: @"";
+      request_info[@"content"] = [[request content] userInfo] ?: @{};
+    }
+
+    NSMutableDictionary* notification_info = [NSMutableDictionary new];
+    notification_info[@"date"] = [notification date] ?: @"";
+    notification_info[@"request"] = request_info;
+    notification_response_dictionary[@"notification"] = notification_info;
+  }
+
+  if ([response isKindOfClass:[UNTextInputNotificationResponse class]]) {
+    notification_response_dictionary[@"userTextInput"] =
+      [(UNTextInputNotificationResponse *)response userText];
+  }
+
+  return notification_response_dictionary;
+}
+
 }  // namespace electron
