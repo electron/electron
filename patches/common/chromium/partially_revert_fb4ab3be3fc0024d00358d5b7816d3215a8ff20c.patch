@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Fri, 19 Apr 2019 14:01:12 -0700
+Subject: Partially revert fb4ab3be3fc0024d00358d5b7816d3215a8ff20c
+
+This change partially reverts the changes made in gin in fb4ab3be3fc0024d00358d5b7816d3215a8ff20c. Electron uses breakpad for windows, while chromium has moved to crashpad. Once electron uses crashpad for windows, we can get rid of this change.
+
+diff --git a/gin/debug_impl.cc b/gin/debug_impl.cc
+index ca0577ea4caabce42bb4ec1aad8062b59eaaa8e4..5c3b7ffc932f063c8ad458d92643564edba393dc 100644
+--- a/gin/debug_impl.cc
++++ b/gin/debug_impl.cc
+@@ -8,6 +8,10 @@ namespace gin {
+ 
+ namespace {
+ v8::JitCodeEventHandler g_jit_code_event_handler = NULL;
++#if defined(OS_WIN)
++Debug::CodeRangeCreatedCallback g_code_range_created_callback = NULL;
++Debug::CodeRangeDeletedCallback g_code_range_deleted_callback = NULL;
++#endif
+ }  // namespace
+ 
+ // static
+@@ -17,9 +21,13 @@ void Debug::SetJitCodeEventHandler(v8::JitCodeEventHandler event_handler) {
+ 
+ #if defined(OS_WIN)
+ // static
+-void Debug::SetUnhandledExceptionCallback(
+-    v8::UnhandledExceptionCallback callback) {
+-  v8::V8::SetUnhandledExceptionCallback(callback);
++void Debug::SetCodeRangeCreatedCallback(CodeRangeCreatedCallback callback) {
++  g_code_range_created_callback = callback;
++}
++
++// static
++void Debug::SetCodeRangeDeletedCallback(CodeRangeDeletedCallback callback) {
++  g_code_range_deleted_callback = callback;
+ }
+ #endif
+ 
+@@ -28,4 +36,16 @@ v8::JitCodeEventHandler DebugImpl::GetJitCodeEventHandler() {
+   return g_jit_code_event_handler;
+ }
+ 
++#if defined(OS_WIN)
++// static
++Debug::CodeRangeCreatedCallback DebugImpl::GetCodeRangeCreatedCallback() {
++  return g_code_range_created_callback;
++}
++
++// static
++Debug::CodeRangeDeletedCallback DebugImpl::GetCodeRangeDeletedCallback() {
++  return g_code_range_deleted_callback;
++}
++#endif
++
+ }  // namespace gin
+diff --git a/gin/debug_impl.h b/gin/debug_impl.h
+index b0b7931f3e10592577858f048eab37d4eff4c18f..b88c0b6c0896f60c6421023fe5783b614d596769 100644
+--- a/gin/debug_impl.h
++++ b/gin/debug_impl.h
+@@ -13,6 +13,10 @@ namespace gin {
+ class DebugImpl {
+  public:
+   static v8::JitCodeEventHandler GetJitCodeEventHandler();
++#if defined(OS_WIN)
++  static Debug::CodeRangeCreatedCallback GetCodeRangeCreatedCallback();
++  static Debug::CodeRangeDeletedCallback GetCodeRangeDeletedCallback();
++#endif
+ };
+ 
+ }  // namespace gin
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index 4dd48f6a871cccb374c58adacb8ad9a80da89a5a..ec61b873d4e2dcdca833c8503beabb88d0798f2d 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -91,9 +91,31 @@ IsolateHolder::IsolateHolder(
+ 
+   isolate_memory_dump_provider_.reset(
+       new V8IsolateMemoryDumpProvider(this, task_runner));
++#if defined(OS_WIN)
++  {
++    void* code_range;
++    size_t size;
++    isolate_->GetCodeRange(&code_range, &size);
++    Debug::CodeRangeCreatedCallback callback =
++        DebugImpl::GetCodeRangeCreatedCallback();
++    if (code_range && size && callback)
++      callback(code_range, size);
++  }
++#endif
+ }
+ 
+ IsolateHolder::~IsolateHolder() {
++#if defined(OS_WIN)
++  {
++    void* code_range;
++    size_t size;
++    isolate_->GetCodeRange(&code_range, &size);
++    Debug::CodeRangeDeletedCallback callback =
++        DebugImpl::GetCodeRangeDeletedCallback();
++    if (code_range && callback)
++      callback(code_range);
++  }
++#endif
+   isolate_memory_dump_provider_.reset();
+   isolate_data_.reset();
+   isolate_->Dispose();
+diff --git a/gin/public/debug.h b/gin/public/debug.h
+index 4e567876f7ac0f010783eded5e57f8b2293542d8..8c2eee341c3bc64331926e258e1fd20080373a80 100644
+--- a/gin/public/debug.h
++++ b/gin/public/debug.h
+@@ -24,11 +24,25 @@ class GIN_EXPORT Debug {
+   static void SetJitCodeEventHandler(v8::JitCodeEventHandler event_handler);
+ 
+ #if defined(OS_WIN)
+-  /* Sets a callback that is invoked for exceptions that arise in V8-generated
+-   * code (jitted code or embedded builtins).
++  typedef void (__cdecl *CodeRangeCreatedCallback)(void*, size_t);
++
++  /* Sets a callback that is invoked for every new code range being created.
++   *
++   * On Win64, exception handling in jitted code is broken due to the fact
++   * that JS stack frames are not ABI compliant. It is possible to install
++   * custom handlers for the code range which holds the jitted code to work
++   * around this issue.
++   *
++   * https://code.google.com/p/v8/issues/detail?id=3598
++   */
++  static void SetCodeRangeCreatedCallback(CodeRangeCreatedCallback callback);
++
++  typedef void (__cdecl *CodeRangeDeletedCallback)(void*);
++
++  /* Sets a callback that is invoked for every previously registered code range
++   * when it is deleted.
+    */
+-  static void SetUnhandledExceptionCallback(
+-      v8::UnhandledExceptionCallback callback);
++  static void SetCodeRangeDeletedCallback(CodeRangeDeletedCallback callback);
+ #endif
+ };
+ 
