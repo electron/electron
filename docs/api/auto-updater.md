@@ -97,6 +97,18 @@ When this API is called, the `before-quit` event is not emitted before all windo
 
 The `autoUpdater` object has the following methods:
 
+### `autoUpdater.initialize(options)`
+
+* `options` Object
+  * `url` String
+  * `headers` Record<string, string> (optional) _macOS_ - HTTP request headers.
+  * `serverType` String (optional) _macOS_ - Either `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
+    README for more information.
+
+Sets the `url` and initializes the auto updater.
+
+**[Deprecated](modernization/property-updates.md)**
+
 ### `autoUpdater.setFeedURL(options)`
 
 * `options` Object
@@ -105,7 +117,9 @@ The `autoUpdater` object has the following methods:
   * `serverType` String (optional) _macOS_ - Either `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
     README for more information.
 
-Sets the `url` and initialize the auto updater.
+Sets the `url` and initializes the auto updater.
+
+**[Deprecated](modernization/property-updates.md)**
 
 ### `autoUpdater.getFeedURL()`
 
@@ -113,7 +127,7 @@ Returns `String` - The current update feed URL.
 
 ### `autoUpdater.checkForUpdates()`
 
-Asks the server whether there is an update. You must call `setFeedURL` before
+Asks the server whether there is an update. You must call `initialize` or set the `feedURL` property before
 using this API.
 
 ### `autoUpdater.quitAndInstall()`
@@ -128,6 +142,14 @@ closed.
 **Note:** It is not strictly necessary to call this function to apply an update,
 as a successfully downloaded update will always be applied the next time the
 application starts.
+
+## Properties
+
+### `autoUpdater.feedURL`
+
+A `String` property containing the auto updater feed URL.  This value can be set via `autoUpdater.initialize(options)`
+or directly through the property accessor.
+
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support

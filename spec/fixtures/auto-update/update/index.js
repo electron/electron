@@ -21,7 +21,7 @@ if (!feedUrl || !feedUrl.startsWith('http')) {
   fs.writeFileSync(urlPath, `${feedUrl}/updated`)
 }
 
-autoUpdater.setFeedURL({
+autoUpdater.initialize({
   url: feedUrl
 })
 

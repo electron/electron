@@ -31,6 +31,8 @@ SQRLUpdater* g_updater = nil;
 namespace {
 
 bool g_update_available = false;
+AutoUpdater::HeaderMap headers_;
+std::string serverType_ = "default";
 std::string update_url_ = "";  // NOLINT(runtime/string)
 
 }  // namespace
@@ -39,8 +41,13 @@ std::string AutoUpdater::GetFeedURL() {
   return update_url_;
 }
 
+void AutoUpdater::SetFeedURL(std::string feedURL) {
+  update_url_ = feedURL;
+  AutoUpdater::SetFeedOptions(update_url_, serverType_, headers_);
+}
+
 // static
-void AutoUpdater::SetFeedURL(mate::Arguments* args) {
+void AutoUpdater::Initialize(mate::Arguments* args) {
   mate::Dictionary opts;
   std::string feed;
   HeaderMap requestHeaders;
@@ -49,7 +56,7 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
     if (!opts.Get("url", &feed)) {
       args->ThrowError(
           "Expected options object to contain a 'url' string property in "
-          "setFeedUrl call");
+          "initialize call");
       return;
     }
     opts.Get("headers", &requestHeaders);
@@ -66,11 +73,18 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
     return;
   }
 
+  update_url_ = feed;
+  serverType_ = serverType;
+  headers_ = requestHeaders;
+  AutoUpdater::SetFeedOptions(feed, serverType, requestHeaders);
+}
+
+void AutoUpdater::SetFeedOptions(std::string feed,
+                                 std::string serverType,
+                                 HeaderMap requestHeaders) {
   Delegate* delegate = GetDelegate();
   if (!delegate)
     return;
-
-  update_url_ = feed;
 
   NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
   NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];

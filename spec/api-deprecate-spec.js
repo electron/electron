@@ -82,6 +82,33 @@ describe('deprecate', () => {
     expect(msg).to.include(prop)
   })
 
+  it('renames a function', () => {
+    let msg
+    deprecate.setHandler(m => { msg = m })
+
+    const oldFunction = 'dingyOldFunction'
+    const newFunction = 'shinyNewFunction'
+
+    const value = 'hi'
+    const o = {
+      shinyNewFunction: function () {
+        return value
+      }
+    }
+    expect(o).to.not.have.a.property(oldFunction)
+    expect(o).to.have.a.property(newFunction).that.is.a('function')
+
+    deprecate.renameFunction(o, oldFunction, newFunction)
+    expect(o.shinyNewFunction()).to.equal(value)
+    expect(o.dingyOldFunction()).to.equal(value)
+
+    expect(msg).to.be.a('string')
+    expect(msg).to.include(oldFunction)
+    expect(msg).to.include(newFunction)
+
+    expect(o).to.have.a.property(oldFunction).that.is.a('function')
+  })
+
   it('warns exactly once when a function is deprecated with no replacement', () => {
     let msg
     deprecate.setHandler(m => { msg = m })

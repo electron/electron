@@ -13,6 +13,15 @@ function warnOnce (oldName: string, newName?: string) {
   }
 }
 
+function withWarnOnce (obj: any, key: any, oldName: string, newName: string) {
+  const warn = warnOnce(oldName, newName)
+  const method = obj[key]
+  return function (this: any, ...args: any) {
+    warn()
+    return method.apply(this, args)
+  }
+}
+
 const deprecate: ElectronInternal.DeprecationUtil = {
   warnOnce,
   setHandler: (handler) => { deprecationHandler = handler },
@@ -57,18 +66,11 @@ const deprecate: ElectronInternal.DeprecationUtil = {
   },
 
   // deprecate a getter/setter function pair in favor of a property
-  fnToProperty: (prototype: any, prop: string, getter: string, setter: string) => {
-    const withWarnOnce = function (obj: any, key: any, oldName: string, newName: string) {
-      const warn = warnOnce(oldName, newName)
-      const method = obj[key]
-      return function (this: any, ...args: any) {
-        warn()
-        return method.apply(this, args)
-      }
-    }
-
+  fnToProperty: (prototype: any, prop: string, getter: string, setter?: string) => {
     prototype[getter.substr(1)] = withWarnOnce(prototype, getter, `${getter.substr(1)} function`, `${prop} property`)
-    prototype[setter.substr(1)] = withWarnOnce(prototype, setter, `${setter.substr(1)} function`, `${prop} property`)
+    if (setter) {
+      prototype[setter.substr(1)] = withWarnOnce(prototype, setter, `${setter.substr(1)} function`, `${prop} property`)
+    }
   },
 
   // remove a property with no replacement
@@ -150,6 +152,11 @@ const deprecate: ElectronInternal.DeprecationUtil = {
           process.nextTick(() => cb!(err))
         })
     } as T
+  },
+
+  // change the name of a function
+  renameFunction: (module: any, oldName: string, newName: string) => {
+    module[oldName] = withWarnOnce(module, newName, oldName, newName)
   },
 
   // change the name of a property

@@ -12,7 +12,7 @@ autoUpdater.on('error', (err) => {
 
 const feedUrl = process.argv[1]
 
-autoUpdater.setFeedURL({
+autoUpdater.initialize({
   url: feedUrl
 })
 

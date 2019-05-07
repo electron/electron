@@ -78,7 +78,8 @@ declare namespace ElectronInternal {
     log(message: string): void;
     function(fn: Function, newName: string): Function;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
-    fnToProperty(module: any, prop: string, getter: string, setter: string): void;
+    fnToProperty(module: any, prop: string, getter: string, setter?: string): void;
+    renameFunction(module: any, oldName: string, newName: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
 
