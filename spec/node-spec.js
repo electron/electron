@@ -578,4 +578,9 @@ describe('node feature', () => {
       .that.is.a('string')
       .and.matches(/^\d+\.\d+\.\d+\.\d+$/)
   })
+
+  it('can find a module using a package.json main field', () => {
+    const result = ChildProcess.spawnSync(remote.process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')])
+    expect(result.status).to.equal(0)
+  })
 })
