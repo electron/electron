@@ -4,6 +4,7 @@
 
 #include "atom/browser/net/atom_url_loader_factory.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -19,6 +20,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/system/string_data_pipe_producer.h"
 #include "net/base/filename_util.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
@@ -87,8 +89,10 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   network::ResourceResponseHead head;
   head.mime_type = "text/html";
   head.charset = "utf-8";
-  if (dict.IsEmpty())
+  if (dict.IsEmpty()) {
+    head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
     return head;
+  }
 
   int status_code = 200;
   dict.Get("statusCode", &status_code);
@@ -98,8 +102,6 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
 
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
-    if (!head.headers)
-      head.headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
     for (const auto& iter : headers.DictItems()) {
       head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
       // Some apps are passing content-type via headers, which is not accepted
@@ -111,6 +113,26 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   dict.Get("mimeType", &head.mime_type);
   dict.Get("charset", &head.charset);
   return head;
+}
+
+// Helper to write string to pipe.
+struct WriteData {
+  network::mojom::URLLoaderClientPtr client;
+  std::string data;
+  std::unique_ptr<mojo::StringDataPipeProducer> producer;
+};
+
+void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
+  if (result != MOJO_RESULT_OK) {
+    network::URLLoaderCompletionStatus status(net::ERR_FAILED);
+    return;
+  }
+
+  network::URLLoaderCompletionStatus status(net::OK);
+  status.encoded_data_length = write_data->data.size();
+  status.encoded_body_length = write_data->data.size();
+  status.decoded_body_length = write_data->data.size();
+  write_data->client->OnComplete(status);
 }
 
 }  // namespace
@@ -215,8 +237,9 @@ void AtomURLLoaderFactory::StartLoadingBuffer(
     return;
   }
 
-  SendContents(std::move(client), ToResponseHead(dict),
-               node::Buffer::Data(buffer), node::Buffer::Length(buffer));
+  SendContents(
+      std::move(client), ToResponseHead(dict),
+      std::string(node::Buffer::Data(buffer), node::Buffer::Length(buffer)));
 }
 
 // static
@@ -231,8 +254,7 @@ void AtomURLLoaderFactory::StartLoadingString(
   else if (!dict.IsEmpty())
     dict.Get("data", &contents);
 
-  SendContents(std::move(client), ToResponseHead(dict), contents.data(),
-               contents.size());
+  SendContents(std::move(client), ToResponseHead(dict), std::move(contents));
 }
 
 // static
@@ -341,21 +363,32 @@ void AtomURLLoaderFactory::StartLoadingStream(
 void AtomURLLoaderFactory::SendContents(
     network::mojom::URLLoaderClientPtr client,
     network::ResourceResponseHead head,
-    const char* data,
-    size_t ssize) {
-  uint32_t size = base::saturated_cast<uint32_t>(ssize);
-  mojo::DataPipe pipe(size);
-  MojoResult result =
-      pipe.producer_handle->WriteData(data, &size, MOJO_WRITE_DATA_FLAG_NONE);
-  if (result != MOJO_RESULT_OK || size < ssize) {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    std::string data) {
+  head.headers->AddHeader(kCORSHeader);
+  client->OnReceiveResponse(head);
+
+  // Code bellow follows the pattern of data_url_loader_factory.cc.
+  mojo::ScopedDataPipeProducerHandle producer;
+  mojo::ScopedDataPipeConsumerHandle consumer;
+  if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+    client->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
     return;
   }
 
-  head.headers->AddHeader(kCORSHeader);
-  client->OnReceiveResponse(head);
-  client->OnStartLoadingResponseBody(std::move(pipe.consumer_handle));
-  client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
+  client->OnStartLoadingResponseBody(std::move(consumer));
+
+  auto write_data = std::make_unique<WriteData>();
+  write_data->client = std::move(client);
+  write_data->data = std::move(data);
+  write_data->producer =
+      std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+
+  base::StringPiece string_piece(write_data->data);
+  write_data->producer->Write(string_piece,
+                              mojo::StringDataPipeProducer::AsyncWritingMode::
+                                  STRING_STAYS_VALID_UNTIL_COMPLETION,
+                              base::BindOnce(OnWrite, std::move(write_data)));
 }
 
 }  // namespace atom

@@ -56,6 +56,7 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
                                  const ProtocolHandler& handler);
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
+  void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
 
   // Old async version of IsProtocolRegistered.
   v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);

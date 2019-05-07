@@ -78,6 +78,11 @@ bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
   return base::ContainsKey(handlers_, scheme);
 }
 
+void ProtocolNS::UninterceptProtocol(const std::string& scheme,
+                                     mate::Arguments* args) {
+  HandleOptionalCallback(args, ProtocolError::NOT_INTERCEPTED);
+}
+
 v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
     const std::string& scheme) {
   util::Promise promise(isolate());
@@ -129,7 +134,7 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("interceptFileProtocol", &Noop)
       .SetMethod("interceptHttpProtocol", &Noop)
       .SetMethod("interceptStreamProtocol", &Noop)
-      .SetMethod("uninterceptProtocol", &Noop);
+      .SetMethod("uninterceptProtocol", &ProtocolNS::UninterceptProtocol);
 }
 
 }  // namespace api
