@@ -9,6 +9,7 @@ const qs = require('querystring')
 const http = require('http')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
+const { createNetworkSandbox } = require('./network-helper')
 const { ipcRenderer, remote } = require('electron')
 const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, webContents } = remote
 
@@ -1987,9 +1988,12 @@ describe('BrowserWindow module', () => {
     })
 
     describe('nativeWindowOpen option', () => {
+      const networkSandbox = createNetworkSandbox(protocol)
+
       beforeEach(async () => {
-        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
-        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
+        // used to create cross-origin navigation situations
+        await networkSandbox.serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
+        await networkSandbox.serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
 
         w.destroy()
         w = new BrowserWindow({
@@ -2004,8 +2008,7 @@ describe('BrowserWindow module', () => {
       })
 
       afterEach(async () => {
-        await unregisterProtocol('foo')
-        await unregisterProtocol('bar')
+        await networkSandbox.reset()
       })
 
       it('opens window of about:blank with cross-scripting enabled', (done) => {
@@ -3805,35 +3808,4 @@ const isScaleFactorRounding = () => {
   if (Math.round(scaleFactor) !== scaleFactor) return true
   // Return true if scale factor is odd number above 2
   return scaleFactor > 2 && scaleFactor % 2 === 1
-}
-
-function serveFileFromProtocol (protocolName, filePath) {
-  return new Promise((resolve, reject) => {
-    protocol.registerBufferProtocol(protocolName, (request, callback) => {
-      // Disabled due to false positive in StandardJS
-      // eslint-disable-next-line standard/no-callback-literal
-      callback({
-        mimeType: 'text/html',
-        data: fs.readFileSync(filePath)
-      })
-    }, (error) => {
-      if (error != null) {
-        reject(error)
-      } else {
-        resolve()
-      }
-    })
-  })
-}
-
-function unregisterProtocol (protocolName) {
-  return new Promise((resolve, reject) => {
-    protocol.unregisterProtocol(protocolName, (error) => {
-      if (error != null) {
-        reject(error)
-      } else {
-        resolve()
-      }
-    })
-  })
 }
