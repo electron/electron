@@ -545,6 +545,17 @@ describe('app module', () => {
         expect(webContents).to.equal(w.webContents);
       });
     });
+
+    it('should emit failed-to-register-for-remote-notifications event when app.registerForRemoteNotifications() is invoked and APNS registration fails', async function() {
+      if (process.platform !== 'darwin') {
+        this.skip();
+      }
+
+      const promise = emittedOnce(app, 'failed-to-register-for-remote-notifications');
+      app.registerForRemoteNotifications();
+      const [, error] = await promise;
+      expect(error).to.be.a('string');
+    });
   });
 
   describe('app.badgeCount', () => {
