@@ -105,8 +105,12 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(mate::Arguments* args) {
-  auto_updater::AutoUpdater::SetFeedURL(args);
+void AutoUpdater::SetFeedURL(std::string feedURL) {
+  auto_updater::AutoUpdater::SetFeedURL(feedURL);
+}
+
+void AutoUpdater::Initialize(mate::Arguments* args) {
+  auto_updater::AutoUpdater::Initialize(args);
 }
 
 void AutoUpdater::QuitAndInstall() {
@@ -134,8 +138,11 @@ void AutoUpdater::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "AutoUpdater"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
-      .SetMethod("getFeedURL", &auto_updater::AutoUpdater::GetFeedURL)
-      .SetMethod("setFeedURL", &AutoUpdater::SetFeedURL)
+      .SetMethod("initialize", &AutoUpdater::Initialize)
+      .SetProperty("feedURL", &auto_updater::AutoUpdater::GetFeedURL,
+                   &AutoUpdater::SetFeedURL)
+      .SetMethod("_getFeedURL", &auto_updater::AutoUpdater::GetFeedURL)
+      .SetMethod("_setFeedURL", &AutoUpdater::SetFeedURL)
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 

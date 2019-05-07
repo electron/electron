@@ -53,9 +53,12 @@ class AutoUpdater {
   // Gets/Sets the delegate.
   static Delegate* GetDelegate();
   static void SetDelegate(Delegate* delegate);
-
   static std::string GetFeedURL();
-  static void SetFeedURL(mate::Arguments* args);
+  static void SetFeedURL(std::string);
+  static void Initialize(mate::Arguments* args);
+  static void SetFeedOptions(std::string serverType,
+                             std::string feed,
+                             HeaderMap requestHeaders);
   static void CheckForUpdates();
   static void QuitAndInstall();
 

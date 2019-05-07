@@ -50,7 +50,7 @@ const idleTime = getSystemIdleTime()
 ### webFrame Isolated World APIs
 
 ```js
-// Removed in Elecron 7.0
+// Removed in Electron 7.0
 webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
 webFrame.setIsolatedWorldHumanReadableName(worldId, name)
 webFrame.setIsolatedWorldSecurityOrigin(worldId, securityOrigin)
@@ -62,6 +62,17 @@ webFrame.setIsolatedWorldInfo(
     name: 'human_readable_name',
     csp: 'content_security_policy'
   })
+```
+
+### `autoUpdater.setFeedURL`
+
+```js
+// Removed in Electron 8.0
+autoUpdater.setFeedURL(options)
+// Replace with initialize
+autoUpdate.initialize(options)
+// OR set property directly
+autoUpdate.feedURL = feedURL
 ```
 
 ## Planned Breaking API Changes (6.0)

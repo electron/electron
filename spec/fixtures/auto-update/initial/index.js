@@ -9,7 +9,7 @@ const feedUrl = process.argv[1]
 
 console.log('Setting Feed URL')
 
-autoUpdater.setFeedURL({
+autoUpdater.initialize({
   url: feedUrl
 })
 

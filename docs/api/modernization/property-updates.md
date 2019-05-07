@@ -7,8 +7,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `app` module
   * `dock`
     * `badge`
-* `autoUpdater` module
-  * `feedUrl`
 * `BrowserWindow`
   * `fullscreen`
   * `simpleFullscreen`
@@ -56,5 +54,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `applicationMenu`
   * `badgeCount`
   * `name`
+* `autoUpdater` module
+  * `feedUrl`
 * `NativeImage`
   * `isMacTemplateImage`

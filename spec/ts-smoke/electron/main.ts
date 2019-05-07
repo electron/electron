@@ -428,7 +428,7 @@ app.exit(0)
 // auto-updater
 // https://github.com/atom/electron/blob/master/docs/api/auto-updater.md
 
-autoUpdater.setFeedURL({
+autoUpdater.initialize({
   url: 'http://mycompany.com/myapp/latest?version=' + app.getVersion(),
   headers: {
     key: 'value'
