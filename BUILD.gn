@@ -520,6 +520,7 @@ source_set("electron_lib") {
         "Squirrel.framework",
         "ReactiveObjC.framework",
         "Mantle.framework",
+        "UserNotifications.framework",
       ]
 
       deps += [

@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_MAC_DICT_UTIL_H_
 
 #import <Foundation/Foundation.h>
+#import <UserNotifications/UserNotifications.h>
 
 namespace base {
 class ListValue;
@@ -18,6 +19,12 @@ NSArray* ListValueToNSArray(const base::ListValue& value);
 base::ListValue NSArrayToListValue(NSArray* arr);
 NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
 base::DictionaryValue NSDictionaryToDictionaryValue(NSDictionary* dict);
+
+std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
+    NSDictionary* dict);
+
+NSDictionary* UNNotificationResponseToNSDictionary(
+    UNNotificationResponse* response) API_AVAILABLE(macosx(10.14));
 
 }  // namespace electron
 

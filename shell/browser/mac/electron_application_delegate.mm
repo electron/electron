@@ -94,21 +94,28 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
   NSObject* user_notification =
-      [notify userInfo][NSApplicationLaunchUserNotificationKey];
+    [notify userInfo][(id) @"NSApplicationLaunchUserNotificationKey"];
   NSDictionary* notification_info = nil;
 
   if (user_notification) {
     if ([user_notification isKindOfClass:[NSUserNotification class]]) {
       notification_info =
-          [static_cast<NSUserNotification*>(user_notification) userInfo];
+        [(NSUserNotification *)user_notification userInfo];
     } else if (@available(macOS 10.14, *)) {
-      notification_info = UNNotificationResponseToNSDictionary(
-          static_cast<UNNotificationResponse*>(user_notification));
+      if ([user_notification isKindOfClass:[UNNotificationResponse class]]) {
+        notification_info = atom::UNNotificationResponseToNSDictionary(
+          (UNNotificationResponse *)user_notification);
+      }
     }
   }
 
-  electron::Browser::Get()->DidFinishLaunching(
-      electron::NSDictionaryToDictionaryValue(notification_info));
+  if (notification_info) {
+    std::unique_ptr<base::DictionaryValue> launch_info =
+        atom::NSDictionaryToDictionaryValue(notification_info);
+    electron::Browser::Get()->DidFinishLaunching(*launch_info);
+  } else {
+    electron::Browser::Get()->DidFinishLaunching(base::DictionaryValue());
+  }
 
 #if BUILDFLAG(USE_ALLOCATOR_SHIM)
   // Disable fatal OOM to hack around an OS bug https://crbug.com/654695.
