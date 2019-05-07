@@ -189,8 +189,11 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
 
 step-delete-git-directories: &step-delete-git-directories
   run:
-    name: Delete src/.git directory
-    command: sudo rm -rf src/.git
+    name: Delete src/.git directory on MacOS to free space
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        sudo rm -rf src/.git
+      fi
 
 # On macOS the npm install command during gclient sync was run on a linux
 # machine and therefore installed a slightly different set of dependencies
