@@ -215,7 +215,8 @@ void SpellCheckClient::SpellCheckWords(
   DCHECK(!scope.spell_check_.IsEmpty());
 
   v8::Local<v8::FunctionTemplate> templ = mate::CreateFunctionTemplate(
-      isolate_, base::Bind(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));
+      isolate_,
+      base::BindRepeating(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));
 
   auto context = isolate_->GetCurrentContext();
   v8::Local<v8::Value> args[] = {mate::ConvertToV8(isolate_, words),

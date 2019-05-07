@@ -52,33 +52,27 @@ describe('chrome extension content scripts', () => {
           return closeWindow(w).then(() => { w = null })
         })
 
-        it('should run content script at document_start', (done) => {
+        it('should run content script at document_start', () => {
           addExtension('content-script-document-start')
-          w.webContents.once('dom-ready', () => {
-            w.webContents.executeJavaScript('document.documentElement.style.backgroundColor', (result) => {
-              expect(result).to.equal('red')
-              done()
-            })
+          w.webContents.once('dom-ready', async () => {
+            const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+            expect(result).to.equal('red')
           })
           w.loadURL('about:blank')
         })
 
-        it('should run content script at document_idle', (done) => {
+        it('should run content script at document_idle', async () => {
           addExtension('content-script-document-idle')
           w.loadURL('about:blank')
-          w.webContents.executeJavaScript('document.body.style.backgroundColor', (result) => {
-            expect(result).to.equal('red')
-            done()
-          })
+          const result = await w.webContents.executeJavaScript('document.body.style.backgroundColor')
+          expect(result).to.equal('red')
         })
 
-        it('should run content script at document_end', (done) => {
+        it('should run content script at document_end', () => {
           addExtension('content-script-document-end')
-          w.webContents.once('did-finish-load', () => {
-            w.webContents.executeJavaScript('document.documentElement.style.backgroundColor', (result) => {
-              expect(result).to.equal('red')
-              done()
-            })
+          w.webContents.once('did-finish-load', async () => {
+            const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
+            expect(result).to.equal('red')
           })
           w.loadURL('about:blank')
         })

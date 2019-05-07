@@ -71,7 +71,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("LabelButton", mate::CreateConstructor<LabelButton>(
-                              isolate, base::Bind(&LabelButton::New)));
+                              isolate, base::BindRepeating(&LabelButton::New)));
 }
 
 }  // namespace

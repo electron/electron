@@ -134,9 +134,9 @@ void RendererClientBase::AddRenderBindings(
     v8::Isolate* isolate,
     v8::Local<v8::Object> binding_object) {
   mate::Dictionary dict(isolate, binding_object);
-  dict.SetMethod(
-      "getRenderProcessPreferences",
-      base::Bind(GetRenderProcessPreferences, preferences_manager_.get()));
+  dict.SetMethod("getRenderProcessPreferences",
+                 base::BindRepeating(GetRenderProcessPreferences,
+                                     preferences_manager_.get()));
 }
 
 void RendererClientBase::RenderThreadStarted() {

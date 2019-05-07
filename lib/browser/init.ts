@@ -44,7 +44,7 @@ if (process.platform === 'win32') {
 // Don't quit on fatal error.
 process.on('uncaughtException', function (error) {
   // Do nothing if the user has a custom uncaught exception handler.
-  if (process.listeners('uncaughtException').length > 1) {
+  if (process.listenerCount('uncaughtException') > 1) {
     return
   }
 
@@ -134,16 +134,16 @@ if (packageJson.version != null) {
 
 // Set application's name.
 if (packageJson.productName != null) {
-  app.setName(`${packageJson.productName}`.trim())
+  app.name = `${packageJson.productName}`.trim()
 } else if (packageJson.name != null) {
-  app.setName(`${packageJson.name}`.trim())
+  app.name = `${packageJson.name}`.trim()
 }
 
 // Set application's desktop name.
 if (packageJson.desktopName != null) {
   app.setDesktopName(packageJson.desktopName)
 } else {
-  app.setDesktopName((app.getName()) + '.desktop')
+  app.setDesktopName(`${app.name}.desktop`)
 }
 
 // Set v8 flags
@@ -158,12 +158,6 @@ require('@electron/internal/browser/chrome-devtools')
 
 // Load the chrome extension support.
 require('@electron/internal/browser/chrome-extension')
-
-const features = process.electronBinding('features')
-if (features.isDesktopCapturerEnabled()) {
-  // Load internal desktop-capturer module.
-  require('@electron/internal/browser/desktop-capturer')
-}
 
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol')

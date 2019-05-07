@@ -18,8 +18,8 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
+#include "gin/dictionary.h"
+#include "gin/object_template_builder.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
@@ -28,24 +28,13 @@
 
 using content::BrowserThread;
 
-namespace mate {
-
-template <>
-struct Converter<atom::api::Cookies::Error> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::api::Cookies::Error val) {
-    if (val == atom::api::Cookies::SUCCESS)
-      return v8::Null(isolate);
-    else
-      return v8::Exception::Error(StringToV8(isolate, "Setting cookie failed"));
-  }
-};
+namespace gin {
 
 template <>
 struct Converter<net::CanonicalCookie> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CanonicalCookie& val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("name", val.Name());
     dict.Set("value", val.Value());
     dict.Set("domain", val.Domain());
@@ -56,7 +45,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("session", !val.IsPersistent());
     if (val.IsPersistent())
       dict.Set("expirationDate", val.ExpiryDate().ToDoubleT());
-    return dict.GetHandle();
+    return ConvertToV8(isolate, dict).As<v8::Object>();
   }
 };
 
@@ -68,22 +57,22 @@ struct Converter<network::mojom::CookieChangeCause> {
     switch (val) {
       case network::mojom::CookieChangeCause::INSERTED:
       case network::mojom::CookieChangeCause::EXPLICIT:
-        return mate::StringToV8(isolate, "explicit");
+        return gin::StringToV8(isolate, "explicit");
       case network::mojom::CookieChangeCause::OVERWRITE:
-        return mate::StringToV8(isolate, "overwrite");
+        return gin::StringToV8(isolate, "overwrite");
       case network::mojom::CookieChangeCause::EXPIRED:
-        return mate::StringToV8(isolate, "expired");
+        return gin::StringToV8(isolate, "expired");
       case network::mojom::CookieChangeCause::EVICTED:
-        return mate::StringToV8(isolate, "evicted");
+        return gin::StringToV8(isolate, "evicted");
       case network::mojom::CookieChangeCause::EXPIRED_OVERWRITE:
-        return mate::StringToV8(isolate, "expired-overwrite");
+        return gin::StringToV8(isolate, "expired-overwrite");
       default:
-        return mate::StringToV8(isolate, "unknown");
+        return gin::StringToV8(isolate, "unknown");
     }
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace atom {
 
@@ -143,7 +132,7 @@ void FilterCookies(const base::Value& filter,
       result.push_back(cookie);
   }
 
-  promise.Resolve(result);
+  promise.Resolve(gin::ConvertToV8(promise.isolate(), result));
 }
 
 std::string InclusionStatusToString(
@@ -176,7 +165,8 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
   Init(isolate);
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
-          base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
+          base::BindRepeating(&Cookies::OnCookieChanged,
+                              base::Unretained(this)));
 }
 
 Cookies::~Cookies() {}
@@ -329,19 +319,21 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
 }
 
 void Cookies::OnCookieChanged(const CookieDetails* details) {
-  Emit("changed", *(details->cookie), details->cause, details->removed);
+  Emit("changed", gin::ConvertToV8(isolate(), *(details->cookie)),
+       gin::ConvertToV8(isolate(), details->cause),
+       gin::ConvertToV8(isolate(), details->removed));
 }
 
 // static
-mate::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
-                                      AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate, new Cookies(isolate, browser_context));
+gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
+                                     AtomBrowserContext* browser_context) {
+  return gin::CreateHandle(isolate, new Cookies(isolate, browser_context));
 }
 
 // static
 void Cookies::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "Cookies"));
+  prototype->SetClassName(gin::StringToV8(isolate, "Cookies"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("get", &Cookies::Get)
       .SetMethod("remove", &Cookies::Remove)

@@ -119,17 +119,17 @@ int ShowTaskDialogUTF16(NativeWindow* parent,
   } else {
     // Show icon according to dialog's type.
     switch (type) {
-      case MESSAGE_BOX_TYPE_INFORMATION:
-      case MESSAGE_BOX_TYPE_QUESTION:
+      case MessageBoxType::kInformation:
+      case MessageBoxType::kQuestion:
         config.pszMainIcon = TD_INFORMATION_ICON;
         break;
-      case MESSAGE_BOX_TYPE_WARNING:
+      case MessageBoxType::kWarning:
         config.pszMainIcon = TD_WARNING_ICON;
         break;
-      case MESSAGE_BOX_TYPE_ERROR:
+      case MessageBoxType::kError:
         config.pszMainIcon = TD_ERROR_ICON;
         break;
-      case MESSAGE_BOX_TYPE_NONE:
+      case MessageBoxType::kNone:
         break;
     }
   }
@@ -279,7 +279,7 @@ void ShowMessageBox(NativeWindow* parent,
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   atom::UnresponsiveSuppressor suppressor;
-  ShowTaskDialogUTF16(nullptr, MESSAGE_BOX_TYPE_ERROR, {}, -1, 0, 0, L"Error",
+  ShowTaskDialogUTF16(nullptr, MessageBoxType::kError, {}, -1, 0, 0, L"Error",
                       title, content, L"", nullptr, gfx::ImageSkia());
 }
 

@@ -4,7 +4,9 @@
 
 #include "atom/browser/api/atom_api_power_monitor.h"
 
-#include <ApplicationServices/ApplicationServices.h>
+#include <vector>
+
+#import <ApplicationServices/ApplicationServices.h>
 #import <Cocoa/Cocoa.h>
 
 @interface MacLockMonitor : NSObject {

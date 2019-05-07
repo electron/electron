@@ -69,7 +69,7 @@ class App : public AtomBrowserClient::Delegate,
             public content::BrowserChildProcessObserver {
  public:
   using FileIconCallback =
-      base::Callback<void(v8::Local<v8::Value>, const gfx::Image&)>;
+      base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
 
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
@@ -133,8 +133,8 @@ class App : public AtomBrowserClient::Delegate,
       content::ResourceType resource_type,
       bool strict_enforcement,
       bool expired_previous_decision,
-      const base::Callback<void(content::CertificateRequestResultType)>&
-          callback) override;
+      const base::RepeatingCallback<
+          void(content::CertificateRequestResultType)>& callback) override;
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -210,6 +210,8 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(mate::Arguments* args);
+  void SetUserAgentFallback(const std::string& user_agent);
+  std::string GetUserAgentFallback();
 
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(mate::Arguments* args);

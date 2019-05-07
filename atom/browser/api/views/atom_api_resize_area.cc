@@ -51,7 +51,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("ResizeArea", mate::CreateConstructor<ResizeArea>(
-                             isolate, base::Bind(&ResizeArea::New)));
+                             isolate, base::BindRepeating(&ResizeArea::New)));
 }
 
 }  // namespace

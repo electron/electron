@@ -1347,11 +1347,11 @@ describe('chromium feature', () => {
     describe('window.history.pushState', () => {
       it('should push state after calling history.pushState() from the same url', (done) => {
         w = new BrowserWindow({ show: false })
-        w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', async () => {
           // History should have current page by now.
           assert.strictEqual(w.webContents.length(), 1)
 
-          w.webContents.executeJavaScript('window.history.pushState({}, "")', () => {
+          w.webContents.executeJavaScript('window.history.pushState({}, "")').then(() => {
             // Initial page + pushed state
             assert.strictEqual(w.webContents.length(), 2)
             done()

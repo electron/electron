@@ -96,7 +96,7 @@ either `process.env` or the `window` object.
 You should at least follow these steps to improve the security of your application:
 
 1. [Only load secure content](#1-only-load-secure-content)
-2. [Disable the Node.js integration in all renderers that display remote content](#2-disable-nodejs-integration-for-remote-content)
+2. [Disable the Node.js integration in all renderers that display remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
 3. [Enable context isolation in all renderers that display remote content](#3-enable-context-isolation-for-remote-content)
 4. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#4-handle-session-permission-requests-from-remote-content)
 5. [Do not disable `webSecurity`](#5-do-not-disable-websecurity)
@@ -159,9 +159,11 @@ browserWindow.loadURL('https://example.com')
 ```
 
 
-## 2) Disable Node.js Integration for Remote Content
+## 2) Do not enable Node.js Integration for Remote Content
 
-It is paramount that you disable Node.js integration in any renderer
+_This recommendation is the default behavior in Electron since 5.0.0._
+
+It is paramount that you do not enable Node.js integration in any renderer
 ([`BrowserWindow`][browser-window], [`BrowserView`][browser-view], or
 [`<webview>`][webview-tag]) that loads remote content. The goal is to limit the
 powers you grant to remote content, thus making it dramatically more difficult
@@ -185,7 +187,13 @@ so-called "Remote Code Execution" (RCE) attack.
 
 ```js
 // Bad
-const mainWindow = new BrowserWindow()
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    nodeIntegration: true,
+    nodeIntegrationInWorker: true
+  }
+})
+
 mainWindow.loadURL('https://example.com')
 ```
 
@@ -193,8 +201,6 @@ mainWindow.loadURL('https://example.com')
 // Good
 const mainWindow = new BrowserWindow({
   webPreferences: {
-    nodeIntegration: false,
-    nodeIntegrationInWorker: false,
     preload: path.join(app.getAppPath(), 'preload.js')
   }
 })
@@ -675,12 +681,12 @@ windows, limiting it to only what you need.
 const { shell } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (event, navigationUrl) => {
+  contents.on('new-window', async (event, navigationUrl) => {
     // In this example, we'll ask the operating system
     // to open this event's url in the default browser.
     event.preventDefault()
 
-    shell.openExternalSync(navigationUrl)
+    await shell.openExternal(navigationUrl)
   })
 })
 ```

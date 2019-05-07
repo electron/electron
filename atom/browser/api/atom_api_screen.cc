@@ -116,7 +116,8 @@ void Screen::OnDisplayMetricsChanged(const display::Display& display,
 v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Cannot require \"screen\" module before app is ready")));
+        isolate,
+        "The 'screen' module can't be used before the app 'ready' event")));
     return v8::Null(isolate);
   }
 
@@ -162,7 +163,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("screen", Screen::Create(isolate));
+  dict.Set("createScreen", base::BindRepeating(&Screen::Create, isolate));
   dict.Set(
       "Screen",
       Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());

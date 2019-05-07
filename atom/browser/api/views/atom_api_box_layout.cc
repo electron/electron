@@ -78,7 +78,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("BoxLayout", mate::CreateConstructor<BoxLayout>(
-                            isolate, base::Bind(&BoxLayout::New)));
+                            isolate, base::BindRepeating(&BoxLayout::New)));
 }
 
 }  // namespace

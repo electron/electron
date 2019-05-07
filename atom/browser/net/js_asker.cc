@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "content/public/browser/browser_thread.h"
 
 namespace atom {
@@ -29,14 +29,14 @@ void JsAsker::AskForOptions(
     v8::Isolate* isolate,
     const JavaScriptHandler& handler,
     std::unique_ptr<base::DictionaryValue> request_details,
-    const BeforeStartCallback& before_start) {
+    BeforeStartCallback before_start) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Context::Scope context_scope(context);
   handler.Run(*(request_details.get()),
-              mate::ConvertToV8(isolate, before_start));
+              mate::ConvertToV8(isolate, std::move(before_start)));
 }
 
 // static

@@ -22,11 +22,11 @@ class ResolveProxyHelper
     : public base::RefCountedThreadSafe<ResolveProxyHelper>,
       network::mojom::ProxyLookupClient {
  public:
-  using ResolveProxyCallback = base::Callback<void(std::string)>;
+  using ResolveProxyCallback = base::OnceCallback<void(std::string)>;
 
   explicit ResolveProxyHelper(AtomBrowserContext* browser_context);
 
-  void ResolveProxy(const GURL& url, const ResolveProxyCallback& callback);
+  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
 
  protected:
   ~ResolveProxyHelper() override;
@@ -36,7 +36,7 @@ class ResolveProxyHelper
   // A PendingRequest is a resolve request that is in progress, or queued.
   struct PendingRequest {
    public:
-    PendingRequest(const GURL& url, const ResolveProxyCallback& callback);
+    PendingRequest(const GURL& url, ResolveProxyCallback callback);
     PendingRequest(PendingRequest&& pending_request) noexcept;
     ~PendingRequest();
 

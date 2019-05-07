@@ -60,7 +60,7 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
   auto callback_key = mate::ConvertToV8(isolate, callback_name)
                           ->ToString(context)
                           .ToLocalChecked();
-  auto callback_value = ipcNative->Get(callback_key);
+  auto callback_value = ipcNative->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by init.ts
   auto callback = v8::Local<v8::Function>::Cast(callback_value);
   ignore_result(callback->Call(context, ipcNative, args.size(), args.data()));

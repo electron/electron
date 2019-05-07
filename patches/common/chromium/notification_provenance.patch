@@ -67,10 +67,10 @@ index cbac30fa7a12db927ba6a15173ba1181e03e0723..4d26fd795a7ce1ffd046c4a0f2ec1779
          mojo::MakeRequest(&notification_service_ptr_));
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index d0b32520a30c1807117a3dc02d5d55bcb3d7b995..f868d3c40f78fa105477d7f22e47a75c5281de14 100644
+index 258d4235cc977ce0aed3cb31020244b26a8c19dd..436ebd7927eec6b007724c988248c418114491e5 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -199,12 +199,13 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -207,12 +207,13 @@ void PlatformNotificationContextImpl::Shutdown() {
  }
  
  void PlatformNotificationContextImpl::CreateService(
@@ -87,7 +87,7 @@ index d0b32520a30c1807117a3dc02d5d55bcb3d7b995..f868d3c40f78fa105477d7f22e47a75c
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 11eed749075c7c17d4beb86674c253b5f296d82d..8a7c7f3f7a069e2339a4234a21dd4536fcf0c6a1 100644
+index de7f9d4c1b670b6955ec62e562b133a86b770652..a7daada96b6ebed404d6fa3eef1048ab022d443f 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -24,6 +24,7 @@
@@ -109,10 +109,10 @@ index 11eed749075c7c17d4beb86674c253b5f296d82d..8a7c7f3f7a069e2339a4234a21dd4536
  
    // Removes |service| from the list of owned services, for example because the
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 1bd1a3f7a152fe63f956cf8eca353d24fb86d5a7..904dea361831e4d57c0f6b65e4690f7948f3fab2 100644
+index d689e264d2b547c155c6e722bd6f6b81cefde3a2..1faf3d47b0207108183c1529928926e762143122 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
-@@ -189,7 +189,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
+@@ -196,7 +196,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
                      RenderProcessHost* host, const url::Origin& origin) {
          static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
              ->GetPlatformNotificationContext()

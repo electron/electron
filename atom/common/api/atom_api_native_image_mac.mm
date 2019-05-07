@@ -4,6 +4,9 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 
+#include <string>
+#include <vector>
+
 #import <Cocoa/Cocoa.h>
 
 #include "base/strings/sys_string_conversions.h"

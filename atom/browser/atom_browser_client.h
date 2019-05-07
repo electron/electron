@@ -64,6 +64,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
 
+  std::string GetUserAgent() const override;
+  void SetUserAgent(const std::string& user_agent);
+
  protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,
@@ -157,9 +160,12 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   std::vector<base::FilePath> GetNetworkContextsParentDirectory() override;
   bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() const override;
-  std::string GetUserAgent() const override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
+      NonNetworkURLLoaderFactoryMap* factories) override;
+  void RegisterNonNetworkSubresourceURLLoaderFactories(
+      int render_process_id,
+      int render_frame_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
 
   // content::RenderProcessHostObserver:
@@ -235,6 +241,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
+
+  std::string user_agent_override_ = "";
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

@@ -41,8 +41,12 @@ struct Converter<std::pair<Type1, Type2>> {
     v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
     if (array->Length() != 2)
       return false;
-    return Converter<Type1>::FromV8(isolate, array->Get(0), &out->first) &&
-           Converter<Type2>::FromV8(isolate, array->Get(1), &out->second);
+
+    auto context = isolate->GetCurrentContext();
+    return Converter<Type1>::FromV8(
+               isolate, array->Get(context, 0).ToLocalChecked(), &out->first) &&
+           Converter<Type2>::FromV8(
+               isolate, array->Get(context, 1).ToLocalChecked(), &out->second);
   }
 };
 

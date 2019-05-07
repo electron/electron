@@ -7,8 +7,10 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/net/atom_url_loader_factory.h"
 #include "content/public/browser/content_browser_client.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
@@ -20,12 +22,12 @@ class AtomBrowserContext;
 namespace api {
 
 // Possible errors.
-enum ProtocolError {
-  PROTOCOL_OK,  // no error
-  PROTOCOL_REGISTERED,
-  PROTOCOL_NOT_REGISTERED,
-  PROTOCOL_INTERCEPTED,
-  PROTOCOL_NOT_INTERCEPTED,
+enum class ProtocolError {
+  OK,  // no error
+  REGISTERED,
+  NOT_REGISTERED,
+  INTERCEPTED,
+  NOT_INTERCEPTED,
 };
 
 // Protocol implementation based on network services.
@@ -46,25 +48,32 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   ~ProtocolNS() override;
 
   // Callback types.
-  using Handler =
-      base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
 
   // JS APIs.
-  int RegisterProtocol(const std::string& scheme,
-                       const Handler& handler,
-                       mate::Arguments* args);
+  ProtocolError RegisterProtocol(ProtocolType type,
+                                 const std::string& scheme,
+                                 const ProtocolHandler& handler);
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
+  void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
 
   // Old async version of IsProtocolRegistered.
   v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
 
+  // Helper for converting old registration APIs to new RegisterProtocol API.
+  template <ProtocolType type>
+  void RegisterProtocolFor(const std::string& scheme,
+                           const ProtocolHandler& handler,
+                           mate::Arguments* args) {
+    HandleOptionalCallback(args, RegisterProtocol(type, scheme, handler));
+  }
+
   // Be compatible with old interface, which accepts optional callback.
   void HandleOptionalCallback(mate::Arguments* args, ProtocolError error);
 
-  // scheme => handler.
-  std::map<std::string, Handler> handlers_;
+  // scheme => (type, handler).
+  std::map<std::string, std::pair<ProtocolType, ProtocolHandler>> handlers_;
 };
 
 }  // namespace api

@@ -114,6 +114,7 @@ class BrowserProcessImpl : public BrowserProcess {
   void SetApplicationLocale(const std::string& locale) override;
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
+  StartupData* startup_data() override;
 
  private:
 #if BUILDFLAG(ENABLE_PRINTING)

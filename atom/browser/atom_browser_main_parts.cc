@@ -151,7 +151,7 @@ void OverrideLinuxAppDataPath() {
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::Bind(&ui::LogErrorEventDescription, d, *error));
+        FROM_HERE, base::BindOnce(&ui::LogErrorEventDescription, d, *error));
   }
   return 0;
 }
@@ -205,7 +205,8 @@ AtomBrowserMainParts::AtomBrowserMainParts(
     const content::MainFunctionParams& params)
     : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
-      node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
+      node_bindings_(
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
       electron_bindings_(new ElectronBindings(uv_default_loop())),
       main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
@@ -367,7 +368,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
   gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 
   wchar_t module_name[MAX_PATH] = {0};
-  if (GetModuleFileName(NULL, module_name, MAX_PATH))
+  if (GetModuleFileName(NULL, module_name, base::size(module_name)))
     ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 
@@ -393,8 +394,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   // Start idle gc.
   gc_timer_.Start(FROM_HERE, base::TimeDelta::FromMinutes(1),
-                  base::Bind(&v8::Isolate::LowMemoryNotification,
-                             base::Unretained(js_env_->isolate())));
+                  base::BindRepeating(&v8::Isolate::LowMemoryNotification,
+                                      base::Unretained(js_env_->isolate())));
 
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
@@ -452,6 +453,7 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
+  node_debugger_->Stop();
   js_env_->OnMessageLoopDestroying();
 
 #if defined(OS_MACOSX)

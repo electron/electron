@@ -136,10 +136,10 @@ void ShutdownDetector::ThreadMain() {
     bytes_read += ret;
   } while (bytes_read < sizeof(signal));
   VLOG(1) << "Handling shutdown for signal " << signal << ".";
-  base::Closure task =
-      base::Bind(&Browser::Quit, base::Unretained(Browser::Get()));
 
-  if (!base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, task)) {
+  if (!base::PostTaskWithTraits(
+          FROM_HERE, {BrowserThread::UI},
+          base::BindOnce(&Browser::Quit, base::Unretained(Browser::Get())))) {
     // Without a UI thread to post the exit task to, there aren't many
     // options.  Raise the signal again.  The default handler will pick it up
     // and cause an ungraceful exit.

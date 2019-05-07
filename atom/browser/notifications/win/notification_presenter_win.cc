@@ -47,7 +47,7 @@ bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
 // static
 NotificationPresenter* NotificationPresenter::Create() {
   auto version = base::win::GetVersion();
-  if (version < base::win::VERSION_WIN8)
+  if (version < base::win::Version::WIN8)
     return new NotificationPresenterWin7;
   if (!WindowsToastNotification::Initialize())
     return nullptr;

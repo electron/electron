@@ -80,7 +80,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     public content::WebContentsObserver,
                     public mojom::ElectronBrowser {
  public:
-  enum Type {
+  enum class Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
     BROWSER_WINDOW,   // Used by BrowserWindow.
     BROWSER_VIEW,     // Used by BrowserView.
@@ -294,8 +294,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
 
-  void TakeHeapSnapshot(const base::FilePath& file_path,
-                        base::Callback<void(bool)>);
+  v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
 
   // Properties.
   int32_t ID() const;
@@ -337,7 +336,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
-                              int32_t level,
+                              blink::mojom::ConsoleMessageLevel level,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;
@@ -535,7 +534,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   WebContentsZoomController* zoom_controller_ = nullptr;
 
   // The type of current WebContents.
-  Type type_ = BROWSER_WINDOW;
+  Type type_ = Type::BROWSER_WINDOW;
 
   // Request id used for findInPage request.
   uint32_t request_id_ = 0;

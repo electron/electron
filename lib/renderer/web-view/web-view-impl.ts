@@ -1,4 +1,4 @@
-import { deprecate, remote, webFrame } from 'electron'
+import { remote, webFrame } from 'electron'
 
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
@@ -273,7 +273,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
   }
 
   for (const method of asyncPromiseMethods) {
-    (WebViewElement.prototype as Record<string, any>)[method] = deprecate.promisify(createPromiseHandler(method))
+    (WebViewElement.prototype as Record<string, any>)[method] = createPromiseHandler(method)
   }
 }
 

@@ -51,8 +51,6 @@
 #include "native_mate/object_template_builder.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
-#include "net/disk_cache/disk_cache.h"
-#include "net/dns/host_cache.h"  // nogncheck
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
@@ -72,15 +70,6 @@ struct ClearStorageDataOptions {
   GURL origin;
   uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
   uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
-};
-
-struct ClearAuthCacheOptions {
-  std::string type;
-  GURL origin;
-  std::string realm;
-  base::string16 username;
-  base::string16 password;
-  net::HttpAuth::Scheme auth_scheme;
 };
 
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
@@ -123,18 +112,6 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-net::HttpAuth::Scheme GetAuthSchemeFromString(const std::string& scheme) {
-  if (scheme == "basic")
-    return net::HttpAuth::AUTH_SCHEME_BASIC;
-  if (scheme == "digest")
-    return net::HttpAuth::AUTH_SCHEME_DIGEST;
-  if (scheme == "ntlm")
-    return net::HttpAuth::AUTH_SCHEME_NTLM;
-  if (scheme == "negotiate")
-    return net::HttpAuth::AUTH_SCHEME_NEGOTIATE;
-  return net::HttpAuth::AUTH_SCHEME_MAX;
-}
-
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const std::string& accept_lang,
                       const std::string& user_agent) {
@@ -167,26 +144,6 @@ struct Converter<ClearStorageDataOptions> {
 };
 
 template <>
-struct Converter<ClearAuthCacheOptions> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     ClearAuthCacheOptions* out) {
-    mate::Dictionary options;
-    if (!ConvertFromV8(isolate, val, &options))
-      return false;
-    options.Get("type", &out->type);
-    options.Get("origin", &out->origin);
-    options.Get("realm", &out->realm);
-    options.Get("username", &out->username);
-    options.Get("password", &out->password);
-    std::string scheme;
-    if (options.Get("scheme", &scheme))
-      out->auth_scheme = GetAuthSchemeFromString(scheme);
-    return true;
-  }
-};
-
-template <>
 struct Converter<atom::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    atom::VerifyRequestParams val) {
@@ -212,121 +169,12 @@ const char kPersistPrefix[] = "persist:";
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 
-void ResolveOrRejectPromiseInUI(util::Promise promise, int net_error) {
-  if (net_error != net::OK) {
-    std::string err_msg = net::ErrorToString(net_error);
-    util::Promise::RejectPromise(std::move(promise), std::move(err_msg));
-  } else {
-    util::Promise::ResolveEmptyPromise(std::move(promise));
-  }
-}
-
-// Callback of HttpCache::GetBackend.
-void OnGetBackend(disk_cache::Backend** backend_ptr,
-                  Session::CacheAction action,
-                  const util::CopyablePromise& promise,
-                  int result) {
-  if (result != net::OK) {
-    std::string err_msg =
-        "Failed to retrieve cache backend: " + net::ErrorToString(result);
-    util::Promise::RejectPromise(promise.GetPromise(), std::move(err_msg));
-  } else if (backend_ptr && *backend_ptr) {
-    if (action == Session::CacheAction::CLEAR) {
-      auto success =
-          (*backend_ptr)
-              ->DoomAllEntries(base::BindOnce(&ResolveOrRejectPromiseInUI,
-                                              promise.GetPromise()));
-      if (success != net::ERR_IO_PENDING)
-        ResolveOrRejectPromiseInUI(promise.GetPromise(), success);
-    } else if (action == Session::CacheAction::STATS) {
-      base::StringPairs stats;
-      (*backend_ptr)->GetStats(&stats);
-      for (const auto& stat : stats) {
-        if (stat.first == "Current size") {
-          int current_size;
-          base::StringToInt(stat.second, &current_size);
-          util::Promise::ResolvePromise<int>(promise.GetPromise(),
-                                             current_size);
-          break;
-        }
-      }
-    }
-  }
-}
-
-void DoCacheActionInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    Session::CacheAction action,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-
-  auto* http_cache = request_context->http_transaction_factory()->GetCache();
-  if (!http_cache) {
-    std::string err_msg =
-        "Failed to retrieve cache: " + net::ErrorToString(net::ERR_FAILED);
-    util::Promise::RejectPromise(std::move(promise), std::move(err_msg));
-    return;
-  }
-
-  // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
-  using BackendPtr = disk_cache::Backend*;
-  auto** backend_ptr = new BackendPtr(nullptr);
-  net::CompletionRepeatingCallback on_get_backend =
-      base::Bind(&OnGetBackend, base::Owned(backend_ptr), action,
-                 util::CopyablePromise(promise));
-  int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
-  if (rv != net::ERR_IO_PENDING)
-    on_get_backend.Run(net::OK);
-}
-
 void SetCertVerifyProcInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const AtomCertVerifier::VerifyProc& proc) {
   auto* request_context = context_getter->GetURLRequestContext();
   static_cast<AtomCertVerifier*>(request_context->cert_verifier())
       ->SetVerifyProc(proc);
-}
-
-void ClearHostResolverCacheInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  auto* cache = request_context->host_resolver()->GetHostCache();
-  if (cache) {
-    cache->clear();
-    DCHECK_EQ(0u, cache->size());
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
-  }
-}
-
-void ClearAuthCacheInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    const ClearAuthCacheOptions& options,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  auto* network_session =
-      request_context->http_transaction_factory()->GetSession();
-  if (network_session) {
-    if (options.type == "password") {
-      auto* auth_cache = network_session->http_auth_cache();
-      if (!options.origin.is_empty()) {
-        auth_cache->Remove(
-            options.origin, options.realm, options.auth_scheme,
-            net::AuthCredentials(options.username, options.password));
-      } else {
-        auth_cache->ClearAllEntries();
-      }
-    } else if (options.type == "clientCertificate") {
-      auto* client_auth_cache = network_session->ssl_client_auth_cache();
-      client_auth_cache->Remove(net::HostPortPair::FromURL(options.origin));
-    }
-    network_session->CloseAllConnections();
-  }
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
 }
 
 void AllowNTLMCredentialsForDomainsInIO(
@@ -433,24 +281,45 @@ v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   args->GetNext(&url);
 
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
-      url,
-      base::Bind(util::CopyablePromise::ResolveCopyablePromise<std::string>,
-                 util::CopyablePromise(promise)));
+      url, base::BindOnce(util::Promise::ResolvePromise<std::string>,
+                          std::move(promise)));
 
   return handle;
 }
 
-template <Session::CacheAction action>
-v8::Local<v8::Promise> Session::DoCacheAction() {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+v8::Local<v8::Promise> Session::GetCacheSize() {
+  auto* isolate = v8::Isolate::GetCurrent();
+  auto promise = util::Promise(isolate);
+  auto handle = promise.GetHandle();
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&DoCacheActionInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     action, std::move(promise)));
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ComputeHttpCacheSize(base::Time(), base::Time::Max(),
+                             base::BindOnce(
+                                 [](util::Promise promise, bool is_upper_bound,
+                                    int64_t size_or_error) {
+                                   if (size_or_error < 0) {
+                                     promise.RejectWithErrorMessage(
+                                         net::ErrorToString(size_or_error));
+                                   } else {
+                                     promise.Resolve(size_or_error);
+                                   }
+                                 },
+                                 std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Session::ClearCache() {
+  auto* isolate = v8::Isolate::GetCurrent();
+  auto promise = util::Promise(isolate);
+  auto handle = promise.GetHandle();
+
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
+                       base::BindOnce(util::Promise::ResolveEmptyPromise,
+                                      std::move(promise)));
 
   return handle;
 }
@@ -474,8 +343,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(mate::Arguments* args) {
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin, base::Time(),
       base::Time::Max(),
-      base::Bind(util::CopyablePromise::ResolveEmptyCopyablePromise,
-                 util::CopyablePromise(promise)));
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
   return handle;
 }
 
@@ -557,17 +425,18 @@ void Session::DisableNetworkEmulation() {
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
 
-void WrapVerifyProc(base::Callback<void(const VerifyRequestParams& request,
-                                        base::Callback<void(int)>)> proc,
-                    const VerifyRequestParams& request,
-                    base::OnceCallback<void(int)> cb) {
+void WrapVerifyProc(
+    base::RepeatingCallback<void(const VerifyRequestParams& request,
+                                 base::RepeatingCallback<void(int)>)> proc,
+    const VerifyRequestParams& request,
+    base::OnceCallback<void(int)> cb) {
   proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  base::Callback<void(const VerifyRequestParams& request,
-                      base::Callback<void(int)>)>
+  base::RepeatingCallback<void(const VerifyRequestParams& request,
+                               base::RepeatingCallback<void(int)>)>
       proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
@@ -578,7 +447,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&SetCertVerifyProcInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
-                     base::Bind(&WrapVerifyProc, proc)));
+                     base::BindRepeating(&WrapVerifyProc, proc)));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -610,30 +479,26 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(mate::Arguments* args) {
   util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&ClearHostResolverCacheInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     std::move(promise)));
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHostCache(nullptr,
+                       base::BindOnce(util::Promise::ResolveEmptyPromise,
+                                      std::move(promise)));
+
   return handle;
 }
 
-v8::Local<v8::Promise> Session::ClearAuthCache(mate::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
+v8::Local<v8::Promise> Session::ClearAuthCache() {
+  auto* isolate = v8::Isolate::GetCurrent();
   util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  ClearAuthCacheOptions options;
-  if (!args->GetNext(&options)) {
-    promise.RejectWithErrorMessage("Must specify options object");
-    return handle;
-  }
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHttpAuthCache(base::Time(),
+                           base::BindOnce(util::Promise::ResolveEmptyPromise,
+                                          std::move(promise)));
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&ClearAuthCacheInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     options, std::move(promise)));
   return handle;
 }
 
@@ -702,7 +567,7 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   }
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
-  download_manager->GetDelegate()->GetNextId(base::Bind(
+  download_manager->GetDelegate()->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
@@ -799,8 +664,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
-      .SetMethod("getCacheSize", &Session::DoCacheAction<CacheAction::STATS>)
-      .SetMethod("clearCache", &Session::DoCacheAction<CacheAction::CLEAR>)
+      .SetMethod("getCacheSize", &Session::GetCacheSize)
+      .SetMethod("clearCache", &Session::ClearCache)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("flushStorageData", &Session::FlushStorageData)
       .SetMethod("setProxy", &Session::SetProxy)

@@ -2,8 +2,8 @@
 // Use of this source code is governed by MIT license that can be found in the
 // LICENSE file.
 
-#ifndef NATIVE_MATE_PERSISTENT_DICTIONARY_H_
-#define NATIVE_MATE_PERSISTENT_DICTIONARY_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_PERSISTENT_DICTIONARY_H_
+#define NATIVE_MATE_NATIVE_MATE_PERSISTENT_DICTIONARY_H_
 
 #include "native_mate/dictionary.h"
 #include "native_mate/scoped_persistent.h"
@@ -34,4 +34,4 @@ struct Converter<PersistentDictionary> {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_PERSISTENT_DICTIONARY_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_PERSISTENT_DICTIONARY_H_

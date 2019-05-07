@@ -179,6 +179,19 @@ step-restore-brew-cache: &step-restore-brew-cache
     keys:
       - v1-brew-cache-{{ arch }}
 
+step-get-more-space-on-mac: &step-get-more-space-on-mac
+  run:
+    name: Free up space on MacOS
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        sudo rm -rf /Library/Developer/CoreSimulator
+      fi
+
+step-delete-git-directories: &step-delete-git-directories
+  run:
+    name: Delete src/.git directory
+    command: sudo rm -rf src/.git
+
 # On macOS the npm install command during gclient sync was run on a linux
 # machine and therefore installed a slightly different set of dependencies
 # Notably "fsevents" is a macOS only dependency, we rerun npm install once
@@ -538,6 +551,7 @@ steps-checkout: &steps-checkout
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
     - *step-install-gnutar-on-mac
 
     - run:
@@ -702,9 +716,11 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
     - *step-gn-gen-default
+    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build

@@ -92,7 +92,7 @@ declare namespace ElectronInternal {
     _replyInternal(...args: any[]): void;
   }
 
-  interface IpcMainInternal extends Electron.EventEmitter {
+  interface IpcMainInternal extends NodeJS.EventEmitter {
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }

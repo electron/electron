@@ -63,8 +63,8 @@ class Session : public mate::TrackableObject<Session>,
 
   // Methods.
   v8::Local<v8::Promise> ResolveProxy(mate::Arguments* args);
-  template <CacheAction action>
-  v8::Local<v8::Promise> DoCacheAction();
+  v8::Local<v8::Promise> GetCacheSize();
+  v8::Local<v8::Promise> ClearCache();
   v8::Local<v8::Promise> ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
   v8::Local<v8::Promise> SetProxy(mate::Arguments* args);
@@ -77,7 +77,7 @@ class Session : public mate::TrackableObject<Session>,
   void SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                  mate::Arguments* args);
   v8::Local<v8::Promise> ClearHostResolverCache(mate::Arguments* args);
-  v8::Local<v8::Promise> ClearAuthCache(mate::Arguments* args);
+  v8::Local<v8::Promise> ClearAuthCache();
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();

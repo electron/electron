@@ -5,10 +5,10 @@ Subject: blink-worker-enable-csp-in-file-scheme.patch
 
 
 diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-index e2134f58fe7c59a17a24e428a4ba27d1f8db838e..174386d0768123c290094e6cf7e9a2ba95bc887c 100644
+index d90b74ba141ee7f9609bea8698ca7b7c2f630d9f..f66233507fb26b4a2626b75b4eb38ff340d2d91c 100644
 --- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
 +++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-@@ -308,7 +308,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
+@@ -310,7 +310,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
    // document (which is implemented in WorkerMessagingProxy, and
    // m_contentSecurityPolicy should be left as nullptr to inherit the policy).
    if (!response.CurrentRequestUrl().ProtocolIs("blob") &&

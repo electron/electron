@@ -1,22 +1,25 @@
 'use strict'
 
+import { createLazyInstance } from '../utils'
+
 const { EventEmitter } = require('events')
-const { powerMonitor, PowerMonitor } = process.electronBinding('power_monitor')
+const { createPowerMonitor, PowerMonitor } = process.electronBinding('power_monitor')
 const { deprecate } = require('electron')
 
 // PowerMonitor is an EventEmitter.
 Object.setPrototypeOf(PowerMonitor.prototype, EventEmitter.prototype)
-EventEmitter.call(powerMonitor)
+
+const powerMonitor = createLazyInstance(createPowerMonitor, PowerMonitor, true)
 
 // On Linux we need to call blockShutdown() to subscribe to shutdown event.
 if (process.platform === 'linux') {
-  powerMonitor.on('newListener', (event) => {
+  powerMonitor.on('newListener', (event:string) => {
     if (event === 'shutdown' && powerMonitor.listenerCount('shutdown') === 0) {
       powerMonitor.blockShutdown()
     }
   })
 
-  powerMonitor.on('removeListener', (event) => {
+  powerMonitor.on('removeListener', (event: string) => {
     if (event === 'shutdown' && powerMonitor.listenerCount('shutdown') === 0) {
       powerMonitor.unblockShutdown()
     }
@@ -24,30 +27,21 @@ if (process.platform === 'linux') {
 }
 
 // TODO(nitsakh): Remove in 7.0
-powerMonitor.querySystemIdleState = function (threshold, callback) {
+powerMonitor.querySystemIdleState = function (threshold: number, callback: Function) {
   deprecate.warn('powerMonitor.querySystemIdleState', 'powerMonitor.getSystemIdleState')
-  if (typeof threshold !== 'number') {
-    throw new Error('Must pass threshold as a number')
-  }
-
-  if (typeof callback !== 'function') {
-    throw new Error('Must pass callback as a function argument')
-  }
+  if (typeof threshold !== 'number') throw new Error('Must pass threshold as a number')
+  if (typeof callback !== 'function') throw new Error('Must pass callback as a function argument')
 
   const idleState = this.getSystemIdleState(threshold)
-
   process.nextTick(() => callback(idleState))
 }
 
 // TODO(nitsakh): Remove in 7.0
-powerMonitor.querySystemIdleTime = function (callback) {
+powerMonitor.querySystemIdleTime = function (callback: Function) {
   deprecate.warn('powerMonitor.querySystemIdleTime', 'powerMonitor.getSystemIdleTime')
-  if (typeof callback !== 'function') {
-    throw new Error('Must pass function as an argument')
-  }
+  if (typeof callback !== 'function') throw new Error('Must pass function as an argument')
 
   const idleTime = this.getSystemIdleTime()
-
   process.nextTick(() => callback(idleTime))
 }
 

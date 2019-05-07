@@ -24,6 +24,7 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
+#include "services/network/public/cpp/resource_request.h"
 #include "storage/browser/blob/upload_blob_element_reader.h"
 
 namespace mate {
@@ -210,7 +211,8 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     if (localVal->IsArray()) {
       auto values = v8::Local<v8::Array>::Cast(localVal);
       for (uint32_t j = 0; j < values->Length(); j++) {
-        if (!addHeaderFromValue(key, values->Get(j))) {
+        if (!addHeaderFromValue(key,
+                                values->Get(context, j).ToLocalChecked())) {
           return false;
         }
       }
@@ -221,6 +223,22 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     }
   }
   return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
+    v8::Isolate* isolate,
+    const network::ResourceRequest& val) {
+  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  dict.Set("method", val.method);
+  dict.Set("url", val.url.spec());
+  dict.Set("referrer", val.referrer.spec());
+  mate::Dictionary headers(isolate, v8::Object::New(isolate));
+  for (net::HttpRequestHeaders::Iterator it(val.headers); it.GetNext();)
+    headers.Set(it.name(), it.value());
+  dict.Set("headers", headers);
+  // FIXME(zcbenz): Figure out how to support uploadData.
+  return dict.GetHandle();
 }
 
 }  // namespace mate

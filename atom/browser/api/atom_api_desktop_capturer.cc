@@ -165,8 +165,12 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       std::vector<std::string> device_names;
       // Crucially, this list of device names will be in the same order as
       // |media_list_sources|.
-      webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
-          &device_names);
+      if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
+              &device_names)) {
+        Emit("error", "Failed to get sources.");
+        return;
+      }
+
       int device_name_index = 0;
       for (auto& source : screen_sources) {
         const auto& device_name = device_names[device_name_index++];
@@ -222,7 +226,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("desktopCapturer", atom::api::DesktopCapturer::Create(isolate));
+  dict.SetMethod("createDesktopCapturer", &atom::api::DesktopCapturer::Create);
 }
 
 }  // namespace

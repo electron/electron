@@ -338,3 +338,7 @@ printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
   return nullptr;
 #endif
 }
+
+StartupData* BrowserProcessImpl::startup_data() {
+  return nullptr;
+}

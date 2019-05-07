@@ -4,6 +4,9 @@
 
 #import "atom/browser/api/atom_api_menu_mac.h"
 
+#include <string>
+#include <utility>
+
 #include "atom/browser/native_window.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/common/node_includes.h"
@@ -41,10 +44,11 @@ void MenuMac::PopupAt(TopLevelWindow* window,
   if (!native_window)
     return;
 
-  auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                          native_window->GetWeakPtr(), window->weak_map_id(), x,
-                          y, positioning_item, callback);
-  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, popup);
+  auto popup =
+      base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
+                     native_window->GetWeakPtr(), window->weak_map_id(), x, y,
+                     positioning_item, callback);
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, std::move(popup));
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
@@ -57,11 +61,11 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
-  auto close_callback = base::Bind(
+  auto close_callback = base::BindRepeating(
       &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
-  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>([
-      [AtomMenuController alloc] initWithModel:model()
-                         useDefaultAccelerator:NO]);
+  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
+      [[AtomMenuController alloc] initWithModel:model()
+                          useDefaultAccelerator:NO]);
   NSMenu* menu = [popup_controllers_[window_id] menu];
   NSView* view = [nswindow contentView];
 
@@ -135,9 +139,9 @@ void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
 // static
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  base::scoped_nsobject<AtomMenuController> menu_controller([
-      [AtomMenuController alloc] initWithModel:menu->model_.get()
-                         useDefaultAccelerator:YES]);
+  base::scoped_nsobject<AtomMenuController> menu_controller(
+      [[AtomMenuController alloc] initWithModel:menu->model_.get()
+                          useDefaultAccelerator:YES]);
 
   NSRunLoop* currentRunLoop = [NSRunLoop currentRunLoop];
   [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)

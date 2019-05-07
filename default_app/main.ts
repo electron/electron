@@ -98,9 +98,9 @@ function loadApplicationPackage (packagePath: string) {
         app.setVersion(packageJson.version)
       }
       if (packageJson.productName) {
-        app.setName(packageJson.productName)
+        app.name = packageJson.productName
       } else if (packageJson.name) {
-        app.setName(packageJson.name)
+        app.name = packageJson.name
       }
       app._setDefaultAppPaths(packagePath)
     }

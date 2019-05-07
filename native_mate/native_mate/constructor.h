@@ -6,8 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_WRAPPABLE_CLASS_H_
-#define NATIVE_MATE_WRAPPABLE_CLASS_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_CONSTRUCTOR_H_
+#define NATIVE_MATE_NATIVE_MATE_CONSTRUCTOR_H_
 
 #include "base/bind.h"
 #include "native_mate/function_template.h"
@@ -150,4 +150,4 @@ void InvokeNew(const base::Callback<Sig>& factory,
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_WRAPPABLE_CLASS_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_CONSTRUCTOR_H_

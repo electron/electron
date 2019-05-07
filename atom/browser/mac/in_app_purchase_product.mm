@@ -4,6 +4,10 @@
 
 #include "atom/browser/mac/in_app_purchase_product.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
@@ -140,8 +144,8 @@
 
     if (product.priceLocale != nil) {
       productStruct.formattedPrice =
-          [[self formatPrice:product.price withLocal:product.priceLocale]
-              UTF8String];
+          [[self formatPrice:product.price
+                   withLocal:product.priceLocale] UTF8String];
     }
   }
 

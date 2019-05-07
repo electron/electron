@@ -40,7 +40,7 @@ class StreamSubscriber
   friend class base::RefCountedDeleteOnSequence<StreamSubscriber>;
 
   using JSHandlersMap = std::map<std::string, v8::Global<v8::Value>>;
-  using EventCallback = base::Callback<void(mate::Arguments* args)>;
+  using EventCallback = base::RepeatingCallback<void(mate::Arguments* args)>;
 
   ~StreamSubscriber();
 

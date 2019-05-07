@@ -76,22 +76,23 @@ void PdfViewerHandler::SetPdfResourceStream(content::StreamInfo* stream) {
 
 void PdfViewerHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
-      "initialize",
-      base::Bind(&PdfViewerHandler::Initialize, base::Unretained(this)));
+      "initialize", base::BindRepeating(&PdfViewerHandler::Initialize,
+                                        base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
-      "getDefaultZoom",
-      base::Bind(&PdfViewerHandler::GetInitialZoom, base::Unretained(this)));
+      "getDefaultZoom", base::BindRepeating(&PdfViewerHandler::GetInitialZoom,
+                                            base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
-      "getInitialZoom",
-      base::Bind(&PdfViewerHandler::GetInitialZoom, base::Unretained(this)));
+      "getInitialZoom", base::BindRepeating(&PdfViewerHandler::GetInitialZoom,
+                                            base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setZoom",
-      base::Bind(&PdfViewerHandler::SetZoom, base::Unretained(this)));
+      base::BindRepeating(&PdfViewerHandler::SetZoom, base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
-      "getStrings",
-      base::Bind(&PdfViewerHandler::GetStrings, base::Unretained(this)));
+      "getStrings", base::BindRepeating(&PdfViewerHandler::GetStrings,
+                                        base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
-      "reload", base::Bind(&PdfViewerHandler::Reload, base::Unretained(this)));
+      "reload",
+      base::BindRepeating(&PdfViewerHandler::Reload, base::Unretained(this)));
 }
 
 void PdfViewerHandler::OnJavascriptAllowed() {
@@ -121,7 +122,7 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
 
   auto zoom_controller =
       WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
-  zoom_controller->SetZoomMode(WebContentsZoomController::ZOOM_MODE_MANUAL);
+  zoom_controller->SetZoomMode(WebContentsZoomController::ZoomMode::MANUAL);
   zoom_controller->SetZoomLevel(0);
 }
 

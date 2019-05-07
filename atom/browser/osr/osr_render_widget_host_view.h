@@ -131,7 +131,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const content::TextInputState& params) override;
   void ImeCancelComposition(void) override;
-  void RenderProcessGone(base::TerminationStatus, int) override;
+  void RenderProcessGone() override;
   void Destroy(void) override;
   void SetTooltipText(const base::string16&) override;
   content::CursorManager* GetCursorManager() override;

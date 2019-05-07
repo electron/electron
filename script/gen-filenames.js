@@ -56,8 +56,12 @@ const main = async () => {
     child.stdout.on('data', chunk => {
       output += chunk.toString()
     })
+    child.stderr.on('data', chunk => console.error(chunk.toString()))
     await new Promise((resolve, reject) => child.on('exit', (code) => {
-      if (code !== 0) return reject(new Error(`Failed to list browserify dependencies for entry: ${browserifyTarget.name}`))
+      if (code !== 0) {
+        console.error(output)
+        return reject(new Error(`Failed to list browserify dependencies for entry: ${browserifyTarget.name}`))
+      }
 
       resolve()
     }))

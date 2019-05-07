@@ -33,6 +33,6 @@
   },
   "optionalDependencies": {
     "abstract-socket": "github:nornagon/node-abstractsocket#v8-compat",
-    "robotjs": "github:nornagon/robotjs#node-12"
+    "robotjs": "github:octalmage/robotjs#d870ddb486e893361e10d23d32c95c9d2b4710c9"
   }
 }

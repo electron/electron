@@ -230,6 +230,29 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
   return S_OK;
 }
 
+std::string OpenExternalOnWorkerThread(
+    const GURL& url,
+    const platform_util::OpenExternalOptions& options) {
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::MAY_BLOCK);
+  // Quote the input scheme to be sure that the command does not have
+  // parameters unexpected by the external program. This url should already
+  // have been escaped.
+  std::string escaped_url = url.spec();
+  escaped_url.insert(0, "\"");
+  escaped_url += "\"";
+
+  std::string working_dir = options.working_dir.AsUTF8Unsafe();
+
+  if (reinterpret_cast<ULONG_PTR>(
+          ShellExecuteA(nullptr, "open", escaped_url.c_str(), nullptr,
+                        working_dir.empty() ? nullptr : working_dir.c_str(),
+                        SW_SHOWNORMAL)) <= 32) {
+    return "Failed to open";
+  }
+  return "";
+}
+
 void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::MAY_BLOCK);
@@ -301,31 +324,15 @@ bool OpenItem(const base::FilePath& full_path) {
     return ui::win::OpenFileViaShell(full_path);
 }
 
-bool OpenExternal(const base::string16& url,
-                  const OpenExternalOptions& options) {
-  // Quote the input scheme to be sure that the command does not have
-  // parameters unexpected by the external program. This url should already
-  // have been escaped.
-  base::string16 escaped_url = L"\"" + url + L"\"";
-  auto working_dir = options.working_dir.value();
-
-  if (reinterpret_cast<ULONG_PTR>(
-          ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
-                        working_dir.empty() ? nullptr : working_dir.c_str(),
-                        SW_SHOWNORMAL)) <= 32) {
-    // We fail to execute the call. We could display a message to the user.
-    // TODO(nsylvain): we should also add a dialog to warn on errors. See
-    // bug 1136923.
-    return false;
-  }
-  return true;
-}
-
-void OpenExternal(const base::string16& url,
+void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenExternalCallback callback) {
-  // TODO(gabriel): Implement async open if callback is specified
-  std::move(callback).Run(OpenExternal(url, options) ? "" : "Failed to open");
+  base::PostTaskAndReplyWithResult(
+      base::CreateCOMSTATaskRunnerWithTraits(
+          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+          .get(),
+      FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
+      std::move(callback));
 }
 
 bool MoveItemToTrash(const base::FilePath& path) {
@@ -341,7 +348,7 @@ bool MoveItemToTrash(const base::FilePath& path) {
   // Elevation prompt enabled for UAC protected files.  This overrides the
   // SILENT, NO_UI and NOERRORUI flags.
 
-  if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
+  if (base::win::GetVersion() >= base::win::Version::WIN8) {
     // Windows 8 introduces the flag RECYCLEONDELETE and deprecates the
     // ALLOWUNDO in favor of ADDUNDORECORD.
     if (FAILED(pfo->SetOperationFlags(

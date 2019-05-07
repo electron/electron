@@ -5,8 +5,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 ## Candidates
 
 * `app` module
-  * `badgeCount`
-  * `name`
   * `dock`
     * `badge`
 * `autoUpdater` module
@@ -32,8 +30,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `DownloadItem` class
   * `savePath`
   * `paused`
-* `NativeImage`
-  * `templateImage`
 * `Session` module
   * `preloads`
 * `SystemPreferences` module
@@ -58,3 +54,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `app` module
   * `accessibilitySupport`
   * `applicationMenu`
+  * `badgeCount`
+  * `name`
+* `NativeImage`
+  * `isMacTemplateImage`

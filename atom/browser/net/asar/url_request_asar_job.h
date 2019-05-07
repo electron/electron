@@ -66,10 +66,10 @@ class URLRequestAsarJob : public net::URLRequestJob {
 
  private:
   // The type of this job.
-  enum JobType {
-    TYPE_ERROR,
-    TYPE_ASAR,
-    TYPE_FILE,
+  enum class JobType {
+    kError,
+    kAsar,
+    kFile,
   };
 
   // Meta information about the file. It's used as a member in the
@@ -111,7 +111,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // Callback after data is asynchronously read from the file into |buf|.
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
 
-  JobType type_ = TYPE_ERROR;
+  JobType type_ = JobType::kError;
 
   std::shared_ptr<Archive> archive_;
   base::FilePath file_path_;

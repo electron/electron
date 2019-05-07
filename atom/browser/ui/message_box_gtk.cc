@@ -111,13 +111,13 @@ class GtkMessageBox : public NativeWindowObserver {
 
   GtkMessageType GetMessageType(MessageBoxType type) {
     switch (type) {
-      case MESSAGE_BOX_TYPE_INFORMATION:
+      case MessageBoxType::kInformation:
         return GTK_MESSAGE_INFO;
-      case MESSAGE_BOX_TYPE_WARNING:
+      case MessageBoxType::kWarning:
         return GTK_MESSAGE_WARNING;
-      case MESSAGE_BOX_TYPE_QUESTION:
+      case MessageBoxType::kQuestion:
         return GTK_MESSAGE_QUESTION;
-      case MESSAGE_BOX_TYPE_ERROR:
+      case MessageBoxType::kError:
         return GTK_MESSAGE_ERROR;
       default:
         return GTK_MESSAGE_OTHER;
@@ -235,7 +235,7 @@ void ShowMessageBox(NativeWindow* parent,
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, {"OK"}, -1, 0, "Error",
+    GtkMessageBox(nullptr, MessageBoxType::kError, {"OK"}, -1, 0, "Error",
                   base::UTF16ToUTF8(title).c_str(),
                   base::UTF16ToUTF8(content).c_str(), "", false,
                   gfx::ImageSkia())

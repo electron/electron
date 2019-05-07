@@ -157,7 +157,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)performClose:(id)sender {
   if (shell_->title_bar_style() ==
-      atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER) {
+      atom::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER) {
     [[self delegate] windowShouldClose:self];
   } else if (shell_->IsSimpleFullScreen()) {
     if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
@@ -182,7 +182,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)performMiniaturize:(id)sender {
   if (shell_->title_bar_style() ==
-      atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
+      atom::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER)
     [self miniaturize:self];
   else
     [super performMiniaturize:sender];

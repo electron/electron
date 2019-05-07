@@ -289,6 +289,27 @@ describe('BrowserWindow module', () => {
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
+    it('should return a promise', () => {
+      const p = w.loadURL('about:blank')
+      expect(p).to.have.property('then')
+    })
+
+    it('should return a promise that resolves', async () => {
+      expect(w.loadURL('about:blank')).to.eventually.be.fulfilled()
+    })
+
+    it('should return a promise that rejects on a load failure', async () => {
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
+      const p = w.loadURL(`data:image/png;base64,${data}`)
+      await expect(p).to.eventually.be.rejected()
+    })
+
+    it('should return a promise that resolves even if pushState occurs during navigation', async () => {
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
+      const p = w.loadURL('data:text/html,<script>window.history.pushState({}, "/foo")</script>')
+      await expect(p).to.eventually.be.fulfilled()
+    })
+
     describe('POST navigations', () => {
       afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
 
@@ -547,19 +568,6 @@ describe('BrowserWindow module', () => {
       expect(image.isEmpty()).to.be.true()
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('returns a Promise with a Buffer (callback)', (done) => {
-      w.capturePage({
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 100
-      }, (image) => {
-        expect(image.isEmpty()).to.be.true()
-        done()
-      })
-    })
-
     it('preserves transparency', async () => {
       const w = await openTheWindow({
         show: false,
@@ -578,30 +586,6 @@ describe('BrowserWindow module', () => {
       // Check the 25th byte in the PNG.
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6)
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('preserves transparency (callback)', (done) => {
-      openTheWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        transparent: true
-      }).then(w => {
-        const p = emittedOnce(w, 'ready-to-show')
-        w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
-        p.then(() => {
-          w.show()
-
-          w.capturePage((image) => {
-            const imgBuffer = image.toPNG()
-            // Check the 25th byte in the PNG.
-            // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
-            expect(imgBuffer[25]).to.equal(6)
-            done()
-          })
-        })
-      })
     })
   })
 
@@ -1370,7 +1354,6 @@ describe('BrowserWindow module', () => {
           const leakResult = emittedOnce(ipcMain, 'leak-result')
           w.loadFile(path.join(fixtures, 'api', 'no-leak.html'))
           const [, result] = await leakResult
-          console.log(result)
           expect(result).to.have.property('require', 'undefined')
           expect(result).to.have.property('exports', 'undefined')
           expect(result).to.have.property('windowExports', 'undefined')
@@ -3096,13 +3079,14 @@ describe('BrowserWindow module', () => {
       w.destroy()
       w = new BrowserWindow()
       w.webContents.once('did-finish-load', () => {
-        w.once('enter-full-screen', () => {
-          w.once('leave-html-full-screen', () => {
-            done()
+        w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true).then(() => {
+          w.once('enter-full-screen', () => {
+            w.once('leave-html-full-screen', () => {
+              done()
+            })
+            w.setFullScreen(false)
           })
-          w.setFullScreen(false)
         })
-        w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true)
       })
       w.loadURL('about:blank')
     })
@@ -3265,7 +3249,7 @@ describe('BrowserWindow module', () => {
             const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
             UI.inspectorView.showPanel(lastPanelId)
           }
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false, () => {
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
             showPanelTimeoutId = setTimeout(show, 100)
           })
         }
@@ -3466,47 +3450,22 @@ describe('BrowserWindow module', () => {
       URIError
     ])
 
-    it('doesnt throw when no calback is provided', () => {
-      const result = ipcRenderer.sendSync('executeJavaScript', code, false)
-      assert.strictEqual(result, 'success')
-    })
-    it('returns result when calback is provided', (done) => {
-      ipcRenderer.send('executeJavaScript', code, true)
-      ipcRenderer.once('executeJavaScript-response', function (event, result) {
-        assert.strictEqual(result, expected)
-        done()
-      })
-    })
-    it('returns result if the code returns an asyncronous promise', (done) => {
-      ipcRenderer.send('executeJavaScript', asyncCode, true)
-      ipcRenderer.once('executeJavaScript-response', (event, result) => {
-        assert.strictEqual(result, expected)
-        done()
-      })
-    })
-    it('resolves the returned promise with the result when a callback is specified', (done) => {
-      ipcRenderer.send('executeJavaScript', code, true)
-      ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
-        assert.strictEqual(result, expected)
-        done()
-      })
-    })
-    it('resolves the returned promise with the result when no callback is specified', (done) => {
-      ipcRenderer.send('executeJavaScript', code, false)
+    it('resolves the returned promise with the result', (done) => {
+      ipcRenderer.send('executeJavaScript', code)
       ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
         assert.strictEqual(result, expected)
         done()
       })
     })
     it('resolves the returned promise with the result if the code returns an asyncronous promise', (done) => {
-      ipcRenderer.send('executeJavaScript', asyncCode, true)
+      ipcRenderer.send('executeJavaScript', asyncCode)
       ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
         assert.strictEqual(result, expected)
         done()
       })
     })
     it('rejects the returned promise if an async error is thrown', (done) => {
-      ipcRenderer.send('executeJavaScript', badAsyncCode, true)
+      ipcRenderer.send('executeJavaScript', badAsyncCode)
       ipcRenderer.once('executeJavaScript-promise-error', (event, error) => {
         assert.strictEqual(error, expectedErrorMsg)
         done()
@@ -3515,7 +3474,7 @@ describe('BrowserWindow module', () => {
     it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
       for (const error in errorTypes) {
         await new Promise((resolve) => {
-          ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`, true)
+          ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`)
           ipcRenderer.once('executeJavaScript-promise-error-name', (event, name) => {
             assert.strictEqual(name, error.name)
             resolve()
@@ -3523,6 +3482,7 @@ describe('BrowserWindow module', () => {
         })
       }
     })
+
     it('works after page load and during subframe load', (done) => {
       w.webContents.once('did-finish-load', () => {
         // initiate a sub-frame load, then try and execute script during it
@@ -3530,23 +3490,25 @@ describe('BrowserWindow module', () => {
           var iframe = document.createElement('iframe')
           iframe.src = '${server.url}/slow'
           document.body.appendChild(iframe)
-        `, () => {
-          w.webContents.executeJavaScript('console.log(\'hello\')', () => {
+        `).then(() => {
+          w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
             done()
           })
         })
       })
       w.loadURL(server.url)
     })
+
     it('executes after page load', (done) => {
-      w.webContents.executeJavaScript(code, (result) => {
+      w.webContents.executeJavaScript(code).then(result => {
         assert.strictEqual(result, expected)
         done()
       })
       w.loadURL(server.url)
     })
+
     it('works with result objects that have DOM class prototypes', (done) => {
-      w.webContents.executeJavaScript('document.location', (result) => {
+      w.webContents.executeJavaScript('document.location').then(result => {
         assert.strictEqual(result.origin, server.url)
         assert.strictEqual(result.protocol, 'http:')
         done()

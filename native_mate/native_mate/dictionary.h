@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_DICTIONARY_H_
-#define NATIVE_MATE_DICTIONARY_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_
+#define NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_
 
 #include "native_mate/converter.h"
 #include "native_mate/object_template_builder.h"
@@ -104,11 +104,12 @@ class Dictionary {
 
   template <typename T>
   bool SetMethod(const base::StringPiece& key, const T& callback) {
-    return GetHandle()->Set(
-        StringToV8(isolate_, key),
-        CallbackTraits<T>::CreateTemplate(isolate_, callback)
-            ->GetFunction(isolate_->GetCurrentContext())
-            .ToLocalChecked());
+    return GetHandle()
+        ->Set(isolate_->GetCurrentContext(), StringToV8(isolate_, key),
+              CallbackTraits<T>::CreateTemplate(isolate_, callback)
+                  ->GetFunction(isolate_->GetCurrentContext())
+                  .ToLocalChecked())
+        .ToChecked();
   }
 
   bool Delete(const base::StringPiece& key) {
@@ -140,4 +141,4 @@ struct Converter<Dictionary> {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_DICTIONARY_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_DICTIONARY_H_

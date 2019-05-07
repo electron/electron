@@ -204,6 +204,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     v8::Isolate* isolate,
     const base::ListValue* val) const {
   v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
+  auto context = isolate->GetCurrentContext();
 
   for (size_t i = 0; i < val->GetSize(); ++i) {
     const base::Value* child = nullptr;
@@ -212,7 +213,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, child);
 
     v8::TryCatch try_catch(isolate);
-    result->Set(static_cast<uint32_t>(i), child_v8);
+    result->Set(context, static_cast<uint32_t>(i), child_v8).Check();
     if (try_catch.HasCaught())
       LOG(ERROR) << "Setter for index " << i << " threw an exception.";
   }
@@ -330,9 +331,10 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8ValueImpl(
   if (val->IsDate()) {
     v8::Date* date = v8::Date::Cast(*val);
     v8::Local<v8::Value> toISOString =
-        date->Get(v8::String::NewFromUtf8(isolate, "toISOString",
-                                          v8::NewStringType::kNormal)
-                      .ToLocalChecked());
+        date->Get(context, v8::String::NewFromUtf8(isolate, "toISOString",
+                                                   v8::NewStringType::kNormal)
+                               .ToLocalChecked())
+            .ToLocalChecked();
     if (toISOString->IsFunction()) {
       v8::MaybeLocal<v8::Value> result =
           toISOString.As<v8::Function>()->Call(context, val, 0, nullptr);

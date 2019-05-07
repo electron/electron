@@ -100,7 +100,7 @@ async function createRelease (branchToTarget, isBeta) {
     }
     releaseIsPrelease = true
   } else {
-    releaseBody = releaseNotes
+    releaseBody = releaseNotes.text
   }
 
   const release = await octokit.repos.createRelease({

@@ -92,8 +92,8 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   }
 
   atom::ShowMessageBox(
-      window, atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, default_id,
-      cancel_id, atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
+      window, atom::MessageBoxType::kNone, buttons, default_id, cancel_id,
+      atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
       base::UTF16ToUTF8(message_text), "", checkbox, false, gfx::ImageSkia(),
       base::Bind(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
                  base::Unretained(this), base::Passed(std::move(callback)),

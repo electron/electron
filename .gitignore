@@ -37,7 +37,7 @@
 /vendor/pyyaml
 node_modules/
 SHASUMS256.txt
-**/yarn.lock
+**/package-lock.json
 compile_commands.json
 .envrc
 

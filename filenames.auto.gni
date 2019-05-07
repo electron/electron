@@ -11,12 +11,14 @@ auto_filenames = {
     "docs/api/chrome-command-line-switches.md",
     "docs/api/client-request.md",
     "docs/api/clipboard.md",
+    "docs/api/command-line.md",
     "docs/api/content-tracing.md",
     "docs/api/cookies.md",
     "docs/api/crash-reporter.md",
     "docs/api/debugger.md",
     "docs/api/desktop-capturer.md",
     "docs/api/dialog.md",
+    "docs/api/dock.md",
     "docs/api/download-item.md",
     "docs/api/environment-variables.md",
     "docs/api/file-object.md",
@@ -116,9 +118,9 @@ auto_filenames = {
     "lib/common/api/is-promise.js",
     "lib/common/api/module-list.js",
     "lib/common/api/native-image.js",
-    "lib/common/atom-binding-setup.ts",
     "lib/common/buffer-utils.js",
     "lib/common/crash-reporter.js",
+    "lib/common/electron-binding-setup.ts",
     "lib/common/error-utils.js",
     "lib/common/web-view-methods.js",
     "lib/renderer/api/crash-reporter.js",
@@ -152,7 +154,7 @@ auto_filenames = {
   ]
 
   isolated_browserify_deps = [
-    "lib/common/atom-binding-setup.ts",
+    "lib/common/electron-binding-setup.ts",
     "lib/isolated_renderer/init.js",
     "lib/renderer/ipc-renderer-internal.ts",
     "lib/renderer/web-view/web-view-element.ts",
@@ -163,7 +165,7 @@ auto_filenames = {
   ]
 
   context_script_browserify_deps = [
-    "lib/common/atom-binding-setup.ts",
+    "lib/common/electron-binding-setup.ts",
     "lib/common/error-utils.js",
     "lib/content_script/init.js",
     "lib/renderer/chrome-api.ts",

@@ -748,7 +748,7 @@ content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
 
 void AtomBrowserClient::WebNotificationAllowed(
     int render_process_id,
-    const base::Callback<void(bool, bool)>& callback) {
+    const base::RepeatingCallback<void(bool, bool)>& callback) {
   content::WebContents* web_contents =
       WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
   if (!web_contents) {
@@ -794,14 +794,10 @@ void AtomBrowserClient::RenderProcessExited(
 }
 
 void OnOpenExternal(const GURL& escaped_url, bool allowed) {
-  if (allowed)
+  if (allowed) {
     platform_util::OpenExternal(
-#if defined(OS_WIN)
-        base::UTF8ToUTF16(escaped_url.spec()),
-#else
-        escaped_url,
-#endif
-        platform_util::OpenExternalOptions());
+        escaped_url, platform_util::OpenExternalOptions(), base::DoNothing());
+  }
 }
 
 void HandleExternalProtocolInUI(
@@ -924,7 +920,13 @@ std::string AtomBrowserClient::GetProduct() const {
 }
 
 std::string AtomBrowserClient::GetUserAgent() const {
-  return GetApplicationUserAgent();
+  if (user_agent_override_.empty())
+    return GetApplicationUserAgent();
+  return user_agent_override_;
+}
+
+void AtomBrowserClient::SetUserAgent(const std::string& user_agent) {
+  user_agent_override_ = user_agent;
 }
 
 void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
@@ -932,6 +934,24 @@ void AtomBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
+  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+  if (protocol)
+    protocol->RegisterURLLoaderFactories(factories);
+}
+
+void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
+    int render_process_id,
+    int render_frame_id,
+    NonNetworkURLLoaderFactoryMap* factories) {
+  // Chromium may call this even when NetworkService is not enabled.
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
+    return;
+
+  content::RenderFrameHost* frame_host =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
   api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
       v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
   if (protocol)

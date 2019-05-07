@@ -110,7 +110,7 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
   auto callback_key = mate::ConvertToV8(isolate, callback_name)
                           ->ToString(context)
                           .ToLocalChecked();
-  auto callback_value = binding->Get(callback_key);
+  auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
   auto callback = v8::Handle<v8::Function>::Cast(callback_value);
   ignore_result(callback->Call(context, binding, 0, nullptr));
@@ -245,7 +245,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("binding", GetBinding);
+  process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
@@ -267,7 +267,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("binding", GetBinding);
+  process.SetMethod("_linkedBinding", GetBinding);
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),

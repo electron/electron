@@ -64,7 +64,7 @@ config("branding") {
 npm_action("build_electron_definitions") {
   script = "gn-typescript-definitions"
   args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-  inputs = auto_filenames.api_docs + [ "package-lock.json" ]
+  inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
   outputs = [
     "$target_gen_dir/tsc/typings/electron.d.ts",
@@ -436,6 +436,7 @@ static_library("electron_lib") {
     "//content/public/browser",
     "//content/public/child",
     "//content/public/common:service_names",
+    "//content/public/gpu",
     "//content/public/renderer",
     "//content/public/utility",
     "//device/bluetooth",
@@ -1068,6 +1069,7 @@ template("dist_zip") {
                              "deps",
                              "data_deps",
                              "data",
+                             "testonly",
                            ])
     write_runtime_deps = _runtime_deps_file
   }
@@ -1077,7 +1079,11 @@ template("dist_zip") {
     deps = [
       ":$_runtime_deps_target",
     ]
-    forward_variables_from(invoker, [ "outputs" ])
+    forward_variables_from(invoker,
+                           [
+                             "outputs",
+                             "testonly",
+                           ])
     args = rebase_path(outputs + [ _runtime_deps_file ], root_build_dir) + [
              target_cpu,
              target_os,
@@ -1145,6 +1151,7 @@ dist_zip("electron_ffmpeg_zip") {
 }
 
 dist_zip("electron_chromedriver_zip") {
+  testonly = true
   data_deps = [
     "//chrome/test/chromedriver",
     ":licenses",

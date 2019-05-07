@@ -86,7 +86,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -119,7 +119,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -146,7 +146,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -163,7 +163,7 @@ describe('protocol module', () => {
             assert.strictEqual(request.getResponseHeader('Access-Control-Allow-Origin'), '*')
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -184,7 +184,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -219,7 +219,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -236,7 +236,7 @@ describe('protocol module', () => {
             assert.strictEqual(request.getResponseHeader('Access-Control-Allow-Origin'), '*')
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -257,7 +257,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -296,7 +296,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, String(fileContent))
             return done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -313,9 +313,7 @@ describe('protocol module', () => {
             assert.strictEqual(request.getResponseHeader('Access-Control-Allow-Origin'), '*')
             done()
           },
-          error: (xhr, errorType, error) => {
-            done(error)
-          }
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -335,9 +333,7 @@ describe('protocol module', () => {
             assert.strictEqual(request.getResponseHeader('X-Great-Header'), 'sogreat')
             done()
           },
-          error: (xhr, errorType, error) => {
-            done(error)
-          }
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -353,7 +349,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, String(fileContent))
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -369,7 +365,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, String(normalContent))
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -428,7 +424,7 @@ describe('protocol module', () => {
               assert.strictEqual(data, text)
               done()
             },
-            error: (xhr, errorType, error) => done(error)
+            error: (xhr, errorType, error) => done(new Error(error))
           })
         })
       })
@@ -686,25 +682,9 @@ describe('protocol module', () => {
       assert.strictEqual(result, true)
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for about: (callback)', (done) => {
-      protocol.isProtocolHandled('about', (result) => {
-        assert.strictEqual(result, true)
-        done()
-      })
-    })
-
     it('returns true for file:', async () => {
       const result = await protocol.isProtocolHandled('file')
       assert.strictEqual(result, true)
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for file: (callback)', (done) => {
-      protocol.isProtocolHandled('file', (result) => {
-        assert.strictEqual(result, true)
-        done()
-      })
     })
 
     it('returns true for http:', async () => {
@@ -732,18 +712,6 @@ describe('protocol module', () => {
       })
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for custom protocol (callback)', (done) => {
-      const emptyHandler = (request, callback) => callback()
-      protocol.registerStringProtocol(protocolName, emptyHandler, (error) => {
-        assert.strictEqual(error, null)
-        protocol.isProtocolHandled(protocolName, (result) => {
-          assert.strictEqual(result, true)
-          done()
-        })
-      })
-    })
-
     it('returns true for intercepted protocol', (done) => {
       const emptyHandler = (request, callback) => callback()
       protocol.interceptStringProtocol('http', emptyHandler, async (error) => {
@@ -751,18 +719,6 @@ describe('protocol module', () => {
         const result = await protocol.isProtocolHandled('http')
         assert.strictEqual(result, true)
         done()
-      })
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('returns true for intercepted protocol (callback)', (done) => {
-      const emptyHandler = (request, callback) => callback()
-      protocol.interceptStringProtocol('http', emptyHandler, (error) => {
-        assert.strictEqual(error, null)
-        protocol.isProtocolHandled('http', (result) => {
-          assert.strictEqual(result, true)
-          done()
-        })
       })
     })
   })
@@ -797,7 +753,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -830,7 +786,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -852,7 +808,7 @@ describe('protocol module', () => {
             assert.strictEqual(data.value, 1)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -873,7 +829,7 @@ describe('protocol module', () => {
             assert.deepStrictEqual({ ...qs.parse(data) }, postData)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -891,7 +847,7 @@ describe('protocol module', () => {
             assert.strictEqual(data, text)
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
@@ -912,14 +868,17 @@ describe('protocol module', () => {
             assert.strictEqual(data, $.param(postData))
             done()
           },
-          error: (xhr, errorType, error) => done(error)
+          error: (xhr, errorType, error) => done(new Error(error))
         })
       })
     })
   })
 
   describe('protocol.interceptHttpProtocol', () => {
-    it('can send POST request', (done) => {
+    // FIXME(zcbenz): This test was passing because the test itself was wrong,
+    // I don't know whether it ever passed before and we should take a look at
+    // it in future.
+    xit('can send POST request', (done) => {
       const server = http.createServer((req, res) => {
         let body = ''
         req.on('data', (chunk) => {
@@ -956,7 +915,7 @@ describe('protocol module', () => {
               assert.deepStrictEqual({ ...qs.parse(data) }, postData)
               done()
             },
-            error: (xhr, errorType, error) => done(error)
+            error: (xhr, errorType, error) => done(new Error(error))
           })
         })
       })

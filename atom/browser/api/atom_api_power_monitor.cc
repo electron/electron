@@ -37,11 +37,11 @@ namespace api {
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if defined(OS_LINUX)
-  SetShutdownHandler(
-      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
+  SetShutdownHandler(base::BindRepeating(&PowerMonitor::ShouldShutdown,
+                                         base::Unretained(this)));
 #elif defined(OS_MACOSX)
-  Browser::Get()->SetShutdownHandler(
-      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
+  Browser::Get()->SetShutdownHandler(base::BindRepeating(
+      &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);
@@ -101,9 +101,10 @@ int PowerMonitor::GetSystemIdleTime() {
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate,
-        "Cannot require \"powerMonitor\" module before app is ready")));
+    isolate->ThrowException(v8::Exception::Error(
+        mate::StringToV8(isolate,
+                         "The 'powerMonitor' module can't be used before the "
+                         "app 'ready' event")));
     return v8::Null(isolate);
   }
 
@@ -139,7 +140,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("powerMonitor", PowerMonitor::Create(isolate));
+  dict.Set("createPowerMonitor",
+           base::BindRepeating(&PowerMonitor::Create, isolate));
   dict.Set("PowerMonitor", PowerMonitor::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());

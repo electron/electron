@@ -10,7 +10,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/files/file_path.h"
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<base::FilePath> {
@@ -31,6 +31,24 @@ struct Converter<base::FilePath> {
     } else {
       return false;
     }
+  }
+};
+
+}  // namespace gin
+
+namespace mate {
+
+template <>
+struct Converter<base::FilePath> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::FilePath& val) {
+    return gin::Converter<base::FilePath::StringType>::ToV8(isolate,
+                                                            val.value());
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     base::FilePath* out) {
+    return gin::Converter<base::FilePath>::FromV8(isolate, val, out);
   }
 };
 

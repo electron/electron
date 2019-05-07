@@ -4,6 +4,24 @@ import * as path from 'path'
 
 const Module = require('module')
 
+// Make sure globals like "process" and "global" are always available in preload
+// scripts even after they are deleted in "loaded" script.
+//
+// Note 1: We rely on a Node patch to actually pass "process" and "global" and
+// other arguments to the wrapper.
+//
+// Note 2: Node introduced a new code path to use native code to wrap module
+// code, which does not work with this hack. However by modifying the
+// "Module.wrapper" we can force Node to use the old code path to wrap module
+// code with JavaScript.
+Module.wrapper = [
+  '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
+  // By running the code in a new closure, it would be possible for the module
+  // code to override "process" and "Buffer" with local variables.
+  'return function (exports, require, module, __filename, __dirname) { ',
+  '\n}.call(this, exports, require, module, __filename, __dirname); });'
+]
+
 // We modified the original process.argv to let node.js load the
 // init.js, we need to restore it here.
 process.argv.splice(1, 1)
@@ -148,7 +166,7 @@ if (nodeIntegration) {
 
   // Redirect window.onerror to uncaughtException.
   window.onerror = function (_message, _filename, _lineno, _colno, error) {
-    if (global.process.listeners('uncaughtException').length > 0) {
+    if (global.process.listenerCount('uncaughtException') > 0) {
       // We do not want to add `uncaughtException` to our definitions
       // because we don't want anyone else (anywhere) to throw that kind
       // of error.

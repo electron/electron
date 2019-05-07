@@ -28,9 +28,9 @@ StreamSubscriber::StreamSubscriber(
   DCHECK(ui_task_runner->RunsTasksInCurrentSequence());
 
   auto weak_self = weak_factory_.GetWeakPtr();
-  On("data", base::Bind(&StreamSubscriber::OnData, weak_self));
-  On("end", base::Bind(&StreamSubscriber::OnEnd, weak_self));
-  On("error", base::Bind(&StreamSubscriber::OnError, weak_self));
+  On("data", base::BindRepeating(&StreamSubscriber::OnData, weak_self));
+  On("end", base::BindRepeating(&StreamSubscriber::OnEnd, weak_self));
+  On("error", base::BindRepeating(&StreamSubscriber::OnError, weak_self));
 }
 
 StreamSubscriber::~StreamSubscriber() {
@@ -80,20 +80,20 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
   // Pass the data to the URLJob in IO thread.
   std::vector<char> buffer(data, data + length);
   base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
-                           base::Bind(&atom::URLRequestStreamJob::OnData,
-                                      url_job_, base::Passed(&buffer)));
+                           base::BindOnce(&atom::URLRequestStreamJob::OnData,
+                                          url_job_, base::Passed(&buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::IO},
-      base::Bind(&atom::URLRequestStreamJob::OnEnd, url_job_));
+      base::BindOnce(&atom::URLRequestStreamJob::OnEnd, url_job_));
 }
 
 void StreamSubscriber::OnError(mate::Arguments* args) {
   base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
-                           base::Bind(&atom::URLRequestStreamJob::OnError,
-                                      url_job_, net::ERR_FAILED));
+                           base::BindOnce(&atom::URLRequestStreamJob::OnError,
+                                          url_job_, net::ERR_FAILED));
 }
 
 void StreamSubscriber::RemoveAllListeners() {

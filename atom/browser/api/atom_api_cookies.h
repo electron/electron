@@ -12,7 +12,7 @@
 #include "atom/browser/net/cookie_details.h"
 #include "atom/common/promise_util.h"
 #include "base/callback_list.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
 
 namespace base {
@@ -31,13 +31,8 @@ namespace api {
 
 class Cookies : public mate::TrackableObject<Cookies> {
  public:
-  enum Error {
-    SUCCESS,
-    FAILED,
-  };
-
-  static mate::Handle<Cookies> Create(v8::Isolate* isolate,
-                                      AtomBrowserContext* browser_context);
+  static gin::Handle<Cookies> Create(v8::Isolate* isolate,
+                                     AtomBrowserContext* browser_context);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,

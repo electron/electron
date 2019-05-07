@@ -56,8 +56,8 @@ app.isPackaged = (() => {
 
 app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
-  app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
-  app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
+  app.setPath('userData', path.join(app.getPath('appData'), app.name!))
+  app.setPath('userCache', path.join(app.getPath('cache'), app.name!))
   app.setAppPath(packagePath)
 
   // Add support for --user-data-dir=
@@ -70,12 +70,12 @@ app._setDefaultAppPaths = (packagePath) => {
 }
 
 if (process.platform === 'darwin') {
-  const setDockMenu = app.dock.setMenu
-  app.dock.setMenu = (menu) => {
+  const setDockMenu = app.dock!.setMenu
+  app.dock!.setMenu = (menu) => {
     dockMenu = menu
     setDockMenu(menu)
   }
-  app.dock.getMenu = () => dockMenu
+  app.dock!.getMenu = () => dockMenu
 }
 
 // Routes the events to webContents.
@@ -86,11 +86,10 @@ for (const name of events) {
   })
 }
 
-// Function Deprecations
-app.getFileIcon = deprecate.promisify(app.getFileIcon)
-
 // Property Deprecations
 deprecate.fnToProperty(app, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
+deprecate.fnToProperty(app, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
+deprecate.fnToProperty(app, 'name', '_getName', '_setName')
 
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')

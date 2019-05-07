@@ -1,7 +1,7 @@
 # TraceCategoriesAndOptions Object
 
-* `categoryFilter` String – is a filter to control what category groups
-  should be traced. A filter can have an optional `-` prefix to exclude
+* `categoryFilter` String - A filter to control what category groups
+  should be traced. A filter can have an optional '-' prefix to exclude
   category groups that contain a matching category. Having both included
   and excluded category patterns in the same list is not supported. Examples:
   `test_MyTest*`, `test_MyTest*,test_OtherStuff`, `-excluded_category1,-excluded_category2`.

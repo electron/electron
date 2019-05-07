@@ -93,8 +93,8 @@ void AutofillPopupView::Show() {
   if (initialize_widget)
     views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
 
-  keypress_callback_ = base::Bind(&AutofillPopupView::HandleKeyPressEvent,
-                                  base::Unretained(this));
+  keypress_callback_ = base::BindRepeating(
+      &AutofillPopupView::HandleKeyPressEvent, base::Unretained(this));
   auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
@@ -150,10 +150,10 @@ void AutofillPopupView::OnSelectedRowChanged(
 
   if (current_row_selection) {
     int selected = current_row_selection.value_or(-1);
-    if (selected == -1 || selected >= child_count())
+    if (selected == -1 || static_cast<size_t>(selected) >= children().size())
       return;
-    child_at(selected)->NotifyAccessibilityEvent(ax::mojom::Event::kSelection,
-                                                 true);
+    children().at(selected)->NotifyAccessibilityEvent(
+        ax::mojom::Event::kSelection, true);
   }
 }
 
@@ -232,7 +232,8 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
 }
 
 void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
-  if (!popup_ || popup_->GetLineCount() != child_count())
+  if (!popup_ ||
+      static_cast<size_t>(popup_->GetLineCount()) != children().size())
     return;
   gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
@@ -293,8 +294,8 @@ void AutofillPopupView::OnMouseExited(const ui::MouseEvent& event) {
   // OnMouseExited event. Pressing return should activate the current selection
   // via AcceleratorPressed, so we need to let that run first.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(&AutofillPopupView::ClearSelection,
-                            weak_ptr_factory_.GetWeakPtr()));
+      FROM_HERE, base::BindOnce(&AutofillPopupView::ClearSelection,
+                                weak_ptr_factory_.GetWeakPtr()));
 }
 
 void AutofillPopupView::OnMouseMoved(const ui::MouseEvent& event) {

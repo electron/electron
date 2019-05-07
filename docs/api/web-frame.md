@@ -67,7 +67,7 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 * `language` String
 * `provider` Object
-  * `spellCheck` Function.
+  * `spellCheck` Function
     * `words` String[]
     * `callback` Function
       * `misspeltWords` String[]
@@ -107,24 +107,6 @@ Inserts `css` as a style sheet in the document.
 
 Inserts `text` to the focused element.
 
-### `webFrame.executeJavaScript(code[, userGesture, callback])`
-
-* `code` String
-* `userGesture` Boolean (optional) - Default is `false`.
-* `callback` Function (optional) - Called after script has been executed.
-  * `result` Any
-
-Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
-
-Evaluates `code` in page.
-
-In the browser window some HTML APIs like `requestFullScreen` can only be
-invoked by a gesture from the user. Setting `userGesture` to `true` will remove
-this limitation.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 ### `webFrame.executeJavaScript(code[, userGesture])`
 
 * `code` String
@@ -138,21 +120,6 @@ Evaluates `code` in page.
 In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
-
-### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])`
-
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
-* `scripts` [WebSource[]](structures/web-source.md)
-* `userGesture` Boolean (optional) - Default is `false`.
-* `callback` Function (optional) - Called after script has been executed.
-  * `result` Any
-
-Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
-
-Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 ### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture])`
 

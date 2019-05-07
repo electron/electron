@@ -66,7 +66,7 @@ WebContentsPermissionHelper::~WebContentsPermissionHelper() {}
 
 void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,
-    const base::Callback<void(bool)>& callback,
+    const base::RepeatingCallback<void(bool)>& callback,
     bool user_gesture,
     const base::DictionaryValue* details) {
   auto* rfh = web_contents_->GetMainFrame();
@@ -75,7 +75,7 @@ void WebContentsPermissionHelper::RequestPermission(
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
       permission, rfh, origin, false, details,
-      base::Bind(&OnPermissionResponse, std::move(callback)));
+      base::BindRepeating(&OnPermissionResponse, callback));
 }
 
 bool WebContentsPermissionHelper::CheckPermission(
@@ -121,7 +121,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
-    const base::Callback<void(bool)>& callback) {
+    const base::RepeatingCallback<void(bool)>& callback) {
   RequestPermission(content::PermissionType::NOTIFICATIONS, callback);
 }
 
@@ -129,11 +129,11 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool user_gesture) {
   RequestPermission(
       static_cast<content::PermissionType>(PermissionType::POINTER_LOCK),
-      base::Bind(&OnPointerLockResponse, web_contents_), user_gesture);
+      base::BindRepeating(&OnPointerLockResponse, web_contents_), user_gesture);
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
-    const base::Callback<void(bool)>& callback,
+    const base::RepeatingCallback<void(bool)>& callback,
     bool user_gesture,
     const GURL& url) {
   base::DictionaryValue details;

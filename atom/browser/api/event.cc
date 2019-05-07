@@ -52,7 +52,10 @@ void Event::FrameDeleted(content::RenderFrameHost* rfh) {
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
-  GetWrapper()->Set(StringToV8(isolate, "defaultPrevented"), v8::True(isolate));
+  GetWrapper()
+      ->Set(isolate->GetCurrentContext(),
+            StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
+      .Check();
 }
 
 bool Event::SendReply(const base::ListValue& result) {

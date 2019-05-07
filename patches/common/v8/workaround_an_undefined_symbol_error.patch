@@ -1,7 +1,7 @@
-From 93a2903b1392fe70bccd32db67649487d88985bd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Richard Townsend <richard.townsend@arm.com>
 Date: Wed, 24 Apr 2019 13:57:36 +0100
-Subject: [PATCH] Workaround an undefined symbol error
+Subject: Workaround an undefined symbol error
 
 Previously, builds configured with dcheck_always_on=true would error
 with messages like this in the log:
@@ -10,19 +10,15 @@ with messages like this in the log:
 
 By moving some functions out of the the arm64-assembler header file,
 this error no longer seems to happen.
----
- src/arm64/assembler-arm64.cc | 16 ++++++++++++++++
- src/arm64/assembler-arm64.h  | 17 +++--------------
- 2 files changed, 19 insertions(+), 14 deletions(-)
 
 diff --git a/src/arm64/assembler-arm64.cc b/src/arm64/assembler-arm64.cc
-index 2763a647c7..7d19be5de8 100644
+index eaafa2375b2746fb7a9f63a1fc6703660b2b123c..fa83830f21b068ff79872e5d9eb6031bffd84028 100644
 --- a/src/arm64/assembler-arm64.cc
 +++ b/src/arm64/assembler-arm64.cc
-@@ -4001,6 +4001,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
+@@ -4013,6 +4013,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
         ImmMoveWide(static_cast<int>(imm)) | ShiftMoveWide(shift));
  }
-
+ 
 +Instr Assembler::RmNot31(CPURegister rm) {
 +  DCHECK_NE(rm.code(), kSPRegInternalCode);
 +  DCHECK(!rm.IsZero());
@@ -43,24 +39,24 @@ index 2763a647c7..7d19be5de8 100644
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index 586eff1241..30b8586f69 100644
+index 8614975a1dbe54fe655f5e050742ccc76faa21da..1e0379b851a062c580cb5884176c3d4833ae5ea8 100644
 --- a/src/arm64/assembler-arm64.h
 +++ b/src/arm64/assembler-arm64.h
-@@ -2232,11 +2232,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+@@ -2234,11 +2234,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
      return rm.code() << Rm_offset;
    }
-
+ 
 -  static Instr RmNot31(CPURegister rm) {
 -    DCHECK_NE(rm.code(), kSPRegInternalCode);
 -    DCHECK(!rm.IsZero());
 -    return Rm(rm);
 -  }
 +  static Instr RmNot31(CPURegister rm);
-
+ 
    static Instr Ra(CPURegister ra) {
      DCHECK_NE(ra.code(), kSPRegInternalCode);
-@@ -2260,15 +2256,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
-
+@@ -2262,15 +2258,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+ 
    // These encoding functions allow the stack pointer to be encoded, and
    // disallow the zero register.
 -  static Instr RdSP(Register rd) {
@@ -74,9 +70,6 @@ index 586eff1241..30b8586f69 100644
 -  }
 +  static Instr RdSP(Register rd);
 +  static Instr RnSP(Register rn);
-
+ 
    // Flags encoding.
    inline static Instr Flags(FlagsUpdate S);
---
-2.19.1.windows.1
-

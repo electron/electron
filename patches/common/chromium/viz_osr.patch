@@ -97,11 +97,11 @@ index 93c52d2b928cba6e98723e19b005fb7bd7089a58..4dc645e770a2a039ed8e4ff4de555767
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index bc3f8a7ee8e1ad4d3aa23baf85638eff48158987..e6610ac4289997386ff17b1adeab80672572c3f7 100644
+index 21345740188ebc13aefae524c9fe065168ccaf27..f56d94f8810063d36ee161b87dccfecbe6e3ab85 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -115,6 +115,8 @@ viz_component("service") {
-     "display_embedder/in_process_gpu_memory_buffer_manager.h",
+@@ -116,6 +116,8 @@ viz_component("service") {
+     "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
 +    "display_embedder/software_output_device_proxy.cc",
@@ -109,11 +109,11 @@ index bc3f8a7ee8e1ad4d3aa23baf85638eff48158987..e6610ac4289997386ff17b1adeab8067
      "display_embedder/software_output_surface.cc",
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
-diff --git a/components/viz/service/display_embedder/gpu_display_provider.cc b/components/viz/service/display_embedder/gpu_display_provider.cc
-index 1c79ef0c20e611eaf547dabd9936a59c954c0bb8..a9bf01500052bc1e4fbacc133a7feacd68bf6057 100644
---- a/components/viz/service/display_embedder/gpu_display_provider.cc
-+++ b/components/viz/service/display_embedder/gpu_display_provider.cc
-@@ -19,6 +19,7 @@
+diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
+index 264c56995171182940b223da06b809eebf78e918..cafc117436bdfb5600e5dfbcd2edf21fe505eeea 100644
+--- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
++++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
+@@ -18,6 +18,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl_non_ddl.h"
@@ -121,7 +121,7 @@ index 1c79ef0c20e611eaf547dabd9936a59c954c0bb8..a9bf01500052bc1e4fbacc133a7feacd
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -282,6 +283,19 @@ GpuDisplayProvider::CreateSoftwareOutputDeviceForPlatform(
+@@ -240,6 +241,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -479,10 +479,10 @@ index a339eaa4dc9ccec292b3df9f31adf1ad45119a77..33146bbe7bb01fbe24cea10d79cad274
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
 diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index 997b82c91539a947fefde5671f898ee97b72f3b8..78b70b490fcc92f0d14e1cde08d3eddf7fa1e562 100644
+index f43ad2f0aeeb4e088c087b0c83cbf35aa764dfef..f88fda16a6f6e88d38b3a3e27a7daed8c4c270f8 100644
 --- a/services/viz/privileged/interfaces/compositing/display_private.mojom
 +++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
-@@ -62,12 +62,14 @@ interface DisplayPrivate {
+@@ -73,12 +73,14 @@ interface DisplayPrivate {
  };
  
  interface DisplayClient {
@@ -510,7 +510,7 @@ index 360cab3eee4c5189a55269d76daa1d78a98ed3d3..6834242f23d27fd6d428c2cd6040206a
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 102c2fcef1124058edc74ab329fa7a073dceef13..2794f5bad7b0ad52a43c044ef2822d4e29aed5ab 100644
+index d1352c059e0ef414e36408648d389b479aab9e28..9326d44cdf9d92b6c7603e8697255b9c204eccf0 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -24,6 +24,7 @@
@@ -519,9 +519,9 @@ index 102c2fcef1124058edc74ab329fa7a073dceef13..2794f5bad7b0ad52a43c044ef2822d4e
  #include "components/viz/common/surfaces/local_surface_id_allocation.h"
 +#include "components/viz/host/host_display_client.h"
  #include "components/viz/host/host_frame_sink_client.h"
+ #include "services/viz/privileged/interfaces/compositing/vsync_parameter_observer.mojom-forward.h"
  #include "third_party/skia/include/core/SkColor.h"
- #include "third_party/skia/include/core/SkMatrix44.h"
-@@ -194,6 +195,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -199,6 +200,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual bool SyncTokensRequiredForDisplayCompositor() = 0;
  };
  
@@ -537,7 +537,7 @@ index 102c2fcef1124058edc74ab329fa7a073dceef13..2794f5bad7b0ad52a43c044ef2822d4e
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -236,6 +246,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -238,6 +248,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -547,7 +547,7 @@ index 102c2fcef1124058edc74ab329fa7a073dceef13..2794f5bad7b0ad52a43c044ef2822d4e
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -460,6 +473,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -463,6 +476,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    ui::ContextFactory* context_factory_;
    ui::ContextFactoryPrivate* context_factory_private_;
  
@@ -557,10 +557,10 @@ index 102c2fcef1124058edc74ab329fa7a073dceef13..2794f5bad7b0ad52a43c044ef2822d4e
    Layer* root_layer_ = nullptr;
  
 diff --git a/ui/compositor/host/host_context_factory_private.cc b/ui/compositor/host/host_context_factory_private.cc
-index 2b23ed42a93399127cb9e67623fafd51c6bdb003..c934258b5de8fa6758bd8d118126b97bbe61ac30 100644
+index f8b1e4b8c64809bf3b151f0578e3bfe6f5b2d6b6..d866753c01bce623c45435fc01cfbac3841afc90 100644
 --- a/ui/compositor/host/host_context_factory_private.cc
 +++ b/ui/compositor/host/host_context_factory_private.cc
-@@ -69,8 +69,12 @@ void HostContextFactoryPrivate::ConfigureCompositor(
+@@ -70,8 +70,12 @@ void HostContextFactoryPrivate::ConfigureCompositor(
        mojo::MakeRequest(&root_params->compositor_frame_sink_client);
    root_params->display_private =
        mojo::MakeRequest(&compositor_data.display_private);

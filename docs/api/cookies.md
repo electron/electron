@@ -81,26 +81,6 @@ Returns `Promise<Cookie[]>` - A promise which resolves an array of cookie object
 Sends a request to get all cookies matching `filter`, and resolves a promise with
 the response.
 
-#### `cookies.get(filter, callback)`
-
-* `filter` Object
-  * `url` String (optional) - Retrieves cookies which are associated with
-    `url`. Empty implies retrieving cookies of all urls.
-  * `name` String (optional) - Filters cookies by name.
-  * `domain` String (optional) - Retrieves cookies whose domains match or are
-    subdomains of `domains`.
-  * `path` String (optional) - Retrieves cookies whose path matches `path`.
-  * `secure` Boolean (optional) - Filters cookies by their Secure property.
-  * `session` Boolean (optional) - Filters out session or persistent cookies.
-* `callback` Function
-  * `error` Error
-  * `cookies` [Cookie[]](structures/cookie.md) - an array of cookie objects.
-
-Sends a request to get all cookies matching `filter`, `callback` will be called
-with `callback(error, cookies)` on complete.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `cookies.set(details)`
 
 * `details` Object
@@ -121,29 +101,6 @@ Returns `Promise<void>` - A promise which resolves when the cookie has been set
 
 Sets a cookie with `details`.
 
-#### `cookies.set(details, callback)`
-
-* `details` Object
-  * `url` String - The url to associate the cookie with.
-  * `name` String (optional) - The name of the cookie. Empty by default if omitted.
-  * `value` String (optional) - The value of the cookie. Empty by default if omitted.
-  * `domain` String (optional) - The domain of the cookie. Empty by default if omitted.
-  * `path` String (optional) - The path of the cookie. Empty by default if omitted.
-  * `secure` Boolean (optional) - Whether the cookie should be marked as Secure. Defaults to
-    false.
-  * `httpOnly` Boolean (optional) - Whether the cookie should be marked as HTTP only.
-    Defaults to false.
-  * `expirationDate` Double (optional) - The expiration date of the cookie as the number of
-    seconds since the UNIX epoch. If omitted then the cookie becomes a session
-    cookie and will not be retained between sessions.
-* `callback` Function
-  * `error` Error
-
-Sets a cookie with `details`, `callback` will be called with `callback(error)`
-on complete.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `cookies.remove(url, name)`
 
 * `url` String - The URL associated with the cookie.
@@ -153,27 +110,8 @@ Returns `Promise<void>` - A promise which resolves when the cookie has been remo
 
 Removes the cookies matching `url` and `name`
 
-#### `cookies.remove(url, name, callback)`
-
-* `url` String - The URL associated with the cookie.
-* `name` String - The name of cookie to remove.
-* `callback` Function
-
-Removes the cookies matching `url` and `name`, `callback` will called with
-`callback()` on complete.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `cookies.flushStore()`
 
 Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed
 
 Writes any unwritten cookies data to disk.
-
-#### `cookies.flushStore(callback)`
-
-* `callback` Function
-
-Writes any unwritten cookies data to disk.
-
-**[Deprecated Soon](modernization/promisification.md)**

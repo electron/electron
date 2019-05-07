@@ -1,7 +1,7 @@
 import * as timers from 'timers'
 import * as util from 'util'
 
-import { electronBindingSetup } from '@electron/internal/common/atom-binding-setup'
+import { electronBindingSetup } from '@electron/internal/common/electron-binding-setup'
 
 process.electronBinding = electronBindingSetup(process._linkedBinding, process.type)
 

@@ -141,9 +141,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `options` Object (optional)
   * `width` Integer (optional) - Window's width in pixels. Default is `800`.
   * `height` Integer (optional) - Window's height in pixels. Default is `600`.
-  * `x` Integer (optional) (**required** if y is used) - Window's left offset from screen.
+  * `x` Integer (optional) - (**required** if y is used) Window's left offset from screen.
     Default is to center the window.
-  * `y` Integer (optional) (**required** if x is used) - Window's top offset from screen.
+  * `y` Integer (optional) - (**required** if x is used) Window's top offset from screen.
     Default is to center the window.
   * `useContentSize` Boolean (optional) - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
@@ -1221,18 +1221,6 @@ Returns `Boolean` - Whether the window's document has been edited.
 
 #### `win.blurWebView()`
 
-#### `win.capturePage([rect, ]callback)`
-
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
-* `callback` Function
-  * `image` [NativeImage](native-image.md)
-
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of [NativeImage](native-image.md)
-that stores data of the snapshot. Omitting `rect` will capture the whole visible page.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `win.capturePage([rect])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
@@ -1330,7 +1318,7 @@ Change to indeterminate mode when progress > 1.
 
 On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `app.getName().desktop`.
+it will assume `{app.name}.desktop`.
 
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
@@ -1616,7 +1604,7 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md). Attach browserView to win.
+* `browserView` [BrowserView](browser-view.md) - Attach browserView to win.
 If there is some other browserViews was attached they will be removed from
 this window.
 
