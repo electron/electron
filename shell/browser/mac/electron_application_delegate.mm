@@ -191,4 +191,36 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser::Get()->NewWindowForTab();
 }
 
+- (void)application:(NSApplication*)application
+    didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
+  // https://stackoverflow.com/a/16411517
+  const char *tokenData = (const char *)[deviceToken bytes];
+  NSMutableString *tokenString = [NSMutableString string];
+  for (NSUInteger i = 0; i < [deviceToken length]; i++) {
+    [tokenString appendFormat:@"%02.2hhX", tokenData[i]];
+  }
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidRegisterForRemoteNotificationsWithDeviceToken(
+    base::SysNSStringToUTF8(tokenString));
+}
+
+- (void)application:(NSApplication*)application
+    didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
+  std::string error_message(base::SysNSStringToUTF8(
+    [NSString stringWithFormat:@"%ld %@ %@",
+      [error code],
+      [error domain],
+      [error userInfo]]));
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidFailToRegisterForRemoteNotificationsWithError(error_message);
+}
+
+- (void)application:(NSApplication*)application
+    didReceiveRemoteNotification:(NSDictionary*)userInfo {
+  std::unique_ptr<base::DictionaryValue> user_info =
+      atom::NSDictionaryToDictionaryValue(userInfo);
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidReceiveRemoteNotification(*user_info);
+}
+
 @end

@@ -86,6 +86,18 @@ class BrowserObserver : public base::CheckedObserver {
 
   // Browser did become active.
   virtual void OnDidBecomeActive() {}
+
+  // The browser successfully registered for APNS. (macOS only)
+  virtual void OnDidRegisterForRemoteNotificationsWithDeviceToken(
+      const std::string& token) {}
+
+  // The browser failed to register for APNS. (macOS only)
+  virtual void OnDidFailToRegisterForRemoteNotificationsWithError(
+      const std::string& error) {}
+
+  // The browser received a remote notification from APNS (macOS only)
+  virtual void OnDidReceiveRemoteNotification(
+      const base::DictionaryValue& user_info) {}
 #endif
 
  protected:
