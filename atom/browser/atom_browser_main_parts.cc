@@ -368,7 +368,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
   gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 
   wchar_t module_name[MAX_PATH] = {0};
-  if (GetModuleFileName(NULL, module_name, MAX_PATH))
+  if (GetModuleFileName(NULL, module_name, base::size(module_name)))
     ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 
