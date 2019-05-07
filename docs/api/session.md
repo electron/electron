@@ -548,9 +548,13 @@ Clears the session’s HTTP authentication cache.
 
 **[Deprecated Soon](modernization/promisification.md)**
 
-#### `ses.clearAuthCache(options)`
+#### `ses.clearAuthCache(options)` _(deprecated)_
 
 * `options` ([RemovePassword](structures/remove-password.md) | [RemoveClientCertificate](structures/remove-client-certificate.md))
+
+Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
+
+#### `ses.clearAuthCache()`
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
 
