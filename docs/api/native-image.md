@@ -71,7 +71,6 @@ images/
 └── icon@3x.png
 ```
 
-
 ```javascript
 const { Tray } = require('electron')
 let appIcon = new Tray('/Users/somebody/images/icon.png')
@@ -276,9 +275,13 @@ Returns [`Size`](structures/size.md)
 
 Marks the image as a template image.
 
+**[Deprecated Soon](modernization/property-updates.md)**
+
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - Whether the image is a template image.
+
+**[Deprecated Soon](modernization/property-updates.md)**
 
 #### `image.crop(rect)`
 
@@ -324,3 +327,11 @@ to explicitly add different scale factor representations to an image. This
 can be called on empty images.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+
+## Properties
+
+### `nativeImage.isMacTemplateImage` _macOS_
+
+A `Boolean` property that determines whether the image is considered a [template image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
+
+Please note that this property only has an effect on macOS.

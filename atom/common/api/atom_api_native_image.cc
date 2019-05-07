@@ -638,8 +638,10 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
       .SetMethod("getSize", &NativeImage::GetSize)
-      .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
-      .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
+      .SetMethod("_setTemplateImage", &NativeImage::SetTemplateImage)
+      .SetMethod("_isTemplateImage", &NativeImage::IsTemplateImage)
+      .SetProperty("isMacTemplateImage", &NativeImage::IsTemplateImage,
+                   &NativeImage::SetTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
