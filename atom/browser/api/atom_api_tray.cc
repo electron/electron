@@ -59,7 +59,7 @@ Tray::Tray(v8::Isolate* isolate,
   InitWith(isolate, wrapper);
 }
 
-Tray::~Tray() {}
+Tray::~Tray() = default;
 
 // static
 mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
