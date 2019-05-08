@@ -5,7 +5,9 @@ const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
 })
 const ciReleaseBuild = require('./ci-release-build')
-const octokit = require('@octokit/rest')()
+const octokit = require('@octokit/rest')({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+})
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
 
@@ -27,8 +29,6 @@ if (!bumpType && !args.notesOnly) {
 }
 
 const gitDir = path.resolve(__dirname, '..')
-octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
-
 async function getNewVersion (dryRun) {
   if (!dryRun) {
     console.log(`Bumping for new "${bumpType}" version.`)
