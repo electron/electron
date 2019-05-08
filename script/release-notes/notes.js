@@ -6,7 +6,9 @@ const os = require('os')
 const path = require('path')
 
 const { GitProcess } = require('dugite')
-const octokit = require('@octokit/rest')()
+const octokit = require('@octokit/rest')({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+})
 const semver = require('semver')
 
 const MAX_FAIL_COUNT = 3
@@ -16,8 +18,6 @@ const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
 const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
 const gitDir = path.resolve(__dirname, '..', '..')
-
-octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
