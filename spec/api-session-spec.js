@@ -1,4 +1,3 @@
-const assert = require('assert')
 const chai = require('chai')
 const http = require('http')
 const https = require('https')
@@ -46,13 +45,13 @@ describe('session module', () => {
 
   describe('session.defaultSession', () => {
     it('returns the default session', () => {
-      assert.strictEqual(session.defaultSession, session.fromPartition(''))
+      expect(session.defaultSession).to.equal(session.fromPartition(''))
     })
   })
 
   describe('session.fromPartition(partition, options)', () => {
     it('returns existing session with same partition', () => {
-      assert.strictEqual(session.fromPartition('test'), session.fromPartition('test'))
+      expect(session.fromPartition('test')).to.equal(session.fromPartition('test'))
     })
 
     it('created session is ref-counted', () => {
@@ -60,10 +59,10 @@ describe('session module', () => {
       const userAgent = 'test-agent'
       const ses1 = session.fromPartition(partition)
       ses1.setUserAgent(userAgent)
-      assert.strictEqual(ses1.getUserAgent(), userAgent)
+      expect(ses1.getUserAgent()).to.equal(userAgent)
       ses1.destroy()
       const ses2 = session.fromPartition(partition)
-      assert.notStrictEqual(ses2.getUserAgent(), userAgent)
+      expect(ses2.getUserAgent()).to.not.equal(userAgent)
     })
   })
 
@@ -119,7 +118,7 @@ describe('session module', () => {
         await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
         const list = await cookies.get({ url })
 
-        assert(list.some(cookie => cookie.name === name && cookie.value === value))
+        expect(list.some(cookie => cookie.name === name && cookie.value === value)).to.be.true()
       }
     })
 
@@ -132,7 +131,7 @@ describe('session module', () => {
       await cookies.remove(url, name)
       const list = await cookies.get({ url })
 
-      assert(!list.some(cookie => cookie.name === name && cookie.value === value))
+      expect(list.some(cookie => cookie.name === name && cookie.value === value)).to.be.false()
     })
 
     it('should set cookie for standard scheme', async () => {
@@ -202,7 +201,7 @@ describe('session module', () => {
           appProcess.stdout.on('data', data => { output += data })
           appProcess.stdout.on('end', () => {
             output = output.replace(/(\r\n|\n|\r)/gm, '')
-            assert.strictEqual(output, result)
+            expect(output).to.equal(result)
             resolve()
           })
         })
@@ -218,7 +217,7 @@ describe('session module', () => {
     it('clears localstorage data', (done) => {
       ipcMain.on('count', (event, count) => {
         ipcMain.removeAllListeners('count')
-        assert.strictEqual(count, 0)
+        expect(count).to.equal(0)
         done()
       })
       w.webContents.on('did-finish-load', () => {
@@ -265,9 +264,9 @@ describe('session module', () => {
         ipcRenderer.sendSync('set-download-option', false, true)
         w.loadURL(url)
         ipcRenderer.once('download-error', (event, downloadUrl, filename, error) => {
-          assert.strictEqual(downloadUrl, url)
-          assert.strictEqual(filename, 'mockFile.txt')
-          assert.strictEqual(error, 'Object has been destroyed')
+          expect(downloadUrl).to.equal(url)
+          expect(filename).to.equal('mockFile.txt')
+          expect(error).to.equal('Object has been destroyed')
           done()
         })
       })
@@ -296,20 +295,20 @@ describe('session module', () => {
     const assertDownload = (event, state, url, mimeType,
       receivedBytes, totalBytes, disposition,
       filename, port, savePath, isCustom) => {
-      assert.strictEqual(state, 'completed')
-      assert.strictEqual(filename, 'mock.pdf')
-      assert.ok(path.isAbsolute(savePath))
-      assert.ok(isPathEqual(savePath, path.join(__dirname, 'fixtures', 'mock.pdf')))
+      expect(state).to.equal('completed')
+      expect(filename).to.equal('mock.pdf')
+      expect(path.isAbsolute(savePath)).to.be.true()
+      expect(isPathEqual(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))).to.be.true()
       if (isCustom) {
-        assert.strictEqual(url, `${protocolName}://item`)
+        expect(url).to.be.equal(`${protocolName}://item`)
       } else {
-        assert.strictEqual(url, `http://127.0.0.1:${port}/`)
+        expect(url).to.be.equal(`http://127.0.0.1:${port}/`)
       }
-      assert.strictEqual(mimeType, 'application/pdf')
-      assert.strictEqual(receivedBytes, mockPDF.length)
-      assert.strictEqual(totalBytes, mockPDF.length)
-      assert.strictEqual(disposition, contentDisposition)
-      assert(fs.existsSync(downloadFilePath))
+      expect(mimeType).to.equal('application/pdf')
+      expect(receivedBytes).to.equal(mockPDF.length)
+      expect(totalBytes).to.equal(mockPDF.length)
+      expect(disposition).to.equal(contentDisposition)
+      expect(fs.existsSync(downloadFilePath)).to.be.true()
       fs.unlinkSync(downloadFilePath)
     }
 
@@ -384,12 +383,12 @@ describe('session module', () => {
           mimeType, receivedBytes,
           totalBytes, disposition,
           filename) => {
-          assert.strictEqual(state, 'cancelled')
-          assert.strictEqual(filename, 'mock.pdf')
-          assert.strictEqual(mimeType, 'application/pdf')
-          assert.strictEqual(receivedBytes, 0)
-          assert.strictEqual(totalBytes, mockPDF.length)
-          assert.strictEqual(disposition, contentDisposition)
+          expect(state).to.equal('cancelled')
+          expect(filename).to.equal('mock.pdf')
+          expect(mimeType).to.equal('application/pdf')
+          expect(receivedBytes).to.equal(0)
+          expect(totalBytes).to.equal(mockPDF.length)
+          expect(disposition).to.equal(contentDisposition)
           done()
         })
       })
@@ -410,12 +409,12 @@ describe('session module', () => {
           mimeType, receivedBytes,
           totalBytes, disposition,
           filename) => {
-          assert.strictEqual(state, 'cancelled')
-          assert.strictEqual(filename, 'download.pdf')
-          assert.strictEqual(mimeType, 'application/pdf')
-          assert.strictEqual(receivedBytes, 0)
-          assert.strictEqual(totalBytes, mockPDF.length)
-          assert.strictEqual(disposition, contentDisposition)
+          expect(state).to.equal('cancelled')
+          expect(filename).to.equal('download.pdf')
+          expect(mimeType).to.equal('application/pdf')
+          expect(receivedBytes).to.equal(0)
+          expect(totalBytes).to.equal(mockPDF.length)
+          expect(disposition).to.equal(contentDisposition)
           done()
         })
       })
@@ -457,7 +456,7 @@ describe('session module', () => {
       it('does not display a save dialog and reports the done state as interrupted', (done) => {
         ipcRenderer.sendSync('set-download-option', false, false)
         ipcRenderer.once('download-done', (event, state) => {
-          assert.strictEqual(state, 'interrupted')
+          expect(state).to.equal('interrupted')
           done()
         })
         w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`)
@@ -495,10 +494,10 @@ describe('session module', () => {
 
     it('does not affect defaultSession', async () => {
       const result1 = await protocol.isProtocolHandled(protocolName)
-      assert.strictEqual(result1, false)
+      expect(result1).to.equal(false)
 
       const result2 = await customSession.protocol.isProtocolHandled(protocolName)
-      assert.strictEqual(result2, true)
+      expect(result2).to.equal(true)
     })
 
     it('handles requests from partition', (done) => {
@@ -533,7 +532,7 @@ describe('session module', () => {
       const config = { proxyRules: 'http=myproxy:80' }
       await customSession.setProxy(config)
       const proxy = await customSession.resolveProxy('http://example.com/')
-      assert.strictEqual(proxy, 'PROXY myproxy:80')
+      expect(proxy).to.equal('PROXY myproxy:80')
     })
 
     it('allows removing the implicit bypass rules for localhost', async () => {
@@ -544,7 +543,7 @@ describe('session module', () => {
 
       await customSession.setProxy(config)
       const proxy = await customSession.resolveProxy('http://localhost')
-      assert.strictEqual(proxy, 'PROXY myproxy:80')
+      expect(proxy).to.equal('PROXY myproxy:80')
     })
 
     it('allows configuring proxy settings with pacScript', async () => {
@@ -565,7 +564,7 @@ describe('session module', () => {
             const config = { pacScript: `http://127.0.0.1:${server.address().port}` }
             await customSession.setProxy(config)
             const proxy = await customSession.resolveProxy('https://google.com')
-            assert.strictEqual(proxy, 'PROXY myproxy:8132')
+            expect(proxy).to.equal('PROXY myproxy:8132')
             resolve()
           } catch (error) {
             reject(error)
@@ -581,7 +580,7 @@ describe('session module', () => {
       }
       await customSession.setProxy(config)
       const proxy = await customSession.resolveProxy('http://example/')
-      assert.strictEqual(proxy, 'DIRECT')
+      expect(proxy).to.equal('DIRECT')
     })
   })
 
@@ -621,9 +620,9 @@ describe('session module', () => {
           callback({ data: content, mimeType: 'text/html' })
         } else if (request.method === 'POST') {
           const uuid = request.uploadData[1].blobUUID
-          assert(uuid)
+          expect(uuid).to.be.a('string')
           session.defaultSession.getBlobData(uuid).then(result => {
-            assert.strictEqual(result.toString(), postData)
+            expect(result.toString()).to.equal(postData)
             done()
           })
         }
@@ -664,13 +663,13 @@ describe('session module', () => {
 
     it('accepts the request when the callback is called with 0', (done) => {
       session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult, errorCode }, callback) => {
-        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
-        assert([-202, -200].includes(errorCode), errorCode)
+        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true()
+        expect([-202, -200].includes(errorCode)).to.be.true()
         callback(0)
       })
 
       w.webContents.once('did-finish-load', () => {
-        assert.strictEqual(w.webContents.getTitle(), 'hello')
+        expect(w.webContents.getTitle()).to.equal('hello')
         done()
       })
       w.loadURL(`https://127.0.0.1:${server.address().port}`)
@@ -678,23 +677,23 @@ describe('session module', () => {
 
     it('rejects the request when the callback is called with -2', (done) => {
       session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
-        assert.strictEqual(hostname, '127.0.0.1')
-        assert.strictEqual(certificate.issuerName, 'Intermediate CA')
-        assert.strictEqual(certificate.subjectName, 'localhost')
-        assert.strictEqual(certificate.issuer.commonName, 'Intermediate CA')
-        assert.strictEqual(certificate.subject.commonName, 'localhost')
-        assert.strictEqual(certificate.issuerCert.issuer.commonName, 'Root CA')
-        assert.strictEqual(certificate.issuerCert.subject.commonName, 'Intermediate CA')
-        assert.strictEqual(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
-        assert.strictEqual(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
-        assert.strictEqual(certificate.issuerCert.issuerCert.issuerCert, undefined)
-        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
+        expect(hostname).to.equal('127.0.0.1')
+        expect(certificate.issuerName).to.equal('Intermediate CA')
+        expect(certificate.subjectName).to.equal('localhost')
+        expect(certificate.issuer.commonName).to.equal('Intermediate CA')
+        expect(certificate.subject.commonName).to.equal('localhost')
+        expect(certificate.issuerCert.issuer.commonName).to.equal('Root CA')
+        expect(certificate.issuerCert.subject.commonName).to.equal('Intermediate CA')
+        expect(certificate.issuerCert.issuerCert.issuer.commonName).to.equal('Root CA')
+        expect(certificate.issuerCert.issuerCert.subject.commonName).to.equal('Root CA')
+        expect(certificate.issuerCert.issuerCert.issuerCert).to.be.undefined()
+        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true()
         callback(-2)
       })
 
       const url = `https://127.0.0.1:${server.address().port}`
       w.webContents.once('did-finish-load', () => {
-        assert.strictEqual(w.webContents.getTitle(), url)
+        expect(w.webContents.getTitle()).to.equal(url)
         done()
       })
       w.loadURL(url)
@@ -717,12 +716,12 @@ describe('session module', () => {
         mimeType, receivedBytes,
         totalBytes, filename,
         savePath) => {
-        assert.strictEqual(state, 'interrupted')
-        assert.deepStrictEqual(urlChain, ['http://127.0.0.1/'])
-        assert.strictEqual(mimeType, 'application/pdf')
-        assert.strictEqual(receivedBytes, 0)
-        assert.strictEqual(totalBytes, 5242880)
-        assert.strictEqual(savePath, filePath)
+        expect(state).to.equal('interrupted')
+        expect(urlChain).to.deep.equal(['http://127.0.0.1/'])
+        expect(mimeType).to.equal('application/pdf')
+        expect(receivedBytes).to.equal(0)
+        expect(totalBytes).to.equal(5242880)
+        expect(savePath).to.equal(filePath)
         done()
       })
     })
@@ -756,14 +755,14 @@ describe('session module', () => {
             ipcRenderer.sendSync('set-download-option', false, false, downloadFilePath)
             w.webContents.session.createInterruptedDownload(options)
           } else {
-            assert.strictEqual(state, 'completed')
-            assert.strictEqual(filename, 'logo.png')
-            assert.strictEqual(savePath, downloadFilePath)
-            assert.strictEqual(url, downloadUrl)
-            assert.strictEqual(mimeType, 'image/png')
-            assert.strictEqual(receivedBytes, 14022)
-            assert.strictEqual(totalBytes, 14022)
-            assert(fs.existsSync(downloadFilePath))
+            expect(state).to.equal('completed')
+            expect(filename).to.equal('logo.png')
+            expect(savePath).to.equal(downloadFilePath)
+            expect(url).to.equal(downloadUrl)
+            expect(mimeType).to.equal('image/png')
+            expect(receivedBytes).to.equal(14022)
+            expect(totalBytes).to.equal(14022)
+            expect(fs.existsSync(downloadFilePath)).to.be.true()
             fs.unlinkSync(downloadFilePath)
             rangeServer.close()
             ipcRenderer.removeListener('download-done', callback)
@@ -802,8 +801,8 @@ describe('session module', () => {
           })
           request.on('login', (info, callback) => {
             attempt += 1
-            assert.strictEqual(info.scheme, 'basic')
-            assert.strictEqual(info.realm, 'Restricted')
+            expect(info.scheme).to.equal('basic')
+            expect(info.realm).to.equal('Restricted')
             callback('test', 'test')
           })
           request.on('response', (response) => {
@@ -813,7 +812,7 @@ describe('session module', () => {
               data += chunk
             })
             response.on('end', () => {
-              assert.strictEqual(data, 'authenticated')
+              expect(data).to.equal('authenticated')
               ses.clearAuthCache({ type: 'password' }).then(() => {
                 issueLoginRequest(attempt)
               })
@@ -839,8 +838,8 @@ describe('session module', () => {
 
       webview = new WebView()
       webview.addEventListener('ipc-message', (e) => {
-        assert.strictEqual(e.channel, 'message')
-        assert.deepStrictEqual(e.args, ['SecurityError'])
+        expect(e.channel).to.equal('message')
+        expect(e.args).to.deep.equal(['SecurityError'])
         done()
       })
       webview.src = `file://${fixtures}/pages/permissions/midi-sysex.html`
