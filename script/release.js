@@ -24,10 +24,8 @@ const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
 
-const octokit = require('@octokit/rest')()
-octokit.authenticate({
-  type: 'token',
-  token: process.env.ELECTRON_GITHUB_TOKEN
+const octokit = require('@octokit/rest')({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
 })
 
 const targetRepo = pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
