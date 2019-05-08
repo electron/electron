@@ -1,6 +1,5 @@
 'use strict'
 
-const assert = require('assert')
 const chai = require('chai')
 const ChildProcess = require('child_process')
 const dirtyChai = require('dirty-chai')
@@ -243,9 +242,9 @@ describe('BrowserView module', () => {
       w.setBrowserView(view)
       view.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
         e.preventDefault()
-        assert.strictEqual(url, 'http://host/')
-        assert.strictEqual(frameName, 'host')
-        assert.strictEqual(additionalFeatures[0], 'this-is-not-a-standard-feature')
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('host')
+        expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature')
         done()
       })
       view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
