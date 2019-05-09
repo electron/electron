@@ -73,10 +73,9 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
       mate::StringToV8(isolate_, event),
       mate::CallbackToV8(isolate_, std::move(callback)),
   };
+  handlers_[event].Reset(isolate_, args[1]);
   node::MakeCallback(isolate_, emitter_.Get(isolate_), "on",
                      node::arraysize(args), args, {0, 0});
-
-  handlers_[event].Reset(isolate_, args[1]);
 }
 
 void NodeStreamLoader::OnData(mate::Arguments* args) {
