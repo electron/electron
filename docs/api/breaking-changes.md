@@ -6,6 +6,19 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+## Planned Breaking API Changes (7.0)
+
+### `session.clearAuthCache(options)`
+
+The `session.clearAuthCache` API no longer accepts options for what to clear, and instead unconditionally clears the whole cache.
+
+```js
+// Deprecated
+session.clearAuthCache({ type: 'password' })
+// Replace with
+session.clearAuthCache()
+```
+
 ## Planned Breaking API Changes (6.0)
 
 ### `win.setMenu(null)`
@@ -81,7 +94,7 @@ powerMonitor.querySystemIdleTime(callback)
 const idleTime = getSystemIdleTime()
 ```
 
-## `app.enableMixedSandbox`
+### `app.enableMixedSandbox`
 
 ```js
 // Deprecated
