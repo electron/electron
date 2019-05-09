@@ -44,10 +44,6 @@ NodeStreamLoader::~NodeStreamLoader() {
 }
 
 void NodeStreamLoader::Start(network::ResourceResponseHead head) {
-  auto weak = weak_factory_.GetWeakPtr();
-  binding_.set_connection_error_handler(
-      base::BindOnce(&NodeStreamLoader::OnConnectionError, weak));
-
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer_, &consumer);
   if (rv != MOJO_RESULT_OK) {
@@ -58,6 +54,7 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   client_->OnReceiveResponse(head);
   client_->OnStartLoadingResponseBody(std::move(consumer));
 
+  auto weak = weak_factory_.GetWeakPtr();
   On("end", base::BindRepeating(&NodeStreamLoader::OnEnd, weak));
   On("error", base::BindRepeating(&NodeStreamLoader::OnError, weak));
   // Since every node::MakeCallback call has a micro scope itself, we have to
@@ -102,24 +99,12 @@ void NodeStreamLoader::OnData(mate::Arguments* args) {
 
 void NodeStreamLoader::OnEnd(mate::Arguments* args) {
   client_->OnComplete(network::URLLoaderCompletionStatus(net::OK));
-  client_.reset();
-  MaybeDeleteSelf();
+  delete this;
 }
 
 void NodeStreamLoader::OnError(mate::Arguments* args) {
   client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
-  client_.reset();
-  MaybeDeleteSelf();
-}
-
-void NodeStreamLoader::OnConnectionError() {
-  binding_.Close();
-  MaybeDeleteSelf();
-}
-
-void NodeStreamLoader::MaybeDeleteSelf() {
-  if (!binding_.is_bound() && !client_.is_bound())
-    delete this;
+  delete this;
 }
 
 }  // namespace atom

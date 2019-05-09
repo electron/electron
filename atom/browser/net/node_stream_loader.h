@@ -19,6 +19,12 @@ class Arguments;
 
 namespace atom {
 
+// Read data from node Stream and feed it to NetworkService.
+//
+// This class manages its own lifetime and should delete itself when the
+// connection is lost or finished.
+//
+// The code is updated with `BlobURLLoader`.
 class NodeStreamLoader : public network::mojom::URLLoader {
  public:
   NodeStreamLoader(network::ResourceResponseHead head,
@@ -49,13 +55,6 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void OnData(mate::Arguments* args);
   void OnEnd(mate::Arguments* args);
   void OnError(mate::Arguments* args);
-
-  // This class manages its own lifetime and should delete itself when the
-  // connection is lost or finished.
-  //
-  // The code is updated with `content::FileURLLoader`.
-  void OnConnectionError();
-  void MaybeDeleteSelf();
 
   mojo::Binding<network::mojom::URLLoader> binding_;
   network::mojom::URLLoaderClientPtr client_;
