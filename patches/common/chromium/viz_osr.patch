@@ -97,7 +97,7 @@ index 93c52d2b928cba6e98723e19b005fb7bd7089a58..4dc645e770a2a039ed8e4ff4de555767
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 21345740188ebc13aefae524c9fe065168ccaf27..f56d94f8810063d36ee161b87dccfecbe6e3ab85 100644
+index 6ad1ea5324d2f11ecb18a6ccc5a493f5b5412716..1e47a1b8409702df96b28b2d6d98d9f12991a486 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -116,6 +116,8 @@ viz_component("service") {
@@ -176,10 +176,10 @@ index f3867356e3d641416e00e6d115ae9ae2a0be90ab..b1d192d2b20ccb63fba07093101d745e
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655857f3e31
+index 0000000000000000000000000000000000000000..fc1bbc1a48cdcb3301fc4b884921fe2692133985
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,166 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -187,7 +187,6 @@ index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
 +
 +#include "base/memory/shared_memory.h"
-+#include "base/threading/thread_checker.h"
 +#include "components/viz/common/resources/resource_sizes.h"
 +#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
@@ -349,10 +348,10 @@ index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..01e1e2f0860faa1afe42c342c8905a7f838bd363
+index 0000000000000000000000000000000000000000..9e845b343166ea3451b2e5446e312a1b79651231
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,89 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -366,6 +365,7 @@ index 0000000000000000000000000000000000000000..01e1e2f0860faa1afe42c342c8905a7f
 +
 +#include <memory>
 +
++#include "base/threading/thread_checker.h"
 +#include "components/viz/host/host_display_client.h"
 +#include "components/viz/service/display/software_output_device.h"
 +#include "components/viz/service/viz_service_export.h"
