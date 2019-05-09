@@ -23,6 +23,10 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
       isolate_(isolate),
       emitter_(isolate, emitter),
       weak_factory_(this) {
+  binding_.set_connection_error_handler(
+      base::BindOnce(&NodeStreamLoader::NotifyComplete,
+                     weak_factory_.GetWeakPtr(), net::ERR_FAILED));
+
   // PostTask since it might destruct.
   base::SequencedTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(&NodeStreamLoader::Start,

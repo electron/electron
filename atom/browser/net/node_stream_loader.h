@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NET_NODE_STREAM_LOADER_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
