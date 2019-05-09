@@ -667,6 +667,18 @@ describe('app module', () => {
     })
   })
 
+  describe('setPath(name, path)', () => {
+    it('does not create a new directory by default', () => {
+      const badPath = path.join(__dirname, 'music')
+
+      expect(fs.existsSync(badPath)).to.be.false
+      app.setPath('music', badPath)
+      expect(fs.existsSync(badPath)).to.be.false
+
+      expect(() => { app.getPath(badPath) }).to.throw()
+    })
+  })
+
   describe('select-client-certificate event', () => {
     let w: BrowserWindow
 
