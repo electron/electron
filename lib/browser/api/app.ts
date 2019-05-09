@@ -19,14 +19,6 @@ Object.setPrototypeOf(App.prototype, EventEmitter.prototype)
 EventEmitter.call(app as any)
 
 Object.assign(app, {
-  // TODO(codebytere): remove in 7.0
-  setApplicationMenu (menu: Electron.Menu | null) {
-    return Menu.setApplicationMenu(menu)
-  },
-  // TODO(codebytere): remove in 7.0
-  getApplicationMenu () {
-    return Menu.getApplicationMenu()
-  },
   commandLine: {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
     getSwitchValue: (theSwitch: string) => commandLine.getSwitchValue(String(theSwitch)),
