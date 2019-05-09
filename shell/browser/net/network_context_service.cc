@@ -4,8 +4,10 @@
 
 #include "shell/browser/net/network_context_service.h"
 
+#include "base/bind_helpers.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "services/network/network_service.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser_process_impl.h"
@@ -30,6 +32,37 @@ NetworkContextService::CreateNetworkContext() {
 
   return network_context;
 }
+
+class Foo : public network::mojom::CertVerifierClient {
+ public:
+  Foo(AtomBrowserContext* browser_context)
+      : browser_context_(browser_context) {}
+  ~Foo() override = default;
+
+  // network::mojom::CertVerifierClient
+  void Verify(int default_error,
+              const net::CertVerifyResult& default_result,
+              const scoped_refptr<net::X509Certificate>& certificate,
+              const std::string& hostname,
+              int flags,
+              const base::Optional<std::string>& ocsp_response,
+              VerifyCallback callback) override {
+    VerifyRequestParams params;
+    params.hostname = hostname;
+    params.default_result = net::ErrorToString(default_error);
+    params.error_code = default_error;
+    params.certificate = certificate;
+    browser_context_->cert_verify_proc().Run(
+        params,
+        base::AdaptCallbackForRepeating(base::BindOnce(
+            [](VerifyCallback callback, const net::CertVerifyResult& result,
+               int err) { std::move(callback).Run(err, result); },
+            std::move(callback), default_result)));
+  }
+
+ private:
+  AtomBrowserContext* browser_context_;
+};
 
 network::mojom::NetworkContextParamsPtr
 NetworkContextService::CreateNetworkContextParams(bool in_memory,
@@ -75,6 +108,12 @@ NetworkContextService::CreateNetworkContextParams(bool in_memory,
 
     network_context_params->transport_security_persister_path = path;
   }
+
+  network::mojom::CertVerifierClientPtr cert_verifier_client;
+  mojo::MakeStrongBinding(std::make_unique<Foo>(browser_context_),
+                          mojo::MakeRequest(&cert_verifier_client));
+  network_context_params->cert_verifier_client =
+      cert_verifier_client.PassInterface();
 
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;

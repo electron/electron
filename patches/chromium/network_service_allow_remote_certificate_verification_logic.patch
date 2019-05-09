@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 8 May 2019 17:25:55 -0700
+Subject: network service: allow remote certificate verification logic
+
+
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index ba7bc6c7f8cd80a1f07e134a485d9516151f737f..f9f2560cc7cfd21508bd99464665a754639a13f5 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -201,6 +201,71 @@ class WrappedTestingCertVerifier : public net::CertVerifier {
+   }
+ };
+ 
++class RemoteCertVerifier : public net::CertVerifier {
++ public:
++  RemoteCertVerifier(std::unique_ptr<net::CertVerifier> upstream, mojom::CertVerifierClientPtrInfo client_info): upstream_(std::move(upstream)) {
++    client_.Bind(std::move(client_info));
++  }
++  ~RemoteCertVerifier() override = default;
++
++  // CertVerifier implementation
++  int Verify(const RequestParams& params,
++             net::CertVerifyResult* verify_result,
++             net::CompletionOnceCallback callback,
++             std::unique_ptr<Request>* out_req,
++             const net::NetLogWithSource& net_log) override {
++    out_req->reset();
++
++    net::CompletionOnceCallback callback2 = base::BindOnce(
++        &RemoteCertVerifier::OnRequestFinished, base::Unretained(this),
++        params, std::move(callback), verify_result);
++    int result = upstream_->Verify(params, verify_result,
++                                   std::move(callback2), out_req, net_log);
++    if (result != net::ERR_IO_PENDING) {
++      // Synchronous completion
++    }
++
++    return result;
++  }
++
++
++  void SetConfig(const Config& config) override {
++    upstream_->SetConfig(config);
++  }
++
++  void OnRequestFinished(const RequestParams& params, net::CompletionOnceCallback callback, net::CertVerifyResult* verify_result, int error) {
++    client_->Verify(error, *verify_result, params.certificate(),
++        params.hostname(), params.flags(), params.ocsp_response(),
++        base::BindOnce(&RemoteCertVerifier::OnRemoteResponse,
++          base::Unretained(this), params, verify_result, error,
++          std::move(callback)));
++  }
++
++  void OnRemoteResponse(
++      const RequestParams& params,
++      net::CertVerifyResult* verify_result,
++      int error,
++      net::CompletionOnceCallback callback,
++      int error2,
++      const net::CertVerifyResult& verify_result2) {
++    if (error2 == net::ERR_ABORTED) {
++      LOG(INFO) << "a";
++      // use the default
++      std::move(callback).Run(error);
++    } else {
++      LOG(INFO) << "b";
++      // use the override
++      //*verify_result = verify_result2;
++      verify_result->Reset();
++      verify_result->verified_cert = verify_result2.verified_cert;
++      std::move(callback).Run(error2);
++    }
++  }
++ private:
++  std::unique_ptr<net::CertVerifier> upstream_;
++  mojom::CertVerifierClientPtr client_;
++};
++
+ // Predicate function to determine if the given |domain| matches the
+ // |filter_type| and |filter_domains| from a |mojom::ClearDataFilter|.
+ bool MatchesDomainFilter(mojom::ClearDataFilter_Type filter_type,
+@@ -2130,8 +2195,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+       cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
+   }
+ 
+-  builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
+-      *command_line, nullptr, std::move(cert_verifier)));
++  cert_verifier = IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
++      *command_line, nullptr, std::move(cert_verifier));
++
++  if (params_->cert_verifier_client) {
++    cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier), std::move(params_->cert_verifier_client));
++  }
++
++  builder.SetCertVerifier(std::move(cert_verifier));
+ 
+   std::unique_ptr<net::NetworkDelegate> network_delegate =
+       std::make_unique<NetworkServiceNetworkDelegate>(this);
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index b7eefc6346e766c34fe039f2e026aca9d42f60ee..bf782a7cb14ed91b677d259e9024171f47c1f604 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -158,6 +158,17 @@ interface TrustedURLLoaderHeaderClient {
+   OnLoaderCreated(int32 request_id, TrustedHeaderClient& header_client);
+ };
+ 
++interface CertVerifierClient {
++  Verify(
++    int32 default_error,
++    CertVerifyResult default_result,
++    X509Certificate certificate,
++    string hostname,
++    int32 flags,
++    string? ocsp_response
++  ) => (int32 error_code, CertVerifyResult result);
++};
++
+ // Parameters for constructing a network context.
+ struct NetworkContextParams {
+   // Name used by memory tools to identify the context.
+@@ -287,6 +298,8 @@ struct NetworkContextParams {
+   // settings.
+   ProxyErrorClient? proxy_error_client;
+ 
++  CertVerifierClient? cert_verifier_client;
++
+   // When PAC quick checking is enabled, DNS lookups for PAC script's host are
+   // timed out aggressively. This prevents hanging all network request on DNS
+   // lookups that are slow or are blockholed, at the cost of making it more
