@@ -47,7 +47,9 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   mojo::ScopedDataPipeConsumerHandle consumer;
   MojoResult rv = mojo::CreateDataPipe(nullptr, &producer_, &consumer);
   if (rv != MOJO_RESULT_OK) {
-    OnError(nullptr);
+    client_->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
+    delete this;
     return;
   }
 
