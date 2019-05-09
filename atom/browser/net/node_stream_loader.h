@@ -32,6 +32,8 @@ class NodeStreamLoader : public network::mojom::URLLoader {
 
   using EventCallback = base::RepeatingCallback<void(mate::Arguments* args)>;
 
+  void Start(network::ResourceResponseHead head);
+
   // URLLoader:
   void FollowRedirect(const std::vector<std::string>& removed_headers,
                       const net::HttpRequestHeaders& modified_headers,

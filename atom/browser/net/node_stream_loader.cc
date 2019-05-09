@@ -18,13 +18,33 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
                                    network::mojom::URLLoaderClientPtr client,
                                    v8::Isolate* isolate,
                                    v8::Local<v8::Object> emitter)
-    : binding_(this),
+    : binding_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
       emitter_(isolate, emitter),
       weak_factory_(this) {
+  // PostTask since it might destruct.
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::BindOnce(&NodeStreamLoader::Start,
+                                weak_factory_.GetWeakPtr(), std::move(head)));
+}
+
+NodeStreamLoader::~NodeStreamLoader() {
+  v8::Locker locker(isolate_);
+  v8::Isolate::Scope isolate_scope(isolate_);
+  v8::HandleScope handle_scope(isolate_);
+
+  // Unsubscribe all handlers.
+  for (const auto& it : handlers_) {
+    v8::Local<v8::Value> args[] = {mate::StringToV8(isolate_, it.first),
+                                   it.second.Get(isolate_)};
+    node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
+                       node::arraysize(args), args, {0, 0});
+  }
+}
+
+void NodeStreamLoader::Start(network::ResourceResponseHead head) {
   auto weak = weak_factory_.GetWeakPtr();
-  binding_.Bind(std::move(loader));
   binding_.set_connection_error_handler(
       base::BindOnce(&NodeStreamLoader::OnConnectionError, weak));
 
@@ -44,20 +64,6 @@ NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
   // subscribe |data| at last otherwise |end|'s listener won't be called when
   // it is emitted in the same tick.
   On("data", base::BindRepeating(&NodeStreamLoader::OnData, weak));
-}
-
-NodeStreamLoader::~NodeStreamLoader() {
-  v8::Locker locker(isolate_);
-  v8::Isolate::Scope isolate_scope(isolate_);
-  v8::HandleScope handle_scope(isolate_);
-
-  // Unsubscribe all handlers.
-  for (const auto& it : handlers_) {
-    v8::Local<v8::Value> args[] = {mate::StringToV8(isolate_, it.first),
-                                   it.second.Get(isolate_)};
-    node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
-                       node::arraysize(args), args, {0, 0});
-  }
 }
 
 void NodeStreamLoader::On(const char* event, EventCallback callback) {
