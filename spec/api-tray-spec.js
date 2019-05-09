@@ -9,12 +9,12 @@ describe('tray module', () => {
     tray = new Tray(nativeImage.createEmpty())
   })
 
-  afterEach(() => {
-    tray.destroy()
-    tray = null
-  })
-
   describe('tray.setContextMenu', () => {
+    afterEach(() => {
+      tray.destroy()
+      tray = null
+    })
+
     it('accepts menu instance', () => {
       tray.setContextMenu(new Menu())
     })
@@ -24,11 +24,24 @@ describe('tray module', () => {
     })
   })
 
+  describe('tray.destroy()', () => {
+    it('destroys a tray', () => {
+      expect(tray.isDestroyed()).to.be.false()
+      tray.destroy()
+
+      expect(tray.isDestroyed()).to.be.true()
+      tray = null
+    })
+  })
+
   describe('tray.popUpContextMenu', () => {
+    afterEach(() => {
+      tray.destroy()
+      tray = null
+    })
+
     before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
+      if (process.platform !== 'win32') this.skip()
     })
 
     it('can be called when menu is showing', (done) => {
@@ -44,20 +57,29 @@ describe('tray module', () => {
   describe('tray.setImage', () => {
     it('accepts empty image', () => {
       tray.setImage(nativeImage.createEmpty())
+
+      tray.destroy()
+      tray = null
     })
   })
 
   describe('tray.setPressedImage', () => {
     it('accepts empty image', () => {
       tray.setPressedImage(nativeImage.createEmpty())
+
+      tray.destroy()
+      tray = null
     })
   })
 
   describe('tray title get/set', () => {
     before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
+      if (process.platform !== 'darwin') this.skip()
+    })
+
+    afterEach(() => {
+      tray.destroy()
+      tray = null
     })
 
     it('sets/gets non-empty title', () => {
