@@ -103,10 +103,21 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
     for (const auto& iter : headers.DictItems()) {
-      head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+      if (iter.second.is_string()) {
+        // key: value
+        head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+      } else if (iter.second.is_list()) {
+        // key: [values...]
+        for (const auto& item : iter.second.GetList()) {
+          if (item.is_string())
+            head.headers->AddHeader(iter.first + ": " + item.GetString());
+        }
+      } else {
+        continue;
+      }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (iter.first == "content-type")
+      if (iter.first == "content-type" && iter.second.is_string())
         head.mime_type = iter.second.GetString();
     }
   }
