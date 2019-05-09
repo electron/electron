@@ -7,7 +7,6 @@ const http = require('http')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
-const { createNetworkSandbox } = require('./network-helper')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
@@ -741,11 +740,6 @@ describe('webContents module', () => {
     })
 
     it('cannot persist zoom level after navigation with webFrame', (done) => {
-      const protocol = session.defaultSession.protocol
-      const sandbox = createNetworkSandbox(protocol)
-      sandbox.serveFileFromProtocol('ccc', path.join(fixtures, 'pages', 'c.html'))
-      sandbox.serveFileFromProtocol('ddd', path.join(fixtures, 'pages', 'd.html'))
-
       let initialNavigation = true
       const source = `
         const {ipcRenderer, webFrame} = require('electron')
@@ -758,16 +752,15 @@ describe('webContents module', () => {
         } else {
           const zoomLevel = w.webContents.getZoomLevel()
           expect(zoomLevel).to.equal(0)
-          sandbox.reset()
           done()
         }
       })
       ipcMain.once('zoom-level-set', (e, zoomLevel) => {
         expect(zoomLevel).to.equal(0.6)
-        w.loadURL('ddd://page')
+        w.loadFile(path.join(fixtures, 'pages', 'd.html'))
         initialNavigation = false
       })
-      w.loadURL('ccc://page')
+      w.loadFile(path.join(fixtures, 'pages', 'c.html'))
     })
   })
 
