@@ -350,7 +350,19 @@ void AtomURLLoaderFactory::StartLoadingStream(
   } else if (stream->IsNullOrUndefined()) {
     // "data" was explicitly passed as null or undefined, assume the user wants
     // to send an empty body.
+    //
+    // Note that We must submit a empty body otherwise NetworkService would
+    // crash.
     client->OnReceiveResponse(head);
+    mojo::ScopedDataPipeProducerHandle producer;
+    mojo::ScopedDataPipeConsumerHandle consumer;
+    if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+      client->OnComplete(
+          network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
+      return;
+    }
+    producer.reset();  // The data pipe is empty.
+    client->OnStartLoadingResponseBody(std::move(consumer));
     client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
   } else if (!stream->IsObject()) {
