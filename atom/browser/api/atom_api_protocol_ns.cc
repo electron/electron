@@ -17,6 +17,10 @@ namespace api {
 
 namespace {
 
+std::string kBuiltinSchemes[] = {
+    "about", "file", "http", "https", "data", "filesystem",
+};
+
 // Convert error code to string.
 std::string ErrorCodeToString(ProtocolError error) {
   switch (error) {
@@ -86,7 +90,15 @@ void ProtocolNS::UninterceptProtocol(const std::string& scheme,
 v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
     const std::string& scheme) {
   util::Promise promise(isolate());
-  promise.Resolve(IsProtocolRegistered(scheme));
+  promise.Resolve(IsProtocolRegistered(scheme) ||
+                  // The |isProtocolHandled| should return true for builtin
+                  // schemes, however with NetworkService it is impossible to
+                  // know which schemes are registered until a real network
+                  // request is sent.
+                  // So we have to test against a hard-coded builtin schemes
+                  // list make it work with old code. We should deprecate this
+                  // API with the new |isProtocolRegistered| API.
+                  base::ContainsValue(kBuiltinSchemes, scheme));
   return promise.GetHandle();
 }
 
