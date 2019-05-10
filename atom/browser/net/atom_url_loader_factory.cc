@@ -199,7 +199,8 @@ void AtomURLLoaderFactory::StartLoading(
 
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
-    client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    client->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
