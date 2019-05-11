@@ -23,6 +23,7 @@ following projects:
 
 * [socorro](https://github.com/mozilla/socorro)
 * [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
+* [electron-crash-report-server](https://github.com/johnmuhl/electron-crash-report-server)
 
 Or use a 3rd party hosted solution:
 
