@@ -435,7 +435,7 @@ bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
 // https://crbug.com/704259
 bool AtomNetworkDelegate::OnCanQueueReportingReport(
     const url::Origin& origin) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnCanSendReportingReports(
