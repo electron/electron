@@ -103,10 +103,21 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
     for (const auto& iter : headers.DictItems()) {
-      head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+      if (iter.second.is_string()) {
+        // key: value
+        head.headers->AddHeader(iter.first + ": " + iter.second.GetString());
+      } else if (iter.second.is_list()) {
+        // key: [values...]
+        for (const auto& item : iter.second.GetList()) {
+          if (item.is_string())
+            head.headers->AddHeader(iter.first + ": " + item.GetString());
+        }
+      } else {
+        continue;
+      }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (iter.first == "content-type")
+      if (iter.first == "content-type" && iter.second.is_string())
         head.mime_type = iter.second.GetString();
     }
   }
@@ -339,7 +350,19 @@ void AtomURLLoaderFactory::StartLoadingStream(
   } else if (stream->IsNullOrUndefined()) {
     // "data" was explicitly passed as null or undefined, assume the user wants
     // to send an empty body.
+    //
+    // Note that We must submit a empty body otherwise NetworkService would
+    // crash.
     client->OnReceiveResponse(head);
+    mojo::ScopedDataPipeProducerHandle producer;
+    mojo::ScopedDataPipeConsumerHandle consumer;
+    if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+      client->OnComplete(
+          network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
+      return;
+    }
+    producer.reset();  // The data pipe is empty.
+    client->OnStartLoadingResponseBody(std::move(consumer));
     client->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
   } else if (!stream->IsObject()) {

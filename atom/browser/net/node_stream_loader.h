@@ -6,19 +6,25 @@
 #define ATOM_BROWSER_NET_NODE_STREAM_LOADER_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "mojo/public/cpp/bindings/strong_binding.h"
+#include "mojo/public/cpp/system/string_data_pipe_producer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "v8/include/v8.h"
 
-namespace mate {
-class Arguments;
-}
-
 namespace atom {
 
+// Read data from node Stream and feed it to NetworkService.
+//
+// This class manages its own lifetime and should delete itself when the
+// connection is lost or finished.
+//
+// We use |paused mode| to read data from |Readable| stream, so we don't need to
+// copy data from buffer and hold it in memory, and we only need to make sure
+// the passed |Buffer| is alive while writing data to pipe.
 class NodeStreamLoader : public network::mojom::URLLoader {
  public:
   NodeStreamLoader(network::ResourceResponseHead head,
@@ -30,7 +36,15 @@ class NodeStreamLoader : public network::mojom::URLLoader {
  private:
   ~NodeStreamLoader() override;
 
-  using EventCallback = base::RepeatingCallback<void(mate::Arguments* args)>;
+  using EventCallback = base::RepeatingCallback<void()>;
+
+  void Start(network::ResourceResponseHead head);
+  void NotifyComplete(int result);
+  void ReadMore();
+  void DidWrite(MojoResult result);
+
+  // Subscribe to events of |emitter|.
+  void On(const char* event, EventCallback callback);
 
   // URLLoader:
   void FollowRedirect(const std::vector<std::string>& removed_headers,
@@ -42,27 +56,23 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
-  // JS bindings.
-  void On(const char* event, EventCallback callback);
-  void OnData(mate::Arguments* args);
-  void OnEnd(mate::Arguments* args);
-  void OnError(mate::Arguments* args);
-
-  // This class manages its own lifetime and should delete itself when the
-  // connection is lost or finished.
-  //
-  // The code is updated with `content::FileURLLoader`.
-  void OnConnectionError();
-  void MaybeDeleteSelf();
-
   mojo::Binding<network::mojom::URLLoader> binding_;
   network::mojom::URLLoaderClientPtr client_;
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;
+  v8::Global<v8::Value> buffer_;
 
-  // Pipes for communicating between Node and NetworkService.
-  mojo::ScopedDataPipeProducerHandle producer_;
+  // Mojo data pipe where the data that is being read is written to.
+  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
+
+  // Whether we are in the middle of write.
+  bool is_writing_ = false;
+
+  // When NotifyComplete is called while writing, we will save the result and
+  // quit with it after the write is done.
+  bool ended_ = false;
+  int result_ = net::OK;
 
   // Store the V8 callbacks to unsubscribe them later.
   std::map<std::string, v8::Global<v8::Value>> handlers_;
