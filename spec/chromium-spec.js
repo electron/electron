@@ -1,4 +1,3 @@
-const assert = require('assert')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const fs = require('fs')
@@ -45,7 +44,7 @@ describe('chromium feature', () => {
         appProcess.stdout.on('data', (data) => { output += data })
         appProcess.stdout.on('end', () => {
           output = output.replace(/(\r\n|\n|\r)/gm, '')
-          assert.strictEqual(output, result)
+          expect(output).to.equal(result)
           done()
         })
       }
@@ -178,7 +177,7 @@ describe('chromium feature', () => {
       w.webContents.on('ipc-message', (event, channel, deviceId) => {
         if (channel === 'deviceIds') deviceIds.push(deviceId)
         if (deviceIds.length === 2) {
-          assert.notDeepStrictEqual(deviceIds[0], deviceIds[1])
+          expect(deviceIds[0]).to.not.deep.equal(deviceIds[1])
           closeWindow(w).then(() => {
             w = null
             done()
@@ -195,15 +194,14 @@ describe('chromium feature', () => {
 
   describe('navigator.language', () => {
     it('should not be empty', () => {
-      assert.notStrictEqual(navigator.language, '')
+      expect(navigator.language).to.not.equal('')
     })
   })
 
   describe('navigator.languages', (done) => {
     it('should return the system locale only', () => {
       const appLocale = app.getLocale()
-      assert.strictEqual(navigator.languages.length, 1)
-      assert.strictEqual(navigator.languages[0], appLocale)
+      expect(navigator.languages).to.deep.equal([appLocale])
     })
   })
 
@@ -222,7 +220,7 @@ describe('chromium feature', () => {
         } else if (channel === 'error') {
           done(message)
         } else if (channel === 'response') {
-          assert.strictEqual(message, 'Hello from serviceWorker!')
+          expect(message).to.equal('Hello from serviceWorker!')
           session.fromPartition('sw-file-scheme-spec').clearStorageData({
             storages: ['serviceworkers']
           }).then(() => done())
@@ -261,7 +259,7 @@ describe('chromium feature', () => {
         } else if (channel === 'error') {
           done(`unexpected error : ${message}`)
         } else if (channel === 'response') {
-          assert.strictEqual(message, 'Hello from serviceWorker!')
+          expect(message).to.equal('Hello from serviceWorker!')
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }).then(() => {
@@ -283,7 +281,8 @@ describe('chromium feature', () => {
 
     it('returns position when permission is granted', (done) => {
       navigator.geolocation.getCurrentPosition((position) => {
-        assert(position.timestamp)
+        expect(position).to.have.a.property('coords')
+        expect(position).to.have.a.property('timestamp')
         done()
       }, (error) => {
         done(error)
@@ -319,15 +318,15 @@ describe('chromium feature', () => {
   describe('window.open', () => {
     it('returns a BrowserWindowProxy object', () => {
       const b = window.open('about:blank', '', 'show=no')
-      assert.strictEqual(b.closed, false)
-      assert.strictEqual(b.constructor.name, 'BrowserWindowProxy')
+      expect(b.closed).to.be.false()
+      expect(b.constructor.name).to.equal('BrowserWindowProxy')
       b.close()
     })
 
     it('accepts "nodeIntegration" as feature', (done) => {
       let b = null
       listener = (event) => {
-        assert.strictEqual(event.data.isProcessGlobalUndefined, true)
+        expect(event.data.isProcessGlobalUndefined).to.be.true()
         b.close()
         done()
       }
@@ -341,7 +340,7 @@ describe('chromium feature', () => {
         const ref1 = remote.getCurrentWindow().getSize()
         const width = ref1[0]
         const height = ref1[1]
-        assert.strictEqual(event.data, `size: ${width} ${height}`)
+        expect(event.data).to.equal(`size: ${width} ${height}`)
         b.close()
         done()
       }
@@ -361,7 +360,7 @@ describe('chromium feature', () => {
         }
 
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-          assert.strictEqual(options.show, w.isVisible())
+          expect(options.show).to.equal(w.isVisible())
           w.close()
           done()
         })
@@ -372,7 +371,7 @@ describe('chromium feature', () => {
     it('disables node integration when it is disabled on the parent window', (done) => {
       let b = null
       listener = (event) => {
-        assert.strictEqual(event.data.isProcessGlobalUndefined, true)
+        expect(event.data.isProcessGlobalUndefined).to.be.true()
         b.close()
         done()
       }
@@ -395,7 +394,7 @@ describe('chromium feature', () => {
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
           contents.executeJavaScript('typeof process').then((typeofProcessGlobal) => {
-            assert.strictEqual(typeofProcessGlobal, 'undefined')
+            expect(typeofProcessGlobal).to.equal('undefined')
             b.close()
             done()
           }).catch(done)
@@ -410,7 +409,7 @@ describe('chromium feature', () => {
         contents.once('did-finish-load', () => {
           app.once('browser-window-created', (event, window) => {
             const preferences = window.webContents.getLastWebPreferences()
-            assert.strictEqual(preferences.javascript, false)
+            expect(preferences.javascript).to.be.false()
             window.destroy()
             b.close()
             done()
@@ -432,7 +431,7 @@ describe('chromium feature', () => {
     it('disables the <webview> tag when it is disabled on the parent window', (done) => {
       let b = null
       listener = (event) => {
-        assert.strictEqual(event.data.isWebViewGlobalUndefined, true)
+        expect(event.data.isWebViewGlobalUndefined).to.be.true()
         b.close()
         done()
       }
@@ -456,7 +455,7 @@ describe('chromium feature', () => {
         height: 450
       }
       listener = (event) => {
-        assert.strictEqual(event.data, `size: ${size.width} ${size.height}`)
+        expect(event.data).to.equal(`size: ${size.width} ${size.height}`)
         b.close()
         done()
       }
@@ -468,8 +467,8 @@ describe('chromium feature', () => {
       w = BrowserWindow.fromId(ipcRenderer.sendSync('create-window-with-options-cycle'))
       w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
       w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-        assert.strictEqual(options.show, false)
-        assert.deepStrictEqual(...resolveGetters(options.foo, {
+        expect(options.show).to.be.false()
+        expect(...resolveGetters(options.foo)).to.deep.equal({
           bar: undefined,
           baz: {
             hello: {
@@ -481,7 +480,7 @@ describe('chromium feature', () => {
               world: true
             }
           }
-        }))
+        })
         done()
       })
     })
@@ -496,7 +495,7 @@ describe('chromium feature', () => {
       }
       app.once('browser-window-created', (event, window) => {
         window.webContents.once('did-finish-load', () => {
-          assert.strictEqual(b.location.href, targetURL)
+          expect(b.location.href).to.equal(targetURL)
           b.close()
           done()
         })
@@ -526,7 +525,7 @@ describe('chromium feature', () => {
       try {
         const [, { webContents }] = await browserWindowCreated
         await waitForWebContentsToLoad(webContents)
-        assert.strictEqual(w.location.href, 'about:blank')
+        expect(w.location.href).to.equal('about:blank')
       } finally {
         w.close()
       }
@@ -538,26 +537,26 @@ describe('chromium feature', () => {
       try {
         const [, { webContents }] = await browserWindowCreated
         await waitForWebContentsToLoad(webContents)
-        assert.strictEqual(w.location.href, 'about:blank')
+        expect(w.location.href).to.equal('about:blank')
       } finally {
         w.close()
       }
     })
 
     it('throws an exception when the arguments cannot be converted to strings', () => {
-      assert.throws(() => {
+      expect(() => {
         window.open('', { toString: null })
-      }, /Cannot convert object to primitive value/)
+      }).to.throw('Cannot convert object to primitive value')
 
-      assert.throws(() => {
+      expect(() => {
         window.open('', '', { toString: 3 })
-      }, /Cannot convert object to primitive value/)
+      }).to.throw('Cannot convert object to primitive value')
     })
 
     it('sets the window title to the specified frameName', (done) => {
       let b = null
       app.once('browser-window-created', (event, createdWindow) => {
-        assert.strictEqual(createdWindow.getTitle(), 'hello')
+        expect(createdWindow.getTitle()).to.equal('hello')
         b.close()
         done()
       })
@@ -567,7 +566,7 @@ describe('chromium feature', () => {
     it('does not throw an exception when the frameName is a built-in object property', (done) => {
       let b = null
       app.once('browser-window-created', (event, createdWindow) => {
-        assert.strictEqual(createdWindow.getTitle(), '__proto__')
+        expect(createdWindow.getTitle()).to.equal('__proto__')
         b.close()
         done()
       })
@@ -576,9 +575,9 @@ describe('chromium feature', () => {
 
     it('does not throw an exception when the features include webPreferences', () => {
       let b = null
-      assert.doesNotThrow(() => {
+      expect(() => {
         b = window.open('', '', 'webPreferences=')
-      })
+      }).to.not.throw()
       b.close()
     })
   })
@@ -602,7 +601,7 @@ describe('chromium feature', () => {
     it('is not null for window opened by window.open', (done) => {
       let b = null
       listener = (event) => {
-        assert.strictEqual(event.data, 'object')
+        expect(event.data).to.equal('object')
         b.close()
         done()
       }
@@ -632,7 +631,7 @@ describe('chromium feature', () => {
 
     it('does nothing when origin of current window does not match opener', (done) => {
       listener = (event) => {
-        assert.strictEqual(event.data, '')
+        expect(event.data).to.equal('')
         done()
       }
       window.addEventListener('message', listener)
@@ -641,7 +640,7 @@ describe('chromium feature', () => {
 
     it('works when origin matches', (done) => {
       listener = (event) => {
-        assert.strictEqual(event.data, location.href)
+        expect(event.data).to.equal(location.href)
         done()
       }
       window.addEventListener('message', listener)
@@ -650,7 +649,7 @@ describe('chromium feature', () => {
 
     it('works when origin does not match opener but has node integration', (done) => {
       listener = (event) => {
-        assert.strictEqual(event.data, location.href)
+        expect(event.data).to.equal(location.href)
         done()
       }
       window.addEventListener('message', listener)
@@ -681,7 +680,7 @@ describe('chromium feature', () => {
     it('does nothing when origin of webview src URL does not match opener', (done) => {
       webview = new WebView()
       webview.addEventListener('console-message', (e) => {
-        assert.strictEqual(e.message, '')
+        expect(e.message).to.equal('')
         done()
       })
       webview.setAttribute('allowpopups', 'on')
@@ -699,7 +698,7 @@ describe('chromium feature', () => {
     it('works when origin matches', (done) => {
       webview = new WebView()
       webview.addEventListener('console-message', (e) => {
-        assert.strictEqual(e.message, webview.src)
+        expect(e.message).to.equal(webview.src)
         done()
       })
       webview.setAttribute('allowpopups', 'on')
@@ -718,7 +717,7 @@ describe('chromium feature', () => {
       webview = new WebView()
       webview.addEventListener('console-message', (e) => {
         webview.remove()
-        assert.strictEqual(e.message, webview.src)
+        expect(e.message).to.equal(webview.src)
         done()
       })
       webview.setAttribute('allowpopups', 'on')
@@ -742,10 +741,10 @@ describe('chromium feature', () => {
         window.removeEventListener('message', listener)
         b.close()
         const message = JSON.parse(event.data)
-        assert.strictEqual(message.data, 'testing')
-        assert.strictEqual(message.origin, 'file://')
-        assert.strictEqual(message.sourceEqualsOpener, true)
-        assert.strictEqual(event.origin, 'file://')
+        expect(message.data).to.equal('testing')
+        expect(message.origin).to.equal('file://')
+        expect(message.sourceEqualsOpener).to.be.true()
+        expect(event.origin).to.equal('file://')
         done()
       }
       window.addEventListener('message', listener)
@@ -759,9 +758,9 @@ describe('chromium feature', () => {
 
     it('throws an exception when the targetOrigin cannot be converted to a string', () => {
       const b = window.open('')
-      assert.throws(() => {
+      expect(() => {
         b.postMessage('test', { toString: null })
-      }, /Cannot convert object to primitive value/)
+      }).to.throw('Cannot convert object to primitive value')
       b.close()
     })
   })
@@ -772,8 +771,8 @@ describe('chromium feature', () => {
       listener = (event) => {
         window.removeEventListener('message', listener)
         b.close()
-        assert.strictEqual(event.source, b)
-        assert.strictEqual(event.origin, 'file://')
+        expect(event.source).to.equal(b)
+        expect(event.origin).to.equal('file://')
         done()
       }
       window.addEventListener('message', listener)
@@ -784,7 +783,7 @@ describe('chromium feature', () => {
       const webview = new WebView()
       webview.addEventListener('console-message', (e) => {
         webview.remove()
-        assert.strictEqual(e.message, 'message')
+        expect(e.message).to.equal('message')
         done()
       })
       webview.allowpopups = true
@@ -824,7 +823,7 @@ describe('chromium feature', () => {
         listener = (event) => {
           window.removeEventListener('message', listener)
           b.close()
-          assert.strictEqual(event.data, 'deliver')
+          expect(event.data).to.equal('deliver')
           done()
         }
         window.addEventListener('message', listener)
@@ -837,7 +836,6 @@ describe('chromium feature', () => {
     it('does not crash', () => {
       const RUint8Array = remote.getGlobal('Uint8Array')
       const arr = new RUint8Array()
-      assert(arr)
     })
   })
 
@@ -856,7 +854,7 @@ describe('chromium feature', () => {
       }
 
       const webgl = document.createElement('canvas').getContext('webgl')
-      assert.notStrictEqual(webgl, null)
+      expect(webgl).to.not.be.null()
     })
   })
 
@@ -865,7 +863,7 @@ describe('chromium feature', () => {
       const worker = new Worker('../fixtures/workers/worker.js')
       const message = 'ping'
       worker.onmessage = (event) => {
-        assert.strictEqual(event.data, message)
+        expect(event.data).to.equal(message)
         worker.terminate()
         done()
       }
@@ -875,7 +873,7 @@ describe('chromium feature', () => {
     it('Worker has no node integration by default', (done) => {
       const worker = new Worker('../fixtures/workers/worker_node.js')
       worker.onmessage = (event) => {
-        assert.strictEqual(event.data, 'undefined undefined undefined undefined')
+        expect(event.data).to.equal('undefined undefined undefined undefined')
         worker.terminate()
         done()
       }
@@ -884,7 +882,7 @@ describe('chromium feature', () => {
     it('Worker has node integration with nodeIntegrationInWorker', (done) => {
       const webview = new WebView()
       webview.addEventListener('ipc-message', (e) => {
-        assert.strictEqual(e.channel, 'object function object function')
+        expect(e.channel).to.equal('object function object function')
         webview.remove()
         done()
       })
@@ -897,7 +895,7 @@ describe('chromium feature', () => {
       const worker = new SharedWorker('../fixtures/workers/shared_worker.js')
       const message = 'ping'
       worker.port.onmessage = (event) => {
-        assert.strictEqual(event.data, message)
+        expect(event.data).to.equal(message)
         done()
       }
       worker.port.postMessage(message)
@@ -906,7 +904,7 @@ describe('chromium feature', () => {
     it('SharedWorker has no node integration by default', (done) => {
       const worker = new SharedWorker('../fixtures/workers/shared_worker_node.js')
       worker.port.onmessage = (event) => {
-        assert.strictEqual(event.data, 'undefined undefined undefined undefined')
+        expect(event.data).to.equal('undefined undefined undefined undefined')
         done()
       }
     })
@@ -917,7 +915,7 @@ describe('chromium feature', () => {
         console.log(e)
       })
       webview.addEventListener('ipc-message', (e) => {
-        assert.strictEqual(e.channel, 'object function object function')
+        expect(e.channel).to.equal('object function object function')
         webview.remove()
         done()
       })
@@ -942,7 +940,7 @@ describe('chromium feature', () => {
       iframe.src = `file://${fixtures}/pages/set-global.html`
       document.body.appendChild(iframe)
       iframe.onload = () => {
-        assert.strictEqual(iframe.contentWindow.test, 'undefined undefined undefined')
+        expect(iframe.contentWindow.test).to.equal('undefined undefined undefined')
         done()
       }
     })
@@ -965,7 +963,7 @@ describe('chromium feature', () => {
 
     it('requesting persitent quota works', (done) => {
       navigator.webkitPersistentStorage.requestQuota(1024 * 1024, (grantedBytes) => {
-        assert.strictEqual(grantedBytes, 1048576)
+        expect(grantedBytes).to.equal(1048576)
         done()
       })
     })
@@ -1006,10 +1004,8 @@ describe('chromium feature', () => {
       })
 
       it('cannot access localStorage', (done) => {
-        ipcMain.once('local-storage-response', (event, message) => {
-          assert.strictEqual(
-            message,
-            'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
+        ipcMain.once('local-storage-response', (event, error) => {
+          expect(error).to.equal(`Failed to read the 'localStorage' property from 'Window': Access is denied for this document.`)
           done()
         })
         contents.loadURL(protocolName + '://host/localStorage')
@@ -1017,9 +1013,7 @@ describe('chromium feature', () => {
 
       it('cannot access sessionStorage', (done) => {
         ipcMain.once('session-storage-response', (event, error) => {
-          assert.strictEqual(
-            error,
-            'Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.')
+          expect(error).to.equal(`Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.`)
           done()
         })
         contents.loadURL(`${protocolName}://host/sessionStorage`)
@@ -1027,9 +1021,7 @@ describe('chromium feature', () => {
 
       it('cannot access WebSQL database', (done) => {
         ipcMain.once('web-sql-response', (event, error) => {
-          assert.strictEqual(
-            error,
-            'Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.')
+          expect(error).to.equal(`Failed to execute 'openDatabase' on 'Window': Access to the WebDatabase API is denied in this context.`)
           done()
         })
         contents.loadURL(`${protocolName}://host/WebSQL`)
@@ -1037,9 +1029,7 @@ describe('chromium feature', () => {
 
       it('cannot access indexedDB', (done) => {
         ipcMain.once('indexed-db-response', (event, error) => {
-          assert.strictEqual(
-            error,
-            'Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.')
+          expect(error).to.equal(`Failed to execute 'open' on 'IDBFactory': access to the Indexed Database API is denied in this context.`)
           done()
         })
         contents.loadURL(`${protocolName}://host/indexedDB`)
@@ -1047,9 +1037,7 @@ describe('chromium feature', () => {
 
       it('cannot access cookie', (done) => {
         ipcMain.once('cookie-response', (event, error) => {
-          assert.strictEqual(
-            error,
-            'Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.')
+          expect(error).to.equal(`Failed to set the 'cookie' property on 'Document': Access is denied for this document.`)
           done()
         })
         contents.loadURL(`${protocolName}://host/cookie`)
@@ -1093,14 +1081,14 @@ describe('chromium feature', () => {
           })
           let redirected = false
           w.webContents.on('crashed', () => {
-            assert.fail('renderer crashed / was killed')
+            expect.fail('renderer crashed / was killed')
           })
           w.webContents.on('did-redirect-navigation', (event, url) => {
-            assert.strictEqual(url, `${server.cross_site_url}/redirected`)
+            expect(url).to.equal(`${server.cross_site_url}/redirected`)
             redirected = true
           })
           w.webContents.on('did-finish-load', () => {
-            assert.strictEqual(redirected, true, 'didnt redirect')
+            expect(redirected).to.be.true('didnt redirect')
             done()
           })
           w.loadURL(`${server.url}/redirect-cross-site`)
@@ -1136,7 +1124,6 @@ describe('chromium feature', () => {
           }
         })
         const socket = new WebSocket(`ws://127.0.0.1:${port}`)
-        assert(socket)
       })
     })
   })
@@ -1241,15 +1228,15 @@ describe('chromium feature', () => {
 
         this.createBrowserWindow({ plugins: true, preload: preloadFile })
         ipcMain.once('pdf-loaded', (event, state) => {
-          assert.strictEqual(state, 'success')
+          expect(state).to.equal('success')
           done()
         })
         w.webContents.on('page-title-updated', () => {
           const parsedURL = url.parse(w.webContents.getURL(), true)
-          assert.strictEqual(parsedURL.protocol, 'chrome:')
-          assert.strictEqual(parsedURL.hostname, 'pdf-viewer')
-          assert.strictEqual(parsedURL.query.src, pagePath)
-          assert.strictEqual(w.webContents.getTitle(), 'cat.pdf')
+          expect(parsedURL.protocol).to.equal('chrome:')
+          expect(parsedURL.hostname).to.equal('pdf-viewer')
+          expect(parsedURL.query.src).to.equal(pagePath)
+          expect(w.webContents.getTitle()).to.equal('cat.pdf')
         })
         w.loadFile(path.join(fixtures, 'pages', page))
       }
@@ -1258,15 +1245,15 @@ describe('chromium feature', () => {
     it('opens when loading a pdf resource as top level navigation', (done) => {
       this.createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
       ipcMain.once('pdf-loaded', (event, state) => {
-        assert.strictEqual(state, 'success')
+        expect(state).to.equal('success')
         done()
       })
       w.webContents.on('page-title-updated', () => {
         const parsedURL = url.parse(w.webContents.getURL(), true)
-        assert.strictEqual(parsedURL.protocol, 'chrome:')
-        assert.strictEqual(parsedURL.hostname, 'pdf-viewer')
-        assert.strictEqual(parsedURL.query.src, this.pdfSource)
-        assert.strictEqual(w.webContents.getTitle(), 'cat.pdf')
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(this.pdfSource)
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
       })
       w.webContents.loadURL(this.pdfSource)
     })
@@ -1274,17 +1261,17 @@ describe('chromium feature', () => {
     it('opens a pdf link given params, the query string should be escaped', (done) => {
       this.createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
       ipcMain.once('pdf-loaded', (event, state) => {
-        assert.strictEqual(state, 'success')
+        expect(state).to.equal('success')
         done()
       })
       w.webContents.on('page-title-updated', () => {
         const parsedURL = url.parse(w.webContents.getURL(), true)
-        assert.strictEqual(parsedURL.protocol, 'chrome:')
-        assert.strictEqual(parsedURL.hostname, 'pdf-viewer')
-        assert.strictEqual(parsedURL.query.src, this.pdfSourceWithParams)
-        assert.strictEqual(parsedURL.query.b, undefined)
-        assert(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2'))
-        assert.strictEqual(w.webContents.getTitle(), 'cat.pdf')
+        expect(parsedURL.protocol).to.equal('chrome:')
+        expect(parsedURL.hostname).to.equal('pdf-viewer')
+        expect(parsedURL.query.src).to.equal(this.pdfSourceWithParams)
+        expect(parsedURL.query.b).to.be.undefined()
+        expect(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2')).to.be.true()
+        expect(w.webContents.getTitle()).to.equal('cat.pdf')
       })
       w.webContents.loadURL(this.pdfSourceWithParams)
     })
@@ -1293,9 +1280,9 @@ describe('chromium feature', () => {
       this.createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
       ipcRenderer.sendSync('set-download-option', false, false)
       ipcRenderer.once('download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) => {
-        assert.strictEqual(state, 'completed')
-        assert.strictEqual(filename, 'cat.pdf')
-        assert.strictEqual(mimeType, 'application/pdf')
+        expect(state).to.equal('completed')
+        expect(filename).to.equal('cat.pdf')
+        expect(mimeType).to.equal('application/pdf')
         fs.unlinkSync(path.join(fixtures, 'mock.pdf'))
         done()
       })
@@ -1304,8 +1291,8 @@ describe('chromium feature', () => {
 
     it('should not open when pdf is requested as sub resource', (done) => {
       fetch(this.pdfSource).then((res) => {
-        assert.strictEqual(res.status, 200)
-        assert.notStrictEqual(document.title, 'cat.pdf')
+        expect(res.status).to.equal(200)
+        expect(document.title).to.not.equal('cat.pdf')
         done()
       }).catch((e) => done(e))
     })
@@ -1321,26 +1308,26 @@ describe('chromium feature', () => {
 
   describe('window.alert(message, title)', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
-      assert.throws(() => {
+      expect(() => {
         window.alert({ toString: null })
-      }, /Cannot convert object to primitive value/)
+      }).to.throw('Cannot convert object to primitive value')
     })
   })
 
   describe('window.confirm(message, title)', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
-      assert.throws(() => {
+      expect(() => {
         window.confirm({ toString: null }, 'title')
-      }, /Cannot convert object to primitive value/)
+      }).to.throw('Cannot convert object to primitive value')
     })
   })
 
   describe('window.history', () => {
     describe('window.history.go(offset)', () => {
       it('throws an exception when the argumnet cannot be converted to a string', () => {
-        assert.throws(() => {
+        expect(() => {
           window.history.go({ toString: null })
-        }, /Cannot convert object to primitive value/)
+        }).to.throw('Cannot convert object to primitive value')
       })
     })
 
@@ -1349,11 +1336,11 @@ describe('chromium feature', () => {
         w = new BrowserWindow({ show: false })
         w.webContents.once('did-finish-load', async () => {
           // History should have current page by now.
-          assert.strictEqual(w.webContents.length(), 1)
+          expect(w.webContents.length()).to.equal(1)
 
           w.webContents.executeJavaScript('window.history.pushState({}, "")').then(() => {
             // Initial page + pushed state
-            assert.strictEqual(w.webContents.length(), 2)
+            expect(w.webContents.length()).to.equal(2)
             done()
           })
         })
@@ -1438,32 +1425,32 @@ describe('chromium feature', () => {
         let focusChange = expectFocusChange()
         w.webContents.sendInputEvent(tabPressEvent)
         let focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-1', `should start focused in element-1, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-1', `should start focused in element-1, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         w.webContents.sendInputEvent(tabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-2', `focus should've moved to element-2, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-2', `focus should've moved to element-2, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         w.webContents.sendInputEvent(tabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-wv-element-1', `focus should've moved to the webview's element-1, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-wv-element-1', `focus should've moved to the webview's element-1, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         webviewContents.sendInputEvent(tabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-wv-element-2', `focus should've moved to the webview's element-2, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-wv-element-2', `focus should've moved to the webview's element-2, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         webviewContents.sendInputEvent(tabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-3', `focus should've moved to element-3, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've moved to element-3, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         w.webContents.sendInputEvent(tabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-1', `focus should've looped back to element-1, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-1', `focus should've looped back to element-1, it's instead in ${focusedElementId}`)
       })
     })
 
@@ -1478,32 +1465,32 @@ describe('chromium feature', () => {
         let focusChange = expectFocusChange()
         w.webContents.sendInputEvent(shiftTabPressEvent)
         let focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-3', `should start focused in element-3, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-3', `should start focused in element-3, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         w.webContents.sendInputEvent(shiftTabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-wv-element-2', `focus should've moved to the webview's element-2, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-wv-element-2', `focus should've moved to the webview's element-2, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         webviewContents.sendInputEvent(shiftTabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-wv-element-1', `focus should've moved to the webview's element-1, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-wv-element-1', `focus should've moved to the webview's element-1, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         webviewContents.sendInputEvent(shiftTabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-2', `focus should've moved to element-2, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-2', `focus should've moved to element-2, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         w.webContents.sendInputEvent(shiftTabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-1', `focus should've moved to element-1, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-1', `focus should've moved to element-1, it's instead in ${focusedElementId}`)
 
         focusChange = expectFocusChange()
         w.webContents.sendInputEvent(shiftTabPressEvent)
         focusedElementId = await focusChange
-        assert.strictEqual(focusedElementId, 'BUTTON-element-3', `focus should've looped back to element-3, it's instead in ${focusedElementId}`)
+        expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've looped back to element-3, it's instead in ${focusedElementId}`)
       })
     })
   })
