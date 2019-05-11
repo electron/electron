@@ -4,7 +4,7 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
-const { resolveGetters } = require('./assert-helpers')
+const { resolveGetters } = require('./expect-helpers')
 
 const { remote, ipcRenderer } = require('electron')
 const { ipcMain, BrowserWindow } = remote
