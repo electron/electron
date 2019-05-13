@@ -100,17 +100,11 @@ class AsarURLLoader : public network::mojom::URLLoader {
       return;
     }
 
-    // Use file loader for unpacked files.
+    // For unpacked path, read like normal file.
+    base::FilePath real_path;
     if (info.unpacked) {
-      base::FilePath real_path;
       archive->CopyFileOut(relative_path, &real_path);
-      network::ResourceRequest new_request = request;
-      new_request.url = net::FilePathToFileURL(real_path);
-      content::CreateFileURLLoader(new_request, std::move(loader),
-                                   std::move(client_), nullptr, false,
-                                   extra_response_headers);
-      MaybeDeleteSelf();
-      return;
+      info.offset = 0;
     }
 
     mojo::DataPipe pipe(kDefaultFileUrlPipeSize);
@@ -122,7 +116,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // Note that while the |Archive| already opens a |base::File|, we still need
     // to create a new |base::File| here, as it might be accessed by multiple
     // requests at the same time.
-    base::File file(archive->path(),
+    base::File file(info.unpacked ? real_path : archive->path(),
                     base::File::FLAG_OPEN | base::File::FLAG_READ);
     // Move cursor to sub-file.
     file.Seek(base::File::FROM_BEGIN, info.offset);
