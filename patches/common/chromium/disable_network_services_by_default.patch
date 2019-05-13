@@ -12,7 +12,7 @@ We should remove this patch after all Electron's code has been migrated to the
 NetworkService.
 
 diff --git a/services/network/public/cpp/features.cc b/services/network/public/cpp/features.cc
-index b12f83da65dd3d5f3959e8ea421fabb46dab7ad2..683890831cd9a34796caf26a80f2baf863d5f04f 100644
+index a73c894c6d3e549b10cbbeb8f74fda526f0f2a9e..2db7d3a9debd7329c09f748dbe1e24bc7c9a0f53 100644
 --- a/services/network/public/cpp/features.cc
 +++ b/services/network/public/cpp/features.cc
 @@ -21,7 +21,7 @@ const base::Feature kNetworkService {

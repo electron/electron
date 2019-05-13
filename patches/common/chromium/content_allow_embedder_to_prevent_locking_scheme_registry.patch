@@ -40,7 +40,7 @@ index 456df421598153bde006ad0ecb0f1031360bb543..af06d78b91fa30e5daf993ad2c65c2c5
    return service_manager::ProcessType::kDefault;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 01f81ee8a103bc893c0739de3463c48839f8d10f..40123b4bf42131a716f9ed7f5dd14b93151fd0b3 100644
+index d4f3b8097c6aba8e15616c6d00070565064b1e9c..5672f4f1c328d30bb04dd8aaf4af63c51d52b3e6 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -88,6 +88,9 @@ class CONTENT_EXPORT ContentMainDelegate {

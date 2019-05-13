@@ -6,7 +6,7 @@ Subject: boringssl BUILD.gn
 Build BoringSSL with some extra functions that nodejs needs.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index 051b3ed07fa7d4ec2e5f9200dab6843176e55d56..edf567e79c88fbe66acf4aabd3952cb8adcab4af 100644
+index 250ed854247a6f2f17690ffb95524eb57c72598b..6399d955196fb2d79f18dfcf7cbb2dbd5bd0bcae 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
 @@ -45,6 +45,19 @@ config("no_asm_config") {
