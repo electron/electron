@@ -17,7 +17,7 @@ namespace api {
 
 namespace {
 
-std::string kBuiltinSchemes[] = {
+const char* kBuiltinSchemes[] = {
     "about", "file", "http", "https", "data", "filesystem",
 };
 

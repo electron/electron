@@ -5,6 +5,7 @@
 #include "atom/browser/net/asar/asar_url_loader.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
