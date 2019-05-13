@@ -49,6 +49,7 @@ struct JumpListItem {
   base::string16 arguments;
   base::string16 title;
   base::string16 description;
+  base::FilePath working_dir;
   base::FilePath icon_path;
   int icon_index = 0;
 
