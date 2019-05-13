@@ -6,7 +6,7 @@ Subject: Revert "Build swiftshader for ARM32."
 This reverts commit e7caa7ca82fc015675aea8cecf178c83a94ab3a7.
 
 diff --git a/ui/gl/BUILD.gn b/ui/gl/BUILD.gn
-index 003730ab8f993637005c4152b5a3bd3660f88a95..b003bf86bb02fce349508a1ef20d5fe003e94c05 100644
+index 70246bcc843422f4ad3e63ce4905b639384e5798..7ca67cb078928025b654e4c36baf6ffd78594a1e 100644
 --- a/ui/gl/BUILD.gn
 +++ b/ui/gl/BUILD.gn
 @@ -15,8 +15,8 @@ declare_args() {

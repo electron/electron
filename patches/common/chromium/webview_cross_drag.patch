@@ -5,10 +5,10 @@ Subject: webview_cross_drag.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 2ff912c1b4fbf02a5c00dfd0206f21f9a3608160..a81fce5c072b91f2dda2fea0f87110d1499603a1 100644
+index 6565781a84d50e1dfdea4086588e8dcf11579d32..1ec9d900346f506a3fd9b1bfcb7de3f38048842a 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -754,6 +754,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+@@ -742,6 +742,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
  
  bool WebContentsViewAura::IsValidDragTarget(
      RenderWidgetHostImpl* target_rwh) const {
