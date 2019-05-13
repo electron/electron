@@ -10,6 +10,7 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/asar/asar_url_loader.h"
 #include "atom/browser/net/node_stream_loader.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -18,7 +19,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/system/string_data_pipe_producer.h"
 #include "net/base/filename_util.h"
@@ -292,8 +292,8 @@ void AtomURLLoaderFactory::StartLoadingFile(
 
   network::ResourceResponseHead head = ToResponseHead(dict);
   head.headers->AddHeader(kCORSHeader);
-  content::CreateFileURLLoader(request, std::move(loader), std::move(client),
-                               nullptr, false, head.headers);
+  asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
+                            head.headers);
 }
 
 // static
