@@ -5,7 +5,6 @@
 import("//extensions/buildflags/buildflags.gni")
 import("//tools/json_schema_compiler/json_features.gni")
 import("//tools/json_schema_compiler/json_schema_api.gni")
-
 assert(enable_extensions)
 
 ################################################################################
