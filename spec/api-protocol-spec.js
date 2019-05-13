@@ -405,7 +405,7 @@ describe('protocol module', () => {
       }
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      expect(r.data.length).to.equal(data.length)
+      expect(r.data).to.have.lengthOf(data.length)
     })
   })
 

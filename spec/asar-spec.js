@@ -59,7 +59,7 @@ describe('asar package', function () {
       it('reads from a empty file', function () {
         const file = path.join(fixtures, 'asar', 'empty.asar', 'file1')
         const buffer = fs.readFileSync(file)
-        expect(buffer.length).to.equal(0)
+        expect(buffer).to.be.empty()
         expect(buffer.toString()).to.equal('')
       })
 

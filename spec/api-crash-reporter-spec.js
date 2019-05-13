@@ -446,7 +446,7 @@ const startServer = ({ callback, processType, done }) => {
       res.end(reportId, () => {
         waitForCrashReport().then(() => {
           expect(crashReporter.getLastCrashReport().id).to.equal(reportId)
-          expect(crashReporter.getUploadedReports().length).to.not.equal(0)
+          expect(crashReporter.getUploadedReports()).to.be.an('array').that.is.not.empty()
           expect(crashReporter.getUploadedReports()[0].id).to.equal(reportId)
           req.socket.destroy()
           done()

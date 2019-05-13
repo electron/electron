@@ -1109,7 +1109,7 @@ describe('BrowserWindow module', () => {
 
     it('returns the window with the webContents', () => {
       expect(BrowserWindow.fromWebContents(w.webContents).id).to.equal(w.id)
-      expect(BrowserWindow.fromWebContents(contents)).to.be.be.undefined()
+      expect(BrowserWindow.fromWebContents(contents)).to.be.undefined()
     })
   })
 
@@ -2549,7 +2549,9 @@ describe('BrowserWindow module', () => {
           if (called) return
           called = true
 
-          expect(data.length).to.not.equal(0)
+          expect(data.constructor.name).to.equal('NativeImage')
+          expect(data.isEmpty()).to.be.false()
+
           w.webContents.endFrameSubscription()
           done()
         })
@@ -2583,7 +2585,8 @@ describe('BrowserWindow module', () => {
           // assert(rect.width < contentWidth || rect.height < contentHeight)
           called = true
 
-          expect(image.getBitmap().length).to.equal(rect.width * rect.height * 4)
+          const expectedSize = rect.width * rect.height * 4
+          expect(image.getBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize)
           w.webContents.endFrameSubscription()
           done()
         })
@@ -2882,11 +2885,11 @@ describe('BrowserWindow module', () => {
         w.destroy()
         w = new BrowserWindow()
         w.setKiosk(true)
-        expect(w.isKiosk()).be.be.true()
+        expect(w.isKiosk()).to.be.true()
 
         w.once('enter-full-screen', () => {
           w.setKiosk(false)
-          expect(w.isKiosk()).be.be.false()
+          expect(w.isKiosk()).to.be.false()
         })
         w.once('leave-full-screen', () => {
           done()
@@ -3652,7 +3655,8 @@ describe('BrowserWindow module', () => {
 
     it('creates offscreen window with correct size', (done) => {
       w.webContents.once('paint', function (event, rect, data) {
-        expect(data.length).to.not.equal(0)
+        expect(data.constructor.name).to.equal('NativeImage')
+        expect(data.isEmpty()).to.be.false()
         const size = data.getSize()
         expect(size.width).to.be.closeTo(100 * devicePixelRatio, 2)
         expect(size.height).to.be.closeTo(100 * devicePixelRatio, 2)

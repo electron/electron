@@ -1102,7 +1102,7 @@ describe('<webview> tag', function () {
 
   describe('permission-request event', () => {
     function setUpRequestHandler (webview, requestedPermission, completed) {
-      expect(webview.partition).to.be.a('string')
+      expect(webview.partition).to.be.a('string').that.is.not.empty()
 
       const listener = function (webContents, permission, callback) {
         if (webContents.id === webview.getWebContentsId()) {
@@ -1250,8 +1250,7 @@ describe('<webview> tag', function () {
       await loadWebView(webview, { src })
 
       const data = await webview.printToPDF({})
-      expect(data).to.be.an.instanceof(Buffer)
-      expect(data.length).to.not.equal(0)
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
   })
 

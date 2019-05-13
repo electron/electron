@@ -168,7 +168,7 @@ describe('BrowserView module', () => {
 
       expect(view1.id).to.be.not.null()
       const views = w.getBrowserViews()
-      expect(views.length).to.equal(2)
+      expect(views).to.have.lengthOf(2)
       expect(views[0].webContents.id).to.equal(view1.webContents.id)
       expect(views[1].webContents.id).to.equal(view2.webContents.id)
 
