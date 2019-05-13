@@ -6,3 +6,4 @@ dcheck.patch
 revert_cctest_add_v8_export_private_to_arm_arm64_ports.patch
 export_symbols_needed_for_windows_build.patch
 workaround_an_undefined_symbol_error.patch
+do_not_export_private_v8_symbols_on_windows.patch
