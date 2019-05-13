@@ -33,9 +33,16 @@ tools and resources.
 
 ## Supported Versions
 
-The latest three release branches are supported by the Electron team.
-For example, if the latest release is 2.0.x, then the 2-0-x series
-is supported, as are the two previous release series 1-7-x and 1-8-x.
+The latest three major versions are supported by the Electron team.
+For example, if the latest release is 5.0.x, then the 4.x.y series
+is supported, as are the two previous release series 3.x.y and 2.x.y.
+
+### Currently supported versions
+- 5.x
+- 4.x
+- 3.x
+
+### End-of-life
 
 When a release branch reaches the end of its support cycle, the series
 will be deprecated in NPM and a final end-of-support release will be
