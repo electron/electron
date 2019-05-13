@@ -48,6 +48,8 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
       command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist);
   auth_dynamic_params->delegate_whitelist = command_line.GetSwitchValueASCII(
       switches::kAuthNegotiateDelegateWhitelist);
+  auth_dynamic_params->enable_negotiate_port =
+      command_line->HasSwitch(atom::switches::kEnableAuthNegotiatePort);
 
   return auth_dynamic_params;
 }
