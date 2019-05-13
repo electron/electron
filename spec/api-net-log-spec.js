@@ -62,32 +62,30 @@ describe('netLog module', () => {
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
     expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
 
-    netLog.startLogging(dumpFileDynamic)
+    await netLog.startLogging(dumpFileDynamic)
 
     expect(netLog.currentlyLogging).to.be.true()
-    expect(netLog.currentlyLoggingPath).to.equal(dumpFileDynamic)
 
-    const path = await netLog.stopLogging()
+    await netLog.stopLogging()
 
     expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
 
-    expect(path).to.equal(dumpFileDynamic)
     expect(fs.existsSync(dumpFileDynamic)).to.be.true()
   })
 
-  it('should silence when .stopLogging() is called without calling .startLogging()', async () => {
+  it('should throw an error when .stopLogging() is called without calling .startLogging()', async () => {
     expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
 
-    const path = await netLog.stopLogging()
+    expect(await (async () => {
+      try {
+        await netLog.stopLogging()
+      } catch (e) {
+        return e
+      }
+    })()).to.be.an('error')
 
     expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
-
-    expect(path).to.equal('')
   })
 
   it('should begin and end logging automatically when --log-net-log is passed', done => {
@@ -110,7 +108,6 @@ describe('netLog module', () => {
     })
   })
 
-  // FIXME(deepak1556): Ch69 follow up.
   it('should begin and end logging automtically when --log-net-log is passed, and behave correctly when .startLogging() and .stopLogging() is called', done => {
     if (isCI && process.platform === 'linux') {
       done()

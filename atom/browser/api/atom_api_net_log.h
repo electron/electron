@@ -13,8 +13,8 @@
 #include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/values.h"
-#include "components/net_log/net_export_file_writer.h"
 #include "native_mate/handle.h"
+#include "services/network/public/mojom/net_log.mojom.h"
 
 namespace atom {
 
@@ -22,8 +22,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class NetLog : public mate::TrackableObject<NetLog>,
-               public net_log::NetExportFileWriter::StateObserver {
+class NetLog : public mate::TrackableObject<NetLog> {
  public:
   static mate::Handle<NetLog> Create(v8::Isolate* isolate,
                                      AtomBrowserContext* browser_context);
@@ -31,24 +30,31 @@ class NetLog : public mate::TrackableObject<NetLog>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  void StartLogging(mate::Arguments* args);
-  std::string GetLoggingState() const;
-  bool IsCurrentlyLogging() const;
-  std::string GetCurrentlyLoggingPath() const;
+  v8::Local<v8::Promise> StartLogging(mate::Arguments* args);
   v8::Local<v8::Promise> StopLogging(mate::Arguments* args);
+  bool IsCurrentlyLogging() const;
 
  protected:
   explicit NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~NetLog() override;
 
-  // net_log::NetExportFileWriter::StateObserver implementation
-  void OnNewState(const base::DictionaryValue& state) override;
+  void OnConnectionError();
+
+  void StartNetLogAfterCreateFile(
+      network::mojom::NetLogCaptureMode capture_mode,
+      uint64_t max_file_size,
+      base::Value custom_constants,
+      util::Promise promise,
+      base::File output_file);
 
  private:
   AtomBrowserContext* browser_context_;
-  net_log::NetExportFileWriter* net_log_writer_;
-  std::list<atom::util::Promise> stop_callback_queue_;
-  std::unique_ptr<base::DictionaryValue> net_log_state_;
+
+  network::mojom::NetLogExporterPtr net_log_exporter_;
+
+  scoped_refptr<base::TaskRunner> file_task_runner_;
+
+  base::WeakPtrFactory<NetLog> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };
