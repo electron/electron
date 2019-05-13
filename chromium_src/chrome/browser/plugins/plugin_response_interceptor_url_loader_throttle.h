@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/macros.h"
+#include "content/public/common/resource_type.h"
 #include "content/public/common/url_loader_throttle.h"
 
 namespace content {
@@ -25,8 +26,9 @@ class ResourceContext;
 class PluginResponseInterceptorURLLoaderThrottle
     : public content::URLLoaderThrottle {
  public:
-  PluginResponseInterceptorURLLoaderThrottle(int resource_type,
-                                             int frame_tree_node_id);
+  PluginResponseInterceptorURLLoaderThrottle(
+      content::ResourceType resource_type,
+      int frame_tree_node_id);
   ~PluginResponseInterceptorURLLoaderThrottle() override;
 
  private:
@@ -35,7 +37,7 @@ class PluginResponseInterceptorURLLoaderThrottle
                            network::ResourceResponseHead* response_head,
                            bool* defer) override;
 
-  const int resource_type_;
+  const content::ResourceType resource_type_;
   const int frame_tree_node_id_;
 
   DISALLOW_COPY_AND_ASSIGN(PluginResponseInterceptorURLLoaderThrottle);

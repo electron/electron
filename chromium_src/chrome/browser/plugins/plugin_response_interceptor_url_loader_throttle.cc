@@ -21,8 +21,9 @@
 #include "services/network/public/cpp/features.h"
 
 PluginResponseInterceptorURLLoaderThrottle::
-    PluginResponseInterceptorURLLoaderThrottle(int resource_type,
-                                               int frame_tree_node_id)
+    PluginResponseInterceptorURLLoaderThrottle(
+        content::ResourceType resource_type,
+        int frame_tree_node_id)
     : resource_type_(resource_type), frame_tree_node_id_(frame_tree_node_id) {}
 
 PluginResponseInterceptorURLLoaderThrottle::
@@ -96,8 +97,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
   transferrable_loader->head = std::move(deep_copied_response->head);
   transferrable_loader->head.intercepted_by_plugin = true;
 
-  bool embedded =
-      resource_type_ != static_cast<int>(content::ResourceType::kMainFrame);
+  bool embedded = resource_type_ != content::ResourceType::kMainFrame;
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(
