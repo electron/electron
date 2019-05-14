@@ -7,10 +7,10 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance.
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index d04e4245939a031a67c8ce5493b7ec9a3c51f695..feb68ebde4361e0282848919e98091ca0a31bb46 100644
+index de85226ab3644cc9af5de66a4c25be5902bab55f..028e57320b3def3cd1d948a479a2453fa193c5bb 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2138,6 +2138,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2140,6 +2140,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
@@ -27,7 +27,7 @@ index d04e4245939a031a67c8ce5493b7ec9a3c51f695..feb68ebde4361e0282848919e98091ca
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2170,6 +2180,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2172,6 +2182,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -79,7 +79,7 @@ index d04e4245939a031a67c8ce5493b7ec9a3c51f695..feb68ebde4361e0282848919e98091ca
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2181,23 +2236,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2183,23 +2238,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  

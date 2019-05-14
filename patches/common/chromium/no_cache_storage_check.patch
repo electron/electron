@@ -7,7 +7,7 @@ Do not check for unique origin in CacheStorage, in Electron we may have
 scripts running without an origin.
 
 diff --git a/content/browser/cache_storage/legacy/legacy_cache_storage.cc b/content/browser/cache_storage/legacy/legacy_cache_storage.cc
-index 73d521edb2c85ad4fac6b6d691e77af1ff91caee..8c4a96de9c23ff48d11c67170c54418c9b0f2998 100644
+index 75ba7c3f1631bdb909f982005a8517dea2968346..10f43c0bc365c55929f867d05375b6b4b864d791 100644
 --- a/content/browser/cache_storage/legacy/legacy_cache_storage.cc
 +++ b/content/browser/cache_storage/legacy/legacy_cache_storage.cc
 @@ -104,7 +104,7 @@ class LegacyCacheStorage::CacheLoader {
