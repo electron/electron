@@ -919,7 +919,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     // We can simulate the pre-Lion fullscreen by auto-hiding the dock and menu
     // bar
     NSApplicationPresentationOptions options =
-        NSApplicationPresentationAutoHideDock +
+        NSApplicationPresentationAutoHideDock |
         NSApplicationPresentationAutoHideMenuBar;
     [NSApp setPresentationOptions:options];
 
@@ -997,12 +997,12 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
   if (kiosk && !is_kiosk_) {
     kiosk_options_ = [NSApp currentSystemPresentationOptions];
     NSApplicationPresentationOptions options =
-        NSApplicationPresentationHideDock +
-        NSApplicationPresentationHideMenuBar +
-        NSApplicationPresentationDisableAppleMenu +
-        NSApplicationPresentationDisableProcessSwitching +
-        NSApplicationPresentationDisableForceQuit +
-        NSApplicationPresentationDisableSessionTermination +
+        NSApplicationPresentationHideDock |
+        NSApplicationPresentationHideMenuBar |
+        NSApplicationPresentationDisableAppleMenu |
+        NSApplicationPresentationDisableProcessSwitching |
+        NSApplicationPresentationDisableForceQuit |
+        NSApplicationPresentationDisableSessionTermination |
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
