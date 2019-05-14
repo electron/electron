@@ -374,6 +374,14 @@ Emitted when the window enters a full-screen state triggered by HTML API.
 
 Emitted when the window leaves a full-screen state triggered by HTML API.
 
+#### Event: 'zoom-changed'
+
+Returns:
+* `event` Event
+* `zoomDirection` String - Can be `in` or `out`.
+
+Emitted when the user is requesting to change the zoom level using the mouse wheel.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.

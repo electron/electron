@@ -636,6 +636,10 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
   return content::KeyboardEventProcessingResult::NOT_HANDLED;
 }
 
+void WebContents::ContentsZoomChange(bool zoom_in) {
+  Emit("zoom-changed", zoom_in ? "in" : "out");
+}
+
 void WebContents::EnterFullscreenModeForTab(
     content::WebContents* source,
     const GURL& origin,
