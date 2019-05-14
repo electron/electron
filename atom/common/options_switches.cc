@@ -247,6 +247,9 @@ const char kAuthServerWhitelist[] = "auth-server-whitelist";
 const char kAuthNegotiateDelegateWhitelist[] =
     "auth-negotiate-delegate-whitelist";
 
+// If set, include the port in generated Kerberos SPNs.
+const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
+
 }  // namespace switches
 
 }  // namespace atom
