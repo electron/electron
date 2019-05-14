@@ -45,20 +45,10 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
                                const content::DownloadTargetCallback& callback,
                                const base::FilePath& default_path);
 
-#if defined(MAS_BUILD)
   void OnDownloadSaveDialogDone(
       uint32_t download_id,
       const content::DownloadTargetCallback& download_callback,
-      bool result,
-      const base::FilePath& path,
-      const std::string& bookmark);
-#else
-  void OnDownloadSaveDialogDone(
-      uint32_t download_id,
-      const content::DownloadTargetCallback& download_callback,
-      bool result,
-      const base::FilePath& path);
-#endif
+      mate::Dictionary result);
 
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
