@@ -24,6 +24,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "native_mate/dictionary.h"
 #include "net/base/mime_util.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -51,9 +52,10 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     atom::util::Promise promise(isolate);
 
-    file_dialog::ShowOpenDialog(settings, std::move(promise));
     auto callback = base::Bind(&FileSelectHelper::OnOpenDialogDone, this);
     ignore_result(promise.Then(callback));
+
+    file_dialog::ShowOpenDialog(settings, std::move(promise));
   }
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
@@ -74,45 +76,43 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   ~FileSelectHelper() override {}
 
-#if defined(MAS_BUILD)
-  void OnOpenDialogDone(bool result,
-                        const std::vector<base::FilePath>& paths,
-                        const std::vector<std::string>& bookmarks)
-#else
-  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths)
-#endif
-  {
+  void OnOpenDialogDone(mate::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
-    if (result) {
-      for (auto& path : paths) {
-        file_info.push_back(FileChooserFileInfo::NewNativeFile(
-            blink::mojom::NativeFileInfo::New(
-                path, path.BaseName().AsUTF16Unsafe())));
-      }
+    bool canceled = true;
+    result.Get("canceled", &canceled);
 
-      if (render_frame_host_ && !paths.empty()) {
-        auto* browser_context = static_cast<atom::AtomBrowserContext*>(
-            render_frame_host_->GetProcess()->GetBrowserContext());
-        browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
-                                              paths[0].DirName());
+    if (!canceled) {
+      std::vector<base::FilePath> paths;
+      if (result.Get("filePaths", &paths)) {
+        for (auto& path : paths) {
+          file_info.push_back(FileChooserFileInfo::NewNativeFile(
+              blink::mojom::NativeFileInfo::New(
+                  path, path.BaseName().AsUTF16Unsafe())));
+        }
+
+        if (render_frame_host_ && !paths.empty()) {
+          auto* browser_context = static_cast<atom::AtomBrowserContext*>(
+              render_frame_host_->GetProcess()->GetBrowserContext());
+          browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
+                                                paths[0].DirName());
+        }
       }
     }
     OnFilesSelected(std::move(file_info));
   }
 
-#if defined(MAS_BUILD)
-  void OnSaveDialogDone(bool result,
-                        const base::FilePath& path,
-                        const std::string& bookmark)
-#else
-  void OnSaveDialogDone(bool result, const base::FilePath& path)
-#endif
-  {
+  void OnSaveDialogDone(mate::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
-    if (result) {
-      file_info.push_back(
-          FileChooserFileInfo::NewNativeFile(blink::mojom::NativeFileInfo::New(
-              path, path.BaseName().AsUTF16Unsafe())));
+    bool canceled = true;
+    result.Get("canceled", &canceled);
+
+    if (!canceled) {
+      base::FilePath path;
+      if (result.Get("filePath", &path)) {
+        file_info.push_back(FileChooserFileInfo::NewNativeFile(
+            blink::mojom::NativeFileInfo::New(
+                path, path.BaseName().AsUTF16Unsafe())));
+      }
     }
     OnFilesSelected(std::move(file_info));
   }
@@ -123,7 +123,6 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
       listener_.reset();
     }
     render_frame_host_ = nullptr;
-    Release();
   }
 
   // content::WebContentsObserver:
