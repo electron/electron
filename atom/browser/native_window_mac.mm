@@ -23,6 +23,7 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
+#include "components/remote_cocoa/app_shim/bridged_native_widget_impl.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -30,7 +31,6 @@
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
-#include "ui/views_bridge_mac/bridged_native_widget_impl.h"
 
 // This view always takes the size of its superview. It is intended to be used
 // as a NSWindow's contentView.  It is needed because NSWindow's implementation
