@@ -179,8 +179,6 @@ void SetCertVerifyProcInIO(
       ->SetVerifyProc(proc);
 }
 
-}
-
 void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::FilePath& path,
                         const std::vector<GURL>& url_chain,
