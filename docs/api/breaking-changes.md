@@ -8,6 +8,16 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 ## Planned Breaking API Changes (7.0)
 
+### Node Headers URL
+
+This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
+command line flag when building native Node modules.  Both will be supported for
+the forseeable future but it is reccomened that you switch.
+
+Deprecated: https://atom.io/download/electron
+
+Replace with: https://electronjs.org/headers
+
 ### `session.clearAuthCache(options)`
 
 The `session.clearAuthCache` API no longer accepts options for what to clear, and instead unconditionally clears the whole cache.

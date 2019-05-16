@@ -10,7 +10,7 @@ import tempfile
 from lib.config import s3_config
 from lib.util import download, rm_rf, s3put, safe_mkdir
 
-DIST_URL = 'https://atom.io/download/electron/'
+DIST_URL = 'https://electronjs.org/headers/'
 
 
 def main():
