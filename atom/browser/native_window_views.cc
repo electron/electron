@@ -5,7 +5,6 @@
 #include "atom/browser/native_window_views.h"
 
 #if defined(OS_WIN)
-#include <objbase.h>
 #include <wrl/client.h>
 #endif
 
@@ -62,7 +61,6 @@
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
-#include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
@@ -473,24 +471,15 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #endif
 }
 
+#if defined(USE_X11)
 void NativeWindowViews::Maximize() {
-#if defined(OS_WIN)
-  // For window without WS_THICKFRAME style, we can not call Maximize().
-  if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
-    restore_bounds_ = GetBounds();
-    auto display =
-        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
-    SetBounds(display.work_area(), false);
-    return;
-  }
-#endif
-
   if (IsVisible())
     widget()->Maximize();
   else
     widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                             gfx::Rect());
 }
+#endif
 
 void NativeWindowViews::Unmaximize() {
 #if defined(OS_WIN)
