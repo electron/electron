@@ -100,3 +100,4 @@ make_--explicitly-allowed-ports_work_with_networkservice.patch
 fix_crashes_in_renderframeimpl_onselectpopupmenuitem_s.patch
 fix_re-entracy_problem_with_invalidateframesinkid.patch
 chore_expose_getcontentclient_to_embedders.patch
+tabbed_window_lagging.patch

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu May 16 13:52:12 JST 2019
+Subject: tabbed_window_lagging.patch
+
+Fix lagging when using tabbed windows.
+
+Later Chromium has some enhancements on graphics code that fix the lagging
+problem, but the changes are split in multiple commits on multiple files and
+we can not just cherry-pick them.
+
+Instead I'm just using the dummy fix and it does not seem to have side effects.
+
+diff --git a/ui/views/cocoa/bridged_native_widget.mm b/ui/views/cocoa/bridged_native_widget.mm
+index 69c5f1f44d7e..45aba19b2390 100644
+--- a/ui/views/cocoa/bridged_native_widget.mm
++++ b/ui/views/cocoa/bridged_native_widget.mm
+@@ -1037,6 +1037,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+ // BridgedNativeWidget, ui::CATransactionObserver
+ 
+ bool BridgedNativeWidget::ShouldWaitInPreCommit() {
++  // Fix lagging when using tabbed windows, see the issue for more:
++  // https://github.com/electron/electron/issues/16925
++  if (@available(macOS 10.12, *)) {
++    if ([[window_ tabbedWindows] count] > 0)
++      return false;
++  }
+   if (!window_visible_)
+     return false;
+   if (ca_transaction_sync_suppressed_)
