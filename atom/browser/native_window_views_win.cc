@@ -302,7 +302,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
 void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
   double aspect_ratio = GetAspectRatio();
-  // aspect_ratio width/height
   if (fabs(aspect_ratio) < 0.0001) {
     return;
   }
@@ -318,31 +317,25 @@ void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
   double temp_width = 0;
   double temp_height = 0;
 
-  gfx::Size ratio_fit_size(width, height);
-  gfx::Size min_fit_size = GetMinimumSize();
-
-  if (min_fit_size.width() >= width) {
-    width = min_fit_size.width();
-  } else if (min_fit_size.height() >= height) {
-    height = min_fit_size.height();
-  }
+  gfx::Size win_fit_size(width, height);
+  const gfx::Size min_fit_size = GetMinimumSize();
+  win_fit_size.SetToMax(min_fit_size);
 
   switch ((UINT)w_param) {
     case WMSZ_LEFT:
     case WMSZ_RIGHT:
-      result_width = width;
-      result_height = width / aspect_ratio;
+      result_width = win_fit_size.width();
+      result_height = static_cast<double>(result_width) / aspect_ratio;
       break;
     case WMSZ_TOP:
     case WMSZ_BOTTOM:
-      result_width = static_cast<double>(height) * aspect_ratio;
-      result_height = height;
+      result_height = win_fit_size.height();
+      result_width = static_cast<double>(result_height) * aspect_ratio;
       break;
     case WMSZ_TOPLEFT:
     case WMSZ_TOPRIGHT:
     case WMSZ_BOTTOMLEFT:
     case WMSZ_BOTTOMRIGHT:
-
       result_width = static_cast<double>(height) * aspect_ratio;
       result_height = height;
 
