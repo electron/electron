@@ -331,7 +331,7 @@ void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
     case WMSZ_LEFT:
     case WMSZ_RIGHT:
       result_width = width;
-      result_height = static_cast<double>(width) / aspect_ratio;
+      result_height = width / aspect_ratio;
       break;
     case WMSZ_TOP:
     case WMSZ_BOTTOM:
