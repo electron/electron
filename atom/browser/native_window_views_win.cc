@@ -303,7 +303,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
   double aspect_ratio = GetAspectRatio();
   // aspect_ratio width/height
-  if (aspect_ratio == 0) {
+  if (fabs(aspect_ratio) < 0.0001) {
     return;
   }
 
