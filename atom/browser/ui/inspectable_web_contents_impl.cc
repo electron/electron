@@ -54,14 +54,14 @@ const double kPresetZoomFactors[] = {0.25, 0.333, 0.5,  0.666, 0.75, 0.9,
                                      2.5,  3.0,   4.0,  5.0};
 
 const char kChromeUIDevToolsURL[] =
-    "chrome-devtools://devtools/bundled/devtools_app.html?"
+    "devtools://devtools/bundled/devtools_app.html?"
     "remoteBase=%s&"
     "can_dock=%s&"
     "toolbarColor=rgba(223,223,223,1)&"
     "textColor=rgba(0,0,0,1)&"
     "experiments=true";
 const char kChromeUIDevToolsRemoteFrontendBase[] =
-    "https://chrome-devtools-frontend.appspot.com/";
+    "https://devtools-frontend.appspot.com/";
 const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 
 const char kDevToolsBoundsPref[] = "electron.devtools.bounds";

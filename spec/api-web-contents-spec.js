@@ -187,7 +187,7 @@ describe('webContents module', () => {
     it('sets arbitry webContents as devtools', (done) => {
       const devtools = new BrowserWindow({ show: false })
       devtools.webContents.once('dom-ready', () => {
-        assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
+        assert.ok(devtools.getURL().startsWith('devtools://devtools'))
         devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
           assert.ok(name, 'InspectorFrontendHostImpl')
           devtools.destroy()

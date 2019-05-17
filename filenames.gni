@@ -34,7 +34,7 @@ filenames = {
     "lib/browser/api/view.js",
     "lib/browser/api/web-contents.js",
     "lib/browser/api/web-contents-view.js",
-    "lib/browser/chrome-devtools.js",
+    "lib/browser/devtools.js",
     "lib/browser/chrome-extension.js",
     "lib/browser/crash-reporter-init.js",
     "lib/browser/default-menu.ts",
