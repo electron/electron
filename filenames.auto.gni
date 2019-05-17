@@ -2,7 +2,6 @@
 auto_filenames = {
   api_docs = [
     "docs/api/accelerator.md",
-    "docs/api/api-contract.md",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
     "docs/api/breaking-changes.md",
