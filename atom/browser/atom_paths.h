@@ -28,18 +28,22 @@ enum {
 
 #if defined(OS_LINUX)
   DIR_APP_DATA,  // Application Data directory under the user profile.
-#else
+#endif
+
+  PATH_END,  // End of new paths. Those that follow redirect to base::DIR_*
+
+#if !defined(OS_LINUX)
   DIR_APP_DATA = base::DIR_APP_DATA,
 #endif
 
 #if defined(OS_POSIX)
-  DIR_CACHE = base::DIR_CACHE,  // Directory where to put cache data.
+  DIR_CACHE = base::DIR_CACHE  // Directory where to put cache data.
 #else
-  DIR_CACHE = base::DIR_APP_DATA,
+  DIR_CACHE = base::DIR_APP_DATA
 #endif
-
-  PATH_END
 };
+
+static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 
 }  // namespace atom
 
