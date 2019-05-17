@@ -41,6 +41,7 @@ extern const char kRunAsNode[];
 extern const char kPdfPluginMimeType[];
 extern const char kPdfPluginPath[];
 extern const char kPdfPluginSrc[];
+extern const char kPDFExtensionPluginName[];
 
 // Constants for PDF viewer webui.
 extern const char kPdfViewerUIOrigin[];
