@@ -190,7 +190,7 @@ describe('webContents module', () => {
       w.webContents.setDevToolsWebContents(devtools.webContents)
       w.webContents.openDevTools()
       await promise
-      expect(devtools.getURL().startsWith('chrome-devtools://devtools')).to.be.true()
+      expect(devtools.getURL().startsWith('devtools://devtools')).to.be.true()
       const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name')
       expect(result).to.equal('InspectorFrontendHostImpl')
       devtools.destroy()

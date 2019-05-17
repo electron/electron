@@ -23,9 +23,7 @@ const char kChromeUIDevToolsHost[] = "devtools";
 const char kChromeUIDevToolsBundledPath[] = "bundled";
 
 std::string PathWithoutParams(const std::string& path) {
-  return GURL(std::string("chrome-devtools://devtools/") + path)
-      .path()
-      .substr(1);
+  return GURL(std::string("devtools://devtools/") + path).path().substr(1);
 }
 
 std::string GetMimeTypeForPath(const std::string& path) {

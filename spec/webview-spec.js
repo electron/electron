@@ -787,7 +787,7 @@ describe('<webview> tag', function () {
 
       // Its WebContents should be a DevTools.
       const devtools = webview2.getWebContents()
-      assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
+      assert.ok(devtools.getURL().startsWith('devtools://devtools'))
 
       const name = await devtools.executeJavaScript('InspectorFrontendHost.constructor.name')
       document.body.removeChild(webview2)
