@@ -25,7 +25,6 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
   const char* kImageDecodeAcceleratorSupportedProfileKey =
       "imageDecodeAcceleratorSupportedProfile";
   const char* kAuxAttributesKey = "auxAttributes";
-  const char* kOverlayCapabilityKey = "overlayCapability";
   const char* kDx12VulkanVersionInfoKey = "dx12VulkanVersionInfo";
 
  public:
@@ -47,8 +46,6 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
   void EndImageDecodeAcceleratorSupportedProfile() override;
   void BeginAuxAttributes() override;
   void EndAuxAttributes() override;
-  void BeginOverlayCapability() override;
-  void EndOverlayCapability() override;
   void BeginDx12VulkanVersionInfo() override;
   void EndDx12VulkanVersionInfo() override;
   std::unique_ptr<base::DictionaryValue> GetDictionary();
