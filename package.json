@@ -47,7 +47,6 @@
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
     "request": "^2.88.0",
     "semver": "^5.6.0",
-    "serve": "^6.5.8",
     "shx": "^0.3.2",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
