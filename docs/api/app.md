@@ -343,6 +343,10 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 })
 ```
 
+### Event: 'gpu-info-update'
+
+Emitted whenever there is a GPU info update.
+
 ### Event: 'gpu-process-crashed'
 
 Returns:
@@ -1011,6 +1015,8 @@ Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetr
 ### `app.getGPUFeatureStatus()`
 
 Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Feature Status from `chrome://gpu/`.
+
+**Note:** This information is only usable after the `gpu-info-update` event is emitted.
 
 ### `app.getGPUInfo(infoType)`
 

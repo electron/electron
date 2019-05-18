@@ -157,6 +157,7 @@ class App : public AtomBrowserClient::Delegate,
                        bool* no_javascript_access) override;
 
   // content::GpuDataManagerObserver:
+  void OnGpuInfoUpdate() override;
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
   // content::BrowserChildProcessObserver:
