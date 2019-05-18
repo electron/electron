@@ -1065,16 +1065,15 @@ Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
 
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(const base::DictionaryValue& options,
-                            net::CompletionRepeatingCallback callback) {
+                            net::CompletionOnceCallback callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     auto copy = base::DictionaryValue::From(
         base::Value::ToUniquePtrValue(options.Clone()));
     CertificateManagerModel::Create(
         browser_context.get(),
-        base::BindRepeating(&App::OnCertificateManagerModelCreated,
-                            base::Unretained(this), base::Passed(&copy),
-                            callback));
+        base::BindOnce(&App::OnCertificateManagerModelCreated,
+                       base::Unretained(this), std::move(copy), callback));
     return;
   }
 

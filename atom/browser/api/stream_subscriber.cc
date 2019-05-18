@@ -5,6 +5,7 @@
 #include "atom/browser/api/stream_subscriber.h"
 
 #include <string>
+#include <utility>
 
 #include "atom/browser/net/url_request_stream_job.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -81,7 +82,7 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
   std::vector<char> buffer(data, data + length);
   base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
                            base::BindOnce(&atom::URLRequestStreamJob::OnData,
-                                          url_job_, base::Passed(&buffer)));
+                                          url_job_, std::move(buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {

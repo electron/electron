@@ -107,13 +107,6 @@ class BundledDataSource : public content::URLDataSource {
   DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
 
-// Helper to convert from OnceCallback to Callback.
-template <typename T>
-void CallMigrationCallback(T callback,
-                           std::unique_ptr<content::StreamInfo> stream_info) {
-  std::move(callback).Run(std::move(stream_info));
-}
-
 }  // namespace
 
 class PdfViewerUI::ResourceRequester
@@ -187,9 +180,7 @@ class PdfViewerUI::ResourceRequester
 
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(&CallMigrationCallback<StreamResponseCallback>,
-                       base::Passed(&stream_response_cb_),
-                       base::Passed(&stream_info_)));
+        base::BindOnce(&stream_response_cb_, std::move(&stream_info_)));
   }
 
  private:
