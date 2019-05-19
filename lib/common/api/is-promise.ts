@@ -1,6 +1,4 @@
-'use strict'
-
-module.exports = function isPromise (val) {
+export function isPromise (val: any) {
   return (
     val &&
     val.then &&

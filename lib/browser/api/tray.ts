@@ -1,8 +1,7 @@
-'use strict'
-
-const { EventEmitter } = require('events')
+import { EventEmitter } from 'events'
 const { Tray } = process.electronBinding('tray')
 
+// Tray is an EventEmitter.
 Object.setPrototypeOf(Tray.prototype, EventEmitter.prototype)
 
-module.exports = Tray
+export = Tray

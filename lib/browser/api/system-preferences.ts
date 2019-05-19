@@ -1,7 +1,6 @@
-'use strict'
-
-const { EventEmitter } = require('events')
+import { EventEmitter } from 'events'
 const { deprecate } = require('electron')
+
 const { systemPreferences, SystemPreferences } = process.electronBinding('system_preferences')
 
 // SystemPreferences is an EventEmitter.

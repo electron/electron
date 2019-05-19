@@ -19,6 +19,15 @@ declare namespace Electron {
     setAppPath(path: string | null): void;
   }
 
+  interface PowerMonitor {
+    blockShutdown(): void;
+    unblockShutdown(): void;
+  }
+
+  interface WebContents {
+    equal(webContents: WebContents): boolean;
+  }
+
   interface SerializedError {
     message: string;
     stack?: string,

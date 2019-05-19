@@ -1,5 +1,3 @@
-'use strict'
-
 const constructors = new Map([
   [Error.name, Error],
   [EvalError.name, EvalError],
@@ -10,10 +8,15 @@ const constructors = new Map([
   [URIError.name, URIError]
 ])
 
-exports.deserialize = function (error) {
+interface ElectronError extends Error {
+  from?: string;
+  cause?: ElectronError;
+}
+
+export function deserialize (error: Electron.SerializedError) {
   if (error && error.__ELECTRON_SERIALIZED_ERROR__ && constructors.has(error.name)) {
     const constructor = constructors.get(error.name)
-    const deserializedError = new constructor(error.message)
+    const deserializedError = new constructor!(error.message) as ElectronError
     deserializedError.stack = error.stack
     deserializedError.from = error.from
     deserializedError.cause = exports.deserialize(error.cause)
@@ -22,7 +25,7 @@ exports.deserialize = function (error) {
   return error
 }
 
-exports.serialize = function (error) {
+export function serialize (error: ElectronError) {
   if (error instanceof Error) {
     // Errors get lost, because: JSON.stringify(new Error('Message')) === {}
     // Take the serializable properties and construct a generic object

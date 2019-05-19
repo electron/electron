@@ -1,8 +1,7 @@
-'use strict'
-
-const { EventEmitter } = require('events')
+import { EventEmitter } from 'events'
 const { BrowserView } = process.electronBinding('browser_view')
 
+// BrowserView is an EventEmitter.
 Object.setPrototypeOf(BrowserView.prototype, EventEmitter.prototype)
 
 BrowserView.fromWebContents = (webContents) => {

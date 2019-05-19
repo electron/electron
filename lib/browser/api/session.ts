@@ -1,8 +1,7 @@
-'use strict'
+import { EventEmitter } from 'events'
+import { app } from 'electron'
 
-const { EventEmitter } = require('events')
-const { app, deprecate } = require('electron')
-const { fromPartition, Session, Cookies, NetLog, Protocol } = process.electronBinding('session')
+const { fromPartition, Session, Cookies } = process.electronBinding('session')
 
 // Public API.
 Object.defineProperties(exports, {
@@ -16,7 +15,10 @@ Object.defineProperties(exports, {
   }
 })
 
+// Session is an EventEmitter.
 Object.setPrototypeOf(Session.prototype, EventEmitter.prototype)
+
+// Cookies is an EventEmitter.
 Object.setPrototypeOf(Cookies.prototype, EventEmitter.prototype)
 
 Session.prototype._init = function () {
