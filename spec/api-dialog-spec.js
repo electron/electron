@@ -1,10 +1,15 @@
 const { expect } = require('chai')
 const { closeWindow } = require('./window-helpers')
-const { BrowserWindow, dialog } = require('electron').remote
+const { remote } = require('electron')
+const { BrowserWindow, dialog } = remote
+const isCI = remote.getGlobal('isCi')
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
     it('should not throw for valid cases', () => {
+      // Blocks the main process and can't be run in CI
+      if (isCI) return
+
       let w
 
       expect(() => {
@@ -44,6 +49,9 @@ describe('dialog module', () => {
 
   describe('showSaveDialog', () => {
     it('should not throw for valid cases', () => {
+      // Blocks the main process and can't be run in CI
+      if (isCI) return
+
       let w
 
       expect(() => {
@@ -83,6 +91,9 @@ describe('dialog module', () => {
 
   describe('showMessageBox', () => {
     it('should not throw for valid cases', () => {
+      // Blocks the main process and can't be run in CI
+      if (isCI) return
+
       let w
 
       expect(() => {
