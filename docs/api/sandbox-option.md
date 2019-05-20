@@ -167,7 +167,7 @@ consider before rendering untrusted content:
   is also enabled.
 - Some bug in V8 engine may allow malicious code to access the renderer preload
   APIs, effectively granting full access to the system through the `remote`
-  module. Therefore, it is highly recommented to
+  module. Therefore, it is highly recommended to
   [disable the `remote` module](../tutorial/security.md#15-disable-the-remote-module).
   If disabling is not feasible, you should selectively
   [filter the `remote` module](../tutorial/security.md#16-filter-the-remote-module).
