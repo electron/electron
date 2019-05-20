@@ -1,6 +1,5 @@
 'use strict'
 
-const assert = require('assert')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const fs = require('fs')
@@ -164,7 +163,7 @@ describe('BrowserWindow module', () => {
         const test = path.join(fixtures, 'api', 'unload')
         const content = fs.readFileSync(test)
         fs.unlinkSync(test)
-        assert.strictEqual(String(content), 'unload')
+        expect(String(content)).to.equal('unload')
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'unload.html'))
@@ -211,7 +210,7 @@ describe('BrowserWindow module', () => {
         const test = path.join(fixtures, 'api', 'close')
         const content = fs.readFileSync(test)
         fs.unlinkSync(test)
-        assert.strictEqual(String(content), 'close')
+        expect(String(content)).to.equal('close')
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'close.html'))
@@ -226,9 +225,9 @@ describe('BrowserWindow module', () => {
     it('prevents users to access methods of webContents', () => {
       const contents = w.webContents
       w.destroy()
-      assert.throws(() => {
+      expect(() => {
         contents.getProcessId()
-      }, /Object has been destroyed/)
+      }).to.throw('Object has been destroyed')
     })
     it('should not crash when destroying windows with pending events', (done) => {
       const responseEvent = 'destroy-test-completed'
@@ -248,25 +247,25 @@ describe('BrowserWindow module', () => {
     })
     it('should emit did-fail-load event for files that do not exist', (done) => {
       w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        assert.strictEqual(code, -6)
-        assert.strictEqual(desc, 'ERR_FILE_NOT_FOUND')
-        assert.strictEqual(isMainFrame, true)
+        expect(code).to.equal(-6)
+        expect(desc).to.equal('ERR_FILE_NOT_FOUND')
+        expect(isMainFrame).to.be.true()
         done()
       })
       w.loadURL('file://a.txt')
     })
     it('should emit did-fail-load event for invalid URL', (done) => {
       w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        assert.strictEqual(desc, 'ERR_INVALID_URL')
-        assert.strictEqual(code, -300)
-        assert.strictEqual(isMainFrame, true)
+        expect(desc).to.equal('ERR_INVALID_URL')
+        expect(code).to.equal(-300)
+        expect(isMainFrame).to.be.true()
         done()
       })
       w.loadURL('http://example:port')
     })
     it('should set `mainFrame = false` on did-fail-load events in iframes', (done) => {
       w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        assert.strictEqual(isMainFrame, false)
+        expect(isMainFrame).to.be.false()
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'))
@@ -280,9 +279,9 @@ describe('BrowserWindow module', () => {
     })
     it('should emit did-fail-load event for URL exceeding character limit', (done) => {
       w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        assert.strictEqual(desc, 'ERR_INVALID_URL')
-        assert.strictEqual(code, -300)
-        assert.strictEqual(isMainFrame, true)
+        expect(desc).to.equal('ERR_INVALID_URL')
+        expect(code).to.equal(-300)
+        expect(isMainFrame).to.be.true()
         done()
       })
       const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
@@ -331,7 +330,7 @@ describe('BrowserWindow module', () => {
           form.submit()
         `)
         const details = await requestDetails
-        assert.strictEqual(details.requestHeaders['content-type'], 'application/x-www-form-urlencoded')
+        expect(details.requestHeaders['content-type']).to.equal('application/x-www-form-urlencoded')
       })
       it('sets the content type header on multi part forms', async () => {
         await w.loadURL(server.url)
@@ -353,13 +352,13 @@ describe('BrowserWindow module', () => {
           form.submit()
         `)
         const details = await requestDetails
-        assert(details.requestHeaders['content-type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary'))
+        expect(details.requestHeaders['content-type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary')).to.be.true()
       })
     })
 
     it('should support support base url for data urls', (done) => {
       ipcMain.once('answer', (event, test) => {
-        assert.strictEqual(test, 'test')
+        expect(test).to.equal('test')
         done()
       })
       w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}` })
@@ -440,15 +439,15 @@ describe('BrowserWindow module', () => {
 
     it('should focus on window', () => {
       w.show()
-      assert(w.isFocused())
+      expect(w.isFocused()).to.be.true()
     })
     it('should make the window visible', () => {
       w.show()
-      assert(w.isVisible())
+      expect(w.isVisible()).to.be.true()
     })
     it('emits when window is shown', (done) => {
       w.once('show', () => {
-        assert.strictEqual(w.isVisible(), true)
+        expect(w.isVisible()).to.be.true()
         done()
       })
       w.show()
@@ -464,17 +463,17 @@ describe('BrowserWindow module', () => {
 
     it('should defocus on window', () => {
       w.hide()
-      assert(!w.isFocused())
+      expect(w.isFocused()).to.be.false()
     })
     it('should make the window not visible', () => {
       w.show()
       w.hide()
-      assert(!w.isVisible())
+      expect(w.isVisible()).to.be.false()
     })
     it('emits when window is hidden', (done) => {
       w.show()
       w.once('hide', () => {
-        assert.strictEqual(w.isVisible(), false)
+        expect(w.isVisible()).to.be.false()
         done()
       })
       w.hide()
@@ -484,22 +483,22 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.showInactive()', () => {
     it('should not focus on window', () => {
       w.showInactive()
-      assert(!w.isFocused())
+      expect(w.isFocused()).to.be.false()
     })
   })
 
   describe('BrowserWindow.focus()', () => {
     it('does not make the window become visible', () => {
-      assert.strictEqual(w.isVisible(), false)
+      expect(w.isVisible()).to.be.false()
       w.focus()
-      assert.strictEqual(w.isVisible(), false)
+      expect(w.isVisible()).to.be.false()
     })
   })
 
   describe('BrowserWindow.blur()', () => {
     it('removes focus from window', () => {
       w.blur()
-      assert(!w.isFocused())
+      expect(w.isFocused()).to.be.false()
     })
   })
 
@@ -507,7 +506,7 @@ describe('BrowserWindow module', () => {
     it('returns the opener window when dev tools window is focused', (done) => {
       w.show()
       w.webContents.once('devtools-focused', () => {
-        assert.deepStrictEqual(BrowserWindow.getFocusedWindow(), w)
+        expect(BrowserWindow.getFocusedWindow()).to.equal(w)
         done()
       })
       w.webContents.openDevTools({ mode: 'undocked' })
@@ -520,38 +519,38 @@ describe('BrowserWindow module', () => {
       const wShownInactive = emittedOnce(w, 'show')
       w.showInactive()
       await wShownInactive
-      assert(!w.isFocused())
+      expect(w.isFocused()).to.be.false()
 
       const otherWindow = new BrowserWindow({ show: false, title: 'otherWindow' })
       const otherWindowShown = emittedOnce(otherWindow, 'show')
       otherWindow.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
       otherWindow.show()
       await otherWindowShown
-      assert(otherWindow.isFocused())
+      expect(otherWindow.isFocused()).to.be.true()
 
       w.moveTop()
       const wPos = w.getPosition()
       const wMoving = emittedOnce(w, 'move')
       w.setPosition(wPos[0] + posDelta, wPos[1] + posDelta)
       await wMoving
-      assert(!w.isFocused())
-      assert(otherWindow.isFocused())
+      expect(w.isFocused()).to.be.false()
+      expect(otherWindow.isFocused()).to.be.true()
 
       const wFocused = emittedOnce(w, 'focus')
       w.focus()
       await wFocused
-      assert(w.isFocused())
+      expect(w.isFocused()).to.be.true()
 
       otherWindow.moveTop()
       const otherWindowPos = otherWindow.getPosition()
       const otherWindowMoving = emittedOnce(otherWindow, 'move')
       otherWindow.setPosition(otherWindowPos[0] + posDelta, otherWindowPos[1] + posDelta)
       await otherWindowMoving
-      assert(!otherWindow.isFocused())
-      assert(w.isFocused())
+      expect(otherWindow.isFocused()).to.be.false()
+      expect(w.isFocused()).to.be.true()
 
       await closeWindow(otherWindow, { assertSingleWindow: false }).then(() => {
-        assert.strictEqual(BrowserWindow.getAllWindows().length, 2) // Test window + w
+        expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2) // Test window + w
       })
     })
   })
@@ -594,7 +593,7 @@ describe('BrowserWindow module', () => {
       const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
       w.setBounds(fullBounds)
 
-      assertBoundsEqual(w.getBounds(), fullBounds)
+      expectBoundsEqual(w.getBounds(), fullBounds)
     })
 
     it('sets the window bounds with partial bounds', () => {
@@ -605,7 +604,7 @@ describe('BrowserWindow module', () => {
       w.setBounds(boundsUpdate)
 
       const expectedBounds = Object.assign(fullBounds, boundsUpdate)
-      assertBoundsEqual(w.getBounds(), expectedBounds)
+      expectBoundsEqual(w.getBounds(), expectedBounds)
     })
   })
 
@@ -617,22 +616,22 @@ describe('BrowserWindow module', () => {
       w.setSize(size[0], size[1])
       await resized
 
-      assertBoundsEqual(w.getSize(), size)
+      expectBoundsEqual(w.getSize(), size)
     })
   })
 
   describe('BrowserWindow.setMinimum/MaximumSize(width, height)', () => {
     it('sets the maximum and minimum size of the window', () => {
-      assert.deepStrictEqual(w.getMinimumSize(), [0, 0])
-      assert.deepStrictEqual(w.getMaximumSize(), [0, 0])
+      expect(w.getMinimumSize()).to.deep.equal([0, 0])
+      expect(w.getMaximumSize()).to.deep.equal([0, 0])
 
       w.setMinimumSize(100, 100)
-      assertBoundsEqual(w.getMinimumSize(), [100, 100])
-      assertBoundsEqual(w.getMaximumSize(), [0, 0])
+      expectBoundsEqual(w.getMinimumSize(), [100, 100])
+      expectBoundsEqual(w.getMaximumSize(), [0, 0])
 
       w.setMaximumSize(900, 600)
-      assertBoundsEqual(w.getMinimumSize(), [100, 100])
-      assertBoundsEqual(w.getMaximumSize(), [900, 600])
+      expectBoundsEqual(w.getMinimumSize(), [100, 100])
+      expectBoundsEqual(w.getMaximumSize(), [900, 600])
     })
   })
 
@@ -642,7 +641,7 @@ describe('BrowserWindow module', () => {
       w.setAspectRatio(1 / 2)
       w.setAspectRatio(0)
       w.once('resize', () => {
-        assertBoundsEqual(w.getSize(), size)
+        expectBoundsEqual(w.getSize(), size)
         done()
       })
       w.setSize(size[0], size[1])
@@ -654,8 +653,7 @@ describe('BrowserWindow module', () => {
       const pos = [10, 10]
       w.once('move', () => {
         const newPos = w.getPosition()
-        assert.strictEqual(newPos[0], pos[0])
-        assert.strictEqual(newPos[1], pos[1])
+        expect(newPos).to.deep.equal(pos)
         done()
       })
       w.setPosition(pos[0], pos[1])
@@ -667,8 +665,7 @@ describe('BrowserWindow module', () => {
       const size = [400, 400]
       w.setContentSize(size[0], size[1])
       const after = w.getContentSize()
-      assert.strictEqual(after[0], size[0])
-      assert.strictEqual(after[1], size[1])
+      expect(after).to.deep.equal(size)
     })
     it('works for a frameless window', () => {
       w.destroy()
@@ -681,8 +678,7 @@ describe('BrowserWindow module', () => {
       const size = [400, 400]
       w.setContentSize(size[0], size[1])
       const after = w.getContentSize()
-      assert.strictEqual(after[0], size[0])
-      assert.strictEqual(after[1], size[1])
+      expect(after).to.deep.equal(size)
     })
   })
 
@@ -690,7 +686,7 @@ describe('BrowserWindow module', () => {
     it('sets the content size and position', (done) => {
       const bounds = { x: 10, y: 10, width: 250, height: 250 }
       w.once('resize', () => {
-        assertBoundsEqual(w.getContentBounds(), bounds)
+        expectBoundsEqual(w.getContentBounds(), bounds)
         done()
       })
       w.setContentBounds(bounds)
@@ -705,7 +701,7 @@ describe('BrowserWindow module', () => {
       })
       const bounds = { x: 10, y: 10, width: 250, height: 250 }
       w.once('resize', () => {
-        assert.deepStrictEqual(w.getContentBounds(), bounds)
+        expect(w.getContentBounds()).to.deep.equal(bounds)
         done()
       })
       w.setContentBounds(bounds)
@@ -717,7 +713,7 @@ describe('BrowserWindow module', () => {
       it(`checks normal bounds after resize`, (done) => {
         const size = [300, 400]
         w.once('resize', () => {
-          assertBoundsEqual(w.getNormalBounds(), w.getBounds())
+          expectBoundsEqual(w.getNormalBounds(), w.getBounds())
           done()
         })
         w.setSize(size[0], size[1])
@@ -725,7 +721,7 @@ describe('BrowserWindow module', () => {
       it(`checks normal bounds after move`, (done) => {
         const pos = [10, 10]
         w.once('move', () => {
-          assertBoundsEqual(w.getNormalBounds(), w.getBounds())
+          expectBoundsEqual(w.getNormalBounds(), w.getBounds())
           done()
         })
         w.setPosition(pos[0], pos[1])
@@ -740,7 +736,7 @@ describe('BrowserWindow module', () => {
       it(`checks normal bounds when maximized`, (done) => {
         const bounds = w.getBounds()
         w.once('maximize', () => {
-          assertBoundsEqual(w.getNormalBounds(), bounds)
+          expectBoundsEqual(w.getNormalBounds(), bounds)
           done()
         })
         w.show()
@@ -752,7 +748,7 @@ describe('BrowserWindow module', () => {
           w.unmaximize()
         })
         w.once('unmaximize', () => {
-          assertBoundsEqual(w.getNormalBounds(), bounds)
+          expectBoundsEqual(w.getNormalBounds(), bounds)
           done()
         })
         w.show()
@@ -768,7 +764,7 @@ describe('BrowserWindow module', () => {
       it(`checks normal bounds when minimized`, (done) => {
         const bounds = w.getBounds()
         w.once('minimize', () => {
-          assertBoundsEqual(w.getNormalBounds(), bounds)
+          expectBoundsEqual(w.getNormalBounds(), bounds)
           done()
         })
         w.show()
@@ -780,7 +776,7 @@ describe('BrowserWindow module', () => {
           w.restore()
         })
         w.once('restore', () => {
-          assertBoundsEqual(w.getNormalBounds(), bounds)
+          expectBoundsEqual(w.getNormalBounds(), bounds)
           done()
         })
         w.show()
@@ -799,7 +795,7 @@ describe('BrowserWindow module', () => {
       it(`checks normal bounds when fullscreen'ed`, (done) => {
         const bounds = w.getBounds()
         w.once('enter-full-screen', () => {
-          assertBoundsEqual(w.getNormalBounds(), bounds)
+          expectBoundsEqual(w.getNormalBounds(), bounds)
           done()
         })
         w.show()
@@ -811,7 +807,7 @@ describe('BrowserWindow module', () => {
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          assertBoundsEqual(w.getNormalBounds(), bounds)
+          expectBoundsEqual(w.getNormalBounds(), bounds)
           done()
         })
         w.show()
@@ -822,7 +818,7 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setProgressBar(progress)', () => {
     it('sets the progress', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         if (process.platform === 'darwin') {
           app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'))
         }
@@ -832,34 +828,34 @@ describe('BrowserWindow module', () => {
           app.dock.setIcon(null)
         }
         w.setProgressBar(-1)
-      })
+      }).to.not.throw()
     })
     it('sets the progress using "paused" mode', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setProgressBar(0.5, { mode: 'paused' })
-      })
+      }).to.not.throw()
     })
     it('sets the progress using "error" mode', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setProgressBar(0.5, { mode: 'error' })
-      })
+      }).to.not.throw()
     })
     it('sets the progress using "normal" mode', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setProgressBar(0.5, { mode: 'normal' })
-      })
+      }).to.not.throw()
     })
   })
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
     it('sets the window as always on top', () => {
-      assert.strictEqual(w.isAlwaysOnTop(), false)
+      expect(w.isAlwaysOnTop()).to.be.false()
       w.setAlwaysOnTop(true, 'screen-saver')
-      assert.strictEqual(w.isAlwaysOnTop(), true)
+      expect(w.isAlwaysOnTop()).to.be.true()
       w.setAlwaysOnTop(false)
-      assert.strictEqual(w.isAlwaysOnTop(), false)
+      expect(w.isAlwaysOnTop()).to.be.false()
       w.setAlwaysOnTop(true)
-      assert.strictEqual(w.isAlwaysOnTop(), true)
+      expect(w.isAlwaysOnTop()).to.be.true()
     })
     it('raises an error when relativeLevel is out of bounds', function () {
       if (process.platform !== 'darwin') {
@@ -871,13 +867,13 @@ describe('BrowserWindow module', () => {
         return
       }
 
-      assert.throws(() => {
+      expect(() => {
         w.setAlwaysOnTop(true, '', -2147483644)
-      })
+      }).to.throw()
 
-      assert.throws(() => {
+      expect(() => {
         w.setAlwaysOnTop(true, '', 2147483632)
-      })
+      }).to.throw()
     })
   })
 
@@ -889,13 +885,13 @@ describe('BrowserWindow module', () => {
     })
 
     it('resets the windows level on minimize', () => {
-      assert.strictEqual(w.isAlwaysOnTop(), false)
+      expect(w.isAlwaysOnTop()).to.be.false()
       w.setAlwaysOnTop(true, 'screen-saver')
-      assert.strictEqual(w.isAlwaysOnTop(), true)
+      expect(w.isAlwaysOnTop()).to.be.true()
       w.minimize()
-      assert.strictEqual(w.isAlwaysOnTop(), false)
+      expect(w.isAlwaysOnTop()).to.be.false()
       w.restore()
-      assert.strictEqual(w.isAlwaysOnTop(), true)
+      expect(w.isAlwaysOnTop()).to.be.true()
     })
   })
 
@@ -908,10 +904,10 @@ describe('BrowserWindow module', () => {
       })
 
       it('allows changing cursor auto-hiding', () => {
-        assert.doesNotThrow(() => {
+        expect(() => {
           w.setAutoHideCursor(false)
           w.setAutoHideCursor(true)
-        })
+        }).to.not.throw()
       })
     })
 
@@ -923,7 +919,7 @@ describe('BrowserWindow module', () => {
       })
 
       it('is not available', () => {
-        assert.ok(!w.setAutoHideCursor)
+        expect(w.setAutoHideCursor).to.be.undefined()
       })
     })
   })
@@ -936,9 +932,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.selectPreviousTab()
-      })
+      }).to.not.throw()
     })
   })
 
@@ -950,9 +946,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.selectNextTab()
-      })
+      }).to.not.throw()
     })
   })
 
@@ -964,9 +960,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.mergeAllWindows()
-      })
+      }).to.not.throw()
     })
   })
 
@@ -978,9 +974,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.moveTabToNewWindow()
-      })
+      }).to.not.throw()
     })
   })
 
@@ -992,9 +988,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.toggleTabBar()
-      })
+      }).to.not.throw()
     })
   })
 
@@ -1007,22 +1003,22 @@ describe('BrowserWindow module', () => {
 
     it('does not throw', (done) => {
       const tabbedWindow = new BrowserWindow({})
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.addTabbedWindow(tabbedWindow)
-      })
+      }).to.not.throw()
 
-      assert.strictEqual(BrowserWindow.getAllWindows().length, 3) // Test window + w + tabbedWindow
+      expect(BrowserWindow.getAllWindows()).to.have.lengthOf(3) // Test window + w + tabbedWindow
 
       closeWindow(tabbedWindow, { assertSingleWindow: false }).then(() => {
-        assert.strictEqual(BrowserWindow.getAllWindows().length, 2) // Test window + w
+        expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2) // Test window + w
         done()
       })
     })
 
     it('throws when called on itself', () => {
-      assert.throws(() => {
+      expect(() => {
         w.addTabbedWindow(w)
-      }, /AddTabbedWindow cannot be called by a window on itself./)
+      }).to.throw('AddTabbedWindow cannot be called by a window on itself.')
     })
   })
 
@@ -1034,14 +1030,14 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setWindowButtonVisibility(true)
         w.setWindowButtonVisibility(false)
-      })
+      }).to.not.throw()
     })
 
     it('throws with custom title bar buttons', () => {
-      assert.throws(() => {
+      expect(() => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
@@ -1049,19 +1045,19 @@ describe('BrowserWindow module', () => {
           frame: false
         })
         w.setWindowButtonVisibility(true)
-      }, /Not supported for this window/)
+      }).to.throw('Not supported for this window')
     })
   })
 
   describe('BrowserWindow.setVibrancy(type)', () => {
     it('allows setting, changing, and removing the vibrancy', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setVibrancy('light')
         w.setVibrancy('dark')
         w.setVibrancy(null)
         w.setVibrancy('ultra-dark')
         w.setVibrancy('')
-      })
+      }).to.not.throw()
     })
   })
 
@@ -1075,7 +1071,7 @@ describe('BrowserWindow module', () => {
     it('supports setting the app details', () => {
       const iconPath = path.join(fixtures, 'assets', 'icon.ico')
 
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setAppDetails({ appId: 'my.app.id' })
         w.setAppDetails({ appIconPath: iconPath, appIconIndex: 0 })
         w.setAppDetails({ appIconPath: iconPath })
@@ -1090,17 +1086,17 @@ describe('BrowserWindow module', () => {
           relaunchDisplayName: 'My app name'
         })
         w.setAppDetails({})
-      })
+      }).to.not.throw()
 
-      assert.throws(() => {
+      expect(() => {
         w.setAppDetails()
-      }, /Insufficient number of arguments\./)
+      }).to.throw('Insufficient number of arguments.')
     })
   })
 
   describe('BrowserWindow.fromId(id)', () => {
     it('returns the window with id', () => {
-      assert.strictEqual(w.id, BrowserWindow.fromId(w.id).id)
+      expect(BrowserWindow.fromId(w.id).id).to.equal(w.id)
     })
   })
 
@@ -1112,8 +1108,8 @@ describe('BrowserWindow module', () => {
     afterEach(() => { contents.destroy() })
 
     it('returns the window with the webContents', () => {
-      assert.strictEqual(BrowserWindow.fromWebContents(w.webContents).id, w.id)
-      assert.strictEqual(BrowserWindow.fromWebContents(contents), undefined)
+      expect(BrowserWindow.fromWebContents(w.webContents).id).to.equal(w.id)
+      expect(BrowserWindow.fromWebContents(contents)).to.be.undefined()
     })
   })
 
@@ -1126,9 +1122,9 @@ describe('BrowserWindow module', () => {
 
     it('returns the window with the webContents', (done) => {
       w.webContents.once('devtools-opened', () => {
-        assert.strictEqual(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id, w.id)
-        assert.strictEqual(BrowserWindow.fromDevToolsWebContents(w.webContents), undefined)
-        assert.strictEqual(BrowserWindow.fromDevToolsWebContents(contents), undefined)
+        expect(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id).to.equal(w.id)
+        expect(BrowserWindow.fromDevToolsWebContents(w.webContents)).to.be.undefined()
+        expect(BrowserWindow.fromDevToolsWebContents(contents)).to.be.undefined()
         done()
       })
       w.webContents.openDevTools()
@@ -1157,12 +1153,12 @@ describe('BrowserWindow module', () => {
     })
 
     it('returns the window with the browserView', () => {
-      assert.strictEqual(BrowserWindow.fromBrowserView(bv).id, w.id)
+      expect(BrowserWindow.fromBrowserView(bv).id).to.equal(w.id)
     })
 
     it('returns undefined if not attached', () => {
       w.setBrowserView(null)
-      assert.strictEqual(BrowserWindow.fromBrowserView(bv), null)
+      expect(BrowserWindow.fromBrowserView(bv)).to.be.null()
     })
   })
 
@@ -1175,28 +1171,28 @@ describe('BrowserWindow module', () => {
         height: 400,
         opacity: 0.5
       })
-      assert.strictEqual(w.getOpacity(), 0.5)
+      expect(w.getOpacity()).to.equal(0.5)
     })
     it('allows setting the opacity', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setOpacity(0.0)
-        assert.strictEqual(w.getOpacity(), 0.0)
+        expect(w.getOpacity()).to.equal(0.0)
         w.setOpacity(0.5)
-        assert.strictEqual(w.getOpacity(), 0.5)
+        expect(w.getOpacity()).to.equal(0.5)
         w.setOpacity(1.0)
-        assert.strictEqual(w.getOpacity(), 1.0)
-      })
+        expect(w.getOpacity()).to.equal(1.0)
+      }).to.not.throw()
     })
   })
 
   describe('BrowserWindow.setShape(rects)', () => {
     it('allows setting shape', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.setShape([])
         w.setShape([{ x: 0, y: 0, width: 100, height: 100 }])
         w.setShape([{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 200, width: 1000, height: 100 }])
         w.setShape([])
-      })
+      }).to.not.throw()
     })
   })
 
@@ -1210,13 +1206,11 @@ describe('BrowserWindow module', () => {
         useContentSize: true
       })
       const contentSize = w.getContentSize()
-      assert.strictEqual(contentSize[0], 400)
-      assert.strictEqual(contentSize[1], 400)
+      expect(contentSize).to.deep.equal([400, 400])
     })
     it('make window created with window size when not used', () => {
       const size = w.getSize()
-      assert.strictEqual(size[0], 400)
-      assert.strictEqual(size[1], 400)
+      expect(size).to.deep.equal([400, 400])
     })
     it('works for a frameless window', () => {
       w.destroy()
@@ -1228,11 +1222,9 @@ describe('BrowserWindow module', () => {
         useContentSize: true
       })
       const contentSize = w.getContentSize()
-      assert.strictEqual(contentSize[0], 400)
-      assert.strictEqual(contentSize[1], 400)
+      expect(contentSize).to.deep.equal([400, 400])
       const size = w.getSize()
-      assert.strictEqual(size[0], 400)
-      assert.strictEqual(size[1], 400)
+      expect(size).to.deep.equal([400, 400])
     })
   })
 
@@ -1256,7 +1248,7 @@ describe('BrowserWindow module', () => {
         titleBarStyle: 'hidden'
       })
       const contentSize = w.getContentSize()
-      assert.strictEqual(contentSize[1], 400)
+      expect(contentSize).to.deep.equal([400, 400])
     })
     it('creates browser window with hidden inset title bar', () => {
       w.destroy()
@@ -1267,7 +1259,7 @@ describe('BrowserWindow module', () => {
         titleBarStyle: 'hiddenInset'
       })
       const contentSize = w.getContentSize()
-      assert.strictEqual(contentSize[1], 400)
+      expect(contentSize).to.deep.equal([400, 400])
     })
   })
 
@@ -1291,15 +1283,14 @@ describe('BrowserWindow module', () => {
     it('can move the window out of screen', () => {
       w.setPosition(-10, -10)
       const after = w.getPosition()
-      assert.strictEqual(after[0], -10)
-      assert.strictEqual(after[1], -10)
+      expect(after).to.deep.equal([-10, -10])
     })
     it('can set the window larger than screen', () => {
       const size = screen.getPrimaryDisplay().size
       size.width += 100
       size.height += 100
       w.setSize(size.width, size.height)
-      assertBoundsEqual(w.getSize(), [size.width, size.height])
+      expectBoundsEqual(w.getSize(), [size.width, size.height])
     })
   })
 
@@ -1319,7 +1310,7 @@ describe('BrowserWindow module', () => {
         zoomToPageWidth: true
       })
       w.maximize()
-      assert.strictEqual(w.getSize()[0], 500)
+      expect(w.getSize()[0]).to.equal(500)
     })
   })
 
@@ -1439,7 +1430,7 @@ describe('BrowserWindow module', () => {
       const defaultSession = session.defaultSession
 
       beforeEach(() => {
-        assert.deepStrictEqual(defaultSession.getPreloads(), [])
+        expect(defaultSession.getPreloads()).to.deep.equal([])
         defaultSession.setPreloads(preloads)
       })
       afterEach(() => {
@@ -1447,15 +1438,15 @@ describe('BrowserWindow module', () => {
       })
 
       it('can set multiple session preload script', function () {
-        assert.deepStrictEqual(defaultSession.getPreloads(), preloads)
+        expect(defaultSession.getPreloads()).to.deep.equal(preloads)
       })
 
       const generateSpecs = (description, sandbox) => {
         describe(description, () => {
           it('loads the script before other scripts in window including normal preloads', function (done) {
             ipcMain.once('vars', function (event, preload1, preload2) {
-              assert.strictEqual(preload1, 'preload-1')
-              assert.strictEqual(preload2, 'preload-1-2')
+              expect(preload1).to.equal('preload-1')
+              expect(preload2).to.equal('preload-1-2')
               done()
             })
             w.destroy()
@@ -1479,7 +1470,7 @@ describe('BrowserWindow module', () => {
       it('adds extra args to process.argv in the renderer process', (done) => {
         const preload = path.join(fixtures, 'module', 'check-arguments.js')
         ipcMain.once('answer', (event, argv) => {
-          assert.ok(argv.includes('--my-magic-arg'))
+          expect(argv).to.include('--my-magic-arg')
           done()
         })
         w.destroy()
@@ -1497,7 +1488,7 @@ describe('BrowserWindow module', () => {
       it('adds extra value args to process.argv in the renderer process', (done) => {
         const preload = path.join(fixtures, 'module', 'check-arguments.js')
         ipcMain.once('answer', (event, argv) => {
-          assert.ok(argv.includes('--my-magic-arg=foo'))
+          expect(argv).to.include('--my-magic-arg=foo')
           done()
         })
         w.destroy()
@@ -1517,8 +1508,8 @@ describe('BrowserWindow module', () => {
       it('disables node integration by default', (done) => {
         const preload = path.join(fixtures, 'module', 'send-later.js')
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
-          assert.strictEqual(typeofProcess, 'undefined')
-          assert.strictEqual(typeofBuffer, 'undefined')
+          expect(typeofProcess).to.equal('undefined')
+          expect(typeofBuffer).to.equal('undefined')
           done()
         })
         w.destroy()
@@ -1586,7 +1577,7 @@ describe('BrowserWindow module', () => {
 
       it('exposes ipcRenderer to preload script', (done) => {
         ipcMain.once('answer', function (event, test) {
-          assert.strictEqual(test, 'preload')
+          expect(test).to.equal('preload')
           done()
         })
         w.destroy()
@@ -1603,7 +1594,7 @@ describe('BrowserWindow module', () => {
       it('exposes ipcRenderer to preload script (path has special chars)', function (done) {
         const preloadSpecialChars = path.join(fixtures, 'module', 'preload-sandboxæø åü.js')
         ipcMain.once('answer', function (event, test) {
-          assert.strictEqual(test, 'preload')
+          expect(test).to.equal('preload')
           done()
         })
         w.destroy()
@@ -1646,7 +1637,7 @@ describe('BrowserWindow module', () => {
           if (process.platform === 'win32') {
             expectedUrl = 'file:///' + htmlPath.replace(/\\/g, '/')
           }
-          assert.strictEqual(url, expectedUrl)
+          expect(url).to.equal(expectedUrl)
           done()
         })
         w.loadURL(pageUrl)
@@ -1669,12 +1660,12 @@ describe('BrowserWindow module', () => {
           if (process.platform === 'win32') {
             expectedUrl = 'file:///' + htmlPath.replace(/\\/g, '/')
           }
-          assert.strictEqual(url, expectedUrl)
-          assert.strictEqual(frameName, 'popup!')
-          assert.strictEqual(options.width, 500)
-          assert.strictEqual(options.height, 600)
+          expect(url).to.equal(expectedUrl)
+          expect(frameName).to.equal('popup!')
+          expect(options.width).to.equal(500)
+          expect(options.height).to.equal(600)
           ipcMain.once('answer', function (event, html) {
-            assert.strictEqual(html, '<h1>scripting from opener</h1>')
+            expect(html).to.equal('<h1>scripting from opener</h1>')
             done()
           })
         })
@@ -1752,7 +1743,7 @@ describe('BrowserWindow module', () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
         ipcMain.once('answer', (event, args) => {
-          assert.strictEqual(args.includes('--enable-sandbox'), true)
+          expect(args).to.include('--enable-sandbox')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
@@ -1771,7 +1762,7 @@ describe('BrowserWindow module', () => {
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'foo', 'bar')
         ipcMain.once('answer', (event, args, webPreferences) => {
-          assert.strictEqual(webPreferences.foo, 'bar')
+          expect(webPreferences.foo).to.equal('bar')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
@@ -1791,15 +1782,15 @@ describe('BrowserWindow module', () => {
         let childWc
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           childWc = options.webContents
-          assert.notStrictEqual(w.webContents, childWc)
+          expect(w.webContents).to.not.equal(childWc)
         })
         ipcMain.once('parent-ready', function (event) {
-          assert.strictEqual(w.webContents, event.sender)
+          expect(w.webContents).to.equal(event.sender)
           event.sender.send('verified')
         })
         ipcMain.once('child-ready', function (event) {
-          assert(childWc)
-          assert.strictEqual(childWc, event.sender)
+          expect(childWc).to.be.an('object')
+          expect(childWc).to.equal(event.sender)
           event.sender.send('verified')
         })
         waitForEvents(ipcMain, [
@@ -1855,7 +1846,7 @@ describe('BrowserWindow module', () => {
           // We need to give it some time so the windows get properly disposed (at least on OSX).
           setTimeout(() => {
             const currentWebContents = webContents.getAllWebContents().map((i) => i.id)
-            assert.deepStrictEqual(currentWebContents, initialWebContents)
+            expect(currentWebContents).to.deep.equal(initialWebContents)
             done()
           }, 100)
         })
@@ -1891,7 +1882,7 @@ describe('BrowserWindow module', () => {
         ipcMain.once('answer', (event, arg) => {
           ipcMain.removeAllListeners('reloaded')
           ipcMain.removeAllListeners('get-remote-module-path')
-          assert.strictEqual(arg, 'hi')
+          expect(arg).to.equal('hi')
           done()
         })
       })
@@ -1926,7 +1917,7 @@ describe('BrowserWindow module', () => {
         ipcMain.once('answer', (event, arg) => {
           ipcMain.removeAllListeners('reloaded')
           ipcMain.removeAllListeners('get-remote-module-path')
-          assert.strictEqual(arg, 'hi child window')
+          expect(arg).to.equal('hi child window')
           done()
         })
       })
@@ -2008,37 +1999,37 @@ describe('BrowserWindow module', () => {
 
       it('opens window of about:blank with cross-scripting enabled', (done) => {
         ipcMain.once('answer', (event, content) => {
-          assert.strictEqual(content, 'Hello')
+          expect(content).to.equal('Hello')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-blank.html'))
       })
       it('opens window of same domain with cross-scripting enabled', (done) => {
         ipcMain.once('answer', (event, content) => {
-          assert.strictEqual(content, 'Hello')
+          expect(content).to.equal('Hello')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-file.html'))
       })
       it('blocks accessing cross-origin frames', (done) => {
         ipcMain.once('answer', (event, content) => {
-          assert.strictEqual(content, 'Blocked a frame with origin "file://" from accessing a cross-origin frame.')
+          expect(content).to.equal('Blocked a frame with origin "file://" from accessing a cross-origin frame.')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-cross-origin.html'))
       })
       it('opens window from <iframe> tags', (done) => {
         ipcMain.once('answer', (event, content) => {
-          assert.strictEqual(content, 'Hello')
+          expect(content).to.equal('Hello')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-iframe.html'))
       });
       (nativeModulesEnabled ? it : it.skip)('loads native addons correctly after reload', (done) => {
         ipcMain.once('answer', (event, content) => {
-          assert.strictEqual(content, 'function')
+          expect(content).to.equal('function')
           ipcMain.once('answer', (event, content) => {
-            assert.strictEqual(content, 'function')
+            expect(content).to.equal('function')
             done()
           })
           w.reload()
@@ -2057,7 +2048,7 @@ describe('BrowserWindow module', () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
         ipcMain.once('answer', (event, args) => {
-          assert.strictEqual(args.includes('--native-window-open'), true)
+          expect(args).to.include('--native-window-open')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
@@ -2075,7 +2066,7 @@ describe('BrowserWindow module', () => {
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'foo', 'bar')
         ipcMain.once('answer', (event, args, webPreferences) => {
-          assert.strictEqual(webPreferences.foo, 'bar')
+          expect(webPreferences.foo).to.equal('bar')
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
@@ -2147,7 +2138,7 @@ describe('BrowserWindow module', () => {
 
     it('opens window with cross-scripting enabled from isolated context', (done) => {
       ipcMain.once('answer', (event, content) => {
-        assert.strictEqual(content, 'Hello')
+        expect(content).to.equal('Hello')
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'))
@@ -2192,7 +2183,7 @@ describe('BrowserWindow module', () => {
       })
       w.webContents.once('did-finish-load', () => {
         w.webContents.once('did-finish-load', () => {
-          assert.fail('Reload was not prevented')
+          expect.fail('Reload was not prevented')
         })
         w.reload()
       })
@@ -2210,7 +2201,7 @@ describe('BrowserWindow module', () => {
       })
       w.webContents.once('did-finish-load', () => {
         w.webContents.once('did-finish-load', () => {
-          assert.fail('Navigation was not prevented')
+          expect.fail('Navigation was not prevented')
         })
         w.loadURL('about:blank')
       })
@@ -2256,9 +2247,9 @@ describe('BrowserWindow module', () => {
       })
 
       onNextVisibilityChange((visibilityState, hidden) => {
-        assert.strictEqual(readyToShow, false)
-        assert.strictEqual(visibilityState, 'visible')
-        assert.strictEqual(hidden, false)
+        expect(readyToShow).to.be.false()
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false()
 
         done()
       })
@@ -2275,12 +2266,12 @@ describe('BrowserWindow module', () => {
       })
 
       onNextVisibilityChange((visibilityState, hidden) => {
-        assert.strictEqual(visibilityState, 'visible')
-        assert.strictEqual(hidden, false)
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false()
 
         onNextVisibilityChange((visibilityState, hidden) => {
-          assert.strictEqual(visibilityState, 'hidden')
-          assert.strictEqual(hidden, true)
+          expect(visibilityState).to.equal('hidden')
+          expect(hidden).to.be.true()
           done()
         })
 
@@ -2301,7 +2292,7 @@ describe('BrowserWindow module', () => {
       onNextVisibilityChange((visibilityState, hidden) => {
         onVisibilityChange((visibilityState, hidden) => {
           if (!hidden) {
-            assert.strictEqual(visibilityState, 'visible')
+            expect(visibilityState).to.equal('visible')
             done()
           }
         })
@@ -2333,7 +2324,7 @@ describe('BrowserWindow module', () => {
       onNextVisibilityChange((visibilityState, hidden) => {
         onVisibilityChange((visibilityState, hidden) => {
           if (!hidden) {
-            assert.strictEqual(visibilityState, 'visible')
+            expect(visibilityState).to.equal('visible')
             done()
           }
         })
@@ -2363,12 +2354,12 @@ describe('BrowserWindow module', () => {
       })
 
       onNextVisibilityChange((visibilityState, hidden) => {
-        assert.strictEqual(visibilityState, 'visible')
-        assert.strictEqual(hidden, false)
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false()
 
         onNextVisibilityChange((visibilityState, hidden) => {
-          assert.strictEqual(visibilityState, 'hidden')
-          assert.strictEqual(hidden, true)
+          expect(visibilityState).to.equal('hidden')
+          expect(hidden).to.be.true()
           done()
         })
 
@@ -2389,8 +2380,8 @@ describe('BrowserWindow module', () => {
       })
 
       onNextVisibilityChange((visibilityState, hidden) => {
-        assert.strictEqual(visibilityState, 'visible')
-        assert.strictEqual(hidden, false)
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false()
 
         onNextVisibilityChange((visibilityState, hidden) => {
           done(new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`))
@@ -2422,9 +2413,9 @@ describe('BrowserWindow module', () => {
     it('emits when window.open is called', (done) => {
       w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
         e.preventDefault()
-        assert.strictEqual(url, 'http://host/')
-        assert.strictEqual(frameName, 'host')
-        assert.strictEqual(additionalFeatures[0], 'this-is-not-a-standard-feature')
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('host')
+        expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature')
         done()
       })
       w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
@@ -2434,9 +2425,9 @@ describe('BrowserWindow module', () => {
       w = new BrowserWindow({ show: false })
       w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
         e.preventDefault()
-        assert.strictEqual(url, 'http://host/')
-        assert.strictEqual(frameName, 'host')
-        assert.strictEqual(additionalFeatures[0], 'this-is-not-a-standard-feature')
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('host')
+        expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature')
         done()
       })
       w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
@@ -2445,8 +2436,8 @@ describe('BrowserWindow module', () => {
     it('emits when link with target is called', (done) => {
       w.webContents.once('new-window', (e, url, frameName) => {
         e.preventDefault()
-        assert.strictEqual(url, 'http://host/')
-        assert.strictEqual(frameName, 'target')
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('target')
         done()
       })
       w.loadFile(path.join(fixtures, 'pages', 'target-name.html'))
@@ -2558,7 +2549,9 @@ describe('BrowserWindow module', () => {
           if (called) return
           called = true
 
-          assert.notStrictEqual(data.length, 0)
+          expect(data.constructor.name).to.equal('NativeImage')
+          expect(data.isEmpty()).to.be.false()
+
           w.webContents.endFrameSubscription()
           done()
         })
@@ -2592,7 +2585,8 @@ describe('BrowserWindow module', () => {
           // assert(rect.width < contentWidth || rect.height < contentHeight)
           called = true
 
-          expect(image.getBitmap().length).to.equal(rect.width * rect.height * 4)
+          const expectedSize = rect.width * rect.height * 4
+          expect(image.getBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize)
           w.webContents.endFrameSubscription()
           done()
         })
@@ -2632,9 +2626,9 @@ describe('BrowserWindow module', () => {
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'))
       await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete')
 
-      assert(fs.existsSync(savePageHtmlPath))
-      assert(fs.existsSync(savePageJsPath))
-      assert(fs.existsSync(savePageCssPath))
+      expect(fs.existsSync(savePageHtmlPath)).to.be.true()
+      expect(fs.existsSync(savePageJsPath)).to.be.true()
+      expect(fs.existsSync(savePageCssPath)).to.be.true()
     })
   })
 
@@ -2643,8 +2637,7 @@ describe('BrowserWindow module', () => {
       w.destroy()
       w = new BrowserWindow()
       const size = w.getSize()
-      assert.strictEqual(size[0], 800)
-      assert.strictEqual(size[1], 600)
+      expect(size).to.deep.equal([800, 600])
     })
   })
 
@@ -2660,53 +2653,53 @@ describe('BrowserWindow module', () => {
 
       w.setMinimizable(false)
       w.setMinimizable(true)
-      assert.deepStrictEqual(w.getSize(), [300, 200])
+      expect(w.getSize()).to.deep.equal([300, 200])
 
       w.setResizable(false)
       w.setResizable(true)
-      assert.deepStrictEqual(w.getSize(), [300, 200])
+      expect(w.getSize()).to.deep.equal([300, 200])
 
       w.setMaximizable(false)
       w.setMaximizable(true)
-      assert.deepStrictEqual(w.getSize(), [300, 200])
+      expect(w.getSize()).to.deep.equal([300, 200])
 
       w.setFullScreenable(false)
       w.setFullScreenable(true)
-      assert.deepStrictEqual(w.getSize(), [300, 200])
+      expect(w.getSize()).to.deep.equal([300, 200])
 
       w.setClosable(false)
       w.setClosable(true)
-      assert.deepStrictEqual(w.getSize(), [300, 200])
+      expect(w.getSize()).to.deep.equal([300, 200])
     })
 
     describe('resizable state', () => {
       it('can be changed with resizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, resizable: false })
-        assert.strictEqual(w.isResizable(), false)
+        expect(w.isResizable()).to.be.false()
 
         if (process.platform === 'darwin') {
-          assert.strictEqual(w.isMaximizable(), true)
+          expect(w.isMaximizable()).to.to.true()
         }
       })
 
       it('can be changed with setResizable method', () => {
-        assert.strictEqual(w.isResizable(), true)
+        expect(w.isResizable()).to.be.true()
         w.setResizable(false)
-        assert.strictEqual(w.isResizable(), false)
+        expect(w.isResizable()).to.be.false()
         w.setResizable(true)
-        assert.strictEqual(w.isResizable(), true)
+        expect(w.isResizable()).to.be.true()
       })
 
       it('works for a frameless window', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, frame: false })
-        assert.strictEqual(w.isResizable(), true)
+        expect(w.isResizable()).to.be.true()
 
         if (process.platform === 'win32') {
           w.destroy()
           w = new BrowserWindow({ show: false, thickFrame: false })
-          assert.strictEqual(w.isResizable(), false)
+          expect(w.isResizable()).to.be.false()
         }
       })
 
@@ -2720,11 +2713,11 @@ describe('BrowserWindow module', () => {
             transparent: true
           })
           w.setContentSize(60, 60)
-          assertBoundsEqual(w.getContentSize(), [60, 60])
+          expectBoundsEqual(w.getContentSize(), [60, 60])
           w.setContentSize(30, 30)
-          assertBoundsEqual(w.getContentSize(), [30, 30])
+          expectBoundsEqual(w.getContentSize(), [30, 30])
           w.setContentSize(10, 10)
-          assertBoundsEqual(w.getContentSize(), [10, 10])
+          expectBoundsEqual(w.getContentSize(), [10, 10])
         })
       }
     })
@@ -2732,16 +2725,16 @@ describe('BrowserWindow module', () => {
     describe('loading main frame state', () => {
       it('is true when the main frame is loading', (done) => {
         w.webContents.on('did-start-loading', () => {
-          assert.strictEqual(w.webContents.isLoadingMainFrame(), true)
+          expect(w.webContents.isLoadingMainFrame()).to.be.true()
           done()
         })
         w.webContents.loadURL(server.url)
       })
       it('is false when only a subframe is loading', (done) => {
         w.webContents.once('did-finish-load', () => {
-          assert.strictEqual(w.webContents.isLoadingMainFrame(), false)
+          expect(w.webContents.isLoadingMainFrame()).to.be.false()
           w.webContents.on('did-start-loading', () => {
-            assert.strictEqual(w.webContents.isLoadingMainFrame(), false)
+            expect(w.webContents.isLoadingMainFrame()).to.be.false()
             done()
           })
           w.webContents.executeJavaScript(`
@@ -2754,9 +2747,9 @@ describe('BrowserWindow module', () => {
       })
       it('is true when navigating to pages from the same origin', (done) => {
         w.webContents.once('did-finish-load', () => {
-          assert.strictEqual(w.webContents.isLoadingMainFrame(), false)
+          expect(w.webContents.isLoadingMainFrame()).to.be.false()
           w.webContents.on('did-start-loading', () => {
-            assert.strictEqual(w.webContents.isLoadingMainFrame(), true)
+            expect(w.webContents.isLoadingMainFrame()).to.be.true()
             done()
           })
           w.webContents.loadURL(`${server.url}/page2`)
@@ -2782,14 +2775,14 @@ describe('BrowserWindow module', () => {
       it('can be changed with movable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, movable: false })
-        assert.strictEqual(w.isMovable(), false)
+        expect(w.isMovable()).to.be.false()
       })
       it('can be changed with setMovable method', () => {
-        assert.strictEqual(w.isMovable(), true)
+        expect(w.isMovable()).to.be.true()
         w.setMovable(false)
-        assert.strictEqual(w.isMovable(), false)
+        expect(w.isMovable()).to.be.false()
         w.setMovable(true)
-        assert.strictEqual(w.isMovable(), true)
+        expect(w.isMovable()).to.be.true()
       })
     })
 
@@ -2797,15 +2790,15 @@ describe('BrowserWindow module', () => {
       it('can be changed with minimizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, minimizable: false })
-        assert.strictEqual(w.isMinimizable(), false)
+        expect(w.isMinimizable()).to.be.false()
       })
 
       it('can be changed with setMinimizable method', () => {
-        assert.strictEqual(w.isMinimizable(), true)
+        expect(w.isMinimizable()).to.be.true()
         w.setMinimizable(false)
-        assert.strictEqual(w.isMinimizable(), false)
+        expect(w.isMinimizable()).to.be.false()
         w.setMinimizable(true)
-        assert.strictEqual(w.isMinimizable(), true)
+        expect(w.isMinimizable()).to.be.true()
       })
     })
 
@@ -2813,31 +2806,31 @@ describe('BrowserWindow module', () => {
       it('can be changed with maximizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, maximizable: false })
-        assert.strictEqual(w.isMaximizable(), false)
+        expect(w.isMaximizable()).to.be.false()
       })
 
       it('can be changed with setMaximizable method', () => {
-        assert.strictEqual(w.isMaximizable(), true)
+        expect(w.isMaximizable()).to.be.true()
         w.setMaximizable(false)
-        assert.strictEqual(w.isMaximizable(), false)
+        expect(w.isMaximizable()).to.be.false()
         w.setMaximizable(true)
-        assert.strictEqual(w.isMaximizable(), true)
+        expect(w.isMaximizable()).to.be.true()
       })
 
       it('is not affected when changing other states', () => {
         w.setMaximizable(false)
-        assert.strictEqual(w.isMaximizable(), false)
+        expect(w.isMaximizable()).to.be.false()
         w.setMinimizable(false)
-        assert.strictEqual(w.isMaximizable(), false)
+        expect(w.isMaximizable()).to.be.false()
         w.setClosable(false)
-        assert.strictEqual(w.isMaximizable(), false)
+        expect(w.isMaximizable()).to.be.false()
 
         w.setMaximizable(true)
-        assert.strictEqual(w.isMaximizable(), true)
+        expect(w.isMaximizable()).to.be.true()
         w.setClosable(true)
-        assert.strictEqual(w.isMaximizable(), true)
+        expect(w.isMaximizable()).to.be.true()
         w.setFullScreenable(false)
-        assert.strictEqual(w.isMaximizable(), true)
+        expect(w.isMaximizable()).to.be.true()
       })
     })
 
@@ -2849,11 +2842,11 @@ describe('BrowserWindow module', () => {
         w.setMaximizable(false)
         w.setResizable(false)
         w.setResizable(true)
-        assert.strictEqual(w.isMaximizable(), false)
+        expect(w.isMaximizable()).to.be.false()
         w.setMaximizable(true)
         w.setResizable(false)
         w.setResizable(true)
-        assert.strictEqual(w.isMaximizable(), true)
+        expect(w.isMaximizable()).to.be.true()
       })
     })
 
@@ -2868,15 +2861,15 @@ describe('BrowserWindow module', () => {
       it('can be changed with fullscreenable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, fullscreenable: false })
-        assert.strictEqual(w.isFullScreenable(), false)
+        expect(w.isFullScreenable()).to.be.false()
       })
 
       it('can be changed with setFullScreenable method', () => {
-        assert.strictEqual(w.isFullScreenable(), true)
+        expect(w.isFullScreenable()).to.be.true()
         w.setFullScreenable(false)
-        assert.strictEqual(w.isFullScreenable(), false)
+        expect(w.isFullScreenable()).to.be.false()
         w.setFullScreenable(true)
-        assert.strictEqual(w.isFullScreenable(), true)
+        expect(w.isFullScreenable()).to.be.true()
       })
     })
 
@@ -2892,11 +2885,11 @@ describe('BrowserWindow module', () => {
         w.destroy()
         w = new BrowserWindow()
         w.setKiosk(true)
-        assert.strictEqual(w.isKiosk(), true)
+        expect(w.isKiosk()).to.be.true()
 
         w.once('enter-full-screen', () => {
           w.setKiosk(false)
-          assert.strictEqual(w.isKiosk(), false)
+          expect(w.isKiosk()).to.be.false()
         })
         w.once('leave-full-screen', () => {
           done()
@@ -2916,11 +2909,11 @@ describe('BrowserWindow module', () => {
         w.destroy()
         w = new BrowserWindow({ resizable: false })
         w.once('enter-full-screen', () => {
-          assert.strictEqual(w.isResizable(), true)
+          expect(w.isResizable()).to.be.true()
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          assert.strictEqual(w.isResizable(), false)
+          expect(w.isResizable()).to.be.false()
           done()
         })
         w.setFullScreen(true)
@@ -2939,11 +2932,11 @@ describe('BrowserWindow module', () => {
         w.destroy()
         w = new BrowserWindow()
         w.once('enter-full-screen', () => {
-          assert.strictEqual(w.isFullScreen(), true)
+          expect(w.isFullScreen()).to.be.true()
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          assert.strictEqual(w.isFullScreen(), false)
+          expect(w.isFullScreen()).to.be.false()
           done()
         })
         w.setFullScreen(true)
@@ -2953,14 +2946,14 @@ describe('BrowserWindow module', () => {
         w.destroy()
         w = new BrowserWindow()
         w.once('enter-full-screen', () => {
-          assert.strictEqual(w.isFullScreen(), true)
+          expect(w.isFullScreen()).to.be.true()
           w.setKiosk(true)
           w.setKiosk(false)
-          assert.strictEqual(w.isFullScreen(), true)
+          expect(w.isFullScreen()).to.be.true()
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          assert.strictEqual(w.isFullScreen(), false)
+          expect(w.isFullScreen()).to.be.false()
           done()
         })
         w.setFullScreen(true)
@@ -2971,15 +2964,15 @@ describe('BrowserWindow module', () => {
       it('can be changed with closable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, closable: false })
-        assert.strictEqual(w.isClosable(), false)
+        expect(w.isClosable()).to.be.false()
       })
 
       it('can be changed with setClosable method', () => {
-        assert.strictEqual(w.isClosable(), true)
+        expect(w.isClosable()).to.be.true()
         w.setClosable(false)
-        assert.strictEqual(w.isClosable(), false)
+        expect(w.isClosable()).to.be.false()
         w.setClosable(true)
-        assert.strictEqual(w.isClosable(), true)
+        expect(w.isClosable()).to.be.true()
       })
     })
 
@@ -2990,17 +2983,17 @@ describe('BrowserWindow module', () => {
         w.destroy()
         const hasShadow = process.platform !== 'darwin'
         w = new BrowserWindow({ show: false, hasShadow: hasShadow })
-        assert.strictEqual(w.hasShadow(), hasShadow)
+        expect(w.hasShadow()).to.equal(hasShadow)
       })
 
       it('can be changed with setHasShadow method', () => {
         if (process.platform !== 'darwin') return
 
-        assert.strictEqual(w.hasShadow(), true)
+        expect(w.hasShadow()).to.be.true()
         w.setHasShadow(false)
-        assert.strictEqual(w.hasShadow(), false)
+        expect(w.hasShadow()).to.be.false()
         w.setHasShadow(true)
-        assert.strictEqual(w.hasShadow(), true)
+        expect(w.hasShadow()).to.be.true()
       })
     })
   })
@@ -3017,7 +3010,7 @@ describe('BrowserWindow module', () => {
       const initialSize = w.getSize()
       w.minimize()
       w.restore()
-      assertBoundsEqual(w.getSize(), initialSize)
+      expectBoundsEqual(w.getSize(), initialSize)
     })
   })
 
@@ -3029,7 +3022,7 @@ describe('BrowserWindow module', () => {
       const initialPosition = w.getPosition()
       w.maximize()
       w.unmaximize()
-      assertBoundsEqual(w.getPosition(), initialPosition)
+      expectBoundsEqual(w.getPosition(), initialPosition)
     })
   })
 
@@ -3047,8 +3040,8 @@ describe('BrowserWindow module', () => {
         w.setFullScreen(true)
         w.once('show', () => { w.setFullScreen(false) })
         w.once('leave-full-screen', () => {
-          assert.strictEqual(w.isVisible(), true)
-          assert.strictEqual(w.isFullScreen(), false)
+          expect(w.isVisible()).to.be.true()
+          expect(w.isFullScreen()).to.be.false()
           done()
         })
         w.show()
@@ -3058,8 +3051,8 @@ describe('BrowserWindow module', () => {
     it('should keep window hidden if already in hidden state', (done) => {
       w.webContents.once('did-finish-load', () => {
         w.once('leave-full-screen', () => {
-          assert.strictEqual(w.isVisible(), false)
-          assert.strictEqual(w.isFullScreen(), false)
+          expect(w.isVisible()).to.be.false()
+          expect(w.isFullScreen()).to.be.false()
           done()
         })
         w.setFullScreen(false)
@@ -3107,22 +3100,22 @@ describe('BrowserWindow module', () => {
 
     describe('parent option', () => {
       it('sets parent window', () => {
-        assert.strictEqual(c.getParentWindow(), w)
+        expect(c.getParentWindow()).to.equal(w)
       })
       it('adds window to child windows of parent', () => {
-        assert.deepStrictEqual(w.getChildWindows(), [c])
+        expect(w.getChildWindows()).to.deep.equal([c])
       })
       it('removes from child windows of parent when window is closed', (done) => {
         c.once('closed', () => {
-          assert.deepStrictEqual(w.getChildWindows(), [])
+          expect(w.getChildWindows()).to.deep.equal([])
           done()
         })
         c.close()
       })
 
       it('should not affect the show option', () => {
-        assert.strictEqual(c.isVisible(), false)
-        assert.strictEqual(c.getParentWindow().isVisible(), false)
+        expect(c.isVisible()).to.be.false()
+        expect(c.getParentWindow().isVisible()).to.be.false()
       })
     })
 
@@ -3133,23 +3126,23 @@ describe('BrowserWindow module', () => {
       })
 
       it('sets parent window', () => {
-        assert.strictEqual(w.getParentWindow(), null)
-        assert.strictEqual(c.getParentWindow(), null)
+        expect(w.getParentWindow()).to.be.null()
+        expect(c.getParentWindow()).to.be.null()
         c.setParentWindow(w)
-        assert.strictEqual(c.getParentWindow(), w)
+        expect(c.getParentWindow()).to.equal(w)
         c.setParentWindow(null)
-        assert.strictEqual(c.getParentWindow(), null)
+        expect(c.getParentWindow()).to.be.null()
       })
       it('adds window to child windows of parent', () => {
-        assert.deepStrictEqual(w.getChildWindows(), [])
+        expect(w.getChildWindows()).to.deep.equal([])
         c.setParentWindow(w)
-        assert.deepStrictEqual(w.getChildWindows(), [c])
+        expect(w.getChildWindows()).to.deep.equal([c])
         c.setParentWindow(null)
-        assert.deepStrictEqual(w.getChildWindows(), [])
+        expect(w.getChildWindows()).to.deep.equal([])
       })
       it('removes from child windows of parent when window is closed', (done) => {
         c.once('closed', () => {
-          assert.deepStrictEqual(w.getChildWindows(), [])
+          expect(w.getChildWindows()).to.deep.equal([])
           done()
         })
         c.setParentWindow(w)
@@ -3171,13 +3164,13 @@ describe('BrowserWindow module', () => {
       })
 
       it('disables parent window', () => {
-        assert.strictEqual(w.isEnabled(), true)
+        expect(w.isEnabled()).to.be.true()
         c.show()
-        assert.strictEqual(w.isEnabled(), false)
+        expect(w.isEnabled()).to.be.false()
       })
       it('re-enables an enabled parent window when closed', (done) => {
         c.once('closed', () => {
-          assert.strictEqual(w.isEnabled(), true)
+          expect(w.isEnabled()).to.be.true()
           done()
         })
         c.show()
@@ -3185,7 +3178,7 @@ describe('BrowserWindow module', () => {
       })
       it('does not re-enable a disabled parent window when closed', (done) => {
         c.once('closed', () => {
-          assert.strictEqual(w.isEnabled(), false)
+          expect(w.isEnabled()).to.be.false()
           done()
         })
         w.setEnabled(false)
@@ -3195,26 +3188,26 @@ describe('BrowserWindow module', () => {
       it('disables parent window recursively', () => {
         const c2 = new BrowserWindow({ show: false, parent: w, modal: true })
         c.show()
-        assert.strictEqual(w.isEnabled(), false)
+        expect(w.isEnabled()).to.be.false()
         c2.show()
-        assert.strictEqual(w.isEnabled(), false)
+        expect(w.isEnabled()).to.be.false()
         c.destroy()
-        assert.strictEqual(w.isEnabled(), false)
+        expect(w.isEnabled()).to.be.false()
         c2.destroy()
-        assert.strictEqual(w.isEnabled(), true)
+        expect(w.isEnabled()).to.be.true()
       })
     })
   })
 
   describe('window.webContents.send(channel, args...)', () => {
     it('throws an error when the channel is missing', () => {
-      assert.throws(() => {
+      expect(() => {
         w.webContents.send()
-      }, 'Missing required channel argument')
+      }).to.throw('Missing required channel argument')
 
-      assert.throws(() => {
+      expect(() => {
         w.webContents.send(null)
-      }, 'Missing required channel argument')
+      }).to.throw('Missing required channel argument')
     })
   })
 
@@ -3229,7 +3222,7 @@ describe('BrowserWindow module', () => {
       // The module's source code is hosted at
       // https://github.com/electron/node-is-valid-window
       const isValidWindow = remote.require('is-valid-window')
-      assert.ok(isValidWindow(w.getNativeWindowHandle()))
+      expect(isValidWindow(w.getNativeWindowHandle())).to.be.true()
     })
   })
 
@@ -3283,13 +3276,13 @@ describe('BrowserWindow module', () => {
 
         const removeExtension = () => {
           BrowserWindow.removeDevToolsExtension('foo')
-          expect(BrowserWindow.getDevToolsExtensions().hasOwnProperty(extensionName)).to.equal(false)
+          expect(BrowserWindow.getDevToolsExtensions()).to.not.have.a.property(extensionName)
         }
 
         const addExtension = () => {
           const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
           BrowserWindow.addDevToolsExtension(extensionPath)
-          expect(BrowserWindow.getDevToolsExtensions().hasOwnProperty(extensionName)).to.equal(true)
+          expect(BrowserWindow.getDevToolsExtensions()).to.have.a.property(extensionName)
 
           showLastDevToolsPanel()
 
@@ -3384,7 +3377,7 @@ describe('BrowserWindow module', () => {
       showLastDevToolsPanel()
 
       ipcMain.once('answer', function (event, message) {
-        assert.strictEqual(message.runtimeId, 'foo')
+        expect(message.runtimeId).to.equal('foo')
         done()
       })
 
@@ -3399,21 +3392,21 @@ describe('BrowserWindow module', () => {
 
       BrowserWindow.addDevToolsExtension(extensionPath)
       app.emit('will-quit')
-      assert.deepStrictEqual(JSON.parse(fs.readFileSync(serializedPath)), [extensionPath])
+      expect(JSON.parse(fs.readFileSync(serializedPath))).to.deep.equal([extensionPath])
 
       BrowserWindow.removeDevToolsExtension(extensionName)
       app.emit('will-quit')
-      assert.strictEqual(fs.existsSync(serializedPath), false)
+      expect(fs.existsSync(serializedPath)).to.be.false()
     })
 
     describe('BrowserWindow.addExtension', () => {
       beforeEach(() => {
         BrowserWindow.removeExtension('foo')
-        assert.strictEqual(BrowserWindow.getExtensions().hasOwnProperty('foo'), false)
+        expect(BrowserWindow.getExtensions()).to.not.have.property('foo')
 
         const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
         BrowserWindow.addExtension(extensionPath)
-        assert.strictEqual(BrowserWindow.getExtensions().hasOwnProperty('foo'), true)
+        expect(BrowserWindow.getExtensions()).to.have.property('foo')
 
         showLastDevToolsPanel()
 
@@ -3421,15 +3414,15 @@ describe('BrowserWindow module', () => {
       })
 
       it('throws errors for missing manifest.json files', () => {
-        assert.throws(() => {
+        expect(() => {
           BrowserWindow.addExtension(path.join(__dirname, 'does-not-exist'))
-        }, /ENOENT: no such file or directory/)
+        }).to.throw('ENOENT: no such file or directory')
       })
 
       it('throws errors for invalid manifest.json files', () => {
-        assert.throws(() => {
+        expect(() => {
           BrowserWindow.addExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'))
-        }, /Unexpected token }/)
+        }).to.throw('Unexpected token }')
       })
     })
   })
@@ -3453,21 +3446,21 @@ describe('BrowserWindow module', () => {
     it('resolves the returned promise with the result', (done) => {
       ipcRenderer.send('executeJavaScript', code)
       ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
-        assert.strictEqual(result, expected)
+        expect(result).to.equal(expected)
         done()
       })
     })
     it('resolves the returned promise with the result if the code returns an asyncronous promise', (done) => {
       ipcRenderer.send('executeJavaScript', asyncCode)
       ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
-        assert.strictEqual(result, expected)
+        expect(result).to.equal(expected)
         done()
       })
     })
     it('rejects the returned promise if an async error is thrown', (done) => {
       ipcRenderer.send('executeJavaScript', badAsyncCode)
       ipcRenderer.once('executeJavaScript-promise-error', (event, error) => {
-        assert.strictEqual(error, expectedErrorMsg)
+        expect(error).to.equal(expectedErrorMsg)
         done()
       })
     })
@@ -3476,7 +3469,7 @@ describe('BrowserWindow module', () => {
         await new Promise((resolve) => {
           ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`)
           ipcRenderer.once('executeJavaScript-promise-error-name', (event, name) => {
-            assert.strictEqual(name, error.name)
+            expect(name).to.equal(error.name)
             resolve()
           })
         })
@@ -3501,7 +3494,7 @@ describe('BrowserWindow module', () => {
 
     it('executes after page load', (done) => {
       w.webContents.executeJavaScript(code).then(result => {
-        assert.strictEqual(result, expected)
+        expect(result).to.equal(expected)
         done()
       })
       w.loadURL(server.url)
@@ -3509,8 +3502,8 @@ describe('BrowserWindow module', () => {
 
     it('works with result objects that have DOM class prototypes', (done) => {
       w.webContents.executeJavaScript('document.location').then(result => {
-        assert.strictEqual(result.origin, server.url)
-        assert.strictEqual(result.protocol, 'http:')
+        expect(result.origin).to.equal(server.url)
+        expect(result.protocol).to.equal('http:')
         done()
       })
       w.loadURL(server.url)
@@ -3525,10 +3518,10 @@ describe('BrowserWindow module', () => {
     })
 
     it('opens the path in Quick Look on macOS', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         w.previewFile(__filename)
         w.closeFilePreview()
-      })
+      }).to.not.throw()
     })
   })
 
@@ -3584,33 +3577,33 @@ describe('BrowserWindow module', () => {
       const p = emittedOnce(ipcMain, 'isolated-world')
       iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
       const [, data] = await p
-      assert.deepStrictEqual(data, expectedContextData)
+      expect(data).to.deep.equal(expectedContextData)
     })
     it('recreates the contexts on reload', async () => {
       await iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
       const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
       iw.webContents.reload()
       const [, data] = await isolatedWorld
-      assert.deepStrictEqual(data, expectedContextData)
+      expect(data).to.deep.equal(expectedContextData)
     })
     it('enables context isolation on child windows', async () => {
       const browserWindowCreated = emittedOnce(app, 'browser-window-created')
       iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
       const [, window] = await browserWindowCreated
-      assert.ok(window.webContents.getLastWebPreferences().contextIsolation)
+      expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true()
     })
     it('separates the page context from the Electron/preload context with sandbox on', async () => {
       const p = emittedOnce(ipcMain, 'isolated-world')
       ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
       const [, data] = await p
-      assert.deepStrictEqual(data, expectedContextData)
+      expect(data).to.deep.equal(expectedContextData)
     })
     it('recreates the contexts on reload with sandbox on', async () => {
       await ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
       const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
       ws.webContents.reload()
       const [, data] = await isolatedWorld
-      assert.deepStrictEqual(data, expectedContextData)
+      expect(data).to.deep.equal(expectedContextData)
     })
     it('supports fetch api', async () => {
       const fetchWindow = new BrowserWindow({
@@ -3624,7 +3617,7 @@ describe('BrowserWindow module', () => {
       fetchWindow.loadURL('about:blank')
       const [, error] = await p
       fetchWindow.destroy()
-      assert.strictEqual(error, 'Failed to fetch')
+      expect(error).to.equal('Failed to fetch')
     })
     it('doesn\'t break ipc serialization', async () => {
       const p = emittedOnce(ipcMain, 'isolated-world')
@@ -3636,7 +3629,7 @@ describe('BrowserWindow module', () => {
         window.postMessage({openedLocation}, '*')
       `)
       const [, data] = await p
-      assert.strictEqual(data.pageContext.openedLocation, '')
+      expect(data.pageContext.openedLocation).to.equal('')
     })
   })
 
@@ -3662,10 +3655,11 @@ describe('BrowserWindow module', () => {
 
     it('creates offscreen window with correct size', (done) => {
       w.webContents.once('paint', function (event, rect, data) {
-        assert.notStrictEqual(data.length, 0)
+        expect(data.constructor.name).to.equal('NativeImage')
+        expect(data.isEmpty()).to.be.false()
         const size = data.getSize()
-        assertWithinDelta(size.width, 100 * devicePixelRatio, 2, 'width')
-        assertWithinDelta(size.height, 100 * devicePixelRatio, 2, 'height')
+        expect(size.width).to.be.closeTo(100 * devicePixelRatio, 2)
+        expect(size.height).to.be.closeTo(100 * devicePixelRatio, 2)
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
@@ -3679,12 +3673,12 @@ describe('BrowserWindow module', () => {
     describe('window.webContents.isOffscreen()', () => {
       it('is true for offscreen type', () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
-        assert.strictEqual(w.webContents.isOffscreen(), true)
+        expect(w.webContents.isOffscreen()).to.be.true()
       })
 
       it('is false for regular window', () => {
         const c = new BrowserWindow({ show: false })
-        assert.strictEqual(c.webContents.isOffscreen(), false)
+        expect(c.webContents.isOffscreen()).to.be.false()
         c.destroy()
       })
     })
@@ -3692,7 +3686,7 @@ describe('BrowserWindow module', () => {
     describe('window.webContents.isPainting()', () => {
       it('returns whether is currently painting', (done) => {
         w.webContents.once('paint', function (event, rect, data) {
-          assert.strictEqual(w.webContents.isPainting(), true)
+          expect(w.webContents.isPainting()).to.be.true()
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
@@ -3703,7 +3697,7 @@ describe('BrowserWindow module', () => {
       it('stops painting', (done) => {
         w.webContents.on('dom-ready', () => {
           w.webContents.stopPainting()
-          assert.strictEqual(w.webContents.isPainting(), false)
+          expect(w.webContents.isPainting()).to.be.false()
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
@@ -3716,7 +3710,7 @@ describe('BrowserWindow module', () => {
           w.webContents.stopPainting()
           w.webContents.startPainting()
           w.webContents.once('paint', function (event, rect, data) {
-            assert.strictEqual(w.webContents.isPainting(), true)
+            expect(w.webContents.isPainting()).to.be.true()
             done()
           })
         })
@@ -3727,7 +3721,7 @@ describe('BrowserWindow module', () => {
     describe('window.webContents.getFrameRate()', () => {
       it('has default frame rate', (done) => {
         w.webContents.once('paint', function (event, rect, data) {
-          assert.strictEqual(w.webContents.getFrameRate(), 60)
+          expect(w.webContents.getFrameRate()).to.equal(60)
           done()
         })
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
@@ -3739,7 +3733,7 @@ describe('BrowserWindow module', () => {
         w.webContents.on('dom-ready', () => {
           w.webContents.setFrameRate(30)
           w.webContents.once('paint', function (event, rect, data) {
-            assert.strictEqual(w.webContents.getFrameRate(), 30)
+            expect(w.webContents.getFrameRate()).to.equal(30)
             done()
           })
         })
@@ -3749,23 +3743,18 @@ describe('BrowserWindow module', () => {
   })
 })
 
-const assertBoundsEqual = (actual, expect) => {
+const expectBoundsEqual = (actual, expected) => {
   if (!isScaleFactorRounding()) {
-    assert.deepStrictEqual(expect, actual)
+    expect(expected).to.deep.equal(actual)
   } else if (Array.isArray(actual)) {
-    assertWithinDelta(actual[0], expect[0], 1, 'x')
-    assertWithinDelta(actual[1], expect[1], 1, 'y')
+    expect(actual[0]).to.be.closeTo(expected[0], 1)
+    expect(actual[1]).to.be.closeTo(expected[1], 1)
   } else {
-    assertWithinDelta(actual.x, expect.x, 1, 'x')
-    assertWithinDelta(actual.y, expect.y, 1, 'y')
-    assertWithinDelta(actual.width, expect.width, 1, 'width')
-    assertWithinDelta(actual.height, expect.height, 1, 'height')
+    expect(actual.x).to.be.closeTo(expected.x, 1)
+    expect(actual.y).to.be.closeTo(expected.y, 1)
+    expect(actual.width).to.be.closeTo(expected.width, 1)
+    expect(actual.height).to.be.closeTo(expected.height, 1)
   }
-}
-
-const assertWithinDelta = (actual, expect, delta, label) => {
-  const result = Math.abs(actual - expect)
-  assert.ok(result <= delta, `${label} value of ${actual} was not within ${delta} of ${expect}`)
 }
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
