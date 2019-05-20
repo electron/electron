@@ -30,6 +30,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/network_context_service.h"
 #include "atom/browser/net/network_context_service_factory.h"
+#include "atom/browser/net/proxying_url_loader_factory.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "atom/browser/notifications/platform_notification_service.h"
 #include "atom/browser/session_preferences.h"
@@ -956,6 +957,29 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
   if (protocol)
     protocol->RegisterURLLoaderFactories(factories);
+}
+
+bool AtomBrowserClient::WillCreateURLLoaderFactory(
+    content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame_host,
+    int render_process_id,
+    bool is_navigation,
+    bool is_download,
+    const url::Origin& request_initiator,
+    network::mojom::URLLoaderFactoryRequest* factory_request,
+    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    bool* bypass_redirect_checks) {
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
+  if (!web_contents)
+    return false;
+
+  auto proxied_request = std::move(*factory_request);
+  network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
+  *factory_request = mojo::MakeRequest(&target_factory_info);
+  new ProxyingURLLoaderFactory(std::move(proxied_request),
+                               std::move(target_factory_info));
+  return true;
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
