@@ -108,8 +108,8 @@ WebContentsPreferences::WebContentsPreferences(
   mate::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
   // Following fields should not be stored.
   copied.Delete("embedder");
-  copied.Delete("isGuest");
   copied.Delete("session");
+  copied.Delete("type");
 
   mate::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
