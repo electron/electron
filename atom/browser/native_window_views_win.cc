@@ -322,22 +322,22 @@ void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
     case WMSZ_LEFT:
     case WMSZ_RIGHT:
       result_width = win_fit_size.width();
-      result_height = static_cast<double>(result_width) / aspect_ratio;
+      result_height = result_width / aspect_ratio;
       break;
     case WMSZ_TOP:
     case WMSZ_BOTTOM:
       result_height = win_fit_size.height();
-      result_width = static_cast<double>(result_height) * aspect_ratio;
+      result_width = result_height * aspect_ratio;
       break;
     case WMSZ_TOPLEFT:
     case WMSZ_TOPRIGHT:
     case WMSZ_BOTTOMLEFT:
     case WMSZ_BOTTOMRIGHT: {
-      result_width = static_cast<double>(height) * aspect_ratio;
+      result_width = height * aspect_ratio;
       result_height = height;
 
       double temp_width = width;
-      double temp_height = static_cast<double>(width) / aspect_ratio;
+      double temp_height = width / aspect_ratio;
 
       if (abs(temp_width * temp_height) > abs(result_width * result_height)) {
         result_width = temp_width;
@@ -346,7 +346,7 @@ void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
       break;
     }
     default:
-      break;
+      return;
   }
 
   window_rect->right = window_rect->left + result_width;
