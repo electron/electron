@@ -43,6 +43,11 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   void RegisterURLLoaderFactories(
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
+  // scheme => (type, handler).
+  using HandlersMap =
+      std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
+  const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
+
  private:
   ProtocolNS(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~ProtocolNS() override;
@@ -56,7 +61,12 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
                                  const ProtocolHandler& handler);
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
+
+  ProtocolError InterceptProtocol(ProtocolType type,
+                                  const std::string& scheme,
+                                  const ProtocolHandler& handler);
   void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
+  bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
   v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
@@ -68,12 +78,18 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
                            mate::Arguments* args) {
     HandleOptionalCallback(args, RegisterProtocol(type, scheme, handler));
   }
+  template <ProtocolType type>
+  void InterceptProtocolFor(const std::string& scheme,
+                            const ProtocolHandler& handler,
+                            mate::Arguments* args) {
+    HandleOptionalCallback(args, InterceptProtocol(type, scheme, handler));
+  }
 
   // Be compatible with old interface, which accepts optional callback.
   void HandleOptionalCallback(mate::Arguments* args, ProtocolError error);
 
-  // scheme => (type, handler).
-  std::map<std::string, std::pair<ProtocolType, ProtocolHandler>> handlers_;
+  HandlersMap handlers_;
+  HandlersMap intercept_handlers_;
 };
 
 }  // namespace api

@@ -971,13 +971,15 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
-  if (!web_contents)
+  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+  if (!protocol)
     return false;
 
   auto proxied_request = std::move(*factory_request);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
   *factory_request = mojo::MakeRequest(&target_factory_info);
-  new ProxyingURLLoaderFactory(std::move(proxied_request),
+  new ProxyingURLLoaderFactory(protocol, std::move(proxied_request),
                                std::move(target_factory_info));
   return true;
 }

@@ -12,9 +12,14 @@
 
 namespace atom {
 
+namespace api {
+class ProtocolNS;
+}
+
 class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
  public:
   ProxyingURLLoaderFactory(
+      api::ProtocolNS* protocol,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info);
   ~ProxyingURLLoaderFactory() override;
@@ -34,6 +39,7 @@ class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
   void OnTargetFactoryError();
   void OnProxyBindingError();
 
+  api::ProtocolNS* protocol_;
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
 
