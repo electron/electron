@@ -117,6 +117,15 @@ WebContentsPreferences::WebContentsPreferences(
 
   instances_.push_back(this);
 
+  SetDefaults();
+}
+
+WebContentsPreferences::~WebContentsPreferences() {
+  instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
+                   instances_.end());
+}
+
+void WebContentsPreferences::SetDefaults() {
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
@@ -162,6 +171,10 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kSpellcheck, true);
 #endif
 
+  if (IsEnabled(options::kSandbox)) {
+    SetBool(options::kNativeWindowOpen, true);
+  }
+
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
   int guest_instance_id = 0;
@@ -173,23 +186,10 @@ WebContentsPreferences::WebContentsPreferences(
         auto* embedder_preferences = WebContentsPreferences::From(embedder);
         if (embedder_preferences &&
             embedder_preferences->IsEnabled(options::kOffscreen)) {
-          preference_.SetKey(options::kOffscreen, base::Value(true));
+          SetBool(options::kOffscreen, true);
         }
       }
     }
-  }
-
-  SetDefaults();
-}
-
-WebContentsPreferences::~WebContentsPreferences() {
-  instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
-                   instances_.end());
-}
-
-void WebContentsPreferences::SetDefaults() {
-  if (IsEnabled(options::kSandbox)) {
-    SetBool(options::kNativeWindowOpen, true);
   }
 
   last_preference_ = preference_.Clone();
@@ -360,13 +360,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     blink::web_pref::WebPreferences* prefs) {
-  prefs->javascript_enabled =
-      IsEnabled(options::kJavaScript, true /* default_value */);
-  prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
-  prefs->text_areas_are_resizable =
-      IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
-  prefs->navigate_on_drag_drop =
-      IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
+  prefs->javascript_enabled = IsEnabled(options::kJavaScript);
+  prefs->images_enabled = IsEnabled(options::kImages);
+  prefs->text_areas_are_resizable = IsEnabled(options::kTextAreasAreResizable);
+  prefs->navigate_on_drag_drop = IsEnabled(options::kNavigateOnDragDrop);
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
     prefs->autoplay_policy =
@@ -374,17 +371,14 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   }
 
   // Check if webgl should be enabled.
-  bool is_webgl_enabled = IsEnabled(options::kWebGL, true /* default_value */);
+  bool is_webgl_enabled = IsEnabled(options::kWebGL);
   prefs->webgl1_enabled = is_webgl_enabled;
   prefs->webgl2_enabled = is_webgl_enabled;
 
   // Check if web security should be enabled.
-  bool is_web_security_enabled =
-      IsEnabled(options::kWebSecurity, true /* default_value */);
-  prefs->web_security_enabled = is_web_security_enabled;
+  prefs->web_security_enabled = IsEnabled(options::kWebSecurity);
   prefs->allow_running_insecure_content =
-      IsEnabled(options::kAllowRunningInsecureContent,
-                !is_web_security_enabled /* default_value */);
+      IsEnabled(options::kAllowRunningInsecureContent);
 
   auto* fonts_dict = preference_.FindKeyOfType("defaultFontFamily",
                                                base::Value::Type::DICTIONARY);
@@ -433,11 +427,11 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   // Whether to enable the remote module
-  prefs->enable_remote_module = IsEnabled(options::kEnableRemoteModule, false);
+  prefs->enable_remote_module = IsEnabled(options::kEnableRemoteModule);
 #endif
 
   prefs->world_safe_execute_javascript =
-      IsEnabled(options::kWorldSafeExecuteJavaScript, true);
+      IsEnabled(options::kWorldSafeExecuteJavaScript);
 
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
