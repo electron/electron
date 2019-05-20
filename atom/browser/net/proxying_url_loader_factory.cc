@@ -4,6 +4,10 @@
 
 #include "atom/browser/net/proxying_url_loader_factory.h"
 
+#include <utility>
+
+#include "atom/browser/net/asar/asar_url_loader.h"
+
 namespace atom {
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
@@ -28,6 +32,14 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     const network::ResourceRequest& request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
+  // Intercept file:// protocol to support asar archives.
+  if (request.url.SchemeIsFile()) {
+    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
+                              nullptr);
+    return;
+  }
+
+  // Pass-through to the original factory.
   target_factory_->CreateLoaderAndStart(std::move(loader), routing_id,
                                         request_id, options, request,
                                         std::move(client), traffic_annotation);
