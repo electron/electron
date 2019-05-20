@@ -100,6 +100,10 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
       "HTTP/1.1 %d %s", status_code,
       net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
 
+  dict.Get("charset", &head.charset);
+  bool has_mime_type = dict.Get("mimeType", &head.mime_type);
+  bool has_content_type = false;
+
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
     for (const auto& iter : headers.DictItems()) {
@@ -117,12 +121,17 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
       }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (iter.first == "content-type" && iter.second.is_string())
+      if (iter.first == "content-type" && iter.second.is_string()) {
         head.mime_type = iter.second.GetString();
+        has_content_type = true;
+      }
     }
   }
-  dict.Get("mimeType", &head.mime_type);
-  dict.Get("charset", &head.charset);
+
+  // Setting |head.mime_type| does not automatically set the "content-type"
+  // header in NetworkService.
+  if (has_mime_type && !has_content_type)
+    head.headers->AddHeader("content-type: " + head.mime_type);
   return head;
 }
 
