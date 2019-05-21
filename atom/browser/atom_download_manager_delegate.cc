@@ -127,8 +127,8 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
         base::Bind(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
                    base::Unretained(this), download_id, callback);
 
-    file_dialog::ShowSaveDialog(settings, std::move(dialog_promise));
     ignore_result(dialog_promise.Then(dialog_callback));
+    file_dialog::ShowSaveDialog(settings, std::move(dialog_promise));
   } else {
     callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                  download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
@@ -136,54 +136,48 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   }
 }
 
-#if defined(MAS_BUILD)
 void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
     uint32_t download_id,
     const content::DownloadTargetCallback& download_callback,
-    bool result,
-    const base::FilePath& path,
-    const std::string& bookmark)
-#else
-void AtomDownloadManagerDelegate::OnDownloadSaveDialogDone(
-    uint32_t download_id,
-    const content::DownloadTargetCallback& download_callback,
-    bool result,
-    const base::FilePath& path)
-#endif
-{
+    mate::Dictionary result) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   auto* item = download_manager_->GetDownload(download_id);
   if (!item)
     return;
 
-  if (result) {
-    // Remember the last selected download directory.
-    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-        download_manager_->GetBrowserContext());
-    browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                          path.DirName());
+  bool canceled = true;
+  result.Get("canceled", &canceled);
 
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
-    api::DownloadItem* download_item =
-        api::DownloadItem::FromWrappedClass(isolate, item);
-    if (download_item)
-      download_item->SetSavePath(path);
+  base::FilePath path;
+
+  if (!canceled) {
+    if (result.Get("filePath", &path)) {
+      // Remember the last selected download directory.
+      AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+          download_manager_->GetBrowserContext());
+      browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                            path.DirName());
+
+      v8::Isolate* isolate = v8::Isolate::GetCurrent();
+      v8::Locker locker(isolate);
+      v8::HandleScope handle_scope(isolate);
+      api::DownloadItem* download_item =
+          api::DownloadItem::FromWrappedClass(isolate, item);
+      if (download_item)
+        download_item->SetSavePath(path);
+    }
   }
 
   // Running the DownloadTargetCallback with an empty FilePath signals that the
   // download should be cancelled. If user cancels the file save dialog, run
   // the callback with empty FilePath.
-  const base::FilePath download_path = result ? path : base::FilePath();
   const auto interrupt_reason =
-      download_path.empty() ? download::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
-                            : download::DOWNLOAD_INTERRUPT_REASON_NONE;
-  download_callback.Run(download_path,
-                        download::DownloadItem::TARGET_DISPOSITION_PROMPT,
-                        download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                        download_path, interrupt_reason);
+      path.empty() ? download::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
+                   : download::DOWNLOAD_INTERRUPT_REASON_NONE;
+  download_callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
+                        download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
+                        interrupt_reason);
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {
