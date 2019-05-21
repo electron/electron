@@ -104,7 +104,7 @@ async function callAppVeyor (targetBranch, job, options) {
   const requestOpts = {
     url: buildAppVeyorURL,
     auth: {
-      bearer: process.env.APPVEYOR_TOKEN
+      bearer: process.env.APPVEYOR_CLOUD_TOKEN
     },
     headers: {
       'Content-Type': 'application/json'
