@@ -3,6 +3,10 @@ From: Tomas Rycl <torycl@microsoft.com>
 Date: Mon, 13 May 2019 15:48:48 +0200
 Subject: Do not export private V8 symbols on Windows
 
+This change stops private V8 symbols and internal crt methods being exported.
+It fixes an issue where native node modules can import
+incorrect CRT methods and crash on Windows.
+It also reduces size of node.lib by 75%.
 
 diff --git a/src/base/macros.h b/src/base/macros.h
 index 1276805182084bda3b72b30afb695d9c0648ad34..7be3c3370755dfe4deaffcb0598cc4d7d7cda0ba 100644
