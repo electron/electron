@@ -177,10 +177,10 @@ index f3867356e3d641416e00e6d115ae9ae2a0be90ab..b1d192d2b20ccb63fba07093101d745e
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655857f3e31
+index 0000000000000000000000000000000000000000..bbca3a43b5ba8bcf1e3a4dab4509b903b7117f36
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,168 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -257,12 +257,13 @@ index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655
 +}
 +
 +void SoftwareOutputDeviceProxy::OnSwapBuffers(
-+    base::OnceClosure swap_ack_callback) {
++    SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback) {
 +  DCHECK(swap_ack_callback_.is_null());
 +
 +  // We aren't waiting on DrawAck() and can immediately run the callback.
 +  if (!waiting_on_draw_ack_) {
-+    task_runner_->PostTask(FROM_HERE, std::move(swap_ack_callback));
++    task_runner_->PostTask(FROM_HERE,
++        base::BindOnce(std::move(swap_ack_callback), viewport_pixel_size_));
 +    return;
 +  }
 +
@@ -344,13 +345,13 @@ index 0000000000000000000000000000000000000000..c784a841f74e7a6215595fd8b1166655
 +  TRACE_EVENT_ASYNC_END0("viz", "SoftwareOutputDeviceProxy::Draw", this);
 +
 +  waiting_on_draw_ack_ = false;
-+  std::move(swap_ack_callback_).Run();
++  std::move(swap_ack_callback_).Run(viewport_pixel_size_);
 +}
 +
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..01e1e2f0860faa1afe42c342c8905a7f838bd363
+index 0000000000000000000000000000000000000000..ff3c0217812a8370a20aa528f117e928fd1b95f4
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
 @@ -0,0 +1,88 @@
@@ -415,7 +416,7 @@ index 0000000000000000000000000000000000000000..01e1e2f0860faa1afe42c342c8905a7f
 +  ~SoftwareOutputDeviceProxy() override;
 +
 +  // SoftwareOutputDevice implementation.
-+  void OnSwapBuffers(base::OnceClosure swap_ack_callback) override;
++  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback) override;
 +
 +  // SoftwareOutputDeviceBase implementation.
 +  void ResizeDelegated() override;
@@ -430,7 +431,7 @@ index 0000000000000000000000000000000000000000..01e1e2f0860faa1afe42c342c8905a7f
 +
 +  std::unique_ptr<SkCanvas> canvas_;
 +  bool waiting_on_draw_ack_ = false;
-+  base::OnceClosure swap_ack_callback_;
++  SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback_;
 +
 +#if !defined(WIN32)
 +  base::WritableSharedMemoryMapping shm_mapping_;
