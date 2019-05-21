@@ -194,8 +194,18 @@ void AtomURLLoaderFactory::StartLoading(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     ProtocolType type,
-    v8::Local<v8::Value> response,
     mate::Arguments* args) {
+  // Send network error when there is no argument passed.
+  //
+  // Note that we should not throw JS error in the callback no matter what is
+  // passed, to keep compatibility with old code.
+  v8::Local<v8::Value> response;
+  if (!args->GetNext(&response)) {
+    client->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    return;
+  }
+
   // Parse {error} object.
   mate::Dictionary dict = ToDict(args->isolate(), response);
   if (!dict.IsEmpty()) {
@@ -233,16 +243,12 @@ void AtomURLLoaderFactory::StartLoading(
       break;
     case ProtocolType::kFree:
       ProtocolType type;
-      v8::Local<v8::Value> extra_arg;
-      if (!mate::ConvertFromV8(args->isolate(), response, &type) ||
-          !args->GetNext(&extra_arg)) {
+      if (!mate::ConvertFromV8(args->isolate(), response, &type)) {
         client->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
-        args->ThrowError("Invalid args, must pass (type, options)");
         return;
       }
       StartLoading(std::move(loader), routing_id, request_id, options, request,
-                   std::move(client), traffic_annotation, type, extra_arg,
-                   args);
+                   std::move(client), traffic_annotation, type, args);
       break;
   }
 }
