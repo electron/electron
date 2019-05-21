@@ -773,6 +773,10 @@ void App::SelectClientCertificate(
   }
 }
 
+void App::OnGpuInfoUpdate() {
+  Emit("gpu-info-update");
+}
+
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {
   Emit("gpu-process-crashed",
        status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);

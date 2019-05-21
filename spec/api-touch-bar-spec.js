@@ -1,36 +1,36 @@
-const assert = require('assert')
 const path = require('path')
 const { BrowserWindow, TouchBar } = require('electron').remote
 const { closeWindow } = require('./window-helpers')
+const { expect } = require('chai')
 
 const { TouchBarButton, TouchBarColorPicker, TouchBarGroup } = TouchBar
 const { TouchBarLabel, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer } = TouchBar
 
 describe('TouchBar module', () => {
   it('throws an error when created without an options object', () => {
-    assert.throws(() => {
+    expect(() => {
       const touchBar = new TouchBar()
       touchBar.toString()
-    }, /Must specify options object as first argument/)
+    }).to.throw('Must specify options object as first argument')
   })
 
   it('throws an error when created with invalid items', () => {
-    assert.throws(() => {
+    expect(() => {
       const touchBar = new TouchBar({ items: [1, true, {}, []] })
       touchBar.toString()
-    }, /Each item must be an instance of TouchBarItem/)
+    }).to.throw('Each item must be an instance of TouchBarItem')
   })
 
   it('throws an error when an invalid escape item is set', () => {
-    assert.throws(() => {
+    expect(() => {
       const touchBar = new TouchBar({ items: [], escapeItem: 'esc' })
       touchBar.toString()
-    }, /Escape item must be an instance of TouchBarItem/)
+    }).to.throw('Escape item must be an instance of TouchBarItem')
 
-    assert.throws(() => {
+    expect(() => {
       const touchBar = new TouchBar({ items: [] })
       touchBar.escapeItem = 'esc'
-    }, /Escape item must be an instance of TouchBarItem/)
+    }).to.throw('Escape item must be an instance of TouchBarItem')
   })
 
   describe('BrowserWindow behavior', () => {

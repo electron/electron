@@ -2,21 +2,21 @@
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const { deprecations, deprecate } = require('electron')
+const { deprecate } = require('electron')
 
 const { expect } = chai
 chai.use(dirtyChai)
 
-describe('deprecations', () => {
+describe('deprecate', () => {
   beforeEach(() => {
-    deprecations.setHandler(null)
+    deprecate.setHandler(null)
     process.throwDeprecation = true
   })
 
   it('allows a deprecation handler function to be specified', () => {
     const messages = []
 
-    deprecations.setHandler(message => {
+    deprecate.setHandler(message => {
       messages.push(message)
     })
 
@@ -27,17 +27,17 @@ describe('deprecations', () => {
   it('returns a deprecation handler after one is set', () => {
     const messages = []
 
-    deprecations.setHandler(message => {
+    deprecate.setHandler(message => {
       messages.push(message)
     })
 
     deprecate.log('this is deprecated')
-    expect(deprecations.getHandler()).to.be.a('function')
+    expect(deprecate.getHandler()).to.be.a('function')
   })
 
   it('renames a property', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecate.setHandler(m => { msg = m })
 
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
@@ -68,7 +68,7 @@ describe('deprecations', () => {
 
   it('deprecates a property of an object', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecate.setHandler(m => { msg = m })
 
     const prop = 'itMustGo'
     const o = { [prop]: 0 }
@@ -84,7 +84,7 @@ describe('deprecations', () => {
 
   it('warns exactly once when a function is deprecated with no replacement', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecate.setHandler(m => { msg = m })
 
     function oldFn () { return 'hello' }
     const deprecatedFn = deprecate.function(oldFn)
@@ -96,7 +96,7 @@ describe('deprecations', () => {
 
   it('warns exactly once when a function is deprecated with a replacement', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecate.setHandler(m => { msg = m })
 
     function oldFn () { return 'hello' }
     function newFn () { return 'goodbye' }
@@ -110,7 +110,7 @@ describe('deprecations', () => {
 
   it('warns only once per item', () => {
     const messages = []
-    deprecations.setHandler(message => messages.push(message))
+    deprecate.setHandler(message => messages.push(message))
 
     const key = 'foo'
     const val = 'bar'
@@ -125,7 +125,7 @@ describe('deprecations', () => {
 
   it('warns if deprecated property is already set', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecate.setHandler(m => { msg = m })
 
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
@@ -146,7 +146,7 @@ describe('deprecations', () => {
 
   it('warns when a function is deprecated in favor of a property', () => {
     const warnings = []
-    deprecations.setHandler(warning => warnings.push(warning))
+    deprecate.setHandler(warning => warnings.push(warning))
 
     const newProp = 'newProp'
     const mod = {
@@ -175,12 +175,12 @@ describe('deprecations', () => {
 
     const enableCallbackWarnings = () => {
       warnings = []
-      deprecations.setHandler(warning => warnings.push(warning))
+      deprecate.setHandler(warning => warnings.push(warning))
       process.enablePromiseAPIs = true
     }
 
     beforeEach(() => {
-      deprecations.setHandler(null)
+      deprecate.setHandler(null)
       process.throwDeprecation = true
 
       promiseFunc = param => new Promise((resolve, reject) => resolve(param))

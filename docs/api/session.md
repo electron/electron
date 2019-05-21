@@ -203,7 +203,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 * `url` URL
 
-Returns `Promise<string>` - Resolves with the proxy information for `url`.
+Returns `Promise<String>` - Resolves with the proxy information for `url`.
 
 #### `ses.setDownloadPath(path)`
 

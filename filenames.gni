@@ -49,7 +49,6 @@ filenames = {
     "lib/browser/utils.ts",
     "lib/common/api/clipboard.js",
     "lib/common/api/deprecate.ts",
-    "lib/common/api/deprecations.js",
     "lib/common/api/is-promise.js",
     "lib/common/api/exports/electron.js",
     "lib/common/api/module-list.js",

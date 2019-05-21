@@ -5,11 +5,11 @@
 #ifndef ATOM_COMMON_ATOM_VERSION_H_
 #define ATOM_COMMON_ATOM_VERSION_H_
 
-#define ATOM_MAJOR_VERSION 6
+#define ATOM_MAJOR_VERSION 7
 #define ATOM_MINOR_VERSION 0
 #define ATOM_PATCH_VERSION 0
 // clang-format off
-#define ATOM_PRE_RELEASE_VERSION -nightly.20190404
+#define ATOM_PRE_RELEASE_VERSION -nightly.20190521
 // clang-format on
 
 #ifndef ATOM_STRINGIFY

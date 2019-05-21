@@ -46,7 +46,7 @@ describe('chrome api', () => {
     const manifest = JSON.parse(manifestString)
 
     expect(manifest.name).to.equal(actualManifest.name)
-    expect(manifest.content_scripts.length).to.equal(actualManifest.content_scripts.length)
+    expect(manifest.content_scripts).to.have.lengthOf(actualManifest.content_scripts.length)
   })
 
   it('chrome.tabs.sendMessage receives the response', async function () {

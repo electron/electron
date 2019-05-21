@@ -2,14 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <dwmapi.h>
+#include <shellapi.h>
+
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/views/root_view.h"
 #include "atom/common/atom_constants.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "ui/base/win/accessibility_misc_utils.h"
+#include "ui/display/display.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/insets.h"
+#include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationCoreApi.h>
@@ -138,10 +143,154 @@ bool IsScreenReaderActive() {
   return screenReader && UiaClientsAreListening();
 }
 
+// We use "enum" instead of "enum class" because we need to do bitwise compare.
+enum AppbarAutohideEdge {
+  TOP = 1 << 0,
+  LEFT = 1 << 1,
+  BOTTOM = 1 << 2,
+  RIGHT = 1 << 3,
+};
+
+// The thickness of an auto-hide taskbar in pixel.
+constexpr int kAutoHideTaskbarThicknessPx = 2;
+
+// Code is copied from chrome_views_delegate_win.cc.
+bool MonitorHasAutohideTaskbarForEdge(UINT edge, HMONITOR monitor) {
+  APPBARDATA taskbar_data = {sizeof(APPBARDATA), NULL, 0, edge};
+  taskbar_data.hWnd = ::GetForegroundWindow();
+
+  // MSDN documents an ABM_GETAUTOHIDEBAREX, which supposedly takes a monitor
+  // rect and returns autohide bars on that monitor.  This sounds like a good
+  // idea for multi-monitor systems.  Unfortunately, it appears to not work at
+  // least some of the time (erroneously returning NULL) and there's almost no
+  // online documentation or other sample code using it that suggests ways to
+  // address this problem. We do the following:-
+  // 1. Use the ABM_GETAUTOHIDEBAR message. If it works, i.e. returns a valid
+  //    window we are done.
+  // 2. If the ABM_GETAUTOHIDEBAR message does not work we query the auto hide
+  //    state of the taskbar and then retrieve its position. That call returns
+  //    the edge on which the taskbar is present. If it matches the edge we
+  //    are looking for, we are done.
+  // NOTE: This call spins a nested run loop.
+  HWND taskbar = reinterpret_cast<HWND>(
+      SHAppBarMessage(ABM_GETAUTOHIDEBAR, &taskbar_data));
+  if (!::IsWindow(taskbar)) {
+    APPBARDATA taskbar_data = {sizeof(APPBARDATA), 0, 0, 0};
+    unsigned int taskbar_state = SHAppBarMessage(ABM_GETSTATE, &taskbar_data);
+    if (!(taskbar_state & ABS_AUTOHIDE))
+      return false;
+
+    taskbar_data.hWnd = ::FindWindow(L"Shell_TrayWnd", NULL);
+    if (!::IsWindow(taskbar_data.hWnd))
+      return false;
+
+    SHAppBarMessage(ABM_GETTASKBARPOS, &taskbar_data);
+    if (taskbar_data.uEdge == edge)
+      taskbar = taskbar_data.hWnd;
+  }
+
+  // There is a potential race condition here:
+  // 1. A maximized chrome window is fullscreened.
+  // 2. It is switched back to maximized.
+  // 3. In the process the window gets a WM_NCCACLSIZE message which calls us to
+  //    get the autohide state.
+  // 4. The worker thread is invoked. It calls the API to get the autohide
+  //    state. On Windows versions  earlier than Windows 7, taskbars could
+  //    easily be always on top or not.
+  //    This meant that we only want to look for taskbars which have the topmost
+  //    bit set.  However this causes problems in cases where the window on the
+  //    main thread is still in the process of switching away from fullscreen.
+  //    In this case the taskbar might not yet have the topmost bit set.
+  // 5. The main thread resumes and does not leave space for the taskbar and
+  //    hence it does not pop when hovered.
+  //
+  // To address point 4 above, it is best to not check for the WS_EX_TOPMOST
+  // window style on the taskbar, as starting from Windows 7, the topmost
+  // style is always set. We don't support XP and Vista anymore.
+  if (::IsWindow(taskbar)) {
+    if (MonitorFromWindow(taskbar, MONITOR_DEFAULTTONEAREST) == monitor)
+      return true;
+    // In some cases like when the autohide taskbar is on the left of the
+    // secondary monitor, the MonitorFromWindow call above fails to return the
+    // correct monitor the taskbar is on. We fallback to MonitorFromPoint for
+    // the cursor position in that case, which seems to work well.
+    POINT cursor_pos = {0};
+    GetCursorPos(&cursor_pos);
+    if (MonitorFromPoint(cursor_pos, MONITOR_DEFAULTTONEAREST) == monitor)
+      return true;
+  }
+  return false;
+}
+
+int GetAppbarAutohideEdges(HWND hwnd) {
+  HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL);
+  if (!monitor)
+    return 0;
+
+  int edges = 0;
+  if (MonitorHasAutohideTaskbarForEdge(ABE_LEFT, monitor))
+    edges |= AppbarAutohideEdge::LEFT;
+  if (MonitorHasAutohideTaskbarForEdge(ABE_TOP, monitor))
+    edges |= AppbarAutohideEdge::TOP;
+  if (MonitorHasAutohideTaskbarForEdge(ABE_RIGHT, monitor))
+    edges |= AppbarAutohideEdge::RIGHT;
+  if (MonitorHasAutohideTaskbarForEdge(ABE_BOTTOM, monitor))
+    edges |= AppbarAutohideEdge::BOTTOM;
+  return edges;
+}
+
 }  // namespace
 
 std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = NULL;
+
+void NativeWindowViews::Maximize() {
+  int autohide_edges = 0;
+  if (!has_frame())
+    autohide_edges = GetAppbarAutohideEdges(GetAcceleratedWidget());
+
+  // Only use Maximize() when:
+  // 1. window has WS_THICKFRAME style;
+  // 2. and window is not frameless when there is autohide taskbar.
+  if ((::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME) &&
+      (has_frame() || autohide_edges == 0)) {
+    if (IsVisible())
+      widget()->Maximize();
+    else
+      widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
+                                              gfx::Rect());
+    return;
+  }
+
+  gfx::Insets insets;
+  if (!has_frame()) {
+    // When taskbar is autohide, we need to leave some space so the window
+    // isn't treated as a "fullscreen app", which would cause the taskbars
+    // to disappear.
+    //
+    // This trick comes from hwnd_message_handler.cc. While Chromium already
+    // does this for normal window, somehow it is not applying the trick when
+    // using frameless window, and we have to do it ourselves.
+    float scale_factor =
+        display::win::ScreenWin::GetScaleFactorForHWND(GetAcceleratedWidget());
+    int thickness = std::ceil(kAutoHideTaskbarThicknessPx / scale_factor);
+    if (autohide_edges & AppbarAutohideEdge::LEFT)
+      insets.set_left(-thickness);
+    if (autohide_edges & AppbarAutohideEdge::TOP)
+      insets.set_top(-thickness);
+    if (autohide_edges & AppbarAutohideEdge::RIGHT)
+      insets.set_right(thickness);
+    if (autohide_edges & AppbarAutohideEdge::BOTTOM)
+      insets.set_bottom(thickness);
+  }
+
+  restore_bounds_ = GetBounds();
+  auto display =
+      display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+  gfx::Rect bounds = display.work_area();
+  bounds.Inset(insets);
+  SetBounds(bounds, false);
+}
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);

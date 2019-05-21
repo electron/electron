@@ -1,4 +1,7 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+const chaiAsPromised = require('chai-as-promised')
+
 const http = require('http')
 const path = require('path')
 const qs = require('querystring')
@@ -11,6 +14,10 @@ const { BrowserWindow, ipcMain, protocol, session, webContents } = remote
 // well. In order to test stream protocol, we must work around this limitation
 // and use Stream instances created in the browser process.
 const stream = remote.require('stream')
+
+const { expect } = chai
+chai.use(dirtyChai)
+chai.use(chaiAsPromised)
 
 /* The whole protocol API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -86,9 +93,7 @@ describe('protocol module', () => {
 
     it('throws error when scheme is already registered', async () => {
       await registerStringProtocol(protocolName, emptyHandler)
-      assert.rejects(async () => {
-        await registerBufferProtocol(protocolName, emptyHandler)
-      })
+      await expect(registerBufferProtocol(protocolName, emptyHandler)).to.be.eventually.rejectedWith(Error)
     })
 
     it('does not crash when handler is called twice', async () => {
@@ -102,14 +107,12 @@ describe('protocol module', () => {
       }
       await registerStringProtocol(protocolName, doubleHandler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('sends error when callback is called with nothing', async () => {
       await registerBufferProtocol(protocolName, emptyHandler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
     })
 
     it('does not crash when callback is called in next tick', async () => {
@@ -118,15 +121,13 @@ describe('protocol module', () => {
       }
       await registerStringProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
   })
 
   describe('protocol.unregisterProtocol', () => {
     it('returns error when scheme does not exist', async () => {
-      assert.rejects(async () => {
-        await unregisterProtocol('not-exist')
-      })
+      await expect(unregisterProtocol('not-exist')).to.be.eventually.rejectedWith(Error)
     })
   })
 
@@ -135,15 +136,15 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(text)
       await registerStringProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('sets Access-Control-Allow-Origin', async () => {
       const handler = (request, callback) => callback(text)
       await registerStringProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
-      assert.ok(r.headers.includes('access-control-allow-origin: *'))
+      expect(r.data).to.equal(text)
+      expect(r.headers).to.include('access-control-allow-origin: *')
     })
 
     it('sends object as response', async () => {
@@ -155,15 +156,13 @@ describe('protocol module', () => {
       }
       await registerStringProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('fails when sending object other than string', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerStringProtocol(protocolName, handler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
     })
   })
 
@@ -173,15 +172,15 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(buffer)
       await registerBufferProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('sets Access-Control-Allow-Origin', async () => {
       const handler = (request, callback) => callback(buffer)
       await registerBufferProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
-      assert.ok(r.headers.includes('access-control-allow-origin: *'))
+      expect(r.data).to.equal(text)
+      expect(r.headers).to.include('access-control-allow-origin: *')
     })
 
     it('sends object as response', async () => {
@@ -193,15 +192,13 @@ describe('protocol module', () => {
       }
       await registerBufferProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('fails when sending string', async () => {
       const handler = (request, callback) => callback(text)
       await registerBufferProtocol(protocolName, handler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
     })
   })
 
@@ -215,15 +212,15 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(filePath)
       await registerFileProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, String(fileContent))
+      expect(r.data).to.equal(String(fileContent))
     })
 
     it('sets Access-Control-Allow-Origin', async () => {
       const handler = (request, callback) => callback(filePath)
       await registerFileProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, String(fileContent))
-      assert.ok(r.headers.includes('access-control-allow-origin: *'))
+      expect(r.data).to.equal(String(fileContent))
+      expect(r.headers).to.include('access-control-allow-origin: *')
     })
 
     it('sets custom headers', async () => {
@@ -233,46 +230,42 @@ describe('protocol module', () => {
       })
       await registerFileProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, String(fileContent))
-      assert.ok(r.headers.includes('x-great-header: sogreat'))
+      expect(r.data).to.equal(String(fileContent))
+      expect(r.headers).to.include('x-great-header: sogreat')
     })
 
     it('sends object as response', async () => {
       const handler = (request, callback) => callback({ path: filePath })
       await registerFileProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, String(fileContent))
+      expect(r.data).to.equal(String(fileContent))
     })
 
     it('can send normal file', async () => {
       const handler = (request, callback) => callback(normalPath)
       await registerFileProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, String(normalContent))
+      expect(r.data).to.equal(String(normalContent))
     })
 
     it('fails when sending unexist-file', async () => {
       const fakeFilePath = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
       const handler = (request, callback) => callback(fakeFilePath)
       await registerFileProtocol(protocolName, handler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
     })
 
     it('fails when sending unsupported content', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerFileProtocol(protocolName, handler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
     })
   })
 
   describe('protocol.registerHttpProtocol', () => {
     it('sends url as response', async () => {
       const server = http.createServer((req, res) => {
-        assert.notStrictEqual(req.headers.accept, '')
+        expect(req.headers.accept).to.not.equal('')
         res.end(text)
         server.close()
       })
@@ -283,23 +276,19 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback({ url })
       await registerHttpProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('fails when sending invalid url', async () => {
       const handler = (request, callback) => callback({ url: 'url' })
       await registerHttpProtocol(protocolName, handler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
     })
 
     it('fails when sending unsupported content', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerHttpProtocol(protocolName, handler)
-      assert.rejects(async () => {
-        await ajax(protocolName + '://fake-host')
-      })
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
     })
 
     it('works when target URL redirects', async () => {
@@ -322,12 +311,12 @@ describe('protocol module', () => {
       await registerHttpProtocol(protocolName, handler)
 
       await contents.loadURL(url)
-      assert.strictEqual(contents.getURL(), url)
+      expect(contents.getURL()).to.equal(url)
     })
 
     it('can access request headers', (done) => {
       const handler = (request) => {
-        assert.ok('headers' in request)
+        expect(request).to.have.a.property('headers')
         done()
       }
       registerHttpProtocol(protocolName, handler, () => {
@@ -341,15 +330,15 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(getStream())
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('sends object as response', async () => {
       const handler = (request, callback) => callback({ data: getStream() })
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
-      assert.strictEqual(r.status, 200)
+      expect(r.data).to.equal(text)
+      expect(r.status).to.equal(200)
     })
 
     it('sends custom response headers', async () => {
@@ -361,9 +350,9 @@ describe('protocol module', () => {
       })
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, text)
-      assert.strictEqual(r.status, 200)
-      assert.ok(r.headers.includes('x-electron: a, b'))
+      expect(r.data).to.equal(text)
+      expect(r.status).to.equal(200)
+      expect(r.headers).to.include('x-electron: a, b')
     })
 
     it('sends custom status code', async () => {
@@ -373,8 +362,8 @@ describe('protocol module', () => {
       })
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data, undefined)
-      assert.strictEqual(r.status, 204)
+      expect(r.data).to.be.undefined()
+      expect(r.status).to.equal(204)
     })
 
     it('receives request headers', async () => {
@@ -388,7 +377,7 @@ describe('protocol module', () => {
       }
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host', { headers: { 'x-return-headers': 'yes' } })
-      assert.strictEqual(r.data['x-return-headers'], 'yes')
+      expect(r.data['x-return-headers']).to.equal('yes')
     })
 
     it('returns response multiple response headers with the same name', async () => {
@@ -406,7 +395,7 @@ describe('protocol module', () => {
       // SUBTLE: when the response headers have multiple values it
       // separates values by ", ". When the response headers are incorrectly
       // converting an array to a string it separates values by ",".
-      assert.strictEqual(r.headers, 'header1: value1, value2\r\nheader2: value3\r\n')
+      expect(r.headers).to.equal('header1: value1, value2\r\nheader2: value3\r\n')
     })
 
     it('can handle large responses', async () => {
@@ -416,48 +405,48 @@ describe('protocol module', () => {
       }
       await registerStreamProtocol(protocolName, handler)
       const r = await ajax(protocolName + '://fake-host')
-      assert.strictEqual(r.data.length, data.length)
+      expect(r.data).to.have.lengthOf(data.length)
     })
   })
 
   describe('protocol.isProtocolHandled', () => {
     it('returns true for about:', async () => {
       const result = await protocol.isProtocolHandled('about')
-      assert.strictEqual(result, true)
+      expect(result).to.be.true()
     })
 
     it('returns true for file:', async () => {
       const result = await protocol.isProtocolHandled('file')
-      assert.strictEqual(result, true)
+      expect(result).to.be.true()
     })
 
     it('returns true for http:', async () => {
       const result = await protocol.isProtocolHandled('http')
-      assert.strictEqual(result, true)
+      expect(result).to.be.true()
     })
 
     it('returns true for https:', async () => {
       const result = await protocol.isProtocolHandled('https')
-      assert.strictEqual(result, true)
+      expect(result).to.be.true()
     })
 
     it('returns false when scheme is not registered', async () => {
       const result = await protocol.isProtocolHandled('no-exist')
-      assert.strictEqual(result, false)
+      expect(result).to.be.false()
     })
 
     it('returns true for custom protocol', async () => {
       const emptyHandler = (request, callback) => callback()
       await registerStringProtocol(protocolName, emptyHandler)
       const result = await protocol.isProtocolHandled(protocolName)
-      assert.strictEqual(result, true)
+      expect(result).to.be.true()
     })
 
     it('returns true for intercepted protocol', async () => {
       const emptyHandler = (request, callback) => callback()
       await interceptStringProtocol('http', emptyHandler)
       const result = await protocol.isProtocolHandled('http')
-      assert.strictEqual(result, true)
+      expect(result).to.be.true()
     })
   })
 
@@ -465,9 +454,9 @@ describe('protocol module', () => {
     const emptyHandler = (request, callback) => callback()
     it('throws error when scheme is already intercepted', (done) => {
       protocol.interceptStringProtocol('http', emptyHandler, (error) => {
-        assert.strictEqual(error, null)
+        expect(error).to.be.null()
         protocol.interceptBufferProtocol('http', emptyHandler, (error) => {
-          assert.notStrictEqual(error, null)
+          expect(error).to.not.be.null()
           done()
         })
       })
@@ -484,14 +473,12 @@ describe('protocol module', () => {
       }
       await interceptStringProtocol('http', doubleHandler)
       const r = await ajax('http://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.be.equal(text)
     })
 
     it('sends error when callback is called with nothing', async () => {
       await interceptStringProtocol('http', emptyHandler)
-      assert.rejects(async () => {
-        await ajax('http://fake-host')
-      })
+      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(404)
     })
   })
 
@@ -500,7 +487,7 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(text)
       await interceptStringProtocol('http', handler)
       const r = await ajax('http://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('can set content-type', async () => {
@@ -512,8 +499,8 @@ describe('protocol module', () => {
       }
       await interceptStringProtocol('http', handler)
       const r = await ajax('http://fake-host')
-      assert.strictEqual(typeof r.data, 'object')
-      assert.strictEqual(r.data.value, 1)
+      expect(r.data).to.be.an('object')
+      expect(r.data).to.have.a.property('value').that.is.equal(1)
     })
 
     it('can receive post data', async () => {
@@ -523,7 +510,7 @@ describe('protocol module', () => {
       }
       await interceptStringProtocol('http', handler)
       const r = await ajax('http://fake-host', { type: 'POST', data: postData })
-      assert.deepStrictEqual({ ...qs.parse(r.data) }, postData)
+      expect({ ...qs.parse(r.data) }).to.deep.equal(postData)
     })
   })
 
@@ -532,7 +519,7 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(Buffer.from(text))
       await interceptBufferProtocol('http', handler)
       const r = await ajax('http://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('can receive post data', async () => {
@@ -542,7 +529,7 @@ describe('protocol module', () => {
       }
       await interceptBufferProtocol('http', handler)
       const r = await ajax('http://fake-host', { type: 'POST', data: postData })
-      assert.strictEqual(r.data, $.param(postData))
+      expect(r.data).to.equal($.param(postData))
     })
   })
 
@@ -580,13 +567,13 @@ describe('protocol module', () => {
       }
       await interceptHttpProtocol('http', handler)
       const r = await ajax('http://fake-host', { type: 'POST', data: postData })
-      assert.deepStrictEqual({ ...qs.parse(r.data) }, postData)
+      expect({ ...qs.parse(r.data) }).to.deep.equal(postData)
     })
 
     it('can use custom session', async () => {
       const customSession = session.fromPartition('custom-ses', { cache: false })
       customSession.webRequest.onBeforeRequest((details, callback) => {
-        assert.strictEqual(details.url, 'http://fake-host/')
+        expect(details.url).to.equal('http://fake-host/')
         callback({ cancel: true })
       })
       after(() => customSession.webRequest.onBeforeRequest(null))
@@ -598,14 +585,12 @@ describe('protocol module', () => {
         })
       }
       await interceptHttpProtocol('http', handler)
-      assert.rejects(async () => {
-        await fetch('http://fake-host')
-      })
+      await expect(fetch('http://fake-host')).to.be.eventually.rejectedWith(Error)
     })
 
     it('can access request headers', (done) => {
       const handler = (request) => {
-        assert.ok('headers' in request)
+        expect(request).to.have.a.property('headers')
         done()
       }
       protocol.interceptHttpProtocol('http', handler, () => {
@@ -619,7 +604,7 @@ describe('protocol module', () => {
       const handler = (request, callback) => callback(getStream())
       await interceptStreamProtocol('http', handler)
       const r = await ajax('http://fake-host')
-      assert.strictEqual(r.data, text)
+      expect(r.data).to.equal(text)
     })
 
     it('can receive post data', async () => {
@@ -628,7 +613,7 @@ describe('protocol module', () => {
       }
       await interceptStreamProtocol('http', handler)
       const r = await ajax('http://fake-host', { type: 'POST', data: postData })
-      assert.deepStrictEqual({ ...qs.parse(r.data) }, postData)
+      expect({ ...qs.parse(r.data) }).to.deep.equal(postData)
     })
 
     it('can execute redirects', async () => {
@@ -644,27 +629,23 @@ describe('protocol module', () => {
             })
           }, 300)
         } else {
-          assert.strictEqual(request.url.indexOf('http://fake-redirect'), 0)
+          expect(request.url.indexOf('http://fake-redirect')).to.equal(0)
           callback(getStream(1, 'redirect'))
         }
       }
       await interceptStreamProtocol('http', handler)
       const r = await ajax('http://fake-host')
-      assert.strictEqual(r.data, 'redirect')
+      expect(r.data).to.equal('redirect')
     })
   })
 
   describe('protocol.uninterceptProtocol', () => {
     it('returns error when scheme does not exist', async () => {
-      assert.rejects(async () => {
-        await protocol.uninterceptProtocol('not-exist')
-      })
+      await expect(uninterceptProtocol('not-exist')).to.be.eventually.rejectedWith(Error)
     })
 
     it('returns error when scheme is not intercepted', async () => {
-      assert.rejects(async () => {
-        await protocol.uninterceptProtocol('http')
-      })
+      await expect(uninterceptProtocol('http')).to.be.eventually.rejectedWith(Error)
     })
   })
 
@@ -773,7 +754,7 @@ describe('protocol module', () => {
     it('supports fetch api by default', async () => {
       const url = 'file://' + fixtures + '/assets/logo.png'
       const response = await window.fetch(url)
-      assert(response.ok)
+      expect(response.ok).to.be.true()
     })
 
     it('allows CORS requests by default', async () => {
@@ -836,8 +817,8 @@ describe('protocol module', () => {
 
       const event = emittedOnce(ipcMain, 'response')
       newContents.loadURL(standardScheme + '://fake-host')
-      const args = await event
-      assert.strictEqual(args[1], expected)
+      const [, response] = await event
+      expect(response).to.equal(expected)
     }
   })
 })

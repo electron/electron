@@ -1,4 +1,3 @@
-const assert = require('assert')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
@@ -21,10 +20,10 @@ describe('webFrame module', function () {
   })
 
   it('supports setting the visual and layout zoom level limits', function () {
-    assert.doesNotThrow(function () {
+    expect(() => {
       webFrame.setVisualZoomLevelLimits(1, 50)
       webFrame.setLayoutZoomLevelLimits(0, 25)
-    })
+    }).to.not.throw()
   })
 
   it('calls a spellcheck provider', async () => {
