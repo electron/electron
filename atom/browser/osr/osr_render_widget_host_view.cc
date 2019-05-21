@@ -12,6 +12,7 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
+#include "base/optional.h"
 #include "base/single_thread_task_runner.h"
 #include "base/task/post_task.h"
 #include "base/time/time.h"
@@ -383,10 +384,10 @@ void OffScreenRenderWidgetHostView::Show() {
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(
       GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), false);
+      GetRootLayer()->bounds().size(), base::nullopt);
 
   if (render_widget_host_)
-    render_widget_host_->WasShown(false);
+    render_widget_host_->WasShown(base::nullopt);
 }
 
 void OffScreenRenderWidgetHostView::Hide() {

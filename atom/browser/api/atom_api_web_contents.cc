@@ -50,6 +50,7 @@
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
+#include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -1216,7 +1217,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   render_widget_host_impl->disable_hidden_ = !background_throttling_;
 
   if (render_widget_host_impl->is_hidden()) {
-    render_widget_host_impl->WasShown(false);
+    render_widget_host_impl->WasShown(base::nullopt);
   }
 }
 
