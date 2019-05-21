@@ -8,16 +8,16 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 2314c6d1d29ebc61d5156644617e9eb088df5d43..05e6f77d047ecfe7430a89f2d6dcbd25bc8bc5df 100644
+index b5301d164138f21ca8ae01abfb153efde51ec324..886b6d3beb3e2d7b13a15af830bea6fb5a567cba 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2108,6 +2108,20 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2127,6 +2127,20 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
-+  BrowserContext* browser_context;
++  BrowserContext* browser_context = nullptr;
 +  scoped_refptr<SiteInstance> candidate_site_instance;
-+  if (!GetContentClient()->browser()->ShouldDisableElectronProcessRestartTricks()) {
++  if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
 +    browser_context =
 +        delegate_->GetControllerForRenderManager().GetBrowserContext();
 +    // If the navigation can swap SiteInstances, compute the SiteInstance it
@@ -32,12 +32,12 @@ index 2314c6d1d29ebc61d5156644617e9eb088df5d43..05e6f77d047ecfe7430a89f2d6dcbd25
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2140,6 +2154,53 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2159,6 +2173,53 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
 +
-+    if (!GetContentClient()->browser()->ShouldDisableElectronProcessRestartTricks()) {
++    if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
 +      bool has_response_started =
 +          (request.state() == NavigationRequest::RESPONSE_STARTED ||
 +          request.state() == NavigationRequest::FAILED) &&
@@ -86,11 +86,11 @@ index 2314c6d1d29ebc61d5156644617e9eb088df5d43..05e6f77d047ecfe7430a89f2d6dcbd25
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2151,23 +2212,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2170,23 +2231,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
-+  if (GetContentClient()->browser()->ShouldDisableElectronProcessRestartTricks()) {
++  if (GetContentClient()->browser()->CanUseCustomSiteInstance()) {
    // If the navigation can swap SiteInstances, compute the SiteInstance it
    // should use.
    // TODO(clamy): We should also consider as a candidate SiteInstance the
@@ -118,14 +118,14 @@ index 2314c6d1d29ebc61d5156644617e9eb088df5d43..05e6f77d047ecfe7430a89f2d6dcbd25
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index dd582ad7e2911d049575a25eb7990e50bdebc73e..5d1f43aa1bb50791ea0df6792ce7783ec1b8b9d0 100644
+index 787cd81b26508d3e04956721f0e7cec2f457aa60..8e62a5dd26595411757e03078ed0e44646c47a52 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -51,6 +51,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
-+bool ContentBrowserClient::ShouldDisableElectronProcessRestartTricks() {
++bool ContentBrowserClient::CanUseCustomSiteInstance() {
 +  return false;
 +}
 +
@@ -143,10 +143,10 @@ index dd582ad7e2911d049575a25eb7990e50bdebc73e..5d1f43aa1bb50791ea0df6792ce7783e
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 8e217f7098c766ec708be6f14b5b68456c0cb6f1..bac66523eea2eb3b06dc7ca54f41f84ca4834bf5 100644
+index bf9b3a601fc16d5070e4467a258a047f47b059f3..3c35eddc2498157c2b98bab55991d8aa195954f6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -210,8 +210,40 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -211,8 +211,40 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:
@@ -168,7 +168,7 @@ index 8e217f7098c766ec708be6f14b5b68456c0cb6f1..bac66523eea2eb3b06dc7ca54f41f84c
    virtual ~ContentBrowserClient() {}
  
 +  // Electron: Allows disabling the below ShouldOverride patch
-+  virtual bool ShouldDisableElectronProcessRestartTricks();
++  virtual bool CanUseCustomSiteInstance();
 +
 +  // Electron: Allows overriding the SiteInstance when navigating.
 +  virtual SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(

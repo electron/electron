@@ -232,6 +232,8 @@ const char kScrollBounce[] = "scroll-bounce";
 const char kHiddenPage[] = "hidden-page";
 const char kNativeWindowOpen[] = "native-window-open";
 const char kWebviewTag[] = "webview-tag";
+const char kDisableElectronSiteInstanceOverrides[] =
+    "disable-electron-site-instance-overrides";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
