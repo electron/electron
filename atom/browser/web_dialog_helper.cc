@@ -35,7 +35,8 @@ using blink::mojom::FileChooserParams;
 namespace {
 
 class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
-                         public content::WebContentsObserver {
+                         public content::WebContentsObserver,
+                         public atom::DirectoryListerHelperDelegate {
  public:
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    std::unique_ptr<content::FileSelectListener> listener,
@@ -71,23 +72,61 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
             isolate, base::Bind(&FileSelectHelper::OnSaveDialogDone, this)))));
   }
 
+  void OnDirectoryListerDone(std::vector<FileChooserFileInfoPtr> file_info,
+                             base::FilePath base_dir) override {
+    OnFilesSelected(std::move(file_info), base_dir);
+    Release();
+  }
+
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
   ~FileSelectHelper() override {}
 
+  void EnumerateDirectory(base::FilePath base_dir) {
+    auto* lister = new net::DirectoryLister(
+        base_dir, net::DirectoryLister::NO_SORT_RECURSIVE,
+        new atom::DirectoryListerHelper(base_dir, this));
+    lister->Start();
+    // It is difficult for callers to know how long to keep a reference to
+    // this instance.  We AddRef() here to keep the instance alive after we
+    // return to the caller.  Once the directory lister is complete we
+    // Release() in OnDirectoryListerDone() and at that point we run
+    // OnFilesSelected() which will deref the last reference held by the
+    // listener.
+    AddRef();
+  }
+
   void OnOpenDialogDone(mate::Dictionary result) {
     std::vector<FileChooserFileInfoPtr> file_info;
     bool canceled = true;
     result.Get("canceled", &canceled);
+    base::FilePath base_dir;
+    // For certain file chooser modes (kUploadFolder) we need to do some async
+    // work before calling back to the listener.  In that particular case the
+    // listener is called from the directory enumerator.
+    bool ready_to_call_listener = false;
 
     if (!canceled) {
       std::vector<base::FilePath> paths;
       if (result.Get("filePaths", &paths)) {
-        for (auto& path : paths) {
-          file_info.push_back(FileChooserFileInfo::NewNativeFile(
-              blink::mojom::NativeFileInfo::New(
-                  path, path.BaseName().AsUTF16Unsafe())));
+        // If we are uploading a folder we need to enumerate its contents
+        if (mode_ == FileChooserParams::Mode::kUploadFolder &&
+            paths.size() >= 1) {
+          base_dir = paths[0];
+
+          // Actually enumerate soemwhere off-thread
+          base::SequencedTaskRunnerHandle::Get()->PostTask(
+              FROM_HERE, base::BindOnce(&FileSelectHelper::EnumerateDirectory,
+                                        this, base_dir));
+        } else {
+          for (auto& path : paths) {
+            file_info.push_back(FileChooserFileInfo::NewNativeFile(
+                blink::mojom::NativeFileInfo::New(
+                    path, path.BaseName().AsUTF16Unsafe())));
+          }
+
+          ready_to_call_listener = true;
         }
 
         if (render_frame_host_ && !paths.empty()) {
@@ -98,7 +137,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
         }
       }
     }
-    OnFilesSelected(std::move(file_info));
+
+    if (ready_to_call_listener)
+      OnFilesSelected(std::move(file_info), base_dir);
   }
 
   void OnSaveDialogDone(mate::Dictionary result) {
@@ -114,12 +155,13 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                 path, path.BaseName().AsUTF16Unsafe())));
       }
     }
-    OnFilesSelected(std::move(file_info));
+    OnFilesSelected(std::move(file_info), base::FilePath());
   }
 
-  void OnFilesSelected(std::vector<FileChooserFileInfoPtr> file_info) {
+  void OnFilesSelected(std::vector<FileChooserFileInfoPtr> file_info,
+                       base::FilePath base_dir) {
     if (listener_) {
-      listener_->FileSelected(std::move(file_info), base::FilePath(), mode_);
+      listener_->FileSelected(std::move(file_info), base_dir, mode_);
       listener_.reset();
     }
     render_frame_host_ = nullptr;
@@ -215,6 +257,30 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 }  // namespace
 
 namespace atom {
+
+DirectoryListerHelper::DirectoryListerHelper(
+    base::FilePath base,
+    DirectoryListerHelperDelegate* helper)
+    : base_dir_(base), delegate_(helper) {}
+DirectoryListerHelper::~DirectoryListerHelper() {}
+
+void DirectoryListerHelper::OnListFile(
+    const net::DirectoryLister::DirectoryListerData& data) {
+  // We don't want to return directory paths, only file paths
+  if (data.info.IsDirectory())
+    return;
+
+  paths_.push_back(data.path);
+}
+void DirectoryListerHelper::OnListDone(int error) {
+  std::vector<FileChooserFileInfoPtr> file_info;
+  for (auto path : paths_)
+    file_info.push_back(FileChooserFileInfo::NewNativeFile(
+        blink::mojom::NativeFileInfo::New(path, base::string16())));
+
+  delegate_->OnDirectoryListerDone(std::move(file_info), base_dir_);
+  delete this;
+}
 
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window), offscreen_(offscreen), weak_factory_(this) {}
