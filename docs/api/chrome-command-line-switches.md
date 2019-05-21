@@ -55,6 +55,8 @@ $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 
 See the [Node documentation][node-cli] or run `node --help` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node's V8 JavaScript engine.
 
+> **NOTE**: This only affects the JavaScript environment of the browser process. Renderer processes are not affected by this flag.
+
 ## --proxy-server=`address:port`
 
 Use a specified proxy server, which overrides the system setting. This switch
