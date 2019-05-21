@@ -9,14 +9,14 @@ index 1276805182084bda3b72b30afb695d9c0648ad34..7be3c3370755dfe4deaffcb0598cc4d7
 --- a/src/base/macros.h
 +++ b/src/base/macros.h
 @@ -416,9 +416,9 @@ bool is_inbounds(float_t v) {
- 
+
  // Setup for Windows shared library export.
  #ifdef BUILDING_V8_SHARED
 -#define V8_EXPORT_PRIVATE __declspec(dllexport)
-+#define V8_EXPORT_PRIVATE // __declspec(dllexport)
++#define V8_EXPORT_PRIVATE /* __declspec(dllexport) */
  #elif USING_V8_SHARED
 -#define V8_EXPORT_PRIVATE __declspec(dllimport)
-+#define V8_EXPORT_PRIVATE // __declspec(dllimport)
++#define V8_EXPORT_PRIVATE /* __declspec(dllimport) */
  #else
  #define V8_EXPORT_PRIVATE
  #endif  // BUILDING_V8_SHARED
