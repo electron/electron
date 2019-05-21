@@ -54,16 +54,14 @@ class SpellCheckClient::SpellcheckRequest {
   ~SpellcheckRequest() {}
 
   const base::string16& text() const { return text_; }
-  std::shared_ptr<blink::WebTextCheckingCompletion> completion() {
-    return completion_;
-  }
+  blink::WebTextCheckingCompletion* completion() { return completion_.get(); }
   WordMap& wordmap() { return word_map_; }
 
  private:
   base::string16 text_;  // Text to be checked in this task.
   WordMap word_map_;     // WordMap to hold distinct words in text
   // The interface to send the misspelled ranges to WebKit.
-  std::shared_ptr<blink::WebTextCheckingCompletion> completion_;
+  std::unique_ptr<blink::WebTextCheckingCompletion> completion_;
 
   DISALLOW_COPY_AND_ASSIGN(SpellcheckRequest);
 };
@@ -191,7 +189,6 @@ void SpellCheckClient::SpellCheckText() {
 void SpellCheckClient::OnSpellCheckDone(
     const std::vector<base::string16>& misspelled_words) {
   std::vector<blink::WebTextCheckingResult> results;
-  auto completion_handler = pending_request_param_->completion();
 
   auto& word_map = pending_request_param_->wordmap();
 
@@ -208,7 +205,7 @@ void SpellCheckClient::OnSpellCheckDone(
       words.clear();
     }
   }
-  completion_handler->DidFinishCheckingText(results);
+  pending_request_param_->completion()->DidFinishCheckingText(results);
   pending_request_param_ = nullptr;
 }
 
