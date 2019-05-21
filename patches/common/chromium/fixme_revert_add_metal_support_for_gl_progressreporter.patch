@@ -1,0 +1,441 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 21 May 2019 10:50:47 -0700
+Subject: FIXME: Revert "Add Metal support for gl::ProgressReporter"
+
+This reverts commit 5bb31c07fbefa8ec97f1c9e7ebc9e94151738ff5.
+
+diff --git a/components/viz/common/BUILD.gn b/components/viz/common/BUILD.gn
+index 789d2a18501fa7054dbb4c79895ee686b97c72ab..270277f4cc5d5bdcff86273b5da124b9d29d2f8e 100644
+--- a/components/viz/common/BUILD.gn
++++ b/components/viz/common/BUILD.gn
+@@ -47,8 +47,6 @@ if (is_mac) {
+     defines = [ "VIZ_METAL_CONTEXT_PROVIDER_IMPLEMENTATION" ]
+ 
+     sources = [
+-      "gpu/metal_api_proxy.h",
+-      "gpu/metal_api_proxy.mm",
+       "gpu/metal_context_provider.h",
+       "gpu/metal_context_provider.mm",
+       "viz_metal_context_provider_export.h",
+@@ -61,7 +59,6 @@ if (is_mac) {
+     deps = [
+       "//base",
+       "//ui/gfx",
+-      "//ui/gl",
+     ]
+ 
+     libs = [
+diff --git a/components/viz/common/gpu/DEPS b/components/viz/common/gpu/DEPS
+index cd1304f17a838e55877b9c66dff9fa843cf4a5c2..dcd56b321e39a9f34cb82eace8faeee26e74e376 100644
+--- a/components/viz/common/gpu/DEPS
++++ b/components/viz/common/gpu/DEPS
+@@ -10,9 +10,3 @@ include_rules = [
+   "+third_party/skia/include/gpu",
+   "+third_party/vulkan/include",
+ ]
+-
+-specific_include_rules = {
+-  "metal_api_proxy.mm": [
+-    "+ui/gl",
+-  ]
+-}
+diff --git a/components/viz/common/gpu/metal_api_proxy.h b/components/viz/common/gpu/metal_api_proxy.h
+deleted file mode 100644
+index 8db4dac90b3e9dfadb5c80751829d77d909470b1..0000000000000000000000000000000000000000
+--- a/components/viz/common/gpu/metal_api_proxy.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-// Copyright 2019 The Chromium Authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#ifndef COMPONENTS_VIZ_COMMON_GPU_METAL_API_PROXY_H_
+-#define COMPONENTS_VIZ_COMMON_GPU_METAL_API_PROXY_H_
+-
+-#import <Metal/Metal.h>
+-
+-#include "base/mac/availability.h"
+-#include "base/mac/scoped_nsobject.h"
+-
+-namespace gl {
+-class ProgressReporter;
+-}  // namespace gl
+-
+-// The MTLDeviceProxy wraps all calls to an MTLDevice. It reports progress
+-// to the GPU watchdog to prevent the watchdog from killing the GPU process
+-// when progress is being made.
+-API_AVAILABLE(macos(10.11))
+-@interface MTLDeviceProxy : NSObject <MTLDevice> {
+-  base::scoped_nsprotocol<id<MTLDevice>> device_;
+-
+-  // Weak pointer to the progress reporter used to avoid watchdog timeouts.
+-  // This must be re-set to nullptr when it is no longer known to be valid.
+-  gl::ProgressReporter* progressReporter_;
+-}
+-
+-- (id)initWithDevice:(id<MTLDevice>)device;
+-- (void)setProgressReporter:(gl::ProgressReporter*)progressReporter;
+-@end
+-
+-#endif  // COMPONENTS_VIZ_COMMON_GPU_METAL_API_PROXY_H_
+diff --git a/components/viz/common/gpu/metal_api_proxy.mm b/components/viz/common/gpu/metal_api_proxy.mm
+deleted file mode 100644
+index 5cd5333a928b0616d6c6b5905900b8c76baa2171..0000000000000000000000000000000000000000
+--- a/components/viz/common/gpu/metal_api_proxy.mm
++++ /dev/null
+@@ -1,256 +0,0 @@
+-// Copyright 2019 The Chromium Authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#include "components/viz/common/gpu/metal_api_proxy.h"
+-
+-#include "ui/gl/progress_reporter.h"
+-
+-@implementation MTLDeviceProxy
+-- (id)initWithDevice:(id<MTLDevice>)device {
+-  if (self = [super init])
+-    device_.reset(device, base::scoped_policy::RETAIN);
+-  return self;
+-}
+-
+-- (void)setProgressReporter:(gl::ProgressReporter*)progressReporter {
+-  progressReporter_ = progressReporter;
+-}
+-
+-// Wrappers that add a gl::ScopedProgressReporter around calls to the true
+-// MTLDevice. For a given method, the method name is fn, return type is R, the
+-// argument types are A0,A1,A2,A3, and the argument names are a0,a1,a2,a3.
+-#define PROXY_METHOD0(R, fn) \
+-  -(R)fn {                   \
+-    return [device_ fn];     \
+-  }
+-#define PROXY_METHOD1(R, fn, A0) \
+-  -(R)fn : (A0)a0 {              \
+-    return [device_ fn:a0];      \
+-  }
+-#define PROXY_METHOD2(R, fn, A0, a1, A1) \
+-  -(R)fn : (A0)a0 a1 : (A1)a1 {          \
+-    return [device_ fn:a0 a1:a1];        \
+-  }
+-#define PROXY_METHOD0_SLOW(R, fn)                                  \
+-  -(R)fn {                                                         \
+-    gl::ScopedProgressReporter scoped_reporter(progressReporter_); \
+-    return [device_ fn];                                           \
+-  }
+-#define PROXY_METHOD1_SLOW(R, fn, A0)                              \
+-  -(R)fn : (A0)a0 {                                                \
+-    gl::ScopedProgressReporter scoped_reporter(progressReporter_); \
+-    return [device_ fn:a0];                                        \
+-  }
+-#define PROXY_METHOD2_SLOW(R, fn, A0, a1, A1)                      \
+-  -(R)fn : (A0)a0 a1 : (A1)a1 {                                    \
+-    gl::ScopedProgressReporter scoped_reporter(progressReporter_); \
+-    return [device_ fn:a0 a1:a1];                                  \
+-  }
+-#define PROXY_METHOD3_SLOW(R, fn, A0, a1, A1, a2, A2)              \
+-  -(R)fn : (A0)a0 a1 : (A1)a1 a2 : (A2)a2 {                        \
+-    gl::ScopedProgressReporter scoped_reporter(progressReporter_); \
+-    return [device_ fn:a0 a1:a1 a2:a2];                            \
+-  }
+-#define PROXY_METHOD4_SLOW(R, fn, A0, a1, A1, a2, A2, a3, A3)      \
+-  -(R)fn : (A0)a0 a1 : (A1)a1 a2 : (A2)a2 a3 : (A3)a3 {            \
+-    gl::ScopedProgressReporter scoped_reporter(progressReporter_); \
+-    return [device_ fn:a0 a1:a1 a2:a2 a3:a3];                      \
+-  }
+-
+-// Disable availability warnings for the calls to |device_| in the macros. (The
+-// relevant availability guards are already present in the MTLDevice protocol
+-// for |self|).
+-#pragma clang diagnostic push
+-#pragma clang diagnostic ignored "-Wunguarded-availability"
+-
+-// Wrapped implementation of the MTLDevice protocol in which some methods
+-// have a gl::ScopedProgressReporter. The methods implemented using macros
+-// with the _SLOW suffix are the ones that create a gl::ScopedProgressReporter.
+-// The rule of thumb is that methods that could potentially do a GPU allocation
+-// or a shader compilation are marked as SLOW.
+-PROXY_METHOD0(NSString*, name)
+-PROXY_METHOD0(uint64_t, registryID)
+-PROXY_METHOD0(MTLSize, maxThreadsPerThreadgroup)
+-PROXY_METHOD0(BOOL, isLowPower)
+-PROXY_METHOD0(BOOL, isHeadless)
+-PROXY_METHOD0(BOOL, isRemovable)
+-PROXY_METHOD0(uint64_t, recommendedMaxWorkingSetSize)
+-PROXY_METHOD0(BOOL, isDepth24Stencil8PixelFormatSupported)
+-PROXY_METHOD0(MTLReadWriteTextureTier, readWriteTextureSupport)
+-PROXY_METHOD0(MTLArgumentBuffersTier, argumentBuffersSupport)
+-PROXY_METHOD0(BOOL, areRasterOrderGroupsSupported)
+-PROXY_METHOD0(NSUInteger, currentAllocatedSize)
+-PROXY_METHOD0(NSUInteger, maxThreadgroupMemoryLength)
+-PROXY_METHOD0(BOOL, areProgrammableSamplePositionsSupported)
+-PROXY_METHOD0_SLOW(nullable id<MTLCommandQueue>, newCommandQueue)
+-PROXY_METHOD1_SLOW(nullable id<MTLCommandQueue>,
+-                   newCommandQueueWithMaxCommandBufferCount,
+-                   NSUInteger)
+-PROXY_METHOD1(MTLSizeAndAlign,
+-              heapTextureSizeAndAlignWithDescriptor,
+-              MTLTextureDescriptor*)
+-PROXY_METHOD2(MTLSizeAndAlign,
+-              heapBufferSizeAndAlignWithLength,
+-              NSUInteger,
+-              options,
+-              MTLResourceOptions)
+-PROXY_METHOD1_SLOW(nullable id<MTLHeap>,
+-                   newHeapWithDescriptor,
+-                   MTLHeapDescriptor*)
+-PROXY_METHOD2_SLOW(nullable id<MTLBuffer>,
+-                   newBufferWithLength,
+-                   NSUInteger,
+-                   options,
+-                   MTLResourceOptions)
+-PROXY_METHOD3_SLOW(nullable id<MTLBuffer>,
+-                   newBufferWithBytes,
+-                   const void*,
+-                   length,
+-                   NSUInteger,
+-                   options,
+-                   MTLResourceOptions)
+-PROXY_METHOD4_SLOW(nullable id<MTLBuffer>,
+-                   newBufferWithBytesNoCopy,
+-                   void*,
+-                   length,
+-                   NSUInteger,
+-                   options,
+-                   MTLResourceOptions,
+-                   deallocator,
+-                   void (^__nullable)(void* pointer, NSUInteger length))
+-PROXY_METHOD1(nullable id<MTLDepthStencilState>,
+-              newDepthStencilStateWithDescriptor,
+-              MTLDepthStencilDescriptor*)
+-PROXY_METHOD1_SLOW(nullable id<MTLTexture>,
+-                   newTextureWithDescriptor,
+-                   MTLTextureDescriptor*)
+-PROXY_METHOD3_SLOW(nullable id<MTLTexture>,
+-                   newTextureWithDescriptor,
+-                   MTLTextureDescriptor*,
+-                   iosurface,
+-                   IOSurfaceRef,
+-                   plane,
+-                   NSUInteger)
+-PROXY_METHOD1_SLOW(nullable id<MTLSamplerState>,
+-                   newSamplerStateWithDescriptor,
+-                   MTLSamplerDescriptor*)
+-PROXY_METHOD0_SLOW(nullable id<MTLLibrary>, newDefaultLibrary)
+-PROXY_METHOD2_SLOW(nullable id<MTLLibrary>,
+-                   newDefaultLibraryWithBundle,
+-                   NSBundle*,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD2_SLOW(nullable id<MTLLibrary>,
+-                   newLibraryWithFile,
+-                   NSString*,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD2_SLOW(nullable id<MTLLibrary>,
+-                   newLibraryWithURL,
+-                   NSURL*,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD2_SLOW(nullable id<MTLLibrary>,
+-                   newLibraryWithData,
+-                   dispatch_data_t,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD3_SLOW(nullable id<MTLLibrary>,
+-                   newLibraryWithSource,
+-                   NSString*,
+-                   options,
+-                   nullable MTLCompileOptions*,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD3_SLOW(void,
+-                   newLibraryWithSource,
+-                   NSString*,
+-                   options,
+-                   nullable MTLCompileOptions*,
+-                   completionHandler,
+-                   MTLNewLibraryCompletionHandler)
+-PROXY_METHOD2_SLOW(nullable id<MTLRenderPipelineState>,
+-                   newRenderPipelineStateWithDescriptor,
+-                   MTLRenderPipelineDescriptor*,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD4_SLOW(nullable id<MTLRenderPipelineState>,
+-                   newRenderPipelineStateWithDescriptor,
+-                   MTLRenderPipelineDescriptor*,
+-                   options,
+-                   MTLPipelineOption,
+-                   reflection,
+-                   MTLAutoreleasedRenderPipelineReflection* __nullable,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD2_SLOW(void,
+-                   newRenderPipelineStateWithDescriptor,
+-                   MTLRenderPipelineDescriptor*,
+-                   completionHandler,
+-                   MTLNewRenderPipelineStateCompletionHandler)
+-PROXY_METHOD3_SLOW(void,
+-                   newRenderPipelineStateWithDescriptor,
+-                   MTLRenderPipelineDescriptor*,
+-                   options,
+-                   MTLPipelineOption,
+-                   completionHandler,
+-                   MTLNewRenderPipelineStateWithReflectionCompletionHandler)
+-PROXY_METHOD2_SLOW(nullable id<MTLComputePipelineState>,
+-                   newComputePipelineStateWithFunction,
+-                   id<MTLFunction>,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD4_SLOW(nullable id<MTLComputePipelineState>,
+-                   newComputePipelineStateWithFunction,
+-                   id<MTLFunction>,
+-                   options,
+-                   MTLPipelineOption,
+-                   reflection,
+-                   MTLAutoreleasedComputePipelineReflection* __nullable,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD2_SLOW(void,
+-                   newComputePipelineStateWithFunction,
+-                   id<MTLFunction>,
+-                   completionHandler,
+-                   MTLNewComputePipelineStateCompletionHandler)
+-PROXY_METHOD3_SLOW(void,
+-                   newComputePipelineStateWithFunction,
+-                   id<MTLFunction>,
+-                   options,
+-                   MTLPipelineOption,
+-                   completionHandler,
+-                   MTLNewComputePipelineStateWithReflectionCompletionHandler)
+-PROXY_METHOD4_SLOW(nullable id<MTLComputePipelineState>,
+-                   newComputePipelineStateWithDescriptor,
+-                   MTLComputePipelineDescriptor*,
+-                   options,
+-                   MTLPipelineOption,
+-                   reflection,
+-                   MTLAutoreleasedComputePipelineReflection* __nullable,
+-                   error,
+-                   __autoreleasing NSError**)
+-PROXY_METHOD3_SLOW(void,
+-                   newComputePipelineStateWithDescriptor,
+-                   MTLComputePipelineDescriptor*,
+-                   options,
+-                   MTLPipelineOption,
+-                   completionHandler,
+-                   MTLNewComputePipelineStateWithReflectionCompletionHandler)
+-PROXY_METHOD0_SLOW(nullable id<MTLFence>, newFence)
+-PROXY_METHOD1(BOOL, supportsFeatureSet, MTLFeatureSet)
+-PROXY_METHOD1(BOOL, supportsTextureSampleCount, NSUInteger)
+-PROXY_METHOD1(NSUInteger,
+-              minimumLinearTextureAlignmentForPixelFormat,
+-              MTLPixelFormat)
+-PROXY_METHOD2(void,
+-              getDefaultSamplePositions,
+-              MTLSamplePosition*,
+-              count,
+-              NSUInteger)
+-PROXY_METHOD1_SLOW(nullable id<MTLArgumentEncoder>,
+-                   newArgumentEncoderWithArguments,
+-                   NSArray<MTLArgumentDescriptor*>*)
+-#pragma clang diagnostic pop
+-@end
+diff --git a/components/viz/common/gpu/metal_context_provider.h b/components/viz/common/gpu/metal_context_provider.h
+index f69c33acd8884e7e31f85da3f4bf7d263d2de95b..71ad85f9a57c565c74741c7981622f594c7d8bd7 100644
+--- a/components/viz/common/gpu/metal_context_provider.h
++++ b/components/viz/common/gpu/metal_context_provider.h
+@@ -18,10 +18,6 @@ class MTLDeviceProtocol;
+ using MTLDevicePtr = MTLDeviceProtocol*;
+ #endif
+ 
+-namespace gl {
+-class ProgressReporter;
+-}  // namespace gl
+-
+ namespace viz {
+ 
+ // The MetalContextProvider provides a Metal-backed GrContext.
+@@ -34,11 +30,6 @@ class VIZ_METAL_CONTEXT_PROVIDER_EXPORT MetalContextProvider {
+ 
+   virtual GrContext* GetGrContext() = 0;
+   virtual MTLDevicePtr GetMTLDevice() = 0;
+-
+-  // Set the progress reported used to prevent watchdog timeouts during longer
+-  // sequences of Metal API calls. It is guaranteed that no further calls to
+-  // |progress_reporter| will be made after |this| is destroyed.
+-  virtual void SetProgressReporter(gl::ProgressReporter* progress_reporter) = 0;
+ };
+ 
+ }  // namespace viz
+diff --git a/components/viz/common/gpu/metal_context_provider.mm b/components/viz/common/gpu/metal_context_provider.mm
+index 6d7d026341667a4b02b5f60761def367691aabbd..07af97e4df757d83c52d2479029f6fc19fc82270 100644
+--- a/components/viz/common/gpu/metal_context_provider.mm
++++ b/components/viz/common/gpu/metal_context_provider.mm
+@@ -5,7 +5,6 @@
+ #include "components/viz/common/gpu/metal_context_provider.h"
+ 
+ #include "base/mac/scoped_nsobject.h"
+-#include "components/viz/common/gpu/metal_api_proxy.h"
+ #include "third_party/skia/include/gpu/GrContext.h"
+ 
+ #import <Metal/Metal.h>
+@@ -17,8 +16,9 @@
+ struct API_AVAILABLE(macos(10.11)) MetalContextProviderImpl
+     : public MetalContextProvider {
+  public:
+-  explicit MetalContextProviderImpl(id<MTLDevice> device) {
+-    device_.reset([[MTLDeviceProxy alloc] initWithDevice:device]);
++  explicit MetalContextProviderImpl(
++      base::scoped_nsprotocol<id<MTLDevice>> device)
++      : device_(device) {
+     command_queue_.reset([device_ newCommandQueue]);
+     // GrContext::MakeMetal will take ownership of the objects passed in. Retain
+     // the objects before passing them to MakeMetal so that the objects in
+@@ -27,19 +27,12 @@ explicit MetalContextProviderImpl(id<MTLDevice> device) {
+         GrContext::MakeMetal([device_ retain], [command_queue_ retain]);
+     DCHECK(gr_context_);
+   }
+-  ~MetalContextProviderImpl() override {
+-    // Because there are no guarantees that |device_| will not outlive |this|,
+-    // un-set the progress reporter on |device_|.
+-    [device_ setProgressReporter:nullptr];
+-  }
+-  void SetProgressReporter(gl::ProgressReporter* progress_reporter) override {
+-    [device_ setProgressReporter:progress_reporter];
+-  }
++  ~MetalContextProviderImpl() override {}
+   GrContext* GetGrContext() override { return gr_context_.get(); }
+   MTLDevicePtr GetMTLDevice() override { return device_.get(); }
+ 
+  private:
+-  base::scoped_nsobject<MTLDeviceProxy> device_;
++  base::scoped_nsprotocol<id<MTLDevice>> device_;
+   base::scoped_nsprotocol<id<MTLCommandQueue>> command_queue_;
+   sk_sp<GrContext> gr_context_;
+ 
+@@ -64,7 +57,7 @@ void SetProgressReporter(gl::ProgressReporter* progress_reporter) override {
+     if (!device_to_use)
+       device_to_use.reset(MTLCreateSystemDefaultDevice());
+     if (device_to_use)
+-      return std::make_unique<MetalContextProviderImpl>(device_to_use.get());
++      return std::make_unique<MetalContextProviderImpl>(device_to_use);
+     DLOG(ERROR) << "Failed to create MTLDevice.";
+   }
+   // If no device was found, or if the macOS version is too old for Metal,
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index a6befd9ea9b504322b711aed1149f22c131dee82..27212143ac2d8926248a7a1ac7b28d56a6628e16 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -90,11 +90,6 @@ void SharedContextState::InitializeGrContext(
+     gl::ProgressReporter* progress_reporter) {
+   progress_reporter_ = progress_reporter;
+ 
+-#if defined(OS_MACOSX)
+-  if (metal_context_provider_)
+-    metal_context_provider_->SetProgressReporter(progress_reporter);
+-#endif
+-
+   if (GrContextIsGL()) {
+     DCHECK(context_->IsCurrent(nullptr));
+     sk_sp<GrGLInterface> interface(gl::init::CreateGrGLInterface(
