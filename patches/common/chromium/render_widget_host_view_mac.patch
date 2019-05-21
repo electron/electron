@@ -66,10 +66,10 @@ index 41285370f97be53ec93249c4eb0caf8c77a595b9..3c7eee8a565444f0c66be88885f8826a
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 01341832627f168b9eb2deba471cf51e8e020d7c..89c2b5b06f3ffbd8fde2093853baf0733693ce46 100644
+index c6f096b1f58265b6dfe469d271e3decb96c14f14..819803a665e145565e2b71541835750983ebf8a5 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -61,6 +61,7 @@
+@@ -62,6 +62,7 @@
  #include "ui/events/keycodes/dom/dom_keyboard_layout_map.h"
  #include "ui/gfx/geometry/dip_util.h"
  #include "ui/gfx/mac/coordinate_conversion.h"

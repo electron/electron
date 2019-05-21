@@ -6,7 +6,7 @@ Subject: pass RenderProcessHost through to PlatformNotificationService
 this is so Electron can identify which renderer a notification came from
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index a30403295a8bb4d8333e538df5c6932f5a7bf9fb..06cca17194ce41c0b27c4e056831d769a5c3e7c6 100644
+index 63a1fe8ebd1a59973748cf12d7a914c91a8e27f1..d2f7d4bdf41c71874849ccaeca13f2b8f9cfa483 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -88,9 +88,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -67,7 +67,7 @@ index cbac30fa7a12db927ba6a15173ba1181e03e0723..4d26fd795a7ce1ffd046c4a0f2ec1779
          mojo::MakeRequest(&notification_service_ptr_));
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 258d4235cc977ce0aed3cb31020244b26a8c19dd..436ebd7927eec6b007724c988248c418114491e5 100644
+index 9402a2b51567beb042dbcfe05a6f61da457a659e..d046d64e94937ea12ff87c06ea14cc112bfd18ee 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -207,12 +207,13 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -87,7 +87,7 @@ index 258d4235cc977ce0aed3cb31020244b26a8c19dd..436ebd7927eec6b007724c988248c418
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index de7f9d4c1b670b6955ec62e562b133a86b770652..a7daada96b6ebed404d6fa3eef1048ab022d443f 100644
+index 3373171efb690863c70cd10bd465fc4b3dd5320c..64f2c0344eb9978e712f5c39e1f43d9b61c3bf08 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -24,6 +24,7 @@

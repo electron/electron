@@ -6,7 +6,7 @@ Subject: Revert "[cctest] Add V8_EXPORT_PRIVATE to arm/arm64 ports"
 This reverts commit 1a7d847cfac9a7363c59c980e47a7b7ff416e6da.
 
 diff --git a/src/arm/assembler-arm.h b/src/arm/assembler-arm.h
-index 07a882a2becd759fd82adc6fb452c60621b51153..7e4a61fb46ee9002d04fe9af2019d3b14c10738f 100644
+index 8157d3cb053fcad45357b3570792e19276670a80..3617d4b71aef412f603470350cb388e7c7515391 100644
 --- a/src/arm/assembler-arm.h
 +++ b/src/arm/assembler-arm.h
 @@ -79,7 +79,7 @@ enum Coprocessor {
@@ -236,7 +236,7 @@ index 8514469227042b5740da73d42fc210a2282414e4..6f46e4b88c2e7c77f6fd58567e9aa2ae
    static bool IsValidImmPCOffset(ImmBranchType branch_type, ptrdiff_t offset);
    bool IsTargetInImmPCOffsetRange(Instruction* target);
 diff --git a/src/arm64/macro-assembler-arm64.h b/src/arm64/macro-assembler-arm64.h
-index 114e19fba9bbafac974205d99c425ea98ed5bc0f..64f332af84843a3091b8b04aebd606dac200b56e 100644
+index 62261c9c734de9fe230c52af6fe807a8d444009b..617d709ee5756ede6cb69632520b7d2410562c16 100644
 --- a/src/arm64/macro-assembler-arm64.h
 +++ b/src/arm64/macro-assembler-arm64.h
 @@ -2082,7 +2082,7 @@ class InstructionAccurateScope {
@@ -367,10 +367,10 @@ index 0c247fd247151a0bdfbf3a9f420c2eb2fa47b5cd..21543e7f498c0becfcc1121f2f17ebd9
    void Emit(Assembler* assm);
    size_t entry_count() const;
    uint32_t section_size() const;
-diff --git a/src/disasm.h b/src/disasm.h
-index f543af2609fa1e5b8fa8c7fcc74a073c52a3912e..d752b1a44b928dddd722a9cc68bf5b22629e60c7 100644
---- a/src/disasm.h
-+++ b/src/disasm.h
+diff --git a/src/diagnostics/disasm.h b/src/diagnostics/disasm.h
+index 2fe14f19321c67aaf1dd388472b14c8b5fbfe400..fcc38eb3b2242ce65f872636b9121c66f94b987a 100644
+--- a/src/diagnostics/disasm.h
++++ b/src/diagnostics/disasm.h
 @@ -14,7 +14,7 @@ typedef unsigned char byte;
  // Interface and default implementation for converting addresses and
  // register-numbers to text.  The default implementation is machine
@@ -398,10 +398,10 @@ index f543af2609fa1e5b8fa8c7fcc74a073c52a3912e..d752b1a44b928dddd722a9cc68bf5b22
  
    // Returns -1 if instruction does not mark the beginning of a constant pool,
    // or the number of entries in the constant pool beginning here.
-diff --git a/src/disassembler.h b/src/disassembler.h
-index d6bb84cd274575c78291eafdb6794d7ff690915c..5315d5598f3064cbf5563246bd5bd17fbb916900 100644
---- a/src/disassembler.h
-+++ b/src/disassembler.h
+diff --git a/src/diagnostics/disassembler.h b/src/diagnostics/disassembler.h
+index 1bb326655abb828e42d370e28b5c12908320f47c..8ac5ced6b370fe15f546c0053afb0c404c8fc8dd 100644
+--- a/src/diagnostics/disassembler.h
++++ b/src/diagnostics/disassembler.h
 @@ -20,10 +20,8 @@ class Disassembler : public AllStatic {
    // Instruction'.
    // the code object is used for name resolution and may be null.
@@ -416,10 +416,10 @@ index d6bb84cd274575c78291eafdb6794d7ff690915c..5315d5598f3064cbf5563246bd5bd17f
  
  }  // namespace internal
 diff --git a/src/objects.cc b/src/objects.cc
-index 70b6966ec0aacfc8df3caa5b73147bbe2691c929..8d6d09eca5ba9ff62744d5d774d7072ad363cf22 100644
+index c254eaf4d6a80cafaf4b17ebef91d794e2034790..9641318f878049c96be8b992e20f459a84635fad 100644
 --- a/src/objects.cc
 +++ b/src/objects.cc
-@@ -1238,7 +1238,7 @@ bool Object::ToInt32(int32_t* value) {
+@@ -1239,7 +1239,7 @@ bool Object::ToInt32(int32_t* value) {
  // static constexpr object declarations need a definition to make the
  // compiler happy.
  constexpr Object Smi::kZero;
@@ -462,7 +462,7 @@ index 31309dc5a89b6433479d95dc9de77401690b004a..ef205cdf90e4426d91c7b6551fd17c9e
    // [name]: Returns shared name if it exists or an empty string otherwise.
    inline String Name() const;
 diff --git a/src/objects/string.cc b/src/objects/string.cc
-index f1fafa0c8e5e52d59ad717280a7ad4af978d88c2..d68a78939146085ee8cb381b856e1796bd47f07c 100644
+index 1f044e3299d6a54caa5a81417213970f24fd1954..625ca289807f0300585811eddb95bc9bc8ac6266 100644
 --- a/src/objects/string.cc
 +++ b/src/objects/string.cc
 @@ -1626,8 +1626,5 @@ String ConsStringIterator::NextLeaf(bool* blew_stack) {
@@ -537,7 +537,7 @@ index d31f5ff067c9b096a94705769c64586ffd546341..cce60d015af915e0984060dd2e84d6f7
    uint32_t table_index;
    WasmInitExpr offset;
 diff --git a/test/cctest/parsing/test-parse-decision.cc b/test/cctest/parsing/test-parse-decision.cc
-index e3b046baef67369153bafc4605ea0e636a88cd36..c0c4b2cd7e847c217fb8c868263fd74b9c8d9499 100644
+index 14b772cd4b72fb7fda13c1633b3c2371aa23485d..2146ca767a53efd3d9ae2f689918de16fd4cbea2 100644
 --- a/test/cctest/parsing/test-parse-decision.cc
 +++ b/test/cctest/parsing/test-parse-decision.cc
 @@ -14,7 +14,6 @@

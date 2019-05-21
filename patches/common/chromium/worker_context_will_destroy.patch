@@ -5,7 +5,7 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 9e405a1f92c8218387ca270c8d2ccdb7030d3ad6..bb625490e2dd86c72e903a5d713881fdf8185cff 100644
+index 5bcf6f95f630ae6232ec9be7d8de7360a1592566..3142a8286e6aaf508a06cee0e32c73903682261f 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -384,6 +384,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -21,10 +21,10 @@ index 9e405a1f92c8218387ca270c8d2ccdb7030d3ad6..bb625490e2dd86c72e903a5d713881fd
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 01b7e68dba2ccfedf0491cd0387e3e0729473c2a..1364adb8e06da07812137ff19e550b4ff3a345e9 100644
+index 2e3a922dd2a8a15bfe3eec802085f09d3eda9e5d..30da4053a8438dd018fb2739a6cc0e300af2e657 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -1072,6 +1072,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -1056,6 +1056,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -38,10 +38,10 @@ index 01b7e68dba2ccfedf0491cd0387e3e0729473c2a..1364adb8e06da07812137ff19e550b4f
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 91345bba1ecd1a28e2588fa2f93b6226b3904467..5fb3283310675d15a5ed387fb33b1bc01b8ceff0 100644
+index f5298e5e942e43008e469214ba252932cc6d771a..ae28b78037e0a078dd9e11fb0cd3edbfdd0ff986 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -205,6 +205,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -201,6 +201,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -50,10 +50,10 @@ index 91345bba1ecd1a28e2588fa2f93b6226b3904467..5fb3283310675d15a5ed387fb33b1bc0
    void RecordMetricsForBackgroundedRendererPurge() override;
  
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index cf06aa2c9beda4a2b6c7f484da971b1b5de2b79b..13b1bbe8098fdbe9096fc61e99d88b038a57df54 100644
+index 921175528990fffc8fda609e768be47b856f7621..f52b4d1573c07a9c280d67bc3b2389dd3a549925 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -664,6 +664,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -660,6 +660,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -62,10 +62,10 @@ index cf06aa2c9beda4a2b6c7f484da971b1b5de2b79b..13b1bbe8098fdbe9096fc61e99d88b03
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 4b2aacabf151c7aacf3a338cc47f1faf0c7b9391..308c10136d7ccf735b216ac5be4af846b218841a 100644
+index 0da8aa29d7ddf6564d46fd1b439f040bc9491527..4c9163415298c2e766e0d64f8a2b0d9110a9032c 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -640,6 +640,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -634,6 +634,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
      nested_runner_->QuitNow();
    }
  

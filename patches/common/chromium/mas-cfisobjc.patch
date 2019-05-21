@@ -6,7 +6,7 @@ Subject: mas-cfisobjc.patch
 Removes usage of the _CFIsObjC private API.
 
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index b5003fbf908fef375fb5daae040cb2e65e23e99e..e0ce94b3aaff00bb319cb0a18af4e70a9c61ca46 100644
+index 8b20ebc678c39b722bd5b03930ce89847e8cc73a..dca8c939e757003aafc1528ec7bbb739bf971fa6 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -26,7 +26,6 @@
