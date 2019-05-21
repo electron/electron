@@ -688,7 +688,7 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 
 ### `app.getLocaleCountryCode()`
 
-Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
+Returns `String` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
 
 **Note:** When unable to detect locale country code, it returns empty string.
 

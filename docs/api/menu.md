@@ -10,7 +10,7 @@ Creates a new menu.
 
 ### Static Methods
 
-The `menu` class has the following static methods:
+The `Menu` class has the following static methods:
 
 #### `Menu.setApplicationMenu(menu)`
 
