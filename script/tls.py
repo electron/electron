@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import json
 import os
 import ssl
@@ -38,15 +39,15 @@ def check_tls(verbose):
       + "in ./docs/development/"
 
   if tls == "TLSv1" or tls == "TLSv1.1":
-    print "Your system/python combination is using an outdated security" \
+    print("Your system/python combination is using an outdated security" \
       + "protocol and will not be able to compile Electron. Please see " \
       + tutorial + "." \
-      + "for instructions on how to update Python."
+      + "for instructions on how to update Python.")
     sys.exit(1)
   else:
     if verbose:
-      print "Your Python is using " + tls + ", which is sufficient for " \
-        + "building Electron."
+      print("Your Python is using " + tls + ", which is sufficient for " \
+        + "building Electron.")
 
 if __name__ == '__main__':
   check_tls(True)

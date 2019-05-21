@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import subprocess
 import sys
@@ -39,7 +40,7 @@ def execute(argv):
     output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
     return output
   except subprocess.CalledProcessError as e:
-    print e.output
+    print(e.output)
     raise e
 
 def main(argv):

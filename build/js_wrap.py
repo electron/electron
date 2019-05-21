@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 in_start = sys.argv.index("--in") + 1

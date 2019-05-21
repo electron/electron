@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import os
 import sys
 import re
@@ -99,9 +100,9 @@ def checkSections(sections, lines):
 
 def print_errors(filepath, brokenLink):
   if brokenLink:
-    print "File Location: " + filepath
+    print("File Location: " + filepath)
     for link in brokenLink:
-      print "\tBroken links: " + link
+      print("\tBroken links: " + link)
 
 
 if __name__ == '__main__':

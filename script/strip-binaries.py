@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import argparse
 import os
 import sys
@@ -31,7 +32,7 @@ def strip_binary(binary_path, target_cpu):
 
 def main():
   args = parse_args()
-  print args
+  print(args)
   if args.file:
     strip_binary(args.file, args.target_cpu)
   else:

@@ -5,6 +5,7 @@
 # found in the LICENSE file.
 
 """Convert pdb to sym for given directories"""
+from __future__ import print_function
 
 import errno
 import glob
@@ -12,6 +13,7 @@ import optparse
 import os
 import Queue
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -69,13 +71,13 @@ def GenerateSymbols(options, binaries):
 
       if options.verbose:
         with print_lock:
-          print "Generating symbols for %s" % binary
+          print("Generating symbols for %s" % binary)
 
       syms = GetCommandOutput([DUMP_SYMS, binary])
       module_line = re.match("MODULE [^ ]+ [^ ]+ ([0-9A-Fa-f]+) (.*)\r\n", syms)
       if module_line == None:
         with print_lock:
-          print "Failed to get symbols for %s" % binary
+          print("Failed to get symbols for %s" % binary)
         queue.task_done()
         continue
 
@@ -115,7 +117,7 @@ def main():
   (options, directories) = parser.parse_args()
 
   if not options.symbols_dir:
-    print "Required option --symbols-dir missing."
+    print("Required option --symbols-dir missing.")
     return 1
 
   if options.clear:

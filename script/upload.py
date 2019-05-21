@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import argparse
 import datetime
 import errno
@@ -154,7 +155,7 @@ def upload_electron(release, file_path, args):
           key_prefix, [file_path])
     upload_sha256_checksum(args.version, file_path, key_prefix)
     s3url = 'https://gh-contractor-zcbenz.s3.amazonaws.com'
-    print '{0} uploaded to {1}/{2}/{0}'.format(filename, s3url, key_prefix)
+    print('{0} uploaded to {1}/{2}/{0}'.format(filename, s3url, key_prefix))
     return
 
   # Upload the file.
@@ -165,8 +166,8 @@ def upload_electron(release, file_path, args):
 
 
 def upload_io_to_github(release, filename, filepath, version):
-  print 'Uploading %s to Github' % \
-      (filename)
+  print('Uploading %s to Github' % \
+      (filename))
   script_path = os.path.join(SOURCE_ROOT, 'script', 'upload-to-github.js')
   execute(['node', script_path, filepath, filename, str(release['id']),
           version])
