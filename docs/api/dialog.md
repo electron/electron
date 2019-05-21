@@ -113,7 +113,7 @@ dialog.showOpenDialogSync(mainWindow, {
   * `securityScopedBookmarks` Boolean (optional) _masOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
 * `callback` Function (optional)
 
-Returns `Promise<Object>` - Resolve wih an object containing the following:
+Returns `Promise<Object>` - Resolve with an object containing the following:
 
 * `canceled` Boolean - whether or not the dialog was canceled.
 * `filePaths` String[] (optional) - An array of file paths chosen by the user. If the dialog is cancelled this will be an empty array.
