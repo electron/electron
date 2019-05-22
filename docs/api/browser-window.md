@@ -394,9 +394,7 @@ Possible values are:
 
 * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
-* On macOS, possible types are `desktop`, `textured`.
-  * The `textured` type adds metal gradient appearance
-    (`NSTexturedBackgroundWindowMask`).
+* On macOS, possible type is `desktop`.
   * The `desktop` type places the window at the desktop background window level
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive

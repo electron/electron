@@ -138,7 +138,6 @@
 
     auto styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                      NSMiniaturizableWindowMask | NSWindowStyleMaskResizable |
-                     NSTexturedBackgroundWindowMask |
                      NSWindowStyleMaskUnifiedTitleAndToolbar;
     devtools_window_.reset([[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)

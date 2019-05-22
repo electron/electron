@@ -311,17 +311,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   std::string windowType;
   options.Get(options::kType, &windowType);
 
-  bool useStandardWindow = true;
-  // eventually deprecate separate "standardWindow" option in favor of
-  // standard / textured window types
-  options.Get(options::kStandardWindow, &useStandardWindow);
-  if (windowType == "textured") {
-    useStandardWindow = false;
-  }
-
   NSUInteger styleMask = NSWindowStyleMaskTitled;
   if (title_bar_style_ == TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER &&
-      (!useStandardWindow || transparent() || !has_frame())) {
+      (transparent() || !has_frame())) {
     styleMask = NSWindowStyleMaskFullSizeContentView;
   }
   if (minimizable) {
@@ -333,9 +325,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   if (title_bar_style_ != TitleBarStyle::NORMAL) {
     // The window without titlebar is treated the same with frameless window.
     set_has_frame(false);
-  }
-  if (!useStandardWindow || transparent() || !has_frame()) {
-    styleMask |= NSTexturedBackgroundWindowMask;
   }
   if (resizable_) {
     styleMask |= NSResizableWindowMask;
