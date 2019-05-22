@@ -124,5 +124,10 @@ describe('contentTracing', () => {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '')
       expect(resultFilePath).to.be.a('string').that.is.not.empty()
     })
+
+    it('creates a temporary file when no path is passed', async function () {
+      const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined)
+      expect(resultFilePath).to.be.a('string').that.is.not.empty()
+    })
   })
 })
