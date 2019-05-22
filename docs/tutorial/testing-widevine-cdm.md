@@ -75,7 +75,7 @@ const { app, BrowserWindow } = require('electron')
 // * `libwidevinecdm.dylib` on macOS,
 // * `widevinecdm.dll` on Windows.
 app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevine_library')
-// The version of plugin can be got from `chrome://plugins` page in Chrome.
+// The version of plugin can be got from `chrome://components` page in Chrome.
 app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866')
 
 let win = null
