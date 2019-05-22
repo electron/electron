@@ -5,7 +5,7 @@ Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 41285370f97be53ec93249c4eb0caf8c77a595b9..3c7eee8a565444f0c66be88885f8826a56acfd18 100644
+index 8284524948c54c91e80e61c046ef7a8a7e66ba66..5e0218a0933df9440bcb86ac89373c417d31d206 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -142,6 +142,11 @@ void ExtractUnderlines(NSAttributedString* string,

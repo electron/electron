@@ -174,7 +174,7 @@ index 742aaa1df005f28ba55b0c42a18d41e9a74a9b6a..382a9eae997fbc399ee196d2fc58951a
  #ifdef V8_ENABLE_CHECKS
    CheckCast(value);
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 4a421e73cb45bf3eb3d6643011151743cf989fee..675d3df256143380594577b458d12c9705e7ecf1 100644
+index 373a692d168fde744e41dbb4295e07d12038ff2c..e3f930127c3133c954352100f98c5cff4a438314 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -2179,6 +2179,10 @@ int PrimitiveArray::Length() const {

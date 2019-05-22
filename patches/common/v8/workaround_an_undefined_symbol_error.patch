@@ -12,7 +12,7 @@ By moving some functions out of the the arm64-assembler header file,
 this error no longer seems to happen.
 
 diff --git a/src/arm64/assembler-arm64.cc b/src/arm64/assembler-arm64.cc
-index eaafa2375b2746fb7a9f63a1fc6703660b2b123c..fa83830f21b068ff79872e5d9eb6031bffd84028 100644
+index 988259264aed79549dd2028d8565841500e401c8..b7ab517fd38426100559469dc547c7c9603bceac 100644
 --- a/src/arm64/assembler-arm64.cc
 +++ b/src/arm64/assembler-arm64.cc
 @@ -4013,6 +4013,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
@@ -39,7 +39,7 @@ index eaafa2375b2746fb7a9f63a1fc6703660b2b123c..fa83830f21b068ff79872e5d9eb6031b
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index 9d2f482f31ad9c056a0c65dbf0ff0980f28ee880..2185cad65b7791e65706685066a412ce660c5940 100644
+index d814722e6a9eb7b156fc86592cd321682bb68974..2492f30278adae9fb3ff9e995cb9328b4ae8694c 100644
 --- a/src/arm64/assembler-arm64.h
 +++ b/src/arm64/assembler-arm64.h
 @@ -2230,11 +2230,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {

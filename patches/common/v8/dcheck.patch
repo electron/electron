@@ -5,7 +5,7 @@ Subject: dcheck.patch
 
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 675d3df256143380594577b458d12c9705e7ecf1..fe4a82836995053d8c43a2ace2457eaa95aa8d38 100644
+index e3f930127c3133c954352100f98c5cff4a438314..e327588adc62c7f19b77e0d9cdcb4cd342ffdc13 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -8248,7 +8248,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
@@ -18,7 +18,7 @@ index 675d3df256143380594577b458d12c9705e7ecf1..fe4a82836995053d8c43a2ace2457eaa
    isolate->default_microtask_queue()->RunMicrotasks(isolate);
  }
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index ee2a4ceed24d92fff94affad47b194576841dff0..3c220a31cf3f913d4161105cbff7347fa1e0df23 100644
+index 0a35533253b003f9626ace8fcbb85e9e25b51e01..a7ba98a7ded1d970b849f3295b026509077de61f 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
 @@ -4999,9 +4999,9 @@ void Heap::TearDown() {
