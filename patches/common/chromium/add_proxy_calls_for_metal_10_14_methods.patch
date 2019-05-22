@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Elly Fong-Jones <ellyjones@chromium.org>
+Date: Wed, 22 May 2019 17:41:30 +0000
+Subject: Add proxy calls for Metal 10.14 methods
+
+Bug: 964476
+Change-Id: I8ae07324d58dc373e99bda157b7bece4c04c0d6f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1623165
+Reviewed-by: Elly Fong-Jones <ellyjones@chromium.org>
+Commit-Queue: ccameron <ccameron@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#662252}
+
+diff --git a/components/viz/common/gpu/metal_api_proxy.mm b/components/viz/common/gpu/metal_api_proxy.mm
+index 5cd5333a928b0616d6c6b5905900b8c76baa2171..1f255e164136ed3438e0fd5f7dfd2195b65a09e8 100644
+--- a/components/viz/common/gpu/metal_api_proxy.mm
++++ b/components/viz/common/gpu/metal_api_proxy.mm
+@@ -32,6 +32,10 @@ -(R)fn : (A0)a0 {              \
+   -(R)fn : (A0)a0 a1 : (A1)a1 {          \
+     return [device_ fn:a0 a1:a1];        \
+   }
++#define PROXY_METHOD3(R, fn, A0, a1, A1, a2, A2) \
++  -(R)fn : (A0)a0 a1 : (A1)a1 : (A2)a2 {          \
++    return [device_ fn:a0 a1:a1 a2:a2];        \
++  }
+ #define PROXY_METHOD0_SLOW(R, fn)                                  \
+   -(R)fn {                                                         \
+     gl::ScopedProgressReporter scoped_reporter(progressReporter_); \
+@@ -252,5 +256,30 @@ -(R)fn : (A0)a0 a1 : (A1)a1 a2 : (A2)a2 a3 : (A3)a3 {            \
+ PROXY_METHOD1_SLOW(nullable id<MTLArgumentEncoder>,
+                    newArgumentEncoderWithArguments,
+                    NSArray<MTLArgumentDescriptor*>*)
++#if defined(MAC_OS_X_VERSION_10_14)
++PROXY_METHOD1_SLOW(nullable id<MTLTexture>,
++                   newSharedTextureWithDescriptor,
++                   MTLTextureDescriptor*)
++PROXY_METHOD1_SLOW(nullable id<MTLTexture>,
++                   newSharedTextureWithHandle,
++                   MTLSharedTextureHandle*)
++PROXY_METHOD1(NSUInteger,
++              minimumTextureBufferAlignmentForPixelFormat,
++              MTLPixelFormat)
++PROXY_METHOD0(NSUInteger, maxBufferLength)
++PROXY_METHOD0(NSUInteger, maxArgumentBufferSamplerCount)
++PROXY_METHOD3_SLOW(nullable id<MTLIndirectCommandBuffer>,
++                   newIndirectCommandBufferWithDescriptor,
++                   MTLIndirectCommandBufferDescriptor*,
++                   maxCommandCount,
++                   NSUInteger,
++                   options,
++                   MTLResourceOptions)
++PROXY_METHOD0(nullable id<MTLEvent>, newEvent)
++PROXY_METHOD0(nullable id<MTLSharedEvent>, newSharedEvent)
++PROXY_METHOD1(nullable id<MTLSharedEvent>,
++              newSharedEventWithHandle,
++              MTLSharedEventHandle*)
++#endif
+ #pragma clang diagnostic pop
+ @end
