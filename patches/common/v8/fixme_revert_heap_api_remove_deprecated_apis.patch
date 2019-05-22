@@ -9,10 +9,10 @@ This commit removes deprecated APIs that nan relies on, temporarily
 reverting but we need to solve this with nan upstream
 
 diff --git a/include/v8-internal.h b/include/v8-internal.h
-index 8e700a4d4d401bb58cdc6128e3e96dbf2d791d5c..94a6e3c1932a06ef1eee1be403b031f50d0d7baf 100644
+index fe2ce67e0df04e58502d73ca5ac81a86ee001494..ed110be42bf4d7ab47bee480d8dbbfe547fbc423 100644
 --- a/include/v8-internal.h
 +++ b/include/v8-internal.h
-@@ -165,6 +165,7 @@ class Internals {
+@@ -174,6 +174,7 @@ class Internals {
    static const int kNodeStateMask = 0x7;
    static const int kNodeStateIsWeakValue = 2;
    static const int kNodeStateIsPendingValue = 3;
@@ -21,10 +21,10 @@ index 8e700a4d4d401bb58cdc6128e3e96dbf2d791d5c..94a6e3c1932a06ef1eee1be403b031f5
    static const int kNodeIsActiveShift = 4;
  
 diff --git a/include/v8.h b/include/v8.h
-index c5e22bb14043ade00b4ecf73b6115e747d5232ad..b96cbdee06a305776e062f5b8362e1b17106e1dd 100644
+index 0adb423592e7040f60a2bb8f1b9429228341838b..2f983b34ceb2ae9a98fac682de66336d9d016d16 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -577,6 +577,10 @@ template <class T> class PersistentBase {
+@@ -576,6 +576,10 @@ template <class T> class PersistentBase {
  
    V8_DEPRECATED("See MarkIndependent.", V8_INLINE bool IsIndependent() const);
  
@@ -35,7 +35,7 @@ index c5e22bb14043ade00b4ecf73b6115e747d5232ad..b96cbdee06a305776e062f5b8362e1b1
    /** Returns true if the handle's reference is weak.  */
    V8_INLINE bool IsWeak() const;
  
-@@ -8596,6 +8600,17 @@ class V8_EXPORT Isolate {
+@@ -8530,6 +8534,17 @@ class V8_EXPORT Isolate {
     */
    void VisitHandlesWithClassIds(PersistentHandleVisitor* visitor);
  
@@ -53,7 +53,7 @@ index c5e22bb14043ade00b4ecf73b6115e747d5232ad..b96cbdee06a305776e062f5b8362e1b1
    /**
     * Iterates through all the persistent handles in the current isolate's heap
     * that have class_ids and are weak to be marked as inactive if there is no
-@@ -9867,6 +9882,17 @@ bool PersistentBase<T>::IsIndependent() const {
+@@ -9807,6 +9822,17 @@ bool PersistentBase<T>::IsIndependent() const {
                          I::kNodeIsIndependentShift);
  }
  
@@ -71,11 +71,11 @@ index c5e22bb14043ade00b4ecf73b6115e747d5232ad..b96cbdee06a305776e062f5b8362e1b1
  template <class T>
  bool PersistentBase<T>::IsWeak() const {
    typedef internal::Internals I;
-diff --git a/src/api.cc b/src/api.cc
-index 2a2311454ba37e557b1c1f046f46e7f5881516b9..10553d5bc638ceb81f4dd14d5231df3e9ae887dc 100644
---- a/src/api.cc
-+++ b/src/api.cc
-@@ -8989,6 +8989,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 693872f22581066cbc33d0b87fed6e3e40102e6e..d0c0ae17edb94e88ec48828e115ecd762ef0674c 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -8628,6 +8628,15 @@ void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
    isolate->global_handles()->IterateAllRootsWithClassIds(visitor);
  }
  
@@ -92,10 +92,10 @@ index 2a2311454ba37e557b1c1f046f46e7f5881516b9..10553d5bc638ceb81f4dd14d5231df3e
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
    i::DisallowHeapAllocation no_allocation;
 diff --git a/src/global-handles.cc b/src/global-handles.cc
-index 350380b23ce6f4fe89e628285d2e69fb1cac88ee..5eb3d93f142ea4d6ec88a4468b6390ec5387da84 100644
+index ef0181d5913f5e89baa6b16b98d5568943e34d01..02561dd2896ed459de9000cc28493fd2ca57de1a 100644
 --- a/src/global-handles.cc
 +++ b/src/global-handles.cc
-@@ -379,6 +379,7 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
+@@ -380,6 +380,7 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
                    Internals::kNodeStateMask);
      STATIC_ASSERT(WEAK == Internals::kNodeStateIsWeakValue);
      STATIC_ASSERT(PENDING == Internals::kNodeStateIsPendingValue);
@@ -103,7 +103,7 @@ index 350380b23ce6f4fe89e628285d2e69fb1cac88ee..5eb3d93f142ea4d6ec88a4468b6390ec
      STATIC_ASSERT(static_cast<int>(IsIndependent::kShift) ==
                    Internals::kNodeIsIndependentShift);
      STATIC_ASSERT(static_cast<int>(IsActive::kShift) ==
-@@ -426,6 +427,11 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
+@@ -427,6 +428,11 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
      flags_ = NodeWeaknessType::update(flags_, weakness_type);
    }
  
@@ -115,7 +115,7 @@ index 350380b23ce6f4fe89e628285d2e69fb1cac88ee..5eb3d93f142ea4d6ec88a4468b6390ec
    bool IsWeak() const { return state() == WEAK; }
  
    bool IsInUse() const { return state() != FREE; }
-@@ -813,6 +819,10 @@ void GlobalHandles::AnnotateStrongRetainer(Address* location,
+@@ -814,6 +820,10 @@ void GlobalHandles::AnnotateStrongRetainer(Address* location,
    Node::FromLocation(location)->AnnotateStrongRetainer(label);
  }
  
@@ -127,7 +127,7 @@ index 350380b23ce6f4fe89e628285d2e69fb1cac88ee..5eb3d93f142ea4d6ec88a4468b6390ec
    return Node::FromLocation(location)->IsWeak();
  }
 diff --git a/src/global-handles.h b/src/global-handles.h
-index 6b8ca0c93fa344ed0155106fef3a0aabf13bdf44..f5f51bb00761f37b7182e0be5e8783831bff3217 100644
+index 8d5bae1491d34311f9559cc70c68498416a326af..e7a0b834d8a70cb368499222687c5bca5b5b4560 100644
 --- a/src/global-handles.h
 +++ b/src/global-handles.h
 @@ -73,6 +73,9 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
@@ -141,10 +141,10 @@ index 6b8ca0c93fa344ed0155106fef3a0aabf13bdf44..f5f51bb00761f37b7182e0be5e878383
    static bool IsWeak(Address* location);
  
 diff --git a/test/cctest/heap/test-heap.cc b/test/cctest/heap/test-heap.cc
-index 6d82863424730b8f98c5cd64595d6699149e9922..ea27b14b8d4d3a75b7a3b0ab5b9729c2f0650e98 100644
+index f67ee369ba3b9954f8af431bea93ecc3933b4e26..4b1019c4f4e0cd04662dd2fdc850dc4ef9256a45 100644
 --- a/test/cctest/heap/test-heap.cc
 +++ b/test/cctest/heap/test-heap.cc
-@@ -528,9 +528,14 @@ TEST(WeakGlobalHandlesScavenge) {
+@@ -527,9 +527,14 @@ TEST(WeakGlobalHandlesScavenge) {
  
    // Scavenge treats weak pointers as normal roots.
    CcTest::CollectGarbage(NEW_SPACE);
@@ -159,7 +159,7 @@ index 6d82863424730b8f98c5cd64595d6699149e9922..ea27b14b8d4d3a75b7a3b0ab5b9729c2
    GlobalHandles::Destroy(h1.location());
    GlobalHandles::Destroy(h2.location());
  }
-@@ -568,8 +573,11 @@ TEST(WeakGlobalUnmodifiedApiHandlesScavenge) {
+@@ -567,8 +572,11 @@ TEST(WeakGlobalUnmodifiedApiHandlesScavenge) {
        &TestWeakGlobalHandleCallback, v8::WeakCallbackType::kParameter);
  
    CcTest::CollectGarbage(NEW_SPACE);
@@ -171,7 +171,7 @@ index 6d82863424730b8f98c5cd64595d6699149e9922..ea27b14b8d4d3a75b7a3b0ab5b9729c2
    GlobalHandles::Destroy(h1.location());
  }
  
-@@ -606,7 +614,10 @@ TEST(WeakGlobalApiHandleModifiedMapScavenge) {
+@@ -605,7 +613,10 @@ TEST(WeakGlobalApiHandleModifiedMapScavenge) {
        &TestWeakGlobalHandleCallback, v8::WeakCallbackType::kParameter);
  
    CcTest::CollectGarbage(NEW_SPACE);
@@ -182,7 +182,7 @@ index 6d82863424730b8f98c5cd64595d6699149e9922..ea27b14b8d4d3a75b7a3b0ab5b9729c2
    GlobalHandles::Destroy(h1.location());
  }
  
-@@ -647,7 +658,10 @@ TEST(WeakGlobalApiHandleWithElementsScavenge) {
+@@ -646,7 +657,10 @@ TEST(WeakGlobalApiHandleWithElementsScavenge) {
        &TestWeakGlobalHandleCallback, v8::WeakCallbackType::kParameter);
  
    CcTest::CollectGarbage(NEW_SPACE);
@@ -193,7 +193,7 @@ index 6d82863424730b8f98c5cd64595d6699149e9922..ea27b14b8d4d3a75b7a3b0ab5b9729c2
    GlobalHandles::Destroy(h1.location());
  }
  
-@@ -682,11 +696,17 @@ TEST(WeakGlobalHandlesMark) {
+@@ -681,11 +695,17 @@ TEST(WeakGlobalHandlesMark) {
    GlobalHandles::MakeWeak(
        h2.location(), reinterpret_cast<void*>(&handle_and_id),
        &TestWeakGlobalHandleCallback, v8::WeakCallbackType::kParameter);
@@ -212,10 +212,10 @@ index 6d82863424730b8f98c5cd64595d6699149e9922..ea27b14b8d4d3a75b7a3b0ab5b9729c2
  }
  
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index 3b3c2265300c8e739b812a1965a709e4f7fc0303..366528583a065b13b477c69fc565b3cae716eda5 100644
+index 8db9adcf509b4dcdab08f87dbe9148038fdefda3..5333cec913d249c331e12d267fa76f7e08f16b24 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -20477,6 +20477,43 @@ TEST(WrapperClassId) {
+@@ -19812,6 +19812,43 @@ TEST(WrapperClassId) {
    object.Reset();
  }
  
