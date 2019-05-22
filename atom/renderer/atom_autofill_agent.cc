@@ -64,7 +64,7 @@ void AutofillAgent::DidChangeScrollOffset() {
   HidePopup();
 }
 
-void AutofillAgent::FocusedNodeChanged(const blink::WebNode&) {
+void AutofillAgent::FocusedElementChanged(const blink::WebElement&) {
   focused_node_was_last_clicked_ = false;
   was_focused_before_now_ = false;
   HidePopup();
