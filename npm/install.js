@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-var version = require('./package').version
+const version = require('./package').version
 
-var fs = require('fs')
-var os = require('os')
-var path = require('path')
-var extract = require('extract-zip')
-var download = require('electron-download')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const extract = require('extract-zip')
+const { downloadArtifact } = require('@electron/get')
 
-var installedVersion = null
+let installedVersion = null
 try {
   installedVersion = fs.readFileSync(path.join(__dirname, 'dist', 'version'), 'utf-8').replace(/^v/, '')
 } catch (ignored) {
@@ -19,28 +19,26 @@ if (process.env.ELECTRON_SKIP_BINARY_DOWNLOAD) {
   process.exit(0)
 }
 
-var platformPath = getPlatformPath()
+const platformPath = getPlatformPath()
 
-var electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
+const electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
 
 if (installedVersion === version && fs.existsSync(electronPath)) {
   process.exit(0)
 }
 
 // downloads if not cached
-download({
-  cache: process.env.electron_config_cache,
-  version: version,
-  platform: process.env.npm_config_platform,
-  arch: process.env.npm_config_arch,
-  strictSSL: process.env.npm_config_strict_ssl === 'true',
+downloadArtifact({
+  version,
+  artifactName: 'electron',
   force: process.env.force_no_cache === 'true',
-  quiet: process.env.npm_config_loglevel === 'silent' || process.env.CI
-}, extractFile)
+  cacheRoot: process.env.electron_config_cache,
+  platform: process.env.npm_config_platform || process.platform,
+  arch: process.env.npm_config_arch || process.arch
+}).then((zipPath) => extractFile(zipPath)).catch((err) => onerror(err))
 
 // unzips and makes path.txt point at the correct executable
-function extractFile (err, zipPath) {
-  if (err) return onerror(err)
+function extractFile (zipPath) {
   extract(zipPath, { dir: path.join(__dirname, 'dist') }, function (err) {
     if (err) return onerror(err)
     fs.writeFile(path.join(__dirname, 'path.txt'), platformPath, function (err) {
@@ -54,7 +52,7 @@ function onerror (err) {
 }
 
 function getPlatformPath () {
-  var platform = process.env.npm_config_platform || os.platform()
+  const platform = process.env.npm_config_platform || os.platform()
 
   switch (platform) {
     case 'darwin':
