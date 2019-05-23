@@ -7,18 +7,13 @@ export const closeWindow = async (
   { assertNotWindows } = { assertNotWindows: true }
 ) => {
   if (window && !window.isDestroyed()) {
-    const isClosed = emittedOnce(window, 'closed')
-    window.setClosable(true)
-    window.close()
-    await isClosed
+    window.destroy()
   }
 
   if (assertNotWindows) {
     const windows = BrowserWindow.getAllWindows()
     for (const win of windows) {
-      const closePromise = emittedOnce(win, 'closed')
-      win.close()
-      await closePromise
+      win.destroy()
     }
     expect(windows).to.have.lengthOf(0)
   }
