@@ -110,14 +110,13 @@ void NetLog::StartNetLogAfterCreateFile(
     uint64_t max_file_size,
     base::Value custom_constants,
     base::File output_file) {
-  DCHECK(pending_start_promise_);
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
-    // here via the connection error handler.
-    std::move(*pending_start_promise_)
-        .RejectWithErrorMessage("Failed to create net log exporter");
+    // here via the connection error handler. If so, the promise has already
+    // been resolved.
     return;
   }
+  DCHECK(pending_start_promise_);
   if (!output_file.IsValid()) {
     std::move(*pending_start_promise_)
         .RejectWithErrorMessage(
