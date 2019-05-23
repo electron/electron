@@ -6,16 +6,17 @@
 
 #include <utility>
 
-#include "atom/browser/api/atom_api_protocol_ns.h"
 #include "atom/browser/net/asar/asar_url_loader.h"
+#include "mojo/public/cpp/bindings/binding.h"
+#include "services/network/public/mojom/url_loader.mojom.h"
 
 namespace atom {
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
-    api::ProtocolNS* protocol,
+    const HandlersMap& handlers,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info)
-    : protocol_(protocol), weak_factory_(this) {
+    : handlers_(handlers), weak_factory_(this) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
@@ -35,8 +36,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   // Check if user has intercepted this scheme.
-  auto it = protocol_->intercept_handlers().find(request.url.scheme());
-  if (it != protocol_->intercept_handlers().end()) {
+  auto it = handlers_.find(request.url.scheme());
+  if (it != handlers_.end()) {
     AtomURLLoaderFactory(it->second.first, it->second.second)
         .CreateLoaderAndStart(std::move(loader), routing_id, request_id,
                               options, request, std::move(client),

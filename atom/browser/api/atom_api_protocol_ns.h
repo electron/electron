@@ -5,9 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
 #define ATOM_BROWSER_API_ATOM_API_PROTOCOL_NS_H_
 
-#include <map>
 #include <string>
-#include <utility>
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/atom_url_loader_factory.h"
@@ -43,9 +41,6 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   void RegisterURLLoaderFactories(
       content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
-  // scheme => (type, handler).
-  using HandlersMap =
-      std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
 
  private:

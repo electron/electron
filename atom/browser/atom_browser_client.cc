@@ -979,7 +979,8 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   auto proxied_request = std::move(*factory_request);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
   *factory_request = mojo::MakeRequest(&target_factory_info);
-  new ProxyingURLLoaderFactory(protocol, std::move(proxied_request),
+  new ProxyingURLLoaderFactory(protocol->intercept_handlers(),
+                               std::move(proxied_request),
                                std::move(target_factory_info));
   return true;
 }

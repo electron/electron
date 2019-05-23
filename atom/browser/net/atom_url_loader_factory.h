@@ -5,7 +5,9 @@
 #ifndef ATOM_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_
 #define ATOM_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_
 
+#include <map>
 #include <string>
+#include <utility>
 
 #include "mojo/public/cpp/bindings/binding_set.h"
 #include "native_mate/dictionary.h"
@@ -27,6 +29,10 @@ enum class ProtocolType {
 using StartLoadingCallback = base::OnceCallback<void(mate::Arguments*)>;
 using ProtocolHandler =
     base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
+
+// scheme => (type, handler).
+using HandlersMap =
+    std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
 
 // Implementation of URLLoaderFactory.
 class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
