@@ -401,6 +401,8 @@ int GetPathConstant(const std::string& name) {
     return DIR_CACHE;
   else if (name == "userCache")
     return DIR_USER_CACHE;
+  else if (name == "appCache")
+    return DIR_APP_CACHE;
   else if (name == "logs")
     return DIR_APP_LOGS;
   else if (name == "home")

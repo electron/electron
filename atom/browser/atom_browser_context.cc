@@ -78,12 +78,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (!base::PathService::Get(DIR_USER_DATA, &path_)) {
-    base::PathService::Get(DIR_APP_DATA, &path_);
-    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    base::PathService::Override(DIR_USER_DATA, path_);
-  }
-
+  base::PathService::Get(DIR_APP_CACHE, &path_);
   if (!in_memory && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                 .Append(base::FilePath::FromUTF8Unsafe(

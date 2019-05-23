@@ -153,9 +153,32 @@ void Browser::WillFinishLaunching() {
 void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  // Comppute the user default directory for storing your app's configuration
+  // files, which it is the `appData` directory appended with your app's name.
+  base::FilePath default_user_data;
+  base::PathService::Get(DIR_APP_DATA, &default_user_data);
+  default_user_data = default_user_data.Append(
+      base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+
+  // If we did not override the 'userData', we use the default directory
   base::FilePath user_data;
-  if (base::PathService::Get(DIR_USER_DATA, &user_data))
-    base::CreateDirectoryAndGetError(user_data, nullptr);
+  if (!base::PathService::Get(DIR_USER_DATA, &user_data)) {
+    user_data = default_user_data;
+    base::PathService::Override(DIR_USER_DATA, user_data);
+  }
+  base::CreateDirectoryAndGetError(user_data, nullptr);
+
+  // If we did not override the 'appCache', we use the 'userData' by default
+  base::FilePath app_cache;
+  if (!base::PathService::Get(DIR_APP_CACHE, &app_cache)) {
+    app_cache = user_data;
+    base::PathService::Override(DIR_APP_CACHE, user_data);
+  } else
+    base::CreateDirectoryAndGetError(app_cache, nullptr);
+
+  // Resync the userCache path
+  base::PathService::Override(DIR_USER_CACHE, app_cache);
 
   is_ready_ = true;
   if (ready_promise_) {
