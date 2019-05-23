@@ -14,6 +14,7 @@ function warnOnce (oldName: string, newName?: string) {
 }
 
 const deprecate: ElectronInternal.DeprecationUtil = {
+  warnOnce,
   setHandler: (handler) => { deprecationHandler = handler },
   getHandler: () => deprecationHandler,
   warn: (oldName, newName) => {
