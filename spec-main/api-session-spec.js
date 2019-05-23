@@ -7,6 +7,7 @@ const send = require('send')
 const auth = require('basic-auth')
 const ChildProcess = require('child_process')
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 const { session, BrowserWindow, net } = require('electron')
 const { expect } = chai
@@ -148,20 +149,25 @@ describe('session module', () => {
       const { cookies } = session.fromPartition('cookies-changed')
       const name = 'foo'
       const value = 'bar'
-      const eventName = 'changed'
       const listener = (event, cookie, cause, removed) => { changes.push({ cookie, cause, removed }) }
 
-      cookies.on(eventName, listener)
+      const a = emittedOnce(cookies, 'changed')
       await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 })
-      await cookies.remove(url, name)
-      cookies.off(eventName, listener)
+      const [, setEventCookie, setEventCause, setEventRemoved] = await a
 
-      expect(changes).to.have.lengthOf(2)
-      expect(changes.every(change => change.cookie.name === name))
-      expect(changes.every(change => change.cookie.value === value))
-      expect(changes.every(change => change.cause === 'explicit'))
-      expect(changes[0].removed).to.eql(false)
-      expect(changes[1].removed).to.eql(true)
+      const b = emittedOnce(cookies, 'changed')
+      await cookies.remove(url, name)
+      const [, removeEventCookie, removeEventCause, removeEventRemoved] = await b
+
+      expect(setEventCookie.name).to.equal(name)
+      expect(setEventCookie.value).to.equal(value)
+      expect(setEventCookie.cause).to.equal('explicit')
+      expect(setEventRemoved).to.equal(false)
+
+      expect(removeEventCookie.name).to.equal(name)
+      expect(removeEventCookie.value).to.equal(value)
+      expect(removeEventCookie.cause).to.equal('explicit')
+      expect(removeEventRemoved).to.equal(true)
     })
 
     describe('ses.cookies.flushStore()', async () => {
