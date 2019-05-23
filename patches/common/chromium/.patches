@@ -78,4 +78,3 @@ add_contentgpuclient_precreatemessageloop_callback.patch
 disable_custom_libcxx_on_windows.patch
 feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
-add_proxy_calls_for_metal_10_14_methods.patch

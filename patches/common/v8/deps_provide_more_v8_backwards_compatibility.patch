@@ -22,7 +22,7 @@ Reviewed-By: Yang Guo <yangguo@chromium.org>
 Reviewed-By: Michaël Zasso <targos@protonmail.com>
 
 diff --git a/include/v8.h b/include/v8.h
-index 742aaa1df005f28ba55b0c42a18d41e9a74a9b6a..382a9eae997fbc399ee196d2fc58951a11675909 100644
+index 0b517b7a469451952723e10ad834d94c2f17e3e3..4d2dcde69f3e11a19df85eed015278db2f46dc95 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -1108,6 +1108,10 @@ class V8_EXPORT PrimitiveArray {
@@ -143,7 +143,7 @@ index 742aaa1df005f28ba55b0c42a18d41e9a74a9b6a..382a9eae997fbc399ee196d2fc58951a
  
    Local<String> ValueOf() const;
  
-@@ -10370,6 +10411,29 @@ template <class T> Value* Value::Cast(T* value) {
+@@ -10399,6 +10440,29 @@ template <class T> Value* Value::Cast(T* value) {
  }
  
  
@@ -174,7 +174,7 @@ index 742aaa1df005f28ba55b0c42a18d41e9a74a9b6a..382a9eae997fbc399ee196d2fc58951a
  #ifdef V8_ENABLE_CHECKS
    CheckCast(value);
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 373a692d168fde744e41dbb4295e07d12038ff2c..e3f930127c3133c954352100f98c5cff4a438314 100644
+index dcd2a79adf1f1b685f7384208786a18d9f593384..56ef6b87cb7982deed05251d57b1008c54725f91 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -2179,6 +2179,10 @@ int PrimitiveArray::Length() const {
@@ -301,7 +301,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..e3f930127c3133c954352100f98c5cff
  int String::WriteOneByte(Isolate* isolate, uint8_t* buffer, int start,
                           int length, int options) const {
    return WriteHelper(reinterpret_cast<i::Isolate*>(isolate), this, buffer,
-@@ -6142,6 +6210,11 @@ MaybeLocal<String> String::NewFromTwoByte(Isolate* isolate,
+@@ -6140,6 +6208,11 @@ MaybeLocal<String> String::NewFromTwoByte(Isolate* isolate,
    return result;
  }
  
@@ -313,8 +313,8 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..e3f930127c3133c954352100f98c5cff
  Local<String> v8::String::Concat(Isolate* v8_isolate, Local<String> left,
                                   Local<String> right) {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-@@ -6411,6 +6484,10 @@ bool v8::BooleanObject::ValueOf() const {
-   return jsvalue->value()->IsTrue(isolate);
+@@ -6409,6 +6482,10 @@ bool v8::BooleanObject::ValueOf() const {
+   return jsvalue->value().IsTrue(isolate);
  }
  
 +Local<v8::Value> v8::StringObject::New(Local<String> value) {
@@ -324,7 +324,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..e3f930127c3133c954352100f98c5cff
  Local<v8::Value> v8::StringObject::New(Isolate* v8_isolate,
                                         Local<String> value) {
    i::Handle<i::String> string = Utils::OpenHandle(*value);
-@@ -8600,6 +8677,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
+@@ -8598,6 +8675,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
    return microtask_queue->IsRunningMicrotasks();
  }
  
@@ -334,7 +334,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..e3f930127c3133c954352100f98c5cff
  String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
      : str_(nullptr), length_(0) {
    if (obj.IsEmpty()) return;
-@@ -8617,6 +8697,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
+@@ -8615,6 +8695,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
  
  String::Utf8Value::~Utf8Value() { i::DeleteArray(str_); }
  

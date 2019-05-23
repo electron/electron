@@ -66,7 +66,7 @@ index 8284524948c54c91e80e61c046ef7a8a7e66ba66..5e0218a0933df9440bcb86ac89373c41
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index c6f096b1f58265b6dfe469d271e3decb96c14f14..819803a665e145565e2b71541835750983ebf8a5 100644
+index 605fe2face44403b470fb372fadb22c38b6d1068..e25d4e7abc435cf16522aa66a423f5c0b64eddb9 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -62,6 +62,7 @@
