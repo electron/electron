@@ -6,7 +6,7 @@ Subject: Revert "[api] Remove deprecated conversion functions"
 This reverts commit c76f377a990343b18953123c2726337b38c59812.
 
 diff --git a/include/v8.h b/include/v8.h
-index 742aaa1df005f28ba55b0c42a18d41e9a74a9b6a..088f43304a7b9ca2e5abb787332dbda9b05b9bd4 100644
+index 0b517b7a469451952723e10ad834d94c2f17e3e3..8012a1935018dde4ec72fd3945457321be9f6319 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -2493,6 +2493,9 @@ class V8_EXPORT Value : public Data {
@@ -47,10 +47,10 @@ index 742aaa1df005f28ba55b0c42a18d41e9a74a9b6a..088f43304a7b9ca2e5abb787332dbda9
    V8_WARN_UNUSED_RESULT Maybe<int64_t> IntegerValue(
        Local<Context> context) const;
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a09047795c 100644
+index 5202fc9f77559d2e25c71f8f81de3cccbb7ba891..92bcc561d50276b31d5bd988dfa7247aaef20a8d 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -3429,6 +3429,12 @@ MaybeLocal<String> Value::ToString(Local<Context> context) const {
+@@ -3430,6 +3430,12 @@ MaybeLocal<String> Value::ToString(Local<Context> context) const {
    RETURN_ESCAPED(result);
  }
  
@@ -63,7 +63,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a0
  MaybeLocal<String> Value::ToDetailString(Local<Context> context) const {
    i::Handle<i::Object> obj = Utils::OpenHandle(this);
    if (obj->IsString()) return ToApiHandle<String>(obj);
-@@ -3450,6 +3456,11 @@ MaybeLocal<Object> Value::ToObject(Local<Context> context) const {
+@@ -3451,6 +3457,11 @@ MaybeLocal<Object> Value::ToObject(Local<Context> context) const {
    RETURN_ESCAPED(result);
  }
  
@@ -75,7 +75,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a0
  MaybeLocal<BigInt> Value::ToBigInt(Local<Context> context) const {
    i::Handle<i::Object> obj = Utils::OpenHandle(this);
    if (obj->IsBigInt()) return ToApiHandle<BigInt>(obj);
-@@ -3466,6 +3477,11 @@ bool Value::BooleanValue(Isolate* v8_isolate) const {
+@@ -3467,6 +3478,11 @@ bool Value::BooleanValue(Isolate* v8_isolate) const {
        reinterpret_cast<i::Isolate*>(v8_isolate));
  }
  
@@ -87,7 +87,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a0
  Local<Boolean> Value::ToBoolean(Isolate* v8_isolate) const {
    auto isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
    return ToApiHandle<Boolean>(
-@@ -3483,6 +3499,12 @@ MaybeLocal<Number> Value::ToNumber(Local<Context> context) const {
+@@ -3484,6 +3500,12 @@ MaybeLocal<Number> Value::ToNumber(Local<Context> context) const {
    RETURN_ESCAPED(result);
  }
  
@@ -100,7 +100,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a0
  MaybeLocal<Integer> Value::ToInteger(Local<Context> context) const {
    auto obj = Utils::OpenHandle(this);
    if (obj->IsSmi()) return ToApiHandle<Integer>(obj);
-@@ -3494,6 +3516,12 @@ MaybeLocal<Integer> Value::ToInteger(Local<Context> context) const {
+@@ -3495,6 +3517,12 @@ MaybeLocal<Integer> Value::ToInteger(Local<Context> context) const {
    RETURN_ESCAPED(result);
  }
  
@@ -113,7 +113,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a0
  MaybeLocal<Int32> Value::ToInt32(Local<Context> context) const {
    auto obj = Utils::OpenHandle(this);
    if (obj->IsSmi()) return ToApiHandle<Int32>(obj);
-@@ -3505,6 +3533,12 @@ MaybeLocal<Int32> Value::ToInt32(Local<Context> context) const {
+@@ -3506,6 +3534,12 @@ MaybeLocal<Int32> Value::ToInt32(Local<Context> context) const {
    RETURN_ESCAPED(result);
  }
  
@@ -126,7 +126,7 @@ index 373a692d168fde744e41dbb4295e07d12038ff2c..7ddaf3858c6bbf19e62614835dc143a0
  MaybeLocal<Uint32> Value::ToUint32(Local<Context> context) const {
    auto obj = Utils::OpenHandle(this);
    if (obj->IsSmi()) return ToApiHandle<Uint32>(obj);
-@@ -3732,6 +3766,13 @@ void v8::RegExp::CheckCast(v8::Value* that) {
+@@ -3733,6 +3767,13 @@ void v8::RegExp::CheckCast(v8::Value* that) {
                    "Could not convert to regular expression");
  }
  

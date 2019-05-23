@@ -303,7 +303,7 @@ index 54b927c3f407bfdaf69e8312360da9cd31c159d1..1da32ae6f4f0a9ee082a4e5c4e987125
    template <typename... CPURegisters>
    explicit CPURegList(CPURegister reg0, CPURegisters... regs)
 diff --git a/src/arm64/simulator-arm64.h b/src/arm64/simulator-arm64.h
-index e8d06f90034c58f5fb293e3bd56171fa9ad3e20c..c11531f1ea682cb749f456eb375b261779c7890b 100644
+index 2a5e25518badddd77febee11debdfb90868f8b8b..673ff8710cabad467fc08556ab96d3737c6d3e03 100644
 --- a/src/arm64/simulator-arm64.h
 +++ b/src/arm64/simulator-arm64.h
 @@ -656,11 +656,10 @@ class Simulator : public DecoderVisitor, public SimulatorBase {
@@ -416,7 +416,7 @@ index db1b8de69b8d0efff6a7f72094e2298a34753b8b..a58702f0d6bb572a666c0261c84c68a5
  
  }  // namespace internal
 diff --git a/src/objects.cc b/src/objects.cc
-index b2e8a3880f1969e426a52d4760701ae26385bca7..5bac83ff1fc1920c535cc2d53d76518fe6a521d4 100644
+index c1ae7ac0640ddf72494d94a636b77084fe8493ae..f4957e844aea20d1fae87b81dba480f6c01faf5b 100644
 --- a/src/objects.cc
 +++ b/src/objects.cc
 @@ -1239,7 +1239,7 @@ bool Object::ToInt32(int32_t* value) {
@@ -447,7 +447,7 @@ index a23763d893bda0003016d84b8f6f8d2c21365fcb..a078d30f2d84e65b087a3bcaf88002f1
    void DeoptimizeDependentCodeGroup(Isolate* isolate, DependencyGroup group);
  
 diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
-index c7d583cf7e077ee2cf401c37eb44460d6ff97817..38d25fb5536caeaf3293aab023c9c33880e01cbc 100644
+index 40d40e182917e4c7b9b6afec70c4735c89d7c5bb..e06c9eb74a8c3b8bbcaab8fb0b1f29d9f981ae46 100644
 --- a/src/objects/shared-function-info.h
 +++ b/src/objects/shared-function-info.h
 @@ -221,9 +221,7 @@ class InterpreterData : public Struct {
@@ -510,7 +510,7 @@ index c7e9460904afe50613d811363d5d4c1281796fad..5b152501196c7aff9311f07e7262e491
   public:
    inline SubStringRange(String string, const DisallowHeapAllocation& no_gc,
 diff --git a/src/regexp/jsregexp.h b/src/regexp/jsregexp.h
-index 0a0b5c10d66d65054e4865d7e920c082daa93158..a44e9f95866ca93659cb3423284352e06d87b04d 100644
+index 9866caa900888273de74cfb012845748931d0fd0..4c7526a59342743f6068e5c61d24c8dad4efd43f 100644
 --- a/src/regexp/jsregexp.h
 +++ b/src/regexp/jsregexp.h
 @@ -1513,8 +1513,7 @@ class RegExpEngine: public AllStatic {
@@ -537,12 +537,12 @@ index d31f5ff067c9b096a94705769c64586ffd546341..cce60d015af915e0984060dd2e84d6f7
    uint32_t table_index;
    WasmInitExpr offset;
 diff --git a/test/cctest/parsing/test-parse-decision.cc b/test/cctest/parsing/test-parse-decision.cc
-index 14b772cd4b72fb7fda13c1633b3c2371aa23485d..2146ca767a53efd3d9ae2f689918de16fd4cbea2 100644
+index c5426e4243bb304079e048820d51d0e5914e695e..4d873cdbfedc7f2f61eff486d828fe020d00eedc 100644
 --- a/test/cctest/parsing/test-parse-decision.cc
 +++ b/test/cctest/parsing/test-parse-decision.cc
 @@ -14,7 +14,6 @@
+ #include "src/execution/isolate.h"
  #include "src/handles-inl.h"
- #include "src/isolate.h"
  #include "src/objects-inl.h"
 -#include "src/objects/shared-function-info-inl.h"
  #include "src/utils.h"

@@ -12,7 +12,7 @@ By moving some functions out of the the arm64-assembler header file,
 this error no longer seems to happen.
 
 diff --git a/src/arm64/assembler-arm64.cc b/src/arm64/assembler-arm64.cc
-index 988259264aed79549dd2028d8565841500e401c8..b7ab517fd38426100559469dc547c7c9603bceac 100644
+index 4408a44770bcc5106bc2dd843ef4954dad7ff7df..df9683fd5e9720255ff6b83e47ec64e2f83f7722 100644
 --- a/src/arm64/assembler-arm64.cc
 +++ b/src/arm64/assembler-arm64.cc
 @@ -4013,6 +4013,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
