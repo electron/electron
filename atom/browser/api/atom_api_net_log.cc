@@ -72,8 +72,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
     return v8::Local<v8::Promise>();
   }
 
-  util::Promise promise(isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+  pending_start_promise_ = base::make_optional<util::Promise>(isolate());
+  v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
@@ -100,8 +100,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
       base::BindOnce(OpenFileForWriting, log_path),
       base::BindOnce(&NetLog::StartNetLogAfterCreateFile,
                      weak_ptr_factory_.GetWeakPtr(), capture_mode,
-                     max_file_size, std::move(custom_constants),
-                     std::move(promise)));
+                     max_file_size, std::move(custom_constants)));
 
   return handle;
 }
@@ -110,28 +109,39 @@ void NetLog::StartNetLogAfterCreateFile(
     network::mojom::NetLogCaptureMode capture_mode,
     uint64_t max_file_size,
     base::Value custom_constants,
-    util::Promise promise,
     base::File output_file) {
+  DCHECK(pending_start_promise_);
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
     // here via the connection error handler.
-    promise.RejectWithErrorMessage("Failed to create net log exporter");
+    std::move(*pending_start_promise_)
+        .RejectWithErrorMessage("Failed to create net log exporter");
     return;
   }
   if (!output_file.IsValid()) {
-    promise.RejectWithErrorMessage(
-        base::File::ErrorToString(output_file.error_details()));
+    std::move(*pending_start_promise_)
+        .RejectWithErrorMessage(
+            base::File::ErrorToString(output_file.error_details()));
     net_log_exporter_.reset();
     return;
   }
   net_log_exporter_->Start(
       std::move(output_file), std::move(custom_constants), capture_mode,
       max_file_size,
-      base::BindOnce(ResolvePromiseWithNetError, std::move(promise)));
+      base::BindOnce(&NetLog::NetLogStarted, base::Unretained(this)));
+}
+
+void NetLog::NetLogStarted(int32_t error) {
+  DCHECK(pending_start_promise_);
+  ResolvePromiseWithNetError(std::move(*pending_start_promise_), error);
 }
 
 void NetLog::OnConnectionError() {
   net_log_exporter_.reset();
+  if (pending_start_promise_) {
+    std::move(*pending_start_promise_)
+        .RejectWithErrorMessage("Failed to start net log exporter");
+  }
 }
 
 bool NetLog::IsCurrentlyLogging() const {

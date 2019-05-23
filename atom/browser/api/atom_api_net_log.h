@@ -12,6 +12,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/common/promise_util.h"
 #include "base/callback.h"
+#include "base/optional.h"
 #include "base/values.h"
 #include "native_mate/handle.h"
 #include "services/network/public/mojom/net_log.mojom.h"
@@ -44,13 +45,15 @@ class NetLog : public mate::TrackableObject<NetLog> {
       network::mojom::NetLogCaptureMode capture_mode,
       uint64_t max_file_size,
       base::Value custom_constants,
-      util::Promise promise,
       base::File output_file);
+  void NetLogStarted(int32_t error);
 
  private:
   AtomBrowserContext* browser_context_;
 
   network::mojom::NetLogExporterPtr net_log_exporter_;
+
+  base::Optional<util::Promise> pending_start_promise_;
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
