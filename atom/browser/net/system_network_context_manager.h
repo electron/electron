@@ -27,6 +27,10 @@ namespace net_log {
 class NetExportFileWriter;
 }
 
+namespace atom {
+network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams();
+}
+
 // Responsible for creating and managing access to the system NetworkContext.
 // Lives on the UI thread. The NetworkContext this owns is intended for requests
 // not associated with a session. It stores no data on disk, and has no HTTP

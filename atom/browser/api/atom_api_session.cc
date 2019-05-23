@@ -22,6 +22,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/media/media_device_id_salt.h"
 #include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/net/system_network_context_manager.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
@@ -492,12 +493,8 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  auto auth_params = ::network::mojom::HttpAuthDynamicParams::New();
+  auto auth_params = CreateHttpAuthDynamicParams();
   auth_params->server_whitelist = domains;
-  auth_params->delegate_whitelist = command_line->GetSwitchValueASCII(
-      atom::switches::kAuthNegotiateDelegateWhitelist);
   content::GetNetworkService()->ConfigureHttpAuthPrefs(std::move(auth_params));
 }
 
