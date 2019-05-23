@@ -5,15 +5,14 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const ChildProcess = require('child_process')
-const { remote } = require('electron')
-const { session } = remote
+const {session} = require('electron')
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 
 const { expect } = chai
 chai.use(dirtyChai)
-const isCI = remote.getGlobal('isCi')
+const isCI = global.isCI
 const netLog = session.fromPartition('net-log').netLog
 
 describe('netLog module', () => {
@@ -92,7 +91,7 @@ describe('netLog module', () => {
       return
     }
 
-    const appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,
@@ -112,7 +111,7 @@ describe('netLog module', () => {
       return
     }
 
-    const appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,
@@ -135,7 +134,7 @@ describe('netLog module', () => {
       return
     }
 
-    const appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,
