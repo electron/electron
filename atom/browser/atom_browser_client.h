@@ -102,7 +102,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       int cert_error,
       const net::SSLInfo& ssl_info,
       const GURL& request_url,
-      content::ResourceType resource_type,
+      bool is_main_frame_request,
       bool strict_enforcement,
       bool expired_previous_decision,
       const base::Callback<void(content::CertificateRequestResultType)>&
@@ -192,8 +192,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool is_main_frame,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      const std::string& method,
-      const net::HttpRequestHeaders& headers,
       network::mojom::URLLoaderFactoryRequest* factory_request,
       // clang-format off
       network::mojom::URLLoaderFactory*& out_factory)  // NOLINT

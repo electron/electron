@@ -26,10 +26,10 @@ index de89d291e5cbc0981cf06170ed35502a1239136d..656f6c38d55d9f9af569bc772254ca13
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
    void OnDidNotProduceFrame(const viz::BeginFrameAck& ack);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 625566d5ad2510679cd3ed4c306c1cd3715f4c94..342c85daba1812461b4d9c0f9255220b26aca770 100644
+index 4b3f3c7e97e73ad6d0166ad114f4168d9ed00e11..59e58d693c971742951434f6582140d9179235f2 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -79,6 +79,12 @@
+@@ -80,6 +80,12 @@
    DCHECK_EQ(1u, num_erased);
  }
  

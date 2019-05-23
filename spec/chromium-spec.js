@@ -400,7 +400,7 @@ describe('chromium feature', () => {
           }).catch(done)
         })
       })
-      b = window.open('chrome-devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
+      b = window.open('devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
     })
 
     it('disables JavaScript when it is disabled on the parent window', (done) => {

@@ -167,8 +167,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
-  network_context_params->enable_brotli =
-      base::FeatureList::IsEnabled(features::kBrotliEncoding);
+  network_context_params->enable_brotli = true;
 
   network_context_params->enable_referrers = true;
 

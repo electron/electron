@@ -7,7 +7,7 @@ v8_context_snapshot_generator is a build time executable.
 The patch adds the config.
 
 diff --git a/tools/v8_context_snapshot/BUILD.gn b/tools/v8_context_snapshot/BUILD.gn
-index 771fc0df366c6461f18940546992b3efe97c4186..2cf5730fd721d3dba97ad43562516c75cf1fc157 100644
+index 2d7b357cfc2cd60e6e880a8c93b32166376540b5..002e9e67f8009e780182150705417c500a01c5cd 100644
 --- a/tools/v8_context_snapshot/BUILD.gn
 +++ b/tools/v8_context_snapshot/BUILD.gn
 @@ -109,6 +109,7 @@ if (use_v8_context_snapshot) {

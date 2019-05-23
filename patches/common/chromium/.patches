@@ -17,7 +17,6 @@ stream_resource_handler.patch
 thread_capabilities.patch
 web_contents.patch
 webview_cross_drag.patch
-worker_context_will_destroy.patch
 disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
@@ -72,9 +71,10 @@ fix_disable_usage_of_setapplicationisdaemon_and.patch
 ipc_message_start.patch
 disable_network_services_by_default.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
-viz_osr.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
-revert_roll_clang_356356_357569.patch
 partially_revert_fb4ab3be3fc0024d00358d5b7816d3215a8ff20c.patch
 build_add_electron_tracing_category.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
+disable_custom_libcxx_on_windows.patch
+feat_offscreen_rendering_with_viz_compositor.patch
+worker_context_will_destroy.patch
