@@ -71,6 +71,7 @@ declare namespace Electron {
 declare namespace ElectronInternal {
   type DeprecationHandler = (message: string) => void;
   interface DeprecationUtil {
+    warnOnce(oldName: string, newName?: string): () => void;
     setHandler(handler: DeprecationHandler): void;
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;

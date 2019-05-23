@@ -5,15 +5,14 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const ChildProcess = require('child_process')
-const { remote } = require('electron')
-const { session } = remote
+const {session} = require('electron')
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 
 const { expect } = chai
 chai.use(dirtyChai)
-const isCI = remote.getGlobal('isCi')
+const isCI = global.isCI
 const netLog = session.fromPartition('net-log').netLog
 
 describe('netLog module', () => {
@@ -47,6 +46,9 @@ describe('netLog module', () => {
     })
   })
 
+  beforeEach(() => {
+    expect(netLog.currentlyLogging).to.be.false()
+  })
   afterEach(() => {
     try {
       if (fs.existsSync(dumpFile)) {
@@ -58,36 +60,29 @@ describe('netLog module', () => {
     } catch (e) {
       // Ignore error
     }
+    expect(netLog.currentlyLogging).to.be.false()
   })
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
-    expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
-
-    netLog.startLogging(dumpFileDynamic)
+    await netLog.startLogging(dumpFileDynamic)
 
     expect(netLog.currentlyLogging).to.be.true()
+
     expect(netLog.currentlyLoggingPath).to.equal(dumpFileDynamic)
 
-    const path = await netLog.stopLogging()
+    await netLog.stopLogging()
 
-    expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
-
-    expect(path).to.equal(dumpFileDynamic)
     expect(fs.existsSync(dumpFileDynamic)).to.be.true()
   })
 
-  it('should silence when .stopLogging() is called without calling .startLogging()', async () => {
-    expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
+  it('should throw an error when .stopLogging() is called without calling .startLogging()', async () => {
+    await expect(netLog.stopLogging()).to.be.rejectedWith('No net log in progress')
+  })
 
-    const path = await netLog.stopLogging()
-
-    expect(netLog.currentlyLogging).to.be.false()
-    expect(netLog.currentlyLoggingPath).to.equal('')
-
-    expect(path).to.equal('')
+  it('should throw an error when .startLogging() is called with an invalid argument', () => {
+    expect(() => netLog.startLogging('')).to.throw()
+    expect(() => netLog.startLogging(null)).to.throw()
+    expect(() => netLog.startLogging([])).to.throw()
   })
 
   it('should begin and end logging automatically when --log-net-log is passed', done => {
@@ -96,7 +91,7 @@ describe('netLog module', () => {
       return
     }
 
-    const appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,
@@ -110,14 +105,13 @@ describe('netLog module', () => {
     })
   })
 
-  // FIXME(deepak1556): Ch69 follow up.
   it('should begin and end logging automtically when --log-net-log is passed, and behave correctly when .startLogging() and .stopLogging() is called', done => {
     if (isCI && process.platform === 'linux') {
       done()
       return
     }
 
-    const appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,
@@ -140,7 +134,7 @@ describe('netLog module', () => {
       return
     }
 
-    const appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,
