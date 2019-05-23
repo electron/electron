@@ -154,7 +154,7 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  // Comppute the user default directory for storing your app's configuration
+  // Compute the user default directory for storing your app's configuration
   // files, which it is the `appData` directory appended with your app's name.
   base::FilePath default_user_data;
   base::PathService::Get(DIR_APP_DATA, &default_user_data);
