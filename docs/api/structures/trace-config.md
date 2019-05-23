@@ -28,20 +28,20 @@ An example TraceConfig that roughly matches what Chrome DevTools records:
 
 ```js
 {
-  recording_mode: "record-until-full",
+  recording_mode: 'record-until-full',
   included_categories: [
-    "devtools.timeline",
-    "disabled-by-default-devtools.timeline",
-    "disabled-by-default-devtools.timeline.frame",
-    "disabled-by-default-devtools.timeline.stack",
-    "v8.execute",
-    "blink.console",
-    "blink.user_timing",
-    "latencyInfo",
-    "disabled-by-default-v8.cpu_profiler",
-    "disabled-by-default-v8.cpu_profiler.hires",
+    'devtools.timeline',
+    'disabled-by-default-devtools.timeline',
+    'disabled-by-default-devtools.timeline.frame',
+    'disabled-by-default-devtools.timeline.stack',
+    'v8.execute',
+    'blink.console',
+    'blink.user_timing',
+    'latencyInfo',
+    'disabled-by-default-v8.cpu_profiler',
+    'disabled-by-default-v8.cpu_profiler.hires'
   ],
-  excluded_categories: [ "*" ],
+  excluded_categories: [ '*' ]
 }
 ```
 
