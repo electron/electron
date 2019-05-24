@@ -5,16 +5,14 @@
 #ifndef ATOM_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 #define ATOM_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
-#include "mojo/public/cpp/bindings/binding.h"
-#include "mojo/public/cpp/bindings/binding_set.h"
-#include "services/network/public/mojom/url_loader.mojom.h"
-#include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "atom/browser/net/atom_url_loader_factory.h"
 
 namespace atom {
 
 class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
  public:
   ProxyingURLLoaderFactory(
+      const HandlersMap& handlers,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info);
   ~ProxyingURLLoaderFactory() override;
@@ -34,10 +32,17 @@ class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
   void OnTargetFactoryError();
   void OnProxyBindingError();
 
+  // This is passed from api::ProtocolNS.
+  //
+  // The ProtocolNS instance lives through the lifetime of BrowserContenxt,
+  // which is guarenteed to cover the lifetime of URLLoaderFactory, so the
+  // reference is guarenteed to be valid.
+  //
+  // In this way we can avoid using code from api namespace in this file.
+  const HandlersMap& handlers_;
+
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
-
-  base::WeakPtrFactory<ProxyingURLLoaderFactory> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };

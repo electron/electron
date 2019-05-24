@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_protocol_ns.h"
 
 #include <memory>
+#include <utility>
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/net_converter.h"
@@ -36,8 +37,6 @@ std::string ErrorCodeToString(ProtocolError error) {
       return "Unexpected error";
   }
 }
-
-void Noop() {}
 
 }  // namespace
 
@@ -82,15 +81,36 @@ bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
   return base::ContainsKey(handlers_, scheme);
 }
 
+ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
+                                            const std::string& scheme,
+                                            const ProtocolHandler& handler) {
+  ProtocolError error = ProtocolError::OK;
+  if (!base::ContainsKey(intercept_handlers_, scheme))
+    intercept_handlers_[scheme] = std::make_pair(type, handler);
+  else
+    error = ProtocolError::INTERCEPTED;
+  return error;
+}
+
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
                                      mate::Arguments* args) {
-  HandleOptionalCallback(args, ProtocolError::NOT_INTERCEPTED);
+  ProtocolError error = ProtocolError::OK;
+  if (base::ContainsKey(intercept_handlers_, scheme))
+    intercept_handlers_.erase(scheme);
+  else
+    error = ProtocolError::NOT_INTERCEPTED;
+  HandleOptionalCallback(args, error);
+}
+
+bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
+  return base::ContainsKey(intercept_handlers_, scheme);
 }
 
 v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
     const std::string& scheme) {
   util::Promise promise(isolate());
   promise.Resolve(IsProtocolRegistered(scheme) ||
+                  IsProtocolIntercepted(scheme) ||
                   // The |isProtocolHandled| should return true for builtin
                   // schemes, however with NetworkService it is impossible to
                   // know which schemes are registered until a real network
@@ -141,12 +161,20 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unregisterProtocol", &ProtocolNS::UnregisterProtocol)
       .SetMethod("isProtocolRegistered", &ProtocolNS::IsProtocolRegistered)
       .SetMethod("isProtocolHandled", &ProtocolNS::IsProtocolHandled)
-      .SetMethod("interceptStringProtocol", &Noop)
-      .SetMethod("interceptBufferProtocol", &Noop)
-      .SetMethod("interceptFileProtocol", &Noop)
-      .SetMethod("interceptHttpProtocol", &Noop)
-      .SetMethod("interceptStreamProtocol", &Noop)
-      .SetMethod("uninterceptProtocol", &ProtocolNS::UninterceptProtocol);
+      .SetMethod("interceptStringProtocol",
+                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kString>)
+      .SetMethod("interceptBufferProtocol",
+                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kBuffer>)
+      .SetMethod("interceptFileProtocol",
+                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kFile>)
+      .SetMethod("interceptHttpProtocol",
+                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kHttp>)
+      .SetMethod("interceptStreamProtocol",
+                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kStream>)
+      .SetMethod("interceptProtocol",
+                 &ProtocolNS::InterceptProtocolFor<ProtocolType::kFree>)
+      .SetMethod("uninterceptProtocol", &ProtocolNS::UninterceptProtocol)
+      .SetMethod("isProtocolIntercepted", &ProtocolNS::IsProtocolIntercepted);
 }
 
 }  // namespace api

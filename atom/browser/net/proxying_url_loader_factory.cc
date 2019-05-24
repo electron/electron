@@ -7,13 +7,16 @@
 #include <utility>
 
 #include "atom/browser/net/asar/asar_url_loader.h"
+#include "mojo/public/cpp/bindings/binding.h"
+#include "services/network/public/mojom/url_loader.mojom.h"
 
 namespace atom {
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
+    const HandlersMap& handlers,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info)
-    : weak_factory_(this) {
+    : handlers_(handlers) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
@@ -32,6 +35,18 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     const network::ResourceRequest& request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
+  // Check if user has intercepted this scheme.
+  auto it = handlers_.find(request.url.scheme());
+  if (it != handlers_.end()) {
+    // <scheme, <type, handler>>
+    it->second.second.Run(
+        request, base::BindOnce(&AtomURLLoaderFactory::StartLoading,
+                                std::move(loader), routing_id, request_id,
+                                options, request, std::move(client),
+                                traffic_annotation, it->second.first));
+    return;
+  }
+
   // Intercept file:// protocol to support asar archives.
   if (request.url.SchemeIsFile()) {
     asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
