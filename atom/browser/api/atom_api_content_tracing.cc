@@ -59,11 +59,9 @@ using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 
 base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
-  if (base::CreateTemporaryFile(&temp_file_path)) {
-    return base::make_optional(std::move(temp_file_path));
-  } else {
+  if (!base::CreateTemporaryFile(&temp_file_path))
     return base::nullopt;
-  }
+  return base::make_optional(std::move(temp_file_path));
 }
 
 void StopTracing(atom::util::Promise promise,
