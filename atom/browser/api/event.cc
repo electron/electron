@@ -58,7 +58,7 @@ void Event::PreventDefault(v8::Isolate* isolate) {
       .Check();
 }
 
-bool Event::SendReply(const base::ListValue& result) {
+bool Event::SendReply(const base::Value& result) {
   if (!callback_ || sender_ == nullptr)
     return false;
 

@@ -22,6 +22,12 @@ interface ElectronBrowser {
       mojo_base.mojom.ListValue arguments);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
+  // process, and returns the response.
+  Invoke(
+      string channel,
+      mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
+
+  // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and waits synchronously for a response.
   //
   // NB. this is not marked [Sync] because mojo synchronous methods can be

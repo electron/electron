@@ -57,10 +57,40 @@ Removes all listeners, or those of the specified `channel`.
 * `...args` any[]
 
 Send a message to the main process asynchronously via `channel`, you can also
-send arbitrary arguments. Arguments will be serialized in JSON internally and
+send arbitrary arguments. Arguments will be serialized as JSON internally and
 hence no functions or prototype chain will be included.
 
 The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module.
+
+### `ipcRenderer.invoke(channel[, arg1][, arg2][, ...])`
+
+* `channel` String
+* `...args` any[]
+
+Returns `Promise<any>` - Resolves with the response from the main process.
+
+Send a message to the main process asynchronously via `channel` and expect an
+asynchronous result. Arguments will be serialized as JSON internally and
+hence no functions or prototype chain will be included.
+
+The main process should listen for `channel` with the [`ipcMain`](ipc-main.md)
+module, and send a result by calling `event.reply()`.
+
+For example:
+```javascript
+// Renderer
+ipcRenderer.invoke('some-name', someArgument).then((result) => {
+  // ...
+})
+
+// Main
+ipcMain.on('some-name', (event, someArgument) => {
+  doSomeWork().then(() => {
+    // ...
+    event.reply(someResult)
+  })
+})
+```
 
 ### `ipcRenderer.sendSync(channel[, arg1][, arg2][, ...])`
 
