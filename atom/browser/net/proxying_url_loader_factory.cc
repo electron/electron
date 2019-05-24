@@ -16,7 +16,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     const HandlersMap& handlers,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info)
-    : handlers_(handlers), weak_factory_(this) {
+    : handlers_(handlers) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));

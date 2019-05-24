@@ -44,8 +44,6 @@ class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;
 
-  base::WeakPtrFactory<ProxyingURLLoaderFactory> weak_factory_;
-
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };
 
