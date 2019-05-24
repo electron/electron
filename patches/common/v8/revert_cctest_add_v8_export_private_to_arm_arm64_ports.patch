@@ -6,7 +6,7 @@ Subject: Revert "[cctest] Add V8_EXPORT_PRIVATE to arm/arm64 ports"
 This reverts commit 1a7d847cfac9a7363c59c980e47a7b7ff416e6da.
 
 diff --git a/src/arm/assembler-arm.h b/src/arm/assembler-arm.h
-index e3b079c32e8f8a29abfe117cba44d3b75f53c49d..e85d0108effe3abb3b88a1a41cce0234751759ef 100644
+index 6767a6e7a45d7b4be988169d3fe7d91367714088..1daeacec57325da0ee197fbf69fd42113997fbb7 100644
 --- a/src/arm/assembler-arm.h
 +++ b/src/arm/assembler-arm.h
 @@ -79,7 +79,7 @@ enum Coprocessor {
@@ -59,7 +59,7 @@ index e3b079c32e8f8a29abfe117cba44d3b75f53c49d..e85d0108effe3abb3b88a1a41cce0234
    explicit UseScratchRegisterScope(Assembler* assembler);
    ~UseScratchRegisterScope();
 diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index d814722e6a9eb7b156fc86592cd321682bb68974..2ccead398af4e16d1a1905060dee88f1adfeb2a2 100644
+index 019295a527d29c2c00c3d092064a3ddde8b45263..e4b7fe230041e501a4fbd77fa6bbdd0071acdeff 100644
 --- a/src/arm64/assembler-arm64.h
 +++ b/src/arm64/assembler-arm64.h
 @@ -49,7 +49,7 @@ class Immediate {
@@ -104,7 +104,7 @@ index 477a126344a50eb9cf29cce216792a53ae98393e..a89bf38980e711c16caaf7a0158e3648
  class Decoder : public V {
   public:
 diff --git a/src/arm64/disasm-arm64.h b/src/arm64/disasm-arm64.h
-index 8e218b5cf80635ddfdef03c3366e692e5ec01c15..0edb2ea58343af0aab71f8e79310270f9e847914 100644
+index c51c8be937fa86eb14048bd4ac780266deb3cd55..fedb070dae8292debc7ca0cce17b23bdd8aff1ef 100644
 --- a/src/arm64/disasm-arm64.h
 +++ b/src/arm64/disasm-arm64.h
 @@ -14,7 +14,8 @@
@@ -184,7 +184,7 @@ index 5c0d42a8c633738e2cae777114fde7aa8671a556..7559946cb165ec1fd8c1cfd0c9bd77cc
  
  #if defined(V8_OS_WIN)
 diff --git a/src/arm64/instructions-arm64.h b/src/arm64/instructions-arm64.h
-index 8514469227042b5740da73d42fc210a2282414e4..6f46e4b88c2e7c77f6fd58567e9aa2ae31a54246 100644
+index 2f62fd15890559ff5bc3d71834f892c7832b6a9b..341b5588e3380e45e196633ebf794f3a4d3e1eca 100644
 --- a/src/arm64/instructions-arm64.h
 +++ b/src/arm64/instructions-arm64.h
 @@ -26,23 +26,23 @@ extern "C" {
@@ -303,7 +303,7 @@ index 54b927c3f407bfdaf69e8312360da9cd31c159d1..1da32ae6f4f0a9ee082a4e5c4e987125
    template <typename... CPURegisters>
    explicit CPURegList(CPURegister reg0, CPURegisters... regs)
 diff --git a/src/arm64/simulator-arm64.h b/src/arm64/simulator-arm64.h
-index 2a5e25518badddd77febee11debdfb90868f8b8b..673ff8710cabad467fc08556ab96d3737c6d3e03 100644
+index c89fd96149064b11e93830d0767222d3956d2b08..76df2e37a159fc7c68fa4a323900d20a6bfe9676 100644
 --- a/src/arm64/simulator-arm64.h
 +++ b/src/arm64/simulator-arm64.h
 @@ -656,11 +656,10 @@ class Simulator : public DecoderVisitor, public SimulatorBase {
@@ -340,7 +340,7 @@ index 2a5e25518badddd77febee11debdfb90868f8b8b..673ff8710cabad467fc08556ab96d373
    // Simulation helpers.
    template <typename T>
 diff --git a/src/arm64/utils-arm64.h b/src/arm64/utils-arm64.h
-index 00ed1c20c31bd312fe02920713fb0b937f1fa30e..f57dc861731c5146e26702147841a75dd045efd8 100644
+index fa99cad46e49ca5427d6d3ab3667f5d9958b02fd..4ad394f7b3b36f802c742f29276c92bda3d6cc13 100644
 --- a/src/arm64/utils-arm64.h
 +++ b/src/arm64/utils-arm64.h
 @@ -33,8 +33,8 @@ int float16classify(float16 value);
@@ -368,7 +368,7 @@ index f366cd5547885d9e5dca19dd9177322dc375fa7c..fb4d47b6ec4e8982951e96f0226dbaf2
    size_t entry_count() const;
    uint32_t section_size() const;
 diff --git a/src/diagnostics/disasm.h b/src/diagnostics/disasm.h
-index 2fe14f19321c67aaf1dd388472b14c8b5fbfe400..fcc38eb3b2242ce65f872636b9121c66f94b987a 100644
+index 9cc380ad2369dab40c1d1828bf0f0c713f3be011..2e82cef8e8e24332fe20bafe7f6633d9ad280069 100644
 --- a/src/diagnostics/disasm.h
 +++ b/src/diagnostics/disasm.h
 @@ -14,7 +14,7 @@ typedef unsigned char byte;
@@ -399,7 +399,7 @@ index 2fe14f19321c67aaf1dd388472b14c8b5fbfe400..fcc38eb3b2242ce65f872636b9121c66
    // Returns -1 if instruction does not mark the beginning of a constant pool,
    // or the number of entries in the constant pool beginning here.
 diff --git a/src/diagnostics/disassembler.h b/src/diagnostics/disassembler.h
-index db1b8de69b8d0efff6a7f72094e2298a34753b8b..a58702f0d6bb572a666c0261c84c68a57afb390b 100644
+index 303252cb4e8cec38e57c0472983458c6f239d7ca..8e11b668148cd3999923d034ce35d9a89709b6f6 100644
 --- a/src/diagnostics/disassembler.h
 +++ b/src/diagnostics/disassembler.h
 @@ -20,10 +20,8 @@ class Disassembler : public AllStatic {
@@ -415,21 +415,8 @@ index db1b8de69b8d0efff6a7f72094e2298a34753b8b..a58702f0d6bb572a666c0261c84c68a5
  };
  
  }  // namespace internal
-diff --git a/src/objects.cc b/src/objects.cc
-index c1ae7ac0640ddf72494d94a636b77084fe8493ae..f4957e844aea20d1fae87b81dba480f6c01faf5b 100644
---- a/src/objects.cc
-+++ b/src/objects.cc
-@@ -1239,7 +1239,7 @@ bool Object::ToInt32(int32_t* value) {
- // static constexpr object declarations need a definition to make the
- // compiler happy.
- constexpr Object Smi::kZero;
--V8_EXPORT_PRIVATE constexpr Object SharedFunctionInfo::kNoSharedNameSentinel;
-+constexpr Object SharedFunctionInfo::kNoSharedNameSentinel;
- 
- Handle<SharedFunctionInfo> FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
-     Isolate* isolate, Handle<FunctionTemplateInfo> info,
 diff --git a/src/objects/code.h b/src/objects/code.h
-index a23763d893bda0003016d84b8f6f8d2c21365fcb..a078d30f2d84e65b087a3bcaf88002f1007a8034 100644
+index a9502611035d5d9b3d2d150f35ed6fc2d64a41da..84089c1a1980240bf1523a2d3b1569b7267bb29a 100644
 --- a/src/objects/code.h
 +++ b/src/objects/code.h
 @@ -650,10 +650,9 @@ class DependentCode : public WeakFixedArray {
@@ -446,11 +433,24 @@ index a23763d893bda0003016d84b8f6f8d2c21365fcb..a078d30f2d84e65b087a3bcaf88002f1
  
    void DeoptimizeDependentCodeGroup(Isolate* isolate, DependencyGroup group);
  
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 5969435539a814fadba24d071762ff38d473a8fa..9554885a9d16718e38b788f954914b12ff856922 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -1234,7 +1234,7 @@ bool Object::ToInt32(int32_t* value) {
+ // static constexpr object declarations need a definition to make the
+ // compiler happy.
+ constexpr Object Smi::kZero;
+-V8_EXPORT_PRIVATE constexpr Object SharedFunctionInfo::kNoSharedNameSentinel;
++constexpr Object SharedFunctionInfo::kNoSharedNameSentinel;
+ 
+ Handle<SharedFunctionInfo> FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
+     Isolate* isolate, Handle<FunctionTemplateInfo> info,
 diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
-index 40d40e182917e4c7b9b6afec70c4735c89d7c5bb..e06c9eb74a8c3b8bbcaab8fb0b1f29d9f981ae46 100644
+index a3b84ee46eab0662f02acf6d1dfdd54488bea03c..af6416d0044aeedfa707b2e2a7e974726b06e41f 100644
 --- a/src/objects/shared-function-info.h
 +++ b/src/objects/shared-function-info.h
-@@ -221,9 +221,7 @@ class InterpreterData : public Struct {
+@@ -222,9 +222,7 @@ class InterpreterData : public Struct {
  class SharedFunctionInfo : public HeapObject {
   public:
    NEVER_READ_ONLY_SPACE
@@ -462,10 +462,10 @@ index 40d40e182917e4c7b9b6afec70c4735c89d7c5bb..e06c9eb74a8c3b8bbcaab8fb0b1f29d9
    // [name]: Returns shared name if it exists or an empty string otherwise.
    inline String Name() const;
 diff --git a/src/objects/string.cc b/src/objects/string.cc
-index c5ae73b6273e8011fe4c80e34958f0b72c8862c4..8338876fba0cbef611f1e40d047d184d09e4c3dd 100644
+index 21bc3bb787dd97615bb0082323958a458314b384..bc103b49b3963e699d299b7bb4e068bf95d6ca80 100644
 --- a/src/objects/string.cc
 +++ b/src/objects/string.cc
-@@ -1626,8 +1626,5 @@ String ConsStringIterator::NextLeaf(bool* blew_stack) {
+@@ -1624,8 +1624,5 @@ String ConsStringIterator::NextLeaf(bool* blew_stack) {
    UNREACHABLE();
  }
  
@@ -475,7 +475,7 @@ index c5ae73b6273e8011fe4c80e34958f0b72c8862c4..8338876fba0cbef611f1e40d047d184d
  }  // namespace internal
  }  // namespace v8
 diff --git a/src/objects/string.h b/src/objects/string.h
-index c7e9460904afe50613d811363d5d4c1281796fad..5b152501196c7aff9311f07e7262e4919a3a2a30 100644
+index 74fc8fa7632d6d96db7804779c8a090a35fe9bc9..f25867a7ab17223b17f80aae654914e26a9226a8 100644
 --- a/src/objects/string.h
 +++ b/src/objects/string.h
 @@ -6,7 +6,6 @@
@@ -510,7 +510,7 @@ index c7e9460904afe50613d811363d5d4c1281796fad..5b152501196c7aff9311f07e7262e491
   public:
    inline SubStringRange(String string, const DisallowHeapAllocation& no_gc,
 diff --git a/src/regexp/jsregexp.h b/src/regexp/jsregexp.h
-index 9866caa900888273de74cfb012845748931d0fd0..4c7526a59342743f6068e5c61d24c8dad4efd43f 100644
+index 832c7e3aa5c75ec9dd6ca6915c7ab3f379363a51..59669a5dda339ef51445d5eddffc77c111a8657d 100644
 --- a/src/regexp/jsregexp.h
 +++ b/src/regexp/jsregexp.h
 @@ -1513,8 +1513,7 @@ class RegExpEngine: public AllStatic {
@@ -524,7 +524,7 @@ index 9866caa900888273de74cfb012845748931d0fd0..4c7526a59342743f6068e5c61d24c8da
  
  
 diff --git a/src/wasm/wasm-module.h b/src/wasm/wasm-module.h
-index d31f5ff067c9b096a94705769c64586ffd546341..cce60d015af915e0984060dd2e84d6f7b46fc79a 100644
+index ac46b9f59c349c3d02ad5be18ddb1cb48fd7cbf9..beca177789830f40b851be985bede752d7c63d5c 100644
 --- a/src/wasm/wasm-module.h
 +++ b/src/wasm/wasm-module.h
 @@ -120,7 +120,7 @@ struct WasmElemSegment {
@@ -536,15 +536,3 @@ index d31f5ff067c9b096a94705769c64586ffd546341..cce60d015af915e0984060dd2e84d6f7
  
    uint32_t table_index;
    WasmInitExpr offset;
-diff --git a/test/cctest/parsing/test-parse-decision.cc b/test/cctest/parsing/test-parse-decision.cc
-index c5426e4243bb304079e048820d51d0e5914e695e..4d873cdbfedc7f2f61eff486d828fe020d00eedc 100644
---- a/test/cctest/parsing/test-parse-decision.cc
-+++ b/test/cctest/parsing/test-parse-decision.cc
-@@ -14,7 +14,6 @@
- #include "src/execution/isolate.h"
- #include "src/handles-inl.h"
- #include "src/objects-inl.h"
--#include "src/objects/shared-function-info-inl.h"
- #include "src/utils.h"
- 
- #include "test/cctest/cctest.h"

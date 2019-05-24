@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index e3b6bc9ab2b12493daddad8471ac48eb15f878e3..880b8eabb4227c93cf1f920b364709aa64e53bc6 100644
+index e56464e933bad96a9419d20f92d689a83ad48869..1c7499e7ac78f6b980de6aff6d926d3bdbb68d07 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3722,6 +3722,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3710,6 +3710,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -45,7 +45,7 @@ index da482a1a1638f27a413502d9be16a5fb12e9678c..de19cb3a5f3d6685d8dede7c3cdb5b47
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c11897f6a45a8bf1a80bfb727992087b03904412..13342817ac00282bba5089bafb7e3a1ed85f0b0d 100644
+index 5e79a99f045272846f3840547345adffb991421b..2c722d14437cdad69544e0c67921dbaec15b97da 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -175,6 +175,7 @@ class RenderFrameHost;
@@ -56,7 +56,7 @@ index c11897f6a45a8bf1a80bfb727992087b03904412..13342817ac00282bba5089bafb7e3a1e
  class SerialDelegate;
  class ServiceManagerConnection;
  class SiteInstance;
-@@ -802,6 +803,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -801,6 +802,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

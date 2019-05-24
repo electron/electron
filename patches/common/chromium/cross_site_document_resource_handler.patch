@@ -37,7 +37,7 @@ index acf458d5c088607d3ceb6d058f28f076bf4cf712..4bdfeefc531b378f33b143ea432aebd6
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 97ac4f66b6410fbb5596e01ae8152194d4f235c8..54550e2942b176bccafbfde395d9ec4ae9777a4a 100644
+index 9c7c77b44d279219411ce545c5448acecbd56d59..f99105176cc97e13b5d2b7c470b95e23b404de0a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -241,6 +241,9 @@ class CONTENT_EXPORT ContentBrowserClient {
