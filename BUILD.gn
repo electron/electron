@@ -8,7 +8,7 @@ import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
-import("//v8/snapshot_toolchain.gni")
+import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
 import("build/js_wrap.gni")
 import("build/npm.gni")
@@ -545,9 +545,9 @@ static_library("electron_lib") {
 
   if (is_mac) {
     deps += [
+      "//components/remote_cocoa/app_shim",
       "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
-      "//ui/views_bridge_mac",
     ]
     sources += [
       "atom/browser/ui/views/autofill_popup_view.cc",

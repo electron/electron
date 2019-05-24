@@ -258,7 +258,7 @@ index aa4433cccff4bc637ce5e71039de3c4352e7cd6b..d9630fdf6b87e11fb9657814895dff36
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 5e468b261f400379d20bb5e8f6fed683229a6837..583474b7e5e2010bd1323be94f08845cc396fc3e 100644
+index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab4cb4b434 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -8,17 +8,21 @@
@@ -324,8 +324,8 @@ index 5e468b261f400379d20bb5e8f6fed683229a6837..583474b7e5e2010bd1323be94f08845c
  Profile* PepperIsolatedFileSystemMessageFilter::GetProfile() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    ProfileManager* profile_manager = g_browser_process->profile_manager();
-@@ -122,6 +129,7 @@ std::string PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(
-   return std::string();
+@@ -122,6 +129,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
+   return storage::IsolatedContext::ScopedFSHandle();
  #endif
  }
 +#endif
@@ -349,7 +349,7 @@ index 5e468b261f400379d20bb5e8f6fed683229a6837..583474b7e5e2010bd1323be94f08845c
  int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
      ppapi::host::HostMessageContext* context) {
  #if BUILDFLAG(ENABLE_EXTENSIONS)
-@@ -178,6 +187,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+@@ -180,6 +189,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
    return PP_ERROR_NOTSUPPORTED;
  #endif
  }
@@ -358,11 +358,11 @@ index 5e468b261f400379d20bb5e8f6fed683229a6837..583474b7e5e2010bd1323be94f08845c
  int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
      ppapi::host::HostMessageContext* context) {
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index ca7f87b973e6e060db2123929da6a3b9fc0ae5a4..f73b596ce78eff9c14ac27699d5ecbd9ff69a0a0 100644
+index 1d5ff1f6aa14812f2a6552f601900b03f3e3c8e7..5b6d0297c874146c21af37b983b2d8ee387b31ce 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-@@ -19,7 +19,9 @@
- #include "ppapi/host/resource_message_filter.h"
+@@ -20,7 +20,9 @@
+ #include "storage/browser/fileapi/isolated_context.h"
  #include "url/gurl.h"
  
 +#if 0
@@ -371,7 +371,7 @@ index ca7f87b973e6e060db2123929da6a3b9fc0ae5a4..f73b596ce78eff9c14ac27699d5ecbd9
  
  namespace content {
  class BrowserPpapiHost;
-@@ -53,16 +55,20 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -54,6 +56,7 @@ class PepperIsolatedFileSystemMessageFilter
  
    ~PepperIsolatedFileSystemMessageFilter() override;
  
@@ -379,9 +379,10 @@ index ca7f87b973e6e060db2123929da6a3b9fc0ae5a4..f73b596ce78eff9c14ac27699d5ecbd9
    Profile* GetProfile();
  
    // Returns filesystem id of isolated filesystem if valid, or empty string
-   // otherwise.  This must run on the UI thread because ProfileManager only
+@@ -61,10 +64,13 @@ class PepperIsolatedFileSystemMessageFilter
    // allows access on that thread.
-   std::string CreateCrxFileSystem(Profile* profile);
+   storage::IsolatedContext::ScopedFSHandle CreateCrxFileSystem(
+       Profile* profile);
 +#endif
  
    int32_t OnOpenFileSystem(ppapi::host::HostMessageContext* context,
@@ -392,7 +393,7 @@ index ca7f87b973e6e060db2123929da6a3b9fc0ae5a4..f73b596ce78eff9c14ac27699d5ecbd9
    int32_t OpenPluginPrivateFileSystem(ppapi::host::HostMessageContext* context);
  
    const int render_process_id_;
-@@ -73,8 +79,10 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -75,8 +81,10 @@ class PepperIsolatedFileSystemMessageFilter
    // Not owned by this object.
    ppapi::host::PpapiHost* ppapi_host_;
  

@@ -6,7 +6,7 @@ Subject: Revert "[cctest] Add V8_EXPORT_PRIVATE to arm/arm64 ports"
 This reverts commit 1a7d847cfac9a7363c59c980e47a7b7ff416e6da.
 
 diff --git a/src/arm/assembler-arm.h b/src/arm/assembler-arm.h
-index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad9a734ee7 100644
+index e3b079c32e8f8a29abfe117cba44d3b75f53c49d..e85d0108effe3abb3b88a1a41cce0234751759ef 100644
 --- a/src/arm/assembler-arm.h
 +++ b/src/arm/assembler-arm.h
 @@ -79,7 +79,7 @@ enum Coprocessor {
@@ -18,7 +18,7 @@ index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad
   public:
    // immediate
    V8_INLINE explicit Operand(int32_t immediate,
-@@ -182,8 +182,9 @@ class V8_EXPORT_PRIVATE Operand {
+@@ -185,8 +185,9 @@ class V8_EXPORT_PRIVATE Operand {
    friend class Assembler;
  };
  
@@ -29,7 +29,7 @@ index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad
   public:
    // [rn +/- offset]      Offset/NegOffset
    // [rn +/- offset]!     PreIndex/NegPreIndex
-@@ -239,9 +240,10 @@ class V8_EXPORT_PRIVATE MemOperand {
+@@ -242,9 +243,10 @@ class V8_EXPORT_PRIVATE MemOperand {
    friend class Assembler;
  };
  
@@ -41,7 +41,7 @@ index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad
   public:
    // [rn {:align}]       Offset
    // [rn {:align}]!      PostIndex
-@@ -262,6 +264,7 @@ class V8_EXPORT_PRIVATE NeonMemOperand {
+@@ -265,6 +267,7 @@ class V8_EXPORT_PRIVATE NeonMemOperand {
    int align_;
  };
  
@@ -49,7 +49,7 @@ index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad
  // Class NeonListOperand represents a list of NEON registers
  class NeonListOperand {
   public:
-@@ -1396,7 +1399,7 @@ class PatchingAssembler : public Assembler {
+@@ -1391,7 +1394,7 @@ class PatchingAssembler : public Assembler {
  // state, even if the list is modified by some other means. Note that this scope
  // can be nested but the destructors need to run in the opposite order as the
  // constructors. We do not have assertions for this.
@@ -59,7 +59,7 @@ index 852b983ac4a40c33d23dba77e9c2b48f653d1b4f..b78a7651d1e5c54e32e08ecb6483e7ad
    explicit UseScratchRegisterScope(Assembler* assembler);
    ~UseScratchRegisterScope();
 diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index 8db1a571b7d198c03a6cb6f1a8ab04597bea2776..8614975a1dbe54fe655f5e050742ccc76faa21da 100644
+index d814722e6a9eb7b156fc86592cd321682bb68974..2ccead398af4e16d1a1905060dee88f1adfeb2a2 100644
 --- a/src/arm64/assembler-arm64.h
 +++ b/src/arm64/assembler-arm64.h
 @@ -49,7 +49,7 @@ class Immediate {
@@ -72,7 +72,7 @@ index 8db1a571b7d198c03a6cb6f1a8ab04597bea2776..8614975a1dbe54fe655f5e050742ccc7
    int64_t value_;
    RelocInfo::Mode rmode_;
 diff --git a/src/arm64/decoder-arm64.h b/src/arm64/decoder-arm64.h
-index 3bc6934e814539022681e8ad4523a68a8f79b07b..a89bf38980e711c16caaf7a0158e36480b8ba978 100644
+index 477a126344a50eb9cf29cce216792a53ae98393e..a89bf38980e711c16caaf7a0158e36480b8ba978 100644
 --- a/src/arm64/decoder-arm64.h
 +++ b/src/arm64/decoder-arm64.h
 @@ -86,7 +86,7 @@ namespace internal {
@@ -95,15 +95,6 @@ index 3bc6934e814539022681e8ad4523a68a8f79b07b..a89bf38980e711c16caaf7a0158e3648
   public:
    DispatchingDecoderVisitor() {}
    virtual ~DispatchingDecoderVisitor() {}
-@@ -120,7 +121,7 @@ class V8_EXPORT_PRIVATE DispatchingDecoderVisitor : public DecoderVisitor {
-   //
-   // will call in order visitor methods in V3, V2, V1, V4.
-   void AppendVisitor(DecoderVisitor* visitor);
--  V8_EXPORT_PRIVATE void PrependVisitor(DecoderVisitor* visitor);
-+  void PrependVisitor(DecoderVisitor* visitor);
-   void InsertVisitorBefore(DecoderVisitor* new_visitor,
-                            DecoderVisitor* registered_visitor);
-   void InsertVisitorAfter(DecoderVisitor* new_visitor,
 @@ -141,6 +142,7 @@ class V8_EXPORT_PRIVATE DispatchingDecoderVisitor : public DecoderVisitor {
    std::list<DecoderVisitor*> visitors_;
  };
@@ -245,10 +236,10 @@ index 8514469227042b5740da73d42fc210a2282414e4..6f46e4b88c2e7c77f6fd58567e9aa2ae
    static bool IsValidImmPCOffset(ImmBranchType branch_type, ptrdiff_t offset);
    bool IsTargetInImmPCOffsetRange(Instruction* target);
 diff --git a/src/arm64/macro-assembler-arm64.h b/src/arm64/macro-assembler-arm64.h
-index 7521eadf696e9594d835d0088594da0ac768e9ff..6174e5b745976d0af5647ca945fcb8e72a0e6e91 100644
+index d345475f18a671879bcf6f5e9063cbcd5b20241b..bcdf1fdc26091b010421e06f5779c7f7791fb2cb 100644
 --- a/src/arm64/macro-assembler-arm64.h
 +++ b/src/arm64/macro-assembler-arm64.h
-@@ -2080,7 +2080,7 @@ class InstructionAccurateScope {
+@@ -2082,7 +2082,7 @@ class InstructionAccurateScope {
  // original state, even if the lists were modified by some other means. Note
  // that this scope can be nested but the destructors need to run in the opposite
  // order as the constructors. We do not have assertions for this.
@@ -257,27 +248,8 @@ index 7521eadf696e9594d835d0088594da0ac768e9ff..6174e5b745976d0af5647ca945fcb8e7
   public:
    explicit UseScratchRegisterScope(TurboAssembler* tasm)
        : available_(tasm->TmpList()),
-@@ -2091,7 +2091,7 @@ class V8_EXPORT_PRIVATE UseScratchRegisterScope {
-     DCHECK_EQ(availablefp_->type(), CPURegister::kVRegister);
-   }
- 
--  V8_EXPORT_PRIVATE ~UseScratchRegisterScope();
-+  ~UseScratchRegisterScope();
- 
-   // Take a register from the appropriate temps list. It will be returned
-   // automatically when the scope ends.
-@@ -2108,8 +2108,7 @@ class V8_EXPORT_PRIVATE UseScratchRegisterScope {
-   VRegister AcquireSameSizeAs(const VRegister& reg);
- 
-  private:
--  V8_EXPORT_PRIVATE static CPURegister AcquireNextAvailable(
--      CPURegList* available);
-+  static CPURegister AcquireNextAvailable(CPURegList* available);
- 
-   // Available scratch registers.
-   CPURegList* available_;     // kRegister
 diff --git a/src/arm64/register-arm64.h b/src/arm64/register-arm64.h
-index b19f41ef8488a9a117a8c88305c6dbe0dc188d39..956fd9ab04bcc4b314eb6253636e776463332b1b 100644
+index 54b927c3f407bfdaf69e8312360da9cd31c159d1..1da32ae6f4f0a9ee082a4e5c4e9871259a14cdef 100644
 --- a/src/arm64/register-arm64.h
 +++ b/src/arm64/register-arm64.h
 @@ -316,14 +316,14 @@ VectorFormat ScalarFormatFromLaneSize(int lanesize);
@@ -331,7 +303,7 @@ index b19f41ef8488a9a117a8c88305c6dbe0dc188d39..956fd9ab04bcc4b314eb6253636e7764
    template <typename... CPURegisters>
    explicit CPURegList(CPURegister reg0, CPURegisters... regs)
 diff --git a/src/arm64/simulator-arm64.h b/src/arm64/simulator-arm64.h
-index 12f9dcba8c565663a699247bd906c98e78e7790d..e4e3e09e45ad2e2859cbbb5c9720ffa4aaf6d2e6 100644
+index 2a5e25518badddd77febee11debdfb90868f8b8b..673ff8710cabad467fc08556ab96d3737c6d3e03 100644
 --- a/src/arm64/simulator-arm64.h
 +++ b/src/arm64/simulator-arm64.h
 @@ -656,11 +656,10 @@ class Simulator : public DecoderVisitor, public SimulatorBase {
@@ -382,10 +354,10 @@ index 00ed1c20c31bd312fe02920713fb0b937f1fa30e..f57dc861731c5146e26702147841a75d
  int LowestSetBitPosition(uint64_t value);
  int HighestSetBitPosition(uint64_t value);
  uint64_t LargestPowerOf2Divisor(uint64_t value);
-diff --git a/src/code-comments.h b/src/code-comments.h
-index 0c247fd247151a0bdfbf3a9f420c2eb2fa47b5cd..21543e7f498c0becfcc1121f2f17ebd90be0840e 100644
---- a/src/code-comments.h
-+++ b/src/code-comments.h
+diff --git a/src/codegen/code-comments.h b/src/codegen/code-comments.h
+index f366cd5547885d9e5dca19dd9177322dc375fa7c..fb4d47b6ec4e8982951e96f0226dbaf25185545c 100644
+--- a/src/codegen/code-comments.h
++++ b/src/codegen/code-comments.h
 @@ -35,7 +35,7 @@ struct CodeCommentEntry {
  
  class CodeCommentsWriter {
@@ -395,10 +367,10 @@ index 0c247fd247151a0bdfbf3a9f420c2eb2fa47b5cd..21543e7f498c0becfcc1121f2f17ebd9
    void Emit(Assembler* assm);
    size_t entry_count() const;
    uint32_t section_size() const;
-diff --git a/src/disasm.h b/src/disasm.h
-index f543af2609fa1e5b8fa8c7fcc74a073c52a3912e..d752b1a44b928dddd722a9cc68bf5b22629e60c7 100644
---- a/src/disasm.h
-+++ b/src/disasm.h
+diff --git a/src/diagnostics/disasm.h b/src/diagnostics/disasm.h
+index 2fe14f19321c67aaf1dd388472b14c8b5fbfe400..fcc38eb3b2242ce65f872636b9121c66f94b987a 100644
+--- a/src/diagnostics/disasm.h
++++ b/src/diagnostics/disasm.h
 @@ -14,7 +14,7 @@ typedef unsigned char byte;
  // Interface and default implementation for converting addresses and
  // register-numbers to text.  The default implementation is machine
@@ -426,10 +398,10 @@ index f543af2609fa1e5b8fa8c7fcc74a073c52a3912e..d752b1a44b928dddd722a9cc68bf5b22
  
    // Returns -1 if instruction does not mark the beginning of a constant pool,
    // or the number of entries in the constant pool beginning here.
-diff --git a/src/disassembler.h b/src/disassembler.h
-index d6bb84cd274575c78291eafdb6794d7ff690915c..5315d5598f3064cbf5563246bd5bd17fbb916900 100644
---- a/src/disassembler.h
-+++ b/src/disassembler.h
+diff --git a/src/diagnostics/disassembler.h b/src/diagnostics/disassembler.h
+index db1b8de69b8d0efff6a7f72094e2298a34753b8b..a58702f0d6bb572a666c0261c84c68a57afb390b 100644
+--- a/src/diagnostics/disassembler.h
++++ b/src/diagnostics/disassembler.h
 @@ -20,10 +20,8 @@ class Disassembler : public AllStatic {
    // Instruction'.
    // the code object is used for name resolution and may be null.
@@ -444,10 +416,10 @@ index d6bb84cd274575c78291eafdb6794d7ff690915c..5315d5598f3064cbf5563246bd5bd17f
  
  }  // namespace internal
 diff --git a/src/objects.cc b/src/objects.cc
-index cf301643a84e2a39a66909eab32a33c418990f28..bc526499502937a10eb56bfd6c75c0f5f9d678ad 100644
+index c1ae7ac0640ddf72494d94a636b77084fe8493ae..f4957e844aea20d1fae87b81dba480f6c01faf5b 100644
 --- a/src/objects.cc
 +++ b/src/objects.cc
-@@ -1237,7 +1237,7 @@ bool Object::ToInt32(int32_t* value) {
+@@ -1239,7 +1239,7 @@ bool Object::ToInt32(int32_t* value) {
  // static constexpr object declarations need a definition to make the
  // compiler happy.
  constexpr Object Smi::kZero;
@@ -457,7 +429,7 @@ index cf301643a84e2a39a66909eab32a33c418990f28..bc526499502937a10eb56bfd6c75c0f5
  Handle<SharedFunctionInfo> FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
      Isolate* isolate, Handle<FunctionTemplateInfo> info,
 diff --git a/src/objects/code.h b/src/objects/code.h
-index a02495c960d531355c62a11c26271ab08685b39e..310584c0b8808fa917f73fb822adaf855ac423a0 100644
+index a23763d893bda0003016d84b8f6f8d2c21365fcb..a078d30f2d84e65b087a3bcaf88002f1007a8034 100644
 --- a/src/objects/code.h
 +++ b/src/objects/code.h
 @@ -650,10 +650,9 @@ class DependentCode : public WeakFixedArray {
@@ -475,10 +447,10 @@ index a02495c960d531355c62a11c26271ab08685b39e..310584c0b8808fa917f73fb822adaf85
    void DeoptimizeDependentCodeGroup(Isolate* isolate, DependencyGroup group);
  
 diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
-index 5b79098fc0619b0d6ebaf48b5d8c6e56af7c32f0..688890ccd5d6a7ea7c4e7e265cea0e4a41d008c5 100644
+index 40d40e182917e4c7b9b6afec70c4735c89d7c5bb..e06c9eb74a8c3b8bbcaab8fb0b1f29d9f981ae46 100644
 --- a/src/objects/shared-function-info.h
 +++ b/src/objects/shared-function-info.h
-@@ -220,9 +220,7 @@ class InterpreterData : public Struct {
+@@ -221,9 +221,7 @@ class InterpreterData : public Struct {
  class SharedFunctionInfo : public HeapObject {
   public:
    NEVER_READ_ONLY_SPACE
@@ -490,10 +462,10 @@ index 5b79098fc0619b0d6ebaf48b5d8c6e56af7c32f0..688890ccd5d6a7ea7c4e7e265cea0e4a
    // [name]: Returns shared name if it exists or an empty string otherwise.
    inline String Name() const;
 diff --git a/src/objects/string.cc b/src/objects/string.cc
-index 323d7ed73dd26531e436d504878ba3fe7c4df6d7..98579e5753a6eafbbd4f0e44b518dc5377631d8a 100644
+index c5ae73b6273e8011fe4c80e34958f0b72c8862c4..8338876fba0cbef611f1e40d047d184d09e4c3dd 100644
 --- a/src/objects/string.cc
 +++ b/src/objects/string.cc
-@@ -1517,8 +1517,5 @@ String ConsStringIterator::NextLeaf(bool* blew_stack) {
+@@ -1626,8 +1626,5 @@ String ConsStringIterator::NextLeaf(bool* blew_stack) {
    UNREACHABLE();
  }
  
@@ -503,7 +475,7 @@ index 323d7ed73dd26531e436d504878ba3fe7c4df6d7..98579e5753a6eafbbd4f0e44b518dc53
  }  // namespace internal
  }  // namespace v8
 diff --git a/src/objects/string.h b/src/objects/string.h
-index 707f29a2ae1d6a0b5effc5e88b192ba1980a7be0..72359fd0c1ad9c1d816b325d263bb613c9de3af0 100644
+index c7e9460904afe50613d811363d5d4c1281796fad..5b152501196c7aff9311f07e7262e4919a3a2a30 100644
 --- a/src/objects/string.h
 +++ b/src/objects/string.h
 @@ -6,7 +6,6 @@
@@ -514,7 +486,7 @@ index 707f29a2ae1d6a0b5effc5e88b192ba1980a7be0..72359fd0c1ad9c1d816b325d263bb613
  #include "src/objects/instance-type.h"
  #include "src/objects/name.h"
  #include "src/objects/smi.h"
-@@ -365,8 +364,8 @@ class String : public Name {
+@@ -369,8 +368,8 @@ class String : public Name {
  
    // Helper function for flattening strings.
    template <typename sinkchar>
@@ -525,7 +497,7 @@ index 707f29a2ae1d6a0b5effc5e88b192ba1980a7be0..72359fd0c1ad9c1d816b325d263bb613
  
    static inline bool IsAscii(const char* chars, int length) {
      return IsAscii(reinterpret_cast<const uint8_t*>(chars), length);
-@@ -422,11 +421,6 @@ class String : public Name {
+@@ -456,11 +455,6 @@ class String : public Name {
    OBJECT_CONSTRUCTORS(String, Name);
  };
  
@@ -538,7 +510,7 @@ index 707f29a2ae1d6a0b5effc5e88b192ba1980a7be0..72359fd0c1ad9c1d816b325d263bb613
   public:
    inline SubStringRange(String string, const DisallowHeapAllocation& no_gc,
 diff --git a/src/regexp/jsregexp.h b/src/regexp/jsregexp.h
-index 0a0b5c10d66d65054e4865d7e920c082daa93158..a44e9f95866ca93659cb3423284352e06d87b04d 100644
+index 9866caa900888273de74cfb012845748931d0fd0..4c7526a59342743f6068e5c61d24c8dad4efd43f 100644
 --- a/src/regexp/jsregexp.h
 +++ b/src/regexp/jsregexp.h
 @@ -1513,8 +1513,7 @@ class RegExpEngine: public AllStatic {
@@ -565,12 +537,12 @@ index d31f5ff067c9b096a94705769c64586ffd546341..cce60d015af915e0984060dd2e84d6f7
    uint32_t table_index;
    WasmInitExpr offset;
 diff --git a/test/cctest/parsing/test-parse-decision.cc b/test/cctest/parsing/test-parse-decision.cc
-index e3b046baef67369153bafc4605ea0e636a88cd36..c0c4b2cd7e847c217fb8c868263fd74b9c8d9499 100644
+index c5426e4243bb304079e048820d51d0e5914e695e..4d873cdbfedc7f2f61eff486d828fe020d00eedc 100644
 --- a/test/cctest/parsing/test-parse-decision.cc
 +++ b/test/cctest/parsing/test-parse-decision.cc
 @@ -14,7 +14,6 @@
+ #include "src/execution/isolate.h"
  #include "src/handles-inl.h"
- #include "src/isolate.h"
  #include "src/objects-inl.h"
 -#include "src/objects/shared-function-info-inl.h"
  #include "src/utils.h"

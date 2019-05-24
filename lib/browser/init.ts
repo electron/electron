@@ -154,7 +154,7 @@ if (packageJson.v8Flags != null) {
 app._setDefaultAppPaths(packagePath)
 
 // Load the chrome devtools support.
-require('@electron/internal/browser/chrome-devtools')
+require('@electron/internal/browser/devtools')
 
 // Load the chrome extension support.
 require('@electron/internal/browser/chrome-extension')

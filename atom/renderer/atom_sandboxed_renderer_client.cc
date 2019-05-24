@@ -35,7 +35,7 @@ const char kModuleCacheKey[] = "native-module-cache";
 
 bool IsDevTools(content::RenderFrame* render_frame) {
   return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
-      "chrome-devtools");
+      "devtools");
 }
 
 bool IsDevToolsExtension(content::RenderFrame* render_frame) {

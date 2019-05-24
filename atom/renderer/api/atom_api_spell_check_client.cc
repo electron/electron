@@ -5,6 +5,7 @@
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -46,22 +47,21 @@ class SpellCheckClient::SpellcheckRequest {
   using WordMap =
       std::map<base::string16, std::vector<blink::WebTextCheckingResult>>;
 
-  SpellcheckRequest(const base::string16& text,
-                    blink::WebTextCheckingCompletion* completion)
-      : text_(text), completion_(completion) {
-    DCHECK(completion);
-  }
+  SpellcheckRequest(
+      const base::string16& text,
+      std::unique_ptr<blink::WebTextCheckingCompletion> completion)
+      : text_(text), completion_(std::move(completion)) {}
   ~SpellcheckRequest() {}
 
   const base::string16& text() const { return text_; }
-  blink::WebTextCheckingCompletion* completion() { return completion_; }
+  blink::WebTextCheckingCompletion* completion() { return completion_.get(); }
   WordMap& wordmap() { return word_map_; }
 
  private:
   base::string16 text_;  // Text to be checked in this task.
   WordMap word_map_;     // WordMap to hold distinct words in text
   // The interface to send the misspelled ranges to WebKit.
-  blink::WebTextCheckingCompletion* completion_;
+  std::unique_ptr<blink::WebTextCheckingCompletion> completion_;
 
   DISALLOW_COPY_AND_ASSIGN(SpellcheckRequest);
 };
@@ -88,7 +88,7 @@ SpellCheckClient::~SpellCheckClient() {
 
 void SpellCheckClient::RequestCheckingOfText(
     const blink::WebString& textToCheck,
-    blink::WebTextCheckingCompletion* completionCallback) {
+    std::unique_ptr<blink::WebTextCheckingCompletion> completionCallback) {
   base::string16 text(textToCheck.Utf16());
   // Ignore invalid requests.
   if (text.empty() || !HasWordCharacters(text, 0)) {
@@ -101,7 +101,8 @@ void SpellCheckClient::RequestCheckingOfText(
     pending_request_param_->completion()->DidCancelCheckingText();
   }
 
-  pending_request_param_.reset(new SpellcheckRequest(text, completionCallback));
+  pending_request_param_.reset(
+      new SpellcheckRequest(text, std::move(completionCallback)));
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
@@ -188,7 +189,6 @@ void SpellCheckClient::SpellCheckText() {
 void SpellCheckClient::OnSpellCheckDone(
     const std::vector<base::string16>& misspelled_words) {
   std::vector<blink::WebTextCheckingResult> results;
-  auto* const completion_handler = pending_request_param_->completion();
 
   auto& word_map = pending_request_param_->wordmap();
 
@@ -205,7 +205,7 @@ void SpellCheckClient::OnSpellCheckDone(
       words.clear();
     }
   }
-  completion_handler->DidFinishCheckingText(results);
+  pending_request_param_->completion()->DidFinishCheckingText(results);
   pending_request_param_ = nullptr;
 }
 

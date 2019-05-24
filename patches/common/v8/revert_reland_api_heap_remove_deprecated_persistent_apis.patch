@@ -6,10 +6,10 @@ Subject: Revert "Reland "[api,heap] Remove deprecated Persistent APIs""
 This reverts commit 4214933c6bb4d1815f07a40eaf008cb1e37ef217.
 
 diff --git a/include/v8-internal.h b/include/v8-internal.h
-index 61bdb58c1a967d58faf3bb3ccbe1c90942b413f8..8e700a4d4d401bb58cdc6128e3e96dbf2d791d5c 100644
+index ef13006d1379290053ec00f70433c9bdaaa1daff..fe2ce67e0df04e58502d73ca5ac81a86ee001494 100644
 --- a/include/v8-internal.h
 +++ b/include/v8-internal.h
-@@ -165,6 +165,8 @@ class Internals {
+@@ -174,6 +174,8 @@ class Internals {
    static const int kNodeStateMask = 0x7;
    static const int kNodeStateIsWeakValue = 2;
    static const int kNodeStateIsPendingValue = 3;
@@ -55,10 +55,10 @@ index 29d813e4274d16939b77e5e1d13f097c5e08b0af..24962607076f780105365700d5aff103
  class PersistentValueMap : public PersistentValueMapBase<K, V, Traits> {
   public:
 diff --git a/include/v8.h b/include/v8.h
-index 26ac2cb01da36529e99dcd5cc878523601addc0d..c5e22bb14043ade00b4ecf73b6115e747d5232ad 100644
+index cb9da12b88bca393ea814a226da82ecae857d343..011495aafd67337b7e0251e571ee2d79bdcfedb3 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -545,6 +545,38 @@ template <class T> class PersistentBase {
+@@ -544,6 +544,38 @@ template <class T> class PersistentBase {
     */
    V8_INLINE void AnnotateStrongRetainer(const char* label);
  
@@ -97,7 +97,7 @@ index 26ac2cb01da36529e99dcd5cc878523601addc0d..c5e22bb14043ade00b4ecf73b6115e74
    /** Returns true if the handle's reference is weak.  */
    V8_INLINE bool IsWeak() const;
  
-@@ -8878,6 +8910,9 @@ class V8_EXPORT V8 {
+@@ -8847,6 +8879,9 @@ class V8_EXPORT V8 {
                                       const char* label);
    static Value* Eternalize(Isolate* isolate, Value* handle);
  
@@ -107,7 +107,7 @@ index 26ac2cb01da36529e99dcd5cc878523601addc0d..c5e22bb14043ade00b4ecf73b6115e74
    template <class K, class V, class T>
    friend class PersistentValueMapBase;
  
-@@ -9824,6 +9859,14 @@ void Persistent<T, M>::Copy(const Persistent<S, M2>& that) {
+@@ -9793,6 +9828,14 @@ void Persistent<T, M>::Copy(const Persistent<S, M2>& that) {
    M::Copy(that, this);
  }
  
@@ -122,7 +122,7 @@ index 26ac2cb01da36529e99dcd5cc878523601addc0d..c5e22bb14043ade00b4ecf73b6115e74
  template <class T>
  bool PersistentBase<T>::IsWeak() const {
    typedef internal::Internals I;
-@@ -9890,6 +9933,31 @@ void PersistentBase<T>::AnnotateStrongRetainer(const char* label) {
+@@ -9859,6 +9902,31 @@ void PersistentBase<T>::AnnotateStrongRetainer(const char* label) {
                               label);
  }
  
@@ -154,11 +154,11 @@ index 26ac2cb01da36529e99dcd5cc878523601addc0d..c5e22bb14043ade00b4ecf73b6115e74
  template <class T>
  void PersistentBase<T>::SetWrapperClassId(uint16_t class_id) {
    typedef internal::Internals I;
-diff --git a/src/api.cc b/src/api.cc
-index 1102e5d9ca745ec57257379acef92a17d374362d..2a2311454ba37e557b1c1f046f46e7f5881516b9 100644
---- a/src/api.cc
-+++ b/src/api.cc
-@@ -1049,6 +1049,11 @@ void V8::MoveTracedGlobalReference(internal::Address** from,
+diff --git a/src/api/api.cc b/src/api/api.cc
+index efaa78cd42945c0a9176a53d59364f488648418a..0964a815793f3347e5326817e56e75cd851cea4d 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -1044,6 +1044,11 @@ void V8::MoveTracedGlobalReference(internal::Address** from,
    i::GlobalHandles::MoveTracedGlobal(from, to);
  }
  
@@ -171,10 +171,10 @@ index 1102e5d9ca745ec57257379acef92a17d374362d..2a2311454ba37e557b1c1f046f46e7f5
                    WeakCallbackInfo<void>::Callback weak_callback,
                    WeakCallbackType type) {
 diff --git a/src/global-handles.cc b/src/global-handles.cc
-index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb1cac88ee 100644
+index ab6172836d38ad53b8b4f5d8d3cac5740ddd6788..b647cc6d55089e1c1835c0b7fd24bf84b3995ab4 100644
 --- a/src/global-handles.cc
 +++ b/src/global-handles.cc
-@@ -379,6 +379,10 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
+@@ -380,6 +380,10 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
                    Internals::kNodeStateMask);
      STATIC_ASSERT(WEAK == Internals::kNodeStateIsWeakValue);
      STATIC_ASSERT(PENDING == Internals::kNodeStateIsPendingValue);
@@ -185,7 +185,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
      set_in_young_list(false);
    }
  
-@@ -402,6 +406,16 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
+@@ -403,6 +407,16 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
      flags_ = NodeState::update(flags_, state);
    }
  
@@ -202,7 +202,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
    bool is_in_young_list() const { return IsInYoungList::decode(flags_); }
    void set_in_young_list(bool v) { flags_ = IsInYoungList::update(flags_, v); }
  
-@@ -548,6 +562,7 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
+@@ -549,6 +563,7 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
      // This method invokes a finalizer. Updating the method name would require
      // adjusting CFI blacklist as weak_callback_ is invoked on the wrong type.
      CHECK(IsPendingFinalizer());
@@ -210,7 +210,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
      set_state(NEAR_DEATH);
      // Check that we are not passing a finalized external string to
      // the callback.
-@@ -578,17 +593,24 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
+@@ -579,17 +594,24 @@ class GlobalHandles::Node final : public NodeBase<GlobalHandles::Node> {
   private:
    // Fields that are not used for managing node memory.
    void ClearImplFields() {
@@ -236,7 +236,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
    class NodeWeaknessType
        : public BitField8<WeaknessType, IsInYoungList::kNext, 2> {};
  
-@@ -851,6 +873,12 @@ void GlobalHandles::IterateWeakRootsIdentifyFinalizers(
+@@ -852,6 +874,12 @@ void GlobalHandles::IterateWeakRootsIdentifyFinalizers(
  
  void GlobalHandles::IdentifyWeakUnmodifiedObjects(
      WeakSlotCallback is_unmodified) {
@@ -249,7 +249,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
    LocalEmbedderHeapTracer* const tracer =
        isolate()->heap()->local_embedder_heap_tracer();
    for (TracedNode* node : traced_young_nodes_) {
-@@ -867,7 +895,9 @@ void GlobalHandles::IdentifyWeakUnmodifiedObjects(
+@@ -868,7 +896,9 @@ void GlobalHandles::IdentifyWeakUnmodifiedObjects(
  
  void GlobalHandles::IterateYoungStrongAndDependentRoots(RootVisitor* v) {
    for (Node* node : young_nodes_) {
@@ -260,7 +260,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
        v->VisitRootPointer(Root::kGlobalHandles, node->label(),
                            node->location());
      }
-@@ -883,7 +913,8 @@ void GlobalHandles::MarkYoungWeakUnmodifiedObjectsPending(
+@@ -884,7 +914,8 @@ void GlobalHandles::MarkYoungWeakUnmodifiedObjectsPending(
      WeakSlotCallbackWithHeap is_dead) {
    for (Node* node : young_nodes_) {
      DCHECK(node->is_in_young_list());
@@ -270,7 +270,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
        if (!node->IsPhantomCallback() && !node->IsPhantomResetHandle()) {
          node->MarkPending();
        }
-@@ -895,7 +926,8 @@ void GlobalHandles::IterateYoungWeakUnmodifiedRootsForFinalizers(
+@@ -896,7 +927,8 @@ void GlobalHandles::IterateYoungWeakUnmodifiedRootsForFinalizers(
      RootVisitor* v) {
    for (Node* node : young_nodes_) {
      DCHECK(node->is_in_young_list());
@@ -280,7 +280,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
        DCHECK(!node->IsPhantomCallback());
        DCHECK(!node->IsPhantomResetHandle());
        // Finalizers need to survive.
-@@ -909,7 +941,8 @@ void GlobalHandles::IterateYoungWeakUnmodifiedRootsForPhantomHandles(
+@@ -910,7 +942,8 @@ void GlobalHandles::IterateYoungWeakUnmodifiedRootsForPhantomHandles(
      RootVisitor* v, WeakSlotCallbackWithHeap should_reset_handle) {
    for (Node* node : young_nodes_) {
      DCHECK(node->is_in_young_list());
@@ -290,7 +290,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
        if (should_reset_handle(isolate_->heap(), node->location())) {
          DCHECK(node->IsPhantomResetHandle() || node->IsPhantomCallback());
          if (node->IsPhantomResetHandle()) {
-@@ -975,6 +1008,9 @@ size_t GlobalHandles::PostScavengeProcessing(unsigned post_processing_count) {
+@@ -985,6 +1018,9 @@ size_t GlobalHandles::PostScavengeProcessing(unsigned post_processing_count) {
      // Filter free nodes.
      if (!node->IsRetainer()) continue;
  
@@ -300,7 +300,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
      if (node->IsPending()) {
        DCHECK(node->has_callback());
        DCHECK(node->IsPendingFinalizer());
-@@ -993,6 +1029,9 @@ size_t GlobalHandles::PostMarkSweepProcessing(unsigned post_processing_count) {
+@@ -1003,6 +1039,9 @@ size_t GlobalHandles::PostMarkSweepProcessing(unsigned post_processing_count) {
      // Filter free nodes.
      if (!node->IsRetainer()) continue;
  
@@ -311,7 +311,7 @@ index fb5087b8a781cce05839dbbb79c5beaf2fddaa06..350380b23ce6f4fe89e628285d2e69fb
        DCHECK(node->has_callback());
        DCHECK(node->IsPendingFinalizer());
 diff --git a/src/profiler/sampling-heap-profiler.cc b/src/profiler/sampling-heap-profiler.cc
-index 08357983dc1e7bd370e483417e6737adbf821017..43a3ccd1c3b25406e39739a903c6f1de30511caf 100644
+index 2b22e673d7cfb4601a31f3d687eb5b3ba69be6c4..cd79b398b482ca31dcad8477d99a8b9a9644640c 100644
 --- a/src/profiler/sampling-heap-profiler.cc
 +++ b/src/profiler/sampling-heap-profiler.cc
 @@ -92,6 +92,16 @@ void SamplingHeapProfiler::SampleObject(Address soon_object, size_t size) {
@@ -332,7 +332,7 @@ index 08357983dc1e7bd370e483417e6737adbf821017..43a3ccd1c3b25406e39739a903c6f1de
  }
  
 diff --git a/test/cctest/heap/heap-utils.h b/test/cctest/heap/heap-utils.h
-index 082d255a3fdc889ba86d5117bc234f70f0525aad..dbe8e30a495b8af53451f5692810128e8b52453e 100644
+index dfd4094913e84d3f04daea5896b34fd21107295b..375c2aeb13320cdc4faa3cdacaa71ac4e0db1896 100644
 --- a/test/cctest/heap/heap-utils.h
 +++ b/test/cctest/heap/heap-utils.h
 @@ -12,22 +12,6 @@ namespace v8 {
@@ -359,7 +359,7 @@ index 082d255a3fdc889ba86d5117bc234f70f0525aad..dbe8e30a495b8af53451f5692810128e
  
  int FixedArrayLenFromSize(int size);
 diff --git a/test/cctest/heap/test-embedder-tracing.cc b/test/cctest/heap/test-embedder-tracing.cc
-index 9ca2509e6c0913ad946cf3879d2f5fe69d301075..3d19538a180243cfdfcdfb9a496fa3471e8e9435 100644
+index 022d605aff3b2eafa07be9075c1ff1645baecbfb..aa76386a22f234bb133e54a853e40b30d91e0b88 100644
 --- a/test/cctest/heap/test-embedder-tracing.cc
 +++ b/test/cctest/heap/test-embedder-tracing.cc
 @@ -103,6 +103,22 @@ class TestEmbedderHeapTracer final : public v8::EmbedderHeapTracer {
@@ -521,10 +521,10 @@ index 9ca2509e6c0913ad946cf3879d2f5fe69d301075..3d19538a180243cfdfcdfb9a496fa347
  }
  
 diff --git a/test/cctest/heap/test-heap.cc b/test/cctest/heap/test-heap.cc
-index a50d69f1b8a26db93525c6523ddaa75b43ccdf34..6d82863424730b8f98c5cd64595d6699149e9922 100644
+index 951c249c0ab909bef84e28221f682389c58d7b11..faad45cb4c11360487d97b04bdde0dce71d9e3cd 100644
 --- a/test/cctest/heap/test-heap.cc
 +++ b/test/cctest/heap/test-heap.cc
-@@ -497,6 +497,44 @@ static void TestWeakGlobalHandleCallback(
+@@ -496,6 +496,44 @@ static void TestWeakGlobalHandleCallback(
    p->first->Reset();
  }
  
@@ -569,7 +569,7 @@ index a50d69f1b8a26db93525c6523ddaa75b43ccdf34..6d82863424730b8f98c5cd64595d6699
  TEST(WeakGlobalUnmodifiedApiHandlesScavenge) {
    CcTest::InitializeVM();
    Isolate* isolate = CcTest::i_isolate();
-@@ -535,6 +573,84 @@ TEST(WeakGlobalUnmodifiedApiHandlesScavenge) {
+@@ -534,6 +572,84 @@ TEST(WeakGlobalUnmodifiedApiHandlesScavenge) {
    GlobalHandles::Destroy(h1.location());
  }
  
@@ -654,7 +654,7 @@ index a50d69f1b8a26db93525c6523ddaa75b43ccdf34..6d82863424730b8f98c5cd64595d6699
  TEST(WeakGlobalHandlesMark) {
    FLAG_stress_incremental_marking = false;
    CcTest::InitializeVM();
-@@ -584,7 +700,9 @@ TEST(DeleteWeakGlobalHandle) {
+@@ -583,7 +699,9 @@ TEST(DeleteWeakGlobalHandle) {
    GlobalHandles* global_handles = isolate->global_handles();
  
    WeakPointerCleared = false;
@@ -664,7 +664,7 @@ index a50d69f1b8a26db93525c6523ddaa75b43ccdf34..6d82863424730b8f98c5cd64595d6699
    {
      HandleScope scope(isolate);
  
-@@ -596,8 +714,15 @@ TEST(DeleteWeakGlobalHandle) {
+@@ -595,8 +713,15 @@ TEST(DeleteWeakGlobalHandle) {
    GlobalHandles::MakeWeak(h.location(), reinterpret_cast<void*>(&handle_and_id),
                            &TestWeakGlobalHandleCallback,
                            v8::WeakCallbackType::kParameter);
@@ -681,10 +681,10 @@ index a50d69f1b8a26db93525c6523ddaa75b43ccdf34..6d82863424730b8f98c5cd64595d6699
  }
  
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index 51d06a76d00276e958d18ff996fa259ada1c21cd..3b3c2265300c8e739b812a1965a709e4f7fc0303 100644
+index 2118f34f1025125b746291af8830ddefd8b45c81..af2026ed86b43d35998e1ce0e760b1622af1a8b5 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -7957,6 +7957,18 @@ static void IndependentWeakHandle(bool global_gc, bool interlinked) {
+@@ -8089,6 +8089,18 @@ static void IndependentWeakHandle(bool global_gc, bool interlinked) {
                            v8::WeakCallbackType::kParameter);
    object_b.handle.SetWeak(&object_b, &SetFlag,
                            v8::WeakCallbackType::kParameter);
@@ -703,7 +703,7 @@ index 51d06a76d00276e958d18ff996fa259ada1c21cd..3b3c2265300c8e739b812a1965a709e4
    if (global_gc) {
      CcTest::CollectAllGarbage();
    } else {
-@@ -8107,6 +8119,19 @@ void v8::internal::heap::HeapTester::ResetWeakHandle(bool global_gc) {
+@@ -8239,6 +8251,19 @@ void v8::internal::heap::HeapTester::ResetWeakHandle(bool global_gc) {
                            v8::WeakCallbackType::kParameter);
    object_b.handle.SetWeak(&object_b, &ResetUseValueAndSetFlag,
                            v8::WeakCallbackType::kParameter);
@@ -723,7 +723,7 @@ index 51d06a76d00276e958d18ff996fa259ada1c21cd..3b3c2265300c8e739b812a1965a709e4
    if (global_gc) {
      CcTest::PreciseCollectAllGarbage();
    } else {
-@@ -8174,6 +8199,16 @@ THREADED_TEST(GCFromWeakCallbacks) {
+@@ -8306,6 +8331,16 @@ THREADED_TEST(GCFromWeakCallbacks) {
        object.flag = false;
        object.handle.SetWeak(&object, gc_forcing_callback[inner_gc],
                              v8::WeakCallbackType::kParameter);
@@ -741,7 +741,7 @@ index 51d06a76d00276e958d18ff996fa259ada1c21cd..3b3c2265300c8e739b812a1965a709e4
        EmptyMessageQueues(isolate);
        CHECK(object.flag);
 diff --git a/test/cctest/test-global-handles.cc b/test/cctest/test-global-handles.cc
-index 75ad7035f15e03f9b8b19917998e21bfea560440..2c620b4963623e4ae4c589832963dbd03cb36296 100644
+index 3cf57b04b2fc9bfa2450d06954b179707527d68d..f2b9bb4cc5fe5f3ce62db3577e63c9ab7ed51609 100644
 --- a/test/cctest/test-global-handles.cc
 +++ b/test/cctest/test-global-handles.cc
 @@ -39,25 +39,6 @@ namespace internal {

@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "chrome/browser/net/chrome_net_log_helper.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/net_log/net_export_file_writer.h"
@@ -19,6 +18,7 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/common/content_switches.h"
+#include "net/log/net_log_capture_mode.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
@@ -105,7 +105,9 @@ void BrowserProcessImpl::PreCreateThreads(
         command_line.GetSwitchValuePath(network::switches::kLogNetLog);
     if (!log_file.empty()) {
       net_log_->StartWritingToFile(
-          log_file, GetNetCaptureModeFromCommandLine(command_line),
+          log_file,
+          net::GetNetCaptureModeFromCommandLine(
+              command_line, network::switches::kNetLogCaptureMode),
           command_line.GetCommandLineString(), std::string());
     }
   }
