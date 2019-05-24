@@ -101,6 +101,17 @@ Returns:
 
 Emitted when the document in the given frame is loaded.
 
+#### Event: 'page-title-updated'
+
+Returns:
+
+* `event` Event
+* `title` String
+* `explicitSet` Boolean
+
+Fired when page title is set during navigation. `explicitSet` is false when
+title is synthesized from file url.
+
 #### Event: 'page-favicon-updated'
 
 Returns:
@@ -373,6 +384,14 @@ Emitted when the window enters a full-screen state triggered by HTML API.
 #### Event: 'leave-html-full-screen'
 
 Emitted when the window leaves a full-screen state triggered by HTML API.
+
+#### Event: 'zoom-changed'
+
+Returns:
+* `event` Event
+* `zoomDirection` String - Can be `in` or `out`.
+
+Emitted when the user is requesting to change the zoom level using the mouse wheel.
 
 #### Event: 'devtools-opened'
 

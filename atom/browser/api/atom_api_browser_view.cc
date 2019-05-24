@@ -68,7 +68,7 @@ void BrowserView::Init(v8::Isolate* isolate,
                        const mate::Dictionary& options) {
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
-  web_preferences.Set("isBrowserView", true);
+  web_preferences.Set("type", "browserView");
   mate::Handle<class WebContents> web_contents =
       WebContents::Create(isolate, web_preferences);
 

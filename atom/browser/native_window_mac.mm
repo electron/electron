@@ -24,6 +24,7 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
+#include "components/remote_cocoa/app_shim/bridged_native_widget_impl.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -31,7 +32,6 @@
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
-#include "ui/views_bridge_mac/bridged_native_widget_impl.h"
 
 // This view always takes the size of its superview. It is intended to be used
 // as a NSWindow's contentView.  It is needed because NSWindow's implementation
@@ -919,7 +919,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     // We can simulate the pre-Lion fullscreen by auto-hiding the dock and menu
     // bar
     NSApplicationPresentationOptions options =
-        NSApplicationPresentationAutoHideDock +
+        NSApplicationPresentationAutoHideDock |
         NSApplicationPresentationAutoHideMenuBar;
     [NSApp setPresentationOptions:options];
 
@@ -997,12 +997,12 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
   if (kiosk && !is_kiosk_) {
     kiosk_options_ = [NSApp currentSystemPresentationOptions];
     NSApplicationPresentationOptions options =
-        NSApplicationPresentationHideDock +
-        NSApplicationPresentationHideMenuBar +
-        NSApplicationPresentationDisableAppleMenu +
-        NSApplicationPresentationDisableProcessSwitching +
-        NSApplicationPresentationDisableForceQuit +
-        NSApplicationPresentationDisableSessionTermination +
+        NSApplicationPresentationHideDock |
+        NSApplicationPresentationHideMenuBar |
+        NSApplicationPresentationDisableAppleMenu |
+        NSApplicationPresentationDisableProcessSwitching |
+        NSApplicationPresentationDisableForceQuit |
+        NSApplicationPresentationDisableSessionTermination |
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;

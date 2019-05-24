@@ -94,7 +94,7 @@ if (preloadScript) {
 }
 
 switch (window.location.protocol) {
-  case 'chrome-devtools:': {
+  case 'devtools:': {
     // Override some inspector APIs.
     require('@electron/internal/renderer/inspector')
     break

@@ -38,9 +38,9 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
  private:
   class SpellcheckRequest;
   // blink::WebTextCheckClient:
-  void RequestCheckingOfText(
-      const blink::WebString& textToCheck,
-      blink::WebTextCheckingCompletion* completionCallback) override;
+  void RequestCheckingOfText(const blink::WebString& textToCheck,
+                             std::unique_ptr<blink::WebTextCheckingCompletion>
+                                 completionCallback) override;
   bool IsSpellCheckingEnabled() const override;
 
   // blink::WebSpellCheckPanelHostClient:

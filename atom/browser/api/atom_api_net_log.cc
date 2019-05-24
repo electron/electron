@@ -8,6 +8,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/system_network_context_manager.h"
+#include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
@@ -21,101 +22,152 @@
 
 namespace atom {
 
+namespace {
+
+scoped_refptr<base::SequencedTaskRunner> CreateFileTaskRunner() {
+  // The tasks posted to this sequenced task runner do synchronous File I/O for
+  // checking paths and setting permissions on files.
+  //
+  // These operations can be skipped on shutdown since FileNetLogObserver's API
+  // doesn't require things to have completed until notified of completion.
+  return base::CreateSequencedTaskRunnerWithTraits(
+      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+       base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
+}
+
+base::File OpenFileForWriting(base::FilePath path) {
+  return base::File(path,
+                    base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+}
+
+void ResolvePromiseWithNetError(util::Promise promise, int32_t error) {
+  if (error == net::OK) {
+    promise.Resolve();
+  } else {
+    promise.RejectWithErrorMessage(net::ErrorToString(error));
+  }
+}
+
+}  // namespace
+
 namespace api {
 
 NetLog::NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+    : browser_context_(browser_context), weak_ptr_factory_(this) {
   Init(isolate);
-
-  net_log_writer_ = g_browser_process->system_network_context_manager()
-                        ->GetNetExportFileWriter();
-  net_log_writer_->AddObserver(this);
+  file_task_runner_ = CreateFileTaskRunner();
 }
 
-NetLog::~NetLog() {
-  net_log_writer_->RemoveObserver(this);
-}
+NetLog::~NetLog() = default;
 
-void NetLog::StartLogging(mate::Arguments* args) {
+v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
   base::FilePath log_path;
   if (!args->GetNext(&log_path) || log_path.empty()) {
     args->ThrowError("The first parameter must be a valid string");
-    return;
+    return v8::Local<v8::Promise>();
   }
+
+  if (net_log_exporter_) {
+    args->ThrowError("There is already a net log running");
+    return v8::Local<v8::Promise>();
+  }
+
+  pending_start_promise_ = base::make_optional<util::Promise>(isolate());
+  v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
+
+  auto command_line_string =
+      base::CommandLine::ForCurrentProcess()->GetCommandLineString();
+  auto channel_string = std::string("Electron " ATOM_VERSION);
+  base::Value custom_constants = base::Value::FromUniquePtrValue(
+      net_log::ChromeNetLog::GetPlatformConstants(command_line_string,
+                                                  channel_string));
 
   auto* network_context =
       content::BrowserContext::GetDefaultStoragePartition(browser_context_)
           ->GetNetworkContext();
 
+  network_context->CreateNetLogExporter(mojo::MakeRequest(&net_log_exporter_));
+  net_log_exporter_.set_connection_error_handler(
+      base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
+
   // TODO(deepak1556): Provide more flexibility to this module
   // by allowing customizations on the capturing options.
-  net_log_writer_->StartNetLog(
-      log_path, net::NetLogCaptureMode::Default(),
-      net_log::NetExportFileWriter::kNoLimit /* file size limit */,
-      base::CommandLine::ForCurrentProcess()->GetCommandLineString(),
-      std::string(), network_context);
+  auto capture_mode = network::mojom::NetLogCaptureMode::DEFAULT;
+  auto max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
+
+  base::PostTaskAndReplyWithResult(
+      file_task_runner_.get(), FROM_HERE,
+      base::BindOnce(OpenFileForWriting, log_path),
+      base::BindOnce(&NetLog::StartNetLogAfterCreateFile,
+                     weak_ptr_factory_.GetWeakPtr(), capture_mode,
+                     max_file_size, std::move(custom_constants)));
+
+  return handle;
 }
 
-std::string NetLog::GetLoggingState() const {
-  if (!net_log_state_)
-    return std::string();
-  const base::Value* current_log_state =
-      net_log_state_->FindKeyOfType("state", base::Value::Type::STRING);
-  if (!current_log_state)
-    return std::string();
-  return current_log_state->GetString();
+void NetLog::StartNetLogAfterCreateFile(
+    network::mojom::NetLogCaptureMode capture_mode,
+    uint64_t max_file_size,
+    base::Value custom_constants,
+    base::File output_file) {
+  if (!net_log_exporter_) {
+    // Theoretically the mojo pipe could have been closed by the time we get
+    // here via the connection error handler. If so, the promise has already
+    // been resolved.
+    return;
+  }
+  DCHECK(pending_start_promise_);
+  if (!output_file.IsValid()) {
+    std::move(*pending_start_promise_)
+        .RejectWithErrorMessage(
+            base::File::ErrorToString(output_file.error_details()));
+    net_log_exporter_.reset();
+    return;
+  }
+  net_log_exporter_->Start(
+      std::move(output_file), std::move(custom_constants), capture_mode,
+      max_file_size,
+      base::BindOnce(&NetLog::NetLogStarted, base::Unretained(this)));
+}
+
+void NetLog::NetLogStarted(int32_t error) {
+  DCHECK(pending_start_promise_);
+  ResolvePromiseWithNetError(std::move(*pending_start_promise_), error);
+}
+
+void NetLog::OnConnectionError() {
+  net_log_exporter_.reset();
+  if (pending_start_promise_) {
+    std::move(*pending_start_promise_)
+        .RejectWithErrorMessage("Failed to start net log exporter");
+  }
 }
 
 bool NetLog::IsCurrentlyLogging() const {
-  const std::string log_state = GetLoggingState();
-  return (log_state == "STARTING_LOG") || (log_state == "LOGGING");
-}
-
-std::string NetLog::GetCurrentlyLoggingPath() const {
-  // Net log exporter has a default path which will be used
-  // when no log path is provided, but since we don't allow
-  // net log capture without user provided file path, this
-  // check is completely safe.
-  if (IsCurrentlyLogging()) {
-    const base::Value* current_log_path =
-        net_log_state_->FindKeyOfType("file", base::Value::Type::STRING);
-    if (current_log_path)
-      return current_log_path->GetString();
-  }
-
-  return std::string();
+  return !!net_log_exporter_;
 }
 
 v8::Local<v8::Promise> NetLog::StopLogging(mate::Arguments* args) {
   util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (IsCurrentlyLogging()) {
-    stop_callback_queue_.emplace_back(std::move(promise));
-    net_log_writer_->StopNetLog(nullptr);
+  if (net_log_exporter_) {
+    // Move the net_log_exporter_ into the callback to ensure that the mojo
+    // pointer lives long enough to resolve the promise. Moving it into the
+    // callback will cause the instance variable to become empty.
+    net_log_exporter_->Stop(
+        base::Value(base::Value::Type::DICTIONARY),
+        base::BindOnce(
+            [](network::mojom::NetLogExporterPtr, util::Promise promise,
+               int32_t error) {
+              ResolvePromiseWithNetError(std::move(promise), error);
+            },
+            std::move(net_log_exporter_), std::move(promise)));
   } else {
-    promise.Resolve(base::FilePath());
+    promise.RejectWithErrorMessage("No net log in progress");
   }
 
   return handle;
-}
-
-void NetLog::OnNewState(const base::DictionaryValue& state) {
-  net_log_state_ = state.CreateDeepCopy();
-
-  if (stop_callback_queue_.empty())
-    return;
-
-  if (GetLoggingState() == "NOT_LOGGING") {
-    for (auto& promise : stop_callback_queue_) {
-      // TODO(zcbenz): Remove the use of CopyablePromise when the
-      // GetFilePathToCompletedLog API accepts OnceCallback.
-      net_log_writer_->GetFilePathToCompletedLog(base::BindRepeating(
-          util::CopyablePromise::ResolveCopyablePromise<const base::FilePath&>,
-          util::CopyablePromise(promise)));
-    }
-    stop_callback_queue_.clear();
-  }
 }
 
 // static
@@ -130,7 +182,6 @@ void NetLog::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "NetLog"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
-      .SetProperty("currentlyLoggingPath", &NetLog::GetCurrentlyLoggingPath)
       .SetMethod("startLogging", &NetLog::StartLogging)
       .SetMethod("stopLogging", &NetLog::StopLogging);
 }

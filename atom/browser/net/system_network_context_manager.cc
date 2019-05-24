@@ -51,6 +51,8 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
       command_line->GetSwitchValueASCII(atom::switches::kAuthServerWhitelist);
   auth_dynamic_params->delegate_whitelist = command_line->GetSwitchValueASCII(
       atom::switches::kAuthNegotiateDelegateWhitelist);
+  auth_dynamic_params->enable_negotiate_port =
+      command_line->HasSwitch(atom::switches::kEnableAuthNegotiatePort);
 
   return auth_dynamic_params;
 }
@@ -165,8 +167,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
-  network_context_params->enable_brotli =
-      base::FeatureList::IsEnabled(features::kBrotliEncoding);
+  network_context_params->enable_brotli = true;
 
   network_context_params->enable_referrers = true;
 

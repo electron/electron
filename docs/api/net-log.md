@@ -7,8 +7,8 @@ Process: [Main](../glossary.md#main-process)
 ```javascript
 const { netLog } = require('electron')
 
-app.on('ready', async function () {
-  netLog.startLogging('/path/to/net-log')
+app.on('ready', async () => {
+  await netLog.startLogging('/path/to/net-log')
   // After some network events
   const path = await netLog.stopLogging()
   console.log('Net-logs written to', path)
@@ -26,6 +26,8 @@ of the `app` module gets emitted.
 
 * `path` String - File path to record network logs.
 
+Returns `Promise<void>` - resolves when the net log has begun recording.
+
 Starts recording network events to `path`.
 
 ### `netLog.stopLogging()`
@@ -40,6 +42,6 @@ Stops recording network events. If not called, net logging will automatically en
 
 A `Boolean` property that indicates whether network logs are recorded.
 
-### `netLog.currentlyLoggingPath`
+### `netLog.currentlyLoggingPath` **Deprecated**
 
 A `String` property that returns the path to the current log file.

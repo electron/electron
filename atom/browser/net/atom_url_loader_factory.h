@@ -5,7 +5,9 @@
 #ifndef ATOM_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_
 #define ATOM_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_
 
+#include <map>
 #include <string>
+#include <utility>
 
 #include "mojo/public/cpp/bindings/binding_set.h"
 #include "native_mate/dictionary.h"
@@ -24,10 +26,13 @@ enum class ProtocolType {
   kFree,  // special type for returning arbitrary type of response.
 };
 
-using StartLoadingCallback =
-    base::OnceCallback<void(v8::Local<v8::Value>, mate::Arguments*)>;
+using StartLoadingCallback = base::OnceCallback<void(mate::Arguments*)>;
 using ProtocolHandler =
     base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
+
+// scheme => (type, handler).
+using HandlersMap =
+    std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
 
 // Implementation of URLLoaderFactory.
 class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
@@ -46,7 +51,6 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                                 traffic_annotation) override;
   void Clone(network::mojom::URLLoaderFactoryRequest request) override;
 
- private:
   static void StartLoading(
       network::mojom::URLLoaderRequest loader,
       int32_t routing_id,
@@ -56,8 +60,9 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       ProtocolType type,
-      v8::Local<v8::Value> response,
       mate::Arguments* args);
+
+ private:
   static void StartLoadingBuffer(network::mojom::URLLoaderClientPtr client,
                                  const mate::Dictionary& dict);
   static void StartLoadingString(network::mojom::URLLoaderClientPtr client,

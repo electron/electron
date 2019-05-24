@@ -117,7 +117,7 @@ void RunSaveDialogInNewThread(const RunState& run_state,
   bool result = ShowSaveDialogSync(settings, &path);
   run_state.ui_task_runner->PostTask(
       FROM_HERE,
-      base::BindOnce(&OnSaveDialogDone, std::move(promise), result, path));
+      base::BindOnce(&OnSaveDialogDone, std::move(promise), !result, path));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
@@ -321,7 +321,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
-    dict.Set("canceled", false);
+    dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
     promise.Resolve(dict.GetHandle());
   } else {

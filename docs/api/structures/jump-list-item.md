@@ -26,3 +26,4 @@
   resource file contains multiple icons this value can be used to specify the
   zero-based index of the icon that should be displayed for this task. If a
   resource file contains only one icon, this property should be set to zero.
+* `workingDirectory` String (optional) - The working directory. Default is empty.

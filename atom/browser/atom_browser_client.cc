@@ -30,6 +30,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/network_context_service.h"
 #include "atom/browser/net/network_context_service_factory.h"
+#include "atom/browser/net/proxying_url_loader_factory.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "atom/browser/notifications/platform_notification_service.h"
 #include "atom/browser/session_preferences.h"
@@ -500,7 +501,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    if (web_contents->GetVisibleURL().SchemeIs("chrome-devtools")) {
+    if (web_contents->GetVisibleURL().SchemeIs("devtools")) {
       command_line->AppendSwitch(switches::kDisableRemoteModule);
     }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
@@ -557,14 +558,14 @@ void AtomBrowserClient::AllowCertificateError(
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
-    content::ResourceType resource_type,
+    bool is_main_frame_request,
     bool strict_enforcement,
     bool expired_previous_decision,
     const base::Callback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
     delegate_->AllowCertificateError(
-        web_contents, cert_error, ssl_info, request_url, resource_type,
+        web_contents, cert_error, ssl_info, request_url, is_main_frame_request,
         strict_enforcement, expired_previous_decision, callback);
   }
 }
@@ -827,8 +828,6 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    const std::string& method,
-    const net::HttpRequestHeaders& headers,
     network::mojom::URLLoaderFactoryRequest* factory_request,
     // clang-format off
     network::mojom::URLLoaderFactory*& out_factory) {  // NOLINT
@@ -956,6 +955,32 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
   if (protocol)
     protocol->RegisterURLLoaderFactories(factories);
+}
+
+bool AtomBrowserClient::WillCreateURLLoaderFactory(
+    content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame_host,
+    int render_process_id,
+    bool is_navigation,
+    bool is_download,
+    const url::Origin& request_initiator,
+    network::mojom::URLLoaderFactoryRequest* factory_request,
+    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    bool* bypass_redirect_checks) {
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
+  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+  if (!protocol)
+    return false;
+
+  auto proxied_request = std::move(*factory_request);
+  network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
+  *factory_request = mojo::MakeRequest(&target_factory_info);
+  new ProxyingURLLoaderFactory(protocol->intercept_handlers(),
+                               std::move(proxied_request),
+                               std::move(target_factory_info));
+  return true;
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {

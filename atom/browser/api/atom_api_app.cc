@@ -85,6 +85,7 @@ struct Converter<Browser::UserTask> {
       return false;
     dict.Get("arguments", &(out->arguments));
     dict.Get("description", &(out->description));
+    dict.Get("workingDirectory", &(out->working_dir));
     return true;
   }
 };
@@ -158,6 +159,7 @@ struct Converter<JumpListItem> {
 
         dict.Get("args", &(out->arguments));
         dict.Get("description", &(out->description));
+        dict.Get("workingDirectory", &(out->working_dir));
         return true;
 
       case JumpListItem::Type::SEPARATOR:
@@ -184,6 +186,7 @@ struct Converter<JumpListItem> {
         dict.Set("iconPath", val.icon_path);
         dict.Set("iconIndex", val.icon_index);
         dict.Set("description", val.description);
+        dict.Set("workingDirectory", val.working_dir);
         break;
 
       case JumpListItem::Type::SEPARATOR:
@@ -720,7 +723,7 @@ void App::AllowCertificateError(
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
-    content::ResourceType resource_type,
+    bool is_main_frame_request,
     bool strict_enforcement,
     bool expired_previous_decision,
     const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
@@ -768,6 +771,10 @@ void App::SelectClientCertificate(
         std::move((*shared_identities)[0]),
         base::BindRepeating(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
+}
+
+void App::OnGpuInfoUpdate() {
+  Emit("gpu-info-update");
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {

@@ -104,9 +104,25 @@ class Promise {
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
-  template <typename ReturnType, typename... ArgTypes>
+  // Please note that using Then is effectively the same as calling .then
+  // in javascript.  This means (a) it is not type safe and (b) please note
+  // it is NOT type safe.
+  // If the base::Callback you provide here is of type void(boolean) and you
+  // resolve the promise with a string, Electron will compile successfully and
+  // then that promise will be rejected as soon as you try to use it as the
+  // mate converters doing work behind the scenes will throw an error for you.
+  // This can be really hard to trace so until either
+  //   * This helper becomes typesafe (by templating the class instead of each
+  //   method)
+  //   * or the world goes mad
+  // Please try your hardest not to use this method
+  // The world thanks you
+  template <typename... ResolveType>
   v8::MaybeLocal<v8::Promise> Then(
-      base::OnceCallback<ReturnType(ArgTypes...)> cb) {
+      base::OnceCallback<void(ResolveType...)> cb) {
+    static_assert(sizeof...(ResolveType) <= 1,
+                  "A promise's 'Then' callback should only receive at most one "
+                  "parameter");
     v8::HandleScope handle_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));

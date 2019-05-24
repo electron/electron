@@ -177,7 +177,7 @@ Creates a new `NativeImage` instance from `dataURL`.
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the NSImage that maps to the
-given image name. See [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename?language=objc)
+given image name. See [`System Icons`](https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/system-icons/)
 for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules

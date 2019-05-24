@@ -416,9 +416,11 @@ Returns:
 
 * `event` Event
 * `title` String
+* `explicitSet` Boolean
 
 Emitted when the document changed its title, calling `event.preventDefault()`
 will prevent the native window's title from changing.
+`explicitSet` is false when title is synthesized from file url.
 
 #### Event: 'close'
 
@@ -590,7 +592,7 @@ win.on('app-command', (e, cmd) => {
 })
 ```
 
-The following app commands are explictly supported on Linux:
+The following app commands are explicitly supported on Linux:
 
 * `browser-backward`
 * `browser-forward`

@@ -97,7 +97,7 @@ index c04e0e8bff1a7a41a1e18aca5403aed16a80aead..d63cec971f0a98f7b8ff30c1f6a0fa84
    EnsureLoaded();
    bool result = false;
 diff --git a/third_party/blink/renderer/modules/storage/cached_storage_area.cc b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
-index 9430717450759c77e8164bc1c496c4a8e4e9ddb6..8a8ff0816d8c015ea8a0456ba66b702b765a128a 100644
+index 6a3a3718443aebf24fd60e00f8f01ba76575ebfa..fb8250553164ebaf1a5ccae4a1c8e2f660ea6e14 100644
 --- a/third_party/blink/renderer/modules/storage/cached_storage_area.cc
 +++ b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
 @@ -106,11 +106,13 @@ bool CachedStorageArea::SetItem(const String& key,
@@ -115,12 +115,12 @@ index 9430717450759c77e8164bc1c496c4a8e4e9ddb6..8a8ff0816d8c015ea8a0456ba66b702b
    EnsureLoaded();
    String old_value;
 diff --git a/third_party/blink/renderer/modules/storage/storage_area_map.cc b/third_party/blink/renderer/modules/storage/storage_area_map.cc
-index 62ab01c2864baa2ef1945031faf42cbeefbfc72b..e7edaff1778c66812ab9f7058e89f84bfba94339 100644
+index 0da8a1e891edad60355792c40b7d15e90c1086e8..df71418d598d5bdf41e9a8a4340999d9d277aeef 100644
 --- a/third_party/blink/renderer/modules/storage/storage_area_map.cc
 +++ b/third_party/blink/renderer/modules/storage/storage_area_map.cc
-@@ -104,10 +104,12 @@ bool StorageAreaMap::SetItemInternal(const String& key,
-   size_t new_item_size = QuotaForString(key) + QuotaForString(value);
+@@ -113,10 +113,12 @@ bool StorageAreaMap::SetItemInternal(const String& key,
    size_t new_quota_used = quota_used_ - old_item_size + new_item_size;
+   size_t new_memory_used = memory_used_ - old_item_memory + new_item_memory;
  
 +#if 0
    // Only check quota if the size is increasing, this allows

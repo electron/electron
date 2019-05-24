@@ -102,7 +102,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       int cert_error,
       const net::SSLInfo& ssl_info,
       const GURL& request_url,
-      content::ResourceType resource_type,
+      bool is_main_frame_request,
       bool strict_enforcement,
       bool expired_previous_decision,
       const base::Callback<void(content::CertificateRequestResultType)>&
@@ -167,6 +167,16 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       int render_process_id,
       int render_frame_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
+  bool WillCreateURLLoaderFactory(
+      content::BrowserContext* browser_context,
+      content::RenderFrameHost* frame,
+      int render_process_id,
+      bool is_navigation,
+      bool is_download,
+      const url::Origin& request_initiator,
+      network::mojom::URLLoaderFactoryRequest* factory_request,
+      network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+      bool* bypass_redirect_checks) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -182,8 +192,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool is_main_frame,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      const std::string& method,
-      const net::HttpRequestHeaders& headers,
       network::mojom::URLLoaderFactoryRequest* factory_request,
       // clang-format off
       network::mojom::URLLoaderFactory*& out_factory)  // NOLINT
