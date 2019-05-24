@@ -5,7 +5,9 @@ import sys
 import zipfile
 
 EXTENSIONS_TO_SKIP = [
-  '.pdb'
+  '.pdb',
+  '.mojom.js',
+  '.mojom-lite.js',
 ]
 
 PATHS_TO_SKIP = [
