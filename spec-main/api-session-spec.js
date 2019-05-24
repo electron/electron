@@ -87,6 +87,8 @@ describe('session module', () => {
       const value = '1'
 
       await cookies.set({ url, name, value })
+      const cs = await cookies.get({ url })
+      expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
     })
 
     it('yields an error when setting a cookie with missing required fields', async () => {
@@ -211,7 +213,6 @@ describe('session module', () => {
 
   describe('ses.clearStorageData(options)', () => {
     it('clears localstorage data', async () => {
-      const { ipcMain } = require('electron')
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'))
       const options = {
         origin: 'file://',
