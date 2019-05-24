@@ -51,7 +51,6 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
                                 traffic_annotation) override;
   void Clone(network::mojom::URLLoaderFactoryRequest request) override;
 
- private:
   static void StartLoading(
       network::mojom::URLLoaderRequest loader,
       int32_t routing_id,
@@ -62,6 +61,8 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       ProtocolType type,
       mate::Arguments* args);
+
+ private:
   static void StartLoadingBuffer(network::mojom::URLLoaderClientPtr client,
                                  const mate::Dictionary& dict);
   static void StartLoadingString(network::mojom::URLLoaderClientPtr client,

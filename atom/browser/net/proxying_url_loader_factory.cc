@@ -38,10 +38,12 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Check if user has intercepted this scheme.
   auto it = handlers_.find(request.url.scheme());
   if (it != handlers_.end()) {
-    AtomURLLoaderFactory(it->second.first, it->second.second)
-        .CreateLoaderAndStart(std::move(loader), routing_id, request_id,
-                              options, request, std::move(client),
-                              traffic_annotation);
+    // <scheme, <type, handler>>
+    it->second.second.Run(
+        request, base::BindOnce(&AtomURLLoaderFactory::StartLoading,
+                                std::move(loader), routing_id, request_id,
+                                options, request, std::move(client),
+                                traffic_annotation, it->second.first));
     return;
   }
 
