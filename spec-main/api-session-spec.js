@@ -86,7 +86,7 @@ describe('session module', () => {
       const name = '1'
       const value = '1'
 
-      await cookies.set({ url, name, value })
+      await cookies.set({ url, name, value, expirationDate: (+new Date) / 1000 + 120 })
       const cs = await cookies.get({ url })
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
     })
