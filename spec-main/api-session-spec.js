@@ -161,12 +161,12 @@ describe('session module', () => {
 
       expect(setEventCookie.name).to.equal(name)
       expect(setEventCookie.value).to.equal(value)
-      expect(setEventCookie.cause).to.equal('explicit')
+      expect(setEventCause).to.equal('explicit')
       expect(setEventRemoved).to.equal(false)
 
       expect(removeEventCookie.name).to.equal(name)
       expect(removeEventCookie.value).to.equal(value)
-      expect(removeEventCookie.cause).to.equal('explicit')
+      expect(removeEventCause).to.equal('explicit')
       expect(removeEventRemoved).to.equal(true)
     })
 
