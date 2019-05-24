@@ -41,11 +41,10 @@ class NetLog : public mate::TrackableObject<NetLog> {
 
   void OnConnectionError();
 
-  void StartNetLogAfterCreateFile(
-      network::mojom::NetLogCaptureMode capture_mode,
-      uint64_t max_file_size,
-      base::Value custom_constants,
-      base::File output_file);
+  void StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
+                                  uint64_t max_file_size,
+                                  base::Value custom_constants,
+                                  base::File output_file);
   void NetLogStarted(int32_t error);
 
  private:

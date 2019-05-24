@@ -92,7 +92,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
 
   // TODO(deepak1556): Provide more flexibility to this module
   // by allowing customizations on the capturing options.
-  auto capture_mode = network::mojom::NetLogCaptureMode::DEFAULT;
+  auto capture_mode = net::NetLogCaptureMode::Default();
   auto max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
 
   base::PostTaskAndReplyWithResult(
@@ -105,11 +105,10 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
   return handle;
 }
 
-void NetLog::StartNetLogAfterCreateFile(
-    network::mojom::NetLogCaptureMode capture_mode,
-    uint64_t max_file_size,
-    base::Value custom_constants,
-    base::File output_file) {
+void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
+                                        uint64_t max_file_size,
+                                        base::Value custom_constants,
+                                        base::File output_file) {
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
     // here via the connection error handler. If so, the promise has already
