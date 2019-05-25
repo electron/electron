@@ -276,6 +276,23 @@ describe('node feature', () => {
           })
         })
       })
+
+      it('does not crash with exception in it', (done) => {
+        setImmediate(() => {
+          assert.throws(() => {
+            throw new Error()
+          })
+          done()
+        })
+      })
+    })
+
+    describe('async hooks', () => {
+      it('does not crash', () => {
+        const asyncHooks = require('async_hooks')
+        const hook = asyncHooks.createHook({ init: function () {} })
+        hook.enable()
+      })
     })
   })
 
