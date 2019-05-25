@@ -835,9 +835,7 @@ describe('Menu module', () => {
     })
   })
 
-  // FIXME(nornagon): this is disabled due to an issue with nan in current v8.
-  // See https://github.com/electron/electron/issues/18409
-  describe.skip('menu accelerators', () => {
+  describe('menu accelerators', () => {
     let testFn = it
     try {
       // We have other tests that check if native modules work, if we fail to require
