@@ -39,7 +39,7 @@ index 4408a44770bcc5106bc2dd843ef4954dad7ff7df..df9683fd5e9720255ff6b83e47ec64e2
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index d814722e6a9eb7b156fc86592cd321682bb68974..2492f30278adae9fb3ff9e995cb9328b4ae8694c 100644
+index 019295a527d29c2c00c3d092064a3ddde8b45263..ff832ce687e404572474c619f205ec826f2f2c1e 100644
 --- a/src/arm64/assembler-arm64.h
 +++ b/src/arm64/assembler-arm64.h
 @@ -2230,11 +2230,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {

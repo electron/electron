@@ -5,7 +5,7 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 5bcf6f95f630ae6232ec9be7d8de7360a1592566..3142a8286e6aaf508a06cee0e32c73903682261f 100644
+index fa2e153443329bcb5a48fe5c577db74a1aec26ca..6bad6c2e34e73d990d49fca4ad953cfbf8deba83 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -384,6 +384,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -21,7 +21,7 @@ index 5bcf6f95f630ae6232ec9be7d8de7360a1592566..3142a8286e6aaf508a06cee0e32c7390
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 2c8ade035da690db45fc629ef2aeebf701b20c59..3a23749a6b4a938320edcdc01857c5c741c66b6a 100644
+index 922aae383d1eb768c94068674fe57864717baf35..2772afc477188a5c465bb7cdb4c97a28da560700 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -1051,6 +1051,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
@@ -50,7 +50,7 @@ index 39d9cf7590c11a178acbf8f9c6dbc3d20088860c..bef9d6351c2a9456ffc5279343515c01
    void RecordMetricsForBackgroundedRendererPurge() override;
  
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index f2a375b8fc9fd8ef808898ace40139f533c5dae4..083e94481c4c9f8a485984c849e5d2960a4cf6b5 100644
+index 782a3a3a121620a130ff165e0f0bccba0fe0c61a..cdbabdbd09065e843bf6fe75055b7fc32a310065 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -656,6 +656,7 @@ class BLINK_PLATFORM_EXPORT Platform {
