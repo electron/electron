@@ -330,6 +330,14 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
 
+  // Do not crash when async id check fails in Node.
+  //
+  // Due to the way node integration works in Electron, the async hooks can not
+  // correctly track the execution of async calls. We should eventually find out
+  // how to make async hooks work correctly in Electron, but for now we just
+  // disable the check to avoid hard crashes.
+  env->async_hooks()->no_force_checks();
+
   if (browser_env_ == BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
     // so instead call it here to match expected node behavior
