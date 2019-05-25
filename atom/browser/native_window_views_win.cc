@@ -307,7 +307,7 @@ void NativeWindowViews::HandleSizingEvent(WPARAM w_param, LPARAM l_param) {
   }
 
   RECT* window_rect;
-  window_rect = reinterpret_cast<RECT*>(l_param);
+  RECT* window_rect = reinterpret_cast<RECT*>(l_param);
   int width = window_rect->right - window_rect->left;
   int height = window_rect->bottom - window_rect->top;
 
