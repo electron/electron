@@ -1,6 +1,8 @@
 #ifndef __CUSTOM_MEDIA_STREAM_H__
 #define __CUSTOM_MEDIA_STREAM_H__
 
+#include <v8.h>
+
 namespace CustomMediaStream {
 
 enum class Plane { Y, U, V };
@@ -28,7 +30,7 @@ struct VideoFrameCallback {
   virtual void releaseFrame(VideoFrame* frame) = 0;
 };
 
-inline VideoFrameCallback* unwrapCallback(v8::Handle<v8::Value> value) {
+inline VideoFrameCallback* unwrapCallback(v8::Local<v8::Value> value) {
   if (!value->IsObject())
     return nullptr;
   v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(value);
