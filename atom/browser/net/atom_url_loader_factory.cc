@@ -177,7 +177,7 @@ void AtomURLLoaderFactory::CreateLoaderAndStart(
       request,
       base::BindOnce(&AtomURLLoaderFactory::StartLoading, std::move(loader),
                      routing_id, request_id, options, request,
-                     std::move(client), traffic_annotation, type_));
+                     std::move(client), traffic_annotation, nullptr, type_));
 }
 
 void AtomURLLoaderFactory::Clone(
@@ -194,6 +194,7 @@ void AtomURLLoaderFactory::StartLoading(
     const network::ResourceRequest& request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    network::mojom::URLLoaderFactory* proxy_factory,
     ProtocolType type,
     mate::Arguments* args) {
   // Send network error when there is no argument passed.
@@ -217,18 +218,47 @@ void AtomURLLoaderFactory::StartLoading(
     }
   }
 
+  network::ResourceResponseHead head = ToResponseHead(dict);
+
+  // Handle redirection.
+  //
+  // Note that with NetworkService, sending the "Location" header no longer
+  // automatically redirects the request, we have explicitly create a new loader
+  // to implement redirection. This is also what Chromium does with WebRequest
+  // API in WebRequestProxyingURLLoaderFactory.
+  std::string location;
+  if (head.headers->IsRedirect(&location)) {
+    network::ResourceRequest new_request = request;
+    new_request.url = GURL(location);
+    // When the redirection comes from an intercepted scheme (which has
+    // |proxy_factory| passed), we askes the proxy factory to create a loader
+    // for new URL, otherwise we call |StartLoadingHttp|, which creates
+    // loader with default factory.
+    //
+    // Note that when handling requests for intercepted scheme, creating loader
+    // with default factory (i.e. calling StartLoadingHttp) would bypass the
+    // ProxyingURLLoaderFactory, we have to explicitly use the proxy factory to
+    // create loader so it is possible to have handlers of intercepted scheme
+    // getting called recursively, which is a behavior expected in protocol
+    // module.
+    //
+    // I'm not sure whether this is an intended behavior in Chromium.
+    if (proxy_factory) {
+      proxy_factory->CreateLoaderAndStart(
+          std::move(loader), routing_id, request_id, options, new_request,
+          std::move(client), traffic_annotation);
+    } else {
+      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
+                       new_request, std::move(client), traffic_annotation,
+                       mate::Dictionary::CreateEmpty(args->isolate()));
+    }
+    return;
+  }
+
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
     client->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
-    return;
-  }
-
-  network::ResourceResponseHead head = ToResponseHead(dict);
-
-  // Handle redirection.
-  std::string location;
-  if (head.headers->IsRedirect(&location)) {
     return;
   }
 
@@ -259,7 +289,8 @@ void AtomURLLoaderFactory::StartLoading(
         return;
       }
       StartLoading(std::move(loader), routing_id, request_id, options, request,
-                   std::move(client), traffic_annotation, type, args);
+                   std::move(client), traffic_annotation, proxy_factory, type,
+                   args);
       break;
   }
 }

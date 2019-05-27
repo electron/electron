@@ -59,6 +59,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const network::ResourceRequest& request,
       network::mojom::URLLoaderClientPtr client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+      network::mojom::URLLoaderFactory* proxy_factory,
       ProtocolType type,
       mate::Arguments* args);
 
