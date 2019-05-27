@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 64dbeec700f4848966cd25940ae1a360de09f1d1..0a92b5d3501682cdd5101e3fdd8dde96580efc92 100644
+index f67479a1f9230f6869c281c884251792bf957cf9..deebf94235041cd439e5b94c81a43aa89b158445 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -285,6 +285,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -37,7 +37,7 @@ index 64dbeec700f4848966cd25940ae1a360de09f1d1..0a92b5d3501682cdd5101e3fdd8dde96
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -934,6 +939,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
+@@ -936,6 +941,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
        hwnd());
  }
  
@@ -49,10 +49,10 @@ index 64dbeec700f4848966cd25940ae1a360de09f1d1..0a92b5d3501682cdd5101e3fdd8dde96
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index e51d2f358319108e1f5dd70898070caf655265bf..5efcdf139ef331f09f427f75a9a75ed270bcd433 100644
+index 060aa2dc02a27d76005657d92a62b466c07f8fce..6f93c637489e64c2e76b48147fc28063aecbe1c6 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
-@@ -189,6 +189,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+@@ -192,6 +192,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
    using TouchIDs = std::set<DWORD>;
    enum class DwmFrameState { OFF, ON };
  

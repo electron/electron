@@ -12,7 +12,7 @@ this patch was introduced in Chrome 66.
 Update(zcbenz): The bug is still in Chrome 72.
 
 diff --git a/content/browser/frame_host/render_frame_proxy_host.cc b/content/browser/frame_host/render_frame_proxy_host.cc
-index 7f0d8867dcf5eeaad3a1294014a141ff52e0643d..fc8b96dfd1c3a6d87ebc2cce1f736735e69743e6 100644
+index 40b42d5c85d693d15aedb6265628fe8da15dae76..1fdf88d06a869da2edad9383456cc89129f7d7cc 100644
 --- a/content/browser/frame_host/render_frame_proxy_host.cc
 +++ b/content/browser/frame_host/render_frame_proxy_host.cc
 @@ -261,6 +261,12 @@ void RenderFrameProxyHost::BubbleLogicalScroll(
