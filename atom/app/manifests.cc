@@ -25,7 +25,8 @@ namespace {
 // extra churn when transitioning away from content_packaged_services.
 service_manager::Manifest MakeOutOfProcess(
     const service_manager::Manifest& manifest) {
-  service_manager::Manifest copy(manifest);
+  // cpplint.py emits a false positive [build/include_what_you_use]
+  service_manager::Manifest copy(manifest);  // NOLINT
   copy.options.execution_mode =
       service_manager::Manifest::ExecutionMode::kOutOfProcessBuiltin;
   return copy;
