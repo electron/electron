@@ -724,15 +724,14 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
 
 base::Optional<service_manager::Manifest>
 AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
-  if (name == content::mojom::kBrowserServiceName) {
+  if (name == content::mojom::kBrowserServiceName)
     return GetElectronContentBrowserOverlayManifest();
-  } else if (name == content::mojom::kPackagedServicesServiceName) {
-    service_manager::Manifest overlay;
-    overlay.packaged_services = GetElectronPackagedServicesOverlayManifest();
-    return overlay;
-  }
-
   return base::nullopt;
+}
+
+std::vector<service_manager::Manifest>
+AtomBrowserClient::GetExtraServiceManifests() {
+  return GetElectronBuiltinServiceManifests();
 }
 
 net::NetLog* AtomBrowserClient::GetNetLog() {
