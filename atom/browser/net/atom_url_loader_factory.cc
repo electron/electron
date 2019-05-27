@@ -25,7 +25,6 @@
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "third_party/blink/renderer/platform/network/network_utils.h"
 
 #include "atom/common/node_includes.h"
 
@@ -86,8 +85,7 @@ mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 // Parse headers from response object.
-network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict,
-                                             net::RedirectInfo* redirect) {
+network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   network::ResourceResponseHead head;
   head.mime_type = "text/html";
   head.charset = "utf-8";
@@ -101,11 +99,6 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict,
   head.headers = new net::HttpResponseHeaders(base::StringPrintf(
       "HTTP/1.1 %d %s", status_code,
       net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
-
-  // To support redirection we have to explicitly tell NetworkService to
-  // redirect, otherwise it would be no difference from network errors.
-  if (redirect && blink::network_utils::IsRedirectResponseCode(status_code))
-    redirect->status_code = status_code;
 
   dict.Get("charset", &head.charset);
   bool has_mime_type = dict.Get("mimeType", &head.mime_type);
@@ -128,15 +121,10 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict,
       }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (iter.second.is_string() &&
-          base::ToLowerASCII(iter.first) == "content-type") {
+      if (base::ToLowerASCII(iter.first) == "content-type" &&
+          iter.second.is_string()) {
         head.mime_type = iter.second.GetString();
         has_content_type = true;
-      }
-      // The redirection info is passed via header.
-      if (redirect && iter.second.is_string() &&
-          base::ToLowerASCII(iter.first) == "location") {
-        redirect->new_url = GURL(iter.second.GetString());
       }
     }
   }
@@ -236,12 +224,11 @@ void AtomURLLoaderFactory::StartLoading(
     return;
   }
 
+  network::ResourceResponseHead head = ToResponseHead(dict);
+
   // Handle redirection.
-  net::RedirectInfo redirect;
-  network::ResourceResponseHead head = ToResponseHead(dict, &redirect);
-  if (redirect.status_code > 0) {
-    redirect.new_method = request.method;
-    client->OnReceiveRedirect(redirect, head);
+  std::string location;
+  if (head.headers->IsRedirect(&location)) {
     return;
   }
 
