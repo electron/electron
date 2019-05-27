@@ -609,11 +609,6 @@ bool AtomBrowserClient::CanCreateWindow(
 
   int opener_render_process_id = opener->GetProcess()->GetID();
 
-  if (IsRendererSandboxed(opener_render_process_id)) {
-    *no_javascript_access = false;
-    return true;
-  }
-
   if (RendererUsesNativeWindowOpen(opener_render_process_id)) {
     if (RendererDisablesPopups(opener_render_process_id)) {
       // <webview> without allowpopups attribute should return

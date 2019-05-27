@@ -36,6 +36,9 @@ class WebContentsPreferences
                          const mate::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
+  // Set WebPreferences defaults onto the JS object.
+  void SetDefaults();
+
   // A simple way to know whether a Boolean property is enabled.
   bool IsEnabled(const base::StringPiece& name,
                  bool default_value = false) const;
@@ -74,6 +77,9 @@ class WebContentsPreferences
 
   // Set preference value to given bool if user did not provide value
   bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
+
+  // Set preference value to given bool
+  void SetBool(const base::StringPiece& key, bool value);
 
   static std::vector<WebContentsPreferences*> instances_;
 
