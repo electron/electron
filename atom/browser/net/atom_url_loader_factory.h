@@ -64,14 +64,17 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
 
  private:
   static void StartLoadingBuffer(network::mojom::URLLoaderClientPtr client,
+                                 network::ResourceResponseHead head,
                                  const mate::Dictionary& dict);
   static void StartLoadingString(network::mojom::URLLoaderClientPtr client,
+                                 network::ResourceResponseHead head,
                                  const mate::Dictionary& dict,
                                  v8::Isolate* isolate,
                                  v8::Local<v8::Value> response);
   static void StartLoadingFile(network::mojom::URLLoaderRequest loader,
                                network::ResourceRequest request,
                                network::mojom::URLLoaderClientPtr client,
+                               network::ResourceResponseHead head,
                                const mate::Dictionary& dict,
                                v8::Isolate* isolate,
                                v8::Local<v8::Value> response);
@@ -86,6 +89,7 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const mate::Dictionary& dict);
   static void StartLoadingStream(network::mojom::URLLoaderRequest loader,
                                  network::mojom::URLLoaderClientPtr client,
+                                 network::ResourceResponseHead head,
                                  const mate::Dictionary& dict);
 
   // Helper to send string as response.

@@ -25,6 +25,7 @@
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "third_party/blink/renderer/platform/network/network_utils.h"
 
 #include "atom/common/node_includes.h"
 
@@ -85,7 +86,8 @@ mate::Dictionary ToDict(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 // Parse headers from response object.
-network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
+network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict,
+                                             net::RedirectInfo* redirect) {
   network::ResourceResponseHead head;
   head.mime_type = "text/html";
   head.charset = "utf-8";
@@ -99,6 +101,11 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
   head.headers = new net::HttpResponseHeaders(base::StringPrintf(
       "HTTP/1.1 %d %s", status_code,
       net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
+
+  // To support redirection we have to explicitly tell NetworkService to
+  // redirect, otherwise it would be no difference from network errors.
+  if (redirect && blink::network_utils::IsRedirectResponseCode(status_code))
+    redirect->status_code = status_code;
 
   dict.Get("charset", &head.charset);
   bool has_mime_type = dict.Get("mimeType", &head.mime_type);
@@ -121,9 +128,15 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
       }
       // Some apps are passing content-type via headers, which is not accepted
       // in NetworkService.
-      if (iter.first == "content-type" && iter.second.is_string()) {
+      if (iter.second.is_string() &&
+          base::ToLowerASCII(iter.first) == "content-type") {
         head.mime_type = iter.second.GetString();
         has_content_type = true;
+      }
+      // The redirection info is passed via header.
+      if (redirect && iter.second.is_string() &&
+          base::ToLowerASCII(iter.first) == "location") {
+        redirect->new_url = GURL(iter.second.GetString());
       }
     }
   }
@@ -223,23 +236,34 @@ void AtomURLLoaderFactory::StartLoading(
     return;
   }
 
+  // Handle redirection.
+  net::RedirectInfo redirect;
+  network::ResourceResponseHead head = ToResponseHead(dict, &redirect);
+  if (redirect.status_code > 0) {
+    redirect.new_method = request.method;
+    client->OnReceiveRedirect(redirect, head);
+    return;
+  }
+
   switch (type) {
     case ProtocolType::kBuffer:
-      StartLoadingBuffer(std::move(client), dict);
+      StartLoadingBuffer(std::move(client), std::move(head), dict);
       break;
     case ProtocolType::kString:
-      StartLoadingString(std::move(client), dict, args->isolate(), response);
+      StartLoadingString(std::move(client), std::move(head), dict,
+                         args->isolate(), response);
       break;
     case ProtocolType::kFile:
-      StartLoadingFile(std::move(loader), request, std::move(client), dict,
-                       args->isolate(), response);
+      StartLoadingFile(std::move(loader), request, std::move(client),
+                       std::move(head), dict, args->isolate(), response);
       break;
     case ProtocolType::kHttp:
       StartLoadingHttp(std::move(loader), routing_id, request_id, options,
                        request, std::move(client), traffic_annotation, dict);
       break;
     case ProtocolType::kStream:
-      StartLoadingStream(std::move(loader), std::move(client), dict);
+      StartLoadingStream(std::move(loader), std::move(client), std::move(head),
+                         dict);
       break;
     case ProtocolType::kFree:
       ProtocolType type;
@@ -256,6 +280,7 @@ void AtomURLLoaderFactory::StartLoading(
 // static
 void AtomURLLoaderFactory::StartLoadingBuffer(
     network::mojom::URLLoaderClientPtr client,
+    network::ResourceResponseHead head,
     const mate::Dictionary& dict) {
   v8::Local<v8::Value> buffer = dict.GetHandle();
   dict.Get("data", &buffer);
@@ -265,13 +290,14 @@ void AtomURLLoaderFactory::StartLoadingBuffer(
   }
 
   SendContents(
-      std::move(client), ToResponseHead(dict),
+      std::move(client), std::move(head),
       std::string(node::Buffer::Data(buffer), node::Buffer::Length(buffer)));
 }
 
 // static
 void AtomURLLoaderFactory::StartLoadingString(
     network::mojom::URLLoaderClientPtr client,
+    network::ResourceResponseHead head,
     const mate::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
@@ -281,7 +307,7 @@ void AtomURLLoaderFactory::StartLoadingString(
   else if (!dict.IsEmpty())
     dict.Get("data", &contents);
 
-  SendContents(std::move(client), ToResponseHead(dict), std::move(contents));
+  SendContents(std::move(client), std::move(head), std::move(contents));
 }
 
 // static
@@ -289,6 +315,7 @@ void AtomURLLoaderFactory::StartLoadingFile(
     network::mojom::URLLoaderRequest loader,
     network::ResourceRequest request,
     network::mojom::URLLoaderClientPtr client,
+    network::ResourceResponseHead head,
     const mate::Dictionary& dict,
     v8::Isolate* isolate,
     v8::Local<v8::Value> response) {
@@ -305,7 +332,6 @@ void AtomURLLoaderFactory::StartLoadingFile(
     return;
   }
 
-  network::ResourceResponseHead head = ToResponseHead(dict);
   head.headers->AddHeader(kCORSHeader);
   asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
                             head.headers);
@@ -357,8 +383,8 @@ void AtomURLLoaderFactory::StartLoadingHttp(
 void AtomURLLoaderFactory::StartLoadingStream(
     network::mojom::URLLoaderRequest loader,
     network::mojom::URLLoaderClientPtr client,
+    network::ResourceResponseHead head,
     const mate::Dictionary& dict) {
-  network::ResourceResponseHead head = ToResponseHead(dict);
   v8::Local<v8::Value> stream;
   if (!dict.Get("data", &stream)) {
     // Assume the opts is already a stream.
