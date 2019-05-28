@@ -284,7 +284,6 @@ step-electron-dist-build: &step-electron-dist-build
       cd src
       ninja -C out/Default electron:electron_dist_zip
       if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
-        cd src
         if [ "`uname`" == "Darwin" ]; then
           target_os=mac
           target_cpu=x64
