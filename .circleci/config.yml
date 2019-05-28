@@ -288,11 +288,11 @@ step-electron-dist-build: &step-electron-dist-build
         if [ "`uname`" == "Darwin" ]; then
           target_os=mac
           target_cpu=x64
-        else if [ "`uname`" == "Linux" ]; then
+        elif [ "`uname`" == "Linux" ]; then
           target_os=linux
           if [ x"$TARGET_ARCH" == x ]; then
             target_cpu=x64
-          else if [ "$TARGET_ARCH" == "ia32" ]; then
+          elif [ "$TARGET_ARCH" == "ia32" ]; then
             target_cpu=x86
           else
             target_cpu="$TARGET_ARCH"
