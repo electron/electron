@@ -8,10 +8,10 @@ run before shutdown. This is required to cleanup WebContents asynchronously
 in atom::CommonWebContentsDelegate::ResetManageWebContents.
 
 diff --git a/content/browser/browser_main_loop.cc b/content/browser/browser_main_loop.cc
-index 5f22028d622e43d2fc0efe68976ec21c4afa60f5..5c180d5367be3df04b51fe00aa3a02abc2fefb60 100644
+index 80a9629832145f498c8f475922f9cfe7d32faed7..4bc87713d33742207d37b74ffd93cc8c4b7c5916 100644
 --- a/content/browser/browser_main_loop.cc
 +++ b/content/browser/browser_main_loop.cc
-@@ -1525,7 +1525,7 @@ void BrowserMainLoop::MainMessageLoopRun() {
+@@ -1529,7 +1529,7 @@ void BrowserMainLoop::MainMessageLoopRun() {
    }
  
    base::RunLoop run_loop;
