@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aaron Leventhal <aleventhal@chromium.org>
+Date: Mon, 10 Sep 2018 19:54:14 +0000
+Subject: Restore live region changed events for processing by JAWS focus mode
+
+The live region changed events are needed by current versions of JAWS,
+which do not process the text inserted events fired by Chrome in all
+modes. Specifically, current versions of JAWS processes text inserted
+events in virtual cursor mode but not in focus mode. This may change
+in future versions of JAWS, and so at some point the live region
+changed events may truly become redundant with the text inserted events.
+
+Bug: 878929
+Change-Id: I3286c84d1d6366735a38af19e68f4c526658b68b
+Reviewed-on: https://chromium-review.googlesource.com/1211508
+Commit-Queue: Dominic Mazzoni <dmazzoni@chromium.org>
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#589412}(cherry picked from commit 521309feaeed915f42a14ce734dd6f0232062532)
+Reviewed-on: https://chromium-review.googlesource.com/1216944
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Commit-Position: refs/branch-heads/3538@{#242}
+Cr-Branched-From: 79f7c91a2b2a2932cd447fa6f865cb6662fa8fa6-refs/heads/master@{#587811}
+
+diff --git a/content/browser/accessibility/browser_accessibility_manager_win.cc b/content/browser/accessibility/browser_accessibility_manager_win.cc
+index f6179284bb4b4e215105de5253bede04feff08bb..b45dc6f416048f387388c3fdbc9821f75648eee6 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_win.cc
++++ b/content/browser/accessibility/browser_accessibility_manager_win.cc
+@@ -179,10 +179,18 @@ void BrowserAccessibilityManagerWin::FireGeneratedEvent(
+       FireWinAccessibilityEvent(EVENT_OBJECT_REORDER, node);
+       break;
+     case Event::LIVE_REGION_CHANGED:
+-      // NVDA and JAWS are inconsistent about speaking this event in content.
+-      // Because of this, and because Firefox does not currently fire it, we
+-      // are avoiding this event for now.
+-      // FireWinAccessibilityEvent(EVENT_OBJECT_LIVEREGIONCHANGED, node);
++      // This event is redundant with the IA2_EVENT_TEXT_INSERTED events;
++      // however, JAWS 2018 and earlier do not process the text inserted
++      // events when "virtual cursor mode" is turned off (Insert+Z).
++      // Fortunately, firing the redudant event does not cause duplicate
++      // verbalizations in either screen reader.
++      // Future versions of JAWS may process the text inserted event when
++      // in focus mode, and so at some point the live region
++      // changed events may truly become redundant with the text inserted
++      // events. Note: Firefox does not fire this event, but JAWS processes
++      // Firefox live region events differently (utilizes MSAA's
++      // EVENT_OBJECT_SHOW).
++      FireWinAccessibilityEvent(EVENT_OBJECT_LIVEREGIONCHANGED, node);
+       break;
+     case Event::LOAD_COMPLETE:
+       FireWinAccessibilityEvent(IA2_EVENT_DOCUMENT_LOAD_COMPLETE, node);
+diff --git a/content/test/data/accessibility/event/live-region-add-expected-win.txt b/content/test/data/accessibility/event/live-region-add-expected-win.txt
+index a57cfad63ae0c7ef351fcb732f9903e59b207555..2768682f95a332d32fc3daa9dd9e3eaa0758eb24 100644
+--- a/content/test/data/accessibility/event/live-region-add-expected-win.txt
++++ b/content/test/data/accessibility/event/live-region-add-expected-win.txt
+@@ -1,3 +1,4 @@
++EVENT_OBJECT_LIVEREGIONCHANGED on <div#live> role=DIV
+ EVENT_OBJECT_REORDER on <div#live> role=DIV
+ EVENT_OBJECT_SHOW on <p> role=P
+ IA2_EVENT_TEXT_INSERTED on <div#live> role=DIV new_text={'<obj>' start=6 end=7}
+diff --git a/content/test/data/accessibility/event/live-region-change-expected-win.txt b/content/test/data/accessibility/event/live-region-change-expected-win.txt
+index aa60a8459e98e22e954ff6169653a698328bc294..d85c9ec837c461baf90ff3cd2bfec0f8bb25c380 100644
+--- a/content/test/data/accessibility/event/live-region-change-expected-win.txt
++++ b/content/test/data/accessibility/event/live-region-change-expected-win.txt
+@@ -1,2 +1,3 @@
++EVENT_OBJECT_LIVEREGIONCHANGED on <div#live> role=DIV
+ IA2_EVENT_TEXT_INSERTED on <div#live> role=DIV new_text={'After' start=0 end=5}
+ IA2_EVENT_TEXT_REMOVED on <div#live> role=DIV old_text={'Before' start=0 end=6}
