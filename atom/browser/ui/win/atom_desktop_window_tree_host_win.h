@@ -7,20 +7,15 @@
 
 #include <windows.h>
 
-#include <vector>
-
-#include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
 namespace atom {
 
-class MessageHandlerDelegate;
-
 class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  public:
   AtomDesktopWindowTreeHostWin(
-      MessageHandlerDelegate* delegate,
-      views::internal::NativeWidgetDelegate* native_widget_delegate,
+      NativeWindowViews* native_window_view,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~AtomDesktopWindowTreeHostWin() override;
 
@@ -32,7 +27,7 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
   bool HasNativeFrame() const override;
 
  private:
-  MessageHandlerDelegate* delegate_;  // weak ref
+  NativeWindowViews* native_window_view_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
 };
