@@ -174,8 +174,9 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   if (!base::PathService::Get(DIR_APP_CACHE, &app_cache)) {
     app_cache = user_data;
     base::PathService::Override(DIR_APP_CACHE, user_data);
-  } else
+  } else {
     base::CreateDirectoryAndGetError(app_cache, nullptr);
+  }
 
   // Resync the userCache path
   base::PathService::Override(DIR_USER_CACHE, app_cache);
