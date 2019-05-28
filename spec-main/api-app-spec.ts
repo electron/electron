@@ -1333,6 +1333,30 @@ describe('default behavior', () => {
       expect(result).to.equal(true)
     })
   })
+
+  describe('user agent fallback', () => {
+    let initialValue: string
+
+    before(() => {
+      initialValue = app.userAgentFallback!
+    })
+
+    it('should have a reasonable default', () => {
+      expect(initialValue).to.include(`Electron/${process.versions.electron}`)
+      expect(initialValue).to.include(`Chrome/${process.versions.chrome}`)
+    })
+
+    it('should be overridable', () => {
+      app.userAgentFallback = 'test-agent/123'
+      expect(app.userAgentFallback).to.equal('test-agent/123')
+    })
+
+    it('should be restorable', () => {
+      app.userAgentFallback = 'test-agent/123'
+      app.userAgentFallback = ''
+      expect(app.userAgentFallback).to.equal(initialValue)
+    })
+  })
 })
 
 async function runTestApp (name: string, ...args: any[]) {

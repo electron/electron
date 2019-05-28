@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "atom/browser/atom_blob_reader.h"
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/atom_paths.h"
@@ -67,7 +68,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
-  user_agent_ = GetApplicationUserAgent();
+  user_agent_ = AtomBrowserClient::Get()->GetUserAgent();
 
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();

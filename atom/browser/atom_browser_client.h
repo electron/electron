@@ -64,6 +64,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
 
+  std::string GetUserAgent() const override;
+  void SetUserAgent(const std::string& user_agent);
+
  protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,
@@ -156,7 +159,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       network::mojom::NetworkService* network_service) override;
   bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() const override;
-  std::string GetUserAgent() const override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -229,6 +231,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
+
+  std::string user_agent_override_ = "";
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

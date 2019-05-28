@@ -1361,6 +1361,15 @@ This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
+### `app.userAgentFallback`
+
+A `String` which is the user agent string Electron will use as a global fallback.
+
+This is the user agent that will be used when no user agent is set at the
+`webContents` or `session` level.  Useful for ensuring your entire
+app has the same user agent.  Set to a custom value as early as possible
+in your apps initialization to ensure that your overridden value is used.
+
 ### `app.isPackaged`
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
