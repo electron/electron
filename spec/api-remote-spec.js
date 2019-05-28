@@ -23,10 +23,6 @@ const comparePaths = (path1, path2) => {
 describe('remote module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
-  let w = null
-
-  afterEach(() => closeWindow(w).then(() => { w = null }))
-
   describe('remote.getGlobal filtering', () => {
     it('can return custom values', () => {
       ipcRenderer.send('handle-next-remote-get-global', { test: 'Hello World!' })
@@ -552,6 +548,9 @@ describe('remote module', () => {
   })
 
   describe('remote function in renderer', () => {
+    let w = null
+
+    afterEach(() => closeWindow(w).then(() => { w = null }))
     afterEach(() => {
       ipcMain.removeAllListeners('done')
     })
