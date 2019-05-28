@@ -1,13 +1,11 @@
 # contentTracing
 
-> Collect tracing data from Chromium's content module for finding performance
-bottlenecks and slow operations.
+> Collect tracing data from Chromium to find performance bottlenecks and slow operations.
 
 Process: [Main](../glossary.md#main-process)
 
-This module does not include a web interface so you need to open
-`chrome://tracing/` in a Chrome browser and load the generated file to view the
-result.
+This module does not include a web interface. To view recorded traces, use
+[trace viewer][], available at `chrome://tracing` in Chrome.
 
 **Note:** You should not use this module until the `ready` event of the app
 module is emitted.
@@ -16,20 +14,15 @@ module is emitted.
 const { app, contentTracing } = require('electron')
 
 app.on('ready', () => {
-  const options = {
-    categoryFilter: '*',
-    traceOptions: 'record-until-full,enable-sampling'
-  }
-
-  contentTracing.startRecording(options, () => {
+  (async () => {
+    await contentTracing.startRecording({
+      include_categories: ['*']
+    })
     console.log('Tracing started')
-
-    setTimeout(() => {
-      contentTracing.stopRecording('', (path) => {
-        console.log('Tracing data recorded to ' + path)
-      })
-    }, 5000)
-  })
+    await new Promise(resolve => setTimeout(resolve, 5000))
+    const path = await contentTracing.stopRecording()
+    console.log('Tracing data recorded to ' + path)
+  })()
 })
 ```
 
@@ -41,11 +34,13 @@ The `contentTracing` module has the following methods:
 
 Returns `Promise<String[]>` - resolves with an array of category groups once all child processes have acknowledged the `getCategories` request
 
-Get a set of category groups. The category groups can change as new code paths are reached.
+Get a set of category groups. The category groups can change as new code paths
+are reached. See also the [list of built-in tracing
+categories](https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h).
 
 ### `contentTracing.startRecording(options)`
 
-* `options` ([TraceCategoriesAndOptions](structures/trace-categories-and-options.md) | [TraceConfig](structures/trace-config.md))
+* `options` ([TraceConfig](structures/trace-config.md) | [TraceCategoriesAndOptions](structures/trace-categories-and-options.md))
 
 Returns `Promise<void>` - resolved once all child processes have acknowledged the `startRecording` request.
 
@@ -54,22 +49,26 @@ Start recording on all processes.
 Recording begins immediately locally and asynchronously on child processes
 as soon as they receive the EnableRecording request.
 
+If a recording is already running, the promise will be immediately resolved, as
+only one trace operation can be in progress at a time.
+
 ### `contentTracing.stopRecording(resultFilePath)`
 
-* `resultFilePath` String
+* `resultFilePath` String (optional)
 
-Returns `Promise<String>` - resolves with a file that contains the traced data once all child processes have acknowledged the `stopRecording` request
+Returns `Promise<String>` - resolves with a path to a file that contains the traced data once all child processes have acknowledged the `stopRecording` request
 
 Stop recording on all processes.
 
 Child processes typically cache trace data and only rarely flush and send
 trace data back to the main process. This helps to minimize the runtime overhead
 of tracing since sending trace data over IPC can be an expensive operation. So,
-to end tracing, we must asynchronously ask all child processes to flush any
+to end tracing, Chromium asynchronously asks all child processes to flush any
 pending trace data.
 
-Trace data will be written into `resultFilePath` if it is not empty or into a
-temporary file.
+Trace data will be written into `resultFilePath`. If `resultFilePath` is empty
+or not provided, trace data will be written to a temporary file, and the path
+will be returned in the promise.
 
 ### `contentTracing.getTraceBufferUsage()`
 
@@ -77,3 +76,5 @@ Returns `Promise<Object>` - Resolves with an object containing the `value` and `
 
 Get the maximum usage across processes of trace buffer as a percentage of the
 full state.
+
+[trace viewer]: https://github.com/catapult-project/catapult/blob/master/tracing
