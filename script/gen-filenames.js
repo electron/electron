@@ -73,7 +73,7 @@ const main = async () => {
       // Ignore empty lines
       .filter(line => line)
       // Get the relative path
-      .map(line => path.relative(rootPath, line))
+      .map(line => path.relative(rootPath, line).replace(/\\/g, '/'))
       // Only care about files in //electron
       .filter(line => !line.startsWith('..'))
       // Only care about our own files
