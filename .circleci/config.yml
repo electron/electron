@@ -287,6 +287,9 @@ step-electron-dist-build: &step-electron-dist-build
         if [ "`uname`" == "Darwin" ]; then
           target_os=mac
           target_cpu=x64
+          if [ x"$MAS_BUILD" == x"true" ]; then
+            target_os=mac_mas
+          fi
         elif [ "`uname`" == "Linux" ]; then
           target_os=linux
           if [ x"$TARGET_ARCH" == x ]; then
