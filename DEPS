@@ -13,6 +13,8 @@ vars = {
     'ab588d36191964c4bca8de5c320534d95606c861',
   'node_version':
     'a86a4a160dc520c61a602c949a32a1bc4c0fc633',
+  'nan_version':
+    '960dd6c70fc9eb136efdf37b4bef18fadbc3436f',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -21,10 +23,12 @@ vars = {
   'boto_git': 'https://github.com/boto',
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
+  # FIXME: Once https://github.com/nodejs/nan/pull/857 lands this should point at nodejs/nan
+  'nodejs_git': 'https://github.com/marshallofsound',
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
 
-  # KEEP IN SYNC WITH spec-runner FILE
+  # KEEP IN SYNC WITH utils.js FILE
   'yarn_version': '1.15.2',
 
   # To be able to build clean Chromium from sources.
@@ -36,6 +40,7 @@ vars = {
   # To allow in-house builds to checkout those manually.
   'checkout_chromium': True,
   'checkout_node': True,
+  'checkout_nan': True,
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
@@ -68,6 +73,10 @@ deps = {
   'src': {
     'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
     'condition': 'checkout_chromium and process_deps',
+  },
+  'src/third_party/nan': {
+    'url': (Var("nodejs_git")) + '/nan.git@' + (Var("nan_version")),
+    'condition': 'checkout_nan and process_deps',
   },
   'src/third_party/electron_node': {
     'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
