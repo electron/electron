@@ -744,21 +744,21 @@ content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
 
 void AtomBrowserClient::WebNotificationAllowed(
     int render_process_id,
-    const base::RepeatingCallback<void(bool, bool)>& callback) {
+    base::OnceCallback<void(bool, bool)> callback) {
   content::WebContents* web_contents =
       WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
   if (!web_contents) {
-    callback.Run(false, false);
+    std::move(callback).Run(false, false);
     return;
   }
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
-    callback.Run(false, false);
+    std::move(callback).Run(false, false);
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::BindRepeating(callback, web_contents->IsAudioMuted()));
+      base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(
@@ -810,9 +810,9 @@ void HandleExternalProtocolInUI(
     return;
 
   GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
-  auto callback = base::BindRepeating(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(callback, has_user_gesture,
-                                                   url);
+  auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
+  permission_helper->RequestOpenExternalPermission(std::move(callback),
+                                                   has_user_gesture, url);
 }
 
 bool AtomBrowserClient::HandleExternalProtocol(
