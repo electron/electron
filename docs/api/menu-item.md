@@ -108,7 +108,7 @@ The following additional roles are available on _macOS_:
 * `moveTabToNewWindow` - Map to the `moveTabToNewWindow` action.
 * `window` - The submenu is a "Window" menu.
 * `help` - The submenu is a "Help" menu.
-* `services` - The submenu is a "Services" menu.
+* `services` - The submenu is a ["Services"](https://developer.apple.com/documentation/appkit/nsapplication/1428608-servicesmenu?language=objc) menu; this is not the same as a menu item populated with [NSServices](https://developer.apple.com/documentation/bundleresources/information_property_list/nsservices?language=objc) and should not be used in context menus.
 * `recentDocuments` - The submenu is an "Open Recent" menu.
 * `clearRecentDocuments` - Map to the `clearRecentDocuments` action.
 
