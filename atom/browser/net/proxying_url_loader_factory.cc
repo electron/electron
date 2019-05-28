@@ -43,7 +43,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
         request, base::BindOnce(&AtomURLLoaderFactory::StartLoading,
                                 std::move(loader), routing_id, request_id,
                                 options, request, std::move(client),
-                                traffic_annotation, it->second.first));
+                                traffic_annotation, this, it->second.first));
     return;
   }
 
