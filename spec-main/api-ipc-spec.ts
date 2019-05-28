@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 
 const { expect } = chai
 
@@ -8,6 +8,16 @@ chai.use(chaiAsPromised)
 
 describe('ipc module', () => {
   describe('invoke', () => {
+    let w = (null as unknown as BrowserWindow);
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      await w.loadURL('about:blank')
+    })
+    after(async () => {
+      w.destroy()
+    })
+
     async function rendererInvoke(...args: any[]) {
       const {ipcRenderer} = require('electron')
       try {
@@ -18,48 +28,8 @@ describe('ipc module', () => {
       }
     }
 
-    it('receives responses', async () => {
-      ipcMain.once('test', (e, arg) => {
-        expect(arg).to.equal(123)
-        e.reply('456')
-      })
-      const done = new Promise(resolve => {
-        ipcMain.once('result', (e, arg) => {
-          expect(arg).to.deep.equal({result: '456'})
-          resolve()
-        })
-      })
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      try {
-        await w.loadURL(`data:text/html,<script>(${rendererInvoke})(123)</script>`)
-        await done
-      } finally {
-        w.destroy()
-      }
-    })
-
-    it('receives errors', async () => {
-      ipcMain.once('test', (e) => {
-        e.throw('some error')
-      })
-      const done = new Promise(resolve => {
-        ipcMain.once('result', (e, arg) => {
-          expect(arg.error).to.match(/some error/)
-          resolve()
-        })
-      })
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      try {
-        await w.loadURL(`data:text/html,<script>(${rendererInvoke})()</script>`)
-        await done
-      } finally {
-        w.destroy()
-      }
-    })
-
-    it('registers a synchronous handler', async () => {
-      (ipcMain as any).handle('test', (arg: number) => {
-        ipcMain.removeAllListeners('test')
+    it('receives a response from a synchronous handler', async () => {
+      ipcMain.handleOnce('test', (e: IpcMainEvent, arg: number) => {
         expect(arg).to.equal(123)
         return 3
       })
@@ -67,18 +37,12 @@ describe('ipc module', () => {
         expect(arg).to.deep.equal({result: 3})
         resolve()
       }))
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      try {
-        await w.loadURL(`data:text/html,<script>(${rendererInvoke})(123)</script>`)
-        await done
-      } finally {
-        w.destroy()
-      }
+      await w.webContents.executeJavaScript(`(${rendererInvoke})(123)`)
+      await done
     })
 
-    it('registers an asynchronous handler', async () => {
-      (ipcMain as any).handle('test', async (arg: number) => {
-        ipcMain.removeAllListeners('test')
+    it('receives a response from an asynchronous handler', async () => {
+      ipcMain.handleOnce('test', async (e: IpcMainEvent, arg: number) => {
         expect(arg).to.equal(123)
         await new Promise(resolve => setImmediate(resolve))
         return 3
@@ -87,36 +51,24 @@ describe('ipc module', () => {
         expect(arg).to.deep.equal({result: 3})
         resolve()
       }))
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      try {
-        await w.loadURL(`data:text/html,<script>(${rendererInvoke})(123)</script>`)
-        await done
-      } finally {
-        w.destroy()
-      }
+      await w.webContents.executeJavaScript(`(${rendererInvoke})(123)`)
+      await done
     })
 
     it('receives an error from a synchronous handler', async () => {
-      (ipcMain as any).handle('test', () => {
-        ipcMain.removeAllListeners('test')
+      ipcMain.handleOnce('test', () => {
         throw new Error('some error')
       })
       const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg.error).to.match(/some error/)
         resolve()
       }))
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      try {
-        await w.loadURL(`data:text/html,<script>(${rendererInvoke})()</script>`)
-        await done
-      } finally {
-        w.destroy()
-      }
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`)
+      await done
     })
 
     it('receives an error from an asynchronous handler', async () => {
-      (ipcMain as any).handle('test', async () => {
-        ipcMain.removeAllListeners('test')
+      ipcMain.handleOnce('test', async () => {
         await new Promise(resolve => setImmediate(resolve))
         throw new Error('some error')
       })
@@ -124,13 +76,34 @@ describe('ipc module', () => {
         expect(arg.error).to.match(/some error/)
         resolve()
       }))
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-      try {
-        await w.loadURL(`data:text/html,<script>(${rendererInvoke})()</script>`)
-        await done
-      } finally {
-        w.destroy()
-      }
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`)
+      await done
+    })
+
+    it('throws an error if no handler is registered', async () => {
+      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+        expect(arg.error).to.match(/No handler registered/)
+        resolve()
+      }))
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`)
+      await done
+    })
+
+    it('throws an error when invoking a handler that was removed', async () => {
+      ipcMain.handle('test', () => {})
+      ipcMain.removeHandler('test')
+      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+        expect(arg.error).to.match(/No handler registered/)
+        resolve()
+      }))
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`)
+      await done
+    })
+
+    it('forbids multiple handlers', async () => {
+      ipcMain.handle('test', () => {})
+      expect(() => { ipcMain.handle('test', () => {}) }).to.throw(/second handler/)
+      ipcMain.removeHandler('test')
     })
   })
 })
