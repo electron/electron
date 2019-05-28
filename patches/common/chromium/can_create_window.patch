@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index e3b6bc9ab2b12493daddad8471ac48eb15f878e3..880b8eabb4227c93cf1f920b364709aa64e53bc6 100644
+index c7901db74eb58fb0caf75ce8e1113278aa0063ed..dfe2a45e0b619500406afc46eed5b7ca11cb2fad 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3722,6 +3722,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3712,6 +3712,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,7 +32,7 @@ index 82882159b0bac6d47d678c485de0aacc7db06c2d..dd2299094b79d82da7ec1cd8f559050b
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index da482a1a1638f27a413502d9be16a5fb12e9678c..de19cb3a5f3d6685d8dede7c3cdb5b47183ed07f 100644
+index ce9d0ede84da62061278f7fb0c543fc2e8a0216e..3729dcc9ea3272c943754a92c6ed1d7a1fd8fcf3 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -518,6 +518,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,17 +45,17 @@ index da482a1a1638f27a413502d9be16a5fb12e9678c..de19cb3a5f3d6685d8dede7c3cdb5b47
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c11897f6a45a8bf1a80bfb727992087b03904412..13342817ac00282bba5089bafb7e3a1ed85f0b0d 100644
+index 449941ddc4d43dc4cb164f6af9dcc69991dddc8b..4c84fb3648b3de36015b325246559f8aefe2ebd5 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -175,6 +175,7 @@ class RenderFrameHost;
+@@ -177,6 +177,7 @@ class RenderFrameHost;
  class RenderProcessHost;
  class RenderViewHost;
  class ResourceContext;
 +class ResourceRequestBody;
  class SerialDelegate;
- class ServiceManagerConnection;
  class SiteInstance;
+ class SpeechRecognitionManagerDelegate;
 @@ -802,6 +803,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,

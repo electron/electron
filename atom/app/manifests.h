@@ -11,6 +11,6 @@
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest();
 const std::vector<service_manager::Manifest>&
-GetElectronPackagedServicesOverlayManifest();
+GetElectronBuiltinServiceManifests();
 
 #endif  // ATOM_APP_MANIFESTS_H_

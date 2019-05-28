@@ -18,6 +18,22 @@
 #include "chrome/services/printing/public/cpp/manifest.h"
 #endif
 
+namespace {
+
+// TODO(https://crbug.com/781334): Remove these helpers and just update the
+// manifest definitions to be marked out-of-process. This is here only to avoid
+// extra churn when transitioning away from content_packaged_services.
+service_manager::Manifest MakeOutOfProcess(
+    const service_manager::Manifest& manifest) {
+  // cpplint.py emits a false positive [build/include_what_you_use]
+  service_manager::Manifest copy(manifest);  // NOLINT
+  copy.options.execution_mode =
+      service_manager::Manifest::ExecutionMode::kOutOfProcessBuiltin;
+  return copy;
+}
+
+}  // namespace
+
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
   static base::NoDestructor<service_manager::Manifest> manifest{
       service_manager::ManifestBuilder()
@@ -35,14 +51,14 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
 }
 
 const std::vector<service_manager::Manifest>&
-GetElectronPackagedServicesOverlayManifest() {
+GetElectronBuiltinServiceManifests() {
   static base::NoDestructor<std::vector<service_manager::Manifest>> manifests{{
-      proxy_resolver::GetManifest(),
+      MakeOutOfProcess(proxy_resolver::GetManifest()),
 #if BUILDFLAG(ENABLE_PRINTING)
-      printing::GetPdfCompositorManifest(),
+      MakeOutOfProcess(printing::GetPdfCompositorManifest()),
 #endif
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-      GetChromePrintingManifest(),
+      MakeOutOfProcess(GetChromePrintingManifest()),
 #endif
   }};
   return *manifests;
