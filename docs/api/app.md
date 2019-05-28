@@ -580,7 +580,7 @@ them.
 
 * `path` String (optional) - A custom path for your logs. Must be absolute.
 
-Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(newPath)`.
+Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(pathName, newPath)`.
 
 On _macOS_, this directory will be set by deafault to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
 
@@ -641,9 +641,9 @@ On _Linux_ and _macOS_, icons depend on the application associated with file mim
 * `name` String
 * `path` String
 
-Overrides the `path` to a special directory or file associated with `name`. If
-the path specifies a directory that does not exist, the directory will be
-created by this method. On failure an `Error` is thrown.
+Overrides the `path` to a special directory or file associated with `name`.
+If the path specifies a directory that does not exist, an `Error` is thrown.
+In that case, the directory should be created with `fs.mkdirSync` or similar.
 
 You can only override paths of a `name` defined in `app.getPath`.
 
