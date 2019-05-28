@@ -382,9 +382,7 @@ describe('webContents module', () => {
     })
   })
 
-  // FIXME(nornagon): this is disabled due to an issue with nan in current v8.
-  // See https://github.com/electron/electron/issues/18409
-  describe.skip('devtools window', () => {
+  describe('devtools window', () => {
     let testFn = it
     if (process.platform === 'darwin' && isCi) {
       testFn = it.skip
