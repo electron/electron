@@ -26,7 +26,8 @@ describe('session module', () => {
       width: 400,
       height: 400,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: true,
+        webviewTag: true,
       }
     })
   })
@@ -557,4 +558,281 @@ describe('session module', () => {
       })
     })
   })
+
+  describe('DownloadItem', () => {
+    const mockPDF = Buffer.alloc(1024 * 1024 * 5)
+    const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
+    const protocolName = 'custom-dl'
+    let contentDisposition = 'inline; filename="mock.pdf"'
+    let address = null
+    let downloadServer = null
+    before(() => {
+      downloadServer = http.createServer((req, res) => {
+        address = downloadServer.address()
+        if (req.url === '/?testFilename') contentDisposition = 'inline'
+        res.writeHead(200, {
+          'Content-Length': mockPDF.length,
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': contentDisposition
+        })
+        res.end(mockPDF)
+        downloadServer.close()
+      })
+    })
+    after(() => {
+      downloadServer.close()
+    })
+
+    const isPathEqual = (path1, path2) => {
+      return path.relative(path1, path2) === ''
+    }
+    const assertDownload = (state, item, isCustom = false) => {
+      expect(state).to.equal('completed')
+      expect(item.getFilename()).to.equal('mock.pdf')
+      expect(path.isAbsolute(item.getSavePath())).to.equal(true)
+      expect(isPathEqual(item.getSavePath(), downloadFilePath)).to.equal(true)
+      if (isCustom) {
+        expect(item.getURL()).to.equal(`${protocolName}://item`)
+      } else {
+        expect(item.getURL()).to.be.equal(`${url}:${address.port}/`)
+      }
+      expect(item.getMimeType()).to.equal('application/pdf')
+      expect(item.getReceivedBytes()).to.equal(mockPDF.length)
+      expect(item.getTotalBytes()).to.equal(mockPDF.length)
+      expect(item.getContentDisposition()).to.equal(contentDisposition)
+      expect(fs.existsSync(downloadFilePath)).to.equal(true)
+      fs.unlinkSync(downloadFilePath)
+    }
+
+    it('can download using WebContents.downloadURL', (done) => {
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const port = downloadServer.address().port
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(downloadFilePath)
+          item.on('done', function (e, state) {
+            assertDownload(state, item)
+            done()
+          })
+        })
+        w.webContents.downloadURL(`${url}:${port}`)
+      })
+    })
+
+    it('can download from custom protocols using WebContents.downloadURL', (done) => {
+      const protocol = session.defaultSession.protocol
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const port = downloadServer.address().port
+        const handler = (ignoredError, callback) => {
+          callback({ url: `${url}:${port}` })
+        }
+        protocol.registerHttpProtocol(protocolName, handler, (error) => {
+          if (error) return done(error)
+          w.webContents.session.once('will-download', function (e, item) {
+            item.setSavePath(downloadFilePath)
+            item.on('done', function (e, state) {
+              assertDownload(state, item, true)
+              done()
+            })
+          })
+          w.webContents.downloadURL(`${protocolName}://item`)
+        })
+      })
+    })
+
+    it('can download using WebView.downloadURL', (done) => {
+      downloadServer.listen(0, '127.0.0.1', async () => {
+        const port = downloadServer.address().port
+        await w.loadURL('about:blank')
+        function webviewDownload({fixtures, url, port}) {
+          const webview = new WebView()
+          webview.addEventListener('did-finish-load', () => {
+            webview.downloadURL(`${url}:${port}/`)
+          })
+          webview.src = `file://${fixtures}/api/blank.html`
+          document.body.appendChild(webview)
+        }
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(downloadFilePath)
+          item.on('done', function (e, state) {
+            assertDownload(state, item)
+            done()
+          })
+        })
+        await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({fixtures, url, port})})`)
+      })
+    })
+
+    it('can cancel download', (done) => {
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const port = downloadServer.address().port
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(downloadFilePath)
+          item.on('done', function (e, state) {
+            expect(state).to.equal('cancelled')
+            expect(item.getFilename()).to.equal('mock.pdf')
+            expect(item.getMimeType()).to.equal('application/pdf')
+            expect(item.getReceivedBytes()).to.equal(0)
+            expect(item.getTotalBytes()).to.equal(mockPDF.length)
+            expect(item.getContentDisposition()).to.equal(contentDisposition)
+            done()
+          })
+          item.cancel()
+        })
+        w.webContents.downloadURL(`${url}:${port}/`)
+      })
+    })
+
+    it('can generate a default filename', function (done) {
+      if (process.env.APPVEYOR === 'True') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return done()
+      }
+
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const port = downloadServer.address().port
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(downloadFilePath)
+          item.on('done', function (e, state) {
+            expect(item.getFilename()).to.equal('download.pdf')
+            done()
+          })
+          item.cancel()
+        })
+        w.webContents.downloadURL(`${url}:${port}/?testFilename`)
+      })
+    })
+
+    it('can set options for the save dialog', (done) => {
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
+        const port = downloadServer.address().port
+        const options = {
+          window: null,
+          title: 'title',
+          message: 'message',
+          buttonLabel: 'buttonLabel',
+          nameFieldLabel: 'nameFieldLabel',
+          defaultPath: '/',
+          filters: [{
+            name: '1', extensions: ['.1', '.2']
+          }, {
+            name: '2', extensions: ['.3', '.4', '.5']
+          }],
+          showsTagField: true,
+          securityScopedBookmarks: true
+        }
+
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(filePath)
+          item.setSaveDialogOptions(options)
+          item.on('done', function (e, state) {
+            expect(item.getSaveDialogOptions()).to.deep.equal(options)
+            done()
+          })
+          item.cancel()
+        })
+        w.webContents.downloadURL(`${url}:${port}`)
+      })
+    })
+
+    describe('when a save path is specified and the URL is unavailable', () => {
+      it('does not display a save dialog and reports the done state as interrupted', (done) => {
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(downloadFilePath)
+          if (item.getState() === 'interrupted') {
+            item.resume()
+          }
+          item.on('done', function (e, state) {
+            expect(state).to.equal('interrupted')
+            done()
+          })
+        })
+        w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`)
+      })
+    })
+  })
+
+  describe('ses.createInterruptedDownload(options)', () => {
+    it('can create an interrupted download item', (done) => {
+      const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
+      const options = {
+        path: downloadFilePath,
+        urlChain: ['http://127.0.0.1/'],
+        mimeType: 'application/pdf',
+        offset: 0,
+        length: 5242880
+      }
+      w.webContents.session.once('will-download', function (e, item) {
+        expect(item.getState()).to.equal('interrupted')
+        item.cancel()
+        expect(item.getURLChain()).to.deep.equal(options.urlChain)
+        expect(item.getMimeType()).to.equal(options.mimeType)
+        expect(item.getReceivedBytes()).to.equal(options.offset)
+        expect(item.getTotalBytes()).to.equal(options.length)
+        expect(item.getSavePath()).to.equal(downloadFilePath)
+        done()
+      })
+      w.webContents.session.createInterruptedDownload(options)
+    })
+
+    it('can be resumed', async () => {
+      const downloadFilePath = path.join(fixtures, 'logo.png')
+      const rangeServer = http.createServer((req, res) => {
+        const options = { root: fixtures }
+        send(req, req.url, options)
+          .on('error', (error) => { done(error) }).pipe(res)
+      })
+      try {
+        await new Promise(resolve => rangeServer.listen(0, '127.0.0.1', resolve))
+        const port = rangeServer.address().port
+        const downloadCancelled = new Promise((resolve) => {
+          w.webContents.session.once('will-download', function (e, item) {
+            item.setSavePath(downloadFilePath)
+            item.on('done', function (e, state) {
+              resolve(item)
+            })
+            item.cancel()
+          })
+        })
+        const downloadUrl = `http://127.0.0.1:${port}/assets/logo.png`
+        w.webContents.downloadURL(downloadUrl)
+        const item = await downloadCancelled
+        expect(item.getState()).to.equal('cancelled')
+
+        const options = {
+          path: item.getSavePath(),
+          urlChain: item.getURLChain(),
+          mimeType: item.getMimeType(),
+          offset: item.getReceivedBytes(),
+          length: item.getTotalBytes(),
+          lastModified: item.getLastModifiedTime(),
+          eTag: item.getETag(),
+        }
+        const downloadResumed = new Promise((resolve) => {
+          w.webContents.session.once('will-download', function (e, item) {
+            expect(item.getState()).to.equal('interrupted')
+            item.setSavePath(downloadFilePath)
+            item.resume()
+            item.on('done', function (e, state) {
+              resolve(item)
+            })
+          })
+        })
+        w.webContents.session.createInterruptedDownload(options)
+        const completedItem = await downloadResumed
+        expect(completedItem.getState()).to.equal('completed')
+        expect(completedItem.getFilename()).to.equal('logo.png')
+        expect(completedItem.getSavePath()).to.equal(downloadFilePath)
+        expect(completedItem.getURL()).to.equal(downloadUrl)
+        expect(completedItem.getMimeType()).to.equal('image/png')
+        expect(completedItem.getReceivedBytes()).to.equal(14022)
+        expect(completedItem.getTotalBytes()).to.equal(14022)
+        expect(fs.existsSync(downloadFilePath)).to.equal(true)
+      } finally {
+        rangeServer.close()
+      }
+    })
+  })
+
 })
