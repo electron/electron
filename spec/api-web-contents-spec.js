@@ -779,31 +779,6 @@ describe('webContents module', () => {
     })
   })
 
-  describe('will-prevent-unload event', () => {
-    it('does not emit if beforeunload returns undefined', (done) => {
-      w.once('closed', () => {
-        done()
-      })
-      w.webContents.on('will-prevent-unload', (e) => {
-        expect.fail('should not have fired')
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
-    })
-
-    it('emits if beforeunload returns false', (done) => {
-      w.webContents.on('will-prevent-unload', () => {
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-    })
-
-    it('supports calling preventDefault on will-prevent-unload events', (done) => {
-      ipcRenderer.send('prevent-next-will-prevent-unload', w.webContents.id)
-      w.once('closed', () => done())
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-    })
-  })
-
   describe('render view deleted events', () => {
     let server = null
 
