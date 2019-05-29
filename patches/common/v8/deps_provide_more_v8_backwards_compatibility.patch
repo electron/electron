@@ -174,7 +174,7 @@ index cc603dc4aae69de4b09f06ed0bca48cdae8eebd3..c59b0fa69880c237e3b60f190160d8b9
  #ifdef V8_ENABLE_CHECKS
    CheckCast(value);
 diff --git a/src/api/api.cc b/src/api/api.cc
-index dc1efc9015ab058eb38812eba7cd92e050a709b0..659a45618a69bf742730d3456e3d4860efa9994f 100644
+index a4e275c19097a9083606707d969791194e9b23d0..a0e2766c60eee5e2bd1d7b651b1e16f656f79cdd 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -2171,6 +2171,10 @@ int PrimitiveArray::Length() const {
@@ -324,7 +324,7 @@ index dc1efc9015ab058eb38812eba7cd92e050a709b0..659a45618a69bf742730d3456e3d4860
  Local<v8::Value> v8::StringObject::New(Isolate* v8_isolate,
                                         Local<String> value) {
    i::Handle<i::String> string = Utils::OpenHandle(*value);
-@@ -8591,6 +8668,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
+@@ -8589,6 +8666,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
    return microtask_queue->IsRunningMicrotasks();
  }
  
@@ -334,7 +334,7 @@ index dc1efc9015ab058eb38812eba7cd92e050a709b0..659a45618a69bf742730d3456e3d4860
  String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
      : str_(nullptr), length_(0) {
    if (obj.IsEmpty()) return;
-@@ -8608,6 +8688,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
+@@ -8606,6 +8686,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
  
  String::Utf8Value::~Utf8Value() { i::DeleteArray(str_); }
  
