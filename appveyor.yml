@@ -44,6 +44,8 @@ test_script:
       Write-Output "Skipping tests for release build"
     } else {
       $env:RUN_TESTS="true"
+      Remove-Item Env:\ELECTRON_ENABLE_LOGGING
+      Remove-Item Env:\ELECTRON_ENABLE_STACK_DUMPING
       Write-Output "Running tests for debug build"
     }
 - if "%RUN_TESTS%"=="true" ( echo Running test suite & python script\test.py --ci --rebuild_native_modules)
