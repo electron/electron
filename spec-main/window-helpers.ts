@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { BrowserWindow, WebContents } from 'electron'
+import { BrowserWindow } from 'electron'
 import { emittedOnce } from './events-helpers';
 
-async function ensureWindowIsClosed(window) {
+async function ensureWindowIsClosed(window: BrowserWindow | null) {
   if (window && !window.isDestroyed()) {
     if (window.webContents && !window.webContents.isDestroyed()) {
       // If a window isn't destroyed already, and it has non-destroyed WebContents,
@@ -12,7 +12,7 @@ async function ensureWindowIsClosed(window) {
       // window.
       const isClosed = emittedOnce(window, 'closed')
       window.destroy()
-      await isClosed()
+      await isClosed
     } else {
       // If there's no WebContents or if the WebContents is already destroyed,
       // then the 'closed' event has already been emitted so there's nothing to
