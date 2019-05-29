@@ -73,9 +73,11 @@
   NSButton* close_button =
       [NSWindow standardWindowButton:NSWindowCloseButton
                         forStyleMask:NSWindowStyleMaskTitled];
+  [close_button setTag:1];
   NSButton* miniaturize_button =
       [NSWindow standardWindowButton:NSWindowMiniaturizeButton
                         forStyleMask:NSWindowStyleMaskTitled];
+  [miniaturize_button setTag:2];
 
   CGFloat x = 0;
   const CGFloat space_between = 20;
@@ -466,7 +468,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   // Default content view.
   SetContentView(new views::View());
-  AddContentViewLayers();
+  AddContentViewLayers(minimizable, closable);
 
   original_frame_ = [window_ frame];
   original_level_ = [window_ level];
@@ -857,9 +859,9 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
   if (newLevel >= minWindowLevel && newLevel <= maxWindowLevel) {
     [window_ setLevel:newLevel];
   } else {
-    *error = std::string([
-        [NSString stringWithFormat:@"relativeLevel must be between %d and %d",
-                                   minWindowLevel, maxWindowLevel] UTF8String]);
+    *error = std::string([[NSString
+        stringWithFormat:@"relativeLevel must be between %d and %d",
+                         minWindowLevel, maxWindowLevel] UTF8String]);
   }
 }
 
@@ -1080,7 +1082,7 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
 
   if (browser_view()) {
     [browser_view()->GetInspectableWebContentsView()->GetNativeView()
-            removeFromSuperview];
+        removeFromSuperview];
     set_browser_view(nullptr);
   }
 
@@ -1379,7 +1381,7 @@ views::View* NativeWindowMac::GetContentsView() {
   return root_view_.get();
 }
 
-void NativeWindowMac::AddContentViewLayers() {
+void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
@@ -1420,6 +1422,12 @@ void NativeWindowMac::AddContentViewLayers() {
           [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
       // NSWindowStyleMaskFullSizeContentView does not work with zoom button
       SetFullScreenable(false);
+
+      if (!minimizable)
+        [[buttons_view_ viewWithTag:2] removeFromSuperview];
+      if (!closable)
+        [[buttons_view_ viewWithTag:1] removeFromSuperview];
+
       [[window_ contentView] addSubview:buttons_view_];
     } else {
       if (title_bar_style_ != NORMAL) {
@@ -1484,7 +1492,7 @@ void NativeWindowMac::OverrideNSWindowContentView() {
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
   [window_ setContentView:container_view_];
-  AddContentViewLayers();
+  AddContentViewLayers(IsMinimizable(), IsClosable());
 }
 
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
