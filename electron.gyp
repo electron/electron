@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '3.1.9',
+    'version%': '3.1.10',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
