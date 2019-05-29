@@ -52,7 +52,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   NotificationPresenter* GetNotificationPresenter();
 
   void WebNotificationAllowed(int render_process_id,
-                              const base::Callback<void(bool, bool)>& callback);
+                              base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate
   std::vector<std::unique_ptr<content::NavigationThrottle>>
