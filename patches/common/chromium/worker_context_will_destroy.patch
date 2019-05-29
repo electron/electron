@@ -21,7 +21,7 @@ index fa2e153443329bcb5a48fe5c577db74a1aec26ca..6bad6c2e34e73d990d49fca4ad953cfb
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 67f40c54f2e9cfec538576dc9e9da6f495ba62aa..61bbe9cb061d83cbcc01999877d6082020ad76ba 100644
+index 32f5e253cee84ef0a9a88d500cb96e4a2321933c..307905c8bcd8de877b5f319b6ff24729a9b40b44 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -1044,6 +1044,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
@@ -38,7 +38,7 @@ index 67f40c54f2e9cfec538576dc9e9da6f495ba62aa..61bbe9cb061d83cbcc01999877d60820
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 7b550279f319d673ce8e4b6f4ad6e9451685bd5b..81e20536edee59ca31f2f674592e31dafb21d22c 100644
+index ba77a976729d592c132778efffc5def8ec3ab35a..b85b09f0542df58aebb2e8e9c4ed69fba4f04272 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -199,6 +199,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
@@ -46,11 +46,11 @@ index 7b550279f319d673ce8e4b6f4ad6e9451685bd5b..81e20536edee59ca31f2f674592e31da
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
 +  void WorkerContextWillDestroy(const v8::Local<v8::Context>& worker) override;
- 
-   void RecordMetricsForBackgroundedRendererPurge() override;
+   bool IsExcludedHeaderForServiceWorkerFetchEvent(
+       const blink::WebString& header_name) override;
  
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 23173b3891d046f96e97f786898c33e67a067c67..ea040ee90e7d544fcca371945e08267d61c7ebe9 100644
+index 2697e8f4622b1738ee62b466c9e528aa48cb072c..5f365cf15e744710ec7d10d0828c634144e53d5f 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -655,6 +655,7 @@ class BLINK_PLATFORM_EXPORT Platform {

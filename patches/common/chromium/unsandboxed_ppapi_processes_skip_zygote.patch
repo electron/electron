@@ -5,10 +5,10 @@ Subject: unsandboxed ppapi processes skip zygote
 
 
 diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppapi_plugin_process_host.cc
-index 817fa41a2dcb4692b33915281b1efc66d1b07334..e7c58a83517061bc127b57e6e0e6875d681b3430 100644
+index 37713154ca38166f5abf34f128211e84a9267553..2afb96a4c46d654630c5519b7654b42654a88b5f 100644
 --- a/content/browser/ppapi_plugin_process_host.cc
 +++ b/content/browser/ppapi_plugin_process_host.cc
-@@ -106,6 +106,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+@@ -121,6 +121,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
    service_manager::ZygoteHandle GetZygote() override {
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
