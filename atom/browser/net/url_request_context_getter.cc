@@ -47,6 +47,7 @@
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "services/network/ignore_errors_cert_verifier.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "services/network/url_request_context_builder_mojo.h"
 #include "url/url_constants.h"
@@ -54,6 +55,11 @@
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
 #include "net/url_request/ftp_protocol_handler.h"
 #endif
+
+#if BUILDFLAG(ENABLE_REPORTING)
+#include "net/reporting/reporting_policy.h"
+#include "net/reporting/reporting_service.h"
+#endif  // BUILDFLAG(ENABLE_REPORTING)
 
 using content::BrowserThread;
 
@@ -264,6 +270,18 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Enable file:// support.
     builder->set_file_enabled(true);
+
+#if BUILDFLAG(ENABLE_REPORTING)
+    if (base::FeatureList::IsEnabled(network::features::kReporting)) {
+      auto reporting_policy = net::ReportingPolicy::Create();
+      builder->set_reporting_policy(std::move(reporting_policy));
+    } else {
+      builder->set_reporting_policy(nullptr);
+    }
+
+    builder->set_network_error_logging_enabled(
+        base::FeatureList::IsEnabled(network::features::kNetworkErrorLogging));
+#endif  // BUILDFLAG(ENABLE_REPORTING)
 
     auto network_delegate = std::make_unique<AtomNetworkDelegate>();
     network_delegate_ = network_delegate.get();

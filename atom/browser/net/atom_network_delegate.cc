@@ -430,25 +430,25 @@ bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
   return false;
 }
 
-// TODO(deepak1556) : Enable after hooking into the reporting service
-// https://crbug.com/704259
 bool AtomNetworkDelegate::OnCanQueueReportingReport(
     const url::Origin& origin) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnCanSendReportingReports(
     std::set<url::Origin> origins,
-    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {}
+    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {
+  std::move(result_callback).Run(std::move(origins));
+}
 
 bool AtomNetworkDelegate::OnCanSetReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
-  return false;
+  return true;
 }
 
 bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request,
