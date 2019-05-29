@@ -78,3 +78,4 @@ add_contentgpuclient_precreatemessageloop_callback.patch
 disable_custom_libcxx_on_windows.patch
 feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
+fix_breakpad_symbol_generation_on_linux_arm.patch
