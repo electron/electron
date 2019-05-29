@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
-import { BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
 
 const { expect } = chai
 
@@ -29,7 +29,7 @@ describe('ipc module', () => {
     }
 
     it('receives a response from a synchronous handler', async () => {
-      ipcMain.handleOnce('test', (e: IpcMainEvent, arg: number) => {
+      ipcMain.handleOnce('test', (e: IpcMainInvokeEvent, arg: number) => {
         expect(arg).to.equal(123)
         return 3
       })
@@ -42,7 +42,7 @@ describe('ipc module', () => {
     })
 
     it('receives a response from an asynchronous handler', async () => {
-      ipcMain.handleOnce('test', async (e: IpcMainEvent, arg: number) => {
+      ipcMain.handleOnce('test', async (e: IpcMainInvokeEvent, arg: number) => {
         expect(arg).to.equal(123)
         await new Promise(resolve => setImmediate(resolve))
         return 3

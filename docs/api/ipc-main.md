@@ -92,7 +92,7 @@ Removes listeners of the specified `channel`.
 
 * `channel` String
 * `listener` Function<Promise> | Function<any>
-  * `event` IpcMainEvent
+  * `event` IpcMainInvokeEvent
   * `...args` any[]
 
 Adds a handler for an `invoke`able IPC. This handler will be called whenever a
@@ -124,7 +124,7 @@ WebContents is the source of the invoke request.
 
 * `channel` String
 * `listener` Function<Promise> | Function<any>
-  * `event` IpcMainEvent
+  * `event` IpcMainInvokeEvent
   * `...args` any[]
 
 Handles a single `invoke`able IPC message, then removes the listener. See
@@ -136,7 +136,13 @@ Handles a single `invoke`able IPC message, then removes the listener. See
 
 Removes any handler for `channel`, if present.
 
-## Event object
+## IpcMainEvent object
 
 The documentation for the `event` object passed to the `callback` can be found
 in the [`ipc-main-event`](structures/ipc-main-event.md) structure docs.
+
+## IpcMainInvokeEvent object
+
+The documentation for the `event` object passed to `handle` callbacks can be
+found in the [`ipc-main-invoke-event`](structures/ipc-main-invoke-event.md)
+structure docs.
