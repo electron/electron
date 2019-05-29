@@ -97,7 +97,7 @@ void RunOpenDialogInNewThread(const RunState& run_state,
   bool result = ShowOpenDialogSync(settings, &paths);
   run_state.ui_task_runner->PostTask(
       FROM_HERE,
-      base::BindOnce(&OnDialogOpened, std::move(promise), result, paths));
+      base::BindOnce(&OnDialogOpened, std::move(promise), !result, paths));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
