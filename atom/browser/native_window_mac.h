@@ -165,7 +165,7 @@ class NativeWindowMac : public NativeWindow {
 
  private:
   // Add custom layers to the content view.
-  void AddContentViewLayers();
+  void AddContentViewLayers(bool minimizable, bool closable);
 
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
