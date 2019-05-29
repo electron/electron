@@ -39,13 +39,7 @@ class IOThread : public content::BrowserThreadDelegate {
 
   // When the network service is disabled, this holds on to a
   // content::NetworkContext class that owns |system_request_context_|.
-  // TODO(deepak1556): primary network context has to be destroyed after
-  // other active contexts, but since the ownership of latter is not released
-  // before IO thread is destroyed, it results in a DCHECK failure.
-  // We leak the reference to primary context to workaround this issue,
-  // since there is only one instance for the entire lifetime of app, it is
-  // safe.
-  network::mojom::NetworkContext* system_network_context_;
+  std::unique_ptr<network::mojom::NetworkContext> system_network_context_;
   net::URLRequestContext* system_request_context_;
 
   // These are set on the UI thread, and then consumed during initialization on

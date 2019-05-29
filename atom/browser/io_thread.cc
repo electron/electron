@@ -55,19 +55,17 @@ void IOThread::Init() {
     network_service->ConfigureHttpAuthPrefs(
         std::move(http_auth_dynamic_params_));
 
-    system_network_context_ =
-        network_service
-            ->CreateNetworkContextWithBuilder(
-                std::move(network_context_request_),
-                std::move(network_context_params_), std::move(builder),
-                &system_request_context_)
-            .release();
+    system_network_context_ = network_service->CreateNetworkContextWithBuilder(
+        std::move(network_context_request_), std::move(network_context_params_),
+        std::move(builder), &system_request_context_);
   }
 }
 
 void IOThread::CleanUp() {
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
     system_request_context_->proxy_resolution_service()->OnShutdown();
+
+  system_network_context_.reset();
 
   if (net_log_)
     net_log_->ShutDownBeforeThreadPool();
