@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 28 May 2019 18:27:09 -0700
+Subject: fix breakpad symbol generation on linux arm
+
+Fixes broken Linux ARM breakpad symbol generation by patching out an ldd-related call that was throwing.
+
+diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
+index 4249d7b26f9037b60a40e073f56037f9ff036138..0ad9ff9b9bc7dd535655b37013270ad504aa6a34 100755
+--- a/components/crash/content/tools/generate_breakpad_symbols.py
++++ b/components/crash/content/tools/generate_breakpad_symbols.py
+@@ -67,7 +67,8 @@ def GetSharedLibraryDependenciesLinux(binary, options):
+   """Return absolute paths to all shared library dependencies of the binary.
+ 
+   This implementation assumes that we're running on a Linux system."""
+-  ldd = subprocess.check_output(['ldd', binary])
++  p = subprocess.Popen(['ldd', binary], stdout=subprocess.PIPE)
++  ldd = p.communicate()[0]
+   lib_re = re.compile('\t.* => (.+) \(.*\)$')
+   result = []
+   for line in ldd.splitlines():
