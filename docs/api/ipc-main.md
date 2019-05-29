@@ -91,7 +91,7 @@ Removes listeners of the specified `channel`.
 ### `ipcMain.handle(channel, listener)`
 
 * `channel` String
-* `listener` Function
+* `listener` Function<Promise> | Function<any>
   * `event` IpcMainEvent
   * `...args` any[]
 
@@ -103,13 +103,13 @@ returned as a reply to the remote caller. Otherwise, the return value of the
 listener will be used as the value of the reply.
 
 ```js
-// main process
+// Main process
 ipcMain.handle('my-invokable-ipc', async (event, ...args) => {
   const result = await somePromise(...args)
   return result
 })
 
-// renderer process
+// Renderer process
 async () => {
   const result = await ipcRenderer.invoke('my-invokable-ipc', arg1, arg2)
   // ...
@@ -123,7 +123,7 @@ WebContents is the source of the invoke request.
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` String
-* `listener` Function
+* `listener` Function<Promise> | Function<any>
   * `event` IpcMainEvent
   * `...args` any[]
 

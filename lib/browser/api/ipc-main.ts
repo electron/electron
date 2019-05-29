@@ -2,26 +2,22 @@ import { EventEmitter } from 'events'
 import { IpcMainEvent } from 'electron'
 
 class IpcMain extends EventEmitter {
-  _invokeHandlers: {[channel: string]: (e: IpcMainEvent, ...args: any[]) => void};
-  constructor () {
-    super()
-    this._invokeHandlers = {}
-  }
+  private _invokeHandlers: Map<string, (e: IpcMainEvent, ...args: any[]) => void> = new Map();
 
   handle (method: string, fn: (e: IpcMainEvent, ...args: any[]) => any) {
-    if (method in this._invokeHandlers) {
+    if (this._invokeHandlers.has(method)) {
       throw new Error(`Attempted to register a second handler for '${method}'`)
     }
     if (typeof fn !== 'function') {
       throw new Error(`Expected handler to be a function, but found type '${typeof fn}'`)
     }
-    this._invokeHandlers[method] = async (e, ...args) => {
+    this._invokeHandlers.set(method, async (e, ...args) => {
       try {
         (e as any).reply(await Promise.resolve(fn(e, ...args)))
       } catch (err) {
         (e as any).throw(err)
       }
-    }
+    })
   }
 
   handleOnce (method: string, fn: Function) {
@@ -32,7 +28,7 @@ class IpcMain extends EventEmitter {
   }
 
   removeHandler (method: string) {
-    delete this._invokeHandlers[method]
+    this._invokeHandlers.delete(method)
   }
 }
 

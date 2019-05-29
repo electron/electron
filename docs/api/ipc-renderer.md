@@ -60,7 +60,8 @@ Send a message to the main process asynchronously via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized as JSON internally and
 hence no functions or prototype chain will be included.
 
-The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module.
+The main process handles it by listening for `channel` with the
+[`ipcMain`](ipc-main.md) module.
 
 ### `ipcRenderer.invoke(channel[, arg1][, arg2][, ...])`
 
@@ -73,22 +74,20 @@ Send a message to the main process asynchronously via `channel` and expect an
 asynchronous result. Arguments will be serialized as JSON internally and
 hence no functions or prototype chain will be included.
 
-The main process should listen for `channel` with the [`ipcMain`](ipc-main.md)
-module, and send a result by calling `event.reply()`.
+The main process should listen for `channel` with
+[`ipcMain.handle()`](ipc-main.md#ipcmainhandlechannel-listener).
 
 For example:
 ```javascript
-// Renderer
+// Renderer process
 ipcRenderer.invoke('some-name', someArgument).then((result) => {
   // ...
 })
 
-// Main
-ipcMain.on('some-name', (event, someArgument) => {
-  doSomeWork().then(() => {
-    // ...
-    event.reply(someResult)
-  })
+// Main process
+ipcMain.handle('some-name', async (event, someArgument) => {
+  const result = await doSomeWork(someArgument)
+  return result
 })
 ```
 
