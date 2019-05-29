@@ -9,7 +9,7 @@ const ChildProcess = require('child_process')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
 
-const { session, BrowserWindow, net } = require('electron')
+const { session, BrowserWindow, net, ipcMain } = require('electron')
 const { expect } = chai
 
 /* The whole session API doesn't use standard callbacks */
@@ -835,4 +835,25 @@ describe('session module', () => {
     })
   })
 
+  describe('ses.setPermissionRequestHandler(handler)', () => {
+    it('cancels any pending requests when cleared', async () => {
+      const ses = w.webContents.session
+      ses.setPermissionRequestHandler(() => {
+        ses.setPermissionRequestHandler(null)
+      })
+
+      const result = emittedOnce(require('electron').ipcMain, 'message')
+
+      function remote() {
+        navigator.requestMIDIAccess({sysex: true}).then(() => {}, (err) => {
+          require('electron').ipcRenderer.send('message', err.name);
+        });
+      }
+
+      await w.loadURL(`data:text/html,<script>(${remote})()</script>`)
+
+      const [,name] = await result
+      expect(name).to.deep.equal('SecurityError')
+    })
+  })
 })
