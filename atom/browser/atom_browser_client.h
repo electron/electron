@@ -52,7 +52,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   NotificationPresenter* GetNotificationPresenter();
 
   void WebNotificationAllowed(int render_process_id,
-                              const base::Callback<void(bool, bool)>& callback);
+                              base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate
   std::vector<std::unique_ptr<content::NavigationThrottle>>
@@ -145,6 +145,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void RegisterOutOfProcessServices(OutOfProcessServiceMap* services) override;
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
+  std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
   net::NetLog* GetNetLog() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;

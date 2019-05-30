@@ -211,7 +211,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetIcon(mate::Handle<NativeImage> icon);
 #endif
 #if defined(OS_WIN)
-  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
+  typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
+                                       v8::Local<v8::Value>)>
       MessageCallback;
   bool HookWindowMessage(UINT message, const MessageCallback& callback);
   bool IsWindowMessageHooked(UINT message);

@@ -5,7 +5,9 @@ import sys
 import zipfile
 
 EXTENSIONS_TO_SKIP = [
-  '.pdb'
+  '.pdb',
+  '.mojom.js',
+  '.mojom-lite.js',
 ]
 
 PATHS_TO_SKIP = [
@@ -52,7 +54,7 @@ def main(argv):
   if sys.platform == 'darwin':
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
-    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, True) as z:
+    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
       for dep in dist_files:
         if skip_path(dep, dist_zip, target_cpu):
           continue

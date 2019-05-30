@@ -56,8 +56,8 @@ v8::Local<v8::Value> MenuItemToV8(
     v8_item.Set("submenu",
                 MenuToV8(isolate, web_contents, context, item.submenu));
   else if (item.action > 0)
-    v8_item.Set("click",
-                base::Bind(ExecuteCommand, web_contents, item.action, context));
+    v8_item.Set("click", base::BindRepeating(ExecuteCommand, web_contents,
+                                             item.action, context));
   return v8_item.GetHandle();
 }
 

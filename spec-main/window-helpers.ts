@@ -1,32 +1,38 @@
 import { expect } from 'chai'
-import { BrowserWindow, WebContents } from 'electron'
+import { BrowserWindow } from 'electron'
 import { emittedOnce } from './events-helpers';
+
+async function ensureWindowIsClosed(window: BrowserWindow | null) {
+  if (window && !window.isDestroyed()) {
+    if (window.webContents && !window.webContents.isDestroyed()) {
+      // If a window isn't destroyed already, and it has non-destroyed WebContents,
+      // then calling destroy() won't immediately destroy it, as it may have
+      // <webview> children which need to be destroyed first. In that case, we
+      // await the 'closed' event which signals the complete shutdown of the
+      // window.
+      const isClosed = emittedOnce(window, 'closed')
+      window.destroy()
+      await isClosed
+    } else {
+      // If there's no WebContents or if the WebContents is already destroyed,
+      // then the 'closed' event has already been emitted so there's nothing to
+      // wait for.
+      window.destroy()
+    }
+  }
+}
 
 export const closeWindow = async (
   window: BrowserWindow | null = null,
   { assertNotWindows } = { assertNotWindows: true }
 ) => {
-  if (window && !window.isDestroyed()) {
-    const isClosed = emittedOnce(window, 'closed')
-    window.setClosable(true)
-    window.close()
-    await isClosed
-  }
+  await ensureWindowIsClosed(window)
 
   if (assertNotWindows) {
     const windows = BrowserWindow.getAllWindows()
     for (const win of windows) {
-      const closePromise = emittedOnce(win, 'closed')
-      win.close()
-      await closePromise
+      await ensureWindowIsClosed(win)
     }
     expect(windows).to.have.lengthOf(0)
-  }
-}
-
-exports.waitForWebContentsToLoad = async (webContents: WebContents) => {
-  const didFinishLoadPromise = emittedOnce(webContents, 'did-finish-load')
-  if (webContents.isLoadingMainFrame()) {
-    await didFinishLoadPromise
   }
 }

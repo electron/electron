@@ -82,6 +82,21 @@ class Promise {
     }
   }
 
+  // Returns an already-resolved promise.
+  template <typename T>
+  static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate,
+                                                T result) {
+    Promise resolved(isolate);
+    resolved.Resolve(result);
+    return resolved.GetHandle();
+  }
+
+  static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate) {
+    Promise resolved(isolate);
+    resolved.Resolve();
+    return resolved.GetHandle();
+  }
+
   v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {

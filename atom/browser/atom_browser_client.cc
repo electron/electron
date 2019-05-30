@@ -561,7 +561,7 @@ void AtomBrowserClient::AllowCertificateError(
     bool is_main_frame_request,
     bool strict_enforcement,
     bool expired_previous_decision,
-    const base::Callback<void(content::CertificateRequestResultType)>&
+    const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
     delegate_->AllowCertificateError(
@@ -608,11 +608,6 @@ bool AtomBrowserClient::CanCreateWindow(
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   int opener_render_process_id = opener->GetProcess()->GetID();
-
-  if (IsRendererSandboxed(opener_render_process_id)) {
-    *no_javascript_access = false;
-    return true;
-  }
 
   if (RendererUsesNativeWindowOpen(opener_render_process_id)) {
     if (RendererDisablesPopups(opener_render_process_id)) {
@@ -727,15 +722,14 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
 
 base::Optional<service_manager::Manifest>
 AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
-  if (name == content::mojom::kBrowserServiceName) {
+  if (name == content::mojom::kBrowserServiceName)
     return GetElectronContentBrowserOverlayManifest();
-  } else if (name == content::mojom::kPackagedServicesServiceName) {
-    service_manager::Manifest overlay;
-    overlay.packaged_services = GetElectronPackagedServicesOverlayManifest();
-    return overlay;
-  }
-
   return base::nullopt;
+}
+
+std::vector<service_manager::Manifest>
+AtomBrowserClient::GetExtraServiceManifests() {
+  return GetElectronBuiltinServiceManifests();
 }
 
 net::NetLog* AtomBrowserClient::GetNetLog() {
@@ -749,21 +743,21 @@ content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
 
 void AtomBrowserClient::WebNotificationAllowed(
     int render_process_id,
-    const base::RepeatingCallback<void(bool, bool)>& callback) {
+    base::OnceCallback<void(bool, bool)> callback) {
   content::WebContents* web_contents =
       WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
   if (!web_contents) {
-    callback.Run(false, false);
+    std::move(callback).Run(false, false);
     return;
   }
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
-    callback.Run(false, false);
+    std::move(callback).Run(false, false);
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::Bind(callback, web_contents->IsAudioMuted()));
+      base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(
@@ -815,9 +809,9 @@ void HandleExternalProtocolInUI(
     return;
 
   GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
-  auto callback = base::Bind(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(callback, has_user_gesture,
-                                                   url);
+  auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
+  permission_helper->RequestOpenExternalPermission(std::move(callback),
+                                                   has_user_gesture, url);
 }
 
 bool AtomBrowserClient::HandleExternalProtocol(

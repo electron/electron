@@ -40,9 +40,10 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
 
 class Protocol : public mate::TrackableObject<Protocol> {
  public:
-  using Handler =
-      base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
-  using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
+  using Handler = base::RepeatingCallback<void(const base::DictionaryValue&,
+                                               v8::Local<v8::Value>)>;
+  using CompletionCallback =
+      base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
   static mate::Handle<Protocol> Create(v8::Isolate* isolate,
                                        AtomBrowserContext* browser_context);

@@ -35,6 +35,7 @@ env-debug-build: &env-debug-build
 
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
+  CHECK_DIST_MANIFEST: '1'
 
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
@@ -282,6 +283,28 @@ step-electron-dist-build: &step-electron-dist-build
     command: |
       cd src
       ninja -C out/Default electron:electron_dist_zip
+      if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+        if [ "`uname`" == "Darwin" ]; then
+          target_os=mac
+          target_cpu=x64
+          if [ x"$MAS_BUILD" == x"true" ]; then
+            target_os=mac_mas
+          fi
+        elif [ "`uname`" == "Linux" ]; then
+          target_os=linux
+          if [ x"$TARGET_ARCH" == x ]; then
+            target_cpu=x64
+          elif [ "$TARGET_ARCH" == "ia32" ]; then
+            target_cpu=x86
+          else
+            target_cpu="$TARGET_ARCH"
+          fi
+        else
+          echo "Unknown system: `uname`"
+          exit 1
+        fi
+        electron/script/check-zip-manifest.py out/Default/dist.zip electron/script/dist_zip.$target_os.$target_cpu.manifest
+      fi
 
 step-electron-dist-store: &step-electron-dist-store
   store_artifacts:
@@ -871,6 +894,21 @@ steps-tests: &steps-tests
 
     - *step-maybe-notify-slack-failure
 
+steps-test-nan: &steps-test-nan
+  steps:
+    - attach_workspace:
+          at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-linux-for-headless-testing
+    - *step-fix-known-hosts-linux
+    - run:
+        name: Run Nan Tests
+        command: |
+          cd src
+          export ELECTRON_OUT_DIR=Default
+          node electron/script/nan-spec-runner.js
+
 chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
@@ -1276,6 +1314,14 @@ jobs:
       <<: *env-stack-dumping
     <<: *steps-tests
 
+  linux-x64-testing-nan:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-nan
+
   linux-x64-release-tests:
     <<: *machine-linux-medium
     environment:
@@ -1308,6 +1354,15 @@ jobs:
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-tests
+
+  linux-ia32-testing-nan:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-nan
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
@@ -1470,6 +1525,9 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
+      - linux-x64-testing-nan:
+          requires:
+            - linux-x64-testing
 
       - linux-ia32-debug:
           requires:
@@ -1478,6 +1536,9 @@ workflows:
           requires:
             - linux-checkout
       - linux-ia32-testing-tests:
+          requires:
+            - linux-ia32-testing
+      - linux-ia32-testing-nan:
           requires:
             - linux-ia32-testing
 

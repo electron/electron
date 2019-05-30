@@ -382,9 +382,7 @@ describe('webContents module', () => {
     })
   })
 
-  // FIXME(nornagon): this is disabled due to an issue with nan in current v8.
-  // See https://github.com/electron/electron/issues/18409
-  describe.skip('devtools window', () => {
+  describe('devtools window', () => {
     let testFn = it
     if (process.platform === 'darwin' && isCi) {
       testFn = it.skip
@@ -778,31 +776,6 @@ describe('webContents module', () => {
         w.webContents.setWebRTCIPHandlingPolicy(policy)
         expect(w.webContents.getWebRTCIPHandlingPolicy()).to.equal(policy)
       })
-    })
-  })
-
-  describe('will-prevent-unload event', () => {
-    it('does not emit if beforeunload returns undefined', (done) => {
-      w.once('closed', () => {
-        done()
-      })
-      w.webContents.on('will-prevent-unload', (e) => {
-        expect.fail('should not have fired')
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
-    })
-
-    it('emits if beforeunload returns false', (done) => {
-      w.webContents.on('will-prevent-unload', () => {
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-    })
-
-    it('supports calling preventDefault on will-prevent-unload events', (done) => {
-      ipcRenderer.send('prevent-next-will-prevent-unload', w.webContents.id)
-      w.once('closed', () => done())
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
     })
   })
 

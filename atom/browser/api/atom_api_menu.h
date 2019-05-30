@@ -100,16 +100,17 @@ class Menu : public mate::TrackableObject<Menu>,
   bool WorksWhenHiddenAt(int index) const;
 
   // Stored delegate methods.
-  base::Callback<bool(v8::Local<v8::Value>, int)> is_checked_;
-  base::Callback<bool(v8::Local<v8::Value>, int)> is_enabled_;
-  base::Callback<bool(v8::Local<v8::Value>, int)> is_visible_;
-  base::Callback<bool(v8::Local<v8::Value>, int)> works_when_hidden_;
-  base::Callback<v8::Local<v8::Value>(v8::Local<v8::Value>, int, bool)>
+  base::RepeatingCallback<bool(v8::Local<v8::Value>, int)> is_checked_;
+  base::RepeatingCallback<bool(v8::Local<v8::Value>, int)> is_enabled_;
+  base::RepeatingCallback<bool(v8::Local<v8::Value>, int)> is_visible_;
+  base::RepeatingCallback<bool(v8::Local<v8::Value>, int)> works_when_hidden_;
+  base::RepeatingCallback<v8::Local<v8::Value>(v8::Local<v8::Value>, int, bool)>
       get_accelerator_;
-  base::Callback<bool(v8::Local<v8::Value>, int)> should_register_accelerator_;
-  base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>, int)>
+  base::RepeatingCallback<bool(v8::Local<v8::Value>, int)>
+      should_register_accelerator_;
+  base::RepeatingCallback<void(v8::Local<v8::Value>, v8::Local<v8::Value>, int)>
       execute_command_;
-  base::Callback<void(v8::Local<v8::Value>)> menu_will_show_;
+  base::RepeatingCallback<void(v8::Local<v8::Value>)> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
