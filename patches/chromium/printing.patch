@@ -27,7 +27,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..a1ec557f54cea6e976d357032328f2e1
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 7ba43aada1ac44827cca264d6f37814e4a91f458..db011ba8370423723ff9d21be30cbf25db1e7537 100644
+index 007b003dd58d44acd6e1351c237fca6463d90602..89e0c1f5ba961b6d885cd212d62011ec8a39b90f 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -121,7 +121,31 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..db011ba8370423723ff9d21be30cbf25
  #endif
  
    ReleasePrinterQuery();
-@@ -594,6 +599,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -436,9 +441,12 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+           content::NotificationService::NoDetails());
+       break;
+     }
+-    case JobEventDetails::USER_INIT_DONE:
+-    case JobEventDetails::DEFAULT_INIT_DONE:
+     case JobEventDetails::USER_INIT_CANCELED: {
++      ReleasePrintJob();
++      break;
++    }
++    case JobEventDetails::USER_INIT_DONE:
++    case JobEventDetails::DEFAULT_INIT_DONE: {
+       NOTREACHED();
+       break;
+     }
+@@ -544,8 +552,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrinterQuery* query) {
+   DCHECK(!print_job_);
+   print_job_ = base::MakeRefCounted<PrintJob>();
+   print_job_->Initialize(query, RenderSourceName(), number_pages_);
+-  registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
+-                 content::Source<PrintJob>(print_job_.get()));
+   printing_succeeded_ = false;
+   return true;
+ }
+@@ -594,6 +600,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -130,6 +154,25 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..db011ba8370423723ff9d21be30cbf25
 +
    if (!print_job_)
      return;
+ 
+@@ -604,7 +613,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+   }
+ 
+   registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
+-                    content::Source<PrintJob>(print_job_.get()));
++                    content::NotificationService::AllSources());
+   // Don't close the worker thread.
+   print_job_ = nullptr;
+ }
+@@ -678,6 +687,9 @@ bool PrintViewManagerBase::PrintNowInternal(
+   // Don't print / print preview interstitials or crashed tabs.
+   if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
+     return false;
++
++  registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
++                content::NotificationService::AllSources());
+   return rfh->Send(message.release());
+ }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
 index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..0838041cfe45d26dca65b549452535820191ae44 100644
