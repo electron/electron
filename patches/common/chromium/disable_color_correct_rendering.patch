@@ -203,7 +203,7 @@ index edf8e92edadae9354962a98712e3bc0ac7410fbe..553c181f04180185acfcf865e59c6dea
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index abb876609aa3f5c1a6e9bdbefd6909b6ffdddb8b..066b445335632574aebfc0007a90914148518f1e 100644
+index 0d4014befd3c4bd1f6ba33a7ffa7637746973167..b1a4c1c56ca8a9ce0688549bc9208007097211a2 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -191,6 +191,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
