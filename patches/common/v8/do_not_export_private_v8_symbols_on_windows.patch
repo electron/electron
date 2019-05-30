@@ -8,19 +8,51 @@ It fixes an issue where native node modules can import
 incorrect CRT methods and crash on Windows.
 It also reduces size of node.lib by 75%.
 
+Patch-Filename: do_not_export_private_v8_symbols_on_windows.patch
+---
+ BUILD.gn          | 4 ++++
+ src/base/macros.h | 8 ++++++--
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 315c7079ed..0f668eae73 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -273,6 +273,10 @@ config("internal_config") {
+     ":v8_header_features",
+   ]
+ 
++  if (!is_component_build && is_electron_build) {
++    defines += [ "HIDE_PRIVATE_SYMBOLS" ]
++  }
++
+   if (is_component_build || is_electron_build) {
+     defines += [ "BUILDING_V8_SHARED" ]
+   }
 diff --git a/src/base/macros.h b/src/base/macros.h
 index 1276805182084bda3b72b30afb695d9c0648ad34..7be3c3370755dfe4deaffcb0598cc4d7d7cda0ba 100644
 --- a/src/base/macros.h
 +++ b/src/base/macros.h
-@@ -416,9 +416,9 @@ bool is_inbounds(float_t v) {
-
+@@ -414,13 +414,17 @@ bool is_inbounds(float_t v) {
+ #ifdef V8_OS_WIN
+ 
  // Setup for Windows shared library export.
++#if defined(HIDE_PRIVATE_SYMBOLS)
++#define V8_EXPORT_PRIVATE
++#else //if !defined(HIDE_PRIVATE_SYMBOLS)
  #ifdef BUILDING_V8_SHARED
--#define V8_EXPORT_PRIVATE __declspec(dllexport)
-+#define V8_EXPORT_PRIVATE /* __declspec(dllexport) */
+ #define V8_EXPORT_PRIVATE __declspec(dllexport)
  #elif USING_V8_SHARED
--#define V8_EXPORT_PRIVATE __declspec(dllimport)
-+#define V8_EXPORT_PRIVATE /* __declspec(dllimport) */
- #else
+ #define V8_EXPORT_PRIVATE __declspec(dllimport)
+-#else
++#else //!(BUILDING_V8_SHARED || USING_V8_SHARED)
  #define V8_EXPORT_PRIVATE
- #endif  // BUILDING_V8_SHARED
+-#endif  // BUILDING_V8_SHARED
++#endif
++#endif
+ 
+ #else  // V8_OS_WIN
+ 
+-- 
+2.21.0
+
