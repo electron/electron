@@ -63,23 +63,18 @@ describe('session module', () => {
     const name = '0'
     const value = '0'
 
-    it('should get cookies', (done) => {
+    it('should get cookies', async () => {
       const server = http.createServer((req, res) => {
         res.setHeader('Set-Cookie', [`${name}=${value}`])
         res.end('finished')
         server.close()
       })
-      server.listen(0, '127.0.0.1', () => {
-        w.webContents.once('did-finish-load', async () => {
-          const list = await w.webContents.session.cookies.get({ url })
-          const cookie = list.find(cookie => cookie.name === name)
-
-          expect(cookie).to.exist.and.to.have.property('value', value)
-          done()
-        })
-        const { port } = server.address()
-        w.loadURL(`${url}:${port}`)
-      })
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const { port } = server.address()
+      await w.loadURL(`${url}:${port}`)
+      const list = await w.webContents.session.cookies.get({ url })
+      const cookie = list.find(cookie => cookie.name === name)
+      expect(cookie).to.exist.and.to.have.property('value', value)
     })
 
     it('sets cookies', async () => {
@@ -93,17 +88,12 @@ describe('session module', () => {
     })
 
     it('yields an error when setting a cookie with missing required fields', async () => {
-      let error
-      try {
+      await expect((async () => {
         const { cookies } = session.defaultSession
         const name = '1'
         const value = '1'
         await cookies.set({ url: '', name, value })
-      } catch (e) {
-        error = e
-      }
-      expect(error).is.an('Error')
-      expect(error).to.have.property('message').which.equals('Failed to get cookie domain')
+      })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
     it('should overwrite previous cookies', async () => {
@@ -174,7 +164,7 @@ describe('session module', () => {
     })
 
     describe('ses.cookies.flushStore()', async () => {
-      describe('flushes the cookies to disk', async () => {
+      it('flushes the cookies to disk', async () => {
         const name = 'foo'
         const value = 'bar'
         const { cookies } = session.defaultSession
@@ -186,29 +176,26 @@ describe('session module', () => {
 
     it('should survive an app restart for persistent partition', async () => {
       const appPath = path.join(fixtures, 'api', 'cookie-app')
-      const electronPath = process.execPath
 
-      const test = (result, phase) => {
+      const runAppWithPhase = (phase) => {
         return new Promise((resolve, reject) => {
           let output = ''
 
           const appProcess = ChildProcess.spawn(
-            electronPath,
+            process.execPath,
             [appPath],
             { env: { PHASE: phase, ...process.env } }
           )
 
           appProcess.stdout.on('data', data => { output += data })
           appProcess.stdout.on('end', () => {
-            output = output.replace(/(\r\n|\n|\r)/gm, '')
-            expect(output).to.equal(result)
-            resolve()
+            resolve(output.replace(/(\r\n|\n|\r)/gm, ''))
           })
         })
       }
 
-      await test('011', 'one')
-      await test('110', 'two')
+      expect(await runAppWithPhase('one')).to.equal('011')
+      expect(await runAppWithPhase('two')).to.equal('110')
     })
   })
 
@@ -229,16 +216,7 @@ describe('session module', () => {
   })
 
   describe('will-download event', () => {
-    beforeEach(() => {
-      if (w != null) w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400
-      })
-    })
-
-    it('can cancel default download behavior', (done) => {
+    it('can cancel default download behavior', async () => {
       const mockFile = Buffer.alloc(1024)
       const contentDisposition = 'inline; filename="mockFile.txt"'
       const downloadServer = http.createServer((req, res) => {
@@ -250,22 +228,23 @@ describe('session module', () => {
         res.end(mockFile)
         downloadServer.close()
       })
+      await new Promise(resolve => downloadServer.listen(0, '127.0.0.1', resolve))
 
-      downloadServer.listen(0, '127.0.0.1', () => {
-        const port = downloadServer.address().port
-        const url = `http://127.0.0.1:${port}/`
+      const port = downloadServer.address().port
+      const url = `http://127.0.0.1:${port}/`
 
+      const downloadPrevented = new Promise(resolve => {
         w.webContents.session.once('will-download', function (e, item) {
           e.preventDefault()
-          expect(item.getURL()).to.equal(url)
-          expect(item.getFilename()).to.equal('mockFile.txt')
-          setImmediate(() => {
-            expect(() => item.getURL()).to.throw('Object has been destroyed')
-            done()
-          })
+          resolve(item)
         })
-        w.loadURL(url)
       })
+      w.loadURL(url)
+      const item = await downloadPrevented
+      expect(item.getURL()).to.equal(url)
+      expect(item.getFilename()).to.equal('mockFile.txt')
+      await new Promise(setImmediate)
+      expect(() => item.getURL()).to.throw('Object has been destroyed')
     })
   })
 
@@ -278,7 +257,7 @@ describe('session module', () => {
       callback({ data: 'test', mimeType: 'text/html' })
     }
 
-    beforeEach((done) => {
+    beforeEach(async () => {
       if (w != null) w.destroy()
       w = new BrowserWindow({
         show: false,
@@ -287,13 +266,11 @@ describe('session module', () => {
         }
       })
       customSession = session.fromPartition(partitionName)
-      customSession.protocol.registerStringProtocol(protocolName, handler, (error) => {
-        done(error != null ? error : undefined)
-      })
+      await customSession.protocol.registerStringProtocol(protocolName, handler)
     })
 
-    afterEach((done) => {
-      customSession.protocol.unregisterProtocol(protocolName, () => done())
+    afterEach(async () => {
+      await customSession.protocol.unregisterProtocol(protocolName)
       customSession = null
     })
 
@@ -315,13 +292,13 @@ describe('session module', () => {
     let server = null
     let customSession = null
 
-    beforeEach((done) => {
+    beforeEach(async () => {
       customSession = session.fromPartition('proxyconfig')
       // FIXME(deepak1556): This is just a hack to force
       // creation of request context which in turn initializes
       // the network context, can be removed with network
       // service enabled.
-      customSession.clearHostResolverCache().then(() => done())
+      await customSession.clearHostResolverCache()
     })
 
     afterEach(() => {
@@ -363,19 +340,11 @@ describe('session module', () => {
         })
         res.end(pac)
       })
-      return new Promise((resolve, reject) => {
-        server.listen(0, '127.0.0.1', async () => {
-          try {
-            const config = { pacScript: `http://127.0.0.1:${server.address().port}` }
-            await customSession.setProxy(config)
-            const proxy = await customSession.resolveProxy('https://google.com')
-            expect(proxy).to.equal('PROXY myproxy:8132')
-            resolve()
-          } catch (error) {
-            reject(error)
-          }
-        })
-      })
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const config = { pacScript: `http://127.0.0.1:${server.address().port}` }
+      await customSession.setProxy(config)
+      const proxy = await customSession.resolveProxy('https://google.com')
+      expect(proxy).to.equal('PROXY myproxy:8132')
     })
 
     it('allows bypassing proxy settings', async () => {
@@ -390,24 +359,14 @@ describe('session module', () => {
   })
 
   describe('ses.getBlobData()', () => {
+    const scheme = 'cors-blob'
+    const protocol = session.defaultSession.protocol
+    const url = `${scheme}://host`
+    after(async () => {
+      await protocol.unregisterProtocol(scheme)
+    })
+
     it('returns blob data for uuid', (done) => {
-      const scheme = 'cors-blob'
-      const protocol = session.defaultSession.protocol
-      const url = `${scheme}://host`
-      before(() => {
-        if (w != null) w.destroy()
-        w = new BrowserWindow({ show: false })
-      })
-
-      after((done) => {
-        protocol.unregisterProtocol(scheme, () => {
-          closeWindow(w).then(() => {
-            w = null
-            done()
-          })
-        })
-      })
-
       const postData = JSON.stringify({
         type: 'blob',
         value: 'hello'
@@ -461,26 +420,23 @@ describe('session module', () => {
       server.listen(0, '127.0.0.1', done)
     })
 
-    afterEach(() => {
+    afterEach((done) => {
       session.defaultSession.setCertificateVerifyProc(null)
-      server.close()
+      server.close(done)
     })
 
-    it('accepts the request when the callback is called with 0', (done) => {
+    it('accepts the request when the callback is called with 0', async () => {
       session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult, errorCode }, callback) => {
         expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true
         expect([-202, -200].includes(errorCode)).to.be.true
         callback(0)
       })
 
-      w.webContents.once('did-finish-load', () => {
-        expect(w.webContents.getTitle()).to.equal('hello')
-        done()
-      })
-      w.loadURL(`https://127.0.0.1:${server.address().port}`)
+      await w.loadURL(`https://127.0.0.1:${server.address().port}`)
+      expect(w.webContents.getTitle()).to.equal('hello')
     })
 
-    it('rejects the request when the callback is called with -2', (done) => {
+    it('rejects the request when the callback is called with -2', async () => {
       session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
         expect(hostname).to.equal('127.0.0.1')
         expect(certificate.issuerName).to.equal('Intermediate CA')
@@ -497,11 +453,8 @@ describe('session module', () => {
       })
 
       const url = `https://127.0.0.1:${server.address().port}`
-      w.webContents.once('did-finish-load', () => {
-        expect(w.webContents.getTitle()).to.equal(url)
-        done()
-      })
-      w.loadURL(url)
+      await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/)
+      expect(w.webContents.getTitle()).to.equal(url)
     })
   })
 
@@ -563,24 +516,23 @@ describe('session module', () => {
     const mockPDF = Buffer.alloc(1024 * 1024 * 5)
     const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
     const protocolName = 'custom-dl'
-    let contentDisposition = 'inline; filename="mock.pdf"'
+    const contentDisposition = 'inline; filename="mock.pdf"'
     let address = null
     let downloadServer = null
-    before(() => {
+    before(async () => {
       downloadServer = http.createServer((req, res) => {
         address = downloadServer.address()
-        if (req.url === '/?testFilename') contentDisposition = 'inline'
         res.writeHead(200, {
           'Content-Length': mockPDF.length,
           'Content-Type': 'application/pdf',
-          'Content-Disposition': contentDisposition
+          'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
         })
         res.end(mockPDF)
-        downloadServer.close()
       })
+      await new Promise(resolve => downloadServer.listen(0, '127.0.0.1', resolve))
     })
-    after(() => {
-      downloadServer.close()
+    after(async () => {
+      await new Promise(resolve => downloadServer.close(resolve))
     })
 
     const isPathEqual = (path1, path2) => {
@@ -605,81 +557,76 @@ describe('session module', () => {
     }
 
     it('can download using WebContents.downloadURL', (done) => {
-      downloadServer.listen(0, '127.0.0.1', () => {
-        const port = downloadServer.address().port
-        w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(downloadFilePath)
-          item.on('done', function (e, state) {
-            assertDownload(state, item)
-            done()
-          })
+      const port = downloadServer.address().port
+      w.webContents.session.once('will-download', function (e, item) {
+        item.setSavePath(downloadFilePath)
+        item.on('done', function (e, state) {
+          assertDownload(state, item)
+          done()
         })
-        w.webContents.downloadURL(`${url}:${port}`)
       })
+      w.webContents.downloadURL(`${url}:${port}`)
     })
 
     it('can download from custom protocols using WebContents.downloadURL', (done) => {
       const protocol = session.defaultSession.protocol
-      downloadServer.listen(0, '127.0.0.1', () => {
-        const port = downloadServer.address().port
-        const handler = (ignoredError, callback) => {
-          callback({ url: `${url}:${port}` })
-        }
-        protocol.registerHttpProtocol(protocolName, handler, (error) => {
-          if (error) return done(error)
-          w.webContents.session.once('will-download', function (e, item) {
-            item.setSavePath(downloadFilePath)
-            item.on('done', function (e, state) {
-              assertDownload(state, item, true)
-              done()
-            })
-          })
-          w.webContents.downloadURL(`${protocolName}://item`)
-        })
-      })
-    })
-
-    it('can download using WebView.downloadURL', (done) => {
-      downloadServer.listen(0, '127.0.0.1', async () => {
-        const port = downloadServer.address().port
-        await w.loadURL('about:blank')
-        function webviewDownload({fixtures, url, port}) {
-          const webview = new WebView()
-          webview.addEventListener('did-finish-load', () => {
-            webview.downloadURL(`${url}:${port}/`)
-          })
-          webview.src = `file://${fixtures}/api/blank.html`
-          document.body.appendChild(webview)
-        }
+      const port = downloadServer.address().port
+      const handler = (ignoredError, callback) => {
+        callback({ url: `${url}:${port}` })
+      }
+      protocol.registerHttpProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
         w.webContents.session.once('will-download', function (e, item) {
           item.setSavePath(downloadFilePath)
           item.on('done', function (e, state) {
-            assertDownload(state, item)
+            assertDownload(state, item, true)
             done()
           })
         })
-        await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({fixtures, url, port})})`)
+        w.webContents.downloadURL(`${protocolName}://item`)
       })
+    })
+
+    it('can download using WebView.downloadURL', async () => {
+      const port = downloadServer.address().port
+      await w.loadURL('about:blank')
+      function webviewDownload({fixtures, url, port}) {
+        const webview = new WebView()
+        webview.addEventListener('did-finish-load', () => {
+          webview.downloadURL(`${url}:${port}/`)
+        })
+        webview.src = `file://${fixtures}/api/blank.html`
+        document.body.appendChild(webview)
+      }
+      const done = new Promise(resolve => {
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(downloadFilePath)
+          item.on('done', function (e, state) {
+            resolve([state, item])
+          })
+        })
+      })
+      await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({fixtures, url, port})})`)
+      const [state, item] = await done
+      assertDownload(state, item)
     })
 
     it('can cancel download', (done) => {
-      downloadServer.listen(0, '127.0.0.1', () => {
-        const port = downloadServer.address().port
-        w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(downloadFilePath)
-          item.on('done', function (e, state) {
-            expect(state).to.equal('cancelled')
-            expect(item.getFilename()).to.equal('mock.pdf')
-            expect(item.getMimeType()).to.equal('application/pdf')
-            expect(item.getReceivedBytes()).to.equal(0)
-            expect(item.getTotalBytes()).to.equal(mockPDF.length)
-            expect(item.getContentDisposition()).to.equal(contentDisposition)
-            done()
-          })
-          item.cancel()
+      const port = downloadServer.address().port
+      w.webContents.session.once('will-download', function (e, item) {
+        item.setSavePath(downloadFilePath)
+        item.on('done', function (e, state) {
+          expect(state).to.equal('cancelled')
+          expect(item.getFilename()).to.equal('mock.pdf')
+          expect(item.getMimeType()).to.equal('application/pdf')
+          expect(item.getReceivedBytes()).to.equal(0)
+          expect(item.getTotalBytes()).to.equal(mockPDF.length)
+          expect(item.getContentDisposition()).to.equal(contentDisposition)
+          done()
         })
-        w.webContents.downloadURL(`${url}:${port}/`)
+        item.cancel()
       })
+      w.webContents.downloadURL(`${url}:${port}/`)
     })
 
     it('can generate a default filename', function (done) {
@@ -689,51 +636,47 @@ describe('session module', () => {
         return done()
       }
 
-      downloadServer.listen(0, '127.0.0.1', () => {
-        const port = downloadServer.address().port
-        w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(downloadFilePath)
-          item.on('done', function (e, state) {
-            expect(item.getFilename()).to.equal('download.pdf')
-            done()
-          })
-          item.cancel()
+      const port = downloadServer.address().port
+      w.webContents.session.once('will-download', function (e, item) {
+        item.setSavePath(downloadFilePath)
+        item.on('done', function (e, state) {
+          expect(item.getFilename()).to.equal('download.pdf')
+          done()
         })
-        w.webContents.downloadURL(`${url}:${port}/?testFilename`)
+        item.cancel()
       })
+      w.webContents.downloadURL(`${url}:${port}/?testFilename`)
     })
 
     it('can set options for the save dialog', (done) => {
-      downloadServer.listen(0, '127.0.0.1', () => {
-        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
-        const port = downloadServer.address().port
-        const options = {
-          window: null,
-          title: 'title',
-          message: 'message',
-          buttonLabel: 'buttonLabel',
-          nameFieldLabel: 'nameFieldLabel',
-          defaultPath: '/',
-          filters: [{
-            name: '1', extensions: ['.1', '.2']
-          }, {
-            name: '2', extensions: ['.3', '.4', '.5']
-          }],
-          showsTagField: true,
-          securityScopedBookmarks: true
-        }
+      const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
+      const port = downloadServer.address().port
+      const options = {
+        window: null,
+        title: 'title',
+        message: 'message',
+        buttonLabel: 'buttonLabel',
+        nameFieldLabel: 'nameFieldLabel',
+        defaultPath: '/',
+        filters: [{
+          name: '1', extensions: ['.1', '.2']
+        }, {
+          name: '2', extensions: ['.3', '.4', '.5']
+        }],
+        showsTagField: true,
+        securityScopedBookmarks: true
+      }
 
-        w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(filePath)
-          item.setSaveDialogOptions(options)
-          item.on('done', function (e, state) {
-            expect(item.getSaveDialogOptions()).to.deep.equal(options)
-            done()
-          })
-          item.cancel()
+      w.webContents.session.once('will-download', function (e, item) {
+        item.setSavePath(filePath)
+        item.setSaveDialogOptions(options)
+        item.on('done', function (e, state) {
+          expect(item.getSaveDialogOptions()).to.deep.equal(options)
+          done()
         })
-        w.webContents.downloadURL(`${url}:${port}`)
+        item.cancel()
       })
+      w.webContents.downloadURL(`${url}:${port}`)
     })
 
     describe('when a save path is specified and the URL is unavailable', () => {
