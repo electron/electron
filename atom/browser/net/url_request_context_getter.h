@@ -37,7 +37,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   // Discard reference to URLRequestContext and inform observers to
   // shutdown. Must be called only on IO thread.
-  void NotifyContextShuttingDown(std::unique_ptr<content::ResourceContext>);
+  void NotifyContextShuttingDown();
 
   AtomURLRequestJobFactory* job_factory() const {
     return top_job_factory_.get();
