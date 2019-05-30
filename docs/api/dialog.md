@@ -111,7 +111,6 @@ dialog.showOpenDialogSync(mainWindow, {
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _masOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
-* `callback` Function (optional)
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
