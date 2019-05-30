@@ -49,9 +49,28 @@ async function downloadArtifact (name, buildNum, dest) {
     process.exit(1)
   } else {
     console.log(`Downloading ${artifactToDownload.url}.`)
-    await downloadFile(artifactToDownload.url, dest)
-    console.log(`Successfully downloaded ${name}.`)
+    let downloadError = false
+    await downloadWithRetry(artifactToDownload.url, dest).catch(err => {
+      console.log(`Error downnloading ${artifactToDownload.url} :`, err)
+      downloadError = true
+    })
+    if (!downloadError) {
+      console.log(`Successfully downloaded ${name}.`)
+    }
   }
+}
+
+async function downloadWithRetry (url, directory) {
+  let lastError
+  for (let i = 0; i < 5; i++) {
+    console.log(`Attempting to download ${url} - attempt #${(i + 1)}`)
+    try {
+      return await downloadFile(url, directory)
+    } catch (err) {
+      lastError = err
+    }
+  }
+  throw lastError
 }
 
 function downloadFile (url, directory) {
