@@ -26,6 +26,29 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..a1ec557f54cea6e976d357032328f2e1
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
+@@ -267,10 +267,18 @@ void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
+   // We can't use OnFailure() here since query_ does not support notifications.
+ 
+   DCHECK(query_);
+-  query_->PostTask(FROM_HERE,
+-                   base::BindOnce(&PrinterQuery::GetSettingsDone,
+-                                  base::WrapRefCounted(query_),
+-                                  printing_context_->settings(), result));
++  if (result == PrintingContext::CANCEL) {
++    print_job_->PostTask(
++      FROM_HERE,
++      base::BindOnce(&NotificationCallback, base::RetainedRef(print_job_),
++                    JobEventDetails::USER_INIT_CANCELED, 0,
++                    base::RetainedRef(document_)));
++  } else {
++    query_->PostTask(FROM_HERE,
++                  base::BindOnce(&PrinterQuery::GetSettingsDone,
++                                base::WrapRefCounted(query_),
++                                printing_context_->settings(), result));
++  }
+ }
+ 
+ void PrintJobWorker::GetSettingsWithUI(
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
 index 007b003dd58d44acd6e1351c237fca6463d90602..89e0c1f5ba961b6d885cd212d62011ec8a39b90f 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
