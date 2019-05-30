@@ -76,7 +76,6 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
-#include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "v8/include/v8.h"
@@ -108,8 +107,6 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/printing_message_filter.h"
-#include "chrome/services/printing/public/mojom/constants.mojom.h"
-#include "components/services/pdf_compositor/public/interfaces/pdf_compositor.mojom.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 using content::BrowserThread;
@@ -703,23 +700,6 @@ network::mojom::NetworkContext* AtomBrowserClient::GetSystemNetworkContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(g_browser_process->system_network_context_manager());
   return g_browser_process->system_network_context_manager()->GetContext();
-}
-
-void AtomBrowserClient::RegisterOutOfProcessServices(
-    OutOfProcessServiceMap* services) {
-  (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
-      base::BindRepeating(&l10n_util::GetStringUTF16,
-                          IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  (*services)[printing::mojom::kServiceName] =
-      base::BindRepeating(&l10n_util::GetStringUTF16,
-                          IDS_UTILITY_PROCESS_PDF_COMPOSITOR_SERVICE_NAME);
-
-  (*services)[printing::mojom::kChromePrintingServiceName] =
-      base::BindRepeating(&l10n_util::GetStringUTF16,
-                          IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME);
-#endif
 }
 
 base::Optional<service_manager::Manifest>
