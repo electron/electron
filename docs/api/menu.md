@@ -277,7 +277,6 @@ window.addEventListener('contextmenu', (e) => {
 </script>
 ```
 
-
 ## Notes on macOS Application Menu
 
 macOS has a completely different style of application menu from Windows and
@@ -285,7 +284,7 @@ Linux. Here are some notes on making your app's menu more native-like.
 
 ### Standard Menus
 
-On macOS there are many system-defined standard menus, like the `Services` and
+On macOS there are many system-defined standard menus, like the [`Services`](https://developer.apple.com/documentation/appkit/nsapplication/1428608-servicesmenu?language=objc) and
 `Windows` menus. To make your menu a standard menu, you should set your menu's
 `role` to one of the following and Electron will recognize them and make them
 become standard menus:
