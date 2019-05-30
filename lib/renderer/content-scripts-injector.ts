@@ -108,15 +108,12 @@ ipcRendererUtils.handle('CHROME_TABS_EXECUTE_SCRIPT', function (
   return runContentScript.call(window, extensionId, url, code)
 })
 
-module.exports = (getRenderProcessPreferences: typeof process.getRenderProcessPreferences) => {
-  // Read the renderer process preferences.
-  const preferences = getRenderProcessPreferences()
-  if (preferences) {
-    for (const pref of preferences) {
-      if (pref.contentScripts) {
-        for (const script of pref.contentScripts) {
-          injectContentScript(pref.extensionId, script)
-        }
+module.exports = () => {
+  const entries: any[] = require('@electron/internal/renderer/ipc-renderer-internal').ipcRendererInternal.sendSync('CHROME_GET_CONTENT_SCRIPTS')
+  for (const entry of entries) {
+    if (entry.contentScripts) {
+      for (const script of entry.contentScripts) {
+        injectContentScript(entry.extensionId, script)
       }
     }
   }

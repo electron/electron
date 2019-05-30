@@ -111,7 +111,7 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    require('@electron/internal/renderer/content-scripts-injector')(process.getRenderProcessPreferences)
+    require('@electron/internal/renderer/content-scripts-injector')()
   }
 }
 

@@ -807,6 +807,14 @@ void App::BrowserChildProcessKilled(
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
                        host->GetProcess().Handle());
+
+  // TODO(jeremy): this isn't really the right place to be creating
+  // `WebContents` instances, but this was implicitly happening before in
+  // `RenderProcessPreferences`, so this is at least more explicit...
+  content::WebContents* web_contents =
+      AtomBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
+  if (web_contents)
+    WebContents::FromOrCreate(v8::Isolate::GetCurrent(), web_contents);
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {
