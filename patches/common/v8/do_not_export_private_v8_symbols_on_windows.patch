@@ -8,14 +8,8 @@ It fixes an issue where native node modules can import
 incorrect CRT methods and crash on Windows.
 It also reduces size of node.lib by 75%.
 
-Patch-Filename: do_not_export_private_v8_symbols_on_windows.patch
----
- BUILD.gn          | 4 ++++
- src/base/macros.h | 8 ++++++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
-
 diff --git a/BUILD.gn b/BUILD.gn
-index 315c7079ed..0f668eae73 100644
+index 315c7079ed488461a456aff799b4d1f17b896150..0f668eae73686c02a7133df31a79e8a0a7b77707 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -273,6 +273,10 @@ config("internal_config") {
@@ -30,7 +24,7 @@ index 315c7079ed..0f668eae73 100644
      defines += [ "BUILDING_V8_SHARED" ]
    }
 diff --git a/src/base/macros.h b/src/base/macros.h
-index 1276805182084bda3b72b30afb695d9c0648ad34..7be3c3370755dfe4deaffcb0598cc4d7d7cda0ba 100644
+index ad70e9820ddb4a63639ca7738c1836cb87766db5..d40be9b57294583f74594d88d9b7d7b937b2db3c 100644
 --- a/src/base/macros.h
 +++ b/src/base/macros.h
 @@ -414,13 +414,17 @@ bool is_inbounds(float_t v) {
@@ -53,6 +47,3 @@ index 1276805182084bda3b72b30afb695d9c0648ad34..7be3c3370755dfe4deaffcb0598cc4d7
  
  #else  // V8_OS_WIN
  
--- 
-2.21.0
-
