@@ -48,7 +48,7 @@ int NodeMain(int argc, char* argv[]) {
     gin::V8Initializer::LoadV8Natives();
 
     // V8 requires a task scheduler apparently
-    base::ThreadPool::CreateAndStartWithDefaultParams("Electron");
+    base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
@@ -116,7 +116,7 @@ int NodeMain(int argc, char* argv[]) {
   // gin::IsolateHolder waits for tasks running in ThreadPool in its
   // destructor and thus must be destroyed before ThreadPool starts skipping
   // CONTINUE_ON_SHUTDOWN tasks.
-  base::ThreadPool::GetInstance()->Shutdown();
+  base::ThreadPoolInstance::Get()->Shutdown();
 
   v8::V8::Dispose();
 
