@@ -1927,6 +1927,7 @@ describe('BrowserWindow module', () => {
           expect(test.hasCrash).to.be.true()
           expect(test.hasHang).to.be.true()
           expect(test.heapStatistics).to.be.an('object')
+          expect(test.blinkMemoryInfo).to.be.an('object')
           expect(test.processMemoryInfo).to.be.an('object')
           expect(test.systemVersion).to.be.a('string')
           expect(test.cpuUsage).to.be.an('object')
