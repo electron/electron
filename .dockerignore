@@ -1,3 +1,4 @@
 *
 !tools/xvfb-init.sh
 !tools/run-electron.sh
+!.circleci/fix-known-hosts.sh
