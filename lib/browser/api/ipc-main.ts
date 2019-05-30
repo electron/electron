@@ -4,7 +4,7 @@ import { IpcMainInvokeEvent } from 'electron'
 class IpcMain extends EventEmitter {
   private _invokeHandlers: Map<string, (e: IpcMainInvokeEvent, ...args: any[]) => void> = new Map();
 
-  handle (method: string, fn: (e: IpcMainInvokeEvent, ...args: any[]) => any) {
+  handle: Electron.IpcMain['handle'] = (method, fn) => {
     if (this._invokeHandlers.has(method)) {
       throw new Error(`Attempted to register a second handler for '${method}'`)
     }
