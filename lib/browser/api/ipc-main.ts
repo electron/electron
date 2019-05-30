@@ -20,7 +20,7 @@ class IpcMain extends EventEmitter {
     })
   }
 
-  handleOnce (method: string, fn: Function) {
+  handleOnce: Electron.IpcMain['handleOnce'] = (method, fn) => {
     this.handle(method, (e, ...args) => {
       this.removeHandler(method)
       return fn(e, ...args)
