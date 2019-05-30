@@ -158,58 +158,6 @@ app.on('ready', function () {
     process.exit(1)
   })
 
-  // For session's download test, listen 'will-download' event in browser, and
-  // reply the result to renderer for verifying
-  const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath, dialogOptions = {}) {
-    window.webContents.session.once('will-download', function (e, item) {
-      window.webContents.send('download-created',
-        item.getState(),
-        item.getURLChain(),
-        item.getMimeType(),
-        item.getReceivedBytes(),
-        item.getTotalBytes(),
-        item.getFilename(),
-        item.getSavePath())
-      if (preventDefault) {
-        e.preventDefault()
-        const url = item.getURL()
-        const filename = item.getFilename()
-        setImmediate(function () {
-          try {
-            item.getURL()
-          } catch (err) {
-            window.webContents.send('download-error', url, filename, err.message)
-          }
-        })
-      } else {
-        if (item.getState() === 'interrupted' && !needCancel) {
-          item.resume()
-        } else {
-          item.setSavePath(filePath)
-          item.setSaveDialogOptions(dialogOptions)
-        }
-        item.on('done', function (e, state) {
-          window.webContents.send('download-done',
-            state,
-            item.getURL(),
-            item.getMimeType(),
-            item.getReceivedBytes(),
-            item.getTotalBytes(),
-            item.getContentDisposition(),
-            item.getFilename(),
-            item.getSavePath(),
-            item.getSaveDialogOptions(),
-            item.getURLChain(),
-            item.getLastModifiedTime(),
-            item.getETag())
-        })
-        if (needCancel) item.cancel()
-      }
-    })
-    event.returnValue = 'done'
-  })
-
   ipcMain.on('prevent-next-input-event', (event, key, id) => {
     webContents.fromId(id).once('before-input-event', (event, input) => {
       if (key === input.key) event.preventDefault()
