@@ -483,7 +483,10 @@ describe('BrowserWindow module', () => {
     })
     it('should focus on window', () => {
       w.show()
-      if (process.platform === 'darwin') {
+      if (process.platform === 'darwin' && !isCI) {
+        // on CI, the Electron window will be the only one open, so it'll get
+        // focus. on not-CI, some other window will have focus, and we don't
+        // steal focus any more, so we expect isFocused to be false.
         expect(w.isFocused()).to.equal(false)
       } else {
         expect(w.isFocused()).to.equal(true)
