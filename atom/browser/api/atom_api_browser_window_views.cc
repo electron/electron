@@ -12,7 +12,7 @@ namespace api {
 
 void BrowserWindow::UpdateDraggableRegions(
     content::RenderFrameHost* rfh,
-    const std::vector<DraggableRegion>& regions) {
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
   if (window_->has_frame())
     return;
   static_cast<NativeWindowViews*>(window_.get())
