@@ -44,8 +44,6 @@ namespace atom {
 class AtomMenuModel;
 class NativeBrowserView;
 
-struct DraggableRegion;
-
 #if defined(OS_MACOSX)
 typedef NSView* NativeWindowHandle;
 #else

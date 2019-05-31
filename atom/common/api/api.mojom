@@ -1,6 +1,7 @@
 module atom.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
+import "ui/gfx/geometry/mojo/geometry.mojom";
 
 interface ElectronRenderer {
   Message(
@@ -11,6 +12,11 @@ interface ElectronRenderer {
       int32 sender_id);
 
   TakeHeapSnapshot(handle file) => (bool success);
+};
+
+struct DraggableRegion {
+  bool draggable;
+  gfx.mojom.Rect bounds;
 };
 
 interface ElectronBrowser {
@@ -44,4 +50,7 @@ interface ElectronBrowser {
   MessageHost(
     string channel,
     mojo_base.mojom.ListValue arguments);
+
+  UpdateDraggableRegions(
+    array<DraggableRegion> regions);
 };

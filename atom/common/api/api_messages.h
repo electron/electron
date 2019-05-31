@@ -4,7 +4,6 @@
 
 // Multiply-included file, no traditional include guard.
 
-#include "atom/common/draggable_region.h"
 #include "base/strings/string16.h"
 #include "base/values.h"
 #include "content/public/common/common_param_traits.h"
@@ -20,11 +19,6 @@
 
 #define IPC_MESSAGE_START ElectronMsgStart
 
-IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
-  IPC_STRUCT_TRAITS_MEMBER(draggable)
-  IPC_STRUCT_TRAITS_MEMBER(bounds)
-IPC_STRUCT_TRAITS_END()
-
 IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
                     gfx::RectF /* bounds */,
                     std::vector<base::string16> /* values */,
@@ -34,10 +28,6 @@ IPC_MESSAGE_ROUTED0(AtomAutofillFrameHostMsg_HidePopup)
 
 IPC_MESSAGE_ROUTED1(AtomAutofillFrameMsg_AcceptSuggestion,
                     base::string16 /* suggestion */)
-
-// Sent by the renderer when the draggable regions are updated.
-IPC_MESSAGE_ROUTED1(AtomFrameHostMsg_UpdateDraggableRegions,
-                    std::vector<atom::DraggableRegion> /* regions */)
 
 // Update renderer process preferences.
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)

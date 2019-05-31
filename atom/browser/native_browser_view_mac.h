@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "atom/browser/native_browser_view.h"
-#include "atom/common/draggable_region.h"
 #include "base/mac/scoped_nsobject.h"
 
 namespace atom {
