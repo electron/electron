@@ -380,11 +380,15 @@ You can use the `setAppLevelAppearance` API to set this value.
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
 
+**[Deprecated](modernization/property-updates.md)**
+
 ### `systemPreferences.canPromptTouchID()` _macOS_
 
 Returns `Boolean` - whether or not this device has the ability to use Touch ID.
 
 **NOTE:** This API will return `false` on macOS systems older than Sierra 10.12.2.
+
+**[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.promptTouchID(reason)` _macOS_
 
@@ -439,3 +443,13 @@ Returns `Object`:
 * `prefersReducedMotion` Boolean - Determines whether the user desires reduced motion based on platform APIs.
 
 Returns an object with system animation settings.
+
+## Properties
+
+### `systemPreferences.appLevelAppearance` _macOS_
+
+A `String` property that determines the macOS appearance setting for
+your application. This maps to values in: [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc). Setting this will override the
+system default as well as the value of `getEffectiveAppearance`.
+
+Possible values that can be set are `dark` and `light`, and possible return values are `dark`, `light`, and `unknown`.

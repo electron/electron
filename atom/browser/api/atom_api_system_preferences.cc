@@ -106,6 +106,9 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::GetAppLevelAppearance)
       .SetMethod("setAppLevelAppearance",
                  &SystemPreferences::SetAppLevelAppearance)
+      .SetProperty("appLevelAppearance",
+                   &SystemPreferences::GetAppLevelAppearance,
+                   &SystemPreferences::SetAppLevelAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
