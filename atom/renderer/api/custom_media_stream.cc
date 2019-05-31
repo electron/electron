@@ -13,13 +13,13 @@
 #include <base/strings/utf_string_conversions.h>
 
 #include <content/public/renderer/render_thread.h>
-#include <content/renderer/media/stream/media_stream_video_capturer_source.h>
-#include <content/renderer/media/stream/media_stream_video_source.h>
-#include <content/renderer/media/stream/media_stream_video_track.h>
 #include <media/base/video_frame.h>
 #include <media/base/video_frame_pool.h>
 #include <media/capture/video_capturer_source.h>
 #include <third_party/blink/public/platform/web_media_stream_source.h>
+#include <third_party/blink/public/web/modules/mediastream/media_stream_video_capturer_source.h>
+#include <third_party/blink/public/web/modules/mediastream/media_stream_video_source.h>
+#include <third_party/blink/public/web/modules/mediastream/media_stream_video_track.h>
 #include <third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h>
 #include <third_party/blink/renderer/modules/mediastream/media_stream_track.h>
 #include <third_party/blink/renderer/platform/bindings/to_v8.h>
@@ -375,7 +375,7 @@ struct ControlObject final
   v8::Global<v8::Object> wrapper_;  // Weak
 
   gfx::Size resolution_;
-  content::VideoCaptureDeliverFrameCB deliver_;
+  media::VideoCapturerSource::VideoCaptureDeliverFrameCB deliver_;
   media::VideoFramePool framePool_;
   const scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_ =
       content::RenderThread::Get()->GetIOTaskRunner();
@@ -446,20 +446,19 @@ blink::WebMediaStreamTrack createTrack(
   base::Base64Encode(base::RandBytesAsString(64), &str_track_id);
   const blink::WebString track_id = blink::WebString::FromASCII(str_track_id);
 
-  std::unique_ptr<content::MediaStreamVideoSource> platform_source(
-      new content::MediaStreamVideoCapturerSource(
-          content::MediaStreamVideoSource::SourceStoppedCallback(),
-          std::move(source)));
+  auto platform_source =
+      std::make_unique<blink::MediaStreamVideoCapturerSource>(
+          blink::WebPlatformMediaStreamSource::SourceStoppedCallback(),
+          std::move(source));
 
-  content::MediaStreamVideoSource* t = platform_source.get();
+  blink::MediaStreamVideoCapturerSource* t = platform_source.get();
   blink::WebMediaStreamSource webkit_source;
   webkit_source.Initialize(track_id, blink::WebMediaStreamSource::kTypeVideo,
                            track_id, false);
   webkit_source.SetPlatformSource(std::move(platform_source));
 
-  std::unique_ptr<content::MediaStreamVideoTrack> platform_track{
-      new content::MediaStreamVideoTrack(
-          t, content::MediaStreamVideoSource::ConstraintsCallback(), true)};
+  auto platform_track = std::make_unique<blink::MediaStreamVideoTrack>(
+      t, blink::MediaStreamVideoSource::ConstraintsCallback(), true);
 
   blink::WebMediaStreamTrack track;
   track.Initialize(webkit_source);
