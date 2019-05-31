@@ -718,9 +718,10 @@ net::NetLog* AtomBrowserClient::GetNetLog() {
   return g_browser_process->net_log();
 }
 
-content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
+std::unique_ptr<content::BrowserMainParts>
+AtomBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
-  return new AtomBrowserMainParts(params);
+  return std::make_unique<AtomBrowserMainParts>(params);
 }
 
 void AtomBrowserClient::WebNotificationAllowed(
