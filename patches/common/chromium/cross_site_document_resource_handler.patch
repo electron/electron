@@ -22,31 +22,31 @@ index d514c10160dd12f225c42e927977660cacbc9c43..49345f1d4d75c8b96efe485202d89774
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 671d2259d50bfbb5b56a79907c1c86218ee04469..373eee0faf29f2d4be98156f4abd476c61dff713 100644
+index d15061de5254fd4f248fed92f47a1b1fcf34cd68..ac0151af07e440b7e4b7a291530abe108b5cd7d9 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -62,6 +62,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
-   return SiteInstanceForNavigationType::ASK_CHROMIUM;
+@@ -57,6 +57,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
+   return nullptr;
  }
  
 +bool ContentBrowserClient::ShouldBypassCORB(int render_process_id) const {
 +  return false;
 +}
 +
- std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
-     const MainFunctionParams& parameters) {
-   return nullptr;
+ void ContentBrowserClient::PostAfterStartupTask(
+     const base::Location& from_here,
+     const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index fcc5a0e5cd830afe459c1defe968b01e3f05f764..3067cf61e02f6abd048dc888237ef9e2d4909a78 100644
+index e5cddbc3a28e0f90bd1d1ae6ebe28d5f2d0299c7..93fd647a472466633d608e05c0b66653c696073d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -242,6 +242,9 @@ class CONTENT_EXPORT ContentBrowserClient {
-       content::RenderFrameHost* rfh,
-       content::SiteInstance* pending_site_instance) {}
+@@ -219,6 +219,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+   virtual std::unique_ptr<BrowserMainParts> CreateBrowserMainParts(
+       const MainFunctionParams& parameters);
  
 +  // Electron: Allows bypassing CORB checks for a renderer process.
 +  virtual bool ShouldBypassCORB(int render_process_id) const;
 +
-   // Allows the embedder to set any number of custom BrowserMainParts
-   // implementations for the browser startup code. See comments in
-   // browser_main_parts.h.
+   // Allows the embedder to change the default behavior of
+   // BrowserThread::PostAfterStartupTask to better match whatever
+   // definition of "startup" the embedder has in mind. This may be
