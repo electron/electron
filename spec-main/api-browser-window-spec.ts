@@ -4,7 +4,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import * as http from 'http'
 import { AddressInfo } from 'net'
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
@@ -114,4 +114,65 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('window.close()', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+
+    it('should emit unload event', async () => {
+      w.loadFile(path.join(fixtures, 'api', 'close.html'))
+      await emittedOnce(w, 'closed')
+      const test = path.join(fixtures, 'api', 'close')
+      const content = fs.readFileSync(test).toString()
+      fs.unlinkSync(test)
+      expect(content).to.equal('close')
+    })
+    it('should emit beforeunload event', async () => {
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
+      await emittedOnce(w, 'onbeforeunload')
+    })
+  })
+
+  describe('BrowserWindow.destroy()', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+
+    it('prevents users to access methods of webContents', async () => {
+      const contents = w.webContents
+      w.destroy()
+      await new Promise(setImmediate)
+      expect(() => {
+        contents.getProcessId()
+      }).to.throw('Object has been destroyed')
+    })
+    it('should not crash when destroying windows with pending events', () => {
+      const focusListener = () => {}
+      app.on('browser-window-focus', focusListener)
+      const windowCount = 3
+      const windowOptions = {
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      }
+      const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
+      windows.forEach(win => win.show())
+      windows.forEach(win => win.focus())
+      windows.forEach(win => win.destroy())
+      app.removeListener('browser-window-focus', focusListener)
+    })
+  })
 })

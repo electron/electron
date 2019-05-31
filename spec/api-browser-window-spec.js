@@ -112,38 +112,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('window.close()', () => {
-    it('should emit unload handler', (done) => {
-      w.once('closed', () => {
-        const test = path.join(fixtures, 'api', 'close')
-        const content = fs.readFileSync(test)
-        fs.unlinkSync(test)
-        expect(String(content)).to.equal('close')
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close.html'))
-    })
-    it('should emit beforeunload handler', (done) => {
-      w.once('onbeforeunload', () => { done() })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-    })
-  })
-
-  describe('BrowserWindow.destroy()', () => {
-    it('prevents users to access methods of webContents', () => {
-      const contents = w.webContents
-      w.destroy()
-      expect(() => {
-        contents.getProcessId()
-      }).to.throw('Object has been destroyed')
-    })
-    it('should not crash when destroying windows with pending events', (done) => {
-      const responseEvent = 'destroy-test-completed'
-      ipcRenderer.on(responseEvent, () => done())
-      ipcRenderer.send('test-browserwindow-destroy', { responseEvent })
-    })
-  })
-
   describe('BrowserWindow.loadURL(url)', () => {
     it('should emit did-start-loading event', (done) => {
       w.webContents.on('did-start-loading', () => { done() })
