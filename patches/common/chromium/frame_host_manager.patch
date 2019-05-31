@@ -108,10 +108,10 @@ index 297b61198dd46114b3d8c89488a71ed01aa299c4..0f64b4926f9077fbf5c4729fed588808
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 559181931dfdc9ba19ecd4d93c33e852d1064a0b..a40bfa1c7f9740b3c91fff87916a31e9160da55f 100644
+index d15061de5254fd4f248fed92f47a1b1fcf34cd68..671d2259d50bfbb5b56a79907c1c86218ee04469 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -51,6 +51,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+@@ -52,6 +52,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
@@ -125,11 +125,11 @@ index 559181931dfdc9ba19ecd4d93c33e852d1064a0b..a40bfa1c7f9740b3c91fff87916a31e9
 +  return SiteInstanceForNavigationType::ASK_CHROMIUM;
 +}
 +
- BrowserMainParts* ContentBrowserClient::CreateBrowserMainParts(
+ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0c909de91541cc9f39b60ba84b3e8c7e1837a3d0..c9f9547f2283f9a10db39eb75981d168c2b28e90 100644
+index e5cddbc3a28e0f90bd1d1ae6ebe28d5f2d0299c7..fcc5a0e5cd830afe459c1defe968b01e3f05f764 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,8 +211,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(

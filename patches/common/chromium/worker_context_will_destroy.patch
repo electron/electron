@@ -5,10 +5,10 @@ Subject: worker_context_will_destroy.patch
 
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index fa2e153443329bcb5a48fe5c577db74a1aec26ca..6bad6c2e34e73d990d49fca4ad953cfbf8deba83 100644
+index 31fcd7d89bf8f23d32ad385351d272e81aad36a1..373a76a576e2ccdf604036daadf012c24d409858 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -384,6 +384,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -389,6 +389,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -62,10 +62,10 @@ index cd2e8603c391b1732abb8621ee41a2703ded6c39..44723c4d76cb2bcd258d8859aee4530c
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 512c3335456016c6d9afebe607999cff3e9f4709..7c90cb0cd86f528895f6ffebfcde854acb7cd124 100644
+index 6c71516b1906fa2cae5440782595af7a2eea8ab7..c150855e51c6623c950c3875a447217ca091ea50 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -637,6 +637,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -640,6 +640,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
      nested_runner_->QuitNow();
    }
  

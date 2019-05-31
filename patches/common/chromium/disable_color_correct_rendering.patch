@@ -65,7 +65,7 @@ index 78a6b5739caed8c3925f303c52ed107be8e4ccfe..ddbf660e594c1a991d4e758fa11b1b2e
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_WIN)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index edf8e92edadae9354962a98712e3bc0ac7410fbe..553c181f04180185acfcf865e59c6dea839cc973 100644
+index b7a65f6dae8f2fcba0ba127cb50f0f338a26b9d0..bc1d0d3dd92d1adc6c94803755a23c28ff47771a 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -80,6 +80,9 @@
@@ -203,7 +203,7 @@ index edf8e92edadae9354962a98712e3bc0ac7410fbe..553c181f04180185acfcf865e59c6dea
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 0d4014befd3c4bd1f6ba33a7ffa7637746973167..b1a4c1c56ca8a9ce0688549bc9208007097211a2 100644
+index f34cfb51693648a7b342d21a61c601090209355a..b488efc71edf5d79e16c25d3d7be2d8ea9fa2ec8 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -191,6 +191,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -215,7 +215,7 @@ index 0d4014befd3c4bd1f6ba33a7ffa7637746973167..b1a4c1c56ca8a9ce0688549bc9208007
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index c43c02c62266f9b73899ff387d76a2889b337ae0..ff4f38a61469ca31d37c1f20900767dfa3d385f6 100644
+index c09ee4ccb619327a8723b389b758d200bf49a45c..40d6675f3f7901fc76bbcc2a4854de0a6dcceeec 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -218,6 +218,7 @@
