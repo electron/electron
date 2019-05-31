@@ -75,7 +75,6 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
 }
 
 void BrowserWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
     const std::vector<mojom::DraggableRegionPtr>& regions) {
   if (window_->has_frame())
     return;
@@ -115,7 +114,7 @@ void BrowserWindow::UpdateDraggableRegions(
 
   auto browser_views = window_->browser_views();
   for (NativeBrowserView* view : browser_views) {
-    (view)->UpdateDraggableRegions(drag_exclude_rects);
+    view->UpdateDraggableRegions(drag_exclude_rects);
   }
 
   // Create and add a ControlRegionView for each region that needs to be

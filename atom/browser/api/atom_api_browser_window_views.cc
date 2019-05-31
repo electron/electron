@@ -11,7 +11,6 @@ namespace atom {
 namespace api {
 
 void BrowserWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
     const std::vector<mojom::DraggableRegionPtr>& regions) {
   if (window_->has_frame())
     return;

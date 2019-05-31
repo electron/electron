@@ -207,7 +207,7 @@ void BrowserWindow::OnRendererResponsive() {
 
 void BrowserWindow::OnDraggableRegionsUpdated(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  UpdateDraggableRegions(nullptr, regions);
+  UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::RequestPreferredWidth(int* width) {
@@ -270,7 +270,7 @@ void BrowserWindow::OnWindowFocus() {
 void BrowserWindow::OnWindowResize() {
 #if defined(OS_MACOSX)
   if (!draggable_regions_.empty())
-    UpdateDraggableRegions(nullptr, draggable_regions_);
+    UpdateDraggableRegions(draggable_regions_);
 #endif
   TopLevelWindow::OnWindowResize();
 }
@@ -308,28 +308,28 @@ void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::ResetBrowserViews();
   TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::RemoveBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::ResetBrowserViews() {
   TopLevelWindow::ResetBrowserViews();
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 

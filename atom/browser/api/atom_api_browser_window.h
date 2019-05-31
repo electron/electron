@@ -92,7 +92,6 @@ class BrowserWindow : public TopLevelWindow,
 
   // Called when the window needs to update its draggable region.
   void UpdateDraggableRegions(
-      content::RenderFrameHost* rfh,
       const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Convert draggable regions in raw format to SkRegion format.
