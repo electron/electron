@@ -12,7 +12,7 @@ vars = {
   'chromium_version':
     'ab588d36191964c4bca8de5c320534d95606c861',
   'node_version':
-    'a86a4a160dc520c61a602c949a32a1bc4c0fc633',
+    'dee0db9864a001ffc16440f725f4952a1a417069',
   'nan_version':
     '960dd6c70fc9eb136efdf37b4bef18fadbc3436f',
 
