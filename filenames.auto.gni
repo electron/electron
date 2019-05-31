@@ -78,6 +78,7 @@ auto_filenames = {
     "docs/api/structures/gpu-feature-status.md",
     "docs/api/structures/io-counters.md",
     "docs/api/structures/ipc-main-event.md",
+    "docs/api/structures/ipc-main-invoke-event.md",
     "docs/api/structures/ipc-renderer-event.md",
     "docs/api/structures/jump-list-category.md",
     "docs/api/structures/jump-list-item.md",

@@ -492,6 +492,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Message(bool internal,
                const std::string& channel,
                base::Value arguments) override;
+  void Invoke(const std::string& channel,
+              base::Value arguments,
+              InvokeCallback callback) override;
   void MessageSync(bool internal,
                    const std::string& channel,
                    base::Value arguments,
