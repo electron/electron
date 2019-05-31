@@ -22,22 +22,22 @@ index d514c10160dd12f225c42e927977660cacbc9c43..49345f1d4d75c8b96efe485202d89774
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a40bfa1c7f9740b3c91fff87916a31e9160da55f..835a8f27e61a30911acd0e811a7abba33d197e88 100644
+index 671d2259d50bfbb5b56a79907c1c86218ee04469..373eee0faf29f2d4be98156f4abd476c61dff713 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -56,6 +56,10 @@ BrowserMainParts* ContentBrowserClient::CreateBrowserMainParts(
-   return nullptr;
+@@ -62,6 +62,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
+   return SiteInstanceForNavigationType::ASK_CHROMIUM;
  }
  
 +bool ContentBrowserClient::ShouldBypassCORB(int render_process_id) const {
 +  return false;
 +}
 +
- void ContentBrowserClient::PostAfterStartupTask(
-     const base::Location& from_here,
-     const scoped_refptr<base::TaskRunner>& task_runner,
+ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
+     const MainFunctionParams& parameters) {
+   return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b94b66ecdd193d6312e1610ab71800543826a94a..72bbd730a6a2c93f7d8caba7d5d173adb2d8ac3f 100644
+index fcc5a0e5cd830afe459c1defe968b01e3f05f764..3067cf61e02f6abd048dc888237ef9e2d4909a78 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -219,6 +219,9 @@ class CONTENT_EXPORT ContentBrowserClient {
