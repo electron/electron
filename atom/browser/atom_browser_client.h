@@ -153,7 +153,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
       content::BrowserContext* browser_context) override;
-  content::BrowserMainParts* CreateBrowserMainParts(
+  std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   base::FilePath GetDefaultDownloadDirectory() override;
   scoped_refptr<network::SharedURLLoaderFactory>
