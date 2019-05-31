@@ -470,6 +470,65 @@ describe('BrowserWindow module', () => {
         w.loadURL(`${url}/navigate-302`)
       })
     })
-
   })
+
+  describe('BrowserWindow.show()', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+    it('should focus on window', () => {
+      w.show()
+      if (process.platform === 'darwin') {
+        expect(w.isFocused()).to.equal(false)
+      } else {
+        expect(w.isFocused()).to.equal(true)
+      }
+    })
+    it('should make the window visible', () => {
+      w.show()
+      expect(w.isVisible()).to.equal(true)
+    })
+    it('emits when window is shown', (done) => {
+      w.once('show', () => {
+        expect(w.isVisible()).to.equal(true)
+        done()
+      })
+      w.show()
+    })
+  })
+
+  describe('BrowserWindow.hide()', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+    it('should defocus on window', () => {
+      w.hide()
+      expect(w.isFocused()).to.equal(false)
+    })
+    it('should make the window not visible', () => {
+      w.show()
+      w.hide()
+      expect(w.isVisible()).to.equal(false)
+    })
+    it('emits when window is hidden', async () => {
+      const shown = emittedOnce(w, 'show')
+      w.show()
+      await shown
+      const hidden = emittedOnce(w, 'hide')
+      w.hide()
+      await hidden
+      expect(w.isVisible()).to.equal(false)
+    })
+  })
+
 })

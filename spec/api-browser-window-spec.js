@@ -112,56 +112,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('BrowserWindow.show()', () => {
-    before(function () {
-      if (isCI) {
-        this.skip()
-      }
-    })
-
-    it('should focus on window', () => {
-      w.show()
-      expect(w.isFocused()).to.be.true()
-    })
-    it('should make the window visible', () => {
-      w.show()
-      expect(w.isVisible()).to.be.true()
-    })
-    it('emits when window is shown', (done) => {
-      w.once('show', () => {
-        expect(w.isVisible()).to.be.true()
-        done()
-      })
-      w.show()
-    })
-  })
-
-  describe('BrowserWindow.hide()', () => {
-    before(function () {
-      if (isCI) {
-        this.skip()
-      }
-    })
-
-    it('should defocus on window', () => {
-      w.hide()
-      expect(w.isFocused()).to.be.false()
-    })
-    it('should make the window not visible', () => {
-      w.show()
-      w.hide()
-      expect(w.isVisible()).to.be.false()
-    })
-    it('emits when window is hidden', (done) => {
-      w.show()
-      w.once('hide', () => {
-        expect(w.isVisible()).to.be.false()
-        done()
-      })
-      w.hide()
-    })
-  })
-
   describe('BrowserWindow.showInactive()', () => {
     it('should not focus on window', () => {
       w.showInactive()
