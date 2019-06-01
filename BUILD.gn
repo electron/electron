@@ -104,7 +104,7 @@ webpack_build("electron_worker_bundle") {
   out_file = "$target_gen_dir/electron_asar/worker/init.js"
 }
 
-webpack_build("electron_sandbox_bundle") {
+webpack_build("electron_sandboxed_renderer_bundle") {
   deps = [
     ":build_electron_definitions",
   ]
@@ -152,7 +152,7 @@ action("atom_js2c") {
     ":atom_js2c_copy",
     ":electron_content_script_bundle",
     ":electron_isolated_renderer_bundle",
-    ":electron_sandbox_bundle",
+    ":electron_sandboxed_renderer_bundle",
   ]
 
   webpack_sources = [
