@@ -88,6 +88,9 @@
   },
   "license": "MIT",
   "author": "Electron Community",
+  "resolutions": {
+    "timers-browserify": "1.4.2"
+  },
   "keywords": [
     "electron"
   ],
