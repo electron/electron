@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const webpack = require('webpack')
 
 const electronRoot = path.resolve(__dirname, '../..')
 
@@ -19,7 +20,7 @@ class AccessDependenciesPlugin {
   }
 }
 
-module.exports = ({ alwaysHasNode, target }) => {
+module.exports = ({ alwaysHasNode, targetDeletesNodeGlobals, target }) => {
   let entry = path.resolve(electronRoot, 'lib', target, 'init.ts')
   if (!fs.existsSync(entry)) {
     entry = path.resolve(electronRoot, 'lib', target, 'init.js')
@@ -56,6 +57,15 @@ module.exports = ({ alwaysHasNode, target }) => {
       __dirname: false,
       __filename: false
     },
-    plugins: [new AccessDependenciesPlugin()]
+    plugins: [
+      new AccessDependenciesPlugin(),
+      ...(targetDeletesNodeGlobals ? [
+        new webpack.ProvidePlugin({
+          process: ['@electron/internal/renderer/webpack-provider', 'process'],
+          global: ['@electron/internal/renderer/webpack-provider', '_global'],
+          Buffer: ['@electron/internal/renderer/webpack-provider', 'Buffer'],
+        })
+      ] : [])
+    ]
   })
 }

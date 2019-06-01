@@ -14,6 +14,10 @@ const Module = require('module')
 // code, which does not work with this hack. However by modifying the
 // "Module.wrapper" we can force Node to use the old code path to wrap module
 // code with JavaScript.
+//
+// Note 3: We provide the equivilant extra variables internally through the
+// webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
+// variables to this wrapper please ensure to update that plugin as well.
 Module.wrapper = [
   '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
   // By running the code in a new closure, it would be possible for the module
