@@ -2,7 +2,7 @@ const path = require('path')
 const webpack = require('webpack')
 
 const configPath = process.argv[2]
-const outPath = process.argv[3]
+const outPath = path.resolve(process.argv[3])
 const config = require(configPath)
 config.output = {
   path: path.dirname(outPath),
