@@ -108,7 +108,6 @@ void AtomRendererClient::DidCreateScriptContext(
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
     env->ForceOnlyContextAwareNativeModules();
-  env->WarnNonContextAwareNativeModules();
 
   environments_.insert(env);
 
