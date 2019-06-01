@@ -34,6 +34,10 @@ const main = async () => {
     {
       name: 'renderer_bundle_deps',
       config: 'webpack.config.renderer.js'
+    },
+    {
+      name: 'worker_bundle_deps',
+      config: 'webpack.config.worker.js'
     }
   ]
 

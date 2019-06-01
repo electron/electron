@@ -42,7 +42,7 @@ describe('asar package', function () {
       it('does not leak fd', function () {
         let readCalls = 1
         while (readCalls <= 10000) {
-          fs.readFileSync(path.join(process.resourcesPath, 'electron.asar', 'renderer', 'api', 'ipc-renderer.js'))
+          fs.readFileSync(path.join(process.resourcesPath, 'electron.asar', 'renderer', 'init.js'))
           readCalls++
         }
       })

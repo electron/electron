@@ -7,7 +7,7 @@ const electronRoot = path.resolve(__dirname, '../..')
 const onlyPrintingGraph = !!process.env.PRINT_WEBPACK_GRAPH
 
 class AccessDependenciesPlugin {
-  apply (compiler) {
+  apply(compiler) {
     // Only hook into webpack when we are printing the dependency graph
     if (!onlyPrintingGraph) return
 
@@ -20,7 +20,12 @@ class AccessDependenciesPlugin {
   }
 }
 
-module.exports = ({ alwaysHasNode, targetDeletesNodeGlobals, target }) => {
+module.exports = ({
+  alwaysHasNode,
+  loadElectronFromAlternateTarget,
+  targetDeletesNodeGlobals,
+  target
+}) => {
   let entry = path.resolve(electronRoot, 'lib', target, 'init.ts')
   if (!fs.existsSync(entry)) {
     entry = path.resolve(electronRoot, 'lib', target, 'init.js')
@@ -37,21 +42,19 @@ module.exports = ({ alwaysHasNode, targetDeletesNodeGlobals, target }) => {
     resolve: {
       alias: {
         '@electron/internal': path.resolve(electronRoot, 'lib'),
-        'electron': path.resolve(electronRoot, 'lib', target, 'api', 'exports', 'electron.js')
+        'electron': path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.js')
       },
       extensions: ['.ts', '.js']
     },
     module: {
-      rules: [
-        {
-          test: /\.ts$/,
-          loader: 'ts-loader',
-          options: {
-            configFile: path.resolve(electronRoot, 'tsconfig.electron.json'),
-            transpileOnly: onlyPrintingGraph
-          }
+      rules: [{
+        test: /\.ts$/,
+        loader: 'ts-loader',
+        options: {
+          configFile: path.resolve(electronRoot, 'tsconfig.electron.json'),
+          transpileOnly: onlyPrintingGraph
         }
-      ]
+      }]
     },
     node: {
       __dirname: false,

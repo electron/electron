@@ -93,6 +93,17 @@ webpack_build("electron_renderer_bundle") {
   out_file = "$target_gen_dir/electron_asar/renderer/init.js"
 }
 
+webpack_build("electron_worker_bundle") {
+  deps = [
+    ":build_electron_definitions",
+  ]
+
+  inputs = auto_filenames.worker_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.worker.js"
+  out_file = "$target_gen_dir/electron_asar/worker/init.js"
+}
+
 webpack_build("electron_sandbox_bundle") {
   deps = [
     ":build_electron_definitions",
@@ -172,11 +183,13 @@ asar("electron_asar") {
   deps = [
     ":electron_browser_bundle",
     ":electron_renderer_bundle",
+    ":electron_worker_bundle",
   ]
 
   root = "$target_gen_dir/electron_asar"
   sources = get_target_outputs(":electron_browser_bundle") +
-            get_target_outputs(":electron_renderer_bundle")
+            get_target_outputs(":electron_renderer_bundle") +
+            get_target_outputs(":electron_worker_bundle")
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]
