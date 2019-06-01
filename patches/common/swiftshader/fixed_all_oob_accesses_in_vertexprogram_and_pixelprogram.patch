@@ -1,0 +1,508 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexis Hetu <sugoi@google.com>
+Date: Thu, 10 Jan 2019 14:04:26 -0500
+Subject: Fixed all OOB accesses in VertexProgram and PixelProgram
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A lot of arrays in VertexProgram and PixelProgram have fixed sizes,
+so programs that have more nested loops or ifs or deeper call stacks
+can cause OOB accesses, which causes security issues in Chromium.
+
+Index clamping was added to prevent any OOB memory accesses here.
+
+This could eventually be fixed properly by first verifying these sizes
+and giving shader compile errors when these limits are exceeded.
+
+Bug chromium:915197 chromium:915206 chromium:915218 b/116373662
+
+Change-Id: I2d0710ed0ce6585f139cba49d5b5d8c909ae6391
+Reviewed-on: https://swiftshader-review.googlesource.com/c/23568
+Tested-by: Alexis Hétu <sugoi@google.com>
+Reviewed-by: Corentin Wallez <cwallez@google.com>
+
+diff --git a/src/Common/Types.hpp b/src/Common/Types.hpp
+index 837df461ab0676d94e6ee1276d75d289f06851ef..fac6d362891cf0b2a19f8faee0a1dbbdddbc3a88 100644
+--- a/src/Common/Types.hpp
++++ b/src/Common/Types.hpp
+@@ -15,6 +15,7 @@
+ #ifndef sw_Types_hpp
+ #define sw_Types_hpp
+ 
++#include <assert.h>
+ #include <limits>
+ #include <type_traits>
+ 
+@@ -151,6 +152,46 @@ namespace sw
+ 		return v;
+ 	}
+ 
++	template <int limit> class BoundedIndex
++	{
++	public:
++		BoundedIndex(int index) : index(index) {}
++
++		inline int operator++(int) { return index++; }
++		inline int operator--(int) { return index--; }
++		inline void operator=(int i) { index = i; }
++
++		inline bool operator==(int i) { return index == i; }
++		inline bool operator!=(int i) { return index != i; }
++		inline bool operator<(int i) { return index < i; }
++		inline bool operator>(int i) { return index > i; }
++		inline bool operator<=(int i) { return index <= i; }
++		inline bool operator>=(int i) { return index >= i; }
++
++		inline operator int()
++		{
++			if(index < 0)
++			{
++#if !defined(NDEBUG) || defined(DCHECK_ALWAYS_ON)
++				assert(false);
++#endif
++				return 0;
++			}
++			else if(index >= limit)
++			{
++#if !defined(NDEBUG) || defined(DCHECK_ALWAYS_ON)
++				assert(false);
++#endif
++				return limit - 1;
++			}
++
++			return index;
++		}
++
++	private:
++		int index = 0;
++	};
++
+ 	// The OFFSET macro is a generalization of the offsetof() macro defined in <cstddef>.
+ 	// It allows e.g. getting the offset of array elements, even when indexed dynamically.
+ 	// We cast the address '32' and subtract it again, because null-dereference is undefined behavior.
+diff --git a/src/Main/Config.hpp b/src/Main/Config.hpp
+index 764bfed1e7a159715f5d269e88d0d9ab578b778f..f875085452d0255d78b60ad9313e035d4ab3691f 100644
+--- a/src/Main/Config.hpp
++++ b/src/Main/Config.hpp
+@@ -97,6 +97,11 @@ namespace sw
+ 		MAX_TEXTURE_LOD = MIPMAP_LEVELS - 2,   // Trilinear accesses lod+1
+ 		RENDERTARGETS = 8,
+ 		NUM_TEMPORARY_REGISTERS = 4096,
++		MAX_SHADER_CALL_SITES = 2048,
++		MAX_SHADER_NESTED_LOOPS = 4,
++		MAX_SHADER_NESTED_IFS = 24 + 24,
++		MAX_SHADER_CALL_STACK_SIZE = 16,
++		MAX_SHADER_ENABLE_STACK_SIZE = 1 + 24,
+ 	};
+ }
+ 
+diff --git a/src/Shader/PixelProgram.cpp b/src/Shader/PixelProgram.cpp
+index 3cedbce8debcc7a1f8d22a7e687ea5673f33d01f..f8637209323b7dfe52b1736a9b15f0285f987331 100644
+--- a/src/Shader/PixelProgram.cpp
++++ b/src/Shader/PixelProgram.cpp
+@@ -828,7 +828,7 @@ namespace sw
+ 
+ 	Int4 PixelProgram::enableMask(const Shader::Instruction *instruction)
+ 	{
+-		Int4 enable = instruction->analysisBranch ? Int4(enableStack[enableIndex]) : Int4(0xFFFFFFFF);
++		Int4 enable = instruction->analysisBranch ? Int4(enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))]) : Int4(0xFFFFFFFF);
+ 
+ 		if(!whileTest)
+ 		{
+@@ -1343,7 +1343,7 @@ namespace sw
+ 
+ 	void PixelProgram::BREAK()
+ 	{
+-		enableBreak = enableBreak & ~enableStack[enableIndex];
++		enableBreak = enableBreak & ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 	}
+ 
+ 	void PixelProgram::BREAKC(Vector4f &src0, Vector4f &src1, Control control)
+@@ -1379,14 +1379,14 @@ namespace sw
+ 
+ 	void PixelProgram::BREAK(Int4 &condition)
+ 	{
+-		condition &= enableStack[enableIndex];
++		condition &= enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		enableBreak = enableBreak & ~condition;
+ 	}
+ 
+ 	void PixelProgram::CONTINUE()
+ 	{
+-		enableContinue = enableContinue & ~enableStack[enableIndex];
++		enableContinue = enableContinue & ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 	}
+ 
+ 	void PixelProgram::TEST()
+@@ -1403,7 +1403,7 @@ namespace sw
+ 
+ 		if(callRetBlock[labelIndex].size() > 1)
+ 		{
+-			callStack[stackIndex++] = UInt(callSiteIndex);
++			callStack[Min(stackIndex++, Int(MAX_SHADER_CALL_STACK_SIZE))] = UInt(callSiteIndex);
+ 		}
+ 
+ 		Int4 restoreLeave = enableLeave;
+@@ -1443,7 +1443,7 @@ namespace sw
+ 
+ 		if(callRetBlock[labelIndex].size() > 1)
+ 		{
+-			callStack[stackIndex++] = UInt(callSiteIndex);
++			callStack[Min(stackIndex++, Int(MAX_SHADER_CALL_STACK_SIZE))] = UInt(callSiteIndex);
+ 		}
+ 
+ 		Int4 restoreLeave = enableLeave;
+@@ -1463,7 +1463,7 @@ namespace sw
+ 			condition = ~condition;
+ 		}
+ 
+-		condition &= enableStack[enableIndex];
++		condition &= enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		if(!labelBlock[labelIndex])
+ 		{
+@@ -1472,11 +1472,11 @@ namespace sw
+ 
+ 		if(callRetBlock[labelIndex].size() > 1)
+ 		{
+-			callStack[stackIndex++] = UInt(callSiteIndex);
++			callStack[Min(stackIndex++, Int(MAX_SHADER_CALL_STACK_SIZE))] = UInt(callSiteIndex);
+ 		}
+ 
+ 		enableIndex++;
+-		enableStack[enableIndex] = condition;
++		enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = condition;
+ 		Int4 restoreLeave = enableLeave;
+ 
+ 		Bool notAllFalse = SignMask(condition) != 0;
+@@ -1496,12 +1496,12 @@ namespace sw
+ 
+ 		if(isConditionalIf[ifDepth])
+ 		{
+-			Int4 condition = ~enableStack[enableIndex] & enableStack[enableIndex - 1];
++			Int4 condition = ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] & enableStack[Min(enableIndex - 1, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 			Bool notAllFalse = SignMask(condition) != 0;
+ 
+ 			branch(notAllFalse, falseBlock, endBlock);
+ 
+-			enableStack[enableIndex] = ~enableStack[enableIndex] & enableStack[enableIndex - 1];
++			enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] & enableStack[Min(enableIndex - 1, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 		}
+ 		else
+ 		{
+@@ -1655,10 +1655,10 @@ namespace sw
+ 
+ 	void PixelProgram::IF(Int4 &condition)
+ 	{
+-		condition &= enableStack[enableIndex];
++		condition &= enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		enableIndex++;
+-		enableStack[enableIndex] = condition;
++		enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = condition;
+ 
+ 		BasicBlock *trueBlock = Nucleus::createBasicBlock();
+ 		BasicBlock *falseBlock = Nucleus::createBasicBlock();
+@@ -1763,10 +1763,10 @@ namespace sw
+ 
+ 		const Vector4f &src = fetchRegister(temporaryRegister);
+ 		Int4 condition = As<Int4>(src.x);
+-		condition &= enableStack[enableIndex - 1];
++		condition &= enableStack[Min(enableIndex - 1, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 		if(shader->containsLeaveInstruction()) condition &= enableLeave;
+ 		if(shader->containsBreakInstruction()) condition &= enableBreak;
+-		enableStack[enableIndex] = condition;
++		enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = condition;
+ 
+ 		Bool notAllFalse = SignMask(condition) != 0;
+ 		branch(notAllFalse, loopBlock, endBlock);
+@@ -1838,7 +1838,7 @@ namespace sw
+ 
+ 	void PixelProgram::LEAVE()
+ 	{
+-		enableLeave = enableLeave & ~enableStack[enableIndex];
++		enableLeave = enableLeave & ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		// FIXME: Return from function if all instances left
+ 		// FIXME: Use enableLeave in other control-flow constructs
+diff --git a/src/Shader/PixelProgram.hpp b/src/Shader/PixelProgram.hpp
+index 240938dd15820601ce2bf5e4ff6eb242ddd196e7..4ed3eef7545e27b56ceffa5a7cf33ebe9b7c287f 100644
+--- a/src/Shader/PixelProgram.hpp
++++ b/src/Shader/PixelProgram.hpp
+@@ -27,7 +27,7 @@ namespace sw
+ 			PixelRoutine(state, shader), r(shader->indirectAddressableTemporaries),
+ 			loopDepth(-1), ifDepth(0), loopRepDepth(0), currentLabel(-1), whileTest(false)
+ 		{
+-			for(int i = 0; i < 2048; ++i)
++			for(int i = 0; i < MAX_SHADER_CALL_SITES; ++i)
+ 			{
+ 				labelBlock[i] = 0;
+ 			}
+@@ -67,17 +67,17 @@ namespace sw
+ 
+ 		// DX9 specific variables
+ 		Vector4f p0;
+-		Array<Int, 4> aL;
+-		Array<Int, 4> increment;
+-		Array<Int, 4> iteration;
++		Array<Int, MAX_SHADER_NESTED_LOOPS> aL;
++		Array<Int, MAX_SHADER_NESTED_LOOPS> increment;
++		Array<Int, MAX_SHADER_NESTED_LOOPS> iteration;
+ 
+ 		Int loopDepth;    // FIXME: Add support for switch
+ 		Int stackIndex;   // FIXME: Inc/decrement callStack
+-		Array<UInt, 16> callStack;
++		Array<UInt, MAX_SHADER_CALL_STACK_SIZE> callStack;
+ 
+ 		// Per pixel based on conditions reached
+ 		Int enableIndex;
+-		Array<Int4, 1 + 24> enableStack;
++		Array<Int4, MAX_SHADER_ENABLE_STACK_SIZE> enableStack;
+ 		Int4 enableBreak;
+ 		Int4 enableContinue;
+ 		Int4 enableLeave;
+@@ -152,18 +152,18 @@ namespace sw
+ 		void RET();
+ 		void LEAVE();
+ 
+-		int ifDepth;
+-		int loopRepDepth;
+-		int currentLabel;
++		BoundedIndex<MAX_SHADER_NESTED_IFS> ifDepth = 0;
++		BoundedIndex<MAX_SHADER_NESTED_LOOPS> loopRepDepth = 0;
++		BoundedIndex<MAX_SHADER_CALL_SITES> currentLabel = -1;
+ 		bool whileTest;
+ 
+-		BasicBlock *ifFalseBlock[24 + 24];
+-		BasicBlock *loopRepTestBlock[4];
+-		BasicBlock *loopRepEndBlock[4];
+-		BasicBlock *labelBlock[2048];
+-		std::vector<BasicBlock*> callRetBlock[2048];
++		BasicBlock *ifFalseBlock[MAX_SHADER_NESTED_IFS];
++		BasicBlock *loopRepTestBlock[MAX_SHADER_NESTED_LOOPS];
++		BasicBlock *loopRepEndBlock[MAX_SHADER_NESTED_LOOPS];
++		BasicBlock *labelBlock[MAX_SHADER_CALL_SITES];
++		std::vector<BasicBlock*> callRetBlock[MAX_SHADER_CALL_SITES];
+ 		BasicBlock *returnBlock;
+-		bool isConditionalIf[24 + 24];
++		bool isConditionalIf[MAX_SHADER_NESTED_IFS];
+ 	};
+ }
+ 
+diff --git a/src/Shader/Shader.cpp b/src/Shader/Shader.cpp
+index 36192c93c7473e7c4bc140843ad2c16ca11d3788..ed185d1c0c139bf971e44d7a1c2830de28a9c6ff 100644
+--- a/src/Shader/Shader.cpp
++++ b/src/Shader/Shader.cpp
+@@ -1877,13 +1877,13 @@ namespace sw
+ 	// This is used to know what basic block to return to.
+ 	void Shader::analyzeCallSites()
+ 	{
+-		int callSiteIndex[2048] = {0};
++		int callSiteIndex[MAX_SHADER_CALL_SITES] = {0};
+ 
+ 		for(auto &inst : instruction)
+ 		{
+ 			if(inst->opcode == OPCODE_CALL || inst->opcode == OPCODE_CALLNZ)
+ 			{
+-				int label = inst->dst.label;
++				int label = sw::min(inst->dst.label, (unsigned int)(MAX_SHADER_CALL_SITES));
+ 
+ 				inst->dst.callSite = callSiteIndex[label]++;
+ 			}
+diff --git a/src/Shader/VertexProgram.cpp b/src/Shader/VertexProgram.cpp
+index ad4e37bd4e5c1e93bc6728d5eaba19caf7f95e92..694f05179d6df328ef6f64a882d428422d7e86d6 100644
+--- a/src/Shader/VertexProgram.cpp
++++ b/src/Shader/VertexProgram.cpp
+@@ -31,7 +31,7 @@ namespace sw
+ 		currentLabel = -1;
+ 		whileTest = false;
+ 
+-		for(int i = 0; i < 2048; i++)
++		for(int i = 0; i < MAX_SHADER_CALL_SITES; i++)
+ 		{
+ 			labelBlock[i] = 0;
+ 		}
+@@ -978,7 +978,7 @@ namespace sw
+ 
+ 	Int4 VertexProgram::enableMask(const Shader::Instruction *instruction)
+ 	{
+-		Int4 enable = instruction->analysisBranch ? Int4(enableStack[enableIndex]) : Int4(0xFFFFFFFF);
++		Int4 enable = instruction->analysisBranch ? Int4(enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))]) : Int4(0xFFFFFFFF);
+ 
+ 		if(!whileTest)
+ 		{
+@@ -1060,7 +1060,7 @@ namespace sw
+ 
+ 	void VertexProgram::BREAK()
+ 	{
+-		enableBreak = enableBreak & ~enableStack[enableIndex];
++		enableBreak = enableBreak & ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 	}
+ 
+ 	void VertexProgram::BREAKC(Vector4f &src0, Vector4f &src1, Control control)
+@@ -1096,14 +1096,14 @@ namespace sw
+ 
+ 	void VertexProgram::BREAK(Int4 &condition)
+ 	{
+-		condition &= enableStack[enableIndex];
++		condition &= enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		enableBreak = enableBreak & ~condition;
+ 	}
+ 
+ 	void VertexProgram::CONTINUE()
+ 	{
+-		enableContinue = enableContinue & ~enableStack[enableIndex];
++		enableContinue = enableContinue & ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 	}
+ 
+ 	void VertexProgram::TEST()
+@@ -1120,7 +1120,7 @@ namespace sw
+ 
+ 		if(callRetBlock[labelIndex].size() > 1)
+ 		{
+-			callStack[stackIndex++] = UInt(callSiteIndex);
++			callStack[Min(stackIndex++, Int(MAX_SHADER_CALL_STACK_SIZE))] = UInt(callSiteIndex);
+ 		}
+ 
+ 		Int4 restoreLeave = enableLeave;
+@@ -1160,7 +1160,7 @@ namespace sw
+ 
+ 		if(callRetBlock[labelIndex].size() > 1)
+ 		{
+-			callStack[stackIndex++] = UInt(callSiteIndex);
++			callStack[Min(stackIndex++, Int(MAX_SHADER_CALL_STACK_SIZE))] = UInt(callSiteIndex);
+ 		}
+ 
+ 		Int4 restoreLeave = enableLeave;
+@@ -1180,7 +1180,7 @@ namespace sw
+ 			condition = ~condition;
+ 		}
+ 
+-		condition &= enableStack[enableIndex];
++		condition &= enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		if(!labelBlock[labelIndex])
+ 		{
+@@ -1189,11 +1189,11 @@ namespace sw
+ 
+ 		if(callRetBlock[labelIndex].size() > 1)
+ 		{
+-			callStack[stackIndex++] = UInt(callSiteIndex);
++			callStack[Min(stackIndex++, Int(MAX_SHADER_CALL_STACK_SIZE))] = UInt(callSiteIndex);
+ 		}
+ 
+ 		enableIndex++;
+-		enableStack[enableIndex] = condition;
++		enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = condition;
+ 		Int4 restoreLeave = enableLeave;
+ 
+ 		Bool notAllFalse = SignMask(condition) != 0;
+@@ -1213,12 +1213,12 @@ namespace sw
+ 
+ 		if(isConditionalIf[ifDepth])
+ 		{
+-			Int4 condition = ~enableStack[enableIndex] & enableStack[enableIndex - 1];
++			Int4 condition = ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] & enableStack[Min(enableIndex - 1, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 			Bool notAllFalse = SignMask(condition) != 0;
+ 
+ 			branch(notAllFalse, falseBlock, endBlock);
+ 
+-			enableStack[enableIndex] = ~enableStack[enableIndex] & enableStack[enableIndex - 1];
++			enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] & enableStack[Min(enableIndex - 1, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 		}
+ 		else
+ 		{
+@@ -1372,10 +1372,10 @@ namespace sw
+ 
+ 	void VertexProgram::IF(Int4 &condition)
+ 	{
+-		condition &= enableStack[enableIndex];
++		condition &= enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		enableIndex++;
+-		enableStack[enableIndex] = condition;
++		enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = condition;
+ 
+ 		BasicBlock *trueBlock = Nucleus::createBasicBlock();
+ 		BasicBlock *falseBlock = Nucleus::createBasicBlock();
+@@ -1481,10 +1481,10 @@ namespace sw
+ 
+ 		const Vector4f &src = fetchRegister(temporaryRegister);
+ 		Int4 condition = As<Int4>(src.x);
+-		condition &= enableStack[enableIndex - 1];
++		condition &= enableStack[Min(enableIndex - 1, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 		if(shader->containsLeaveInstruction()) condition &= enableLeave;
+ 		if(shader->containsBreakInstruction()) condition &= enableBreak;
+-		enableStack[enableIndex] = condition;
++		enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))] = condition;
+ 
+ 		Bool notAllFalse = SignMask(condition) != 0;
+ 		branch(notAllFalse, loopBlock, endBlock);
+@@ -1556,7 +1556,7 @@ namespace sw
+ 
+ 	void VertexProgram::LEAVE()
+ 	{
+-		enableLeave = enableLeave & ~enableStack[enableIndex];
++		enableLeave = enableLeave & ~enableStack[Min(enableIndex, Int(MAX_SHADER_ENABLE_STACK_SIZE))];
+ 
+ 		// FIXME: Return from function if all instances left
+ 		// FIXME: Use enableLeave in other control-flow constructs
+diff --git a/src/Shader/VertexProgram.hpp b/src/Shader/VertexProgram.hpp
+index 3c4199c6611198997326d387f787bcd7467558a3..8421078acaa9f89e311015f62e17d4825a3a6e82 100644
+--- a/src/Shader/VertexProgram.hpp
++++ b/src/Shader/VertexProgram.hpp
+@@ -39,18 +39,18 @@ namespace sw
+ 
+ 		RegisterArray<NUM_TEMPORARY_REGISTERS> r;   // Temporary registers
+ 		Vector4f a0;
+-		Array<Int, 4> aL;
++		Array<Int, MAX_SHADER_NESTED_LOOPS> aL;
+ 		Vector4f p0;
+ 
+-		Array<Int, 4> increment;
+-		Array<Int, 4> iteration;
++		Array<Int, MAX_SHADER_NESTED_LOOPS> increment;
++		Array<Int, MAX_SHADER_NESTED_LOOPS> iteration;
+ 
+ 		Int loopDepth;
+ 		Int stackIndex;   // FIXME: Inc/decrement callStack
+-		Array<UInt, 16> callStack;
++		Array<UInt, MAX_SHADER_CALL_STACK_SIZE> callStack;
+ 
+ 		Int enableIndex;
+-		Array<Int4, 1 + 24> enableStack;
++		Array<Int4, MAX_SHADER_ENABLE_STACK_SIZE> enableStack;
+ 		Int4 enableBreak;
+ 		Int4 enableContinue;
+ 		Int4 enableLeave;
+@@ -121,18 +121,18 @@ namespace sw
+ 		Vector4f sampleTexture(const Src &s, Vector4f &uvwq, Float4 &lod, Vector4f &dsx, Vector4f &dsy, Vector4f &offset, SamplerFunction function);
+ 		Vector4f sampleTexture(int sampler, Vector4f &uvwq, Float4 &lod, Vector4f &dsx, Vector4f &dsy, Vector4f &offset, SamplerFunction function);
+ 
+-		int ifDepth;
+-		int loopRepDepth;
+-		int currentLabel;
++		BoundedIndex<MAX_SHADER_NESTED_IFS> ifDepth = 0;
++		BoundedIndex<MAX_SHADER_NESTED_LOOPS> loopRepDepth = 0;
++		BoundedIndex<MAX_SHADER_CALL_SITES> currentLabel = -1;
+ 		bool whileTest;
+ 
+-		BasicBlock *ifFalseBlock[24 + 24];
+-		BasicBlock *loopRepTestBlock[4];
+-		BasicBlock *loopRepEndBlock[4];
+-		BasicBlock *labelBlock[2048];
+-		std::vector<BasicBlock*> callRetBlock[2048];
++		BasicBlock *ifFalseBlock[MAX_SHADER_NESTED_IFS];
++		BasicBlock *loopRepTestBlock[MAX_SHADER_NESTED_LOOPS];
++		BasicBlock *loopRepEndBlock[MAX_SHADER_NESTED_LOOPS];
++		BasicBlock *labelBlock[MAX_SHADER_CALL_SITES];
++		std::vector<BasicBlock*> callRetBlock[MAX_SHADER_CALL_SITES];
+ 		BasicBlock *returnBlock;
+-		bool isConditionalIf[24 + 24];
++		bool isConditionalIf[MAX_SHADER_NESTED_IFS];
+ 	};
+ }
+ 
