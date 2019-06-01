@@ -513,6 +513,16 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow autoHideMenuBar property', () => {
+    it('has an autoHideMenuBar property', () => {
+      expect(w).to.have.a.property('autoHideMenuBar')
+
+      // TODO(codebytere): remove when propertyification is complete
+      expect(w.setAutoHideMenuBar).to.be.a('function')
+      expect(w.isMenuBarAutoHide).to.be.a('function')
+    })
+  })
+
   describe('BrowserWindow.moveTop()', () => {
     it('should not steal focus', async () => {
       const posDelta = 50

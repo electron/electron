@@ -22,7 +22,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `title`
   * `documentEdited`
   * `hasShadow`
-  * `autohideMenuBar`
   * `menubarVisible`
   * `visibleOnAllWorkspaces`
 * `crashReporter` module
@@ -54,6 +53,8 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `applicationMenu`
   * `badgeCount`
   * `name`
+* `BrowserWindow` module
+  * `autohideMenuBar`
 * `NativeImage`
   * `isMacTemplateImage`
 * `SystemPreferences` module
