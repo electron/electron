@@ -189,7 +189,7 @@ app.on('window-all-closed', () => {
 
 Promise.all([
   import('@electron/internal/browser/default-menu'),
-  app.whenReady
+  app.whenReady()
 ]).then(([{ setDefaultApplicationMenu }]) => {
   // Create default menu
   setDefaultApplicationMenu()
