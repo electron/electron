@@ -42,7 +42,9 @@ module.exports = ({
     resolve: {
       alias: {
         '@electron/internal': path.resolve(electronRoot, 'lib'),
-        'electron': path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.js')
+        'electron': path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.js'),
+        // Force timers to resolve to our dependency that doens't use window.postMessage
+        'timers': path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
       },
       extensions: ['.ts', '.js']
     },
@@ -52,13 +54,17 @@ module.exports = ({
         loader: 'ts-loader',
         options: {
           configFile: path.resolve(electronRoot, 'tsconfig.electron.json'),
-          transpileOnly: onlyPrintingGraph
+          transpileOnly: onlyPrintingGraph,
+          ignoreDiagnostics: [6059]
         }
       }]
     },
     node: {
       __dirname: false,
-      __filename: false
+      __filename: false,
+      // We provide our own "timers" import above, any usage of setImmediate inside
+      // one of our renderer bundles should import it from the 'timers' package
+      setImmediate: false,
     },
     plugins: [
       new AccessDependenciesPlugin(),

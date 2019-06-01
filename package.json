@@ -51,6 +51,7 @@
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
+    "timers-browserify": "1.4.2",
     "ts-loader": "^6.0.2",
     "ts-node": "^6.0.3",
     "typescript": "~3.3.3333",
@@ -88,9 +89,6 @@
   },
   "license": "MIT",
   "author": "Electron Community",
-  "resolutions": {
-    "timers-browserify": "1.4.2"
-  },
   "keywords": [
     "electron"
   ],
