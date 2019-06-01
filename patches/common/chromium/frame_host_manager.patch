@@ -7,7 +7,7 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance.
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index b5301d164138f21ca8ae01abfb153efde51ec324..91efc5f94f61f7bccc2ff802851097df8eb52818 100644
+index 297b61198dd46114b3d8c89488a71ed01aa299c4..0f64b4926f9077fbf5c4729fed5888088b6912e8 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2127,6 +2127,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -27,7 +27,7 @@ index b5301d164138f21ca8ae01abfb153efde51ec324..91efc5f94f61f7bccc2ff802851097df
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2159,6 +2169,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2158,6 +2168,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -79,7 +79,7 @@ index b5301d164138f21ca8ae01abfb153efde51ec324..91efc5f94f61f7bccc2ff802851097df
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2170,23 +2225,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2169,23 +2224,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -108,10 +108,10 @@ index b5301d164138f21ca8ae01abfb153efde51ec324..91efc5f94f61f7bccc2ff802851097df
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 3729dcc9ea3272c943754a92c6ed1d7a1fd8fcf3..2317ddf6a3c533f701fe44bf1b8114eb042c2189 100644
+index d15061de5254fd4f248fed92f47a1b1fcf34cd68..671d2259d50bfbb5b56a79907c1c86218ee04469 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -51,6 +51,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+@@ -52,6 +52,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
@@ -125,11 +125,11 @@ index 3729dcc9ea3272c943754a92c6ed1d7a1fd8fcf3..2317ddf6a3c533f701fe44bf1b8114eb
 +  return SiteInstanceForNavigationType::ASK_CHROMIUM;
 +}
 +
- BrowserMainParts* ContentBrowserClient::CreateBrowserMainParts(
+ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4c84fb3648b3de36015b325246559f8aefe2ebd5..a81f40507b2233c3bde03b940cccd6be0aaa4926 100644
+index e5cddbc3a28e0f90bd1d1ae6ebe28d5f2d0299c7..fcc5a0e5cd830afe459c1defe968b01e3f05f764 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,8 +211,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(

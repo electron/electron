@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "atom/browser/net/url_request_context_getter.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
@@ -35,6 +36,24 @@ IOThread::~IOThread() {
   BrowserThread::SetIOThreadDelegate(nullptr);
 }
 
+void IOThread::RegisterURLRequestContextGetter(
+    atom::URLRequestContextGetter* getter) {
+  base::AutoLock lock(lock_);
+
+  DCHECK(!base::FeatureList::IsEnabled(network::features::kNetworkService));
+  DCHECK_EQ(0u, request_context_getters_.count(getter));
+  request_context_getters_.insert(getter);
+}
+
+void IOThread::DeregisterURLRequestContextGetter(
+    atom::URLRequestContextGetter* getter) {
+  base::AutoLock lock(lock_);
+
+  DCHECK(!base::FeatureList::IsEnabled(network::features::kNetworkService));
+  DCHECK_EQ(1u, request_context_getters_.count(getter));
+  request_context_getters_.erase(getter);
+}
+
 void IOThread::Init() {
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
@@ -55,19 +74,23 @@ void IOThread::Init() {
     network_service->ConfigureHttpAuthPrefs(
         std::move(http_auth_dynamic_params_));
 
-    system_network_context_ =
-        network_service
-            ->CreateNetworkContextWithBuilder(
-                std::move(network_context_request_),
-                std::move(network_context_params_), std::move(builder),
-                &system_request_context_)
-            .release();
+    system_network_context_ = network_service->CreateNetworkContextWithBuilder(
+        std::move(network_context_request_), std::move(network_context_params_),
+        std::move(builder), &system_request_context_);
   }
 }
 
 void IOThread::CleanUp() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
     system_request_context_->proxy_resolution_service()->OnShutdown();
+
+    base::AutoLock lock(lock_);
+    for (auto* getter : request_context_getters_) {
+      getter->NotifyContextShuttingDown();
+    }
+
+    system_network_context_.reset();
+  }
 
   if (net_log_)
     net_log_->ShutDownBeforeThreadPool();

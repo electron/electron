@@ -27,7 +27,7 @@ index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..d124a4558affaf244ea82ab37f823db6
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 007b003dd58d44acd6e1351c237fca6463d90602..4ddbf18e335609623aba42cc39a7c977fe8c5229 100644
+index 309477ec68ed90f4d0229d92f37a6456e779c51c..84fd2dce14f3c95aba6df2170417b0612287070e 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -132,7 +132,7 @@ index 007b003dd58d44acd6e1351c237fca6463d90602..4ddbf18e335609623aba42cc39a7c977
      return;
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index a2569836d04ff968e690215f56f6de3b6d884874..6ddec22641b74d5484c2e0d4f62e5d71d8d783e9 100644
+index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..0838041cfe45d26dca65b549452535820191ae44 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -39,6 +39,8 @@ class PrintJob;
@@ -155,7 +155,7 @@ index a2569836d04ff968e690215f56f6de3b6d884874..6ddec22641b74d5484c2e0d4f62e5d71
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -197,6 +201,9 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -195,6 +199,9 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_;
  

@@ -122,9 +122,13 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!main_request_context_getter_.get());
+  DCHECK(g_browser_process->io_thread());
+
   LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
       this, protocol_handlers, std::move(protocol_interceptors));
+  g_browser_process->io_thread()->RegisterURLRequestContextGetter(
+      main_request_context_getter_.get());
   return main_request_context_getter_;
 }
 
@@ -203,13 +207,13 @@ void URLRequestContextGetter::Handle::LazyInitialize() {
 
 void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (main_request_context_getter_.get()) {
+
+  if (main_request_context_getter_) {
     if (BrowserThread::IsThreadInitialized(BrowserThread::IO)) {
       base::PostTaskWithTraits(
           FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&URLRequestContextGetter::NotifyContextShuttingDown,
-                         base::RetainedRef(main_request_context_getter_),
-                         std::move(resource_context_)));
+                         base::RetainedRef(main_request_context_getter_)));
     }
   }
 
@@ -238,18 +242,20 @@ URLRequestContextGetter::~URLRequestContextGetter() {
   DCHECK(context_shutting_down_);
 }
 
-void URLRequestContextGetter::NotifyContextShuttingDown(
-    std::unique_ptr<content::ResourceContext> resource_context) {
+void URLRequestContextGetter::NotifyContextShuttingDown() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  DCHECK(g_browser_process->io_thread());
+  DCHECK(context_handle_);
 
-  // todo(brenca): remove once C70 lands
-  if (url_request_context_ && url_request_context_->cookie_store()) {
-    url_request_context_->cookie_store()->FlushStore(base::NullCallback());
-  }
+  if (context_shutting_down_)
+    return;
+
+  g_browser_process->io_thread()->DeregisterURLRequestContextGetter(this);
 
   context_shutting_down_ = true;
-  resource_context.reset();
+  context_handle_->resource_context_.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
+  network_context_.reset();
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {

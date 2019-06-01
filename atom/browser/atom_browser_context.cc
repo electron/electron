@@ -110,11 +110,12 @@ AtomBrowserContext::~AtomBrowserContext() {
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
 
-  BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                            std::move(resource_context_));
-
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
+  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
     io_handle_->ShutdownOnUIThread();
+  } else {
+    BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
+                              std::move(resource_context_));
+  }
 
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
