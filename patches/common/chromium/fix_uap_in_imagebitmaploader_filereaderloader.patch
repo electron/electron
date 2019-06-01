@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Thu, 13 Dec 2018 17:09:55 +0000
+Subject: Fix UAP in ImageBitmapLoader/FileReaderLoader
+
+FileReaderLoader stores its client as a raw pointer, so in cases like
+ImageBitmapLoader where the FileReaderLoaderClient really is garbage
+collected we have to make sure to destroy the FileReaderLoader when
+the ExecutionContext that owns it is destroyed.
+
+Bug: 913970
+Change-Id: I40b02115367cf7bf5bbbbb8e9b57874d2510f861
+Reviewed-on: https://chromium-review.googlesource.com/c/1374511
+Reviewed-by: Jeremy Roman <jbroman@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#616342}
+
+diff --git a/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.cc b/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.cc
+index 076b9beeaa6675c5e858a1c7f5a321ab57c606fb..40898b704891c3723574d3afa4aebf72f5cdce5c 100644
+--- a/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.cc
++++ b/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.cc
+@@ -238,27 +238,31 @@ void ImageBitmapFactories::DidFinishLoading(ImageBitmapLoader* loader) {
+   pending_loaders_.erase(loader);
+ }
+ 
++void ImageBitmapFactories::Trace(blink::Visitor* visitor) {
++  visitor->Trace(pending_loaders_);
++  Supplement<LocalDOMWindow>::Trace(visitor);
++  Supplement<WorkerGlobalScope>::Trace(visitor);
++}
++
+ ImageBitmapFactories::ImageBitmapLoader::ImageBitmapLoader(
+     ImageBitmapFactories& factory,
+     base::Optional<IntRect> crop_rect,
+     ScriptState* script_state,
+     const ImageBitmapOptions& options)
+-    : loader_(
++    : ContextLifecycleObserver(ExecutionContext::From(script_state)),
++      loader_(
+           FileReaderLoader::Create(FileReaderLoader::kReadAsArrayBuffer, this)),
+       factory_(&factory),
+       resolver_(ScriptPromiseResolver::Create(script_state)),
+       crop_rect_(crop_rect),
+       options_(options) {}
+ 
+-void ImageBitmapFactories::ImageBitmapLoader::LoadBlobAsync(
+-    Blob* blob) {
++void ImageBitmapFactories::ImageBitmapLoader::LoadBlobAsync(Blob* blob) {
+   loader_->Start(blob->GetBlobDataHandle());
+ }
+ 
+-void ImageBitmapFactories::Trace(blink::Visitor* visitor) {
+-  visitor->Trace(pending_loaders_);
+-  Supplement<LocalDOMWindow>::Trace(visitor);
+-  Supplement<WorkerGlobalScope>::Trace(visitor);
++ImageBitmapFactories::ImageBitmapLoader::~ImageBitmapLoader() {
++  DCHECK(!loader_);
+ }
+ 
+ void ImageBitmapFactories::ImageBitmapLoader::RejectPromise(
+@@ -277,11 +281,20 @@ void ImageBitmapFactories::ImageBitmapLoader::RejectPromise(
+     default:
+       NOTREACHED();
+   }
++  loader_.reset();
+   factory_->DidFinishLoading(this);
+ }
+ 
++void ImageBitmapFactories::ImageBitmapLoader::ContextDestroyed(
++    ExecutionContext*) {
++  if (loader_)
++    factory_->DidFinishLoading(this);
++  loader_.reset();
++}
++
+ void ImageBitmapFactories::ImageBitmapLoader::DidFinishLoading() {
+   DOMArrayBuffer* array_buffer = loader_->ArrayBufferResult();
++  loader_.reset();
+   if (!array_buffer) {
+     RejectPromise(kAllocationFailureImageBitmapRejectionReason);
+     return;
+@@ -359,6 +372,7 @@ void ImageBitmapFactories::ImageBitmapLoader::ResolvePromiseOnOriginalThread(
+ }
+ 
+ void ImageBitmapFactories::ImageBitmapLoader::Trace(blink::Visitor* visitor) {
++  ContextLifecycleObserver::Trace(visitor);
+   visitor->Trace(factory_);
+   visitor->Trace(resolver_);
+ }
+diff --git a/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.h b/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.h
+index 25bdf1ffd1e85a05ab4ee46aaa81c61294fd7d1a..726012a20f7250ea1166ec03875ebaa10f352a49 100644
+--- a/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.h
++++ b/third_party/blink/renderer/core/imagebitmap/image_bitmap_factories.h
+@@ -36,6 +36,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/image_bitmap_source.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
++#include "third_party/blink/renderer/core/dom/context_lifecycle_observer.h"
+ #include "third_party/blink/renderer/core/fileapi/file_reader_loader.h"
+ #include "third_party/blink/renderer/core/fileapi/file_reader_loader_client.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+@@ -103,7 +104,10 @@ class ImageBitmapFactories final
+  private:
+   class ImageBitmapLoader final
+       : public GarbageCollectedFinalized<ImageBitmapLoader>,
++        public ContextLifecycleObserver,
+         public FileReaderLoaderClient {
++    USING_GARBAGE_COLLECTED_MIXIN(ImageBitmapLoader);
++
+    public:
+     static ImageBitmapLoader* Create(ImageBitmapFactories& factory,
+                                      base::Optional<IntRect> crop_rect,
+@@ -115,9 +119,9 @@ class ImageBitmapFactories final
+     void LoadBlobAsync(Blob*);
+     ScriptPromise Promise() { return resolver_->Promise(); }
+ 
+-    void Trace(blink::Visitor*);
++    void Trace(blink::Visitor*) override;
+ 
+-    ~ImageBitmapLoader() override = default;
++    ~ImageBitmapLoader() override;
+ 
+    private:
+     ImageBitmapLoader(ImageBitmapFactories&,
+@@ -140,6 +144,9 @@ class ImageBitmapFactories final
+         const String& color_space_conversion_option);
+     void ResolvePromiseOnOriginalThread(sk_sp<SkImage>);
+ 
++    // ContextLifecycleObserver
++    void ContextDestroyed(ExecutionContext*) override;
++
+     // FileReaderLoaderClient
+     void DidStartLoading() override {}
+     void DidReceiveData() override {}
