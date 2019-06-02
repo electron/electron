@@ -1,4 +1,4 @@
-import { app, dialog, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, dialog, BrowserWindow, Menu, shell, ipcMain } from 'electron'
 import * as path from 'path'
 
 let mainWindow: BrowserWindow | null = null
@@ -45,6 +45,18 @@ ipcMain.on('bootstrap', (event) => {
   }
 })
 
+const editMenuTemplate: Electron.MenuItemConstructorOptions[] = [
+  { role: 'undo' },
+  { role: 'redo' },
+  { type: 'separator' },
+  { role: 'cut' },
+  { role: 'copy' },
+  { role: 'paste' },
+  { role: 'pasteandmatchstyle' },
+  { role: 'delete' },
+  { role: 'selectall' }
+]
+
 async function createWindow () {
   await app.whenReady()
 
@@ -69,6 +81,21 @@ async function createWindow () {
 
   mainWindow = new BrowserWindow(options)
   mainWindow.on('ready-to-show', () => mainWindow!.show())
+
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    const menu = Menu.buildFromTemplate([
+      ...(params.isEditable ? editMenuTemplate : []),
+      { type: 'separator' },
+      {
+        label: 'Inspect',
+        click: () => {
+          mainWindow!.webContents.inspectElement(params.x, params.y)
+        }
+      }
+    ])
+
+    menu.popup()
+  })
 
   mainWindow.webContents.on('new-window', (event, url) => {
     event.preventDefault()
