@@ -307,25 +307,23 @@ node::Environment* NodeBindings::CreateEnvironment(
 #endif
 
   // Feed node the path to initialization script.
-  base::FilePath::StringType process_type;
+  std::string process_type;
   switch (browser_env_) {
     case BrowserEnvironment::BROWSER:
-      process_type = FILE_PATH_LITERAL("browser");
+      process_type = "browser";
       break;
     case BrowserEnvironment::RENDERER:
-      process_type = FILE_PATH_LITERAL("renderer");
+      process_type = "renderer";
       break;
     case BrowserEnvironment::WORKER:
-      process_type = FILE_PATH_LITERAL("worker");
+      process_type = "worker";
       break;
   }
   base::FilePath resources_path =
       GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
-  base::FilePath script_path =
-      resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
-          .Append(process_type)
-          .Append(FILE_PATH_LITERAL("init.js"));
-  args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
+  std::string init_script = "electron/js2c/" + process_type + "_init";
+
+  args.insert(args.begin() + 1, init_script);
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
@@ -347,7 +345,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   process.Set("resourcesPath", resources_path);
   // Do not set DOM globals for renderer process.
   if (browser_env_ != BrowserEnvironment::BROWSER)
-    process.Set("_noBrowserGlobals", resources_path);
+    process.Set("_noBrowserGlobals", true);
   // The path to helper app.
   base::FilePath helper_exec_path;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);

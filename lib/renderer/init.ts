@@ -128,8 +128,9 @@ if (contextIsolation) {
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  global.require = __non_webpack_require__ // eslint-disable-line
-  global.module = Module._cache[__filename]
+  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
+  global.module = new Module('electron/js2c/renderer_init')
+  global.require = makeRequireFunction(global.module)
 
   // Set the __filename to the path of html file if it is file: protocol.
   if (window.location.protocol === 'file:') {
@@ -139,7 +140,7 @@ if (nodeIntegration) {
     if (process.platform === 'win32') {
       if (pathname[0] === '/') pathname = pathname.substr(1)
 
-      const isWindowsNetworkSharePath = location.hostname.length > 0 && __filename.startsWith('\\')
+      const isWindowsNetworkSharePath = location.hostname.length > 0 && process.resourcesPath.startsWith('\\')
       if (isWindowsNetworkSharePath) {
         pathname = `//${location.host}/${pathname}`
       }
@@ -152,14 +153,15 @@ if (nodeIntegration) {
     global.module.filename = global.__filename
 
     // Also search for module under the html file.
-    global.module.paths = global.module.paths.concat(Module._nodeModulePaths(global.__dirname))
+    global.module.paths = Module._nodeModulePaths(global.__dirname)
   } else {
-    global.__filename = __filename
-    global.__dirname = __dirname
+    // For backwards compatibility we fake these two paths here
+    global.__filename = path.join(process.resourcesPath, 'electron.asar', 'renderer', 'init.js')
+    global.__dirname = path.join(process.resourcesPath, 'electron.asar', 'renderer')
 
     if (appPath) {
       // Search for module under the app directory
-      global.module.paths = global.module.paths.concat(Module._nodeModulePaths(appPath))
+      global.module.paths = Module._nodeModulePaths(appPath)
     }
   }
 
@@ -203,7 +205,7 @@ for (const preloadScript of preloadScripts) {
     if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
       throw new Error('Preload scripts outside of app path are not allowed')
     }
-    __non_webpack_require__(preloadScript)  // eslint-disable-line
+    Module._load(preloadScript)  // eslint-disable-line
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
     console.error(`${error}`)
