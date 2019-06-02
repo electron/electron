@@ -66,4 +66,4 @@ function getWebFrame (context: Window) {
 
 const _webFrame = new WebFrame(window)
 
-export default _webFrame
+export = _webFrame

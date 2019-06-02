@@ -37,4 +37,4 @@ const ipcMain = new IpcMain()
 // Do not throw exception when channel name is "error".
 ipcMain.on('error', () => {})
 
-export default ipcMain
+export = ipcMain

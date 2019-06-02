@@ -177,4 +177,4 @@ const deprecate: ElectronInternal.DeprecationUtil = {
   }
 }
 
-export default deprecate
+export = deprecate

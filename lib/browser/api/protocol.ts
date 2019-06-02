@@ -26,4 +26,4 @@ Object.setPrototypeOf(protocol, new Proxy({}, {
   }
 }))
 
-export default protocol
+export = protocol

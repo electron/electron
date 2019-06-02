@@ -8,7 +8,7 @@ const commandLine = process.electronBinding('command_line')
 const { app, App } = bindings
 
 // Only one app object permitted.
-export default app
+export = app
 
 let dockMenu: Electron.Menu | null = null
 
