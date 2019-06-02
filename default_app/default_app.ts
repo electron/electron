@@ -37,12 +37,8 @@ function isTrustedSender (webContents: Electron.WebContents) {
   return parsedUrl.protocol === 'file:' && urlPath === indexPath
 }
 
-ipcMain.on('bootstrap', (event) => {
-  try {
-    event.returnValue = isTrustedSender(event.sender) ? electronPath : null
-  } catch {
-    event.returnValue = null
-  }
+ipcMain.handle('bootstrap', (event) => {
+  return isTrustedSender(event.sender) ? electronPath : null
 })
 
 async function createWindow () {
