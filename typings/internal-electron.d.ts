@@ -47,11 +47,6 @@ declare namespace Electron {
     allFrames: boolean
   }
 
-  interface RendererProcessPreference {
-    contentScripts: Array<ContentScript>
-    extensionId: string;
-  }
-
   interface IpcRendererInternal extends Electron.IpcRenderer {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
@@ -86,6 +81,26 @@ declare namespace ElectronInternal {
 
     // convertPromiseValue: Temporarily disabled until it's used
     promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, /*convertPromiseValue: (v: any) => any*/): T;
+  }
+
+  interface DesktopCapturer {
+    startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
+    emit: typeof NodeJS.EventEmitter.prototype.emit | null;
+  }
+
+  interface GetSourcesOptions {
+    captureWindow: boolean;
+    captureScreen: boolean;
+    thumbnailSize: Electron.Size;
+    fetchWindowIcons: boolean;
+  }
+
+  interface GetSourcesResult {
+    id: string;
+    name: string;
+    thumbnail: string;
+    display_id: string;
+    appIcon: string | null;
   }
 
   // Internal IPC has _replyInternal and NO reply method
