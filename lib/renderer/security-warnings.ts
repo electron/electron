@@ -3,6 +3,8 @@ import { invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-ut
 
 let shouldLog: boolean | null = null
 
+const { platform, execPath, env } = process
+
 /**
  * This method checks if a security message should be logged.
  * It does so by determining whether we're running as Electron,
@@ -15,8 +17,6 @@ const shouldLogSecurityWarnings = function (): boolean {
   if (shouldLog !== null) {
     return shouldLog
   }
-
-  const { platform, execPath, env } = process
 
   switch (platform) {
     case 'darwin':

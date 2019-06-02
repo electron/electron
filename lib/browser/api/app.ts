@@ -1,6 +1,6 @@
 import * as path from 'path'
 
-import * as electron from 'electron'
+import { deprecate, Menu } from 'electron'
 import { EventEmitter } from 'events'
 
 const bindings = process.electronBinding('app')
@@ -9,8 +9,6 @@ const { app, App } = bindings
 
 // Only one app object permitted.
 export default app
-
-const { deprecate, Menu } = electron
 
 let dockMenu: Electron.Menu | null = null
 

@@ -16,11 +16,6 @@ require('../common/reset-search-paths')
 // Import common settings.
 require('@electron/internal/common/init')
 
-const globalPaths = Module.globalPaths
-
-// Expose public APIs.
-globalPaths.push(path.join(__dirname, 'api', 'exports'))
-
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
   // handle console output when running as GUI program.
@@ -112,7 +107,7 @@ if (process.resourcesPath) {
   for (packagePath of searchPaths) {
     try {
       packagePath = path.join(process.resourcesPath, packagePath)
-      packageJson = require(path.join(packagePath, 'package.json'))
+      packageJson = __non_webpack_require__(path.join(packagePath, 'package.json')) // eslint-disable-line
       break
     } catch {
       continue
@@ -194,7 +189,7 @@ app.on('window-all-closed', () => {
 
 Promise.all([
   import('@electron/internal/browser/default-menu'),
-  app.whenReady
+  app.whenReady()
 ]).then(([{ setDefaultApplicationMenu }]) => {
   // Create default menu
   setDefaultApplicationMenu()
