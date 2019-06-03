@@ -205,7 +205,7 @@ for (const preloadScript of preloadScripts) {
     if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
       throw new Error('Preload scripts outside of app path are not allowed')
     }
-    Module._load(preloadScript)  // eslint-disable-line
+    Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
     console.error(`${error}`)
