@@ -129,8 +129,8 @@ AtomExtensionsBrowserClient::MaybeCreateResourceBundleRequestJob(
 base::FilePath AtomExtensionsBrowserClient::GetBundleResourcePath(
     const network::ResourceRequest& request,
     const base::FilePath& extension_resources_path,
-    extensions::ComponentExtensionResourceInfo* resource_info) const {
-  *resource_info = {};
+    int* resource_id) const {
+  *resource_id = 0;
   return base::FilePath();
 }
 
@@ -138,7 +138,7 @@ void AtomExtensionsBrowserClient::LoadResourceFromResourceBundle(
     const network::ResourceRequest& request,
     network::mojom::URLLoaderRequest loader,
     const base::FilePath& resource_relative_path,
-    const extensions::ComponentExtensionResourceInfo& resource_info,
+    int resource_id,
     const std::string& content_security_policy,
     network::mojom::URLLoaderClientPtr client,
     bool send_cors_header) {
@@ -172,7 +172,7 @@ PrefService* AtomExtensionsBrowserClient::GetPrefServiceForContext(
 
 void AtomExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
     content::BrowserContext* context,
-    std::vector<extensions::ExtensionPrefsObserver*>* observers) const {}
+    std::vector<extensions::EarlyExtensionPrefsObserver*>* observers) const {}
 
 extensions::ProcessManagerDelegate*
 AtomExtensionsBrowserClient::GetProcessManagerDelegate() const {
@@ -259,10 +259,6 @@ void AtomExtensionsBrowserClient::BroadcastEventToRenderers(
           ->BroadcastEvent(std::move(event));
     }
   }
-}
-
-net::NetLog* AtomExtensionsBrowserClient::GetNetLog() {
-  return AtomBrowserClient::Get()->GetNetLog();
 }
 
 extensions::ExtensionCache* AtomExtensionsBrowserClient::GetExtensionCache() {

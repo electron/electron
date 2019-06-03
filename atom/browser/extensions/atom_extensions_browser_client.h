@@ -62,12 +62,12 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
   base::FilePath GetBundleResourcePath(
       const network::ResourceRequest& request,
       const base::FilePath& extension_resources_path,
-      extensions::ComponentExtensionResourceInfo* resource_info) const override;
+      int* resource_id) const override;
   void LoadResourceFromResourceBundle(
       const network::ResourceRequest& request,
       network::mojom::URLLoaderRequest loader,
       const base::FilePath& resource_relative_path,
-      const extensions::ComponentExtensionResourceInfo& resource_info,
+      int resource_id,
       const std::string& content_security_policy,
       network::mojom::URLLoaderClientPtr client,
       bool send_cors_header) override;
@@ -84,7 +84,7 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
       content::BrowserContext* context) override;
   void GetEarlyExtensionPrefsObservers(
       content::BrowserContext* context,
-      std::vector<extensions::ExtensionPrefsObserver*>* observers)
+      std::vector<extensions::EarlyExtensionPrefsObserver*>* observers)
       const override;
   extensions::ProcessManagerDelegate* GetProcessManagerDelegate()
       const override;
@@ -112,7 +112,6 @@ class AtomExtensionsBrowserClient : public extensions::ExtensionsBrowserClient {
       extensions::events::HistogramValue histogram_value,
       const std::string& event_name,
       std::unique_ptr<base::ListValue> args) override;
-  net::NetLog* GetNetLog() override;
   extensions::ExtensionCache* GetExtensionCache() override;
   bool IsBackgroundUpdateAllowed() override;
   bool IsMinBrowserVersionSupported(const std::string& min_version) override;

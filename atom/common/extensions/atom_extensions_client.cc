@@ -126,12 +126,6 @@ bool AtomExtensionsClient::IsScriptableURL(const GURL& url,
   return true;
 }
 
-bool AtomExtensionsClient::ShouldSuppressFatalErrors() const {
-  return true;
-}
-
-void AtomExtensionsClient::RecordDidSuppressFatalError() {}
-
 const GURL& AtomExtensionsClient::GetWebstoreBaseURL() const {
   return webstore_base_url_;
 }

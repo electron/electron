@@ -72,8 +72,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   net::NetLog* GetNetLog() override;
 
-  std::string GetUserAgent() const override;
-
  protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,

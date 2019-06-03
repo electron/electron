@@ -27,7 +27,7 @@ class AtomNavigationUIData : public content::NavigationUIData {
   // Creates a new ChromeNavigationUIData that is a deep copy of the original.
   // Any changes to the original after the clone is created will not be
   // reflected in the clone.  |extension_data_| is deep copied.
-  std::unique_ptr<content::NavigationUIData> Clone() const override;
+  std::unique_ptr<content::NavigationUIData> Clone() override;
 
   void SetExtensionNavigationUIData(
       std::unique_ptr<ExtensionNavigationUIData> extension_data);
