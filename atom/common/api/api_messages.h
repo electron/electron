@@ -7,12 +7,9 @@
 #include "base/strings/string16.h"
 #include "base/values.h"
 #include "content/public/common/common_param_traits.h"
-#include "content/public/common/referrer.h"
 #include "ipc/ipc_message_macros.h"
-#include "ipc/ipc_platform_file.h"
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/ipc/gfx_param_traits.h"
-#include "url/gurl.h"
 
 // The message starter should be declared in ipc/ipc_message_start.h. Since
 // we don't want to patch Chromium, we just pretend to be Content Shell.
