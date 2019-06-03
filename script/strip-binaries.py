@@ -9,7 +9,9 @@ LINUX_BINARIES_TO_STRIP = [
   'electron',
   'libffmpeg.so',
   'libGLESv2.so',
-  'libEGL.so'
+  'libEGL.so',
+  'swiftshader/libGLESv2.so',
+  'swiftshader/libEGL.so'
 ]
 
 def strip_binaries(directory, target_cpu):
