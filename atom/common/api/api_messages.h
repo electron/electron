@@ -11,9 +11,6 @@
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/ipc/gfx_param_traits.h"
 
-// The message starter should be declared in ipc/ipc_message_start.h. Since
-// we don't want to patch Chromium, we just pretend to be Content Shell.
-
 #define IPC_MESSAGE_START ElectronMsgStart
 
 IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
