@@ -40,7 +40,7 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
   if (allowed)
     controller.TakeAction();
   else
-    controller.Deny(blink::MEDIA_DEVICE_PERMISSION_DENIED);
+    controller.Deny(blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
 }
 
 void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {

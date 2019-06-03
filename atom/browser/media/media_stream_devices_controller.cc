@@ -42,9 +42,10 @@ MediaStreamDevicesController::MediaStreamDevicesController(
 
 MediaStreamDevicesController::~MediaStreamDevicesController() {
   if (!callback_.is_null()) {
-    std::move(callback_).Run(blink::MediaStreamDevices(),
-                             blink::MEDIA_DEVICE_FAILED_DUE_TO_SHUTDOWN,
-                             std::unique_ptr<content::MediaStreamUI>());
+    std::move(callback_).Run(
+        blink::MediaStreamDevices(),
+        blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
+        std::unique_ptr<content::MediaStreamUI>());
   }
 }
 
@@ -60,7 +61,7 @@ bool MediaStreamDevicesController::TakeAction() {
 
   // Deny the request if there is no device attached to the OS.
   if (!HasAnyAvailableDevice()) {
-    Deny(blink::MEDIA_DEVICE_NO_HARDWARE);
+    Deny(blink::mojom::MediaStreamRequestResult::NO_HARDWARE);
     return true;
   }
 
@@ -146,12 +147,12 @@ void MediaStreamDevicesController::Accept() {
     }
   }
 
-  std::move(callback_).Run(devices, blink::MEDIA_DEVICE_OK,
+  std::move(callback_).Run(devices, blink::mojom::MediaStreamRequestResult::OK,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::Deny(
-    blink::MediaStreamRequestResult result) {
+    blink::mojom::MediaStreamRequestResult result) {
   std::move(callback_).Run(blink::MediaStreamDevices(), result,
                            std::unique_ptr<content::MediaStreamUI>());
 }
@@ -188,10 +189,11 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
                                  screen_id.ToString(), "Screen"));
   }
 
-  std::move(callback_).Run(devices,
-                           devices.empty() ? blink::MEDIA_DEVICE_NO_HARDWARE
-                                           : blink::MEDIA_DEVICE_OK,
-                           std::unique_ptr<content::MediaStreamUI>());
+  std::move(callback_).Run(
+      devices,
+      devices.empty() ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
+                      : blink::mojom::MediaStreamRequestResult::OK,
+      std::unique_ptr<content::MediaStreamUI>());
 }
 
 }  // namespace atom
