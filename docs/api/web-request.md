@@ -82,11 +82,11 @@ The `callback` has to be called with an `response` object.
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
-    * `requestHeaders` Object
+    * `requestHeaders` Record<string, string>
   * `callback` Function
     * `response` Object
       * `cancel` Boolean (optional)
-      * `requestHeaders` Object (optional) - When provided, request will be made
+      * `requestHeaders` Record<string, string> (optional) - When provided, request will be made
   with these headers.
 
 The `listener` will be called with `listener(details, callback)` before sending
@@ -109,7 +109,7 @@ The `callback` has to be called with an `response` object.
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
-    * `requestHeaders` Object
+    * `requestHeaders` Record<string, string>
 
 The `listener` will be called with `listener(details)` just before a request is
 going to be sent to the server, modifications of previous `onBeforeSendHeaders`

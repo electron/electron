@@ -232,31 +232,6 @@ ipcMain.on('set-client-certificate-option', function (event, skip) {
   event.returnValue = 'done'
 })
 
-ipcMain.on('close-on-will-navigate', (event, id) => {
-  const contents = event.sender
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-navigate', (event, input) => {
-    window.close()
-    contents.send('closed-on-will-navigate')
-  })
-})
-
-ipcMain.on('close-on-will-redirect', (event, id) => {
-  const contents = event.sender
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-redirect', (event, input) => {
-    window.close()
-    contents.send('closed-on-will-redirect')
-  })
-})
-
-ipcMain.on('prevent-will-redirect', (event, id) => {
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-redirect', (event) => {
-    event.preventDefault()
-  })
-})
-
 ipcMain.on('create-window-with-options-cycle', (event) => {
   // This can't be done over remote since cycles are already
   // nulled out at the IPC layer
@@ -345,47 +320,6 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
 ipcMain.on('crash-service-pid', (event, pid) => {
   process.crashServicePid = pid
   event.returnValue = null
-})
-
-ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
-  let contents = null
-  let destroy = () => {}
-  if (options.id) {
-    const w = BrowserWindow.fromId(options.id)
-    contents = w.webContents
-    destroy = () => w.close()
-  } else {
-    contents = webContents.create()
-    destroy = () => contents.destroy()
-  }
-
-  contents.once(options.name, () => destroy())
-
-  contents.once('destroyed', () => {
-    event.sender.send(options.responseEvent)
-  })
-
-  contents.loadURL(options.url)
-})
-
-ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
-  const focusListener = (event, win) => win.id
-  app.on('browser-window-focus', focusListener)
-  const windowCount = 3
-  const windowOptions = {
-    show: false,
-    width: 400,
-    height: 400,
-    webPreferences: {
-      backgroundThrottling: false
-    }
-  }
-  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
-  windows.forEach(win => win.show())
-  windows.forEach(win => win.focus())
-  windows.forEach(win => win.destroy())
-  app.removeListener('browser-window-focus', focusListener)
-  event.sender.send(testOptions.responseEvent)
 })
 
 // Suspend listeners until the next event and then restore them
