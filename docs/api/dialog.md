@@ -154,7 +154,7 @@ dialog.showOpenDialog(mainWindow, {
 })
 ```
 
-### `dialog.showSaveDialog([browserWindow, ]options)`
+### `dialog.showSaveDialogSync([browserWindow, ]options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
