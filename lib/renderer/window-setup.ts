@@ -20,8 +20,9 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 const { defineProperty } = Object
 
 // Helper function to resolve relative url.
-const a = window.document.createElement('a')
+let a: HTMLAnchorElement
 const resolveURL = function (url: string) {
+  a = a || window.document.createElement('a')
   a.href = url
   return a.href
 }
