@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tomas Rycl <torycl@microsoft.com>
+Date: Mon, 13 May 2019 15:48:48 +0200
+Subject: Do not export private V8 symbols on Windows
+
+This change stops private V8 symbols and internal crt methods being exported.
+It fixes an issue where native node modules can import
+incorrect CRT methods and crash on Windows.
+It also reduces size of node.lib by 75%.
+
+This patch can be safely removed if, when it is removed, `node.lib` does not
+contain any standard C++ library exports (e.g. `std::ostringstream`).
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 465247a682cc1012d77c28c731fe1553565f128f..d208b9a2fbb6409bd436169b29786349a4df3b19 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -229,6 +229,7 @@ v8_toolset_for_shell = "host"
+ # Configurations
+ #
+ config("internal_config") {
++  defines = []
+   visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
+   include_dirs = [
+@@ -238,8 +239,12 @@ config("internal_config") {
+ 
+   configs = [ "//build/config/compiler:wexit_time_destructors" ]
+ 
++  if (!is_component_build && is_electron_build) {
++    defines += [ "HIDE_PRIVATE_SYMBOLS" ]
++  }
++
+   if (is_component_build || is_electron_build) {
+-    defines = [ "BUILDING_V8_SHARED" ]
++    defines += [ "BUILDING_V8_SHARED" ]
+   }
+ }
+ 
+diff --git a/src/base/macros.h b/src/base/macros.h
+index 8a088ffc40eacb15b2833d6a85612e2075315fb9..76791d31b4a695ba9f8bb80121a791f512d99879 100644
+--- a/src/base/macros.h
++++ b/src/base/macros.h
+@@ -415,13 +415,17 @@ bool is_inbounds(float_t v) {
+ #ifdef V8_OS_WIN
+ 
+ // Setup for Windows shared library export.
++#if defined(HIDE_PRIVATE_SYMBOLS)
++#define V8_EXPORT_PRIVATE
++#else //if !defined(HIDE_PRIVATE_SYMBOLS)
+ #ifdef BUILDING_V8_SHARED
+ #define V8_EXPORT_PRIVATE __declspec(dllexport)
+ #elif USING_V8_SHARED
+ #define V8_EXPORT_PRIVATE __declspec(dllimport)
+-#else
++#else //!(BUILDING_V8_SHARED || USING_V8_SHARED)
+ #define V8_EXPORT_PRIVATE
+-#endif  // BUILDING_V8_SHARED
++#endif
++#endif
+ 
+ #else  // V8_OS_WIN
+ 
