@@ -16,12 +16,6 @@ class AtomResourceDispatcherHostDelegate
  public:
   AtomResourceDispatcherHostDelegate();
 
-  // content::ResourceDispatcherHostDelegate:
-  bool ShouldInterceptResourceAsStream(net::URLRequest* request,
-                                       const std::string& mime_type,
-                                       GURL* origin,
-                                       std::string* payload) override;
-
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomResourceDispatcherHostDelegate);
 };
