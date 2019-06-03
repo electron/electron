@@ -176,7 +176,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network_context_params->enable_referrers = true;
 
   network_context_params->proxy_resolver_factory =
-      ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
+      ChromeMojoProxyResolverFactory::CreateWithSelfOwnedReceiver();
 
   return network_context_params;
 }
