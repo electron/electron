@@ -146,11 +146,6 @@ AtomBrowserContext::~AtomBrowserContext() {
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // TODO(MarshallOfSound): Why?
-  extension_system_ = nullptr;
-#endif
 }
 
 void AtomBrowserContext::InitPrefs() {
