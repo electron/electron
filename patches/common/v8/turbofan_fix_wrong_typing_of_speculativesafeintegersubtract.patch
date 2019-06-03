@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Benedikt Meurer <bmeurer@chromium.org>
+Date: Tue, 11 Dec 2018 07:58:19 +0100
+Subject: [turbofan] Fix wrong typing of SpeculativeSafeIntegerSubtract.
+
+The typing of SpeculativeSafeIntegerSubtract didn't include -0, and the
+SimplifiedLowering rules for SpeculativeSafeIntegerSubtract didn't
+properly handle the case of `-0 - 0`, but would always pass Word32
+truncations.
+
+Bug: chromium:913296
+Change-Id: I0e5a401f075db8b349a5579e1e294df97378ea49
+Reviewed-on: https://chromium-review.googlesource.com/c/1370042
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Commit-Queue: Benedikt Meurer <bmeurer@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#58147}
+
+diff --git a/src/compiler/operation-typer.cc b/src/compiler/operation-typer.cc
+index a9ae8c322aa6d1be31f52cef77f0915a1506cad9..31c4d75f8e88ece659fb13279247c56f43c28141 100644
+--- a/src/compiler/operation-typer.cc
++++ b/src/compiler/operation-typer.cc
+@@ -664,7 +664,7 @@ Type OperationTyper::SpeculativeSafeIntegerSubtract(Type lhs, Type rhs) {
+   // In either case the result will be in the safe integer range, so we
+   // can bake in the type here. This needs to be in sync with
+   // SimplifiedLowering::VisitSpeculativeAdditiveOp.
+-  return result = Type::Intersect(result, cache_.kSafeInteger, zone());
++  return Type::Intersect(result, cache_.kSafeIntegerOrMinusZero, zone());
+ }
+ 
+ Type OperationTyper::NumberMultiply(Type lhs, Type rhs) {
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index 74bb7fcd6b5f00209a920a41ab117f232a0d0fca..65c7e73ddaa0c079392283e2c245061bb6deb950 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -1305,7 +1305,6 @@ class RepresentationSelector {
+ 
+     // Try to use type feedback.
+     NumberOperationHint hint = NumberOperationHintOf(node->op());
+-
+     DCHECK(hint == NumberOperationHint::kSignedSmall ||
+            hint == NumberOperationHint::kSigned32);
+ 
+@@ -1313,8 +1312,14 @@ class RepresentationSelector {
+     Type right_feedback_type = TypeOf(node->InputAt(1));
+     // Handle the case when no int32 checks on inputs are necessary (but
+     // an overflow check is needed on the output). Note that we do not
+-    // have to do any check if at most one side can be minus zero.
+-    if (left_upper.Is(Type::Signed32OrMinusZero()) &&
++    // have to do any check if at most one side can be minus zero. For
++    // subtraction we need to handle the case of -0 - 0 properly, since
++    // that can produce -0.
++    Type left_constraint_type =
++        node->opcode() == IrOpcode::kSpeculativeSafeIntegerAdd
++            ? Type::Signed32OrMinusZero()
++            : Type::Signed32();
++    if (left_upper.Is(left_constraint_type) &&
+         right_upper.Is(Type::Signed32OrMinusZero()) &&
+         (left_upper.Is(Type::Signed32()) || right_upper.Is(Type::Signed32()))) {
+       VisitBinop(node, UseInfo::TruncatingWord32(),
+diff --git a/test/mjsunit/regress/regress-crbug-913296.js b/test/mjsunit/regress/regress-crbug-913296.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3fab06607f51aeca4752afca9cde56cc42e567c9
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-913296.js
+@@ -0,0 +1,13 @@
++// Copyright 2018 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function foo(trigger) {
++  return Object.is((trigger ? -0 : 0) - 0, -0);
++}
++
++assertFalse(foo(false));
++%OptimizeFunctionOnNextCall(foo);
++assertTrue(foo(true));
