@@ -1,4 +1,4 @@
-This page tracks the issues, contributions, and status of running the Electron Test Suite.
+This page tracks the issues, contributions, and status of running the Electron Test Suite. For more information, see GitHub issue [electron#18550](https://github.com/electron/electron/issues/18550).
 
 # ARM device
 
