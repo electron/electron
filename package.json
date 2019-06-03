@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "7.0.0-nightly.20190530",
+  "version": "7.0.0-nightly.20190602",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -14,11 +14,11 @@
     "@types/mocha": "^5.2.6",
     "@types/node": "^10.12.21",
     "@types/split": "^1.0.0",
+    "@types/webpack": "^4.4.32",
+    "@types/webpack-env": "^1.13.9",
     "@typescript-eslint/eslint-plugin": "^1.4.2",
     "@typescript-eslint/parser": "^1.4.2",
-    "aliasify": "^2.1.0",
     "asar": "^1.0.0",
-    "browserify": "^16.2.3",
     "check-for-leaks": "^1.0.2",
     "clang-format": "^1.2.3",
     "colors": "^1.1.2",
@@ -51,14 +51,16 @@
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
+    "timers-browserify": "1.4.2",
+    "ts-loader": "^6.0.2",
     "ts-node": "^6.0.3",
-    "tsify": "^4.0.1",
-    "typescript": "~3.3.3333"
+    "typescript": "~3.3.3333",
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2"
   },
   "private": true,
   "scripts": {
     "asar": "asar",
-    "browserify": "browserify",
     "bump-version": "./script/bump-version.js",
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
@@ -82,24 +84,14 @@
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "webpack": "node build/webpack/run-compiler"
   },
   "license": "MIT",
   "author": "Electron Community",
   "keywords": [
     "electron"
   ],
-  "aliasify": {
-    "replacements": {
-      "@electron/internal/(.+)": "./lib/$1"
-    },
-    "appliesTo": {
-      "includeExtensions": [
-        ".js",
-        ".ts"
-      ]
-    }
-  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",

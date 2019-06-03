@@ -151,6 +151,20 @@ describe('systemPreferences module', () => {
     })
   })
 
+  describe('systemPreferences.appLevelAppearance', () => {
+    before(function () {
+      if (process.platform !== 'darwin') this.skip()
+    })
+
+    it('has an appLevelAppearance property', () => {
+      expect(systemPreferences).to.have.a.property('appLevelAppearance')
+
+      // TODO(codebytere): remove when propertyification is complete
+      expect(systemPreferences.getAppLevelAppearance).to.be.a('function')
+      expect(systemPreferences.setAppLevelAppearance).to.be.a('function')
+    })
+  })
+
   describe('systemPreferences.setUserDefault(key, type, value)', () => {
     before(function () {
       if (process.platform !== 'darwin') {

@@ -9,7 +9,6 @@ browser_compositor_mac.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
-frame_host_manager.patch
 out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
@@ -58,11 +57,9 @@ command-ismediakey.patch
 tts.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
-cross_site_document_resource_handler.patch
 content_allow_embedder_to_prevent_locking_scheme_registry.patch
 support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
-disable_time_ticks_dcheck.patch
 autofill_size_calculation.patch
 revert_build_swiftshader_for_arm32.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch
@@ -79,3 +76,5 @@ disable_custom_libcxx_on_windows.patch
 feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
+cross_site_document_resource_handler.patch
+frame_host_manager.patch

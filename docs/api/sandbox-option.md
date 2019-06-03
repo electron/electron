@@ -119,8 +119,7 @@ Important things to notice in the preload script:
   `remote` and `ipcRenderer` modules.
 - The preload script must be contained in a single script, but it is possible to have
   complex preload code composed with multiple modules by using a tool like
-  browserify, as explained below. In fact, browserify is already used by
-  Electron to provide a node-like environment to the preload script.
+  webpack or browserify. An example of using browserify is below.
 
 To create a browserify bundle and use it as a preload script, something like
 the following should be used:

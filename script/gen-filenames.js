@@ -14,41 +14,39 @@ const allDocs = fs.readdirSync(path.resolve(__dirname, '../docs/api'))
   )
 
 const main = async () => {
-  const browserifyTargets = [
+  const webpackTargets = [
     {
-      name: 'sandbox_browserify_deps',
-      entry: 'lib/sandboxed_renderer/init.js'
+      name: 'sandbox_bundle_deps',
+      config: 'webpack.config.sandboxed_renderer.js'
     },
     {
-      name: 'isolated_browserify_deps',
-      entry: 'lib/isolated_renderer/init.js'
+      name: 'isolated_bundle_deps',
+      config: 'webpack.config.isolated_renderer.js'
     },
     {
-      name: 'context_script_browserify_deps',
-      entry: 'lib/content_script/init.js'
+      name: 'content_script_bundle_deps',
+      config: 'webpack.config.content_script.js'
+    },
+    {
+      name: 'browser_bundle_deps',
+      config: 'webpack.config.browser.js'
+    },
+    {
+      name: 'renderer_bundle_deps',
+      config: 'webpack.config.renderer.js'
+    },
+    {
+      name: 'worker_bundle_deps',
+      config: 'webpack.config.worker.js'
     }
   ]
 
-  await Promise.all(browserifyTargets.map(async browserifyTarget => {
+  await Promise.all(webpackTargets.map(async webpackTarget => {
     const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-filenames-'))
     const child = cp.spawn('node', [
-      'node_modules/browserify/bin/cmd.js',
-      browserifyTarget.entry,
-      ...(browserifyTarget.name === 'sandbox_browserify_deps' ? [
-        '-r',
-        './lib/sandboxed_renderer/api/exports/electron.js:electron'
-      ] : []),
-      '-t',
-      'aliasify',
-      '-p',
-      '[',
-      'tsify',
-      '-p',
-      'tsconfig.electron.json',
-      ']',
-      '-o',
-      path.resolve(tmpDir, 'out.js'),
-      '--list'
+      'build/webpack/get-outputs.js',
+      `./${webpackTarget.config}`,
+      path.resolve(tmpDir, `${webpackTarget.name}.measure.js`)
     ], {
       cwd: path.resolve(__dirname, '..')
     })
@@ -60,28 +58,25 @@ const main = async () => {
     await new Promise((resolve, reject) => child.on('exit', (code) => {
       if (code !== 0) {
         console.error(output)
-        return reject(new Error(`Failed to list browserify dependencies for entry: ${browserifyTarget.name}`))
+        return reject(new Error(`Failed to list webpack dependencies for entry: ${webpackTarget.name}`))
       }
 
       resolve()
     }))
 
-    browserifyTarget.dependencies = output
-      .split('\n')
+    webpackTarget.dependencies = JSON.parse(output)
       // Remove whitespace
       .map(line => line.trim())
-      // Ignore empty lines
-      .filter(line => line)
       // Get the relative path
       .map(line => path.relative(rootPath, line))
       // Only care about files in //electron
       .filter(line => !line.startsWith('..'))
       // Only care about our own files
       .filter(line => !line.startsWith('node_modules'))
+      // All webpack builds depend on the tsconfig  and package json files
+      .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json'])
       // Make the generated list easier to read
       .sort()
-      // All browserify commands depend on the tsconfig  and package json files
-      .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json'])
     await fs.remove(tmpDir)
   }))
 
@@ -93,7 +88,7 @@ auto_filenames = {
 ${allDocs.map(doc => `    "${doc}",`).join('\n')}
   ]
 
-${browserifyTargets.map(target => `  ${target.name} = [
+${webpackTargets.map(target => `  ${target.name} = [
 ${target.dependencies.map(dep => `    "${dep}",`).join('\n')}
   ]`).join('\n\n')}
 }

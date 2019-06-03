@@ -22,31 +22,31 @@ index 2151c5b9698e9a2768875d04a2297956cc4c0d41..8a316a117ab367bcbac947894cbe1bc2
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2317ddf6a3c533f701fe44bf1b8114eb042c2189..9a823a98175c33c84b8d44a95c9d7d44568807ca 100644
+index 3729dcc9ea3272c943754a92c6ed1d7a1fd8fcf3..787cd81b26508d3e04956721f0e7cec2f457aa60 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -61,6 +61,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
-   return SiteInstanceForNavigationType::ASK_CHROMIUM;
+@@ -56,6 +56,10 @@ BrowserMainParts* ContentBrowserClient::CreateBrowserMainParts(
+   return nullptr;
  }
  
 +bool ContentBrowserClient::ShouldBypassCORB(int render_process_id) const {
 +  return false;
 +}
 +
- BrowserMainParts* ContentBrowserClient::CreateBrowserMainParts(
-     const MainFunctionParams& parameters) {
-   return nullptr;
+ void ContentBrowserClient::PostAfterStartupTask(
+     const base::Location& from_here,
+     const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a81f40507b2233c3bde03b940cccd6be0aaa4926..1a208d24bae80277e4a60f4180bb7f95c38561ce 100644
+index 4c84fb3648b3de36015b325246559f8aefe2ebd5..bf9b3a601fc16d5070e4467a258a047f47b059f3 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -242,6 +242,9 @@ class CONTENT_EXPORT ContentBrowserClient {
-       content::RenderFrameHost* rfh,
-       content::SiteInstance* pending_site_instance) {}
+@@ -219,6 +219,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+   virtual BrowserMainParts* CreateBrowserMainParts(
+       const MainFunctionParams& parameters);
  
 +  // Electron: Allows bypassing CORB checks for a renderer process.
 +  virtual bool ShouldBypassCORB(int render_process_id) const;
 +
-   // Allows the embedder to set any number of custom BrowserMainParts
-   // implementations for the browser startup code. See comments in
-   // browser_main_parts.h.
+   // Allows the embedder to change the default behavior of
+   // BrowserThread::PostAfterStartupTask to better match whatever
+   // definition of "startup" the embedder has in mind. This may be

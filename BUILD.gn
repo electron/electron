@@ -10,9 +10,9 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
-import("build/js_wrap.gni")
 import("build/npm.gni")
 import("build/tsc.gni")
+import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("electron_paks.gni")
 import("filenames.auto.gni")
@@ -71,135 +71,70 @@ npm_action("build_electron_definitions") {
   ]
 }
 
-npm_action("atom_browserify_sandbox_unwrapped") {
-  script = "browserify"
+webpack_build("electron_browser_bundle") {
   deps = [
     ":build_electron_definitions",
   ]
 
-  inputs = auto_filenames.sandbox_browserify_deps
+  inputs = auto_filenames.browser_bundle_deps
 
-  outputs = [
-    "$target_gen_dir/js2c/sandbox_bundle_unwrapped.js",
-  ]
-
-  args = [
-    "lib/sandboxed_renderer/init.js",
-    "-r",
-    "./lib/sandboxed_renderer/api/exports/electron.js:electron",
-    "-t",
-    "aliasify",
-    "-p",
-    "[",
-    "tsify",
-    "-p",
-    "tsconfig.electron.json",
-    "]",
-    "--standalone",
-    "sandboxed_preload",
-    "-o",
-    rebase_path(outputs[0]),
-  ]
+  config_file = "//electron/build/webpack/webpack.config.browser.js"
+  out_file = "$target_gen_dir/electron_asar/browser/init.js"
 }
 
-npm_action("atom_browserify_isolated_unwrapped") {
-  script = "browserify"
+webpack_build("electron_renderer_bundle") {
   deps = [
     ":build_electron_definitions",
   ]
 
-  inputs = auto_filenames.isolated_browserify_deps
+  inputs = auto_filenames.renderer_bundle_deps
 
-  outputs = [
-    "$target_gen_dir/js2c/isolated_bundle_unwrapped.js",
-  ]
-
-  args = [
-    "lib/isolated_renderer/init.js",
-    "-t",
-    "aliasify",
-    "-p",
-    "[",
-    "tsify",
-    "-p",
-    "tsconfig.electron.json",
-    "]",
-    "--standalone",
-    "isolated_preload",
-    "-o",
-    rebase_path(outputs[0]),
-  ]
+  config_file = "//electron/build/webpack/webpack.config.renderer.js"
+  out_file = "$target_gen_dir/electron_asar/renderer/init.js"
 }
 
-npm_action("atom_browserify_content_script_unwrapped") {
-  script = "browserify"
+webpack_build("electron_worker_bundle") {
   deps = [
     ":build_electron_definitions",
   ]
 
-  inputs = auto_filenames.context_script_browserify_deps
+  inputs = auto_filenames.worker_bundle_deps
 
-  outputs = [
-    "$target_gen_dir/js2c/content_script_bundle_unwrapped.js",
-  ]
-
-  args = [
-    "lib/content_script/init.js",
-    "-t",
-    "aliasify",
-    "-p",
-    "[",
-    "tsify",
-    "-p",
-    "tsconfig.electron.json",
-    "]",
-    "--standalone",
-    "content_script_preload",
-    "-o",
-    rebase_path(outputs[0]),
-  ]
+  config_file = "//electron/build/webpack/webpack.config.worker.js"
+  out_file = "$target_gen_dir/electron_asar/worker/init.js"
 }
 
-js_wrap("atom_browserify_content_script") {
+webpack_build("electron_sandboxed_renderer_bundle") {
   deps = [
-    ":atom_browserify_content_script_unwrapped",
+    ":build_electron_definitions",
   ]
 
-  inputs = [
-    "$target_gen_dir/js2c/content_script_bundle_unwrapped.js",
-  ]
+  inputs = auto_filenames.sandbox_bundle_deps
 
-  outputs = [
-    "$target_gen_dir/js2c/content_script_bundle.js",
-  ]
+  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
+  out_file = "$target_gen_dir/js2c/sandbox_bundle.js"
 }
 
-js_wrap("atom_browserify_isolated") {
+webpack_build("electron_isolated_renderer_bundle") {
   deps = [
-    ":atom_browserify_isolated_unwrapped",
+    ":build_electron_definitions",
   ]
 
-  inputs = [
-    "$target_gen_dir/js2c/isolated_bundle_unwrapped.js",
-  ]
+  inputs = auto_filenames.isolated_bundle_deps
 
-  outputs = [
-    "$target_gen_dir/js2c/isolated_bundle.js",
-  ]
+  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
+  out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-js_wrap("atom_browserify_sandbox") {
+webpack_build("electron_content_script_bundle") {
   deps = [
-    ":atom_browserify_sandbox_unwrapped",
+    ":build_electron_definitions",
   ]
 
-  inputs = [
-    "$target_gen_dir/js2c/sandbox_bundle_unwrapped.js",
-  ]
+  inputs = auto_filenames.content_script_bundle_deps
 
-  outputs = [
-    "$target_gen_dir/js2c/sandbox_bundle.js",
-  ]
+  config_file = "//electron/build/webpack/webpack.config.content_script.js"
+  out_file = "$target_gen_dir/js2c/content_script_bundle.js"
 }
 
 copy("atom_js2c_copy") {
@@ -214,19 +149,19 @@ copy("atom_js2c_copy") {
 
 action("atom_js2c") {
   deps = [
-    ":atom_browserify_content_script",
-    ":atom_browserify_isolated",
-    ":atom_browserify_sandbox",
     ":atom_js2c_copy",
+    ":electron_content_script_bundle",
+    ":electron_isolated_renderer_bundle",
+    ":electron_sandboxed_renderer_bundle",
   ]
 
-  browserify_sources = [
+  webpack_sources = [
     "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
   ]
 
-  sources = browserify_sources + [
+  sources = webpack_sources + [
               "$target_gen_dir/js2c/asar.js",
               "$target_gen_dir/js2c/asar_init.js",
             ]
@@ -242,46 +177,19 @@ action("atom_js2c") {
          rebase_path(sources, root_build_dir)
 }
 
-target_gen_electron_js = "$target_gen_dir/js/electron"
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
-
-typescript_build("lib_js") {
-  deps = [
-    ":build_electron_definitions",
-  ]
-  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
-
-  sources = filenames.js_sources
-  if (enable_desktop_capturer) {
-    sources += [
-      "lib/browser/desktop-capturer.js",
-      "lib/renderer/api/desktop-capturer.js",
-    ]
-  }
-  if (enable_view_api) {
-    sources += [
-      "lib/browser/api/views/box-layout.js",
-      "lib/browser/api/views/button.js",
-      "lib/browser/api/views/label-button.js",
-      "lib/browser/api/views/layout-manager.js",
-      "lib/browser/api/views/md-text-button.js",
-      "lib/browser/api/views/resize-area.js",
-      "lib/browser/api/views/text-field.js",
-    ]
-  }
-
-  output_gen_dir = target_gen_electron_js
-  output_dir_name = "lib"
-  tsconfig = "tsconfig.electron.json"
-}
 
 asar("electron_asar") {
   deps = [
-    ":lib_js",
+    ":electron_browser_bundle",
+    ":electron_renderer_bundle",
+    ":electron_worker_bundle",
   ]
 
-  root = "$target_gen_electron_js/electron/lib"
-  sources = get_target_outputs(":lib_js")
+  root = "$target_gen_dir/electron_asar"
+  sources = get_target_outputs(":electron_browser_bundle") +
+            get_target_outputs(":electron_renderer_bundle") +
+            get_target_outputs(":electron_worker_bundle")
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]

@@ -667,7 +667,7 @@ to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.setName(name)`
 
@@ -675,7 +675,7 @@ preferred over `name` by Electron.
 
 Overrides the current application's name.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.getLocale()`
 
@@ -1070,13 +1070,13 @@ On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
 Returns `Integer` - The current value displayed in the counter badge.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.isUnityRunning()` _Linux_
 
@@ -1152,7 +1152,7 @@ technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
@@ -1165,7 +1165,7 @@ This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.showAboutPanel()` _macOS_ _Linux_
 
@@ -1306,3 +1306,16 @@ This is the user agent that will be used when no user agent is set at the
 `webContents` or `session` level.  It is useful for ensuring that your entire
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
+
+### `app.allowRendererProcessReuse`
+
+A `Boolean` which when `true` disables the overrides that Electron has in place
+to ensure renderer processes are restarted on every navigation.  The current
+default value for this property is `false`.
+
+The intention is for these overrides to become disabled by default and then at
+some point in the future this property will be removed.  This property impacts
+which native modules you can use in the renderer process.  For more information
+on the direction Electron is going with renderer process restarts and usage of
+native modules in the renderer process please check out this
+[Tracking Issue](https://github.com/electron/electron/issues/18397).

@@ -1278,6 +1278,11 @@ describe('chromium feature', () => {
 
     it('should download a pdf when plugins are disabled', (done) => {
       this.createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
+      // NOTE(nornagon): this test has been skipped for ages, so there's no way
+      // to refactor it confidently. The 'set-download-option' ipc was removed
+      // around May 2019, so if you're working on the pdf viewer and arrive at
+      // this test and want to know what 'set-download-option' did, look here:
+      // https://github.com/electron/electron/blob/d87b3ead760ae2d20f2401a8dac4ce548f8cd5f5/spec/static/main.js#L164
       ipcRenderer.sendSync('set-download-option', false, false)
       ipcRenderer.once('download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) => {
         expect(state).to.equal('completed')

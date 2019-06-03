@@ -1,0 +1,35 @@
+import("../npm.gni")
+
+template("webpack_build") {
+  assert(defined(invoker.config_file), "Need webpack config file to run")
+  assert(defined(invoker.out_file), "Need output file to run")
+  assert(defined(invoker.inputs), "Need webpack inputs to run")
+
+  npm_action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+    script = "webpack"
+
+    inputs = [
+               invoker.config_file,
+               "//electron/build/webpack/webpack.config.base.js",
+               "//electron/tsconfig.json",
+               "//electron/yarn.lock",
+               "//electron/typings/internal-ambient.d.ts",
+               "//electron/typings/internal-electron.d.ts",
+               "//electron/typings/internal-helpers.d.ts",
+             ] + invoker.inputs
+
+    args = [
+      rebase_path(invoker.config_file),
+      rebase_path(invoker.out_file),
+    ]
+
+    outputs = [
+      invoker.out_file,
+    ]
+  }
+}

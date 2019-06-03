@@ -40,19 +40,19 @@ describe('webFrame module', function () {
     const spellCheckerFeedback =
       new Promise(resolve => {
         ipcMain.on('spec-spell-check', (e, words, callback) => {
-          if (words.length === 2) {
-            // The promise is resolved only after this event is received twice
-            // Array contains only 1 word first time and 2 the next time
+          if (words.length === 5) {
+            // The API calls the provider after every completed word.
+            // The promise is resolved only after this event is received with all words.
             resolve([words, callback])
           }
         })
       })
-    const inputText = 'spleling test '
+    const inputText = `spleling test you're `
     for (const keyCode of inputText) {
       w.webContents.sendInputEvent({ type: 'char', keyCode })
     }
     const [words, callback] = await spellCheckerFeedback
-    expect(words).to.deep.equal(['spleling', 'test'])
+    expect(words.sort()).to.deep.equal(['spleling', 'test', `you're`, 'you', 're'].sort())
     expect(callback).to.be.true()
   })
 

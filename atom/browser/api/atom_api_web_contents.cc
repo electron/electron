@@ -924,6 +924,14 @@ void WebContents::Message(bool internal,
                  internal, channel, std::move(arguments));
 }
 
+void WebContents::Invoke(const std::string& channel,
+                         base::Value arguments,
+                         InvokeCallback callback) {
+  // webContents.emit('-ipc-invoke', new Event(), channel, arguments);
+  EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
+                 std::move(callback), channel, std::move(arguments));
+}
+
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               base::Value arguments,
