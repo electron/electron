@@ -48,7 +48,6 @@ class BrowserProcessImpl : public BrowserProcess {
   void PostDestroyThreads();
   void PostMainMessageLoopRun();
 
-  void ResourceDispatcherHostCreated() override {}
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
