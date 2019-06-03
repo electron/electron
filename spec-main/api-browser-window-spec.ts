@@ -17,11 +17,13 @@ const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 describe('BrowserWindow module', () => {
   describe('BrowserWindow constructor', () => {
-    it('allows passing undefined as the webContents', async () => {
+    it('allows passing void 0 as the webContents', async () => {
       expect(() => {
         const w = new BrowserWindow({
           show: false,
-          webContents: undefined
+          // apparently void 0 had different behaviour from undefined in the
+          // issue that this test is supposed to catch.
+          webContents: void 0
         } as any)
         w.destroy()
       }).not.to.throw()
