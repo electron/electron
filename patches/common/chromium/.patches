@@ -78,3 +78,4 @@ worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
 cross_site_document_resource_handler.patch
 frame_host_manager.patch
+woa_compiler_workaround.patch
