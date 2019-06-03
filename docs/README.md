@@ -89,7 +89,7 @@ These individual tutorials expand on topics discussed in the guide above.
   * [Proxies](tutorial/installation.md#proxies)
   * [Custom Mirrors and Caches](tutorial/installation.md#custom-mirrors-and-caches)
   * [Troubleshooting](tutorial/installation.md#troubleshooting)
-* In Detail: Electron Releases & Developer Feedback
+* Electron Releases & Developer Feedback
   * [Versioning Policy](tutorial/electron-versioning.md)
   * [Release Timelines](tutorial/electron-timelines.md)
   * [App Feedback Program](tutorial/app-feedback-program.md)
