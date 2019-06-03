@@ -1470,9 +1470,13 @@ menu bar will only show when users press the single `Alt` key.
 If the menu bar is already visible, calling `setAutoHideMenuBar(true)` won't
 hide it immediately.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMenuBarAutoHide()`
 
 Returns `Boolean` - Whether menu bar automatically hides itself.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
@@ -1641,6 +1645,13 @@ removed in future Electron releases.
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 
 ### Properties
+
+#### `win.autoHideMenuBar`
+
+A `Boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
+
+If the menu bar is already visible, setting this property to `true` won't
+hide it immediately.
 
 #### `win.excludedFromShownWindowsMenu` _macOS_
 
