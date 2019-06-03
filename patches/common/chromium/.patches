@@ -12,7 +12,6 @@ dom_storage_limits.patch
 out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
-stream_resource_handler.patch
 thread_capabilities.patch
 web_contents.patch
 webview_cross_drag.patch
@@ -76,6 +75,6 @@ disable_custom_libcxx_on_windows.patch
 feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
-cross_site_document_resource_handler.patch
 frame_host_manager.patch
+cross_site_document_resource_handler.patch
 woa_compiler_workaround.patch

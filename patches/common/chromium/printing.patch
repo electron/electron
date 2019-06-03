@@ -9,7 +9,7 @@ majority of changes originally come from these PRs:
   * https://github.com/electron/electron/pull/8596
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..d124a4558affaf244ea82ab37f823db6e345d499 100644
+index 88a6142eea4c7a219c08fe3463c44711f5c9fada..a1ec557f54cea6e976d357032328f2e10cc30054 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -27,7 +27,7 @@ index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..d124a4558affaf244ea82ab37f823db6
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 309477ec68ed90f4d0229d92f37a6456e779c51c..84fd2dce14f3c95aba6df2170417b0612287070e 100644
+index 7ba43aada1ac44827cca264d6f37814e4a91f458..db011ba8370423723ff9d21be30cbf25db1e7537 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@

@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Thu, 15 Nov 2018 22:04:34 +0530
+Date: Mon, 3 Jun 2019 14:07:40 -0700
 Subject: cross_site_document_resource_handler.patch
 
 Add a content layer hook to disable CORB for a renderer process,
@@ -22,26 +22,26 @@ index d514c10160dd12f225c42e927977660cacbc9c43..49345f1d4d75c8b96efe485202d89774
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 671d2259d50bfbb5b56a79907c1c86218ee04469..373eee0faf29f2d4be98156f4abd476c61dff713 100644
+index 62d5e17f0599a78d679495d6fa674939d237602e..f40a4ff5f08e906e62dd838eb5af63ade92037d2 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -62,6 +62,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
-   return SiteInstanceForNavigationType::ASK_CHROMIUM;
+@@ -71,6 +71,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
+   return nullptr;
  }
  
 +bool ContentBrowserClient::ShouldBypassCORB(int render_process_id) const {
 +  return false;
 +}
 +
- std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
-     const MainFunctionParams& parameters) {
-   return nullptr;
+ void ContentBrowserClient::PostAfterStartupTask(
+     const base::Location& from_here,
+     const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index fcc5a0e5cd830afe459c1defe968b01e3f05f764..3067cf61e02f6abd048dc888237ef9e2d4909a78 100644
+index 136df7edaaaaaa1eb121ef7cf80aebc47969dc8d..5b889fec05ee9017f5f149fab70c4feab39c86dc 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -219,6 +219,9 @@ class CONTENT_EXPORT ContentBrowserClient {
-   virtual BrowserMainParts* CreateBrowserMainParts(
+@@ -252,6 +252,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+   virtual std::unique_ptr<BrowserMainParts> CreateBrowserMainParts(
        const MainFunctionParams& parameters);
  
 +  // Electron: Allows bypassing CORB checks for a renderer process.

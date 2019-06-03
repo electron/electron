@@ -17,7 +17,7 @@ index ee5760ecbe0f836d0e49f53527252a48f4344b03..a413be0448816152f99d234a4e409bf0
        GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
        drag_start_view_id_;
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index f4250007968103cb174d201eb377b04e589dc0a8..90e548004049f3636dee08341f2b77af6de78e1a 100644
+index c4638ac6e86d6a816848cdbbdfa3e70d45086d90..18bd2fb8171568745549d490ee93887418890157 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
 @@ -336,6 +336,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {

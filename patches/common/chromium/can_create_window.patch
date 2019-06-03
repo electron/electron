@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 9894266bfe41e29da212aaa5fae603125b21d7a5..e60c52cf30cd53a04a4a18f4ef30aeb99c5cfbd5 100644
+index 387831a4615746339f4fe16b2b1bf405f7364b54..37d8be6076b9e98ca68acb5f7dc024b0d018879e 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3709,6 +3709,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3719,6 +3719,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -45,7 +45,7 @@ index f4c61acba134daf907a1b9afaaf0327a183287e4..d15061de5254fd4f248fed92f47a1b1f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 1a16897afa4457319518bce5341a6e1416bd016e..e5cddbc3a28e0f90bd1d1ae6ebe28d5f2d0299c7 100644
+index 6ab15079fe2e1234aca140dfebd5287d8701c147..8ceccd96c4e143921ace8db69685a9631e168dd2 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -177,6 +177,7 @@ class RenderFrameHost;
@@ -56,7 +56,7 @@ index 1a16897afa4457319518bce5341a6e1416bd016e..e5cddbc3a28e0f90bd1d1ae6ebe28d5f
  class SerialDelegate;
  class SiteInstance;
  class SpeechRecognitionManagerDelegate;
-@@ -804,6 +805,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -805,6 +806,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
