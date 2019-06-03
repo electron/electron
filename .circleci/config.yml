@@ -196,17 +196,17 @@ step-delete-git-directories: &step-delete-git-directories
         sudo rm -rf src/.git
       fi
 
-# On macOS the npm install command during gclient sync was run on a linux
+# On macOS the yarn install command during gclient sync was run on a linux
 # machine and therefore installed a slightly different set of dependencies
-# Notably "fsevents" is a macOS only dependency, we rerun npm install once
+# Notably "fsevents" is a macOS only dependency, we rerun yarn install once
 # we are on a macOS machine to get the correct state
 step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
   run:
-    name: Install NPM Dependencies on MacOS
+    name: Install node_modules on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        npm install
+        npm run yarn install
       fi
 
 # This step handles the differences between the linux "gclient sync"
@@ -568,7 +568,7 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          npm install
+          npm run yarn install
           npm run lint
 
 steps-checkout: &steps-checkout

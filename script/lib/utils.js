@@ -1,10 +1,10 @@
-// KEEP IN SYNC WITH DEPS FILE
-const YARN_VERSION = '1.15.2'
+const { GitProcess } = require('dugite')
+const fs = require('fs')
+const path = require('path')
+
+const YARN_VERSION = /'yarn_version': '(.+?)'/.exec(fs.readFileSync(path.resolve(__dirname, '../../DEPS'), 'utf8'))[1]
 
 const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
-
-const { GitProcess } = require('dugite')
-const path = require('path')
 
 require('colors')
 const pass = '\u2713'.green
