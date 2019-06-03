@@ -3,73 +3,31 @@ From: Richard Townsend <richard.townsend@arm.com>
 Date: Wed, 24 Apr 2019 13:57:36 +0100
 Subject: Workaround an undefined symbol error
 
-Previously, builds configured with dcheck_always_on=true would error
-with messages like this in the log:
+Previously, electron builds configured with dcheck_always_on=true would
+error out with messages like this in the log:
+
  lld-link: error: undefined symbol: public: bool __cdecl
-  v8::internal::CPURegister::IsZero(void) const
+   v8::internal::CPURegister::IsZero(void) const
 
-By moving some functions out of the the arm64-assembler header file,
-this error no longer seems to happen.
+This problem is caused by electron's unusual build configuration, where
+symbols are exported, but the binary is non-component. By adding a
+header into the appropriate place, this error no longer occurs.
+---
+ src/regexp/arm64/regexp-macro-assembler-arm64.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/src/arm64/assembler-arm64.cc b/src/arm64/assembler-arm64.cc
-index 770dbd0827f03d40d30b530504ba0900f56011f1..b5e0e706ce2bda34f286c68e55d8ba993c4cf9db 100644
---- a/src/arm64/assembler-arm64.cc
-+++ b/src/arm64/assembler-arm64.cc
-@@ -4013,6 +4013,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
-        ImmMoveWide(static_cast<int>(imm)) | ShiftMoveWide(shift));
- }
- 
-+Instr Assembler::RmNot31(CPURegister rm) {
-+  DCHECK_NE(rm.code(), kSPRegInternalCode);
-+  DCHECK(!rm.IsZero());
-+  return Rm(rm);
-+}
-+
-+Instr Assembler::RdSP(Register rd) {
-+  DCHECK(!rd.IsZero());
-+  return (rd.code() & kRegCodeMask) << Rd_offset;
-+}
-+
-+Instr Assembler::RnSP(Register rn) {
-+  DCHECK(!rn.IsZero());
-+  return (rn.code() & kRegCodeMask) << Rn_offset;
-+}
-+
- void Assembler::AddSub(const Register& rd, const Register& rn,
-                        const Operand& operand, FlagsUpdate S, AddSubOp op) {
-   DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
-diff --git a/src/arm64/assembler-arm64.h b/src/arm64/assembler-arm64.h
-index 4791dcdbc7062a5d222d5c11a9c49c811e0e3fe6..bf69046dc3ff6c773261f2257b5cdb0be6822d52 100644
---- a/src/arm64/assembler-arm64.h
-+++ b/src/arm64/assembler-arm64.h
-@@ -2226,11 +2226,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
-     return rm.code() << Rm_offset;
-   }
- 
--  static Instr RmNot31(CPURegister rm) {
--    DCHECK_NE(rm.code(), kSPRegInternalCode);
--    DCHECK(!rm.IsZero());
--    return Rm(rm);
--  }
-+  static Instr RmNot31(CPURegister rm);
- 
-   static Instr Ra(CPURegister ra) {
-     DCHECK_NE(ra.code(), kSPRegInternalCode);
-@@ -2254,15 +2250,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
- 
-   // These encoding functions allow the stack pointer to be encoded, and
-   // disallow the zero register.
--  static Instr RdSP(Register rd) {
--    DCHECK(!rd.IsZero());
--    return (rd.code() & kRegCodeMask) << Rd_offset;
--  }
--
--  static Instr RnSP(Register rn) {
--    DCHECK(!rn.IsZero());
--    return (rn.code() & kRegCodeMask) << Rn_offset;
--  }
-+  static Instr RdSP(Register rd);
-+  static Instr RnSP(Register rn);
- 
-   // Flags encoding.
-   inline static Instr Flags(FlagsUpdate S);
+diff --git a/src/regexp/arm64/regexp-macro-assembler-arm64.h b/src/regexp/arm64/regexp-macro-assembler-arm64.h
+index 4c6f579655..0a24056beb 100644
+--- a/src/regexp/arm64/regexp-macro-assembler-arm64.h
++++ b/src/regexp/arm64/regexp-macro-assembler-arm64.h
+@@ -6,6 +6,7 @@
+ #define V8_REGEXP_ARM64_REGEXP_MACRO_ASSEMBLER_ARM64_H_
+
+ #include "src/arm64/assembler-arm64.h"
++#include "src/arm64/assembler-arm64-inl.h"
+ #include "src/codegen/macro-assembler.h"
+ #include "src/regexp/regexp-macro-assembler.h"
+
+--
+2.19.1.windows.1
+
