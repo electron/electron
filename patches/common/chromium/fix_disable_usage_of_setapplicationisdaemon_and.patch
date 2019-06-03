@@ -4,9 +4,8 @@ Date: Mon, 4 Mar 2019 14:51:45 -0800
 Subject: fix: disable usage of SetApplicationIsDaemon and
  _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
 
-
 diff --git a/content/utility/utility_service_factory.cc b/content/utility/utility_service_factory.cc
-index 4450cc711772c600f138acb5458eb8ab0801ecf5..58e81aac8f8c97e5a3b3cd32b4d95789e14d2d31 100644
+index 24a2644f008eb4878c87b62aebac962d074a0fe3..c1d07917c2ea576971b23c0f309d58ce559ca0ba 100644
 --- a/content/utility/utility_service_factory.cc
 +++ b/content/utility/utility_service_factory.cc
 @@ -195,7 +195,7 @@ void UtilityServiceFactory::RunNetworkServiceOnIOThread(
