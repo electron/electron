@@ -5,3 +5,4 @@ deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
 export_symbols_needed_for_windows_build.patch
 workaround_an_undefined_symbol_error.patch
+do_not_export_private_v8_symbols_on_windows.patch
