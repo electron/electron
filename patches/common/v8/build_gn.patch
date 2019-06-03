@@ -1,37 +1,48 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From b8362980ad805e6835d2ca528da06e0cfacf11bf Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Tue, 16 Apr 2019 10:43:04 -0700
 Subject: build_gn.patch
 
+Patch-Filename: build_gn.patch
+---
+ BUILD.gn | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index bb9372d63ba90a1f78db0310bde991d5ff789285..01ef8b8420cb951db372753a4d8b9e987cfb237c 100644
+index bb9372d63b..7d063f0ed9 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -269,7 +269,7 @@ config("internal_config") {
+@@ -269,7 +269,11 @@ config("internal_config") {
      ":v8_header_features",
    ]
- 
+
 -  if (is_component_build) {
-+  if (is_component_build || is_electron_build) {
++  if (is_component_build ||
++      (is_electron_build && (!(is_win && target_cpu == "arm64") ||
++                             current_toolchain != host_toolchain))) {
++    # Condition is checking Arm64 Windows => using target toolchain
++    # Reduce via De Morgan's Law: to !(Arm64 Windows) v target toolchain
      defines += [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -3784,7 +3784,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -3784,7 +3788,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
- 
+
 -    configs = [ ":internal_config" ]
 +    configs = [ ":internal_config_base" ]
- 
+
      deps = [
        ":v8_libbase",
-@@ -3815,6 +3815,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
- 
+@@ -3815,6 +3819,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+
      configs = [ ":internal_config" ]
- 
+
 +    configs += [ "//electron/build/config:build_time_executable" ]
 +
      deps = [
        ":v8_base_without_compiler",
        ":v8_compiler_for_mksnapshot",
+--
+2.19.1.windows.1
+
