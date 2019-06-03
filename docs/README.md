@@ -93,7 +93,7 @@ These individual tutorials expand on topics discussed in the guide above.
   * [Versioning Policy](tutorial/electron-versioning.md)
   * [Release Timelines](tutorial/electron-timelines.md)
   * [App Feedback Program](tutorial/app-feedback-program.md)
-* [In Detail: Packaging App Source Code with asar](tutorial/application-packaging.md)
+* [Packaging App Source Code with asar](tutorial/application-packaging.md)
   * [Generating asar Archives](tutorial/application-packaging.md#generating-asar-archives)
   * [Using asar Archives](tutorial/application-packaging.md#using-asar-archives)
   * [Limitations](tutorial/application-packaging.md#limitations-of-the-node-api)
