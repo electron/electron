@@ -5,6 +5,7 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/api/api_messages.h"
@@ -19,11 +20,10 @@
 #include "content/public/renderer/render_view.h"
 #include "electron/atom/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
-#include "mojo/public/cpp/bindings/associated_binding.h"
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -95,16 +95,20 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
 void AtomRenderFrameObserver::DraggableRegionsChanged() {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       render_frame_->GetWebFrame()->GetDocument().DraggableRegions();
-  std::vector<DraggableRegion> regions;
+  std::vector<mojom::DraggableRegionPtr> regions;
   for (auto& webregion : webregions) {
-    DraggableRegion region;
+    auto region = mojom::DraggableRegion::New();
     render_frame_->GetRenderView()->ConvertViewportToWindowViaWidget(
         &webregion.bounds);
-    region.bounds = webregion.bounds;
-    region.draggable = webregion.draggable;
-    regions.push_back(region);
+    region->bounds = webregion.bounds;
+    region->draggable = webregion.draggable;
+    regions.push_back(std::move(region));
   }
-  Send(new AtomFrameHostMsg_UpdateDraggableRegions(routing_id(), regions));
+
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame_->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+  browser_ptr->UpdateDraggableRegions(std::move(regions));
 }
 
 void AtomRenderFrameObserver::WillReleaseScriptContext(

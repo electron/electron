@@ -170,17 +170,6 @@ void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
   ScheduleUnresponsiveEvent(50);
 }
 
-bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
-                                      content::RenderFrameHost* rfh) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(BrowserWindow, message, rfh)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
-                        UpdateDraggableRegions)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-  return handled;
-}
-
 void BrowserWindow::OnCloseContents() {
   // On some machines it may happen that the window gets destroyed for twice,
   // checking web_contents() can effectively guard against that.
@@ -214,6 +203,11 @@ void BrowserWindow::OnCloseContents() {
 void BrowserWindow::OnRendererResponsive() {
   window_unresponsive_closure_.Cancel();
   Emit("responsive");
+}
+
+void BrowserWindow::OnDraggableRegionsUpdated(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::RequestPreferredWidth(int* width) {
@@ -276,7 +270,7 @@ void BrowserWindow::OnWindowFocus() {
 void BrowserWindow::OnWindowResize() {
 #if defined(OS_MACOSX)
   if (!draggable_regions_.empty())
-    UpdateDraggableRegions(nullptr, draggable_regions_);
+    UpdateDraggableRegions(draggable_regions_);
 #endif
   TopLevelWindow::OnWindowResize();
 }
@@ -314,28 +308,28 @@ void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::ResetBrowserViews();
   TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::RemoveBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::ResetBrowserViews() {
   TopLevelWindow::ResetBrowserViews();
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
@@ -377,13 +371,13 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 
 // Convert draggable regions in raw format to SkRegion format.
 std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
   auto sk_region = std::make_unique<SkRegion>();
-  for (const DraggableRegion& region : regions) {
+  for (const auto& region : regions) {
     sk_region->op(
-        region.bounds.x(), region.bounds.y(), region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+        region->bounds.x(), region->bounds.y(), region->bounds.right(),
+        region->bounds.bottom(),
+        region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
 }

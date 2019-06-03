@@ -512,8 +512,6 @@ filenames = {
     "atom/common/crash_reporter/win/crash_service.h",
     "atom/common/crash_reporter/win/crash_service_main.cc",
     "atom/common/crash_reporter/win/crash_service_main.h",
-    "atom/common/draggable_region.cc",
-    "atom/common/draggable_region.h",
     "atom/common/gin_util.h",
     "atom/common/heap_snapshot.cc",
     "atom/common/heap_snapshot.h",

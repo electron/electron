@@ -22,7 +22,6 @@
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_constants.h"
-#include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"

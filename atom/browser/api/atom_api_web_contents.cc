@@ -964,6 +964,12 @@ void WebContents::MessageHost(const std::string& channel,
                  base::nullopt, channel, std::move(arguments));
 }
 
+void WebContents::UpdateDraggableRegions(
+    std::vector<mojom::DraggableRegionPtr> regions) {
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnDraggableRegionsUpdated(regions);
+}
+
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
   // A RenderFrameHost can be destroyed before the related Mojo binding is
