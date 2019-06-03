@@ -200,6 +200,23 @@ webFrame.setIsolatedWorldInfo(
   })
 ```
 
+## `webFrame.setSpellCheckProvider`
+The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+```js
+// Deprecated
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck: (text) => {
+    return !spellchecker.isMisspelled(text)
+  }
+})
+// Replace with
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck: (words, callback) => {
+    callback(words.filter(text => spellchecker.isMisspelled(text)))
+  }
+})
+```
+
 ## Planned Breaking API Changes (4.0)
 
 The following list includes the breaking API changes made in Electron 4.0.
