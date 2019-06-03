@@ -252,21 +252,6 @@ void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
 
 }  // namespace
 
-struct WebContents::FrameDispatchHelper {
-  WebContents* api_web_contents;
-  content::RenderFrameHost* rfh;
-
-  bool Send(IPC::Message* msg) { return rfh->Send(msg); }
-
-  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg) {
-    api_web_contents->OnSetTemporaryZoomLevel(rfh, level, reply_msg);
-  }
-
-  void OnGetZoomLevel(IPC::Message* reply_msg) {
-    api_web_contents->OnGetZoomLevel(rfh, reply_msg);
-  }
-};
-
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents), type_(Type::REMOTE) {
@@ -1146,13 +1131,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 bool WebContents::OnMessageReceived(const IPC::Message& message,
                                     content::RenderFrameHost* frame_host) {
   bool handled = true;
-  FrameDispatchHelper helper = {this, frame_host};
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-    IPC_MESSAGE_FORWARD_DELAY_REPLY(
-        AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
-        FrameDispatchHelper::OnSetTemporaryZoomLevel)
-    IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
-                                    FrameDispatchHelper::OnGetZoomLevel)
 #if defined(TOOLKIT_VIEWS)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
@@ -2044,20 +2023,12 @@ double WebContents::GetZoomFactor() const {
   return content::ZoomLevelToZoomFactor(level);
 }
 
-void WebContents::OnSetTemporaryZoomLevel(content::RenderFrameHost* rfh,
-                                          double level,
-                                          IPC::Message* reply_msg) {
+void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
-  double new_level = zoom_controller_->GetZoomLevel();
-  AtomFrameHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg,
-                                                           new_level);
-  rfh->Send(reply_msg);
 }
 
-void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
-                                 IPC::Message* reply_msg) {
-  AtomFrameHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
-  rfh->Send(reply_msg);
+void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
+  std::move(callback).Run(GetZoomLevel());
 }
 
 v8::Local<v8::Value> WebContents::GetPreloadPath(v8::Isolate* isolate) const {
