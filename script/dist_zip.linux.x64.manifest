@@ -7,7 +7,6 @@ electron
 icudtl.dat
 libEGL.so
 libGLESv2.so
-libVkICD_mock_icd.so
 libffmpeg.so
 locales/am.pak
 locales/ar.pak
