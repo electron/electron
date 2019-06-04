@@ -102,8 +102,53 @@ describe('ipc module', () => {
 
     it('forbids multiple handlers', async () => {
       ipcMain.handle('test', () => {})
-      expect(() => { ipcMain.handle('test', () => {}) }).to.throw(/second handler/)
-      ipcMain.removeHandler('test')
+      try {
+        expect(() => { ipcMain.handle('test', () => {}) }).to.throw(/second handler/)
+      } finally {
+        ipcMain.removeHandler('test')
+      }
+    })
+  })
+
+  describe('ordering', () => {
+    let w = (null as unknown as BrowserWindow);
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      await w.loadURL('about:blank')
+    })
+    after(async () => {
+      w.destroy()
+    })
+
+    it('between send and sendSync is consistent', async () => {
+      const received: number[] = []
+      ipcMain.on('test-async', (e, i) => { received.push(i) })
+      ipcMain.on('test-sync', (e, i) => { received.push(i); e.returnValue = null })
+      const done = new Promise(resolve => ipcMain.once('done', () => { resolve() }))
+      try {
+        function rendererStressTest() {
+          const {ipcRenderer} = require('electron')
+          for (let i = 0; i < 1000; i++) {
+            switch ((Math.random() * 2) | 0) {
+              case 0:
+                ipcRenderer.send('test-async', i)
+                break;
+              case 1:
+                ipcRenderer.sendSync('test-sync', i)
+                break;
+            }
+          }
+          ipcRenderer.send('done')
+        }
+        w.webContents.executeJavaScript(`(${rendererStressTest})()`)
+        await done
+      } finally {
+        ipcMain.removeAllListeners('test-async')
+        ipcMain.removeAllListeners('test-sync')
+      }
+      expect(received).to.have.lengthOf(1000)
+      expect(received).to.deep.equal([...received].sort())
     })
   })
 })
