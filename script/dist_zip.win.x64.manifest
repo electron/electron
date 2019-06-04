@@ -1,6 +1,5 @@
 LICENSE
 LICENSES.chromium.html
-VkICD_mock_icd.dll
 chrome_100_percent.pak
 chrome_200_percent.pak
 d3dcompiler_47.dll
@@ -65,7 +64,6 @@ locales/zh-TW.pak
 natives_blob.bin
 resources.pak
 resources/default_app.asar
-resources/electron.asar
 snapshot_blob.bin
 swiftshader/libEGL.dll
 swiftshader/libGLESv2.dll
