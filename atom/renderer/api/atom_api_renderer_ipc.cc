@@ -43,7 +43,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     render_frame->GetRemoteInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_browser_ptr_));
     render_frame->GetRemoteInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_browser_sync_ptr_));
+        mojo::MakeRequest(&electron_browser_async_ptr_));
   }
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
@@ -71,7 +71,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                                 const base::Value& arguments) {
     atom::util::Promise p(args->isolate());
     auto handle = p.GetHandle();
-    electron_browser_ptr_->Invoke(
+    electron_browser_async_ptr_->Invoke(
         channel, arguments.Clone(),
         base::BindOnce(
             [](atom::util::Promise p, base::Value value) { p.Resolve(value); },
@@ -160,7 +160,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     // We unbind the interface from this thread to pass it over to the worker
     // thread temporarily. This requires that no callbacks be pending for this
     // interface.
-    auto interface_info = electron_browser_sync_ptr_.PassInterface();
+    auto interface_info = electron_browser_ptr_.PassInterface();
     task_runner->PostTask(
         FROM_HERE, base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
                                   base::Unretained(&interface_info),
@@ -168,7 +168,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                                   base::Unretained(&result), internal, channel,
                                   base::Unretained(&arguments)));
     response_received_event.Wait();
-    electron_browser_sync_ptr_.Bind(std::move(interface_info));
+    electron_browser_ptr_.Bind(std::move(interface_info));
     return result;
   }
 
@@ -200,9 +200,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
 
   atom::mojom::ElectronBrowserPtr electron_browser_ptr_;
 
-  // We execute all synchronous calls on a separate mojo pipe, because
-  // of the way that we block on the result of synchronous calls.
-  atom::mojom::ElectronBrowserPtr electron_browser_sync_ptr_;
+  atom::mojom::ElectronBrowserPtr electron_browser_async_ptr_;
 };
 
 void Initialize(v8::Local<v8::Object> exports,
