@@ -41,7 +41,8 @@ void CrashReporterCrashpad::SetCrashKeyValue(const base::StringPiece& key,
 void CrashReporterCrashpad::SetInitialCrashKeyValues(
     const std::string& version) {
   SetCrashKeyValue("prod", ATOM_PRODUCT_NAME);
-  SetCrashKeyValue("process_type", is_browser_ ? "browser" : "renderer");
+  SetCrashKeyValue("process_type",
+                   process_type_.empty() ? "browser" : process_type_);
   SetCrashKeyValue("ver", version);
 
   for (const auto& upload_parameter : upload_parameters_) {

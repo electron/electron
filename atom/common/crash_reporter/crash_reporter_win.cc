@@ -54,7 +54,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   if (simple_string_dictionary_)
     return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (is_browser_) {
+  if (process_type_.empty()) {
     base::FilePath handler_path;
     base::PathService::Get(base::FILE_EXE, &handler_path);
 
@@ -91,7 +91,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
   SetInitialCrashKeyValues(version);
-  if (is_browser_) {
+  if (process_type_.empty()) {
     database_ = crashpad::CrashReportDatabase::Initialize(crashes_dir);
     SetUploadToServer(upload_to_server);
   }

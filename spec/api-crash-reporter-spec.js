@@ -102,7 +102,7 @@ describe('crashReporter module', () => {
 
             childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
           },
-          processType: 'browser',
+          processType: 'node',
           done: done
         })
       })

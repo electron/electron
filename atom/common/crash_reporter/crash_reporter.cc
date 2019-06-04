@@ -9,6 +9,7 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/map_converter.h"
 #include "base/command_line.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
@@ -21,8 +22,13 @@ const char kCrashpadProcess[] = "crash-handler";
 const char kCrashesDirectoryKey[] = "crashes-directory";
 
 CrashReporter::CrashReporter() {
-  auto* cmd = base::CommandLine::ForCurrentProcess();
-  is_browser_ = cmd->GetSwitchValueASCII(switches::kProcessType).empty();
+  std::unique_ptr<base::Environment> env = base::Environment::Create();
+  if (env->HasVar("ELECTRON_RUN_AS_NODE")) {
+    process_type_ = "node";
+  } else {
+    auto* cmd = base::CommandLine::ForCurrentProcess();
+    process_type_ = cmd->GetSwitchValueASCII(switches::kProcessType);
+  }
 }
 
 CrashReporter::~CrashReporter() {}
@@ -46,7 +52,8 @@ void CrashReporter::Start(const std::string& product_name,
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   upload_parameters_ = parameters;
-  upload_parameters_["process_type"] = is_browser_ ? "browser" : "renderer";
+  upload_parameters_["process_type"] =
+      process_type_.empty() ? "browser" : process_type_;
 
   // Setting platform dependent parameters.
   SetUploadParameters();

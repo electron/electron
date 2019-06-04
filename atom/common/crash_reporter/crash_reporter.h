@@ -60,7 +60,7 @@ class CrashReporter {
   virtual void SetUploadParameters();
 
   StringMap upload_parameters_;
-  bool is_browser_;
+  std::string process_type_;
 
  private:
   bool is_initialized_ = false;
