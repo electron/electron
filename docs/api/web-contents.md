@@ -1396,7 +1396,7 @@ Opens the developer tools for the shared worker context.
 
 Opens the developer tools for the service worker context.
 
-#### `contents.send(channel[, arg1][, arg2][, ...])`
+#### `contents.send(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
@@ -1437,7 +1437,7 @@ app.on('ready', () => {
 </html>
 ```
 
-#### `contents.sendToFrame(frameId, channel[, arg1][, arg2][, ...])`
+#### `contents.sendToFrame(frameId, channel, ...args)`
 
 * `frameId` Integer
 * `channel` String

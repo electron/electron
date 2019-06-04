@@ -557,7 +557,7 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 
-### `<webview>.send(channel[, arg1][, arg2][, ...])`
+### `<webview>.send(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
