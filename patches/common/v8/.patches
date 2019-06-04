@@ -20,4 +20,5 @@ expose_mksnapshot.patch
 build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
 turbofan_fix_wrong_typing_of_speculativesafeintegersubtract.patch
+turbofan_restrict_redundancy_elimination_from_widening_types.patch
 valueserializer_report_if_buffer_expansion_fails_during.patch

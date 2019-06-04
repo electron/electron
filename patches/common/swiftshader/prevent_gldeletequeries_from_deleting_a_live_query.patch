@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexis Hetu <sugoi@google.com>
+Date: Wed, 14 Nov 2018 10:54:53 -0500
+Subject: Prevent glDeleteQueries from deleting a live Query
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+glDeleteQueries() instantly deletes all the es2::Query objects
+passed as arguments to this function. If some of these queries
+are still being used by the renderer, this will result in a use
+after free error. To solve this issue, sw::Query is now a also
+ref counted object.
+
+Bug chromium:904714
+
+Change-Id: Ic1d5781bbf1724d8d07936fd49c8a172dc3d9fd4
+Reviewed-on: https://swiftshader-review.googlesource.com/c/22548
+Tested-by: Alexis Hétu <sugoi@google.com>
+Reviewed-by: Nicolas Capens <nicolascapens@google.com>
+
+diff --git a/src/D3D9/Direct3DQuery9.cpp b/src/D3D9/Direct3DQuery9.cpp
+index 31d249e7897869b8a97c1b8a4e449b1a71500f80..b6a3b2d60a8fa14016007d00be753e1642c75cbc 100644
+--- a/src/D3D9/Direct3DQuery9.cpp
++++ b/src/D3D9/Direct3DQuery9.cpp
+@@ -41,7 +41,7 @@ namespace D3D9
+ 		{
+ 			device->removeQuery(query);
+ 
+-			delete query;
++			query->release();
+ 		}
+ 	}
+ 
+@@ -202,7 +202,7 @@ namespace D3D9
+ 			return INVALIDCALL();
+ 		}
+ 
+-		bool signaled = !query || query->reference == 0;
++		bool signaled = !query || query->isReady();
+ 
+ 		if(size && signaled)
+ 		{
+diff --git a/src/OpenGL/libGLESv2/Query.cpp b/src/OpenGL/libGLESv2/Query.cpp
+index 027f8abcae73d0caae9cdfb610c4873229e93e40..87286210f2c4e4b6e984c5b28049afe3587eb1ca 100644
+--- a/src/OpenGL/libGLESv2/Query.cpp
++++ b/src/OpenGL/libGLESv2/Query.cpp
+@@ -32,7 +32,7 @@ Query::Query(GLuint name, GLenum type) : NamedObject(name)
+ 
+ Query::~Query()
+ {
+-	delete mQuery;
++	mQuery->release();
+ }
+ 
+ void Query::begin()
+@@ -140,7 +140,7 @@ GLboolean Query::testQuery()
+ {
+ 	if(mQuery != nullptr && mStatus != GL_TRUE)
+ 	{
+-		if(!mQuery->building && mQuery->reference == 0)
++		if(!mQuery->building && mQuery->isReady())
+ 		{
+ 			unsigned int resultSum = mQuery->data;
+ 			mStatus = GL_TRUE;
+diff --git a/src/Renderer/Renderer.cpp b/src/Renderer/Renderer.cpp
+index b560f4171ea649055572e4c535560d8664e1fa7e..e4a4e06660bf8a4731974f7615b8d68dd39e6b30 100644
+--- a/src/Renderer/Renderer.cpp
++++ b/src/Renderer/Renderer.cpp
+@@ -78,6 +78,27 @@ namespace sw
+ 		int threadIndex;
+ 	};
+ 
++	Query::Query(Type type) : building(false), data(0), type(type), reference(1)
++	{
++	}
++
++	void Query::addRef()
++	{
++		++reference; // Atomic
++	}
++
++	void Query::release()
++	{
++		int ref = reference--; // Atomic
++
++		ASSERT(ref >= 0);
++
++		if(ref == 0)
++		{
++			delete this;
++		}
++	}
++
+ 	DrawCall::DrawCall()
+ 	{
+ 		queries = 0;
+@@ -314,7 +335,7 @@ namespace sw
+ 				{
+ 					if(includePrimitivesWrittenQueries || (query->type != Query::TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN))
+ 					{
+-						++query->reference; // Atomic
++						query->addRef();
+ 						draw->queries->push_back(query);
+ 					}
+ 				}
+@@ -1002,7 +1023,7 @@ namespace sw
+ 							break;
+ 						}
+ 
+-						--query->reference; // Atomic
++						query->release();
+ 					}
+ 
+ 					delete draw.queries;
+diff --git a/src/Renderer/Renderer.hpp b/src/Renderer/Renderer.hpp
+index ce22866d7224036d4d32294d93f6a53c9da7d48d..0846a27b7b83b70206df6f594af0f59fb9e74fb5 100644
+--- a/src/Renderer/Renderer.hpp
++++ b/src/Renderer/Renderer.hpp
+@@ -89,26 +89,35 @@ namespace sw
+ 	{
+ 		enum Type { FRAGMENTS_PASSED, TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN };
+ 
+-		Query(Type type) : building(false), reference(0), data(0), type(type)
+-		{
+-		}
++		Query(Type type);
++
++		void addRef();
++		void release();
+ 
+-		void begin()
++		inline void begin()
+ 		{
+ 			building = true;
+ 			data = 0;
+ 		}
+ 
+-		void end()
++		inline void end()
+ 		{
+ 			building = false;
+ 		}
+ 
++		inline bool isReady() const
++		{
++			return (reference == 1);
++		}
++
+ 		bool building;
+-		AtomicInt reference;
+ 		AtomicInt data;
+ 
+ 		const Type type;
++	private:
++		~Query() {} // Only delete a query within the release() function
++
++		AtomicInt reference;
+ 	};
+ 
+ 	struct DrawData
