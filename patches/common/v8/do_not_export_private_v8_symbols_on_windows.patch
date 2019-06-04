@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tomas Rycl <torycl@microsoft.com>
+Date: Mon, 13 May 2019 15:48:48 +0200
+Subject: Do not export private V8 symbols on Windows
+
+This change stops private V8 symbols and internal crt methods being exported.
+It fixes an issue where native node modules can import
+incorrect CRT methods and crash on Windows.
+It also reduces size of node.lib by 75%.
+
+This patch can be safely removed if, when it is removed, `node.lib` does not
+contain any standard C++ library exports (e.g. `std::ostringstream`).
+
+diff --git a/BUILD.gn b/BUILD.gn
+index f43c42a62e1a2d273ece56377c328addb8b99d66..fcf110e673b92070cc1931b376f8a26d38b188e4 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -212,6 +212,10 @@ config("internal_config") {
+ 
+   defines = []
+ 
++  if (!is_component_build && is_electron_build) {
++    defines += [ "HIDE_PRIVATE_SYMBOLS" ]
++  }
++
+   if (is_component_build || is_electron_build) {
+     defines += [ "BUILDING_V8_SHARED" ]
+   }
+diff --git a/src/globals.h b/src/globals.h
+index 6edc5d01b4ff503d05d70a7e40959fbc7f972628..d442f691729bd661488018c55e621169cc52ee5e 100644
+--- a/src/globals.h
++++ b/src/globals.h
+@@ -20,13 +20,17 @@
+ #ifdef V8_OS_WIN
+ 
+ // Setup for Windows shared library export.
++#if defined(HIDE_PRIVATE_SYMBOLS)
++#define V8_EXPORT_PRIVATE
++#else //if !defined(HIDE_PRIVATE_SYMBOLS)
+ #ifdef BUILDING_V8_SHARED
+ #define V8_EXPORT_PRIVATE __declspec(dllexport)
+ #elif USING_V8_SHARED
+ #define V8_EXPORT_PRIVATE __declspec(dllimport)
+-#else
++#else //!(BUILDING_V8_SHARED || USING_V8_SHARED)
+ #define V8_EXPORT_PRIVATE
+-#endif  // BUILDING_V8_SHARED
++#endif
++#endif
+ 
+ #else  // V8_OS_WIN
+ 
