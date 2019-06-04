@@ -1,15 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <grit-part>
-  <!-- Proxy Resolver Service -->
-  <message name="IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME" desc="The name of the utility process used for out-of-process V8 proxy resolution.">
-    V8 Proxy Resolver
-  </message>
-
-  <!-- PDF Compositor Service -->
-  <message name="IDS_UTILITY_PROCESS_PDF_COMPOSITOR_SERVICE_NAME" desc="The name of the utility process used for PDF compositing.">
-    PDF Compositor Service
-  </message>
-
   <!-- Printing Service -->
   <message name="IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME" desc="The name of the utility process used for printing conversions.">
     Printing Service

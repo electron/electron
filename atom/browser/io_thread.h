@@ -6,11 +6,17 @@
 #define ATOM_BROWSER_IO_THREAD_H_
 
 #include <memory>
+#include <set>
 
 #include "atom/browser/net/system_network_context_manager.h"
 #include "base/macros.h"
+#include "base/synchronization/lock.h"
 #include "content/public/browser/browser_thread_delegate.h"
 #include "services/network/public/mojom/network_service.mojom.h"
+
+namespace atom {
+class URLRequestContextGetter;
+}
 
 namespace net {
 class URLRequestContext;
@@ -27,6 +33,9 @@ class IOThread : public content::BrowserThreadDelegate {
       SystemNetworkContextManager* system_network_context_manager);
   ~IOThread() override;
 
+  void RegisterURLRequestContextGetter(atom::URLRequestContextGetter* getter);
+  void DeregisterURLRequestContextGetter(atom::URLRequestContextGetter* getter);
+
  protected:
   // BrowserThreadDelegate Implementation, runs on the IO thread.
   void Init() override;
@@ -39,13 +48,7 @@ class IOThread : public content::BrowserThreadDelegate {
 
   // When the network service is disabled, this holds on to a
   // content::NetworkContext class that owns |system_request_context_|.
-  // TODO(deepak1556): primary network context has to be destroyed after
-  // other active contexts, but since the ownership of latter is not released
-  // before IO thread is destroyed, it results in a DCHECK failure.
-  // We leak the reference to primary context to workaround this issue,
-  // since there is only one instance for the entire lifetime of app, it is
-  // safe.
-  network::mojom::NetworkContext* system_network_context_;
+  std::unique_ptr<network::mojom::NetworkContext> system_network_context_;
   net::URLRequestContext* system_request_context_;
 
   // These are set on the UI thread, and then consumed during initialization on
@@ -58,6 +61,13 @@ class IOThread : public content::BrowserThreadDelegate {
   // interface, but initial state needs to be set non-racily.
   network::mojom::HttpAuthStaticParamsPtr http_auth_static_params_;
   network::mojom::HttpAuthDynamicParamsPtr http_auth_dynamic_params_;
+
+  // |lock_| protects access to |request_context_getters_|.
+  base::Lock lock_;
+
+  // List of all request contexts that needs to be notified when
+  // IO thread is shutting down.
+  std::set<atom::URLRequestContextGetter*> request_context_getters_;
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };
