@@ -79,7 +79,7 @@ webpack_build("electron_browser_bundle") {
   inputs = auto_filenames.browser_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.browser.js"
-  out_file = "$target_gen_dir/electron_asar/browser/init.js"
+  out_file = "$target_gen_dir/js2c/browser_init.js"
 }
 
 webpack_build("electron_renderer_bundle") {
@@ -90,7 +90,7 @@ webpack_build("electron_renderer_bundle") {
   inputs = auto_filenames.renderer_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.renderer.js"
-  out_file = "$target_gen_dir/electron_asar/renderer/init.js"
+  out_file = "$target_gen_dir/js2c/renderer_init.js"
 }
 
 webpack_build("electron_worker_bundle") {
@@ -101,7 +101,7 @@ webpack_build("electron_worker_bundle") {
   inputs = auto_filenames.worker_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.worker.js"
-  out_file = "$target_gen_dir/electron_asar/worker/init.js"
+  out_file = "$target_gen_dir/js2c/worker_init.js"
 }
 
 webpack_build("electron_sandboxed_renderer_bundle") {
@@ -150,12 +150,18 @@ copy("atom_js2c_copy") {
 action("atom_js2c") {
   deps = [
     ":atom_js2c_copy",
+    ":electron_browser_bundle",
     ":electron_content_script_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
+    ":electron_worker_bundle",
   ]
 
   webpack_sources = [
+    "$target_gen_dir/js2c/browser_init.js",
+    "$target_gen_dir/js2c/renderer_init.js",
+    "$target_gen_dir/js2c/worker_init.js",
     "$target_gen_dir/js2c/content_script_bundle.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
@@ -178,22 +184,6 @@ action("atom_js2c") {
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
-
-asar("electron_asar") {
-  deps = [
-    ":electron_browser_bundle",
-    ":electron_renderer_bundle",
-    ":electron_worker_bundle",
-  ]
-
-  root = "$target_gen_dir/electron_asar"
-  sources = get_target_outputs(":electron_browser_bundle") +
-            get_target_outputs(":electron_renderer_bundle") +
-            get_target_outputs(":electron_worker_bundle")
-  outputs = [
-    "$root_out_dir/resources/electron.asar",
-  ]
-}
 
 typescript_build("default_app_js") {
   deps = [
@@ -845,11 +835,9 @@ if (is_mac) {
     public_deps = [
       ":default_app_asar",
       ":electron_app_strings_bundle_data",
-      ":electron_asar",
     ]
     sources = [
       "$root_out_dir/resources/default_app.asar",
-      "$root_out_dir/resources/electron.asar",
       "atom/browser/resources/mac/electron.icns",
     ]
     outputs = [
@@ -893,7 +881,6 @@ if (is_mac) {
     deps = [
       ":default_app_asar",
       ":electron_app_manifest",
-      ":electron_asar",
       ":electron_lib",
       ":packed_resources",
       "//content:sandbox_helper_win",
@@ -914,7 +901,6 @@ if (is_mac) {
 
     if (!is_mac) {
       data += [ "$root_out_dir/resources/default_app.asar" ]
-      data += [ "$root_out_dir/resources/electron.asar" ]
     }
 
     public_deps = [

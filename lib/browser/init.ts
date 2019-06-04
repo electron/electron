@@ -106,7 +106,7 @@ if (process.resourcesPath) {
   for (packagePath of searchPaths) {
     try {
       packagePath = path.join(process.resourcesPath, packagePath)
-      packageJson = __non_webpack_require__(path.join(packagePath, 'package.json')) // eslint-disable-line
+      packageJson = Module._load(path.join(packagePath, 'package.json'))
       break
     } catch {
       continue
@@ -197,6 +197,7 @@ Promise.all([
 
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
+  process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false)
   Module._load(path.join(packagePath, mainStartupScript), Module, true)
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)')

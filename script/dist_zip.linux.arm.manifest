@@ -64,7 +64,6 @@ locales/zh-TW.pak
 natives_blob.bin
 resources.pak
 resources/default_app.asar
-resources/electron.asar
 snapshot_blob.bin
 v8_context_snapshot.bin
 version
