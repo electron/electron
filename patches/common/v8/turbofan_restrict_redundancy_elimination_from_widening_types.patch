@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sigurd Schneider <sigurds@chromium.org>
+Date: Mon, 7 Jan 2019 15:11:31 +0100
+Subject: [turbofan] Restrict redundancy elimination from widening types
+
+This CL prevents redundancy elimination from widening types, which
+can cause problems if the input of a DeadValue (which has type None)
+is replaced by an equivalent node that does not have type None. This
+can happen because load elimination does not re-type nodes, for
+example.
+
+Bug: chromium:919340
+Change-Id: I89e872412edbcdc610e70ae160cde56cd045006c
+Reviewed-on: https://chromium-review.googlesource.com/c/1397709
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Jaroslav Sevcik <jarin@chromium.org>
+Commit-Queue: Sigurd Schneider <sigurds@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#58617}
+
+diff --git a/src/compiler/redundancy-elimination.cc b/src/compiler/redundancy-elimination.cc
+index 5ecef0408be4c849cccd695ccb8329ec7f27055e..8cc0501a22132e3c226294c53b047a473a8f9005 100644
+--- a/src/compiler/redundancy-elimination.cc
++++ b/src/compiler/redundancy-elimination.cc
+@@ -179,11 +179,22 @@ bool CheckSubsumes(Node const* a, Node const* b) {
+   return true;
+ }
+ 
++bool TypeSubsumes(Node* node, Node* replacement) {
++  if (!NodeProperties::IsTyped(node) || !NodeProperties::IsTyped(replacement)) {
++    // If either node is untyped, we are running during an untyped optimization
++    // phase, and replacement is OK.
++    return true;
++  }
++  Type node_type = NodeProperties::GetType(node);
++  Type replacement_type = NodeProperties::GetType(replacement);
++  return replacement_type.Is(node_type);
++}
++
+ }  // namespace
+ 
+ Node* RedundancyElimination::EffectPathChecks::LookupCheck(Node* node) const {
+   for (Check const* check = head_; check != nullptr; check = check->next) {
+-    if (CheckSubsumes(check->node, node)) {
++    if (CheckSubsumes(check->node, node) && TypeSubsumes(node, check->node)) {
+       DCHECK(!check->node->IsDead());
+       return check->node;
+     }
+diff --git a/test/mjsunit/regress/regress-919340.js b/test/mjsunit/regress/regress-919340.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..900bf6fde2f56bc328a17995c18a2fabd3f1023b
+--- /dev/null
++++ b/test/mjsunit/regress/regress-919340.js
+@@ -0,0 +1,17 @@
++// Copyright 2019 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --opt
++
++var E = 'Σ';
++var PI = 123;
++function f() {
++    print(E = 2, /b/.test(E) || /b/.test(E = 2));
++    ((E = 3) * PI);
++}
++
++f();
++f();
++%OptimizeFunctionOnNextCall(f);
++f();
