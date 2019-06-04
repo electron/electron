@@ -11,6 +11,9 @@ import { closeWindow } from './window-helpers';
 
 const { expect } = chai
 
+const ifit = (condition: boolean) => (condition ? it : it.skip)
+const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
+
 chai.use(chaiAsPromised)
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
@@ -36,6 +39,12 @@ const expectBoundsEqual = (actual: any, expected: any) => {
     expect(actual.y).to.be.closeTo(expected.y, 1)
     expect(actual.width).to.be.closeTo(expected.width, 1)
     expect(actual.height).to.be.closeTo(expected.height, 1)
+  }
+}
+
+const closeAllWindows = async () => {
+  for (const w of BrowserWindow.getAllWindows()) {
+    await closeWindow(w, {assertNotWindows: false})
   }
 }
 
@@ -824,12 +833,7 @@ describe('BrowserWindow module', () => {
           w.minimize()
         })
       })
-      describe(`Fullscreen state`, () => {
-        before(function () {
-          if (process.platform === 'darwin') {
-            this.skip()
-          }
-        })
+      ifdescribe(process.platform !== 'darwin')(`Fullscreen state`, () => {
         it(`checks normal bounds when fullscreen'ed`, (done) => {
           const bounds = w.getBounds()
           w.once('enter-full-screen', () => {
@@ -855,7 +859,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('tabbed windows', () => {
+  ifdescribe(process.platform === 'darwin')('tabbed windows', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
       w = new BrowserWindow({show: false})
@@ -863,12 +867,6 @@ describe('BrowserWindow module', () => {
     afterEach(async () => {
       await closeWindow(w)
       w = null as unknown as BrowserWindow
-    })
-
-    beforeEach(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
     })
 
     describe('BrowserWindow.selectPreviousTab()', () => {
@@ -931,4 +929,127 @@ describe('BrowserWindow module', () => {
       })
     })
   })
+
+  describe('autoHideMenuBar property', () => {
+    afterEach(closeAllWindows)
+    it('exists', () => {
+      const w = new BrowserWindow({show: false})
+      expect(w).to.have.property('autoHideMenuBar')
+
+      // TODO(codebytere): remove when propertyification is complete
+      expect(w.setAutoHideMenuBar).to.be.a('function')
+      expect(w.isMenuBarAutoHide).to.be.a('function')
+    })
+  })
+
+  describe('BrowserWindow.capturePage(rect)', () => {
+    afterEach(closeAllWindows)
+
+    it('returns a Promise with a Buffer', async () => {
+      const w = new BrowserWindow({show: false})
+      const image = await w.capturePage({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
+      })
+
+      expect(image.isEmpty()).to.equal(true)
+    })
+
+    it('preserves transparency', async () => {
+      const w = new BrowserWindow({show: false, transparent: true})
+      w.loadURL('about:blank')
+      await emittedOnce(w, 'ready-to-show')
+      w.show()
+
+      const image = await w.capturePage()
+      const imgBuffer = image.toPNG()
+
+      // Check the 25th byte in the PNG.
+      // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
+      expect(imgBuffer[25]).to.equal(6)
+    })
+  })
+
+  describe('BrowserWindow.setProgressBar(progress)', () => {
+    let w = null as unknown as BrowserWindow
+    before(() => {
+      w = new BrowserWindow({show: false})
+    })
+    after(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+    it('sets the progress', () => {
+      expect(() => {
+        if (process.platform === 'darwin') {
+          app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'))
+        }
+        w.setProgressBar(0.5)
+
+        if (process.platform === 'darwin') {
+          app.dock.setIcon(null as any)
+        }
+        w.setProgressBar(-1)
+      }).to.not.throw()
+    })
+    it('sets the progress using "paused" mode', () => {
+      expect(() => {
+        w.setProgressBar(0.5, { mode: 'paused' })
+      }).to.not.throw()
+    })
+    it('sets the progress using "error" mode', () => {
+      expect(() => {
+        w.setProgressBar(0.5, { mode: 'error' })
+      }).to.not.throw()
+    })
+    it('sets the progress using "normal" mode', () => {
+      expect(() => {
+        w.setProgressBar(0.5, { mode: 'normal' })
+      }).to.not.throw()
+    })
+  })
+
+  describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+
+    it('sets the window as always on top', () => {
+      expect(w.isAlwaysOnTop()).to.equal(false)
+      w.setAlwaysOnTop(true, 'screen-saver')
+      expect(w.isAlwaysOnTop()).to.equal(true)
+      w.setAlwaysOnTop(false)
+      expect(w.isAlwaysOnTop()).to.equal(false)
+      w.setAlwaysOnTop(true)
+      expect(w.isAlwaysOnTop()).to.equal(true)
+    })
+
+    ifit(process.platform === 'darwin')('raises an error when relativeLevel is out of bounds', () => {
+      expect(() => {
+        w.setAlwaysOnTop(true, 'normal', -2147483644)
+      }).to.throw()
+
+      expect(() => {
+        w.setAlwaysOnTop(true, 'normal', 2147483632)
+      }).to.throw()
+    })
+
+    ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
+      expect(w.isAlwaysOnTop()).to.equal(false)
+      w.setAlwaysOnTop(true, 'screen-saver')
+      expect(w.isAlwaysOnTop()).to.equal(true)
+      w.minimize()
+      expect(w.isAlwaysOnTop()).to.equal(false)
+      w.restore()
+      expect(w.isAlwaysOnTop()).to.equal(true)
+    })
+  })
+
 })
