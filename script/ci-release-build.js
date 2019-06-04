@@ -2,11 +2,11 @@ require('dotenv-safe').load()
 
 const assert = require('assert')
 const request = require('request')
-const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
+const buildAppVeyorURL = 'https://ci.appveyor.com/api/builds'
 
 const appVeyorJobs = {
-  'electron-x64': 'electron',
-  'electron-ia32': 'electron-39ng6'
+  'electron-x64': 'electron-x64-release',
+  'electron-ia32': 'electron-ia32-release'
 }
 
 const circleCIJobs = [
@@ -104,13 +104,13 @@ async function callAppVeyor (targetBranch, job, options) {
   const requestOpts = {
     url: buildAppVeyorURL,
     auth: {
-      bearer: process.env.APPVEYOR_TOKEN
+      bearer: process.env.APPVEYOR_CLOUD_TOKEN
     },
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      accountName: 'AppVeyor',
+      accountName: 'electron-bot',
       projectSlug: appVeyorJobs[job],
       branch: targetBranch,
       environmentVariables
@@ -120,7 +120,7 @@ async function callAppVeyor (targetBranch, job, options) {
   let appVeyorResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log('Error calling AppVeyor:', err)
   })
-  const buildUrl = `https://windows-ci.electronjs.org/project/AppVeyor/${appVeyorJobs[job]}/build/${appVeyorResponse.version}`
+  const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${appVeyorResponse.version}`
   console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`)
 }
 
