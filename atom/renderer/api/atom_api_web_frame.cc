@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "atom/common/api/api.mojom.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
@@ -23,6 +24,7 @@
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -201,25 +203,26 @@ void SetName(v8::Local<v8::Value> window, const std::string& name) {
       blink::WebString::FromUTF8(name));
 }
 
-double SetZoomLevel(v8::Local<v8::Value> window, double level) {
-  double result = 0.0;
+void SetZoomLevel(v8::Local<v8::Value> window, double level) {
   content::RenderFrame* render_frame = GetRenderFrame(window);
-  render_frame->Send(new AtomFrameHostMsg_SetTemporaryZoomLevel(
-      render_frame->GetRoutingID(), level, &result));
-  return result;
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+  browser_ptr->SetTemporaryZoomLevel(level);
 }
 
 double GetZoomLevel(v8::Local<v8::Value> window) {
   double result = 0.0;
   content::RenderFrame* render_frame = GetRenderFrame(window);
-  render_frame->Send(
-      new AtomFrameHostMsg_GetZoomLevel(render_frame->GetRoutingID(), &result));
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+  browser_ptr->DoGetZoomLevel(&result);
   return result;
 }
 
-double SetZoomFactor(v8::Local<v8::Value> window, double factor) {
-  return blink::WebView::ZoomLevelToZoomFactor(
-      SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor)));
+void SetZoomFactor(v8::Local<v8::Value> window, double factor) {
+  SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor));
 }
 
 double GetZoomFactor(v8::Local<v8::Value> window) {

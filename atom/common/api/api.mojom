@@ -59,4 +59,9 @@ interface ElectronBrowser {
 
   UpdateDraggableRegions(
     array<DraggableRegion> regions);
+
+  SetTemporaryZoomLevel(double zoom_level);
+
+  [Sync]
+  DoGetZoomLevel() => (double result);
 };
