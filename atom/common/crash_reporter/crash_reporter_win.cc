@@ -78,6 +78,8 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
       base::string16 pipe_name = base::UTF8ToUTF16(pipe_name_utf8);
       if (!crashpad_client_.SetHandlerIPCPipe(pipe_name))
         LOG(ERROR) << "Failed to set handler IPC pipe name: " << pipe_name;
+    } else {
+      LOG(ERROR) << "Unable to get pipe name for crashpad";
     }
   }
   crashpad::CrashpadInfo* crashpad_info =
