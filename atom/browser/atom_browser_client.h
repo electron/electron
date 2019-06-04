@@ -178,6 +178,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       network::mojom::URLLoaderFactoryRequest* factory_request,
       network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
       bool* bypass_redirect_checks) override;
+#if defined(OS_WIN)
+  bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
+#endif
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
