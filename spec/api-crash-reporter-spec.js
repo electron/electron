@@ -78,7 +78,7 @@ describe('crashReporter module', () => {
 
         stopServer = startServer({
           callback (port) {
-            const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.name} Crashes`)
+            const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
 
@@ -194,7 +194,7 @@ describe('crashReporter module', () => {
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
       const name = crashReporter.getProductName()
-      const expectedName = (process.platform === 'darwin') ? 'Electron Test' : 'Zombies'
+      const expectedName = 'Electron Test'
       expect(name).to.equal(expectedName)
     })
   })
@@ -226,12 +226,7 @@ describe('crashReporter module', () => {
   describe('getCrashesDirectory', () => {
     it('correctly returns the directory', () => {
       const crashesDir = crashReporter.getCrashesDirectory()
-      let dir
-      if (process.platform === 'win32') {
-        dir = `${app.getPath('temp')}/Zombies Crashes`
-      } else {
-        dir = `${app.getPath('temp')}/Electron Test Crashes`
-      }
+      let dir = app.getPath('temp').join('Electron Test Crashes')
       expect(crashesDir).to.equal(dir)
     })
   })
