@@ -11,6 +11,8 @@ interface ElectronRenderer {
       mojo_base.mojom.ListValue arguments,
       int32 sender_id);
 
+  UpdateCrashpadPipeName(string pipe_name);
+
   TakeHeapSnapshot(handle file) => (bool success);
 };
 

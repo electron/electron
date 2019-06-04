@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/common/atom_constants.h"
 #include "base/environment.h"
 #include "base/memory/singleton.h"
 #include "base/path_service.h"
@@ -13,6 +15,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "crashpad/client/crashpad_client.h"
 #include "crashpad/client/crashpad_info.h"
+#include "electron/atom/common/api/api.mojom.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 #if defined(_WIN64)
 #include "gin/public/debug.h"
@@ -28,7 +32,6 @@ int CrashForException(EXCEPTION_POINTERS* info) {
   return EXCEPTION_CONTINUE_SEARCH;
 }
 #endif
-const char kPipeNameVar[] = "ELECTRON_CRASHPAD_PIPE_NAME";
 
 }  // namespace
 
@@ -55,7 +58,6 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   // Only need to initialize once.
   if (simple_string_dictionary_)
     return;
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (process_type_.empty()) {
     base::FilePath handler_path;
     base::PathService::Get(base::FILE_EXE, &handler_path);
@@ -70,11 +72,11 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
                            base::UTF16ToASCII(crashes_dir.value()).c_str()));
     crashpad_client_.StartHandler(handler_path, crashes_dir, crashes_dir,
                                   submit_url, StringMap(), args, true, false);
-    env->SetVar(kPipeNameVar,
-                base::UTF16ToUTF8(GetCrashpadClient().GetHandlerIPCPipe()));
+    UpdatePipeName();
   } else {
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
     std::string pipe_name_utf8;
-    if (env->GetVar(kPipeNameVar, &pipe_name_utf8)) {
+    if (env->GetVar(atom::kCrashpadPipeName, &pipe_name_utf8)) {
       base::string16 pipe_name = base::UTF8ToUTF16(pipe_name_utf8);
       if (!crashpad_client_.SetHandlerIPCPipe(pipe_name))
         LOG(ERROR) << "Failed to set handler IPC pipe name: " << pipe_name;
@@ -104,6 +106,31 @@ void CrashReporterWin::SetUploadParameters() {
 
 crashpad::CrashpadClient& CrashReporterWin::GetCrashpadClient() {
   return crashpad_client_;
+}
+
+void CrashReporterWin::UpdatePipeName() {
+  std::string pipe_name = base::UTF16ToUTF8(crashpad_client_.GetHandlerIPCPipe());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  env->SetVar(atom::kCrashpadPipeName, pipe_name);
+
+  // Notify all WebContents of the pipe name.
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto pages = atom::api::WebContents::GetAll(isolate);
+  for (const auto& value : pages) {
+    mate::Handle<atom::api::WebContents> web_contents;
+    if (!mate::ConvertFromV8(isolate, value, &web_contents))
+      continue;
+    if (web_contents->GetType() == atom::api::WebContents::Type::REMOTE)
+      continue;
+    auto* frame_host = web_contents->web_contents()->GetMainFrame();
+    if (!frame_host)
+      continue;
+
+    atom::mojom::ElectronRendererAssociatedPtr electron_ptr;
+    frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
+        mojo::MakeRequest(&electron_ptr));
+    electron_ptr->UpdateCrashpadPipeName(pipe_name);
+  }
 }
 
 // static

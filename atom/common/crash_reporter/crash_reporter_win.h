@@ -24,7 +24,7 @@ class CrashReporterWin : public CrashReporterCrashpad {
 #if defined(_WIN64)
   static void SetUnhandledExceptionFilter();
 #endif
-  crashpad::CrashpadClient& GetCrashpadClient();
+
   void InitBreakpad(const std::string& product_name,
                     const std::string& version,
                     const std::string& company_name,
@@ -34,11 +34,16 @@ class CrashReporterWin : public CrashReporterCrashpad {
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
 
+  crashpad::CrashpadClient& GetCrashpadClient();
+
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterWin>;
-  crashpad::CrashpadClient crashpad_client_;
   CrashReporterWin();
   ~CrashReporterWin() override;
+
+  void UpdatePipeName();
+
+  crashpad::CrashpadClient crashpad_client_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterWin);
 };
