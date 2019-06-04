@@ -172,7 +172,7 @@ Creates a new `NativeImage` instance from `dataURL`.
 ### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
 
 * `imageName` String
-* `hslShift` Number[] (Optional)
+* `hslShift` Number[] (optional)
 
 Returns `NativeImage`
 
