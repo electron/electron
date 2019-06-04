@@ -148,7 +148,7 @@ describe('ipc module', () => {
         ipcMain.removeAllListeners('test-sync')
       }
       expect(received).to.have.lengthOf(1000)
-      expect(received).to.deep.equal([...received].sort())
+      expect(received).to.deep.equal([...received].sort((a, b) => a - b))
     })
   })
 })
