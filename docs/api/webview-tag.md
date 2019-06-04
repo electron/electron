@@ -566,7 +566,7 @@ Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. The renderer process can handle the message by
 listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) module.
 
-See [webContents.send](web-contents.md#contentssendchannel-arg1-arg2-) for
+See [webContents.send](web-contents.md#contentssendchannel-args) for
 examples.
 
 ### `<webview>.sendInputEvent(event)`
