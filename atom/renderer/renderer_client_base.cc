@@ -15,7 +15,6 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/electron_api_service_impl.h"
-#include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
@@ -66,15 +65,6 @@
 namespace atom {
 
 namespace {
-
-v8::Local<v8::Value> GetRenderProcessPreferences(
-    const PreferencesManager* preferences_manager,
-    v8::Isolate* isolate) {
-  if (preferences_manager->preferences())
-    return mate::ConvertToV8(isolate, *preferences_manager->preferences());
-  else
-    return v8::Null(isolate);
-}
 
 std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                                                const char* switch_name) {
@@ -134,9 +124,6 @@ void RendererClientBase::AddRenderBindings(
     v8::Isolate* isolate,
     v8::Local<v8::Object> binding_object) {
   mate::Dictionary dict(isolate, binding_object);
-  dict.SetMethod("getRenderProcessPreferences",
-                 base::BindRepeating(GetRenderProcessPreferences,
-                                     preferences_manager_.get()));
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -199,8 +186,6 @@ void RendererClientBase::RenderThreadStarted() {
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
-
-  preferences_manager_.reset(new PreferencesManager);
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
