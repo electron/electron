@@ -21,7 +21,7 @@ Returns:
 
 The `inAppPurchase` module has the following methods:
 
-### `inAppPurchase.purchaseProduct(productID, quantity)`
+### `inAppPurchase.purchaseProduct(productID[, quantity])`
 
 * `productID` String - The identifiers of the product to purchase. (The identifier of `com.example.app.product1` is `product1`).
 * `quantity` Integer (optional) - The number of items the user wants to purchase.

@@ -51,7 +51,7 @@ Removes the specified `listener` from the listener array for the specified
 
 Removes all listeners, or those of the specified `channel`.
 
-### `ipcRenderer.send(channel[, arg1][, arg2][, ...])`
+### `ipcRenderer.send(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
@@ -63,7 +63,7 @@ hence no functions or prototype chain will be included.
 The main process handles it by listening for `channel` with the
 [`ipcMain`](ipc-main.md) module.
 
-### `ipcRenderer.invoke(channel[, arg1][, arg2][, ...])`
+### `ipcRenderer.invoke(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
@@ -91,7 +91,7 @@ ipcMain.handle('some-name', async (event, someArgument) => {
 })
 ```
 
-### `ipcRenderer.sendSync(channel[, arg1][, arg2][, ...])`
+### `ipcRenderer.sendSync(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
@@ -108,7 +108,7 @@ and replies by setting `event.returnValue`.
 **Note:** Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
 
-### `ipcRenderer.sendTo(webContentsId, channel, [, arg1][, arg2][, ...])`
+### `ipcRenderer.sendTo(webContentsId, channel, ...args)`
 
 * `webContentsId` Number
 * `channel` String
@@ -116,7 +116,7 @@ unless you know what you are doing you should never use it.
 
 Sends a message to a window with `webContentsId` via `channel`.
 
-### `ipcRenderer.sendToHost(channel[, arg1][, arg2][, ...])`
+### `ipcRenderer.sendToHost(channel, ...args)`
 
 * `channel` String
 * `...args` any[]

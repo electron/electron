@@ -131,7 +131,7 @@ response are visible by the time this listener is fired.
     * `timestamp` Double
     * `statusLine` String
     * `statusCode` Integer
-    * `responseHeaders` Record<string, string> (Optional)
+    * `responseHeaders` Record<string, string> (optional)
   * `callback` Function
     * `response` Object
       * `cancel` Boolean (optional)
@@ -160,7 +160,7 @@ The `callback` has to be called with an `response` object.
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
-    * `responseHeaders` Record<string, string> (Optional)
+    * `responseHeaders` Record<string, string> (optional)
     * `fromCache` Boolean - Indicates whether the response was fetched from disk
       cache.
     * `statusCode` Integer
@@ -189,7 +189,7 @@ and response headers are available.
     * `ip` String (optional) - The server IP address that the request was
       actually sent to.
     * `fromCache` Boolean
-    * `responseHeaders` Record<string, string> (Optional)
+    * `responseHeaders` Record<string, string> (optional)
 
 The `listener` will be called with `listener(details)` when a server initiated
 redirect is about to occur.
@@ -208,7 +208,7 @@ redirect is about to occur.
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
-    * `responseHeaders` Record<string, string> (Optional)
+    * `responseHeaders` Record<string, string> (optional)
     * `fromCache` Boolean
     * `statusCode` Integer
     * `statusLine` String

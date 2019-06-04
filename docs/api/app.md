@@ -576,7 +576,7 @@ Hides all application windows without minimizing them.
 Shows application windows after they were hidden. Does not automatically focus
 them.
 
-### `app.setAppLogsPath(path)`
+### `app.setAppLogsPath([path])`
 
 * `path` String (optional) - A custom path for your logs. Must be absolute.
 

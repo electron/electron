@@ -84,7 +84,7 @@ Removes the specified `listener` from the listener array for the specified
 
 ### `ipcMain.removeAllListeners([channel])`
 
-* `channel` String
+* `channel` String (optional)
 
 Removes listeners of the specified `channel`.
 
