@@ -9,13 +9,15 @@
 #include "base/environment.h"
 #include "base/memory/singleton.h"
 #include "base/path_service.h"
-#include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "crashpad/client/crashpad_client.h"
 #include "crashpad/client/crashpad_info.h"
+
 #if defined(_WIN64)
 #include "gin/public/debug.h"
 #endif
+
 namespace {
 
 #if defined(_WIN64)
@@ -62,13 +64,10 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
         "--no-rate-limit",
         "--no-upload-gzip",  // not all servers accept gzip
     };
-    std::string process_arg = "--type=$1";
+    args.push_back(base::StringPrintf("--type=%s", kCrashpadProcess));
     args.push_back(
-        base::ReplaceStringPlaceholders(process_arg, {kCrashpadProcess}, NULL));
-    std::string crashes_dir_arg = "--$1=$2";
-    args.push_back(base::ReplaceStringPlaceholders(
-        crashes_dir_arg,
-        {kCrashesDirectoryKey, base::UTF16ToASCII(crashes_dir.value())}, NULL));
+        base::StringPrintf("--%s=%s", kCrashesDirectoryKey,
+                           base::UTF16ToASCII(crashes_dir.value()).c_str()));
     crashpad_client_.StartHandler(handler_path, crashes_dir, crashes_dir,
                                   submit_url, StringMap(), args, true, false);
     env->SetVar(kPipeNameVar,
