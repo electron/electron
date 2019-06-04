@@ -85,7 +85,6 @@
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
     "tsc": "tsc",
-    "yarn": "npx yarn@$(node -p 'require(\"./script/lib/utils\").YARN_VERSION')",
     "webpack": "node build/webpack/run-compiler"
   },
   "license": "MIT",

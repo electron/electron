@@ -206,7 +206,7 @@ step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        npm run yarn install
+        node build/yarn install
       fi
 
 # This step handles the differences between the linux "gclient sync"
@@ -568,7 +568,7 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          npm run yarn install
+          node build/yarn install
           npm run lint
 
 steps-checkout: &steps-checkout
