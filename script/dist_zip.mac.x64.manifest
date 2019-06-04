@@ -12,7 +12,6 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Librari
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist
-Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/MainMenu.nib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/
