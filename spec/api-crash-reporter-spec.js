@@ -467,7 +467,7 @@ const startServer = ({ callback, processType, done }) => {
   server.listen(port, '127.0.0.1', () => {
     port = server.address().port
     remote.process.port = port
-    if (process.platform === 'darwin') {
+    if (process.platform !== 'linux') {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1:' + port
