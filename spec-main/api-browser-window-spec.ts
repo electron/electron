@@ -641,7 +641,7 @@ describe('BrowserWindow module', () => {
   describe('sizing', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({show: false, width: 400, height: 400})
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -722,7 +722,7 @@ describe('BrowserWindow module', () => {
 
     describe('BrowserWindow.setContentSize(width, height)', () => {
       it('sets the content size', () => {
-        const size = [400, 400]
+        const size = [456, 789]
         w.setContentSize(size[0], size[1])
         const after = w.getContentSize()
         expect(after).to.deep.equal(size)
@@ -735,7 +735,7 @@ describe('BrowserWindow module', () => {
           width: 400,
           height: 400
         })
-        const size = [400, 400]
+        const size = [456, 789]
         w.setContentSize(size[0], size[1])
         const after = w.getContentSize()
         expect(after).to.deep.equal(size)
@@ -787,7 +787,7 @@ describe('BrowserWindow module', () => {
           w.setPosition(pos[0], pos[1])
         })
       })
-      describe(`Maximized state`, () => {
+      ifdescribe(process.platform !== 'linux')(`Maximized state`, () => {
         it(`checks normal bounds when maximized`, (done) => {
           const bounds = w.getBounds()
           w.once('maximize', () => {
@@ -810,7 +810,7 @@ describe('BrowserWindow module', () => {
           w.maximize()
         })
       })
-      describe(`Minimized state`, () => {
+      ifdescribe(process.platform !== 'linux')(`Minimized state`, () => {
         it(`checks normal bounds when minimized`, (done) => {
           const bounds = w.getBounds()
           w.once('minimize', () => {
@@ -833,7 +833,7 @@ describe('BrowserWindow module', () => {
           w.minimize()
         })
       })
-      ifdescribe(process.platform !== 'darwin')(`Fullscreen state`, () => {
+      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
         it(`checks normal bounds when fullscreen'ed`, (done) => {
           const bounds = w.getBounds()
           w.once('enter-full-screen', () => {
