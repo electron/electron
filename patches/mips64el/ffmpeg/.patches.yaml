@@ -1,6 +1,0 @@
-repo: src/third_party/ffmpeg
-patches:
--
-  author: Cheng Zhao <zcbenz@gmail.com>
-  file: Fix-build_ffmpeg-with-cross-prefix-mips64el-redhat-l.patch
-  description: null
