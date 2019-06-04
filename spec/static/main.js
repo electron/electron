@@ -19,7 +19,6 @@ let window = null
 
 // will be used by crash-reporter spec.
 process.port = 0
-process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -317,9 +316,45 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   })
 })
 
-ipcMain.on('crash-service-pid', (event, pid) => {
-  process.crashServicePid = pid
-  event.returnValue = null
+ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
+  let contents = null
+  let destroy = () => {}
+  if (options.id) {
+    const w = BrowserWindow.fromId(options.id)
+    contents = w.webContents
+    destroy = () => w.close()
+  } else {
+    contents = webContents.create()
+    destroy = () => contents.destroy()
+  }
+
+  contents.once(options.name, () => destroy())
+
+  contents.once('destroyed', () => {
+    event.sender.send(options.responseEvent)
+  })
+
+  contents.loadURL(options.url)
+})
+
+ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
+  const focusListener = (event, win) => win.id
+  app.on('browser-window-focus', focusListener)
+  const windowCount = 3
+  const windowOptions = {
+    show: false,
+    width: 400,
+    height: 400,
+    webPreferences: {
+      backgroundThrottling: false
+    }
+  }
+  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
+  windows.forEach(win => win.show())
+  windows.forEach(win => win.focus())
+  windows.forEach(win => win.destroy())
+  app.removeListener('browser-window-focus', focusListener)
+  event.sender.send(testOptions.responseEvent)
 })
 
 // Suspend listeners until the next event and then restore them

@@ -47,10 +47,6 @@ describe('crashReporter module', () => {
 
       afterEach(() => closeWindow(w).then(() => { w = null }))
 
-      afterEach(() => {
-        stopCrashService()
-      })
-
       afterEach((done) => {
         if (stopServer != null) {
           stopServer(done)
@@ -85,20 +81,6 @@ describe('crashReporter module', () => {
             const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.name} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
-
-            if (process.platform === 'win32') {
-              const crashServiceProcess = childProcess.spawn(process.execPath, [
-                `--reporter-url=http://127.0.0.1:${port}`,
-                '--application-name=Zombies',
-                `--crashes-directory=${crashesDir}`
-              ], {
-                env: {
-                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
-                },
-                detached: true
-              })
-              remote.process.crashServicePid = crashServiceProcess.pid
-            }
 
             childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
           },
@@ -483,19 +465,5 @@ const startServer = ({ callback, processType, done }) => {
     server.close(() => {
       done()
     })
-  }
-}
-
-const stopCrashService = () => {
-  const { crashServicePid } = remote.process
-  if (crashServicePid) {
-    remote.process.crashServicePid = 0
-    try {
-      process.kill(crashServicePid)
-    } catch (error) {
-      if (error.code !== 'ESRCH') {
-        throw error
-      }
-    }
   }
 }
