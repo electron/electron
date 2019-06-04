@@ -150,5 +150,40 @@ describe('ipc module', () => {
       expect(received).to.have.lengthOf(1000)
       expect(received).to.deep.equal([...received].sort((a, b) => a - b))
     })
+
+    it('between send, sendSync, and invoke is consistent', async () => {
+      const received: number[] = []
+      ipcMain.handle('test-invoke', (e, i) => { received.push(i) })
+      ipcMain.on('test-async', (e, i) => { received.push(i) })
+      ipcMain.on('test-sync', (e, i) => { received.push(i); e.returnValue = null })
+      const done = new Promise(resolve => ipcMain.once('done', () => { resolve() }))
+      try {
+        function rendererStressTest() {
+          const {ipcRenderer} = require('electron')
+          for (let i = 0; i < 1000; i++) {
+            switch ((Math.random() * 3) | 0) {
+              case 0:
+                ipcRenderer.send('test-async', i)
+                break;
+              case 1:
+                ipcRenderer.sendSync('test-sync', i)
+                break;
+              case 2:
+                ipcRenderer.invoke('test-invoke', i)
+                break;
+            }
+          }
+          ipcRenderer.send('done')
+        }
+        w.webContents.executeJavaScript(`(${rendererStressTest})()`)
+        await done
+      } finally {
+        ipcMain.removeHandler('test-invoke')
+        ipcMain.removeAllListeners('test-async')
+        ipcMain.removeAllListeners('test-sync')
+      }
+      expect(received).to.have.lengthOf(1000)
+      expect(received).to.deep.equal([...received].sort((a, b) => a - b))
+    })
   })
 })
