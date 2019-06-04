@@ -2662,24 +2662,24 @@ describe('BrowserWindow module', () => {
         show: false
       })
 
-      w.setMinimizable(false)
-      w.setMinimizable(true)
+      w.minimizable = false
+      w.minimizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setResizable(false)
-      w.setResizable(true)
+      w.resizable = false
+      w.resizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setMaximizable(false)
-      w.setMaximizable(true)
+      w.maximizable = false
+      w.maximizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setFullScreenable(false)
-      w.setFullScreenable(true)
+      w.fullScreenable = false
+      w.fullScreenable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setClosable(false)
-      w.setClosable(true)
+      w.closable = false
+      w.closable = true
       expect(w.getSize()).to.deep.equal([300, 200])
     })
 
@@ -2687,13 +2687,14 @@ describe('BrowserWindow module', () => {
       it('can be changed with resizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, resizable: false })
-        expect(w.isResizable()).to.be.false()
+        expect(w.resizable).to.be.false()
 
         if (process.platform === 'darwin') {
-          expect(w.isMaximizable()).to.to.true()
+          expect(w.maximizable).to.to.true()
         }
       })
 
+      // TODO(codebytere): remove when propertyification is complete
       it('can be changed with setResizable method', () => {
         expect(w.isResizable()).to.be.true()
         w.setResizable(false)
@@ -2702,15 +2703,23 @@ describe('BrowserWindow module', () => {
         expect(w.isResizable()).to.be.true()
       })
 
+      it('can be changed with resizable property', () => {
+        expect(w.resizable).to.be.true()
+        w.resizable = false
+        expect(w.resizable).to.be.false()
+        w.resizable = true
+        expect(w.resizable).to.be.true()
+      })
+
       it('works for a frameless window', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, frame: false })
-        expect(w.isResizable()).to.be.true()
+        expect(w.resizable).to.be.true()
 
         if (process.platform === 'win32') {
           w.destroy()
           w = new BrowserWindow({ show: false, thickFrame: false })
-          expect(w.isResizable()).to.be.false()
+          expect(w.resizable).to.be.false()
         }
       })
 
@@ -2782,7 +2791,23 @@ describe('BrowserWindow module', () => {
       return
     }
 
-    describe('movable state', () => {
+    describe('movable state (property)', () => {
+      it('can be changed with movable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, movable: false })
+        expect(w.movable).to.be.false()
+      })
+      it('can be changed with movable property', () => {
+        expect(w.movable).to.be.true()
+        w.movable = false
+        expect(w.movable).to.be.false()
+        w.movable = true
+        expect(w.movable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('movable state (methods)', () => {
       it('can be changed with movable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, movable: false })
@@ -2797,7 +2822,24 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('minimizable state', () => {
+    describe('minimizable state (property)', () => {
+      it('can be changed with minimizable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, minimizable: false })
+        expect(w.minimizable).to.be.false()
+      })
+
+      it('can be changed with minimizable property', () => {
+        expect(w.minimizable).to.be.true()
+        w.minimizable = false
+        expect(w.minimizable).to.be.false()
+        w.minimizable = true
+        expect(w.minimizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('minimizable state (methods)', () => {
       it('can be changed with minimizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, minimizable: false })
@@ -2813,7 +2855,40 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('maximizable state', () => {
+    describe('maximizable state (property)', () => {
+      it('can be changed with maximizable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, maximizable: false })
+        expect(w.maximizable).to.be.false()
+      })
+
+      it('can be changed with maximizable property', () => {
+        expect(w.maximizable).to.be.true()
+        w.maximizable = false
+        expect(w.maximizable).to.be.false()
+        w.maximizable = true
+        expect(w.maximizable).to.be.true()
+      })
+
+      it('is not affected when changing other states', () => {
+        w.maximizable = false
+        expect(w.maximizable).to.be.false()
+        w.minimizable = false
+        expect(w.maximizable).to.be.false()
+        w.closable = false
+        expect(w.maximizable).to.be.false()
+
+        w.maximizable = true
+        expect(w.maximizable).to.be.true()
+        w.closable = true
+        expect(w.maximizable).to.be.true()
+        w.fullScreenable = false
+        expect(w.maximizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('maximizable state (methods)', () => {
       it('can be changed with maximizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, maximizable: false })
@@ -2850,6 +2925,23 @@ describe('BrowserWindow module', () => {
       if (process.platform !== 'win32') return
 
       it('is reset to its former state', () => {
+        w.maximizable = false
+        w.resizable = false
+        w.resizable = true
+        expect(w.maximizable).to.be.false()
+        w.maximizable = true
+        w.resizable = false
+        w.resizable = true
+        expect(w.maximizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('maximizable state (Windows only) (methods)', () => {
+      // Only implemented on windows.
+      if (process.platform !== 'win32') return
+
+      it('is reset to its former state', () => {
         w.setMaximizable(false)
         w.setResizable(false)
         w.setResizable(true)
@@ -2861,12 +2953,30 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('fullscreenable state', () => {
+    describe('fullscreenable state (property)', () => {
       before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
+      })
+
+      it('can be changed with fullscreenable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, fullscreenable: false })
+        expect(w.fullScreenable).to.be.false()
+      })
+
+      it('can be changed with fullScreenable property', () => {
+        expect(w.fullScreenable).to.be.true()
+        w.fullScreenable = false
+        expect(w.fullScreenable).to.be.false()
+        w.fullScreenable = true
+        expect(w.fullScreenable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('fullscreenable state (methods)', () => {
+      before(function () {
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('can be changed with fullscreenable option', () => {
@@ -2910,21 +3020,18 @@ describe('BrowserWindow module', () => {
 
     describe('fullscreen state with resizable set', () => {
       before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('resizable flag should be set to true and restored', (done) => {
         w.destroy()
         w = new BrowserWindow({ resizable: false })
         w.once('enter-full-screen', () => {
-          expect(w.isResizable()).to.be.true()
+          expect(w.resizable).to.be.true()
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          expect(w.isResizable()).to.be.false()
+          expect(w.resizable).to.be.false()
           done()
         })
         w.setFullScreen(true)
@@ -2971,7 +3078,24 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('closable state', () => {
+    describe('closable state (property)', () => {
+      it('can be changed with closable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, closable: false })
+        expect(w.closable).to.be.false()
+      })
+
+      it('can be changed with setClosable method', () => {
+        expect(w.closable).to.be.true()
+        w.closable = false
+        expect(w.closable).to.be.false()
+        w.closable = true
+        expect(w.closable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('closable state (methods)', () => {
       it('can be changed with closable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, closable: false })
