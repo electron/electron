@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 18 Dec 2018 14:45:19 +0000
+Subject: Fix SVG crash for v0 distribution into foreignObject.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We require a parent element to be an SVG element for non-svg-root
+elements in order to create a LayoutObject for them. However, we checked
+the light tree parent element, not the flat tree one which is the parent
+for the layout tree construction. Note that this is just an issue in
+Shadow DOM v0 since v1 does not allow shadow roots on SVG elements.
+
+Bug: 915469
+Change-Id: Id81843abad08814fae747b5bc81c09666583f130
+Reviewed-on: https://chromium-review.googlesource.com/c/1382494
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#617487}
+
+diff --git a/third_party/WebKit/LayoutTests/svg/foreignObject/shadow-dom-v0-crash.html b/third_party/WebKit/LayoutTests/svg/foreignObject/shadow-dom-v0-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..44ac3b0540b8f5a816a67b5be382b179623bd0cd
+--- /dev/null
++++ b/third_party/WebKit/LayoutTests/svg/foreignObject/shadow-dom-v0-crash.html
+@@ -0,0 +1,11 @@
++<!DOCTYPE html>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<p>PASS if no crash or DCHECK failure.</p>
++<svg id="svg"><g /></svg>
++<script>
++  test(() => {
++    const root = svg.createShadowRoot();
++    root.innerHTML = '<foreignObject><div><content></content></div></foreignObject>';
++  }, "Rendering an svg g element distributed into a foreignObject will crash.");
++</script>
+diff --git a/third_party/blink/renderer/core/svg/svg_element.cc b/third_party/blink/renderer/core/svg/svg_element.cc
+index e9a1fd9dd0ef6975cbc3e0967e8b0e9c8362b7a1..6af7df47e3502903346c4509c6fd080ef6d071ef 100644
+--- a/third_party/blink/renderer/core/svg/svg_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_element.cc
+@@ -37,6 +37,7 @@
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+ #include "third_party/blink/renderer/core/dom/events/event.h"
++#include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
+ #include "third_party/blink/renderer/core/dom/node_computed_style.h"
+ #include "third_party/blink/renderer/core/dom/shadow_root.h"
+ #include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"
+@@ -1047,10 +1048,8 @@ bool SVGElement::LayoutObjectIsNeeded(const ComputedStyle& style) const {
+ }
+ 
+ bool SVGElement::HasSVGParent() const {
+-  // Should we use the flat tree parent instead? If so, we should probably fix a
+-  // few other checks.
+-  return ParentOrShadowHostElement() &&
+-         ParentOrShadowHostElement()->IsSVGElement();
++  Element* parent = FlatTreeTraversal::ParentElement(*this);
++  return parent && parent->IsSVGElement();
+ }
+ 
+ MutableCSSPropertyValueSet* SVGElement::AnimatedSMILStyleProperties() const {
