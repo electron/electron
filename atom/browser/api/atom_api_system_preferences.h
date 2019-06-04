@@ -65,25 +65,22 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
 #elif defined(OS_MACOSX)
-  using NotificationCallback =
-      base::RepeatingCallback<void(const std::string&,
-                                   const base::DictionaryValue&)>;
-
   void PostNotification(const std::string& name,
                         const base::DictionaryValue& user_info,
                         mate::Arguments* args);
-  int SubscribeNotification(const std::string& name,
-                            const NotificationCallback& callback);
+  v8::Local<v8::Promise> SubscribeNotification(v8::Isolate* isolate,
+                                               const std::string& name);
   void UnsubscribeNotification(int id);
   void PostLocalNotification(const std::string& name,
                              const base::DictionaryValue& user_info);
-  int SubscribeLocalNotification(const std::string& name,
-                                 const NotificationCallback& callback);
+  v8::Local<v8::Promise> SubscribeLocalNotification(v8::Isolate* isolate,
+                                                    const std::string& name);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
                                  const base::DictionaryValue& user_info);
-  int SubscribeWorkspaceNotification(const std::string& name,
-                                     const NotificationCallback& callback);
+  v8::Local<v8::Promise> SubscribeWorkspaceNotification(
+      v8::Isolate* isolate,
+      const std::string& name);
   void UnsubscribeWorkspaceNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
@@ -125,9 +122,9 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   ~SystemPreferences() override;
 
 #if defined(OS_MACOSX)
-  int DoSubscribeNotification(const std::string& name,
-                              const NotificationCallback& callback,
-                              NotificationCenterKind kind);
+  void DoSubscribeNotification(const std::string& name,
+                               util::Promise promise,
+                               NotificationCenterKind kind);
   void DoUnsubscribeNotification(int request_id, NotificationCenterKind kind);
 #endif
 

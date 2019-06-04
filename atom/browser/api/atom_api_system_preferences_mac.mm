@@ -26,6 +26,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/mac/url_conversions.h"
 
@@ -131,11 +132,15 @@ void SystemPreferences::PostNotification(const std::string& name,
             deliverImmediately:immediate];
 }
 
-int SystemPreferences::SubscribeNotification(
-    const std::string& name,
-    const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback,
-                                 kNSDistributedNotificationCenter);
+v8::Local<v8::Promise> SystemPreferences::SubscribeNotification(
+    v8::Isolate* isolate,
+    const std::string& name) {
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  DoSubscribeNotification(name, std::move(promise),
+                          kNSDistributedNotificationCenter);
+  return handle;
 }
 
 void SystemPreferences::UnsubscribeNotification(int request_id) {
@@ -151,10 +156,14 @@ void SystemPreferences::PostLocalNotification(
                       userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
-int SystemPreferences::SubscribeLocalNotification(
-    const std::string& name,
-    const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback, kNSNotificationCenter);
+v8::Local<v8::Promise> SystemPreferences::SubscribeLocalNotification(
+    v8::Isolate* isolate,
+    const std::string& name) {
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  DoSubscribeNotification(name, std::move(promise), kNSNotificationCenter);
+  return handle;
 }
 
 void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
@@ -171,23 +180,27 @@ void SystemPreferences::PostWorkspaceNotification(
                       userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
-int SystemPreferences::SubscribeWorkspaceNotification(
-    const std::string& name,
-    const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback,
-                                 kNSWorkspaceNotificationCenter);
+v8::Local<v8::Promise> SystemPreferences::SubscribeWorkspaceNotification(
+    v8::Isolate* isolate,
+    const std::string& name) {
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  DoSubscribeNotification(name, std::move(promise),
+                          kNSWorkspaceNotificationCenter);
+  return handle;
 }
 
 void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSWorkspaceNotificationCenter);
 }
 
-int SystemPreferences::DoSubscribeNotification(
-    const std::string& name,
-    const NotificationCallback& callback,
-    NotificationCenterKind kind) {
+void SystemPreferences::DoSubscribeNotification(const std::string& name,
+                                                util::Promise promise,
+                                                NotificationCenterKind kind) {
   int request_id = g_next_id++;
-  __block NotificationCallback copied_callback = callback;
+
+  __block util::Promise p = std::move(promise);
   NSNotificationCenter* center;
   switch (kind) {
     case kNSDistributedNotificationCenter:
@@ -208,18 +221,23 @@ int SystemPreferences::DoSubscribeNotification(
                   object:nil
                    queue:nil
               usingBlock:^(NSNotification* notification) {
-                std::unique_ptr<base::DictionaryValue> user_info =
+                mate::Dictionary dict =
+                    mate::Dictionary::CreateEmpty(p.isolate());
+                dict.Set("id", request_id);
+                dict.Set("event", base::SysNSStringToUTF8(notification.name));
+
+                std::unique_ptr<base::DictionaryValue> info =
                     NSDictionaryToDictionaryValue(notification.userInfo);
-                if (user_info) {
-                  copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name), *user_info);
+                if (info) {
+                  base::Value user_info =
+                      base::Value::FromUniquePtrValue(std::move(info));
+                  dict.Set("userInfo", user_info);
                 } else {
-                  copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name),
-                      base::DictionaryValue());
+                  base::Value empty_dict(base::Value::Type::DICTIONARY);
+                  dict.Set("userInfo", empty_dict);
                 }
+                std::move(p).Resolve(dict.GetHandle());
               }];
-  return request_id;
 }
 
 void SystemPreferences::DoUnsubscribeNotification(int request_id,
