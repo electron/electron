@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Tue, 29 Jan 2019 19:51:07 +0000
+Subject: [FileSystem] Harden against overflows of OperationID a bit better.
+
+Rather than having a UAF when OperationID overflows instead overwrite
+the old operation with the new one. Can still cause weirdness, but at
+least won't result in UAF. Also update OperationID to uint64_t to
+make sure we don't overflow to begin with.
+
+Bug: 925864
+Change-Id: Ifdf3fa0935ab5ea8802d91bba39601f02b0dbdc9
+Reviewed-on: https://chromium-review.googlesource.com/c/1441498
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Reviewed-by: Victor Costan <pwnall@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#627115}
+
+diff --git a/storage/browser/fileapi/file_system_operation_runner.cc b/storage/browser/fileapi/file_system_operation_runner.cc
+index fbda72b3cdf851947aa697776e54e0b5092e729b..09af7c0c8c9099489286152009f05ad49d968174 100644
+--- a/storage/browser/fileapi/file_system_operation_runner.cc
++++ b/storage/browser/fileapi/file_system_operation_runner.cc
+@@ -701,7 +701,7 @@ FileSystemOperationRunner::BeginOperation(
+     base::WeakPtr<BeginOperationScoper> scope) {
+   OperationHandle handle;
+   handle.id = next_operation_id_++;
+-  operations_.emplace(handle.id, std::move(operation));
++  operations_[handle.id] = std::move(operation);
+   handle.scope = scope;
+   return handle;
+ }
+diff --git a/storage/browser/fileapi/file_system_operation_runner.h b/storage/browser/fileapi/file_system_operation_runner.h
+index a330f4802d5d5c721d8bba460f25edc2f8e1340a..97f9e0d81163d08644f0cee5b9da21ac24b300af 100644
+--- a/storage/browser/fileapi/file_system_operation_runner.h
++++ b/storage/browser/fileapi/file_system_operation_runner.h
+@@ -53,7 +53,7 @@ class STORAGE_EXPORT FileSystemOperationRunner
+   using CopyOrMoveOption = FileSystemOperation::CopyOrMoveOption;
+   using GetMetadataField = FileSystemOperation::GetMetadataField;
+ 
+-  using OperationID = int;
++  using OperationID = uint64_t;
+ 
+   virtual ~FileSystemOperationRunner();
+ 

@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 11 Jan 2019 11:27:18 +0100
+Subject: [parser] LiteralBuffer::ExpandBuffer always grows
+
+Bug: chromium:914736
+Change-Id: Id02715b69361d15df23c70f85f3250526369547f
+Reviewed-on: https://chromium-review.googlesource.com/c/1405859
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#58734}
+
+diff --git a/src/parsing/scanner.cc b/src/parsing/scanner.cc
+index 852b5e400b3ffe84e464a2d63c943a30b497ac69..267b38fd7fed38421b9b6e315b02771dbab9381f 100644
+--- a/src/parsing/scanner.cc
++++ b/src/parsing/scanner.cc
+@@ -67,13 +67,14 @@ Handle<String> Scanner::LiteralBuffer::Internalize(Isolate* isolate) const {
+ }
+ 
+ int Scanner::LiteralBuffer::NewCapacity(int min_capacity) {
+-  int capacity = Max(min_capacity, backing_store_.length());
+-  int new_capacity = Min(capacity * kGrowthFactory, capacity + kMaxGrowth);
+-  return new_capacity;
++  return min_capacity < (kMaxGrowth / (kGrowthFactor - 1))
++             ? min_capacity * kGrowthFactor
++             : min_capacity + kMaxGrowth;
+ }
+ 
+ void Scanner::LiteralBuffer::ExpandBuffer() {
+-  Vector<byte> new_store = Vector<byte>::New(NewCapacity(kInitialCapacity));
++  int min_capacity = Max(kInitialCapacity, backing_store_.length());
++  Vector<byte> new_store = Vector<byte>::New(NewCapacity(min_capacity));
+   MemCopy(new_store.start(), backing_store_.start(), position_);
+   backing_store_.Dispose();
+   backing_store_ = new_store;
+diff --git a/src/parsing/scanner.h b/src/parsing/scanner.h
+index 34da5fafbf733fd326e91baeeac26bf4517c9fcf..d779317c55567311dc266af101815d2740d28e0b 100644
+--- a/src/parsing/scanner.h
++++ b/src/parsing/scanner.h
+@@ -453,8 +453,7 @@ class Scanner {
+ 
+    private:
+     static const int kInitialCapacity = 16;
+-    static const int kGrowthFactory = 4;
+-    static const int kMinConversionSlack = 256;
++    static const int kGrowthFactor = 4;
+     static const int kMaxGrowth = 1 * MB;
+ 
+     inline bool IsValidAscii(char code_unit) {
