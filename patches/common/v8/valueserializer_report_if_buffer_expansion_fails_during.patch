@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Roman <jbroman@chromium.org>
+Date: Thu, 13 Dec 2018 18:43:00 -0500
+Subject: ValueSerializer: Report if buffer expansion fails during
+ WriteHostObject.
+
+Also fail early if we detect that we've previously run out of memory and thus
+corrupted the buffer.
+
+Add a unit test for this kind of case.
+
+Bug: chromium:914731
+Change-Id: Iaaf3927209bffeab6fe8ba462d9dd9dad8cbbe2f
+Reviewed-on: https://chromium-review.googlesource.com/c/1377449
+Reviewed-by: Yang Guo <yangguo@chromium.org>
+Commit-Queue: Jeremy Roman <jbroman@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#58248}
+
+diff --git a/src/value-serializer.cc b/src/value-serializer.cc
+index 4c9c9a9aa2d9ce6017bb02448fa474478c9f6308..8c85bd9f5466612937a71f8bfdcb82120f7fb9c7 100644
+--- a/src/value-serializer.cc
++++ b/src/value-serializer.cc
+@@ -344,7 +344,11 @@ void ValueSerializer::TransferArrayBuffer(uint32_t transfer_id,
+ }
+ 
+ Maybe<bool> ValueSerializer::WriteObject(Handle<Object> object) {
+-  out_of_memory_ = false;
++  // There is no sense in trying to proceed if we've previously run out of
++  // memory. Bail immediately, as this likely implies that some write has
++  // previously failed and so the buffer is corrupt.
++  if (V8_UNLIKELY(out_of_memory_)) return ThrowIfOutOfMemory();
++
+   if (object->IsSmi()) {
+     WriteSmi(Smi::cast(*object));
+     return ThrowIfOutOfMemory();
+@@ -930,8 +934,10 @@ Maybe<bool> ValueSerializer::WriteHostObject(Handle<JSObject> object) {
+   Maybe<bool> result =
+       delegate_->WriteHostObject(v8_isolate, Utils::ToLocal(object));
+   RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate_, Nothing<bool>());
++  USE(result);
+   DCHECK(!result.IsNothing());
+-  return result;
++  DCHECK(result.ToChecked());
++  return ThrowIfOutOfMemory();
+ }
+ 
+ Maybe<uint32_t> ValueSerializer::WriteJSObjectPropertiesSlow(
+diff --git a/test/unittests/value-serializer-unittest.cc b/test/unittests/value-serializer-unittest.cc
+index 92603b588ad13480460a166b556be18e57fc8ad6..bc738c84fc8b15bdfcdb0cc995f8002362292a4c 100644
+--- a/test/unittests/value-serializer-unittest.cc
++++ b/test/unittests/value-serializer-unittest.cc
+@@ -119,7 +119,10 @@ class ValueSerializerTest : public TestWithIsolate {
+     }
+     std::pair<uint8_t*, size_t> buffer = serializer.Release();
+     std::vector<uint8_t> result(buffer.first, buffer.first + buffer.second);
+-    free(buffer.first);
++    if (auto* delegate = GetSerializerDelegate())
++      delegate->FreeBufferMemory(buffer.first);
++    else
++      free(buffer.first);
+     return Just(std::move(result));
+   }
+ 
+@@ -138,6 +141,10 @@ class ValueSerializerTest : public TestWithIsolate {
+     return buffer;
+   }
+ 
++  std::vector<uint8_t> EncodeTest(const char* source) {
++    return EncodeTest(EvaluateScriptForInput(source));
++  }
++
+   v8::Local<v8::Message> InvalidEncodeTest(Local<Value> input_value) {
+     Context::Scope scope(serialization_context());
+     TryCatch try_catch(isolate());
+@@ -2698,5 +2705,89 @@ TEST_F(ValueSerializerTestWithWasm, DecodeWasmModuleWithInvalidDataLength) {
+   InvalidDecodeTest({0xFF, 0x09, 0x3F, 0x00, 0x57, 0x79, 0x00, 0x7F});
+ }
+ 
++class ValueSerializerTestWithLimitedMemory : public ValueSerializerTest {
++ protected:
++// GMock doesn't use the "override" keyword.
++#if __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Winconsistent-missing-override"
++#endif
++
++  class SerializerDelegate : public ValueSerializer::Delegate {
++   public:
++    explicit SerializerDelegate(ValueSerializerTestWithLimitedMemory* test)
++        : test_(test) {}
++
++    ~SerializerDelegate() { EXPECT_EQ(nullptr, last_buffer_); }
++
++    void SetMemoryLimit(size_t limit) { memory_limit_ = limit; }
++
++    void* ReallocateBufferMemory(void* old_buffer, size_t size,
++                                 size_t* actual_size) override {
++      EXPECT_EQ(old_buffer, last_buffer_);
++      if (size > memory_limit_) return nullptr;
++      *actual_size = size;
++      last_buffer_ = realloc(old_buffer, size);
++      return last_buffer_;
++    }
++
++    void FreeBufferMemory(void* buffer) override {
++      EXPECT_EQ(buffer, last_buffer_);
++      last_buffer_ = nullptr;
++      free(buffer);
++    }
++
++    void ThrowDataCloneError(Local<String> message) override {
++      test_->isolate()->ThrowException(Exception::Error(message));
++    }
++
++    MOCK_METHOD2(WriteHostObject,
++                 Maybe<bool>(Isolate* isolate, Local<Object> object));
++
++   private:
++    ValueSerializerTestWithLimitedMemory* test_;
++    void* last_buffer_ = nullptr;
++    size_t memory_limit_ = 0;
++  };
++
++#if __clang__
++#pragma clang diagnostic pop
++#endif
++
++  ValueSerializer::Delegate* GetSerializerDelegate() override {
++    return &serializer_delegate_;
++  }
++
++  void BeforeEncode(ValueSerializer* serializer) override {
++    serializer_ = serializer;
++  }
++
++  SerializerDelegate serializer_delegate_{this};
++  ValueSerializer* serializer_ = nullptr;
++};
++
++TEST_F(ValueSerializerTestWithLimitedMemory, FailIfNoMemoryInWriteHostObject) {
++  EXPECT_CALL(serializer_delegate_, WriteHostObject(isolate(), _))
++      .WillRepeatedly(Invoke([this](Isolate*, Local<Object>) {
++        static const char kDummyData[1024] = {};
++        serializer_->WriteRawBytes(&kDummyData, sizeof(kDummyData));
++        return Just(true);
++      }));
++
++  // If there is enough memory, things work.
++  serializer_delegate_.SetMemoryLimit(2048);
++  EncodeTest("new ExampleHostObject()");
++
++  // If not, we get a graceful failure, rather than silent misbehavior.
++  serializer_delegate_.SetMemoryLimit(1024);
++  InvalidEncodeTest("new ExampleHostObject()");
++
++  // And we definitely don't continue to serialize other things.
++  serializer_delegate_.SetMemoryLimit(1024);
++  EvaluateScriptForInput("gotA = false");
++  InvalidEncodeTest("[new ExampleHostObject, {get a() { gotA = true; }}]");
++  EXPECT_TRUE(EvaluateScriptForInput("gotA")->IsFalse());
++}
++
+ }  // namespace
+ }  // namespace v8
