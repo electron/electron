@@ -25,6 +25,10 @@
 #include "gin/v8_initializer.h"
 #include "native_mate/dictionary.h"
 
+#if defined(_WIN64)
+#include "atom/common/crash_reporter/crash_reporter_win.h"
+#endif
+
 namespace atom {
 
 int NodeMain(int argc, char* argv[]) {
@@ -52,6 +56,9 @@ int NodeMain(int argc, char* argv[]) {
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
+#if defined(_WIN64)
+    crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
+#endif
 
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
