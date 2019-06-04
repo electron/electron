@@ -206,7 +206,7 @@ step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        node build/yarn install
+        node script/yarn install
       fi
 
 # This step handles the differences between the linux "gclient sync"
@@ -524,7 +524,7 @@ step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        npm run create-typescript-definitions
+        node script/yarn create-typescript-definitions
       fi
 
 step-fix-known-hosts-linux: &step-fix-known-hosts-linux
@@ -568,8 +568,8 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          node build/yarn install
-          npm run lint
+          node script/yarn install
+          node script/yarn lint
 
 steps-checkout: &steps-checkout
   steps:
@@ -872,7 +872,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && npm run test -- --ci --enable-logging)
+          (cd electron && node script/yarn test -- --ci --enable-logging)
     - run:
         name: Check test results existence
         command: |

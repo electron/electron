@@ -7,6 +7,7 @@ const NAN_DIR = path.resolve(BASE, 'third_party', 'nan')
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 
 const utils = require('./lib/utils')
+const { YARN_VERSION } = require('./yarn')
 
 if (!process.mainModule) {
   throw new Error('Must call the nan spec runner directly')
@@ -29,7 +30,7 @@ async function main () {
     return process.exit(buildStatus)
   }
 
-  const { status: installStatus } = cp.spawnSync(NPX_CMD, [`yarn@${utils.YARN_VERSION}`, 'install'], {
+  const { status: installStatus } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit'

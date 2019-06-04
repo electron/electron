@@ -2,8 +2,6 @@ const { GitProcess } = require('dugite')
 const fs = require('fs')
 const path = require('path')
 
-const YARN_VERSION = /'yarn_version': '(.+?)'/.exec(fs.readFileSync(path.resolve(__dirname, '../../DEPS'), 'utf8'))[1]
-
 const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 require('colors')
@@ -45,6 +43,5 @@ module.exports = {
   getCurrentBranch,
   getElectronExec,
   getAbsoluteElectronExec,
-  OUT_DIR,
-  YARN_VERSION
+  OUT_DIR
 }
