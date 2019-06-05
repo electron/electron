@@ -56,9 +56,6 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump when renderer crashes', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-
         this.timeout(180000)
 
         stopServer = startServer({
@@ -71,9 +68,6 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump when node processes crash', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-
         this.timeout(180000)
 
         stopServer = startServer({
@@ -152,9 +146,6 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump with updated extra parameters', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-
         this.timeout(180000)
 
         stopServer = startServer({
