@@ -9,7 +9,7 @@
 #include <string>
 
 #include "atom/common/crash_reporter/crash_reporter_crashpad.h"
-#include "crashpad/client/crashpad_client.h"
+#include "third_party/crashpad/crashpad/client/crashpad_client.h"
 
 namespace base {
 template <typename T>

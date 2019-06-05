@@ -13,8 +13,8 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/mac_util.h"
 #include "base/memory/singleton.h"
-#include "crashpad/client/crashpad_client.h"
-#include "crashpad/client/crashpad_info.h"
+#include "third_party/crashpad/crashpad/client/crashpad_client.h"
+#include "third_party/crashpad/crashpad/client/crashpad_info.h"
 
 namespace crash_reporter {
 

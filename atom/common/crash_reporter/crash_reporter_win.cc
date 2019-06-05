@@ -14,10 +14,10 @@
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "crashpad/client/crashpad_client.h"
-#include "crashpad/client/crashpad_info.h"
 #include "electron/atom/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "third_party/crashpad/crashpad/client/crashpad_client.h"
+#include "third_party/crashpad/crashpad/client/crashpad_info.h"
 
 #if defined(_WIN64)
 #include "gin/public/debug.h"

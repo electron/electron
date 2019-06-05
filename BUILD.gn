@@ -511,12 +511,6 @@ static_library("electron_lib") {
   }
 
   if ((is_mac && !is_mas_build) || is_win) {
-    include_dirs += [
-      # NOTE(nornagon): other chromium files use the full path to include
-      # crashpad; this is just here for compatibility between GN and GYP, so that
-      # the #includes can be agnostic about where crashpad is vendored.
-      "//third_party/crashpad",
-    ]
     sources += [
       "atom/common/crash_reporter/crash_reporter_crashpad.cc",
       "atom/common/crash_reporter/crash_reporter_crashpad.h",
