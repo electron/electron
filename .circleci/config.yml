@@ -193,17 +193,17 @@ step-delete-git-directories: &step-delete-git-directories
         sudo rm -rf src/.git
       fi
 
-# On macOS the npm install command during gclient sync was run on a linux
+# On macOS the yarn install command during gclient sync was run on a linux
 # machine and therefore installed a slightly different set of dependencies
-# Notably "fsevents" is a macOS only dependency, we rerun npm install once
+# Notably "fsevents" is a macOS only dependency, we rerun yarn install once
 # we are on a macOS machine to get the correct state
 step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
   run:
-    name: Install NPM Dependencies on MacOS
+    name: Install node_modules on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        npm install
+        node script/yarn install
       fi
 
 # This step handles the differences between the linux "gclient sync"
@@ -509,7 +509,7 @@ step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src/electron
-        npm run create-typescript-definitions
+        node script/yarn create-typescript-definitions
       fi
 
 step-fix-known-hosts-linux: &step-fix-known-hosts-linux
@@ -553,8 +553,8 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          npx yarn@1.15.2 install --frozen-lockfile
-          npx yarn@1.15.2 lint
+          node script/yarn install
+          node script/yarn lint
 
 steps-checkout: &steps-checkout
   steps:
@@ -807,7 +807,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && npm run test -- --ci --enable-logging)
+          (cd electron && node script/yarn test -- --ci --enable-logging)
     - run:
         name: Check test results existence
         command: |
