@@ -107,7 +107,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
         promise_.Resolve(result[0]);
       } else {
         promise_.RejectWithErrorMessage(
-            "Script failed to execute, this normally means a syncronous error "
+            "Script failed to execute, this normally means an error "
+            "was thrown. Check the renderer console for the error."
             "was thrown, check the renderer console for the error");
       }
     } else {
