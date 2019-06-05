@@ -64,7 +64,7 @@ describe('shell module', () => {
 
       shell.openExternal(url).then(() => {
         promiseResolved = true
-        if (blurEventEmitted) {
+        if (blurEventEmitted || process.platform === 'linux') {
           done()
         }
       })
