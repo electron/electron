@@ -36,15 +36,21 @@ RenderFrame* GetCurrentRenderFrame() {
 
 class IPCRenderer : public mate::Wrappable<IPCRenderer> {
  public:
-  explicit IPCRenderer(v8::Isolate* isolate) {
+  explicit IPCRenderer(v8::Isolate* isolate)
+      : task_runner_(base::CreateSingleThreadTaskRunnerWithTraits({})) {
     Init(isolate);
     RenderFrame* render_frame = GetCurrentRenderFrame();
     DCHECK(render_frame);
-    render_frame->GetRemoteInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_browser_ptr_));
-    render_frame->GetRemoteInterfaces()->GetInterface(
-        mojo::MakeRequest(&electron_browser_sync_ptr_));
+
+    // Bind the interface on the background runner. All accesses will be via
+    // the thread-safe pointer. This is to support our "fake-sync"
+    // MessageSync() hack; see the comment in IPCRenderer::SendSync.
+    atom::mojom::ElectronBrowserPtrInfo info;
+    render_frame->GetRemoteInterfaces()->GetInterface(mojo::MakeRequest(&info));
+    electron_browser_ptr_ = atom::mojom::ThreadSafeElectronBrowserPtr::Create(
+        std::move(info), task_runner_);
   }
+
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
     prototype->SetClassName(mate::StringToV8(isolate, "IPCRenderer"));
@@ -55,15 +61,15 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
         .SetMethod("sendToHost", &IPCRenderer::SendToHost)
         .SetMethod("invoke", &IPCRenderer::Invoke);
   }
+
   static mate::Handle<IPCRenderer> Create(v8::Isolate* isolate) {
     return mate::CreateHandle(isolate, new IPCRenderer(isolate));
   }
 
-  void Send(mate::Arguments* args,
-            bool internal,
+  void Send(bool internal,
             const std::string& channel,
             const base::ListValue& arguments) {
-    electron_browser_ptr_->Message(internal, channel, arguments.Clone());
+    electron_browser_ptr_->get()->Message(internal, channel, arguments.Clone());
   }
 
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
@@ -71,33 +77,31 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
                                 const base::Value& arguments) {
     atom::util::Promise p(args->isolate());
     auto handle = p.GetHandle();
-    electron_browser_ptr_->Invoke(
+
+    electron_browser_ptr_->get()->Invoke(
         channel, arguments.Clone(),
-        base::BindOnce(
-            [](atom::util::Promise p, base::Value value) { p.Resolve(value); },
-            std::move(p)));
+        base::BindOnce([](atom::util::Promise p,
+                          base::Value result) { p.Resolve(result); },
+                       std::move(p)));
 
     return handle;
   }
 
-  void SendTo(mate::Arguments* args,
-              bool internal,
+  void SendTo(bool internal,
               bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
               const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageTo(internal, send_to_all, web_contents_id,
-                                     channel, arguments.Clone());
+    electron_browser_ptr_->get()->MessageTo(
+        internal, send_to_all, web_contents_id, channel, arguments.Clone());
   }
 
-  void SendToHost(mate::Arguments* args,
-                  const std::string& channel,
+  void SendToHost(const std::string& channel,
                   const base::ListValue& arguments) {
-    electron_browser_ptr_->MessageHost(channel, arguments.Clone());
+    electron_browser_ptr_->get()->MessageHost(channel, arguments.Clone());
   }
 
-  base::Value SendSync(mate::Arguments* args,
-                       bool internal,
+  base::Value SendSync(bool internal,
                        const std::string& channel,
                        const base::ListValue& arguments) {
     // We aren't using a true synchronous mojo call here. We're calling an
@@ -134,12 +138,12 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     //
     // However, in the calling process, we still need to block on the result,
     // because the caller is expecting a result synchronously. So we do a bit
-    // of a trick: we pass the Mojo handle over to a new thread, send the
+    // of a trick: we pass the Mojo handle over to a worker thread, send the
     // asynchronous message from that thread, and then block on the result.
-    // It's important that we pass the handle over to the new thread, because
-    // that allows Mojo to process incoming messages (most importantly, the
-    // response to our request) on the new thread. If we didn't pass it to a
-    // new thread, and instead sent the call from the main thread, we would
+    // It's important that we pass the handle over to the worker thread,
+    // because that allows Mojo to process incoming messages (most importantly,
+    // the response to our request) on that thread. If we didn't pass it to a
+    // worker thread, and instead sent the call from the main thread, we would
     // never receive a response because Mojo wouldn't be able to run its
     // message handling code, because the main thread would be tied up blocking
     // on the WaitableEvent.
@@ -148,61 +152,43 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
 
     base::Value result;
 
-    // A task is posted to a separate thread to execute the request so that
+    // A task is posted to a worker thread to execute the request so that
     // this thread may block on a waitable event. It is safe to pass raw
-    // pointers to |result| and |event| as this stack frame will survive until
-    // the request is complete.
-    scoped_refptr<base::SingleThreadTaskRunner> task_runner =
-        base::CreateSingleThreadTaskRunnerWithTraits({});
+    // pointers to |result| and |response_received_event| as this stack frame
+    // will survive until the request is complete.
 
     base::WaitableEvent response_received_event;
-
-    // We unbind the interface from this thread to pass it over to the worker
-    // thread temporarily. This requires that no callbacks be pending for this
-    // interface.
-    auto interface_info = electron_browser_sync_ptr_.PassInterface();
-    task_runner->PostTask(
+    task_runner_->PostTask(
         FROM_HERE, base::BindOnce(&IPCRenderer::SendMessageSyncOnWorkerThread,
-                                  base::Unretained(&interface_info),
+                                  base::Unretained(this),
                                   base::Unretained(&response_received_event),
                                   base::Unretained(&result), internal, channel,
-                                  base::Unretained(&arguments)));
+                                  arguments.Clone()));
     response_received_event.Wait();
-    electron_browser_sync_ptr_.Bind(std::move(interface_info));
     return result;
   }
 
  private:
-  static void SendMessageSyncOnWorkerThread(
-      atom::mojom::ElectronBrowserPtrInfo* interface_info,
-      base::WaitableEvent* event,
-      base::Value* result,
-      bool internal,
-      const std::string& channel,
-      const base::ListValue* arguments) {
-    atom::mojom::ElectronBrowserPtr browser_ptr(std::move(*interface_info));
-    browser_ptr->MessageSync(
-        internal, channel, arguments->Clone(),
+  void SendMessageSyncOnWorkerThread(base::WaitableEvent* event,
+                                     base::Value* result,
+                                     bool internal,
+                                     const std::string& channel,
+                                     base::Value arguments) {
+    electron_browser_ptr_->get()->MessageSync(
+        internal, channel, std::move(arguments),
         base::BindOnce(&IPCRenderer::ReturnSyncResponseToMainThread,
-                       std::move(browser_ptr), base::Unretained(interface_info),
                        base::Unretained(event), base::Unretained(result)));
   }
-  static void ReturnSyncResponseToMainThread(
-      atom::mojom::ElectronBrowserPtr ptr,
-      atom::mojom::ElectronBrowserPtrInfo* interface_info,
-      base::WaitableEvent* event,
-      base::Value* result,
-      base::Value response) {
+  static void ReturnSyncResponseToMainThread(base::WaitableEvent* event,
+                                             base::Value* result,
+                                             base::Value response) {
     *result = std::move(response);
-    *interface_info = ptr.PassInterface();
     event->Signal();
   }
 
-  atom::mojom::ElectronBrowserPtr electron_browser_ptr_;
-
-  // We execute all synchronous calls on a separate mojo pipe, because
-  // of the way that we block on the result of synchronous calls.
-  atom::mojom::ElectronBrowserPtr electron_browser_sync_ptr_;
+  scoped_refptr<base::SequencedTaskRunner> task_runner_;
+  scoped_refptr<atom::mojom::ThreadSafeElectronBrowserPtr>
+      electron_browser_ptr_;
 };
 
 void Initialize(v8::Local<v8::Object> exports,
