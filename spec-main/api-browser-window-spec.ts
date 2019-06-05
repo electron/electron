@@ -30,7 +30,7 @@ const isScaleFactorRounding = () => {
 
 const expectBoundsEqual = (actual: any, expected: any) => {
   if (!isScaleFactorRounding()) {
-    expect({...expected}).to.deep.equal({...actual})
+    expect(expected).to.deep.equal(actual)
   } else if (Array.isArray(actual)) {
     expect(actual[0]).to.be.closeTo(expected[0], 1)
     expect(actual[1]).to.be.closeTo(expected[1], 1)
@@ -746,8 +746,10 @@ describe('BrowserWindow module', () => {
       it('sets the content size and position', (done) => {
         const bounds = { x: 10, y: 10, width: 250, height: 250 }
         w.once('resize', () => {
-          expectBoundsEqual(w.getContentBounds(), bounds)
-          done()
+          setTimeout(() => {
+            expectBoundsEqual(w.getContentBounds(), bounds)
+            done()
+          })
         })
         w.setContentBounds(bounds)
       })
@@ -761,8 +763,10 @@ describe('BrowserWindow module', () => {
         })
         const bounds = { x: 10, y: 10, width: 250, height: 250 }
         w.once('resize', () => {
-          expect(w.getContentBounds()).to.deep.equal(bounds)
-          done()
+          setTimeout(() => {
+            expect(w.getContentBounds()).to.deep.equal(bounds)
+            done()
+          })
         })
         w.setContentBounds(bounds)
       })
