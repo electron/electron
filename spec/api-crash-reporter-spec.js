@@ -221,7 +221,7 @@ describe('crashReporter module', () => {
   describe('getCrashesDirectory', () => {
     it('correctly returns the directory', () => {
       const crashesDir = crashReporter.getCrashesDirectory()
-      const dir = app.getPath('temp').join('Electron Test Crashes')
+      const dir = path.join(app.getPath('temp'), 'Electron Test Crashes')
       expect(crashesDir).to.equal(dir)
     })
   })
