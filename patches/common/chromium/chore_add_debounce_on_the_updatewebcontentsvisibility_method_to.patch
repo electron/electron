@@ -4,7 +4,6 @@ Date: Wed, 5 Jun 2019 15:11:00 -0700
 Subject: chore: add debounce on the updateWebContentsVisibility method to
  ensure quick changes in occlusion do not result in flickering
 
-
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.h b/content/app_shim_remote_cocoa/web_contents_view_cocoa.h
 index 230e259f6017310e556d11dec43973b74015f191..ebd19fc31efef50677da417dfd69f0c8cce6c682 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.h
