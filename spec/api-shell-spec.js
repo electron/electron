@@ -49,7 +49,23 @@ describe('shell module', () => {
         process.env.DISPLAY = ''
       }
 
-      shell.openExternal(url).then(() => done())
+      // Ensure an external window is activated via our window's blur event
+      let promiseResolved = false
+      let blurEventEmitted = false
+
+      window.addEventListener('blur', () => {
+        blurEventEmitted = true
+        if (promiseResolved) {
+          done()
+        }
+      })
+
+      shell.openExternal(url).then(() => {
+        promiseResolved = true
+        if (blurEventEmitted) {
+          done()
+        }
+      })
     })
   })
 
