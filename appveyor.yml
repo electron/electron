@@ -50,6 +50,7 @@ build_script:
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
       }
+  - where gclient
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
@@ -61,7 +62,7 @@ build_script:
       if ($env:GN_CONFIG -eq 'release') {
         $env:GCLIENT_EXTRA_ARGS="--custom-var=checkout_boto=True --custom-var=checkout_requests=True"
       } else {
-        $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es ] "
+        $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
       gclient config
