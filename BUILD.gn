@@ -612,12 +612,6 @@ if (is_mac) {
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
 
-  mac_xib_bundle_data("electron_xibs") {
-    sources = [
-      "atom/common/resources/mac/MainMenu.xib",
-    ]
-  }
-
   bundle_data("electron_framework_resources") {
     public_deps = [
       ":packed_resources",
@@ -686,7 +680,6 @@ if (is_mac) {
     deps = [
       ":electron_framework_libraries",
       ":electron_framework_resources",
-      ":electron_xibs",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]

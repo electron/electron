@@ -483,7 +483,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 
 void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 #if defined(OS_MACOSX)
-  InitializeMainNib();
+  InitializeEmptyApplicationMenu();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
 }

@@ -11,8 +11,8 @@
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
-#include "components/remote_cocoa/app_shim/bridged_native_widget_impl.h"
-#include "ui/views/cocoa/bridged_native_widget_host_impl.h"
+#include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
 using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
@@ -26,7 +26,7 @@ using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
   // on the fly.
   // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
   // window delegate.
-  auto* bridge_host = views::BridgedNativeWidgetHostImpl::GetFromNativeWindow(
+  auto* bridge_host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
       shell->GetNativeWindow());
   auto* bridged_view = bridge_host->bridge_impl();
   if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
@@ -247,7 +247,7 @@ using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
   // Clears the delegate when window is going to be closed, since EL Capitan it
   // is possible that the methods of delegate would get called after the window
   // has been closed.
-  auto* bridge_host = views::BridgedNativeWidgetHostImpl::GetFromNativeWindow(
+  auto* bridge_host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
       shell_->GetNativeWindow());
   auto* bridged_view = bridge_host->bridge_impl();
   bridged_view->OnWindowWillClose();
