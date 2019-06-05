@@ -89,14 +89,18 @@ describe('crashReporter module', () => {
         let dumpFile
         let crashesDir = crashReporter.getCrashesDirectory()
         const existingDumpFiles = new Set()
-        if (process.platform === 'darwin') {
+        if (process.platform !== 'linux') {
           // crashpad puts the dump files in the "completed" subdirectory
-          crashesDir = path.join(crashesDir, 'completed')
+          if (process.platform === 'darwin') {
+            crashesDir = path.join(crashesDir, 'completed')
+          } else {
+            crashesDir = path.join(crashesDir, 'reports')
+          }
           crashReporter.setUploadToServer(false)
         }
         const testDone = (uploaded) => {
           if (uploaded) return done(new Error('Uploaded crash report'))
-          if (process.platform === 'darwin') crashReporter.setUploadToServer(true)
+          if (process.platform !== 'linux') crashReporter.setUploadToServer(true)
           expect(fs.existsSync(dumpFile)).to.be.true()
           done()
         }
@@ -262,7 +266,7 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.getUploadToServer()).to.throw()
     })
     it('returns true when uploadToServer is set to true', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -276,7 +280,7 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.true()
     })
     it('returns false when uploadToServer is set to false', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -297,7 +301,7 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.setUploadToServer('arg')).to.throw()
     })
     it('sets uploadToServer false when called with false', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -312,7 +316,7 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.false()
     })
     it('sets uploadToServer true when called with true', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -339,7 +343,7 @@ describe('crashReporter module', () => {
       expect(parameters).to.be.an('object')
     })
     it('adds a parameter to current parameters', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -354,7 +358,7 @@ describe('crashReporter module', () => {
       expect(crashReporter.getParameters()).to.have.a.property('hello')
     })
     it('removes a parameter from current parameters', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
