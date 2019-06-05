@@ -21,7 +21,6 @@
 #include "atom/browser/atom_navigation_throttle.h"
 #include "atom/browser/atom_paths.h"
 #include "atom/browser/atom_quota_permission_context.h"
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/font_defaults.h"
@@ -62,7 +61,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
@@ -589,13 +587,6 @@ void AtomBrowserClient::SelectClientCertificate(
                                        std::move(client_certs),
                                        std::move(delegate));
   }
-}
-
-void AtomBrowserClient::ResourceDispatcherHostCreated() {
-  resource_dispatcher_host_delegate_.reset(
-      new AtomResourceDispatcherHostDelegate);
-  content::ResourceDispatcherHost::Get()->SetDelegate(
-      resource_dispatcher_host_delegate_.get());
 }
 
 bool AtomBrowserClient::CanCreateWindow(
