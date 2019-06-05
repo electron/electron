@@ -752,7 +752,7 @@ Calling `event.preventDefault()` will make it return empty sources.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.require()` is called in the renderer process.
@@ -763,7 +763,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `globalName` String
 
 Emitted when `remote.getGlobal()` is called in the renderer process.
@@ -774,7 +774,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.getBuiltin()` is called in the renderer process.
@@ -785,7 +785,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWindow()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -795,7 +795,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -805,7 +805,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `guestWebContents` [WebContents](web-contents.md)
 
 Emitted when `<webview>.getWebContents()` is called in the renderer process.
