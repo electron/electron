@@ -29,7 +29,6 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_contents_zoom_controller.h"
 #include "atom/browser/web_view_guest_delegate.h"
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/color_util.h"
@@ -1128,6 +1127,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
+/*
 bool WebContents::OnMessageReceived(const IPC::Message& message,
                                     content::RenderFrameHost* frame_host) {
   bool handled = true;
@@ -1141,6 +1141,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 
   return handled;
 }
+*/
 
 // There are three ways of destroying a webContents:
 // 1. call webContents.destroy();

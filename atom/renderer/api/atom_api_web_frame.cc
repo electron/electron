@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "atom/common/api/api.mojom.h"
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"

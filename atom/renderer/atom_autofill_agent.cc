@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include "atom/common/api/api_messages.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "third_party/blink/public/platform/web_keyboard_event.h"
@@ -165,6 +164,7 @@ void AutofillAgent::DidCompleteFocusChangeInFrame() {
   DoFocusChangeComplete();
 }
 
+/*
 bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AutofillAgent, message)
@@ -175,6 +175,7 @@ bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
 
   return handled;
 }
+*/
 
 bool AutofillAgent::IsUserGesture() const {
   return blink::WebUserGestureIndicator::IsProcessingUserGesture(
@@ -182,16 +183,20 @@ bool AutofillAgent::IsUserGesture() const {
 }
 
 void AutofillAgent::HidePopup() {
+  /*
   Send(new AtomAutofillFrameHostMsg_HidePopup(render_frame()->GetRoutingID()));
+  */
 }
 
 void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
                               const std::vector<base::string16>& values,
                               const std::vector<base::string16>& labels) {
+  /*
   gfx::RectF bounds =
       render_frame()->GetRenderView()->ElementBoundsInWindow(element);
   Send(new AtomAutofillFrameHostMsg_ShowPopup(render_frame()->GetRoutingID(),
                                               bounds, values, labels));
+                                              */
 }
 
 void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {

@@ -436,8 +436,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   bool OnMessageReceived(const IPC::Message& message) override;
-  bool OnMessageReceived(const IPC::Message& message,
-                         content::RenderFrameHost* frame_host) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;

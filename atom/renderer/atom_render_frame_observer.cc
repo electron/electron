@@ -8,7 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"

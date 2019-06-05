@@ -8,7 +8,6 @@
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/autofill_popup.h"
-#include "atom/common/api/api_messages.h"
 #include "base/i18n/rtl.h"
 #include "chrome/browser/ui/autofill/popup_view_common.h"
 #include "electron/buildflags/buildflags.h"
@@ -110,8 +109,10 @@ void AutofillPopup::SetItems(const std::vector<base::string16>& values,
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
+  /*
   frame_host_->Send(new AtomAutofillFrameMsg_AcceptSuggestion(
       frame_host_->GetRoutingID(), GetValueAt(index)));
+  */
 }
 
 void AutofillPopup::UpdatePopupBounds() {

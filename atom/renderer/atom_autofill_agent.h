@@ -38,7 +38,9 @@ class AutofillAgent : public content::RenderFrameObserver,
     bool requires_caret_at_end;
   };
 
+  /*
   bool OnMessageReceived(const IPC::Message& message) override;
+  */
 
   // blink::WebAutofillClient:
   void TextFieldDidEndEditing(const blink::WebInputElement&) override;
