@@ -93,6 +93,11 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   }
 }
 
+- (void)resignCurrentActivity {
+  if (currentActivity_)
+    [currentActivity_ resignCurrent];
+}
+
 - (void)updateCurrentActivity:(NSString*)type
                  withUserInfo:(NSDictionary*)userInfo {
   if (currentActivity_) {

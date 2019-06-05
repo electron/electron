@@ -161,6 +161,10 @@ void Browser::InvalidateCurrentActivity() {
   [[AtomApplication sharedApplication] invalidateCurrentActivity];
 }
 
+void Browser::ResignCurrentActivity() {
+  [[AtomApplication sharedApplication] resignCurrentActivity];
+}
+
 void Browser::UpdateCurrentActivity(const std::string& type,
                                     const base::DictionaryValue& user_info) {
   [[AtomApplication sharedApplication]

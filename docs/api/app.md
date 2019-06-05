@@ -964,10 +964,11 @@ Returns `String` - The type of the currently running activity.
 
 ### `app.invalidateCurrentActivity()` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
-  [`NSUserActivity.activityType`][activity-type].
-
 Invalidates the current [Handoff][handoff] user activity.
+
+### `app.resignCurrentActivity()` _macOS_
+
+Marks the current [Handoff][handoff] user activity as inactive without invalidating it.
 
 ### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
