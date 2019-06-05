@@ -12,12 +12,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `BrowserWindow`
   * `fullscreen`
   * `simpleFullscreen`
-  * `movable`
-  * `resizable`
-  * `maximizable`
-  * `minimizable`
-  * `fullscreenable`
-  * `closable`
   * `alwaysOnTop`
   * `title`
   * `documentEdited`
@@ -55,6 +49,12 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `name`
 * `BrowserWindow` module
   * `autohideMenuBar`
+  * `resizable`
+  * `maximizable`
+  * `minimizable`
+  * `fullscreenable`
+  * `movable`
+  * `closable`
 * `NativeImage`
   * `isMacTemplateImage`
 * `SystemPreferences` module
