@@ -4,6 +4,9 @@
 
 #include "atom/browser/browser.h"
 
+#include <string>
+#include <utility>
+
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
@@ -15,6 +18,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
@@ -114,23 +118,23 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
 
-  CFStringRef bundle =
-      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
-  NSString* bundleId =
-      static_cast<NSString*>(base::mac::CFTypeRefToNSObjectAutorelease(bundle));
+  base::ScopedCFTypeRef<CFStringRef> bundleId(
+      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns)));
+
   if (!bundleId)
     return false;
 
   // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
-  NSComparisonResult result = [bundleId caseInsensitiveCompare:identifier];
+  NSComparisonResult result =
+      [base::mac::CFToNSCast(bundleId) caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetBadgeCount(int count) {
-  DockSetBadgeText(count != 0 ? base::IntToString(count) : "");
+  DockSetBadgeText(count != 0 ? base::NumberToString(count) : "");
   badge_count_ = count;
   return true;
 }
@@ -281,9 +285,9 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
     LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
   }
 #else
-  if (settings.open_at_login)
+  if (settings.open_at_login) {
     base::mac::AddToLoginItems(settings.open_as_hidden);
-  else {
+  } else {
     RemoveFromLoginItems();
   }
 #endif
@@ -408,6 +412,14 @@ void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
       about_panel_options_.SetString(key, val->GetString());
     }
   }
+}
+
+void Browser::ShowEmojiPanel() {
+  [[AtomApplication sharedApplication] orderFrontCharacterPalette:nil];
+}
+
+bool Browser::IsEmojiPanelSupported() {
+  return true;
 }
 
 }  // namespace atom

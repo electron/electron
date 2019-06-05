@@ -11,6 +11,7 @@
 
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/resource_context.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "services/network/public/mojom/network_service.mojom.h"
@@ -36,7 +37,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   // Discard reference to URLRequestContext and inform observers to
   // shutdown. Must be called only on IO thread.
-  void NotifyContextShuttingDown(std::unique_ptr<ResourceContext>);
+  void NotifyContextShuttingDown();
 
   AtomURLRequestJobFactory* job_factory() const {
     return top_job_factory_.get();
@@ -69,7 +70,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     void LazyInitialize();
 
     scoped_refptr<URLRequestContextGetter> main_request_context_getter_;
-    std::unique_ptr<ResourceContext> resource_context_;
+    std::unique_ptr<content::ResourceContext> resource_context_;
     base::WeakPtr<AtomBrowserContext> browser_context_;
     // This is a NetworkContext interface that uses URLRequestContextGetter
     // NetworkContext, ownership is passed to StoragePartition when

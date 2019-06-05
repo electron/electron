@@ -108,8 +108,8 @@ WebContentsPreferences::WebContentsPreferences(
   mate::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
   // Following fields should not be stored.
   copied.Delete("embedder");
-  copied.Delete("isGuest");
   copied.Delete("session");
+  copied.Delete("type");
 
   mate::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
@@ -122,15 +122,16 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kNodeIntegration, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInSubFrames, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
+  SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kEnableRemoteModule, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
-  SetDefaultBoolIfUndefined("javascript", true);
-  SetDefaultBoolIfUndefined("images", true);
-  SetDefaultBoolIfUndefined("textAreasAreResizable", true);
-  SetDefaultBoolIfUndefined("webgl", true);
+  SetDefaultBoolIfUndefined(options::kJavaScript, true);
+  SetDefaultBoolIfUndefined(options::kImages, true);
+  SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
+  SetDefaultBoolIfUndefined(options::kWebGL, true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
@@ -146,12 +147,37 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
+  SetDefaults();
+
+  // If this is a <webview> tag, and the embedder is offscreen-rendered, then
+  // this WebContents is also offscreen-rendered.
+  int guest_instance_id = 0;
+  if (web_preferences.Get(options::kGuestInstanceID, &guest_instance_id)) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        auto* embedder_preferences = WebContentsPreferences::From(embedder);
+        if (embedder_preferences &&
+            embedder_preferences->IsEnabled(options::kOffscreen)) {
+          preference_.SetKey(options::kOffscreen, base::Value(true));
+        }
+      }
+    }
+  }
+
   last_preference_ = preference_.Clone();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
   instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
                    instances_.end());
+}
+
+void WebContentsPreferences::SetDefaults() {
+  if (IsEnabled(options::kSandbox)) {
+    SetBool(options::kNativeWindowOpen, true);
+  }
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
@@ -167,6 +193,10 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
   }
 }
 
+void WebContentsPreferences::SetBool(const base::StringPiece& key, bool value) {
+  preference_.SetKey(key, base::Value(value));
+}
+
 bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
                                        bool default_value) const {
   auto* current_value =
@@ -179,6 +209,8 @@ bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
   if (preference_.is_dict())
     static_cast<base::DictionaryValue*>(&preference_)->MergeDictionary(&extend);
+
+  SetDefaults();
 }
 
 void WebContentsPreferences::Clear() {
@@ -308,17 +340,22 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
   }
 
+  // --offscreen
+  if (IsEnabled(options::kOffscreen)) {
+    command_line->AppendSwitch(options::kOffscreen);
+  }
+
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
-                                    base::IntToString(guest_instance_id));
+                                    base::NumberToString(guest_instance_id));
 
   // Pass the opener's window id.
   int opener_id;
   if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
     command_line->AppendSwitchASCII(switches::kOpenerID,
-                                    base::IntToString(opener_id));
+                                    base::NumberToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.
@@ -371,6 +408,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kNodeIntegrationInSubFrames))
     command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
 
+  if (IsEnabled(options::kDisableHtmlFullscreenWindowResize))
+    command_line->AppendSwitch(switches::kDisableHtmlFullscreenWindowResize);
+
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
@@ -379,19 +419,20 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebPreferences* prefs) {
-  prefs->javascript_enabled = IsEnabled("javascript", true /* default_value */);
-  prefs->images_enabled = IsEnabled("images", true /* default_value */);
+  prefs->javascript_enabled =
+      IsEnabled(options::kJavaScript, true /* default_value */);
+  prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
   prefs->text_areas_are_resizable =
-      IsEnabled("textAreasAreResizable", true /* default_value */);
+      IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
   prefs->navigate_on_drag_drop =
-      IsEnabled("navigateOnDragDrop", false /* default_value */);
+      IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
     prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
   }
 
   // Check if webgl should be enabled.
-  bool is_webgl_enabled = IsEnabled("webgl", true /* default_value */);
+  bool is_webgl_enabled = IsEnabled(options::kWebGL, true /* default_value */);
   prefs->webgl1_enabled = is_webgl_enabled;
   prefs->webgl2_enabled = is_webgl_enabled;
 

@@ -35,14 +35,46 @@ describe('chrome api', () => {
       return JSON.parse(data)
     })()
 
-    w.loadURL('about:blank')
+    await w.loadURL('about:blank')
 
-    const p = emittedOnce(w.webContents, 'console-message')
-    w.webContents.executeJavaScript(`window.postMessage('getManifest', '*')`)
-    const [,, manifestString] = await p
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'getManifest' }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, manifestString] = await promise
     const manifest = JSON.parse(manifestString)
 
     expect(manifest.name).to.equal(actualManifest.name)
-    expect(manifest.content_scripts.length).to.equal(actualManifest.content_scripts.length)
+    expect(manifest.content_scripts).to.have.lengthOf(actualManifest.content_scripts.length)
+  })
+
+  it('chrome.tabs.sendMessage receives the response', async function () {
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'sendMessage', args: ['Hello World!'] }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, responseString] = await promise
+    const response = JSON.parse(responseString)
+
+    expect(response.message).to.equal('Hello World!')
+    expect(response.tabId).to.equal(w.webContents.id)
+  })
+
+  it('chrome.tabs.executeScript receives the response', async function () {
+    await w.loadURL('about:blank')
+
+    const promise = emittedOnce(w.webContents, 'console-message')
+
+    const message = { method: 'executeScript', args: ['1 + 2'] }
+    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`)
+
+    const [,, responseString] = await promise
+    const response = JSON.parse(responseString)
+
+    expect(response).to.equal(3)
   })
 })

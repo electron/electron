@@ -6,15 +6,18 @@ const os = require('os')
 const path = require('path')
 
 const { GitProcess } = require('dugite')
-const octokit = require('@octokit/rest')()
+const octokit = require('@octokit/rest')({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+})
 const semver = require('semver')
+
+const MAX_FAIL_COUNT = 3
+const CHECK_INTERVAL = 5000
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
 const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
 const gitDir = path.resolve(__dirname, '..', '..')
-
-octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
@@ -298,35 +301,41 @@ const checkCache = async (name, operation) => {
   return response
 }
 
+// helper function to add some resiliency to volatile GH api endpoints
+async function runRetryable (fn, maxRetries) {
+  let lastError
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn()
+    } catch (error) {
+      await new Promise((resolve, reject) => setTimeout(resolve, CHECK_INTERVAL))
+      lastError = error
+    }
+  }
+  // Silently eat 404s.
+  if (lastError.status !== 404) throw lastError
+}
+
 const getPullRequest = async (number, owner, repo) => {
   const name = `${owner}-${repo}-pull-${number}`
   return checkCache(name, async () => {
-    try {
-      return await octokit.pulls.get({ number, owner, repo })
-    } catch (error) {
-      // Silently eat 404s.
-      // We can get a bad pull number if someone manually lists
-      // an issue number in PR number notation, e.g. 'fix: foo (#123)'
-      if (error.code !== 404) {
-        throw error
-      }
-    }
+    return runRetryable(octokit.pulls.get({
+      number,
+      owner,
+      repo
+    }), MAX_FAIL_COUNT)
   })
 }
 
 const getComments = async (number, owner, repo) => {
   const name = `${owner}-${repo}-pull-${number}-comments`
   return checkCache(name, async () => {
-    try {
-      return await octokit.issues.listComments({ number, owner, repo, per_page: 100 })
-    } catch (error) {
-      // Silently eat 404s.
-      // We can get a bad pull number if someone manually lists
-      // an issue number in PR number notation, e.g. 'fix: foo (#123)'
-      if (error.code !== 404) {
-        throw error
-      }
-    }
+    return runRetryable(octokit.issues.listComments({
+      number,
+      owner,
+      repo,
+      per_page: 100
+    }), MAX_FAIL_COUNT)
   })
 }
 

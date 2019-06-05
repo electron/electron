@@ -84,7 +84,7 @@ Emitted when an update has been downloaded.
 
 On Windows only `releaseName` is available.
 
-**Note:** It is not strictly necessary to handle this event. A successfully 
+**Note:** It is not strictly necessary to handle this event. A successfully
 downloaded update will still be applied the next time the application starts.
 
 ### Event: 'before-quit-for-update'
@@ -125,8 +125,8 @@ Under the hood calling `autoUpdater.quitAndInstall()` will close all application
 windows first, and automatically call `app.quit()` after all windows have been
 closed.
 
-**Note:** It is not strictly necessary to call this function to apply an update, 
-as a successfully downloaded update will always be applied the next time the 
+**Note:** It is not strictly necessary to call this function to apply an update,
+as a successfully downloaded update will always be applied the next time the
 application starts.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac

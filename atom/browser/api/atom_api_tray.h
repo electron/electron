@@ -69,6 +69,7 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   void SetPressedImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
+  std::string GetTitle();
   void SetHighlightMode(TrayIcon::HighlightMode mode);
   void SetIgnoreDoubleClickEvents(bool ignore);
   bool GetIgnoreDoubleClickEvents();

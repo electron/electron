@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 5 Apr 2019 12:49:24 +0530
+Subject: Define ipc identifier for legacy Electron ipc messages
+
+Electron ipc messages used to piggy back on ShellMsgStart for ipc
+identifier. But its not available after
+https://chromium-review.googlesource.com/c/chromium/src/+/1525181.
+This patch can be removed once legacy ipc messages are no longer
+used.
+
+diff --git a/ipc/ipc_message_start.h b/ipc/ipc_message_start.h
+index 4d83cdf93aef66d3479c9a325e8241592d85359e..a03af8a4b9d370ae849d4fe61c805ecb525fe394 100644
+--- a/ipc/ipc_message_start.h
++++ b/ipc/ipc_message_start.h
+@@ -69,6 +69,7 @@ enum IPCMessageStart {
+   ExtensionWorkerMsgStart,
+   SubresourceFilterMsgStart,
+   ChromeAppsMsgStart,
++  ElectronMsgStart,
+   LastIPCMsgStart  // Must come last.
+ };
+ 

@@ -16,6 +16,7 @@
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/resource_context.h"
 
 class PrefRegistrySimple;
 class PrefService;
@@ -148,6 +149,7 @@ class AtomBrowserContext
   URLRequestContextGetter::Handle* io_handle_;
   ValueMapPrefStore* in_memory_pref_store_;
 
+  std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;

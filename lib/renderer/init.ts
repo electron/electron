@@ -1,7 +1,30 @@
 import { EventEmitter } from 'events'
+import * as fs from 'fs'
 import * as path from 'path'
 
 const Module = require('module')
+
+// Make sure globals like "process" and "global" are always available in preload
+// scripts even after they are deleted in "loaded" script.
+//
+// Note 1: We rely on a Node patch to actually pass "process" and "global" and
+// other arguments to the wrapper.
+//
+// Note 2: Node introduced a new code path to use native code to wrap module
+// code, which does not work with this hack. However by modifying the
+// "Module.wrapper" we can force Node to use the old code path to wrap module
+// code with JavaScript.
+//
+// Note 3: We provide the equivilant extra variables internally through the
+// webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
+// variables to this wrapper please ensure to update that plugin as well.
+Module.wrapper = [
+  '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
+  // By running the code in a new closure, it would be possible for the module
+  // code to override "process" and "Buffer" with local variables.
+  'return function (exports, require, module, __filename, __dirname) { ',
+  '\n}.call(this, exports, require, module, __filename, __dirname); });'
+]
 
 // We modified the original process.argv to let node.js load the
 // init.js, we need to restore it here.
@@ -14,16 +37,20 @@ require('../common/reset-search-paths')
 // Import common settings.
 require('@electron/internal/common/init')
 
-const globalPaths = Module.globalPaths
-
-// Expose public APIs.
-globalPaths.push(path.join(__dirname, 'api', 'exports'))
-
 // The global variable will be used by ipc for event dispatching
-const v8Util = process.atomBinding('v8_util')
+const v8Util = process.electronBinding('v8_util')
 
-v8Util.setHiddenValue(global, 'ipc', new EventEmitter())
-v8Util.setHiddenValue(global, 'ipc-internal', new EventEmitter())
+const ipcEmitter = new EventEmitter()
+const ipcInternalEmitter = new EventEmitter()
+v8Util.setHiddenValue(global, 'ipc', ipcEmitter)
+v8Util.setHiddenValue(global, 'ipc-internal', ipcInternalEmitter)
+
+v8Util.setHiddenValue(global, 'ipcNative', {
+  onMessage (internal: boolean, channel: string, args: any[], senderId: number) {
+    const sender = internal ? ipcInternalEmitter : ipcEmitter
+    sender.emit(channel, { sender, senderId }, ...args)
+  }
+})
 
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
@@ -31,7 +58,7 @@ const { webFrameInit } = require('@electron/internal/renderer/web-frame-init')
 webFrameInit()
 
 // Process command line arguments.
-const { hasSwitch, getSwitchValue } = process.atomBinding('command_line')
+const { hasSwitch, getSwitchValue } = process.electronBinding('command_line')
 
 const parseOption = function<T> (
   name: string, defaultValue: T, converter?: (value: string) => T
@@ -49,7 +76,6 @@ const contextIsolation = hasSwitch('context-isolation')
 const nodeIntegration = hasSwitch('node-integration')
 const webviewTag = hasSwitch('webview-tag')
 const isHiddenPage = hasSwitch('hidden-page')
-const isBackgroundPage = hasSwitch('background-page')
 const usesNativeWindowOpen = hasSwitch('native-window-open')
 
 const preloadScript = parseOption('preload', null)
@@ -67,14 +93,14 @@ if (preloadScript) {
 }
 
 switch (window.location.protocol) {
-  case 'chrome-devtools:': {
+  case 'devtools:': {
     // Override some inspector APIs.
     require('@electron/internal/renderer/inspector')
     break
   }
   case 'chrome-extension:': {
     // Inject the chrome.* APIs that chrome extensions require
-    require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, isBackgroundPage, window)
+    require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window)
     break
   }
   case 'chrome:':
@@ -82,18 +108,17 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup')
-    windowSetup(ipcRendererInternal, guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    if (process.isMainFrame) {
-      require('@electron/internal/renderer/content-scripts-injector')
-    }
+    require('@electron/internal/renderer/content-scripts-injector')()
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
-  require('@electron/internal/renderer/web-view/web-view-init')(contextIsolation, webviewTag, guestInstanceId)
+  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init')
+  webViewInit(contextIsolation, webviewTag, guestInstanceId)
 }
 
 // Pass the arguments to isolatedWorld.
@@ -103,8 +128,9 @@ if (contextIsolation) {
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  global.require = require
-  global.module = module
+  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
+  global.module = new Module('electron/js2c/renderer_init')
+  global.require = makeRequireFunction(global.module)
 
   // Set the __filename to the path of html file if it is file: protocol.
   if (window.location.protocol === 'file:') {
@@ -114,7 +140,7 @@ if (nodeIntegration) {
     if (process.platform === 'win32') {
       if (pathname[0] === '/') pathname = pathname.substr(1)
 
-      const isWindowsNetworkSharePath = location.hostname.length > 0 && globalPaths[0].startsWith('\\')
+      const isWindowsNetworkSharePath = location.hostname.length > 0 && process.resourcesPath.startsWith('\\')
       if (isWindowsNetworkSharePath) {
         pathname = `//${location.host}/${pathname}`
       }
@@ -124,23 +150,24 @@ if (nodeIntegration) {
     global.__dirname = path.dirname(global.__filename)
 
     // Set module's filename so relative require can work as expected.
-    module.filename = global.__filename
+    global.module.filename = global.__filename
 
     // Also search for module under the html file.
-    module.paths = module.paths.concat(Module._nodeModulePaths(global.__dirname))
+    global.module.paths = Module._nodeModulePaths(global.__dirname)
   } else {
-    global.__filename = __filename
-    global.__dirname = __dirname
+    // For backwards compatibility we fake these two paths here
+    global.__filename = path.join(process.resourcesPath, 'electron.asar', 'renderer', 'init.js')
+    global.__dirname = path.join(process.resourcesPath, 'electron.asar', 'renderer')
 
     if (appPath) {
       // Search for module under the app directory
-      module.paths = module.paths.concat(Module._nodeModulePaths(appPath))
+      global.module.paths = Module._nodeModulePaths(appPath)
     }
   }
 
   // Redirect window.onerror to uncaughtException.
   window.onerror = function (_message, _filename, _lineno, _colno, error) {
-    if (global.process.listeners('uncaughtException').length > 0) {
+    if (global.process.listenerCount('uncaughtException') > 0) {
       // We do not want to add `uncaughtException` to our definitions
       // because we don't want anyone else (anywhere) to throw that kind
       // of error.
@@ -162,11 +189,23 @@ if (nodeIntegration) {
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
+const { isParentDir } = require('@electron/internal/common/path-utils')
+
+let absoluteAppPath: string
+const getAppPath = function () {
+  if (absoluteAppPath === undefined) {
+    absoluteAppPath = fs.realpathSync(appPath!)
+  }
+  return absoluteAppPath
+}
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
-    require(preloadScript)
+    if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
+      throw new Error('Preload scripts outside of app path are not allowed')
+    }
+    Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
     console.error(`${error}`)

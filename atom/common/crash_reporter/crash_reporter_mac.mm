@@ -4,7 +4,11 @@
 
 #include "atom/common/crash_reporter/crash_reporter_mac.h"
 
+#include <algorithm>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "base/files/file_util.h"
 #include "base/mac/bundle_locations.h"

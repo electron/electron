@@ -40,7 +40,7 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
   if (allowed)
     controller.TakeAction();
   else
-    controller.Deny(blink::MEDIA_DEVICE_PERMISSION_DENIED);
+    controller.Deny(blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
 }
 
 void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
@@ -48,12 +48,12 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
     web_contents->GotResponseToLockMouseRequest(allowed);
 }
 
-void OnPermissionResponse(base::Callback<void(bool)> callback,
+void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
                           blink::mojom::PermissionStatus status) {
   if (status == blink::mojom::PermissionStatus::GRANTED)
-    callback.Run(true);
+    std::move(callback).Run(true);
   else
-    callback.Run(false);
+    std::move(callback).Run(false);
 }
 
 }  // namespace
@@ -66,7 +66,7 @@ WebContentsPermissionHelper::~WebContentsPermissionHelper() {}
 
 void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,
-    const base::Callback<void(bool)>& callback,
+    base::OnceCallback<void(bool)> callback,
     bool user_gesture,
     const base::DictionaryValue* details) {
   auto* rfh = web_contents_->GetMainFrame();
@@ -75,7 +75,7 @@ void WebContentsPermissionHelper::RequestPermission(
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
       permission, rfh, origin, false, details,
-      base::Bind(&OnPermissionResponse, std::move(callback)));
+      base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
 bool WebContentsPermissionHelper::CheckPermission(
@@ -90,10 +90,10 @@ bool WebContentsPermissionHelper::CheckPermission(
 }
 
 void WebContentsPermissionHelper::RequestFullscreenPermission(
-    const base::Callback<void(bool)>& callback) {
+    base::OnceCallback<void(bool)> callback) {
   RequestPermission(
       static_cast<content::PermissionType>(PermissionType::FULLSCREEN),
-      callback);
+      std::move(callback));
 }
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
@@ -121,26 +121,27 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
-    const base::Callback<void(bool)>& callback) {
-  RequestPermission(content::PermissionType::NOTIFICATIONS, callback);
+    base::OnceCallback<void(bool)> callback) {
+  RequestPermission(content::PermissionType::NOTIFICATIONS,
+                    std::move(callback));
 }
 
 void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool user_gesture) {
   RequestPermission(
       static_cast<content::PermissionType>(PermissionType::POINTER_LOCK),
-      base::Bind(&OnPointerLockResponse, web_contents_), user_gesture);
+      base::BindOnce(&OnPointerLockResponse, web_contents_), user_gesture);
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
-    const base::Callback<void(bool)>& callback,
+    base::OnceCallback<void(bool)> callback,
     bool user_gesture,
     const GURL& url) {
   base::DictionaryValue details;
   details.SetString("externalURL", url.spec());
   RequestPermission(
       static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
-      callback, user_gesture, &details);
+      std::move(callback), user_gesture, &details);
 }
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(

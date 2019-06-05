@@ -10,21 +10,20 @@
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/task/task_scheduler/task_scheduler.h"
+#include "base/task/thread_pool/thread_pool.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -49,7 +48,7 @@ int NodeMain(int argc, char* argv[]) {
     gin::V8Initializer::LoadV8Natives();
 
     // V8 requires a task scheduler apparently
-    base::TaskScheduler::CreateAndStartWithDefaultParams("Electron");
+    base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
@@ -71,9 +70,9 @@ int NodeMain(int argc, char* argv[]) {
 
     mate::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
-    process.SetMethod("log", &AtomBindings::Log);
+    process.SetMethod("log", &ElectronBindings::Log);
 #endif
-    process.SetMethod("crash", &AtomBindings::Crash);
+    process.SetMethod("crash", &ElectronBindings::Crash);
 
     // Setup process.crashReporter.start in child node processes
     auto reporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
@@ -102,6 +101,7 @@ int NodeMain(int argc, char* argv[]) {
       }
     } while (more == true);
 
+    node_debugger.Stop();
     exit_code = node::EmitExit(env);
     node::RunAtExit(env);
     gin_env.platform()->DrainTasks(env->isolate());
@@ -113,10 +113,10 @@ int NodeMain(int argc, char* argv[]) {
 
   // According to "src/gin/shell/gin_main.cc":
   //
-  // gin::IsolateHolder waits for tasks running in TaskScheduler in its
-  // destructor and thus must be destroyed before TaskScheduler starts skipping
+  // gin::IsolateHolder waits for tasks running in ThreadPool in its
+  // destructor and thus must be destroyed before ThreadPool starts skipping
   // CONTINUE_ON_SHUTDOWN tasks.
-  base::TaskScheduler::GetInstance()->Shutdown();
+  base::ThreadPoolInstance::Get()->Shutdown();
 
   v8::V8::Dispose();
 

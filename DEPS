@@ -10,9 +10,11 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '73.0.3683.65',
+    'f200986dfaabd6aad6a4b37dad7aae42fec349e9',
   'node_version':
-    'fac6d766c143db8db05bb3b0c0871df8f032363c',
+    'b823596192bb790f9ea2a61022b55bf50e6daa83',
+  'nan_version':
+    '960dd6c70fc9eb136efdf37b4bef18fadbc3436f',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -21,8 +23,13 @@ vars = {
   'boto_git': 'https://github.com/boto',
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
+  # FIXME: Once https://github.com/nodejs/nan/pull/857 lands this should point at nodejs/nan
+  'nodejs_git': 'https://github.com/marshallofsound',
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
+
+  # KEEP IN SYNC WITH utils.js FILE
+  'yarn_version': '1.15.2',
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
@@ -33,12 +40,16 @@ vars = {
   # To allow in-house builds to checkout those manually.
   'checkout_chromium': True,
   'checkout_node': True,
+  'checkout_nan': True,
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
 
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
+
+  # To allow running hooks without parsing the DEPS tree
+  'process_deps': True,
 
   # It is always needed for normal Electron builds,
   # but might be impossible for custom in-house builds.
@@ -61,30 +72,34 @@ vars = {
 deps = {
   'src': {
     'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
-    'condition': 'checkout_chromium',
+    'condition': 'checkout_chromium and process_deps',
+  },
+  'src/third_party/nan': {
+    'url': (Var("nodejs_git")) + '/nan.git@' + (Var("nan_version")),
+    'condition': 'checkout_nan and process_deps',
   },
   'src/third_party/electron_node': {
     'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
-    'condition': 'checkout_node',
+    'condition': 'checkout_node and process_deps',
   },
   'src/electron/vendor/pyyaml': {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
-    'condition': 'checkout_pyyaml',
+    'condition': 'checkout_pyyaml and process_deps',
   },
   'src/electron/vendor/boto': {
     'url': Var('boto_git') + '/boto.git' + '@' +  Var('boto_version'),
-    'condition': 'checkout_boto',
+    'condition': 'checkout_boto and process_deps',
   },
   'src/electron/vendor/requests': {
     'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
-    'condition': 'checkout_requests',
+    'condition': 'checkout_requests and process_deps',
   },
 }
 
 hooks = [
   {
     'name': 'patch_chromium',
-    'condition': 'checkout_chromium and apply_patches',
+    'condition': '(checkout_chromium and apply_patches) and process_deps',
     'pattern': 'src/electron',
     'action': [
       'python',
@@ -107,13 +122,13 @@ hooks = [
     'action': [
       'python',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npm.py", "install"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
     ],
   },
   {
     'name': 'setup_boto',
     'pattern': 'src/electron',
-    'condition': 'checkout_boto',
+    'condition': 'checkout_boto and process_deps',
     'action': [
       'python',
       '-c',
@@ -123,7 +138,7 @@ hooks = [
   {
     'name': 'setup_requests',
     'pattern': 'src/electron',
-    'condition': 'checkout_requests',
+    'condition': 'checkout_requests and process_deps',
     'action': [
       'python',
       '-c',

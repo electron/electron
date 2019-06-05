@@ -12,7 +12,7 @@ you can interact with the community in these locations:
 - [`electron`](https://discuss.atom.io/c/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
-- [`Electron`](https://atom-slack.herokuapp.com) channel on Atom's Slack
+- `#electron` channel on [Atom's Slack](https://discuss.atom.io/t/join-us-on-slack/16638?source_topic_id=25406)
 - [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
@@ -33,9 +33,16 @@ tools and resources.
 
 ## Supported Versions
 
-The latest three release branches are supported by the Electron team.
-For example, if the latest release is 2.0.x, then the 2-0-x series
-is supported, as are the two previous release series 1-7-x and 1-8-x.
+The latest three major versions are supported by the Electron team.
+For example, if the latest release is 5.0.x, then the 4.x.y series
+is supported, as are the two previous release series 3.x.y and 2.x.y.
+
+### Currently supported versions
+- 5.x
+- 4.x
+- 3.x
+
+### End-of-life
 
 When a release branch reaches the end of its support cycle, the series
 will be deprecated in NPM and a final end-of-support release will be

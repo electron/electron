@@ -9,36 +9,37 @@
 #include "atom/browser/net/url_request_stream_job.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/node_includes.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 
 StreamSubscriber::StreamSubscriber(
     v8::Isolate* isolate,
     v8::Local<v8::Object> emitter,
-    base::WeakPtr<atom::URLRequestStreamJob> url_job)
-    : isolate_(isolate),
+    base::WeakPtr<atom::URLRequestStreamJob> url_job,
+    scoped_refptr<base::SequencedTaskRunner> ui_task_runner)
+    : base::RefCountedDeleteOnSequence<StreamSubscriber>(ui_task_runner),
+      isolate_(isolate),
       emitter_(isolate, emitter),
       url_job_(url_job),
       weak_factory_(this) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK(ui_task_runner->RunsTasksInCurrentSequence());
+
   auto weak_self = weak_factory_.GetWeakPtr();
-  On("data", base::Bind(&StreamSubscriber::OnData, weak_self));
-  On("end", base::Bind(&StreamSubscriber::OnEnd, weak_self));
-  On("error", base::Bind(&StreamSubscriber::OnError, weak_self));
+  On("data", base::BindRepeating(&StreamSubscriber::OnData, weak_self));
+  On("end", base::BindRepeating(&StreamSubscriber::OnEnd, weak_self));
+  On("error", base::BindRepeating(&StreamSubscriber::OnError, weak_self));
 }
 
 StreamSubscriber::~StreamSubscriber() {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   RemoveAllListeners();
 }
 
 void StreamSubscriber::On(const std::string& event,
                           EventCallback&& callback) {  // NOLINT
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
   DCHECK(js_handlers_.find(event) == js_handlers_.end());
 
   v8::Locker locker(isolate_);
@@ -52,7 +53,7 @@ void StreamSubscriber::On(const std::string& event,
 }
 
 void StreamSubscriber::Off(const std::string& event) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
   DCHECK(js_handlers_.find(event) != js_handlers_.end());
 
   v8::Locker locker(isolate_);
@@ -79,23 +80,24 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
   // Pass the data to the URLJob in IO thread.
   std::vector<char> buffer(data, data + length);
   base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
-                           base::Bind(&atom::URLRequestStreamJob::OnData,
-                                      url_job_, base::Passed(&buffer)));
+                           base::BindOnce(&atom::URLRequestStreamJob::OnData,
+                                          url_job_, base::Passed(&buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::IO},
-      base::Bind(&atom::URLRequestStreamJob::OnEnd, url_job_));
+      base::BindOnce(&atom::URLRequestStreamJob::OnEnd, url_job_));
 }
 
 void StreamSubscriber::OnError(mate::Arguments* args) {
   base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
-                           base::Bind(&atom::URLRequestStreamJob::OnError,
-                                      url_job_, net::ERR_FAILED));
+                           base::BindOnce(&atom::URLRequestStreamJob::OnError,
+                                          url_job_, net::ERR_FAILED));
 }
 
 void StreamSubscriber::RemoveAllListeners() {
+  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);

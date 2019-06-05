@@ -1,9 +1,9 @@
 import * as timers from 'timers'
 import * as util from 'util'
 
-import { atomBindingSetup } from '@electron/internal/common/atom-binding-setup'
+import { electronBindingSetup } from '@electron/internal/common/electron-binding-setup'
 
-process.atomBinding = atomBindingSetup(process.binding, process.type)
+process.electronBinding = electronBindingSetup(process._linkedBinding, process.type)
 
 type AnyFn = (...args: any[]) => any
 

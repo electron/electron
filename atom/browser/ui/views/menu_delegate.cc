@@ -22,7 +22,7 @@ MenuDelegate::MenuDelegate(MenuBar* menu_bar)
 MenuDelegate::~MenuDelegate() {}
 
 void MenuDelegate::RunMenu(AtomMenuModel* model,
-                           views::MenuButton* button,
+                           views::Button* button,
                            ui::MenuSourceType source_type) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
@@ -43,8 +43,10 @@ void MenuDelegate::RunMenu(AtomMenuModel* model,
   menu_runner_.reset(new views::MenuRunner(
       item,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
-  menu_runner_->RunMenuAt(button->GetWidget()->GetTopLevelWidget(), button,
-                          bounds, views::MENU_ANCHOR_TOPRIGHT, source_type);
+  menu_runner_->RunMenuAt(
+      button->GetWidget()->GetTopLevelWidget(),
+      static_cast<views::MenuButton*>(button)->button_controller(), bounds,
+      views::MenuAnchorPosition::kTopRight, source_type);
 }
 
 void MenuDelegate::ExecuteCommand(int id) {
@@ -130,8 +132,8 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     if (!switch_in_progress) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
-          base::Bind(&views::MenuRunner::Cancel,
-                     base::Unretained(menu_runner_.get())));
+          base::BindOnce(&views::MenuRunner::Cancel,
+                         base::Unretained(menu_runner_.get())));
     }
   }
 

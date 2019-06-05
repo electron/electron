@@ -16,7 +16,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     locales \
     lsb-release \
     nano \
-    python-dbusmock \
+    python-dbus \
     python-pip \
     python-setuptools \
     sudo \
@@ -32,6 +32,9 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
 
 # crcmod is required by gsutil, which is used for filling the gclient git cache
 RUN pip install -U crcmod
+
+# dbusmock is needed for Electron tests
+RUN pip install python-dbusmock
 
 RUN mkdir /tmp/workspace
 RUN chown builduser:builduser /tmp/workspace

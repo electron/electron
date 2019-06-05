@@ -4,17 +4,19 @@
 
 #include <set>
 #include <string>
+#include <utility>
 
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/promise_util.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
+#include "base/optional.h"
+#include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 using content::TracingController;
 
@@ -53,40 +55,45 @@ struct Converter<base::trace_event::TraceConfig> {
 
 namespace {
 
-using CompletionCallback = base::Callback<void(const base::FilePath&)>;
+using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 
-scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
-    const base::FilePath& path,
-    const CompletionCallback& callback) {
-  base::FilePath result_file_path = path;
-  if (result_file_path.empty() && !base::CreateTemporaryFile(&result_file_path))
-    LOG(ERROR) << "Creating temporary file failed";
-
-  return TracingController::CreateFileEndpoint(
-      result_file_path, base::Bind(callback, result_file_path));
+base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
+  base::FilePath temp_file_path;
+  if (!base::CreateTemporaryFile(&temp_file_path))
+    return base::nullopt;
+  return base::make_optional(std::move(temp_file_path));
 }
 
-void OnRecordingStopped(const atom::util::CopyablePromise& promise,
-                        const base::FilePath& path) {
-  promise.GetPromise().Resolve(path);
+void StopTracing(atom::util::Promise promise,
+                 base::Optional<base::FilePath> file_path) {
+  if (file_path) {
+    auto endpoint = TracingController::CreateFileEndpoint(
+        *file_path, base::AdaptCallbackForRepeating(base::BindOnce(
+                        &atom::util::Promise::ResolvePromise<base::FilePath>,
+                        std::move(promise), *file_path)));
+    TracingController::GetInstance()->StopTracing(endpoint);
+  } else {
+    promise.RejectWithErrorMessage(
+        "Failed to create temporary file for trace data");
+  }
 }
 
-v8::Local<v8::Promise> StopRecording(v8::Isolate* isolate,
-                                     const base::FilePath& path) {
-  atom::util::Promise promise(isolate);
+v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
+  atom::util::Promise promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  // TODO(zcbenz): Remove the use of CopyablePromise when the
-  // CreateFileEndpoint API accepts OnceCallback.
-  TracingController::GetInstance()->StopTracing(GetTraceDataEndpoint(
-      path,
-      base::Bind(&OnRecordingStopped, atom::util::CopyablePromise(promise))));
-  return handle;
-}
+  base::FilePath path;
+  if (args->GetNext(&path) && !path.empty()) {
+    StopTracing(std::move(promise), base::make_optional(path));
+  } else {
+    // use a temporary file.
+    base::PostTaskWithTraitsAndReplyWithResult(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+        base::BindOnce(CreateTemporaryFileOnIO),
+        base::BindOnce(StopTracing, std::move(promise)));
+  }
 
-void OnCategoriesAvailable(atom::util::Promise promise,
-                           const std::set<std::string>& categories) {
-  promise.Resolve(categories);
+  return handle;
 }
 
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
@@ -94,13 +101,11 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
-  TracingController::GetInstance()->GetCategories(
-      base::BindOnce(&OnCategoriesAvailable, std::move(promise)));
-  return handle;
-}
+  TracingController::GetInstance()->GetCategories(base::BindOnce(
+      atom::util::Promise::ResolvePromise<const std::set<std::string>&>,
+      std::move(promise)));
 
-void OnTracingStarted(atom::util::Promise promise) {
-  promise.Resolve();
+  return handle;
 }
 
 v8::Local<v8::Promise> StartTracing(
@@ -109,9 +114,15 @@ v8::Local<v8::Promise> StartTracing(
   atom::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  // Note: This method always succeeds.
-  TracingController::GetInstance()->StartTracing(
-      trace_config, base::BindOnce(&OnTracingStarted, std::move(promise)));
+  if (!TracingController::GetInstance()->StartTracing(
+          trace_config, base::BindOnce(atom::util::Promise::ResolveEmptyPromise,
+                                       std::move(promise)))) {
+    // If StartTracing returns false, that means it didn't invoke its callback.
+    // Return an already-resolved promise and abandon the previous promise (it
+    // was std::move()d into the StartTracing callback and has been deleted by
+    // this point).
+    return atom::util::Promise::ResolvedPromise(isolate);
+  }
   return handle;
 }
 
@@ -148,4 +159,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_content_tracing, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_content_tracing, Initialize)

@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 4 Mar 2019 14:43:36 -0800
+Subject: fix: disable usage of abort_report_np in MAS builds
+
+
+diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
+index 4eebcea13d17093a685cc79b8a8f61fb3894c71b..d704dced154f1d5db097e566a9c681438f94475d 100644
+--- a/sandbox/mac/sandbox_logging.cc
++++ b/sandbox/mac/sandbox_logging.cc
+@@ -22,9 +22,11 @@
+     __builtin_unreachable();                                                   \
+   }
+ 
++#if !defined(MAS_BUILD)
+ extern "C" {
+ void abort_report_np(const char*, ...);
+ }
++#endif
+ 
+ namespace sandbox {
+ 
+@@ -94,11 +96,13 @@ void SendAslLog(Level level, const char* message) {
+   asl_set(asl_message.get(), ASL_KEY_MSG, message);
+   asl_send(asl_client.get(), asl_message.get());
+ 
++  #if !defined(MAS_BUILD)
+   if (__builtin_available(macOS 10.11, *)) {
+     if (level == Level::FATAL) {
+       abort_report_np(message);
+     }
+   }
++  #endif
+ }
+ 
+ // |error| is strerror(errno) when a P* logging function is called. Pass

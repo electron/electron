@@ -68,7 +68,7 @@ def download(text, url, path):
     web_file = urllib2.urlopen(url)
     file_size = int(web_file.info().getheaders("Content-Length")[0])
     downloaded_size = 0
-    block_size = 128
+    block_size = 4096
 
     ci = os.environ.get('CI') is not None
 

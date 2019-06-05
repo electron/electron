@@ -84,22 +84,23 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
                                const base::FilePath& path) {
   auto* isolated_context = storage::IsolatedContext::GetInstance();
   std::string root_name(kRootName);
-  std::string file_system_id = isolated_context->RegisterFileSystemForPath(
-      storage::kFileSystemTypeNativeLocal, std::string(), path, &root_name);
+  storage::IsolatedContext::ScopedFSHandle file_system =
+      isolated_context->RegisterFileSystemForPath(
+          storage::kFileSystemTypeNativeLocal, std::string(), path, &root_name);
 
   content::ChildProcessSecurityPolicy* policy =
       content::ChildProcessSecurityPolicy::GetInstance();
   content::RenderViewHost* render_view_host = web_contents->GetRenderViewHost();
   int renderer_id = render_view_host->GetProcess()->GetID();
-  policy->GrantReadFileSystem(renderer_id, file_system_id);
-  policy->GrantWriteFileSystem(renderer_id, file_system_id);
-  policy->GrantCreateFileForFileSystem(renderer_id, file_system_id);
-  policy->GrantDeleteFromFileSystem(renderer_id, file_system_id);
+  policy->GrantReadFileSystem(renderer_id, file_system.id());
+  policy->GrantWriteFileSystem(renderer_id, file_system.id());
+  policy->GrantCreateFileForFileSystem(renderer_id, file_system.id());
+  policy->GrantDeleteFromFileSystem(renderer_id, file_system.id());
 
   if (!policy->CanReadFile(renderer_id, path))
     policy->GrantReadFile(renderer_id, path);
 
-  return file_system_id;
+  return file_system.id();
 }
 
 FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
@@ -126,14 +127,16 @@ std::unique_ptr<base::DictionaryValue> CreateFileSystemValue(
 }
 
 void WriteToFile(const base::FilePath& path, const std::string& content) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::WILL_BLOCK);
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
   base::WriteFile(path, content.data(), content.size());
 }
 
 void AppendToFile(const base::FilePath& path, const std::string& content) {
-  base::ScopedBlockingCall scoped_blocking_call(base::BlockingType::WILL_BLOCK);
+  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
   base::AppendToFile(path, content.data(), content.size());
@@ -350,9 +353,8 @@ blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
   SecurityStateTabHelper* helper =
       SecurityStateTabHelper::FromWebContents(web_contents);
   DCHECK(helper);
-  security_state::SecurityInfo security_info;
-  helper->GetSecurityInfo(&security_info);
-  return security_state::GetSecurityStyle(security_info,
+  return security_state::GetSecurityStyle(helper->GetSecurityLevel(),
+                                          *helper->GetVisibleSecurityState(),
                                           security_style_explanations);
 }
 
@@ -508,7 +510,7 @@ void CommonWebContentsDelegate::DevToolsIndexPath(
     return;
   std::vector<std::string> excluded_folders;
   std::unique_ptr<base::Value> parsed_excluded_folders =
-      base::JSONReader::Read(excluded_folders_message);
+      base::JSONReader::ReadDeprecated(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     const std::vector<base::Value>& folder_paths =
         parsed_excluded_folders->GetList();
@@ -521,15 +523,15 @@ void CommonWebContentsDelegate::DevToolsIndexPath(
       scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>(
           devtools_file_system_indexer_->IndexPath(
               file_system_path, excluded_folders,
-              base::Bind(
+              base::BindRepeating(
                   &CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated,
                   weak_factory_.GetWeakPtr(), request_id, file_system_path),
-              base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingWorked,
-                         weak_factory_.GetWeakPtr(), request_id,
-                         file_system_path),
-              base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingDone,
-                         weak_factory_.GetWeakPtr(), request_id,
-                         file_system_path)));
+              base::BindRepeating(
+                  &CommonWebContentsDelegate::OnDevToolsIndexingWorked,
+                  weak_factory_.GetWeakPtr(), request_id, file_system_path),
+              base::BindRepeating(
+                  &CommonWebContentsDelegate::OnDevToolsIndexingDone,
+                  weak_factory_.GetWeakPtr(), request_id, file_system_path)));
 }
 
 void CommonWebContentsDelegate::DevToolsStopIndexing(int request_id) {
@@ -551,8 +553,9 @@ void CommonWebContentsDelegate::DevToolsSearchInPath(
   }
   devtools_file_system_indexer_->SearchInPath(
       file_system_path, query,
-      base::Bind(&CommonWebContentsDelegate::OnDevToolsSearchCompleted,
-                 weak_factory_.GetWeakPtr(), request_id, file_system_path));
+      base::BindRepeating(&CommonWebContentsDelegate::OnDevToolsSearchCompleted,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path));
 }
 
 void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(
@@ -619,7 +622,17 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
     return;
   }
 
-  owner_window_->SetFullScreen(enter_fullscreen);
+  // Set fullscreen on window if allowed.
+  auto* web_preferences = WebContentsPreferences::From(GetWebContents());
+  bool html_fullscreenable =
+      web_preferences ? !web_preferences->IsEnabled(
+                            options::kDisableHtmlFullscreenWindowResize)
+                      : true;
+
+  if (html_fullscreenable) {
+    owner_window_->SetFullScreen(enter_fullscreen);
+  }
+
   html_fullscreen_ = enter_fullscreen;
   native_fullscreen_ = false;
 }

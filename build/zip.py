@@ -5,13 +5,15 @@ import sys
 import zipfile
 
 EXTENSIONS_TO_SKIP = [
-  '.pdb'
+  '.pdb',
+  '.mojom.js',
+  '.mojom-lite.js',
 ]
 
 PATHS_TO_SKIP = [
   'angledata', #Skipping because it is an output of //ui/gl that we don't need
-  './libVkLayer_', #Skipping because these are outputs that we don't need
-  './VkLayerLayer_', #Skipping because these are outputs that we don't need
+  './libVkICD_mock_', #Skipping because these are outputs that we don't need
+  './VkICD_mock_', #Skipping because these are outputs that we don't need
 
   # //chrome/browser:resources depends on this via
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
@@ -52,7 +54,7 @@ def main(argv):
   if sys.platform == 'darwin':
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
-    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
       for dep in dist_files:
         if skip_path(dep, dist_zip, target_cpu):
           continue
@@ -61,7 +63,10 @@ def main(argv):
             for file in files:
               z.write(os.path.join(root, file))
         else:
-          z.write(dep)
+          basename = os.path.basename(dep)
+          dirname = os.path.dirname(dep)
+          arcname = os.path.join(dirname, 'chrome-sandbox') if basename == 'chrome_sandbox' else dep
+          z.write(dep, arcname)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

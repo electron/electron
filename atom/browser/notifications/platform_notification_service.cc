@@ -79,7 +79,6 @@ PlatformNotificationService::~PlatformNotificationService() {}
 
 void PlatformNotificationService::DisplayNotification(
     content::RenderProcessHost* render_process_host,
-    content::BrowserContext* browser_context,
     const std::string& notification_id,
     const GURL& origin,
     const blink::PlatformNotificationData& notification_data,
@@ -93,14 +92,13 @@ void PlatformNotificationService::DisplayNotification(
   if (notification) {
     browser_client_->WebNotificationAllowed(
         render_process_host->GetID(),
-        base::Bind(&OnWebNotificationAllowed, notification,
-                   notification_resources.notification_icon,
-                   notification_data));
+        base::BindRepeating(&OnWebNotificationAllowed, notification,
+                            notification_resources.notification_icon,
+                            notification_data));
   }
 }
 
 void PlatformNotificationService::DisplayPersistentNotification(
-    content::BrowserContext* browser_context,
     const std::string& notification_id,
     const GURL& service_worker_scope,
     const GURL& origin,
@@ -108,11 +106,9 @@ void PlatformNotificationService::DisplayPersistentNotification(
     const blink::NotificationResources& notification_resources) {}
 
 void PlatformNotificationService::ClosePersistentNotification(
-    content::BrowserContext* browser_context,
     const std::string& notification_id) {}
 
 void PlatformNotificationService::CloseNotification(
-    content::BrowserContext* browser_context,
     const std::string& notification_id) {
   auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
@@ -121,17 +117,20 @@ void PlatformNotificationService::CloseNotification(
 }
 
 void PlatformNotificationService::GetDisplayedNotifications(
-    content::BrowserContext* browser_context,
-    const DisplayedNotificationsCallback& callback) {}
+    DisplayedNotificationsCallback callback) {}
 
-int64_t PlatformNotificationService::ReadNextPersistentNotificationId(
-    content::BrowserContext* browser_context) {
+int64_t PlatformNotificationService::ReadNextPersistentNotificationId() {
   // Electron doesn't support persistent notifications.
   return 0;
 }
 
 void PlatformNotificationService::RecordNotificationUkmEvent(
-    content::BrowserContext* browser_context,
     const content::NotificationDatabaseData& data) {}
+
+void PlatformNotificationService::ScheduleTrigger(base::Time timestamp) {}
+
+base::Time PlatformNotificationService::ReadNextTriggerTimestamp() {
+  return base::Time::Max();
+}
 
 }  // namespace atom

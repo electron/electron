@@ -9,11 +9,10 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -242,7 +241,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Menu::SetConstructor(isolate, base::Bind(&Menu::New));
+  Menu::SetConstructor(isolate, base::BindRepeating(&Menu::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set(
@@ -257,4 +256,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_menu, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_menu, Initialize)

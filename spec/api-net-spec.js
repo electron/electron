@@ -1,10 +1,15 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+
 const { remote } = require('electron')
 const { ipcRenderer } = require('electron')
 const http = require('http')
 const url = require('url')
 const { net } = remote
 const { session } = remote
+
+const { expect } = chai
+chai.use(dirtyChai)
 
 /* The whole net API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -62,7 +67,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.method, 'GET')
+            expect(request.method).to.equal('GET')
             response.end()
             break
           default:
@@ -71,7 +76,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request(`${server.url}${requestUrl}`)
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -88,7 +93,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.method, 'POST')
+            expect(request.method).to.equal('POST')
             response.end()
             break
           default:
@@ -100,7 +105,7 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -118,7 +123,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.method, 'GET')
+            expect(request.method).to.equal('GET')
             response.write(bodyData)
             response.end()
             break
@@ -129,13 +134,13 @@ describe('net module', () => {
       const urlRequest = net.request(`${server.url}${requestUrl}`)
       urlRequest.on('response', (response) => {
         let expectedBodyData = ''
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
           expectedBodyData += chunk.toString()
         })
         response.on('end', () => {
-          assert.strictEqual(expectedBodyData, bodyData)
+          expect(expectedBodyData).to.equal(bodyData)
           done()
         })
         response.resume()
@@ -150,12 +155,12 @@ describe('net module', () => {
         let postedBodyData = ''
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.method, 'POST')
+            expect(request.method).to.equal('POST')
             request.on('data', (chunk) => {
               postedBodyData += chunk.toString()
             })
             request.on('end', () => {
-              assert.strictEqual(postedBodyData, bodyData)
+              expect(postedBodyData).to.equal(bodyData)
               response.end()
             })
             break
@@ -168,7 +173,7 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {})
         response.on('end', () => {
@@ -188,9 +193,9 @@ describe('net module', () => {
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.chunkedEncoding = true
-            assert.strictEqual(request.method, 'POST')
-            assert.strictEqual(request.headers['transfer-encoding'], 'chunked')
-            assert(!request.headers['content-length'])
+            expect(request.method).to.equal('POST')
+            expect(request.headers['transfer-encoding']).to.equal('chunked')
+            expect(request.headers['content-length']).to.be.undefined()
             request.on('data', (chunk) => {
               response.write(chunk)
             })
@@ -212,7 +217,7 @@ describe('net module', () => {
       const sentChunks = []
       const receivedChunks = []
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
           receivedChunks.push(chunk)
@@ -220,8 +225,8 @@ describe('net module', () => {
         response.on('end', () => {
           const sentData = Buffer.concat(sentChunks)
           const receivedData = Buffer.concat(receivedChunks)
-          assert.strictEqual(sentData.toString(), receivedData.toString())
-          assert.strictEqual(chunkIndex, chunkCount)
+          expect(sentData.toString()).to.equal(receivedData.toString())
+          expect(chunkIndex).to.be.equal(chunkCount)
           done()
         })
         response.resume()
@@ -231,7 +236,7 @@ describe('net module', () => {
         chunkIndex += 1
         const chunk = randomBuffer(kOneKiloByte)
         sentChunks.push(chunk)
-        assert(urlRequest.write(chunk))
+        expect(urlRequest.write(chunk)).to.be.true()
       }
       urlRequest.end()
     })
@@ -269,11 +274,11 @@ describe('net module', () => {
           return
         }
 
-        assert(requestResponseEventEmitted)
-        assert(requestFinishEventEmitted)
-        assert(requestCloseEventEmitted)
-        assert(responseDataEventEmitted)
-        assert(responseEndEventEmitted)
+        expect(requestResponseEventEmitted).to.be.true()
+        expect(requestFinishEventEmitted).to.be.true()
+        expect(requestCloseEventEmitted).to.be.true()
+        expect(responseDataEventEmitted).to.be.true()
+        expect(responseEndEventEmitted).to.be.true()
         done()
       }
 
@@ -284,7 +289,7 @@ describe('net module', () => {
       urlRequest.on('response', (response) => {
         requestResponseEventEmitted = true
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         const buffers = []
         response.pause()
         response.on('data', (chunk) => {
@@ -293,26 +298,26 @@ describe('net module', () => {
         })
         response.on('end', () => {
           const receivedBodyData = Buffer.concat(buffers)
-          assert(receivedBodyData.toString() === bodyData)
+          expect(receivedBodyData.toString()).to.equal(bodyData)
           responseEndEventEmitted = true
           maybeDone(done)
         })
         response.resume()
         response.on('error', (error) => {
-          assert.ifError(error)
+          expect(error).to.be.an('Error')
         })
         response.on('aborted', () => {
-          assert.fail('response aborted')
+          expect.fail('response aborted')
         })
       })
       urlRequest.on('finish', () => {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', (error) => {
-        assert.ifError(error)
+        expect(error).to.be.an('Error')
       })
       urlRequest.on('abort', () => {
-        assert.fail('request aborted')
+        expect.fail('request aborted')
       })
       urlRequest.on('close', () => {
         requestCloseEventEmitted = true
@@ -328,8 +333,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue)
+            expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -344,7 +348,7 @@ describe('net module', () => {
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -354,15 +358,11 @@ describe('net module', () => {
         response.resume()
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
       urlRequest.write('')
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
       urlRequest.end()
     })
 
@@ -373,14 +373,13 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue.toString())
+            expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString())
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
             break
           default:
-            assert.strictEqual(request.url, requestUrl)
+            expect(request.url).to.equal(requestUrl)
         }
       })
       const urlRequest = net.request({
@@ -389,7 +388,7 @@ describe('net module', () => {
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('end', () => {
           done()
@@ -397,15 +396,11 @@ describe('net module', () => {
         response.resume()
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
       urlRequest.write('')
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
       urlRequest.end()
     })
 
@@ -416,7 +411,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert(!request.headers[customHeaderName.toLowerCase()])
+            expect(request.headers[customHeaderName.toLowerCase()]).to.be.undefined()
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -431,7 +426,7 @@ describe('net module', () => {
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -441,10 +436,10 @@ describe('net module', () => {
         response.resume()
       })
       urlRequest.write('')
-      assert.throws(() => {
+      expect(() => {
         urlRequest.setHeader(customHeaderName, customHeaderValue)
-      })
-      assert(!urlRequest.getHeader(customHeaderName))
+      }).to.throw()
+      expect(urlRequest.getHeader(customHeaderName)).to.be.undefined()
       urlRequest.end()
     })
 
@@ -455,7 +450,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert(!request.headers[customHeaderName.toLowerCase()])
+            expect(request.headers[customHeaderName.toLowerCase()]).to.be.undefined()
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -470,7 +465,7 @@ describe('net module', () => {
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -480,10 +475,9 @@ describe('net module', () => {
         response.resume()
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
       urlRequest.removeHeader(customHeaderName)
-      assert(!urlRequest.getHeader(customHeaderName))
+      expect(urlRequest.getHeader(customHeaderName)).to.be.undefined()
       urlRequest.write('')
       urlRequest.end()
     })
@@ -495,8 +489,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue)
+            expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -511,7 +504,7 @@ describe('net module', () => {
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -521,14 +514,12 @@ describe('net module', () => {
         response.resume()
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
       urlRequest.write('')
-      assert.throws(() => {
+      expect(() => {
         urlRequest.removeHeader(customHeaderName)
-      })
-      assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+      }).to.throw()
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
       urlRequest.end()
     })
 
@@ -540,8 +531,7 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.headers[cookieHeaderName.toLowerCase()],
-              cookieHeaderValue)
+            expect(request.headers[cookieHeaderName.toLowerCase()]).to.equal(cookieHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -563,7 +553,7 @@ describe('net module', () => {
         })
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
-          assert.strictEqual(statusCode, 200)
+          expect(statusCode).to.equal(200)
           response.pause()
           response.on('data', (chunk) => {})
           response.on('end', () => {
@@ -572,8 +562,7 @@ describe('net module', () => {
           response.resume()
         })
         urlRequest.setHeader(cookieHeaderName, cookieHeaderValue)
-        assert.strictEqual(urlRequest.getHeader(cookieHeaderName),
-          cookieHeaderValue)
+        expect(urlRequest.getHeader(cookieHeaderName)).to.equal(cookieHeaderValue)
         urlRequest.end()
       }, (error) => {
         done(error)
@@ -584,7 +573,7 @@ describe('net module', () => {
       const requestUrl = '/requestUrl'
       server.on('request', (request, response) => {
         response.end()
-        assert.fail('Unexpected request event')
+        expect.fail('Unexpected request event')
       })
 
       let requestAbortEventEmitted = false
@@ -595,25 +584,25 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.fail('Unexpected response event')
+        expect.fail('Unexpected response event')
       })
       urlRequest.on('finish', () => {
-        assert.fail('Unexpected finish event')
+        expect.fail('Unexpected finish event')
       })
       urlRequest.on('error', () => {
-        assert.fail('Unexpected error event')
+        expect.fail('Unexpected error event')
       })
       urlRequest.on('abort', () => {
         requestAbortEventEmitted = true
       })
       urlRequest.on('close', () => {
         requestCloseEventEmitted = true
-        assert(requestAbortEventEmitted)
-        assert(requestCloseEventEmitted)
+        expect(requestAbortEventEmitted).to.be.true()
+        expect(requestCloseEventEmitted).to.be.true()
         done()
       })
       urlRequest.abort()
-      assert(!urlRequest.write(''))
+      expect(urlRequest.write('')).to.be.false()
       urlRequest.end()
     })
 
@@ -639,22 +628,22 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.fail('Unexpected response event')
+        expect.fail('Unexpected response event')
       })
       urlRequest.on('finish', () => {
-        assert.fail('Unexpected finish event')
+        expect.fail('Unexpected finish event')
       })
       urlRequest.on('error', () => {
-        assert.fail('Unexpected error event')
+        expect.fail('Unexpected error event')
       })
       urlRequest.on('abort', () => {
         requestAbortEventEmitted = true
       })
       urlRequest.on('close', () => {
         requestCloseEventEmitted = true
-        assert(requestReceivedByServer)
-        assert(requestAbortEventEmitted)
-        assert(requestCloseEventEmitted)
+        expect(requestReceivedByServer).to.be.true()
+        expect(requestAbortEventEmitted).to.be.true()
+        expect(requestCloseEventEmitted).to.be.true()
         done()
       })
 
@@ -693,23 +682,23 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.fail('Unexpected response event')
+        expect.fail('Unexpected response event')
       })
       urlRequest.on('finish', () => {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', () => {
-        assert.fail('Unexpected error event')
+        expect.fail('Unexpected error event')
       })
       urlRequest.on('abort', () => {
         requestAbortEventEmitted = true
       })
       urlRequest.on('close', () => {
         requestCloseEventEmitted = true
-        assert(requestFinishEventEmitted)
-        assert(requestReceivedByServer)
-        assert(requestAbortEventEmitted)
-        assert(requestCloseEventEmitted)
+        expect(requestFinishEventEmitted).to.be.true()
+        expect(requestReceivedByServer).to.be.true()
+        expect(requestAbortEventEmitted).to.be.true()
+        expect(requestCloseEventEmitted).to.be.true()
         done()
       })
 
@@ -748,16 +737,16 @@ describe('net module', () => {
       urlRequest.on('response', (response) => {
         requestResponseEventEmitted = true
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
         response.on('end', () => {
-          assert.fail('Unexpected end event')
+          expect.fail('Unexpected end event')
         })
         response.resume()
         response.on('error', () => {
-          assert.fail('Unexpected error event')
+          expect.fail('Unexpected error event')
         })
         response.on('aborted', () => {
           responseAbortedEventEmitted = true
@@ -768,19 +757,19 @@ describe('net module', () => {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', () => {
-        assert.fail('Unexpected error event')
+        expect.fail('Unexpected error event')
       })
       urlRequest.on('abort', () => {
         requestAbortEventEmitted = true
       })
       urlRequest.on('close', () => {
         requestCloseEventEmitted = true
-        assert(requestFinishEventEmitted, 'request should emit "finish" event')
-        assert(requestReceivedByServer, 'request should be received by the server')
-        assert(requestResponseEventEmitted, '"response" event should be emitted')
-        assert(requestAbortEventEmitted, 'request should emit "abort" event')
-        assert(responseAbortedEventEmitted, 'response should emit "aborted" event')
-        assert(requestCloseEventEmitted, 'request should emit "close" event')
+        expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
+        expect(requestReceivedByServer).to.be.true('request should be received by the server')
+        expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted')
+        expect(requestAbortEventEmitted).to.be.true('request should emit "abort" event')
+        expect(responseAbortedEventEmitted).to.be.true('response should emit "aborted" event')
+        expect(requestCloseEventEmitted).to.be.true('request should emit "close" event')
         done()
       })
       urlRequest.end(randomString(kOneKiloByte))
@@ -809,13 +798,13 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', () => {
-        assert.fail('Unexpected response event')
+        expect.fail('Unexpected response event')
       })
       urlRequest.on('finish', () => {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', () => {
-        assert.fail('Unexpected error event')
+        expect.fail('Unexpected error event')
       })
       urlRequest.on('abort', () => {
         ++requestAbortEventCount
@@ -825,10 +814,10 @@ describe('net module', () => {
         requestCloseEventEmitted = true
         // Let all pending async events to be emitted
         setTimeout(() => {
-          assert(requestFinishEventEmitted)
-          assert(requestReceivedByServer)
-          assert.strictEqual(requestAbortEventCount, 1)
-          assert(requestCloseEventEmitted)
+          expect(requestFinishEventEmitted).to.be.true()
+          expect(requestReceivedByServer).to.be.true()
+          expect(requestAbortEventCount).to.equal(1)
+          expect(requestCloseEventEmitted).to.be.true()
           done()
         }, 500)
       })
@@ -875,13 +864,13 @@ describe('net module', () => {
       const urlRequest = net.request(`${server.url}${requestUrl}`)
 
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
         response.on('end', () => {
-          assert(requestIsRedirected, 'The server should receive a request to the forward URL')
-          assert(requestIsIntercepted, 'The request should be intercepted by the webRequest module')
+          expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL')
+          expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module')
           done()
         })
         response.resume()
@@ -906,7 +895,7 @@ describe('net module', () => {
       })
 
       session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-        assert.fail('Request should not be intercepted by the default session')
+        expect.fail('Request should not be intercepted by the default session')
       })
 
       const customSession = session.fromPartition(customPartitionName, { cache: false })
@@ -931,13 +920,13 @@ describe('net module', () => {
         session: customSession
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
         response.on('end', () => {
-          assert(requestIsRedirected, 'The server should receive a request to the forward URL')
-          assert(requestIsIntercepted, 'The request should be intercepted by the webRequest module')
+          expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL')
+          expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module')
           done()
         })
         response.resume()
@@ -951,29 +940,29 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`,
         redirect: 'custom'
       }
-      assert.throws(() => {
+      expect(() => {
         net.request(options)
-      }, 'redirect mode should be one of follow, error or manual')
+      }).to.throw('redirect mode should be one of follow, error or manual')
     })
 
     it('should throw when calling getHeader without a name', () => {
-      assert.throws(() => {
+      expect(() => {
         net.request({ url: `${server.url}/requestUrl` }).getHeader()
-      }, /`name` is required for getHeader\(name\)\./)
+      }).to.throw(/`name` is required for getHeader\(name\)\./)
 
-      assert.throws(() => {
+      expect(() => {
         net.request({ url: `${server.url}/requestUrl` }).getHeader(null)
-      }, /`name` is required for getHeader\(name\)\./)
+      }).to.throw(/`name` is required for getHeader\(name\)\./)
     })
 
     it('should throw when calling removeHeader without a name', () => {
-      assert.throws(() => {
+      expect(() => {
         net.request({ url: `${server.url}/requestUrl` }).removeHeader()
-      }, /`name` is required for removeHeader\(name\)\./)
+      }).to.throw(/`name` is required for removeHeader\(name\)\./)
 
-      assert.throws(() => {
+      expect(() => {
         net.request({ url: `${server.url}/requestUrl` }).removeHeader(null)
-      }, /`name` is required for removeHeader\(name\)\./)
+      }).to.throw(/`name` is required for removeHeader\(name\)\./)
     })
 
     it('should follow redirect when no redirect mode is provided', (done) => {
@@ -997,7 +986,7 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         done()
       })
       urlRequest.end()
@@ -1029,7 +1018,7 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         done()
       })
       urlRequest.end()
@@ -1057,7 +1046,7 @@ describe('net module', () => {
         redirect: 'error'
       })
       urlRequest.on('error', (error) => {
-        assert.strictEqual(error.message, 'Request cannot follow redirect with the current redirect mode')
+        expect(error.message).to.equal('Request cannot follow redirect with the current redirect mode')
       })
       urlRequest.on('close', () => {
         done()
@@ -1093,8 +1082,8 @@ describe('net module', () => {
         redirect: 'manual'
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
-        assert.strictEqual(redirectCount, 2)
+        expect(response.statusCode).to.equal(200)
+        expect(redirectCount).to.equal(2)
         done()
       })
       urlRequest.on('redirect', (status, method, url) => {
@@ -1134,7 +1123,7 @@ describe('net module', () => {
         redirect: 'manual'
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).that.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -1144,7 +1133,7 @@ describe('net module', () => {
         response.resume()
       })
       urlRequest.on('close', () => {
-        assert.strictEqual(redirectCount, 1)
+        expect(redirectCount).to.equal(1)
         done()
       })
       urlRequest.on('redirect', (status, method, url) => {
@@ -1188,7 +1177,7 @@ describe('net module', () => {
       })
 
       session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-        assert.fail('Request should not be intercepted by the default session')
+        expect.fail('Request should not be intercepted by the default session')
       })
 
       const customSession = session.fromPartition(customPartitionName, {
@@ -1213,13 +1202,13 @@ describe('net module', () => {
         partition: customPartitionName
       })
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
         response.on('end', () => {
-          assert(requestIsRedirected, 'The server should receive a request to the forward URL')
-          assert(requestIsIntercepted, 'The request should be intercepted by the webRequest module')
+          expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL')
+          expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module')
           done()
         })
         response.resume()
@@ -1249,9 +1238,8 @@ describe('net module', () => {
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
-            assert.strictEqual(request.method, 'GET')
-            assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue)
+            expect(request.method).to.equal('GET')
+            expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -1270,7 +1258,7 @@ describe('net module', () => {
       options.headers[customHeaderName] = customHeaderValue
       const urlRequest = net.request(options)
       urlRequest.on('response', (response) => {
-        assert.strictEqual(response.statusCode, 200)
+        expect(response.statusCode).to.be.equal(200)
         response.pause()
         response.on('data', (chunk) => {
         })
@@ -1305,7 +1293,7 @@ describe('net module', () => {
               if (chunk) {
                 receivedBodyData += chunk.toString()
               }
-              assert.strictEqual(receivedBodyData, bodyData)
+              expect(receivedBodyData).to.be.equal(bodyData)
               response.end()
             })
             break
@@ -1318,12 +1306,12 @@ describe('net module', () => {
       nodeRequest.on('response', (nodeResponse) => {
         const netRequest = net.request(`${server.url}${netRequestUrl}`)
         netRequest.on('response', (netResponse) => {
-          assert.strictEqual(netResponse.statusCode, 200)
+          expect(netResponse.statusCode).to.be.equal(200)
           netResponse.pause()
           netResponse.on('data', (chunk) => {})
           netResponse.on('end', () => {
-            assert(netRequestReceived)
-            assert(netRequestEnded)
+            expect(netRequestReceived).to.be.true()
+            expect(netRequestEnded).to.be.true()
             done()
           })
           netResponse.resume()
@@ -1347,11 +1335,11 @@ describe('net module', () => {
       let requestErrorEventEmitted = false
       const urlRequest = net.request(`${server.url}${requestUrl}`)
       urlRequest.on('error', (error) => {
-        assert(error)
+        expect(error).to.be.an('Error')
         requestErrorEventEmitted = true
       })
       urlRequest.on('close', () => {
-        assert(requestErrorEventEmitted)
+        expect(requestErrorEventEmitted).to.be.true()
         done()
       })
       urlRequest.end()
@@ -1363,6 +1351,7 @@ describe('net module', () => {
       const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
+
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:
@@ -1375,36 +1364,117 @@ describe('net module', () => {
             handleUnexpectedURL(request, response)
         }
       })
+
       const urlRequest = net.request({
         method: 'GET',
         url: `${server.url}${requestUrl}`
       })
+
       urlRequest.on('response', (response) => {
-        const statusCode = response.statusCode
-        assert(typeof statusCode === 'number')
-        assert.strictEqual(statusCode, 200)
-        const statusMessage = response.statusMessage
-        assert(typeof statusMessage === 'string')
-        assert.strictEqual(statusMessage, 'OK')
+        expect(response.statusCode).to.equal(200)
+        expect(response.statusMessage).to.equal('OK')
+
         const headers = response.headers
-        assert(typeof headers === 'object')
-        assert.deepStrictEqual(headers[customHeaderName.toLowerCase()],
-          [customHeaderValue])
+        expect(headers).to.be.an('object')
+        const headerValue = headers[customHeaderName.toLowerCase()]
+        expect(headerValue).to.equal(customHeaderValue)
+
         const httpVersion = response.httpVersion
-        assert(typeof httpVersion === 'string')
-        assert(httpVersion.length > 0)
+        expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1)
+
         const httpVersionMajor = response.httpVersionMajor
-        assert(typeof httpVersionMajor === 'number')
-        assert(httpVersionMajor >= 1)
+        expect(httpVersionMajor).to.be.a('number').and.to.be.at.least(1)
+
         const httpVersionMinor = response.httpVersionMinor
-        assert(typeof httpVersionMinor === 'number')
-        assert(httpVersionMinor >= 0)
+        expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0)
+
         response.pause()
-        response.on('data', (chunk) => {
-        })
-        response.on('end', () => {
-          done()
-        })
+        response.on('data', chunk => {})
+        response.on('end', () => { done() })
+        response.resume()
+      })
+      urlRequest.end()
+    })
+
+    it('should discard duplicate headers', (done) => {
+      const requestUrl = '/duplicateRequestUrl'
+      const includedHeader = 'max-forwards'
+      const discardableHeader = 'Max-Forwards'
+
+      const includedHeaderValue = 'max-fwds-val'
+      const discardableHeaderValue = 'max-fwds-val-two'
+
+      server.on('request', (request, response) => {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.setHeader(discardableHeader, discardableHeaderValue)
+            response.setHeader(includedHeader, includedHeaderValue)
+            response.end()
+            break
+          default:
+            handleUnexpectedURL(request, response)
+        }
+      })
+
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+
+      urlRequest.on('response', response => {
+        expect(response.statusCode).to.equal(200)
+        expect(response.statusMessage).to.equal('OK')
+
+        const headers = response.headers
+        expect(headers).to.be.an('object')
+
+        expect(headers).to.have.property(includedHeader)
+        expect(headers).to.not.have.property(discardableHeader)
+        expect(headers[includedHeader]).to.equal(includedHeaderValue)
+
+        response.pause()
+        response.on('data', chunk => {})
+        response.on('end', () => { done() })
+        response.resume()
+      })
+      urlRequest.end()
+    })
+
+    it('should join repeated non-discardable value with ,', (done) => {
+      const requestUrl = '/requestUrl'
+
+      server.on('request', (request, response) => {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.setHeader('referrer-policy', ['first-text', 'second-text'])
+            response.end()
+            break
+          default:
+            handleUnexpectedURL(request, response)
+        }
+      })
+
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+
+      urlRequest.on('response', response => {
+        expect(response.statusCode).to.equal(200)
+        expect(response.statusMessage).to.equal('OK')
+
+        const headers = response.headers
+        expect(headers).to.be.an('object')
+        expect(headers).to.have.a.property('referrer-policy')
+        expect(headers['referrer-policy']).to.equal('first-text, second-text')
+
+        response.pause()
+        response.on('data', chunk => {})
+        response.on('end', () => { done() })
         response.resume()
       })
       urlRequest.end()
@@ -1431,7 +1501,7 @@ describe('net module', () => {
               if (chunk) {
                 receivedBodyData += chunk.toString()
               }
-              assert.strictEqual(receivedBodyData, bodyData)
+              expect(receivedBodyData).to.equal(bodyData)
               response.end()
             })
             break
@@ -1491,9 +1561,9 @@ describe('net module', () => {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', (response) => {
-        assert(!requestCloseEventEmitted)
+        expect(requestCloseEventEmitted).to.be.false()
         const statusCode = response.statusCode
-        assert.strictEqual(statusCode, 200)
+        expect(statusCode).to.equal(200)
         response.pause()
         response.on('data', () => {
         })
@@ -1501,20 +1571,20 @@ describe('net module', () => {
         })
         response.resume()
         response.on('error', () => {
-          assert(!requestCloseEventEmitted)
+          expect(requestCloseEventEmitted).to.be.false()
         })
         response.on('aborted', () => {
-          assert(!requestCloseEventEmitted)
+          expect(requestCloseEventEmitted).to.be.false()
         })
       })
       urlRequest.on('finish', () => {
-        assert(!requestCloseEventEmitted)
+        expect(requestCloseEventEmitted).to.be.false()
       })
       urlRequest.on('error', () => {
-        assert(!requestCloseEventEmitted)
+        expect(requestCloseEventEmitted).to.be.false()
       })
       urlRequest.on('abort', () => {
-        assert(!requestCloseEventEmitted)
+        expect(requestCloseEventEmitted).to.be.false()
       })
       urlRequest.on('close', () => {
         requestCloseEventEmitted = true
@@ -1537,7 +1607,7 @@ describe('net module', () => {
         const {net} = require('electron')
         const urlRequest = net.request('${server.url}${requestUrl}')
         process.nextTick(() => {
-          const v8Util = process.atomBinding('v8_util')
+          const v8Util = process.electronBinding('v8_util')
           v8Util.requestGarbageCollectionForTesting()
           event.sender.send('api-net-spec-done')
         })
@@ -1577,7 +1647,7 @@ describe('net module', () => {
           })
           process.nextTick(() => {
             // Trigger a garbage collection.
-            const v8Util = process.atomBinding('v8_util')
+            const v8Util = process.electronBinding('v8_util')
             v8Util.requestGarbageCollectionForTesting()
             event.sender.send('api-net-spec-resume')
           })
@@ -1613,7 +1683,7 @@ describe('net module', () => {
         })
         urlRequest.on('close', () => {
           process.nextTick(() => {
-            const v8Util = process.atomBinding('v8_util')
+            const v8Util = process.electronBinding('v8_util')
             v8Util.requestGarbageCollectionForTesting()
             event.sender.send('api-net-spec-done')
           })
@@ -1627,5 +1697,5 @@ describe('net module', () => {
 function handleUnexpectedURL (request, response) {
   response.statusCode = '500'
   response.end()
-  assert.fail(`Unexpected URL: ${request.url}`)
+  expect.fail(`Unexpected URL: ${request.url}`)
 }

@@ -92,10 +92,10 @@ void RootView::SetMenuBarVisibility(bool visible) {
 
   menu_bar_visible_ = visible;
   if (visible) {
-    DCHECK_EQ(child_count(), 1);
+    DCHECK_EQ(children().size(), 1ul);
     AddChildView(menu_bar_.get());
   } else {
-    DCHECK_EQ(child_count(), 2);
+    DCHECK_EQ(children().size(), 2ul);
     RemoveChildView(menu_bar_.get());
   }
 
@@ -145,9 +145,11 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
 
     View* focused_view = GetFocusManager()->GetFocusedView();
     last_focused_view_tracker_->SetView(focused_view);
-    menu_bar_->RequestFocus();
-    // Show accelerators when menu bar is focused
-    menu_bar_->SetAcceleratorVisibility(true);
+    if (menu_bar_visible_) {
+      menu_bar_->RequestFocus();
+      // Show accelerators when menu bar is focused
+      menu_bar_->SetAcceleratorVisibility(true);
+    }
   } else {
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;

@@ -23,20 +23,29 @@ def main():
   returncode = 0
   try:
     with scoped_cwd(app_path):
-      mkargs = [ get_binary_path('mksnapshot', app_path), \
-                   SNAPSHOT_SOURCE, '--startup_blob', 'snapshot_blob.bin', \
-                   '--turbo_instruction_scheduling' ]
-      subprocess.check_call(mkargs)
-      print 'ok mksnapshot successfully created snapshot_blob.bin.'
-      context_snapshot = 'v8_context_snapshot.bin'
-      context_snapshot_path = os.path.join(app_path, context_snapshot)
-      gen_binary = get_binary_path('v8_context_snapshot_generator', \
-                                   app_path)
-      genargs = [ gen_binary, \
-                 '--output_file={0}'.format(context_snapshot_path) ]
-      subprocess.check_call(genargs)
-      print 'ok v8_context_snapshot_generator successfully created ' \
-            + context_snapshot
+      if args.snapshot_files_dir is None:
+        mkargs = [ get_binary_path('mksnapshot', app_path), \
+                    SNAPSHOT_SOURCE, '--startup_blob', 'snapshot_blob.bin', \
+                    '--turbo_instruction_scheduling',
+                    '--no-native-code-counters' ]
+        subprocess.check_call(mkargs)
+        print 'ok mksnapshot successfully created snapshot_blob.bin.'
+        context_snapshot = 'v8_context_snapshot.bin'
+        context_snapshot_path = os.path.join(app_path, context_snapshot)
+        gen_binary = get_binary_path('v8_context_snapshot_generator', \
+                                    app_path)
+        genargs = [ gen_binary, \
+                  '--output_file={0}'.format(context_snapshot_path) ]
+        subprocess.check_call(genargs)
+        print 'ok v8_context_snapshot_generator successfully created ' \
+              + context_snapshot
+        if args.create_snapshot_only:
+          return 0
+      else:
+        gen_bin_path = os.path.join(args.snapshot_files_dir, '*.bin')
+        generated_bin_files = glob.glob(gen_bin_path)
+        for bin_file in generated_bin_files:
+          shutil.copy2(bin_file, app_path)
 
       test_path = os.path.join(SOURCE_ROOT, 'spec', 'fixtures', \
                                'snapshot-items-available')
@@ -93,6 +102,14 @@ def parse_args():
                           Relative to the --source-root.',
                       default=None,
                       required=True)
+  parser.add_argument('--create-snapshot-only',
+                      help='Just create snapshot files, but do not run test',
+                      action='store_true')
+  parser.add_argument('--snapshot-files-dir',
+                      help='Directory containing snapshot files to use \
+                          for testing',
+                      default=None,
+                      required=False)
   parser.add_argument('--source-root',
                       default=SOURCE_ROOT,
                       required=False)

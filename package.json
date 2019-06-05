@@ -1,28 +1,40 @@
 {
   "name": "electron",
-  "version": "6.0.0-nightly.20190227",
+  "version": "7.0.0-nightly.20190604",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
+    "@electron/docs-parser": "^0.1.1",
+    "@electron/typescript-definitions": "^8.3.1",
     "@octokit/rest": "^16.3.2",
+    "@types/chai": "^4.1.7",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/express": "^4.16.1",
+    "@types/fs-extra": "^5.0.5",
+    "@types/mocha": "^5.2.6",
     "@types/node": "^10.12.21",
-    "aliasify": "^2.1.0",
+    "@types/split": "^1.0.0",
+    "@types/webpack": "^4.4.32",
+    "@types/webpack-env": "^1.13.9",
+    "@typescript-eslint/eslint-plugin": "^1.4.2",
+    "@typescript-eslint/parser": "^1.4.2",
     "asar": "^1.0.0",
-    "browserify": "^16.2.3",
     "check-for-leaks": "^1.0.2",
     "clang-format": "^1.2.3",
     "colors": "^1.1.2",
     "dotenv-safe": "^4.0.4",
     "dugite": "^1.45.0",
-    "electron-docs-linter": "^3.0.0",
-    "electron-typescript-definitions": "^8.2.1",
     "eslint": "^5.13.0",
     "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.17.2",
     "eslint-plugin-mocha": "^5.2.0",
+    "eslint-plugin-node": "^8.0.1",
+    "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-typescript": "^0.14.0",
+    "express": "^4.16.4",
     "folder-hash": "^2.1.1",
     "fs-extra": "^7.0.1",
-    "husky": "^0.14.3",
+    "husky": "^2.2.0",
     "klaw": "^3.0.0",
     "lint": "^1.1.2",
     "lint-staged": "^8.1.0",
@@ -35,18 +47,20 @@
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
     "request": "^2.88.0",
     "semver": "^5.6.0",
-    "serve": "^6.5.8",
+    "shx": "^0.3.2",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
-    "tsify": "^4.0.1",
-    "typescript": "~3.1.1",
-    "typescript-eslint-parser": "^21.0.0"
+    "timers-browserify": "1.4.2",
+    "ts-loader": "^6.0.2",
+    "ts-node": "^6.0.3",
+    "typescript": "~3.3.3333",
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2"
   },
   "private": true,
   "scripts": {
     "asar": "asar",
-    "browserify": "browserify",
     "bump-version": "./script/bump-version.js",
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
@@ -54,43 +68,43 @@
     "lint:js": "node ./script/lint.js --js",
     "lint:clang-format": "python script/run-clang-format.py -r -c atom/ chromium_src/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:cpp": "node ./script/lint.js --cc",
+    "lint:objc": "node ./script/lint.js --objc",
     "lint:py": "node ./script/lint.js --py",
     "lint:gn": "node ./script/lint.js --gn",
-    "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links",
+    "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:check-trailing-whitespace",
     "lint:docs-relative-links": "python ./script/check-relative-doc-links.py",
+    "lint:check-trailing-whitespace": "python ./script/check-trailing-whitespace.py",
     "lint:js-in-markdown": "standard-markdown docs",
-    "create-api-json": "electron-docs-linter docs --outfile=electron-api.json",
-    "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=electron-api.json --out=electron.d.ts && node spec/ts-smoke/runner.js",
-    "gn-typescript-definitions": "npm run create-typescript-definitions && cp electron.d.ts",
+    "create-api-json": "electron-docs-parser --dir=./",
+    "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --api=electron-api.json && node spec/ts-smoke/runner.js",
+    "gn-typescript-definitions": "npm run create-typescript-definitions && shx cp electron.d.ts",
     "pre-flight": "pre-flight",
     "preinstall": "node -e 'process.exit(0)'",
-    "precommit": "lint-staged",
     "prepack": "check-for-leaks",
-    "prepush": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
-    "test": "node ./script/spec-runner.js electron/spec",
-    "tsc": "tsc"
+    "test": "node ./script/spec-runner.js",
+    "tsc": "tsc",
+    "webpack": "node build/webpack/run-compiler"
   },
   "license": "MIT",
   "author": "Electron Community",
   "keywords": [
     "electron"
   ],
-  "aliasify": {
-    "replacements": {
-      "@electron/internal/(.+)": "./lib/$1"
-    },
-    "appliesTo": {
-      "includeExtensions": [
-        ".js",
-        ".ts"
-      ]
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "check-for-leaks"
     }
   },
   "lint-staged": {
     "*.{js,ts}": [
       "node script/lint.js --js --fix --only --",
+      "git add"
+    ],
+    "*.{js,ts,d.ts}": [
+      "node script/gen-filenames.js",
       "git add"
     ],
     "*.{cc,mm,c,h}": [
@@ -108,8 +122,9 @@
       "node script/lint.js --py --fix --only --",
       "git add"
     ],
-    "docs/api/*.md": [
+    "docs/api/**/*.md": [
       "node script/gen-filenames.js",
+      "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
     ]
   }

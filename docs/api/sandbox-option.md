@@ -1,9 +1,7 @@
 # `sandbox` Option
 
-> Create a browser window with a renderer that can run inside Chromium OS sandbox. With this
+> Create a browser window with a sandboxed renderer. With this
 option enabled, the renderer must communicate via IPC to the main process in order to access node APIs.
-However, in order to enable the Chromium OS sandbox, Electron must be run with the `--enable-sandbox`
-command line argument.
 
 One of the key security features of Chromium is that all blink rendering/JavaScript
 code is executed within a sandbox. This sandbox uses OS-specific features to ensure
@@ -56,35 +54,17 @@ only via IPC. The use of this option stops Electron from creating a Node.js runt
 within this new window `window.open` follows the native behaviour (by default Electron creates a [`BrowserWindow`](browser-window.md)
 and returns a proxy to this via `window.open`).
 
-It is important to note that this option alone won't enable the OS-enforced sandbox. To enable this feature, the
-`--enable-sandbox` command-line argument must be passed to electron, which will
-force `sandbox: true` for all `BrowserWindow` instances.
+[`app.enableSandbox`](app.md#appenablesandbox-experimental) can be used to force `sandbox: true` for all `BrowserWindow` instances.
 
 ```js
 let win
+app.enableSandbox()
 app.on('ready', () => {
-  // no need to pass `sandbox: true` since `--enable-sandbox` was enabled.
+  // no need to pass `sandbox: true` since `app.enableSandbox()` was called.
   win = new BrowserWindow()
   win.loadURL('http://google.com')
 })
 ```
-
-Note that it is not enough to call
-`app.commandLine.appendSwitch('--enable-sandbox')`, as electron/node startup
-code runs after it is possible to make changes to Chromium sandbox settings. The
-switch must be passed to Electron on the command-line:
-
-```sh
-electron --enable-sandbox app.js
-```
-
-It is not possible to have the OS sandbox active only for some renderers, if
-`--enable-sandbox` is enabled, normal Electron windows cannot be created.
-
-If you need to mix sandboxed and non-sandboxed renderers in one application,
-omit the `--enable-sandbox` argument. Without this argument, windows
-created with `sandbox: true` will still have Node.js disabled and communicate
-only via IPC, which by itself is already a gain from security POV.
 
 ## Preload
 
@@ -97,7 +77,7 @@ app.on('ready', () => {
   win = new BrowserWindow({
     webPreferences: {
       sandbox: true,
-      preload: 'preload.js'
+      preload: path.join(app.getAppPath(), 'preload.js')
     }
   })
   win.loadURL('http://google.com')
@@ -110,8 +90,8 @@ and preload.js:
 // This file is loaded whenever a javascript context is created. It runs in a
 // private scope that can access a subset of Electron renderer APIs. We must be
 // careful to not leak any objects into the global scope!
-const fs = require('fs')
-const { ipcRenderer } = require('electron')
+const { ipcRenderer, remote } = require('electron')
+const fs = remote.require('fs')
 
 // read a configuration file using the `fs` module
 const buf = fs.readFileSync('allowed-popup-urls.json')
@@ -133,16 +113,13 @@ window.open = customWindowOpen
 Important things to notice in the preload script:
 
 - Even though the sandboxed renderer doesn't have Node.js running, it still has
-  access to a limited node-like environment: `Buffer`, `process`, `setImmediate`
-  and `require` are available.
+  access to a limited node-like environment: `Buffer`, `process`, `setImmediate`,
+  `clearImmediate` and `require` are available.
 - The preload script can indirectly access all APIs from the main process through the
-  `remote` and `ipcRenderer` modules. This is how `fs` (used above) and other
-  modules are implemented: They are proxies to remote counterparts in the main
-  process.
+  `remote` and `ipcRenderer` modules.
 - The preload script must be contained in a single script, but it is possible to have
   complex preload code composed with multiple modules by using a tool like
-  browserify, as explained below. In fact, browserify is already used by
-  Electron to provide a node-like environment to the preload script.
+  webpack or browserify. An example of using browserify is below.
 
 To create a browserify bundle and use it as a preload script, something like
 the following should be used:
@@ -150,7 +127,6 @@ the following should be used:
 ```sh
   browserify preload/index.js \
     -x electron \
-    -x fs \
     --insert-global-vars=__filename,__dirname -o preload.js
 ```
 
@@ -163,14 +139,14 @@ injects code for those).
 Currently the `require` function provided in the preload scope exposes the
 following modules:
 
-- `child_process`
 - `electron`
   - `crashReporter`
-  - `remote`
+  - `desktopCapturer`
   - `ipcRenderer`
+  - `nativeImage`
+  - `remote`
   - `webFrame`
-- `fs`
-- `os`
+- `events`
 - `timers`
 - `url`
 
@@ -185,16 +161,17 @@ feature. We are still not aware of the security implications of exposing some
 Electron renderer APIs to the preload script, but here are some things to
 consider before rendering untrusted content:
 
-- A preload script can accidentally leak privileged APIs to untrusted code.
+- A preload script can accidentally leak privileged APIs to untrusted code,
+  unless [`contextIsolation`](../tutorial/security.md#3-enable-context-isolation-for-remote-content)
+  is also enabled.
 - Some bug in V8 engine may allow malicious code to access the renderer preload
   APIs, effectively granting full access to the system through the `remote`
-  module.
+  module. Therefore, it is highly recommended to
+  [disable the `remote` module](../tutorial/security.md#15-disable-the-remote-module).
+  If disabling is not feasible, you should selectively
+  [filter the `remote` module](../tutorial/security.md#16-filter-the-remote-module).
 
 Since rendering untrusted content in Electron is still uncharted territory,
 the APIs exposed to the sandbox preload script should be considered more
 unstable than the rest of Electron APIs, and may have breaking changes to fix
 security issues.
-
-One planned enhancement that should greatly increase security is to block IPC
-messages from sandboxed renderers by default, allowing the main process to
-explicitly define a set of messages the renderer is allowed to send.

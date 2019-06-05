@@ -4,17 +4,14 @@
 
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
-#include "atom/browser/ui/win/message_handler_delegate.h"
-
 namespace atom {
 
 AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
-    MessageHandlerDelegate* delegate,
-    views::internal::NativeWidgetDelegate* native_widget_delegate,
+    NativeWindowViews* native_window_view,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-    : views::DesktopWindowTreeHostWin(native_widget_delegate,
+    : views::DesktopWindowTreeHostWin(native_window_view->widget(),
                                       desktop_native_widget_aura),
-      delegate_(delegate) {}
+      native_window_view_(native_window_view) {}
 
 AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {}
 
@@ -22,7 +19,7 @@ bool AtomDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                 WPARAM w_param,
                                                 LPARAM l_param,
                                                 LRESULT* result) {
-  return delegate_->PreHandleMSG(message, w_param, l_param, result);
+  return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
 }
 
 bool AtomDesktopWindowTreeHostWin::HasNativeFrame() const {

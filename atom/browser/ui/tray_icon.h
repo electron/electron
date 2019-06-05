@@ -39,23 +39,22 @@ class TrayIcon {
   // status icon (e.g. Ubuntu Unity).
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
-  // Sets the title displayed aside of the status icon in the status bar. This
-  // only works on macOS.
-  virtual void SetTitle(const std::string& title);
-
   // Sets the status icon highlight mode. This only works on macOS.
-  enum HighlightMode {
+  enum class HighlightMode {
     ALWAYS,    // Always highlight the tray icon
     NEVER,     // Never highlight the tray icon
     SELECTION  // Highlight the tray icon when clicked or the menu is opened
   };
   virtual void SetHighlightMode(HighlightMode mode);
 
-  // Setter and getter for the flag which determines whether to ignore double
-  // click events. These only work on macOS.
 #if defined(OS_MACOSX)
+  // Set/Get flag determining whether to ignore double click events.
   virtual void SetIgnoreDoubleClickEvents(bool ignore) = 0;
   virtual bool GetIgnoreDoubleClickEvents() = 0;
+
+  // Set/Get title displayed next to status icon in the status bar.
+  virtual void SetTitle(const std::string& title) = 0;
+  virtual std::string GetTitle() = 0;
 #endif
 
   // Displays a notification balloon with the specified contents.

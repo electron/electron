@@ -4,7 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-You cannot require or use this module until the `ready` event of the `app`
+This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
 `screen` is an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
@@ -15,13 +15,11 @@ property, so writing `let { screen } = require('electron')` will not work.
 An example of creating a window that fills the whole screen:
 
 ```javascript
-const electron = require('electron')
-const { app, BrowserWindow } = electron
+const { app, BrowserWindow, screen } = require('electron')
 
 let win
-
 app.on('ready', () => {
-  const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
   win = new BrowserWindow({ width, height })
   win.loadURL('https://github.com')
 })
@@ -30,13 +28,12 @@ app.on('ready', () => {
 Another example of creating a window in the external display:
 
 ```javascript
-const electron = require('electron')
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, screen } = require('electron')
 
 let win
 
 app.on('ready', () => {
-  let displays = electron.screen.getAllDisplays()
+  let displays = screen.getAllDisplays()
   let externalDisplay = displays.find((display) => {
     return display.bounds.x !== 0 || display.bounds.y !== 0
   })

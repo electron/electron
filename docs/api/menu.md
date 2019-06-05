@@ -10,7 +10,7 @@ Creates a new menu.
 
 ### Static Methods
 
-The `menu` class has the following static methods:
+The `Menu` class has the following static methods:
 
 #### `Menu.setApplicationMenu(menu)`
 
@@ -65,7 +65,7 @@ You can also attach other fields to the element of the `template` and they will 
 
 The `menu` object has the following instance methods:
 
-#### `menu.popup(options)`
+#### `menu.popup([options])`
 
 * `options` Object (optional)
   * `window` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
@@ -155,7 +155,7 @@ const { app, Menu } = require('electron')
 const template = [
   // { role: 'appMenu' }
   ...(process.platform === 'darwin' ? [{
-    label: app.getName(),
+    label: app.name,
     submenu: [
       { role: 'about' },
       { type: 'separator' },
@@ -240,7 +240,10 @@ const template = [
     submenu: [
       {
         label: 'Learn More',
-        click () { require('electron').shell.openExternalSync('https://electronjs.org') }
+        click: async () => {
+          const { shell } = require('electron')
+          await shell.openExternal('https://electronjs.org')
+        }
       }
     ]
   }
@@ -274,7 +277,6 @@ window.addEventListener('contextmenu', (e) => {
 </script>
 ```
 
-
 ## Notes on macOS Application Menu
 
 macOS has a completely different style of application menu from Windows and
@@ -282,7 +284,7 @@ Linux. Here are some notes on making your app's menu more native-like.
 
 ### Standard Menus
 
-On macOS there are many system-defined standard menus, like the `Services` and
+On macOS there are many system-defined standard menus, like the [`Services`](https://developer.apple.com/documentation/appkit/nsapplication/1428608-servicesmenu?language=objc) and
 `Windows` menus. To make your menu a standard menu, you should set your menu's
 `role` to one of the following and Electron will recognize them and make them
 become standard menus:

@@ -3,16 +3,30 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
+
+#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/wm/public/tooltip_client.h"
 
 namespace atom {
 
 AtomDesktopNativeWidgetAura::AtomDesktopNativeWidgetAura(
-    views::internal::NativeWidgetDelegate* delegate)
-    : views::DesktopNativeWidgetAura(delegate) {
+    NativeWindowViews* native_window_view)
+    : views::DesktopNativeWidgetAura(native_window_view->widget()),
+      native_window_view_(native_window_view) {
+  GetNativeWindow()->SetName("AtomDesktopNativeWidgetAura");
   // This is to enable the override of OnWindowActivated
   wm::SetActivationChangeObserver(GetNativeWindow(), this);
+}
+
+void AtomDesktopNativeWidgetAura::InitNativeWidget(
+    const views::Widget::InitParams& params) {
+  views::Widget::InitParams modified_params = params;
+  desktop_window_tree_host_ = new AtomDesktopWindowTreeHostWin(
+      native_window_view_,
+      static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
+  modified_params.desktop_window_tree_host = desktop_window_tree_host_;
+  views::DesktopNativeWidgetAura::InitNativeWidget(modified_params);
 }
 
 void AtomDesktopNativeWidgetAura::Activate() {

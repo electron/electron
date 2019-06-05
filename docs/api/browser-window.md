@@ -141,9 +141,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `options` Object (optional)
   * `width` Integer (optional) - Window's width in pixels. Default is `800`.
   * `height` Integer (optional) - Window's height in pixels. Default is `600`.
-  * `x` Integer (optional) (**required** if y is used) - Window's left offset from screen.
+  * `x` Integer (optional) - (**required** if y is used) Window's left offset from screen.
     Default is to center the window.
-  * `y` Integer (optional) (**required** if x is used) - Window's top offset from screen.
+  * `y` Integer (optional) - (**required** if x is used) Window's top offset from screen.
     Default is to center the window.
   * `useContentSize` Boolean (optional) - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
@@ -266,6 +266,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
+      **Note:** For security reasons, preload scripts can only be loaded from
+      a subpath of the [app path](app.md#appgetapppath).
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
@@ -306,7 +308,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `textAreasAreResizable` Boolean (optional) - Make TextArea elements resizable. Default
       is `true`.
     * `webgl` Boolean (optional) - Enables WebGL support. Default is `true`.
-    * `webaudio` Boolean (optional) - Enables WebAudio support. Default is `true`.
     * `plugins` Boolean (optional) - Whether plugins should be enabled. Default is `false`.
     * `experimentalFeatures` Boolean (optional) - Enables Chromium's experimental features.
       Default is `false`.
@@ -379,6 +380,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       content in the window, can be `no-user-gesture-required`,
       `user-gesture-required`, `document-user-activation-required`. Defaults to
       `no-user-gesture-required`.
+    * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
+      prevent the window from resizing when entering HTML Fullscreen. Default
+      is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -412,9 +416,11 @@ Returns:
 
 * `event` Event
 * `title` String
+* `explicitSet` Boolean
 
 Emitted when the document changed its title, calling `event.preventDefault()`
 will prevent the native window's title from changing.
+`explicitSet` is false when title is synthesized from file url.
 
 #### Event: 'close'
 
@@ -586,7 +592,7 @@ win.on('app-command', (e, cmd) => {
 })
 ```
 
-The following app commands are explictly supported on Linux:
+The following app commands are explicitly supported on Linux:
 
 * `browser-backward`
 * `browser-forward`
@@ -858,7 +864,7 @@ Returns `Boolean` - Whether the window is in normal state (not maximized, not mi
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` [Size](structures/size.md) - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) (optional) - The extra size not to be included while
 maintaining the aspect ratio. _macOS_
 
 This will make a window maintain an aspect ratio. The extra size allows a
@@ -1003,9 +1009,13 @@ Returns `Integer[]` - Contains the window's maximum width and height.
 
 Sets whether the window can be manually resized by user.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isResizable()`
 
 Returns `Boolean` - Whether the window can be manually resized by user.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMovable(movable)` _macOS_ _Windows_
 
@@ -1013,11 +1023,15 @@ Returns `Boolean` - Whether the window can be manually resized by user.
 
 Sets whether the window can be moved by user. On Linux does nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMovable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be moved by user.
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
@@ -1026,11 +1040,15 @@ On Linux always returns `true`.
 Sets whether the window can be manually minimized by user. On Linux does
 nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMinimizable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be manually minimized by user
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
@@ -1039,11 +1057,15 @@ On Linux always returns `true`.
 Sets whether the window can be manually maximized by user. On Linux does
 nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMaximizable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be manually maximized by user.
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setFullScreenable(fullscreenable)`
 
@@ -1052,10 +1074,14 @@ On Linux always returns `true`.
 Sets whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isFullScreenable()`
 
 Returns `Boolean` - Whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setClosable(closable)` _macOS_ _Windows_
 
@@ -1063,11 +1089,15 @@ maximizes the window.
 
 Sets whether the window can be manually closed by user. On Linux does nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isClosable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
@@ -1217,23 +1247,11 @@ Returns `Boolean` - Whether the window's document has been edited.
 
 #### `win.blurWebView()`
 
-#### `win.capturePage([rect, ]callback)`
-
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
-* `callback` Function
-  * `image` [NativeImage](native-image.md)
-
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of [NativeImage](native-image.md)
-that stores data of the snapshot. Omitting `rect` will capture the whole visible page.
-
-**[Deprecated Soon](promisification.md)**
-
 #### `win.capturePage([rect])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 
-* Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
+Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 
@@ -1326,7 +1344,7 @@ Change to indeterminate mode when progress > 1.
 
 On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `app.getName().desktop`.
+it will assume `{app.name}.desktop`.
 
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
@@ -1476,9 +1494,13 @@ menu bar will only show when users press the single `Alt` key.
 If the menu bar is already visible, calling `setAutoHideMenuBar(true)` won't
 hide it immediately.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMenuBarAutoHide()`
 
 Returns `Boolean` - Whether menu bar automatically hides itself.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
@@ -1612,7 +1634,7 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md). Attach browserView to win.
+* `browserView` [BrowserView](browser-view.md) - Attach browserView to win.
 If there is some other browserViews was attached they will be removed from
 this window.
 
@@ -1645,3 +1667,64 @@ removed in future Electron releases.
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
+
+### Properties
+
+#### `win.autoHideMenuBar`
+
+A `Boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
+
+If the menu bar is already visible, setting this property to `true` won't
+hide it immediately.
+
+#### `win.minimizable`
+
+A `Boolean` property that determines whether the window can be manually minimized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.maximizable`
+
+A `Boolean` property that determines whether the window can be manually maximized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.fullScreenable`
+
+A `Boolean` property that determines whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window.
+
+#### `win.resizable`
+
+A `Boolean` property that determines whether the window can be manually resized by user.
+
+#### `win.closable`
+
+A `Boolean` property that determines whether the window can be manually closed by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.movable`
+
+A `Boolean` property that determines Whether the window can be moved by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.excludedFromShownWindowsMenu` _macOS_
+
+A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
+
+```js
+const win = new BrowserWindow({ height: 600, width: 600 })
+
+const template = [
+  {
+    role: 'windowmenu'
+  }
+]
+
+win.excludedFromShownWindowsMenu = true
+
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```

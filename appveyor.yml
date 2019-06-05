@@ -23,13 +23,28 @@
 # https://www.appveyor.com/docs/build-configuration/#secure-variables
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
+# Uncomment these lines to enable RDP
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
 version: 1.0.{build}
 build_cloud: libcc-20
-image: libcc-20-vs2017-15.7.4
+image: libcc-20-vs2017-15.9
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   DISABLE_CRASH_REPORTER_TESTS: true
   ELECTRON_OUT_DIR: Default
+  ELECTRON_ENABLE_STACK_DUMPING: 1
+notifications:
+  - provider: Webhook
+    url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook
+    method: POST
+    headers:
+      x-mission-control-secret:
+        secure: 90BLVPcqhJPG7d24v0q/RRray6W3wDQ8uVQlQjOHaBWkw1i8FoA1lsjr2C/v1dVok+tS2Pi6KxDctPUkwIb4T27u4RhvmcPzQhVpfwVJAG9oNtq+yKN7vzHfg7k/pojEzVdJpQLzeJGcSrZu7VY39Q==
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: false
 build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
@@ -38,7 +53,7 @@ build_script:
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - md src
+  - ps: if (Test-Path src\electron) { Remove-Item src\electron -Recurse }
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
@@ -52,12 +67,14 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags
+  - gclient sync --with_branch_heads --with_tags --reset
   - cd src
   - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
+  - gn check out/Default //electron:manifests
+  - gn check out/Default //electron/atom/common/api:mojo
   - ninja -C out/Default electron:electron_app
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
@@ -79,6 +96,8 @@ build_script:
         appveyor PushArtifact out/Default/symbols.zip
       }
 test_script:
+  # Workaround for https://github.com/appveyor/ci/issues/2420
+  - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
   - ps: >-
       if ((-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
         $env:RUN_TESTS="true"

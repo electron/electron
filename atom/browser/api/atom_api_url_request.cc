@@ -9,9 +9,9 @@
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/atom_url_request.h"
 #include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
@@ -354,7 +354,7 @@ void URLRequest::OnReceivedRedirect(
 }
 
 void URLRequest::OnAuthenticationRequired(
-    scoped_refptr<const net::AuthChallengeInfo> auth_info) {
+    const net::AuthChallengeInfo& auth_info) {
   if (request_state_.Canceled() || request_state_.Closed()) {
     return;
   }
@@ -364,8 +364,8 @@ void URLRequest::OnAuthenticationRequired(
     return;
   }
 
-  Emit("login", auth_info.get(),
-       base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
+  Emit("login", auth_info,
+       base::BindOnce(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 
 void URLRequest::OnResponseStarted(

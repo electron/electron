@@ -5,9 +5,8 @@
 #include "atom/browser/api/views/atom_api_resize_area.h"
 
 #include "atom/common/api/constructor.h"
-#include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace atom {
 
@@ -52,9 +51,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("ResizeArea", mate::CreateConstructor<ResizeArea>(
-                             isolate, base::Bind(&ResizeArea::New)));
+                             isolate, base::BindRepeating(&ResizeArea::New)));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_resize_area, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_resize_area, Initialize)

@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -20,8 +21,6 @@
 #if defined(OS_WIN)
 #include "ui/display/win/screen_win.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -117,7 +116,8 @@ void Screen::OnDisplayMetricsChanged(const display::Display& display,
 v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Cannot require \"screen\" module before app is ready")));
+        isolate,
+        "The 'screen' module can't be used before the app 'ready' event")));
     return v8::Null(isolate);
   }
 
@@ -163,7 +163,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("screen", Screen::Create(isolate));
+  dict.Set("createScreen", base::BindRepeating(&Screen::Create, isolate));
   dict.Set(
       "Screen",
       Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
@@ -171,4 +171,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_screen, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_screen, Initialize)

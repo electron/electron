@@ -14,6 +14,10 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "v8/include/v8.h"
 
+namespace gfx {
+class Image;
+}
+
 namespace atom {
 
 namespace api {
@@ -24,10 +28,9 @@ class FrameSubscriber : public content::WebContentsObserver,
                         public viz::mojom::FrameSinkVideoConsumer {
  public:
   using FrameCaptureCallback =
-      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
+      base::RepeatingCallback<void(const gfx::Image&, const gfx::Rect&)>;
 
-  FrameSubscriber(v8::Isolate* isolate,
-                  content::WebContents* web_contents,
+  FrameSubscriber(content::WebContents* web_contents,
                   const FrameCaptureCallback& callback,
                   bool only_dirty);
   ~FrameSubscriber() override;
@@ -45,14 +48,15 @@ class FrameSubscriber : public content::WebContentsObserver,
   void OnFrameCaptured(
       base::ReadOnlySharedMemoryRegion data,
       ::media::mojom::VideoFrameInfoPtr info,
-      const gfx::Rect& update_rect,
       const gfx::Rect& content_rect,
       viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) override;
   void OnStopped() override;
 
   void Done(const gfx::Rect& damage, const SkBitmap& frame);
 
-  v8::Isolate* isolate_;
+  // Get the pixel size of render view.
+  gfx::Size GetRenderViewSize() const;
+
   FrameCaptureCallback callback_;
   bool only_dirty_;
 

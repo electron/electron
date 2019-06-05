@@ -18,6 +18,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/promise_util.h"
 #include "base/process/process_iterator.h"
+#include "base/process/process_metrics.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
@@ -26,7 +27,8 @@
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "net/base/completion_callback.h"
+#include "net/base/completion_once_callback.h"
+#include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
 
 #if defined(USE_NSS_CERTS)
@@ -67,7 +69,7 @@ class App : public AtomBrowserClient::Delegate,
             public content::BrowserChildProcessObserver {
  public:
   using FileIconCallback =
-      base::Callback<void(v8::Local<v8::Value>, const gfx::Image&)>;
+      base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
 
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
@@ -77,7 +79,7 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
       std::unique_ptr<base::DictionaryValue> options,
-      const net::CompletionCallback& callback,
+      net::CompletionOnceCallback callback,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
 
@@ -128,11 +130,11 @@ class App : public AtomBrowserClient::Delegate,
       int cert_error,
       const net::SSLInfo& ssl_info,
       const GURL& request_url,
-      content::ResourceType resource_type,
+      bool is_main_frame_request,
       bool strict_enforcement,
       bool expired_previous_decision,
-      const base::Callback<void(content::CertificateRequestResultType)>&
-          callback) override;
+      const base::RepeatingCallback<
+          void(content::CertificateRequestResultType)>& callback) override;
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -155,6 +157,7 @@ class App : public AtomBrowserClient::Delegate,
                        bool* no_javascript_access) override;
 
   // content::GpuDataManagerObserver:
+  void OnGpuInfoUpdate() override;
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
   // content::BrowserChildProcessObserver:
@@ -173,6 +176,8 @@ class App : public AtomBrowserClient::Delegate,
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
   void ChildProcessDisconnected(base::ProcessId pid);
+
+  void SetAppLogsPath(mate::Arguments* args);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
@@ -196,7 +201,7 @@ class App : public AtomBrowserClient::Delegate,
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
-                         const net::CompletionCallback& callback);
+                         net::CompletionRepeatingCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
                                      mate::Arguments* args);
@@ -206,6 +211,10 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(mate::Arguments* args);
+  void SetUserAgentFallback(const std::string& user_agent);
+  std::string GetUserAgentFallback();
+  void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
+  bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(mate::Arguments* args);
@@ -213,8 +222,9 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   v8::Global<v8::Value> dock_;
 #endif
+
 #if defined(MAS_BUILD)
-  base::Callback<void()> StartAccessingSecurityScopedResource(
+  base::RepeatingCallback<void()> StartAccessingSecurityScopedResource(
       mate::Arguments* args);
 #endif
 

@@ -69,7 +69,6 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
   parent_->AddObserver(this);
 
   view_ = new AutofillPopupView(this, parent->GetWidget());
-  view_->Show();
 
 #if BUILDFLAG(ENABLE_OSR)
   if (offscreen) {
@@ -83,6 +82,9 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
 #endif
+
+  // Do this after OSR setup, we check for view_proxy_ when showing
+  view_->Show();
 }
 
 void AutofillPopup::Hide() {

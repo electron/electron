@@ -1,3 +1,6 @@
+// KEEP IN SYNC WITH DEPS FILE
+const YARN_VERSION = '1.15.2'
+
 const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 const { GitProcess } = require('dugite')
@@ -42,5 +45,6 @@ module.exports = {
   getCurrentBranch,
   getElectronExec,
   getAbsoluteElectronExec,
-  OUT_DIR
+  OUT_DIR,
+  YARN_VERSION
 }

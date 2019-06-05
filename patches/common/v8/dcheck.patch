@@ -4,12 +4,12 @@ Date: Mon, 22 Oct 2018 10:47:12 -0700
 Subject: dcheck.patch
 
 
-diff --git a/src/api.cc b/src/api.cc
-index ed4113a3381fcfc83463a866a34b0fd071cc2650..7c409499a83e2f7d3dd552c2b91f77de62adfea0 100644
---- a/src/api.cc
-+++ b/src/api.cc
-@@ -8611,7 +8611,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
- 
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 1b39655a1221b3df0012f5cc26697841d2c100d6..a6ea06b358f4ff21b3f4313c82b4ec52ca5513b8 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -8236,7 +8236,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
+ }
  
  void Isolate::RunMicrotasks() {
 -  DCHECK_NE(MicrotasksPolicy::kScoped, GetMicrotasksPolicy());
@@ -18,10 +18,10 @@ index ed4113a3381fcfc83463a866a34b0fd071cc2650..7c409499a83e2f7d3dd552c2b91f77de
    isolate->default_microtask_queue()->RunMicrotasks(isolate);
  }
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index d399d070b84b948840de84a92c64e366e5aa42bb..413e18d9cdf6c947c86752a86473d095cc29c011 100644
+index 209832dddc21b3c7ef3ab6d8586572b5eaf5f337..7416eda8db13019d8db54bf1a54a9ae4e15982d1 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
-@@ -4773,9 +4773,9 @@ void Heap::TearDown() {
+@@ -5080,9 +5080,9 @@ void Heap::TearDown() {
  void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
                                   GCType gc_type, void* data) {
    DCHECK_NOT_NULL(callback);

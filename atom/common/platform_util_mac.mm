@@ -4,6 +4,9 @@
 
 #include "atom/common/platform_util.h"
 
+#include <string>
+#include <utility>
+
 #import <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 #import <ServiceManagement/ServiceManagement.h>
@@ -91,17 +94,10 @@ bool OpenItem(const base::FilePath& full_path) {
                                launchIdentifiers:NULL];
 }
 
-bool OpenExternal(const GURL& url, const OpenExternalOptions& options) {
-  DCHECK([NSThread isMainThread]);
-  NSURL* ns_url = net::NSURLWithGURL(url);
-  if (ns_url)
-    return OpenURL(ns_url, options.activate).empty();
-  return false;
-}
-
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenExternalCallback callback) {
+  DCHECK([NSThread isMainThread]);
   NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
     std::move(callback).Run("Invalid URL");

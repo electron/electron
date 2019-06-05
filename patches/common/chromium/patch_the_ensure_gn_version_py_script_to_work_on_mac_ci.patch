@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Fri, 12 Apr 2019 12:47:57 -0700
+Subject: patch the ensure_gn_version.py script to work on mac CI
+
+This script is temporary until https://crbug.com/944667 is resolved. We need to
+patch it because on mac CI, we check out the source code on Linux, which
+confuses the script.
+
+diff --git a/buildtools/ensure_gn_version.py b/buildtools/ensure_gn_version.py
+index 9c01f58b44991cf8b48ef8c68ca17946e73e1c3d..a4618353f722e04ea54f84c6eb1f193d3bb97dee 100755
+--- a/buildtools/ensure_gn_version.py
++++ b/buildtools/ensure_gn_version.py
+@@ -38,6 +38,11 @@ SRC_DIR = os.path.dirname(BUILDTOOLS_DIR)
+ 
+ 
+ def main():
++  # NB. on Electron's CI we check out the macOS source on Linux. Bypass this
++  # check as it's not relevant on Electron CI and it gets confused.
++  if os.environ.get('CI') is not None:
++    return 0
++
+   parser = argparse.ArgumentParser()
+   parser.add_argument('version',
+           help='CIPD "git_revision:XYZ" label for GN to sync to')

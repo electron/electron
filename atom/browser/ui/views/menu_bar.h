@@ -16,8 +16,9 @@
 #include "ui/views/view.h"
 
 namespace views {
+class Button;
 class MenuButton;
-}
+}  // namespace views
 
 namespace atom {
 
@@ -78,10 +79,10 @@ class MenuBar : public views::AccessiblePaneView,
   const char* GetClassName() const override;
 
   // views::MenuButtonListener:
-  void OnMenuButtonClicked(views::MenuButton* source,
+  void OnMenuButtonClicked(views::Button* source,
                            const gfx::Point& point,
                            const ui::Event* event) override;
-  void OnNativeThemeChanged(const ui::NativeTheme* theme) override;
+  void OnThemeChanged() override;
 
  private:
   friend class MenuBarColorUpdater;
@@ -89,7 +90,7 @@ class MenuBar : public views::AccessiblePaneView,
   void RebuildChildren();
   void UpdateViewColors();
 
-  void RefreshColorCache(const ui::NativeTheme* theme = nullptr);
+  void RefreshColorCache();
   SkColor background_color_;
 #if defined(USE_X11)
   SkColor enabled_color_;

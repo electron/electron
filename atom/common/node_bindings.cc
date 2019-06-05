@@ -14,6 +14,7 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -28,45 +29,42 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_includes.h"
-
-#define ELECTRON_BUILTIN_MODULES(V)          \
-  V(atom_browser_app)                        \
-  V(atom_browser_auto_updater)               \
-  V(atom_browser_browser_view)               \
-  V(atom_browser_content_tracing)            \
-  V(atom_browser_debugger)                   \
-  V(atom_browser_dialog)                     \
-  V(atom_browser_download_item)              \
-  V(atom_browser_event)                      \
-  V(atom_browser_global_shortcut)            \
-  V(atom_browser_in_app_purchase)            \
-  V(atom_browser_menu)                       \
-  V(atom_browser_net)                        \
-  V(atom_browser_power_monitor)              \
-  V(atom_browser_power_save_blocker)         \
-  V(atom_browser_protocol)                   \
-  V(atom_browser_render_process_preferences) \
-  V(atom_browser_session)                    \
-  V(atom_browser_system_preferences)         \
-  V(atom_browser_top_level_window)           \
-  V(atom_browser_tray)                       \
-  V(atom_browser_web_contents)               \
-  V(atom_browser_web_contents_view)          \
-  V(atom_browser_view)                       \
-  V(atom_browser_web_view_manager)           \
-  V(atom_browser_window)                     \
-  V(atom_common_asar)                        \
-  V(atom_common_clipboard)                   \
-  V(atom_common_command_line)                \
-  V(atom_common_crash_reporter)              \
-  V(atom_common_features)                    \
-  V(atom_common_native_image)                \
-  V(atom_common_notification)                \
-  V(atom_common_screen)                      \
-  V(atom_common_shell)                       \
-  V(atom_common_v8_util)                     \
-  V(atom_renderer_ipc)                       \
+#define ELECTRON_BUILTIN_MODULES(V)  \
+  V(atom_browser_app)                \
+  V(atom_browser_auto_updater)       \
+  V(atom_browser_browser_view)       \
+  V(atom_browser_content_tracing)    \
+  V(atom_browser_debugger)           \
+  V(atom_browser_dialog)             \
+  V(atom_browser_download_item)      \
+  V(atom_browser_event)              \
+  V(atom_browser_global_shortcut)    \
+  V(atom_browser_in_app_purchase)    \
+  V(atom_browser_menu)               \
+  V(atom_browser_net)                \
+  V(atom_browser_power_monitor)      \
+  V(atom_browser_power_save_blocker) \
+  V(atom_browser_protocol)           \
+  V(atom_browser_session)            \
+  V(atom_browser_system_preferences) \
+  V(atom_browser_top_level_window)   \
+  V(atom_browser_tray)               \
+  V(atom_browser_web_contents)       \
+  V(atom_browser_web_contents_view)  \
+  V(atom_browser_view)               \
+  V(atom_browser_web_view_manager)   \
+  V(atom_browser_window)             \
+  V(atom_common_asar)                \
+  V(atom_common_clipboard)           \
+  V(atom_common_command_line)        \
+  V(atom_common_crash_reporter)      \
+  V(atom_common_features)            \
+  V(atom_common_native_image)        \
+  V(atom_common_notification)        \
+  V(atom_common_screen)              \
+  V(atom_common_shell)               \
+  V(atom_common_v8_util)             \
+  V(atom_renderer_ipc)               \
   V(atom_renderer_web_frame)
 
 #define ELECTRON_VIEW_MODULES(V) \
@@ -84,7 +82,7 @@
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
 // forward declaration. The definitions are in each module's
-// implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
+// implementation when calling the NODE_LINKED_MODULE_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
 #if BUILDFLAG(ENABLE_VIEW_API)
@@ -131,7 +129,7 @@ namespace {
 // is not modified.
 std::unique_ptr<const char* []> StringVectorToArgArray(
     const std::vector<std::string>& vector) {
-  std::unique_ptr<const char* []> array(new const char*[vector.size()]);
+  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
@@ -159,7 +157,7 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_(browser_env), weak_factory_(this) {
-  if (browser_env == WORKER) {
+  if (browser_env == BrowserEnvironment::WORKER) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
   } else {
@@ -206,13 +204,14 @@ base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
 }
 
 void NodeBindings::Initialize() {
+  TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_standalone_mode = browser_env_ == BROWSER;
+  node::g_standalone_mode = browser_env_ == BrowserEnvironment::BROWSER;
   node::g_upstream_node_mode = false;
 
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     AtomCommandLine::InitializeFromCommandLine();
 #endif
 
@@ -286,7 +285,8 @@ void NodeBindings::Initialize() {
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
-  if (browser_env_ == BROWSER || env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
+  if (browser_env_ == BrowserEnvironment::BROWSER ||
+      env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
@@ -306,31 +306,30 @@ node::Environment* NodeBindings::CreateEnvironment(
 #endif
 
   // Feed node the path to initialization script.
-  base::FilePath::StringType process_type;
+  std::string process_type;
   switch (browser_env_) {
-    case BROWSER:
-      process_type = FILE_PATH_LITERAL("browser");
+    case BrowserEnvironment::BROWSER:
+      process_type = "browser";
       break;
-    case RENDERER:
-      process_type = FILE_PATH_LITERAL("renderer");
+    case BrowserEnvironment::RENDERER:
+      process_type = "renderer";
       break;
-    case WORKER:
-      process_type = FILE_PATH_LITERAL("worker");
+    case BrowserEnvironment::WORKER:
+      process_type = "worker";
       break;
   }
-  base::FilePath resources_path = GetResourcesPath(browser_env_ == BROWSER);
-  base::FilePath script_path =
-      resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
-          .Append(process_type)
-          .Append(FILE_PATH_LITERAL("init.js"));
-  args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
+  base::FilePath resources_path =
+      GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
+  std::string init_script = "electron/js2c/" + process_type + "_init";
 
-  std::unique_ptr<const char* []> c_argv = StringVectorToArgArray(args);
+  args.insert(args.begin() + 1, init_script);
+
+  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
 
-  if (browser_env_ == BROWSER) {
+  if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
     // so instead call it here to match expected node behavior
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
@@ -344,8 +343,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
   // Do not set DOM globals for renderer process.
-  if (browser_env_ != BROWSER)
-    process.Set("_noBrowserGlobals", resources_path);
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    process.Set("_noBrowserGlobals", true);
   // The path to helper app.
   base::FilePath helper_exec_path;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
@@ -397,13 +396,13 @@ void NodeBindings::UvRunOnce() {
   v8::MicrotasksScope script_scope(env->isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
 
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
   if (r == 0)

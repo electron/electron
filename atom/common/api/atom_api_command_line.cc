@@ -4,14 +4,13 @@
 
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_util.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "services/network/public/cpp/network_switches.h"
-
-#include "atom/common/node_includes.h"
 
 namespace {
 
@@ -52,10 +51,11 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("hasSwitch", &HasSwitch);
   dict.SetMethod("getSwitchValue", &GetSwitchValue);
   dict.SetMethod("appendSwitch", &AppendSwitch);
-  dict.SetMethod("appendArgument", base::Bind(&base::CommandLine::AppendArg,
-                                              base::Unretained(command_line)));
+  dict.SetMethod("appendArgument",
+                 base::BindRepeating(&base::CommandLine::AppendArg,
+                                     base::Unretained(command_line)));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_command_line, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_command_line, Initialize)

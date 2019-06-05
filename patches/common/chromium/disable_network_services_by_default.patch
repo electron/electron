@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Tue, 9 Apr 2019 14:57:02 -0700
+Subject: disable_network_services_by_default.patch
+
+Disable NetworkService by default.
+
+This allows us to enable NetworkService with command line flags, which makes it
+easier to work on NetworkService migration.
+
+We should remove this patch after all Electron's code has been migrated to the
+NetworkService.
+
+diff --git a/services/network/public/cpp/features.cc b/services/network/public/cpp/features.cc
+index 6d52910b8a248519a5eedad42d4f081840db92e7..89635931c4d45447f82156974a3145394098ef68 100644
+--- a/services/network/public/cpp/features.cc
++++ b/services/network/public/cpp/features.cc
+@@ -18,7 +18,7 @@ const base::Feature kNetworkErrorLogging{"NetworkErrorLogging",
+                                          base::FEATURE_ENABLED_BY_DEFAULT};
+ // Enables the network service.
+ const base::Feature kNetworkService{"NetworkService",
+-                                    base::FEATURE_ENABLED_BY_DEFAULT};
++                                    base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ // Out of Blink CORS
+ const base::Feature kOutOfBlinkCors{"OutOfBlinkCors",

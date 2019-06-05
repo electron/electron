@@ -93,8 +93,13 @@ bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
 
   // All addresses are 32bit relative offsets to start.
   record->runtime_function.BeginAddress = 0;
+#if defined(_M_ARM64)
+  record->runtime_function.FunctionLength =
+      base::checked_cast<DWORD>(size_in_bytes);
+#else
   record->runtime_function.EndAddress =
       base::checked_cast<DWORD>(size_in_bytes);
+#endif
   record->runtime_function.UnwindData =
       offsetof(ExceptionHandlerRecord, unwind_info);
 
@@ -134,6 +139,7 @@ void UnregisterNonABICompliantCodeRange(void* start) {
 
   RtlDeleteFunctionTable(&record->runtime_function);
 }
+
 #endif  // _WIN64
 
 }  // namespace
@@ -188,6 +194,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
     if (code_range && size &&
         RegisterNonABICompliantCodeRange(code_range, size)) {
+      // FIXME(nornagon): This broke with https://crrev.com/c/1474703
       gin::Debug::SetCodeRangeDeletedCallback(
           UnregisterNonABICompliantCodeRange);
     }

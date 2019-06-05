@@ -28,6 +28,15 @@ v8::Local<v8::Object> WrappableBase::GetWrapper() const {
     return v8::Local<v8::Object>();
 }
 
+v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(
+    v8::Isolate* isolate) const {
+  if (!wrapper_.IsEmpty())
+    return v8::MaybeLocal<v8::Object>(
+        v8::Local<v8::Object>::New(isolate, wrapper_));
+  else
+    return v8::MaybeLocal<v8::Object>();
+}
+
 void WrappableBase::InitWith(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper) {
   CHECK(wrapper_.IsEmpty());
@@ -39,8 +48,7 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
-    init->Call(isolate->GetCurrentContext(), wrapper, 0, nullptr)
-        .ToLocalChecked();
+    init->Call(isolate->GetCurrentContext(), wrapper, 0, nullptr).IsEmpty();
 
   AfterInit(isolate);
 }

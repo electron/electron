@@ -4,14 +4,18 @@
 
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
 
+#include <algorithm>
+
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_mac.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
-#include "ui/views/cocoa/bridged_native_widget_host_impl.h"
+#include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
-#include "ui/views_bridge_mac/bridged_native_widget_impl.h"
+
+using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
 
 @implementation AtomNSWindowDelegate
 
@@ -22,7 +26,7 @@
   // on the fly.
   // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
   // window delegate.
-  auto* bridge_host = views::BridgedNativeWidgetHostImpl::GetFromNativeWindow(
+  auto* bridge_host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
       shell->GetNativeWindow());
   auto* bridged_view = bridge_host->bridge_impl();
   if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
@@ -179,7 +183,7 @@
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
   // artifacts.
-  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN_INSET) {
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     [window setToolbar:nil];
   }
@@ -196,14 +200,14 @@
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
       // Show title if fullscreen_window_title flag is set
-      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+      (shell_->title_bar_style() != TitleBarStyle::HIDDEN_INSET ||
        shell_->fullscreen_window_title())) {
     [window setTitleVisibility:NSWindowTitleVisible];
   }
 
   // Restore the native toolbar immediately after entering fullscreen, if we
   // do this before leaving fullscreen, traffic light buttons will be jumping.
-  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN_INSET) {
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
@@ -220,13 +224,13 @@
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
-      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+      (shell_->title_bar_style() != TitleBarStyle::HIDDEN_INSET ||
        shell_->fullscreen_window_title())) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
 
   // Turn off the style for toolbar.
-  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN_INSET) {
     shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
     [window setTitlebarAppearsTransparent:YES];
   }
@@ -243,7 +247,7 @@
   // Clears the delegate when window is going to be closed, since EL Capitan it
   // is possible that the methods of delegate would get called after the window
   // has been closed.
-  auto* bridge_host = views::BridgedNativeWidgetHostImpl::GetFromNativeWindow(
+  auto* bridge_host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
       shell_->GetNativeWindow());
   auto* bridged_view = bridge_host->bridge_impl();
   bridged_view->OnWindowWillClose();

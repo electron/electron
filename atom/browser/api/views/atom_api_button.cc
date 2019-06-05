@@ -5,9 +5,8 @@
 #include "atom/browser/api/views/atom_api_button.h"
 
 #include "atom/common/api/constructor.h"
-#include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace atom {
 
@@ -51,10 +50,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Button",
-           mate::CreateConstructor<Button>(isolate, base::Bind(&Button::New)));
+  dict.Set("Button", mate::CreateConstructor<Button>(
+                         isolate, base::BindRepeating(&Button::New)));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_button, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_button, Initialize)

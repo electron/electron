@@ -13,7 +13,7 @@ namespace in_app_purchase {
 
 // --------------------------- Typedefs ---------------------------
 
-typedef base::Callback<void(bool isProductValid)> InAppPurchaseCallback;
+typedef base::OnceCallback<void(bool isProductValid)> InAppPurchaseCallback;
 
 // --------------------------- Functions ---------------------------
 
@@ -27,7 +27,7 @@ std::string GetReceiptURL(void);
 
 void PurchaseProduct(const std::string& productID,
                      int quantity,
-                     const InAppPurchaseCallback& callback);
+                     InAppPurchaseCallback callback);
 
 }  // namespace in_app_purchase
 

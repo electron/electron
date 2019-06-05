@@ -19,14 +19,16 @@
 #include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_process_impl.h"
+#include "atom/browser/feature_list.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/browser/ui/devtools_manager_delegate.h"
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -45,6 +47,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
+#include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/material_design/material_design_controller.h"
@@ -74,7 +77,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
-#include "ui/gfx/platform_font_win.h"
+#include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
 #endif
 
@@ -89,9 +92,6 @@
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
-// Must be included after all other headers.
-#include "atom/common/node_includes.h"
-
 namespace atom {
 
 namespace {
@@ -103,7 +103,7 @@ void Erase(T* container, typename T::iterator iter) {
 
 #if defined(OS_WIN)
 // gfx::Font callbacks
-void AdjustUIFont(gfx::PlatformFontWin::FontAdjustment* font_adjustment) {
+void AdjustUIFont(gfx::win::FontAdjustment* font_adjustment) {
   l10n_util::NeedOverrideDefaultUIFont(&font_adjustment->font_family_override,
                                        &font_adjustment->font_scale);
   font_adjustment->font_scale *= display::win::GetAccessibilityFontScale();
@@ -151,7 +151,7 @@ void OverrideLinuxAppDataPath() {
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::Bind(&ui::LogErrorEventDescription, d, *error));
+        FROM_HERE, base::BindOnce(&ui::LogErrorEventDescription, d, *error));
   }
   return 0;
 }
@@ -198,34 +198,6 @@ int X11EmptyIOErrorHandler(Display* d) {
 
 }  // namespace
 
-void AtomBrowserMainParts::InitializeFeatureList() {
-  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  auto enable_features =
-      cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
-  auto disable_features =
-      cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
-  // Disable creation of spare renderer process with site-per-process mode,
-  // it interferes with our process preference tracking for non sandboxed mode.
-  // Can be reenabled when our site instance policy is aligned with chromium
-  // when node integration is enabled.
-  disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name;
-  auto feature_list = std::make_unique<base::FeatureList>();
-  feature_list->InitializeFromCommandLine(enable_features, disable_features);
-  base::FeatureList::SetInstance(std::move(feature_list));
-}
-
-#if !defined(OS_MACOSX)
-void AtomBrowserMainParts::OverrideAppLogsPath() {
-  base::FilePath path;
-  if (base::PathService::Get(DIR_APP_DATA, &path)) {
-    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    base::PathService::Override(DIR_APP_LOGS, path);
-  }
-}
-#endif
-
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
@@ -233,8 +205,9 @@ AtomBrowserMainParts::AtomBrowserMainParts(
     const content::MainFunctionParams& params)
     : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
-      node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
-      atom_bindings_(new AtomBindings(uv_default_loop())),
+      node_bindings_(
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
+      electron_bindings_(new ElectronBindings(uv_default_loop())),
       main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
@@ -283,8 +256,7 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 }
 
 int AtomBrowserMainParts::PreEarlyInitialization() {
-  InitializeFeatureList();
-  OverrideAppLogsPath();
+  field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
@@ -322,7 +294,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_debugger_->Start();
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
@@ -392,11 +364,11 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(OS_WIN)
-  gfx::PlatformFontWin::SetAdjustFontCallback(&AdjustUIFont);
-  gfx::PlatformFontWin::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
+  gfx::win::SetAdjustFontCallback(&AdjustUIFont);
+  gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 
   wchar_t module_name[MAX_PATH] = {0};
-  if (GetModuleFileName(NULL, module_name, MAX_PATH))
+  if (GetModuleFileName(NULL, module_name, base::size(module_name)))
     ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 
@@ -422,8 +394,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   // Start idle gc.
   gc_timer_.Start(FROM_HERE, base::TimeDelta::FromMinutes(1),
-                  base::Bind(&v8::Isolate::LowMemoryNotification,
-                             base::Unretained(js_env_->isolate())));
+                  base::BindRepeating(&v8::Isolate::LowMemoryNotification,
+                                      base::Unretained(js_env_->isolate())));
 
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
@@ -481,6 +453,7 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
+  node_debugger_->Stop();
   js_env_->OnMessageLoopDestroying();
 
 #if defined(OS_MACOSX)
@@ -510,7 +483,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 
 void AtomBrowserMainParts::PreMainMessageLoopStartCommon() {
 #if defined(OS_MACOSX)
-  InitializeMainNib();
+  InitializeEmptyApplicationMenu();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
 }

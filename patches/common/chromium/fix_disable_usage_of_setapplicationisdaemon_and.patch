@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 4 Mar 2019 14:51:45 -0800
+Subject: fix: disable usage of SetApplicationIsDaemon and
+ _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
+
+diff --git a/content/utility/utility_service_factory.cc b/content/utility/utility_service_factory.cc
+index 2e098ff3c2d0052984a96ffc72e393a20418b445..bf07ae34c286f03225535f6082a9151f12a3a5f2 100644
+--- a/content/utility/utility_service_factory.cc
++++ b/content/utility/utility_service_factory.cc
+@@ -207,7 +207,7 @@ void UtilityServiceFactory::RunService(
+ std::unique_ptr<service_manager::Service>
+ UtilityServiceFactory::CreateAudioService(
+     mojo::PendingReceiver<service_manager::mojom::Service> receiver) {
+-#if defined(OS_MACOSX)
++#if defined(OS_MACOSX) && !defined(MAS_BUILD)
+   // Don't connect to launch services when running sandboxed
+   // (https://crbug.com/874785).
+   if (base::FeatureList::IsEnabled(
+diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
+index caa30bb378b30331f90057fe7ce3aec724104bf8..a766daa808495f7872051e129c6ad9f76f54e4fe 100644
+--- a/sandbox/mac/system_services.cc
++++ b/sandbox/mac/system_services.cc
+@@ -9,16 +9,19 @@
+ 
+ #include "base/mac/mac_logging.h"
+ 
++#if !defined(MAS_BUILD)
+ extern "C" {
+ OSStatus SetApplicationIsDaemon(Boolean isDaemon);
+ void _LSSetApplicationLaunchServicesServerConnectionStatus(
+     uint64_t flags,
+     bool (^connection_allowed)(CFDictionaryRef options));
+ }  // extern "C"
++#endif
+ 
+ namespace sandbox {
+ 
+ void DisableLaunchServices() {
++  #if !defined(MAS_BUILD)
+   // Allow the process to continue without a LaunchServices ASN. The
+   // INIT_Process function in HIServices will abort if it cannot connect to
+   // launchservicesd to get an ASN. By setting this flag, HIServices skips
+@@ -32,6 +35,7 @@ void DisableLaunchServices() {
+       0, ^bool(CFDictionaryRef options) {
+         return false;
+       });
++  #endif
+ }
+ 
+ }  // namespace sandbox

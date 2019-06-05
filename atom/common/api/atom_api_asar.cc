@@ -9,12 +9,11 @@
 #include "atom/common/asar/archive.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
-
-#include "atom/common/node_includes.h"
 #include "third_party/electron_node/src/node_native_module.h"
 
 namespace {
@@ -118,16 +117,11 @@ class Archive : public mate::Wrappable<Archive> {
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
 
-void InitAsarSupport(v8::Isolate* isolate,
-                     v8::Local<v8::Value> source,
-                     v8::Local<v8::Value> require) {
+void InitAsarSupport(v8::Isolate* isolate, v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
   std::vector<v8::Local<v8::String>> asar_init_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "source"),
       node::FIXED_ONE_BYTE_STRING(isolate, "require")};
-
-  std::vector<v8::Local<v8::Value>> asar_init_args = {source, require};
-
+  std::vector<v8::Local<v8::Value>> asar_init_args = {require};
   node::per_process::native_module_loader.CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/asar_init",
       &asar_init_params, &asar_init_args, nullptr);
@@ -144,4 +138,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_asar, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_asar, Initialize)

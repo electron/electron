@@ -26,8 +26,9 @@ following projects:
 
 Or use a 3rd party hosted solution:
 
-* [Backtrace I/O](https://backtrace.io/electron/)
+* [Backtrace](https://backtrace.io/electron/)
 * [Sentry](https://docs.sentry.io/clients/electron)
+* [BugSplat](https://www.bugsplat.com/docs/platforms/electron)
 
 Crash reports are saved locally in an application-specific temp directory folder.
 For a `productName` of `YourName`, crash reports will be stored in a folder
@@ -44,13 +45,12 @@ The `crashReporter` module has the following methods:
 * `options` Object
   * `companyName` String
   * `submitURL` String - URL that crash reports will be sent to as POST.
-  * `productName` String (optional) - Defaults to `app.getName()`.
-  * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server
-    Default is `true`.
+  * `productName` String (optional) - Defaults to `app.name`.
+  * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server. Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
   * `extra` Object (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
-    supported and the property names and values must be less than 64 characters long.
+    supported. When using Windows, the property names and values must be fewer than 64 characters.
   * `crashesDirectory` String (optional) - Directory to store the crashreports temporarily (only used when the crash reporter is started via `process.crashReporter.start`).
 
 You are required to call this method before using any other `crashReporter` APIs
@@ -95,8 +95,7 @@ them will get reported without `companyName`, `productName` or any of the `extra
 
 Returns [`CrashReport`](structures/crash-report.md):
 
-Returns the date and ID of the last crash report. If no crash reports have been
-sent or the crash reporter has not been started, `null` is returned.
+Returns the date and ID of the last crash report. Only crash reports that have been uploaded will be returned; even if a crash report is present on disk it will not be returned until it is uploaded. In the case that there are no uploaded reports, `null` is returned.
 
 ### `crashReporter.getUploadedReports()`
 

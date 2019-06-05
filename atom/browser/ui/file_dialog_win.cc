@@ -97,7 +97,7 @@ void RunOpenDialogInNewThread(const RunState& run_state,
   bool result = ShowOpenDialogSync(settings, &paths);
   run_state.ui_task_runner->PostTask(
       FROM_HERE,
-      base::BindOnce(&OnDialogOpened, std::move(promise), result, paths));
+      base::BindOnce(&OnDialogOpened, std::move(promise), !result, paths));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
@@ -117,7 +117,7 @@ void RunSaveDialogInNewThread(const RunState& run_state,
   bool result = ShowSaveDialogSync(settings, &path);
   run_state.ui_task_runner->PostTask(
       FROM_HERE,
-      base::BindOnce(&OnSaveDialogDone, std::move(promise), result, path));
+      base::BindOnce(&OnSaveDialogDone, std::move(promise), !result, path));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
@@ -259,7 +259,8 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
       return false;
 
     wchar_t file_name[MAX_PATH];
-    hr = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH, file_name, MAX_PATH);
+    hr = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH, file_name,
+                                  base::size(file_name));
 
     if (FAILED(hr))
       return false;
@@ -320,7 +321,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
-    dict.Set("canceled", false);
+    dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
     promise.Resolve(dict.GetHandle());
   } else {

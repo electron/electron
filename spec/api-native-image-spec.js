@@ -105,10 +105,38 @@ describe('nativeImage module', () => {
     return matchingImage
   }
 
+  describe('isMacTemplateImage property', () => {
+    before(function () {
+      if (process.platform !== 'darwin') this.skip()
+    })
+
+    it('returns whether the image is a template image', () => {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+
+      expect(image.isMacTemplateImage).to.be.a('boolean')
+
+      expect(image.isTemplateImage).to.be.a('function')
+      expect(image.setTemplateImage).to.be.a('function')
+    })
+
+    it('correctly recognizes a template image', () => {
+      const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'))
+      expect(templateImage.isMacTemplateImage).to.be.true()
+    })
+
+    it('sets a template image', function () {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      expect(image.isMacTemplateImage).to.be.false()
+
+      image.isMacTemplateImage = true
+      expect(image.isMacTemplateImage).to.be.true()
+    })
+  })
+
   describe('createEmpty()', () => {
     it('returns an empty image', () => {
       const empty = nativeImage.createEmpty()
-      expect(empty.isEmpty())
+      expect(empty.isEmpty()).to.be.true()
       expect(empty.getAspectRatio()).to.equal(1)
       expect(empty.toDataURL()).to.equal('data:image/png;base64,')
       expect(empty.toDataURL({ scaleFactor: 2.0 })).to.equal('data:image/png;base64,')
@@ -127,9 +155,38 @@ describe('nativeImage module', () => {
     })
   })
 
-  describe('createFromBuffer(buffer, scaleFactor)', () => {
+  describe('createFromBitmap(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
-      expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty())
+      expect(nativeImage.createFromBitmap(Buffer.from([]), { width: 0, height: 0 }).isEmpty()).to.be.true()
+    })
+
+    it('returns an image created from the given buffer', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+
+      const imageB = nativeImage.createFromBitmap(imageA.toBitmap(), imageA.getSize())
+      expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 })
+
+      const imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 })
+      expect(imageC.getSize()).to.deep.equal({ width: 269, height: 95 })
+    })
+
+    it('throws on invalid arguments', () => {
+      expect(() => nativeImage.createFromBitmap(null, {})).to.throw('buffer must be a node Buffer')
+      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12], {})).to.throw('buffer must be a node Buffer')
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), {})).to.throw('width is required')
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1 })).to.throw('height is required')
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1, height: 1 })).to.throw('invalid buffer size')
+    })
+  })
+
+  describe('createFromBuffer(buffer, options)', () => {
+    it('returns an empty image when the buffer is empty', () => {
+      expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true()
+    })
+
+    it('returns an empty image when the buffer is too small', () => {
+      const image = nativeImage.createFromBuffer(Buffer.from([1, 2, 3, 4]), { width: 100, height: 100 })
+      expect(image.isEmpty()).to.be.true()
     })
 
     it('returns an image created from the given buffer', () => {
@@ -151,7 +208,7 @@ describe('nativeImage module', () => {
       expect(imageE.getSize()).to.deep.equal({ width: 100, height: 200 })
 
       const imageF = nativeImage.createFromBuffer(imageA.toBitmap())
-      expect(imageF.isEmpty())
+      expect(imageF.isEmpty()).to.be.true()
 
       const imageG = nativeImage.createFromBuffer(imageA.toPNG(),
         { width: 100, height: 200 })
@@ -165,11 +222,16 @@ describe('nativeImage module', () => {
         { width: 538, height: 190, scaleFactor: 2.0 })
       expect(imageI.getSize()).to.deep.equal({ width: 269, height: 95 })
     })
+
+    it('throws on invalid arguments', () => {
+      expect(() => nativeImage.createFromBuffer(null)).to.throw('buffer must be a node Buffer')
+      expect(() => nativeImage.createFromBuffer([12, 14, 124, 12])).to.throw('buffer must be a node Buffer')
+    })
   })
 
   describe('createFromDataURL(dataURL)', () => {
     it('returns an empty image from the empty string', () => {
-      expect(nativeImage.createFromDataURL('').isEmpty())
+      expect(nativeImage.createFromDataURL('').isEmpty()).to.be.true()
     })
 
     it('returns an image created from the given string', () => {
@@ -178,7 +240,7 @@ describe('nativeImage module', () => {
         const imageFromPath = nativeImage.createFromPath(imageData.path)
         const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl)
 
-        expect(imageFromDataUrl.isEmpty())
+        expect(imageFromDataUrl.isEmpty()).to.be.false()
         expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize())
         expect(imageFromDataUrl.toBitmap()).to.satisfy(
           bitmap => imageFromPath.toBitmap().equals(bitmap))
@@ -272,11 +334,11 @@ describe('nativeImage module', () => {
 
   describe('createFromPath(path)', () => {
     it('returns an empty image for invalid paths', () => {
-      expect(nativeImage.createFromPath('').isEmpty())
-      expect(nativeImage.createFromPath('does-not-exist.png').isEmpty())
-      expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty())
-      expect(nativeImage.createFromPath(__dirname).isEmpty())
-      expect(nativeImage.createFromPath(__filename).isEmpty())
+      expect(nativeImage.createFromPath('').isEmpty()).to.be.true()
+      expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true()
+      expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true()
+      expect(nativeImage.createFromPath(__dirname).isEmpty()).to.be.true()
+      expect(nativeImage.createFromPath(__filename).isEmpty()).to.be.true()
     })
 
     it('loads images from paths relative to the current working directory', () => {
@@ -335,7 +397,7 @@ describe('nativeImage module', () => {
   describe('createFromNamedImage(name)', () => {
     it('returns empty for invalid options', () => {
       const image = nativeImage.createFromNamedImage('totally_not_real')
-      expect(image.isEmpty())
+      expect(image.isEmpty()).to.be.true()
     })
 
     it('returns empty on non-darwin platforms', function () {
@@ -346,7 +408,7 @@ describe('nativeImage module', () => {
       }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
-      expect(image.isEmpty())
+      expect(image.isEmpty()).to.be.true()
     })
 
     it('returns a valid image on darwin', function () {
@@ -392,8 +454,8 @@ describe('nativeImage module', () => {
     })
 
     it('returns an empty image when called on an empty image', () => {
-      expect(nativeImage.createEmpty().resize({ width: 1, height: 1 }).isEmpty())
-      expect(nativeImage.createEmpty().resize({ width: 0, height: 0 }).isEmpty())
+      expect(nativeImage.createEmpty().resize({ width: 1, height: 1 }).isEmpty()).to.be.true()
+      expect(nativeImage.createEmpty().resize({ width: 0, height: 0 }).isEmpty()).to.be.true()
     })
 
     it('supports a quality option', () => {
@@ -409,16 +471,16 @@ describe('nativeImage module', () => {
 
   describe('crop(bounds)', () => {
     it('returns an empty image when called on an empty image', () => {
-      expect(nativeImage.createEmpty().crop({ width: 1, height: 2, x: 0, y: 0 }).isEmpty())
-      expect(nativeImage.createEmpty().crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty())
+      expect(nativeImage.createEmpty().crop({ width: 1, height: 2, x: 0, y: 0 }).isEmpty()).to.be.true()
+      expect(nativeImage.createEmpty().crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true()
     })
 
     it('returns an empty image when the bounds are invalid', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
-      expect(image.crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty())
-      expect(image.crop({ width: -1, height: 10, x: 0, y: 0 }).isEmpty())
-      expect(image.crop({ width: 10, height: -35, x: 0, y: 0 }).isEmpty())
-      expect(image.crop({ width: 100, height: 100, x: 1000, y: 1000 }).isEmpty())
+      expect(image.crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true()
+      expect(image.crop({ width: -1, height: 10, x: 0, y: 0 }).isEmpty()).to.be.true()
+      expect(image.crop({ width: 10, height: -35, x: 0, y: 0 }).isEmpty()).to.be.true()
+      expect(image.crop({ width: 100, height: 100, x: 1000, y: 1000 }).isEmpty()).to.be.true()
     })
 
     it('returns a cropped image', () => {
@@ -447,6 +509,18 @@ describe('nativeImage module', () => {
   })
 
   describe('addRepresentation()', () => {
+    it('does not add representation when the buffer is too small', () => {
+      const image = nativeImage.createEmpty()
+
+      image.addRepresentation({
+        buffer: Buffer.from([1, 2, 3, 4]),
+        width: 100,
+        height: 100
+      })
+
+      expect(image.isEmpty()).to.be.true()
+    })
+
     it('supports adding a buffer representation for a scale factor', () => {
       const image = nativeImage.createEmpty()
 

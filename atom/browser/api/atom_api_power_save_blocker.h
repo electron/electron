@@ -8,24 +8,24 @@
 #include <map>
 #include <memory>
 
-#include "atom/browser/api/trackable_object.h"
-#include "native_mate/handle.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
-
-namespace mate {
-class Dictionary;
-}
 
 namespace atom {
 
 namespace api {
 
-class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
+class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
  public:
-  static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
+  static gin::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+
+  static gin::WrapperInfo kWrapperInfo;
 
  protected:
   explicit PowerSaveBlocker(v8::Isolate* isolate);

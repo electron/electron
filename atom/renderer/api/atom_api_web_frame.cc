@@ -7,12 +7,15 @@
 #include <utility>
 #include <vector>
 
+#include "atom/common/api/api.mojom.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
+#include "atom/common/promise_util.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
@@ -21,6 +24,7 @@
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -34,8 +38,6 @@
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
 #include "url/url_util.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -93,23 +95,20 @@ class RenderFrameStatus : public content::RenderFrameObserver {
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
-  using CompletionCallback =
-      base::Callback<void(const v8::Local<v8::Value>& result)>;
-
-  explicit ScriptExecutionCallback(const CompletionCallback& callback)
-      : callback_(callback) {}
+  explicit ScriptExecutionCallback(atom::util::Promise promise)
+      : promise_(std::move(promise)) {}
   ~ScriptExecutionCallback() override {}
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
-    if (!callback_.is_null() && !result.IsEmpty() && !result[0].IsEmpty())
+    if (!result.empty() && !result[0].IsEmpty())
       // Right now only single results per frame is supported.
-      callback_.Run(result[0]);
+      promise_.Resolve(result[0]);
     delete this;
   }
 
  private:
-  CompletionCallback callback_;
+  atom::util::Promise promise_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
@@ -204,25 +203,26 @@ void SetName(v8::Local<v8::Value> window, const std::string& name) {
       blink::WebString::FromUTF8(name));
 }
 
-double SetZoomLevel(v8::Local<v8::Value> window, double level) {
-  double result = 0.0;
+void SetZoomLevel(v8::Local<v8::Value> window, double level) {
   content::RenderFrame* render_frame = GetRenderFrame(window);
-  render_frame->Send(new AtomFrameHostMsg_SetTemporaryZoomLevel(
-      render_frame->GetRoutingID(), level, &result));
-  return result;
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+  browser_ptr->SetTemporaryZoomLevel(level);
 }
 
 double GetZoomLevel(v8::Local<v8::Value> window) {
   double result = 0.0;
   content::RenderFrame* render_frame = GetRenderFrame(window);
-  render_frame->Send(
-      new AtomFrameHostMsg_GetZoomLevel(render_frame->GetRoutingID(), &result));
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+  browser_ptr->DoGetZoomLevel(&result);
   return result;
 }
 
-double SetZoomFactor(v8::Local<v8::Value> window, double factor) {
-  return blink::WebView::ZoomLevelToZoomFactor(
-      SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor)));
+void SetZoomFactor(v8::Local<v8::Value> window, double factor) {
+  SetZoomLevel(window, blink::WebView::ZoomFactorToZoomLevel(factor));
 }
 
 double GetZoomFactor(v8::Local<v8::Value> window) {
@@ -323,25 +323,32 @@ void InsertCSS(v8::Local<v8::Value> window, const std::string& css) {
   }
 }
 
-void ExecuteJavaScript(mate::Arguments* args,
-                       v8::Local<v8::Value> window,
-                       const base::string16& code) {
+v8::Local<v8::Promise> ExecuteJavaScript(mate::Arguments* args,
+                                         v8::Local<v8::Value> window,
+                                         const base::string16& code) {
+  v8::Isolate* isolate = args->isolate();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
-  ScriptExecutionCallback::CompletionCallback completion_callback;
-  args->GetNext(&completion_callback);
-  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
-      new ScriptExecutionCallback(completion_callback));
+
   GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
-      has_user_gesture, callback.release());
+      has_user_gesture, new ScriptExecutionCallback(std::move(promise)));
+
+  return handle;
 }
 
-void ExecuteJavaScriptInIsolatedWorld(
+v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
     mate::Arguments* args,
     v8::Local<v8::Value> window,
     int world_id,
     const std::vector<mate::Dictionary>& scripts) {
+  v8::Isolate* isolate = args->isolate();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   std::vector<blink::WebScriptSource> sources;
 
   for (const auto& script : scripts) {
@@ -352,8 +359,8 @@ void ExecuteJavaScriptInIsolatedWorld(
     script.Get("startLine", &start_line);
 
     if (!script.Get("code", &code)) {
-      args->ThrowError("Invalid 'code'");
-      return;
+      promise.RejectWithErrorMessage("Invalid 'code'");
+      return handle;
     }
 
     sources.emplace_back(
@@ -368,14 +375,14 @@ void ExecuteJavaScriptInIsolatedWorld(
       blink::WebLocalFrame::kSynchronous;
   args->GetNext(&scriptExecutionType);
 
-  ScriptExecutionCallback::CompletionCallback completion_callback;
-  args->GetNext(&completion_callback);
-  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
-      new ScriptExecutionCallback(completion_callback));
-
+  // Debugging tip: if you see a crash stack trace beginning from this call,
+  // then it is very likely that some exception happened when executing the
+  // "content_script/init.js" script.
   GetRenderFrame(window)->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
-      scriptExecutionType, callback.release());
+      scriptExecutionType, new ScriptExecutionCallback(std::move(promise)));
+
+  return handle;
 }
 
 void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
@@ -548,4 +555,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_renderer_web_frame, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_renderer_web_frame, Initialize)

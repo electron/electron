@@ -51,6 +51,10 @@ class NativeImage : public mate::Wrappable<NativeImage> {
                                                   size_t length);
   static mate::Handle<NativeImage> CreateFromPath(v8::Isolate* isolate,
                                                   const base::FilePath& path);
+  static mate::Handle<NativeImage> CreateFromBitmap(
+      mate::Arguments* args,
+      v8::Local<v8::Value> buffer,
+      const mate::Dictionary& options);
   static mate::Handle<NativeImage> CreateFromBuffer(
       mate::Arguments* args,
       v8::Local<v8::Value> buffer);

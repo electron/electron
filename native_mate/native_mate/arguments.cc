@@ -25,21 +25,15 @@ std::string V8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }  // namespace
 
 Arguments::Arguments()
-    : isolate_(NULL),
-      info_(NULL),
-      next_(0),
-      insufficient_arguments_(false) {
-}
+    : isolate_(NULL), info_(NULL), next_(0), insufficient_arguments_(false) {}
 
 Arguments::Arguments(const v8::FunctionCallbackInfo<v8::Value>& info)
     : isolate_(info.GetIsolate()),
       info_(&info),
       next_(0),
-      insufficient_arguments_(false) {
-}
+      insufficient_arguments_(false) {}
 
-Arguments::~Arguments() {
-}
+Arguments::~Arguments() {}
 
 v8::Local<v8::Value> Arguments::PeekNext() const {
   if (next_ >= info_->Length())
@@ -57,15 +51,14 @@ v8::Local<v8::Value> Arguments::ThrowError() const {
 }
 
 v8::Local<v8::Value> Arguments::ThrowError(const std::string& message) const {
-  isolate_->ThrowException(v8::Exception::Error(
-      StringToV8(isolate_, message)));
+  isolate_->ThrowException(v8::Exception::Error(StringToV8(isolate_, message)));
   return v8::Undefined(isolate_);
 }
 
 v8::Local<v8::Value> Arguments::ThrowTypeError(
     const std::string& message) const {
-  isolate_->ThrowException(v8::Exception::TypeError(
-      StringToV8(isolate_, message)));
+  isolate_->ThrowException(
+      v8::Exception::TypeError(StringToV8(isolate_, message)));
   return v8::Undefined(isolate_);
 }
 

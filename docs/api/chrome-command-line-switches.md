@@ -181,6 +181,11 @@ logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
 
+## --no-sandbox
+
+Disables Chromium sandbox, which is now enabled by default.
+Should only be used for testing.
+
 [app]: app.md
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
 [ready]: app.md#event-ready

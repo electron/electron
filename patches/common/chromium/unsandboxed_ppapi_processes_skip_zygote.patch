@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 16 Apr 2019 11:25:08 -0700
+Subject: unsandboxed ppapi processes skip zygote
+
+
+diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppapi_plugin_process_host.cc
+index 37713154ca38166f5abf34f128211e84a9267553..2afb96a4c46d654630c5519b7654b42654a88b5f 100644
+--- a/content/browser/ppapi_plugin_process_host.cc
++++ b/content/browser/ppapi_plugin_process_host.cc
+@@ -121,6 +121,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+   service_manager::ZygoteHandle GetZygote() override {
+     const base::CommandLine& browser_command_line =
+         *base::CommandLine::ForCurrentProcess();
++    if (browser_command_line.HasSwitch(service_manager::switches::kNoSandbox)) {
++      return nullptr;
++    }
+     base::CommandLine::StringType plugin_launcher = browser_command_line
+         .GetSwitchValueNative(switches::kPpapiPluginLauncher);
+     if (is_broker_ || !plugin_launcher.empty())

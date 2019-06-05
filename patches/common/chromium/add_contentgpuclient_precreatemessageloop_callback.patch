@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Thu, 11 Apr 2019 14:49:20 +0200
+Subject: Add ContentGpuClient::PreCreateMessageLoop() callback
+
+Invoke in GpuMain after SetErrorMode, before starting the message loop.
+Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
+
+This should be upstreamed
+
+diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
+index 82f0c4f62be2f210db2c3ed1169c2a816c59cf1f..20dcb7dd1ee1172cfbf263f14724dd4701fa6eae 100644
+--- a/content/gpu/gpu_main.cc
++++ b/content/gpu/gpu_main.cc
+@@ -234,6 +234,10 @@ int GpuMain(const MainFunctionParams& parameters) {
+ 
+   logging::SetLogMessageHandler(GpuProcessLogMessageHandler);
+ 
++  auto* client = GetContentClient()->gpu();
++  if (client)
++    client->PreCreateMessageLoop();
++
+   // We are experiencing what appear to be memory-stomp issues in the GPU
+   // process. These issues seem to be impacting the message loop and listeners
+   // registered to it. Create the message loop on the heap to guard against
+@@ -335,7 +339,6 @@ int GpuMain(const MainFunctionParams& parameters) {
+ 
+   GpuProcess gpu_process(io_thread_priority);
+ 
+-  auto* client = GetContentClient()->gpu();
+   if (client)
+     client->PostIOThreadCreated(gpu_process.io_task_runner());
+ 
+diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
+index 20e31e1bd96395cb4350aa6ae84cc16c4ca2116b..d89af81ef9426c197a62027b514011afd10ea3ce 100644
+--- a/content/public/gpu/content_gpu_client.h
++++ b/content/public/gpu/content_gpu_client.h
+@@ -35,6 +35,10 @@ class CONTENT_EXPORT ContentGpuClient {
+  public:
+   virtual ~ContentGpuClient() {}
+ 
++  // Allows the embedder to perform platform-specific initialization before
++  // creating the message loop.
++  virtual void PreCreateMessageLoop() {}
++
+   // Initializes the registry. |registry| will be passed to a ConnectionFilter
+   // (which lives on the IO thread). Unlike other childthreads, the client must
+   // register additional interfaces on this registry rather than just creating

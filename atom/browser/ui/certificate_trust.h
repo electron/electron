@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/callback_forward.h"
+#include "atom/common/promise_util.h"
 #include "base/memory/ref_counted.h"
 #include "net/cert/x509_certificate.h"
 
@@ -17,12 +17,10 @@ class NativeWindow;
 
 namespace certificate_trust {
 
-typedef base::Callback<void(void)> ShowTrustCallback;
-
-void ShowCertificateTrust(atom::NativeWindow* parent_window,
-                          const scoped_refptr<net::X509Certificate>& cert,
-                          const std::string& message,
-                          const ShowTrustCallback& callback);
+v8::Local<v8::Promise> ShowCertificateTrust(
+    atom::NativeWindow* parent_window,
+    const scoped_refptr<net::X509Certificate>& cert,
+    const std::string& message);
 
 }  // namespace certificate_trust
 

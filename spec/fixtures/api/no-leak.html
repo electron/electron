@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Document</title>
+</head>
+<body>
+  <script>
+  window.postMessage({
+    require: typeof require,
+    exports: typeof exports,
+    windowRequire: typeof window.require,
+    windowExports: typeof window.exports,
+    windowPreload: typeof window.sandboxed_preload,
+  })
+  </script>
+</body>
+</html>

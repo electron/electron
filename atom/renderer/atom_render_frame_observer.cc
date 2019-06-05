@@ -5,22 +5,25 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -33,32 +36,6 @@
 namespace atom {
 
 namespace {
-
-bool GetIPCObject(v8::Isolate* isolate,
-                  v8::Local<v8::Context> context,
-                  bool internal,
-                  v8::Local<v8::Object>* ipc) {
-  v8::Local<v8::String> key =
-      mate::StringToV8(isolate, internal ? "ipc-internal" : "ipc");
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-  v8::Local<v8::Object> global_object = context->Global();
-  v8::Local<v8::Value> value;
-  if (!global_object->GetPrivate(context, privateKey).ToLocal(&value))
-    return false;
-  if (value.IsEmpty() || !value->IsObject())
-    return false;
-  *ipc = value->ToObject(isolate);
-  return true;
-}
-
-std::vector<v8::Local<v8::Value>> ListValueToVector(
-    v8::Isolate* isolate,
-    const base::ListValue& list) {
-  v8::Local<v8::Value> array = mate::ConvertToV8(isolate, list);
-  std::vector<v8::Local<v8::Value>> result;
-  mate::ConvertFromV8(isolate, array, &result);
-  return result;
-}
 
 base::StringPiece NetResourceProvider(int key) {
   if (key == IDR_DIR_HEADER_HTML) {
@@ -86,37 +63,52 @@ void AtomRenderFrameObserver::DidClearWindowObject() {
   renderer_client_->DidClearWindowObject(render_frame_);
 }
 
-void AtomRenderFrameObserver::DidCreateDocumentElement() {
-  document_created_ = true;
-}
-
 void AtomRenderFrameObserver::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  if (renderer_client_->isolated_world() && IsMainWorld(world_id) &&
-      // Only the top window's main frame has isolated world.
-      render_frame_->IsMainFrame() && !render_frame_->GetWebFrame()->Opener()) {
+  bool use_context_isolation = renderer_client_->isolated_world();
+  bool is_main_world = IsMainWorld(world_id);
+  bool is_main_frame = render_frame_->IsMainFrame();
+  bool is_not_opened = !render_frame_->GetWebFrame()->Opener();
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  bool should_create_isolated_context =
+      use_context_isolation && is_main_world &&
+      (is_main_frame || allow_node_in_sub_frames) && is_not_opened;
+
+  if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
     renderer_client_->SetupMainWorldOverrides(context, render_frame_);
+  }
+
+  if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
+      world_id <= World::ISOLATED_WORLD_EXTENSIONS_END) {
+    renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
+                                                   world_id);
   }
 }
 
 void AtomRenderFrameObserver::DraggableRegionsChanged() {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       render_frame_->GetWebFrame()->GetDocument().DraggableRegions();
-  std::vector<DraggableRegion> regions;
+  std::vector<mojom::DraggableRegionPtr> regions;
   for (auto& webregion : webregions) {
-    DraggableRegion region;
+    auto region = mojom::DraggableRegion::New();
     render_frame_->GetRenderView()->ConvertViewportToWindowViaWidget(
         &webregion.bounds);
-    region.bounds = webregion.bounds;
-    region.draggable = webregion.draggable;
-    regions.push_back(region);
+    region->bounds = webregion.bounds;
+    region->draggable = webregion.draggable;
+    regions.push_back(std::move(region));
   }
-  Send(new AtomFrameHostMsg_UpdateDraggableRegions(routing_id(), regions));
+
+  mojom::ElectronBrowserPtr browser_ptr;
+  render_frame_->GetRemoteInterfaces()->GetInterface(
+      mojo::MakeRequest(&browser_ptr));
+  browser_ptr->UpdateDraggableRegions(std::move(regions));
 }
 
 void AtomRenderFrameObserver::WillReleaseScriptContext(
@@ -155,98 +147,14 @@ bool AtomRenderFrameObserver::IsIsolatedWorld(int world_id) {
 }
 
 bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  if (renderer_client_->isolated_world() && render_frame_->IsMainFrame())
+  bool allow_node_in_sub_frames =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInSubFrames);
+  if (renderer_client_->isolated_world() &&
+      (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
     return IsIsolatedWorld(world_id);
   else
     return IsMainWorld(world_id);
-}
-
-bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
-    IPC_MESSAGE_HANDLER(AtomFrameMsg_Message, OnBrowserMessage)
-    IPC_MESSAGE_HANDLER(AtomFrameMsg_TakeHeapSnapshot, OnTakeHeapSnapshot)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
-void AtomRenderFrameObserver::OnBrowserMessage(bool internal,
-                                               bool send_to_all,
-                                               const std::string& channel,
-                                               const base::ListValue& args,
-                                               int32_t sender_id) {
-  // Don't handle browser messages before document element is created.
-  // When we receive a message from the browser, we try to transfer it
-  // to a web page, and when we do that Blink creates an empty
-  // document element if it hasn't been created yet, and it makes our init
-  // script to run while `window.location` is still "about:blank".
-  if (!document_created_)
-    return;
-
-  blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
-  if (!frame)
-    return;
-
-  EmitIPCEvent(frame, internal, channel, args, sender_id);
-
-  // Also send the message to all sub-frames.
-  if (send_to_all) {
-    for (blink::WebFrame* child = frame->FirstChild(); child;
-         child = child->NextSibling())
-      if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), internal, channel, args,
-                     sender_id);
-      }
-  }
-}
-
-void AtomRenderFrameObserver::OnTakeHeapSnapshot(
-    IPC::PlatformFileForTransit file_handle,
-    const std::string& channel) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
-
-  auto file = IPC::PlatformFileForTransitToFile(file_handle);
-  bool success = TakeHeapSnapshot(blink::MainThreadIsolate(), &file);
-
-  base::ListValue args;
-  args.AppendBoolean(success);
-
-  render_frame_->Send(new AtomFrameHostMsg_Message(
-      render_frame_->GetRoutingID(), true, channel, args));
-}
-
-void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
-                                           bool internal,
-                                           const std::string& channel,
-                                           const base::ListValue& args,
-                                           int32_t sender_id) {
-  if (!frame)
-    return;
-
-  v8::Isolate* isolate = blink::MainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
-  v8::Context::Scope context_scope(context);
-
-  // Only emit IPC event for context with node integration.
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (!env)
-    return;
-
-  v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, internal, &ipc)) {
-    TRACE_EVENT0("devtools.timeline", "FunctionCall");
-    auto args_vector = ListValueToVector(isolate, args);
-    // Insert the Event object, event.sender is ipc.
-    mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
-    event.Set("sender", ipc);
-    event.Set("senderId", sender_id);
-    args_vector.insert(args_vector.begin(), event.GetHandle());
-    mate::EmitEvent(isolate, ipc, channel, args_vector);
-  }
 }
 
 }  // namespace atom

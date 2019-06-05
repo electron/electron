@@ -11,10 +11,10 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_blob_reader.h"
 #include "atom/browser/net/resolve_proxy_helper.h"
+#include "atom/common/promise_util.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
-#include "net/base/completion_callback.h"
 
 class GURL;
 
@@ -62,13 +62,12 @@ class Session : public mate::TrackableObject<Session>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods.
-  void ResolveProxy(const GURL& url,
-                    const ResolveProxyHelper::ResolveProxyCallback& callback);
-  template <CacheAction action>
-  void DoCacheAction(const net::CompletionCallback& callback);
-  void ClearStorageData(mate::Arguments* args);
+  v8::Local<v8::Promise> ResolveProxy(mate::Arguments* args);
+  v8::Local<v8::Promise> GetCacheSize();
+  v8::Local<v8::Promise> ClearCache();
+  v8::Local<v8::Promise> ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
-  void SetProxy(const mate::Dictionary& options, const base::Closure& callback);
+  v8::Local<v8::Promise> SetProxy(mate::Arguments* args);
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();
@@ -77,13 +76,13 @@ class Session : public mate::TrackableObject<Session>,
                                    mate::Arguments* args);
   void SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                  mate::Arguments* args);
-  void ClearHostResolverCache(mate::Arguments* args);
-  void ClearAuthCache(mate::Arguments* args);
+  v8::Local<v8::Promise> ClearHostResolverCache(mate::Arguments* args);
+  v8::Local<v8::Promise> ClearAuthCache();
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
-  void GetBlobData(const std::string& uuid,
-                   const AtomBlobReader::CompletionCallback& callback);
+  v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
+                                     const std::string& uuid);
   void CreateInterruptedDownload(const mate::Dictionary& options);
   void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
   std::vector<base::FilePath::StringType> GetPreloads() const;

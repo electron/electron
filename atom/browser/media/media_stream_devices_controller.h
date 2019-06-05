@@ -22,7 +22,7 @@ class MediaStreamDevicesController {
 
   // Explicitly accept or deny the request.
   void Accept();
-  void Deny(blink::MediaStreamRequestResult result);
+  void Deny(blink::mojom::MediaStreamRequestResult result);
 
  private:
   // Handle the request of desktop or tab screen cast.

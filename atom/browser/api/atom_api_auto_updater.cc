@@ -64,11 +64,17 @@ void AutoUpdater::OnError(const std::string& message,
   auto errorObject =
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked();
 
+  auto context = isolate()->GetCurrentContext();
+
   // add two new params for better error handling
-  errorObject->Set(mate::StringToV8(isolate(), "code"),
-                   v8::Integer::New(isolate(), code));
-  errorObject->Set(mate::StringToV8(isolate(), "domain"),
-                   mate::StringToV8(isolate(), domain));
+  errorObject
+      ->Set(context, mate::StringToV8(isolate(), "code"),
+            v8::Integer::New(isolate(), code))
+      .Check();
+  errorObject
+      ->Set(context, mate::StringToV8(isolate(), "domain"),
+            mate::StringToV8(isolate(), domain))
+      .Check();
 
   mate::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
 }
@@ -91,7 +97,8 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& url) {
   Emit("update-downloaded", release_notes, release_name, release_date, url,
        // Keep compatibility with old APIs.
-       base::Bind(&AutoUpdater::QuitAndInstall, base::Unretained(this)));
+       base::BindRepeating(&AutoUpdater::QuitAndInstall,
+                           base::Unretained(this)));
 }
 
 void AutoUpdater::OnWindowAllClosed() {
@@ -154,4 +161,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_auto_updater, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_auto_updater, Initialize)

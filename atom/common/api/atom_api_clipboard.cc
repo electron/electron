@@ -6,14 +6,13 @@
 
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -227,4 +226,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_clipboard, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_clipboard, Initialize)

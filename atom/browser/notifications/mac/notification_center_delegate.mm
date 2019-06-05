@@ -4,6 +4,8 @@
 
 #include "atom/browser/notifications/mac/notification_center_delegate.h"
 
+#include <string>
+
 #include "atom/browser/notifications/mac/cocoa_notification.h"
 #include "atom/browser/notifications/mac/notification_presenter_mac.h"
 

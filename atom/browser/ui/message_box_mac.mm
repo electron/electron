@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/message_box.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/native_window.h"
@@ -34,11 +38,11 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   [alert setInformativeText:base::SysUTF8ToNSString(detail)];
 
   switch (type) {
-    case MESSAGE_BOX_TYPE_INFORMATION:
+    case MessageBoxType::kInformation:
       alert.alertStyle = NSInformationalAlertStyle;
       break;
-    case MESSAGE_BOX_TYPE_WARNING:
-    case MESSAGE_BOX_TYPE_ERROR:
+    case MessageBoxType::kWarning:
+    case MessageBoxType::kError:
       // NSWarningAlertStyle shows the app icon while NSCriticalAlertStyle
       // shows a warning icon with an app icon badge. Since there is no
       // error variant, lets just use NSCriticalAlertStyle.
@@ -90,16 +94,16 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
 
 }  // namespace
 
-int ShowMessageBox(NativeWindow* parent_window,
-                   MessageBoxType type,
-                   const std::vector<std::string>& buttons,
-                   int default_id,
-                   int cancel_id,
-                   int options,
-                   const std::string& title,
-                   const std::string& message,
-                   const std::string& detail,
-                   const gfx::ImageSkia& icon) {
+int ShowMessageBoxSync(NativeWindow* parent_window,
+                       MessageBoxType type,
+                       const std::vector<std::string>& buttons,
+                       int default_id,
+                       int cancel_id,
+                       int options,
+                       const std::string& title,
+                       const std::string& message,
+                       const std::string& detail,
+                       const gfx::ImageSkia& icon) {
   NSAlert* alert =
       CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
                     message, detail, "", false, icon);
@@ -134,7 +138,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
-                    const MessageBoxCallback& callback) {
+                    MessageBoxCallback callback) {
   NSAlert* alert =
       CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
                     message, detail, checkbox_label, checkbox_checked, icon);
@@ -143,18 +147,20 @@ void ShowMessageBox(NativeWindow* parent_window,
   // window to wait for.
   if (!parent_window) {
     int ret = [[alert autorelease] runModal];
-    callback.Run(ret, alert.suppressionButton.state == NSOnState);
+    std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
     NSWindow* window =
         parent_window ? parent_window->GetNativeWindow().GetNativeNSWindow()
                       : nil;
+
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
-    __block MessageBoxCallback callback_ = callback;
+    __block MessageBoxCallback callback_ = std::move(callback);
+
     [alert beginSheetModalForWindow:window
                   completionHandler:^(NSModalResponse response) {
-                    callback_.Run(response,
-                                  alert.suppressionButton.state == NSOnState);
+                    std::move(callback_).Run(
+                        response, alert.suppressionButton.state == NSOnState);
                   }];
   }
 }

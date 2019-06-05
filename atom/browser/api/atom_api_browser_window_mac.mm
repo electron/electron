@@ -4,12 +4,14 @@
 
 #include "atom/browser/api/atom_api_browser_window.h"
 
+#include <memory>
+#include <vector>
+
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/native_browser_view.h"
 #include "atom/browser/native_window_mac.h"
 #include "atom/browser/ui/inspectable_web_contents_view.h"
-#include "atom/common/draggable_region.h"
 #include "base/mac/scoped_nsobject.h"
 
 @interface NSView (WebContentsView)
@@ -73,8 +75,7 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
 }
 
 void BrowserWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
-    const std::vector<DraggableRegion>& regions) {
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
   if (window_->has_frame())
     return;
 
@@ -100,7 +101,9 @@ void BrowserWindow::UpdateDraggableRegions(
 
   // Draggable regions is implemented by having the whole web view draggable
   // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  draggable_regions_ = regions;
+  draggable_regions_.clear();
+  for (const auto& r : regions)
+    draggable_regions_.push_back(r.Clone());
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
     drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
@@ -111,7 +114,7 @@ void BrowserWindow::UpdateDraggableRegions(
 
   auto browser_views = window_->browser_views();
   for (NativeBrowserView* view : browser_views) {
-    (view)->UpdateDraggableRegions(drag_exclude_rects);
+    view->UpdateDraggableRegions(drag_exclude_rects);
   }
 
   // Create and add a ControlRegionView for each region that needs to be

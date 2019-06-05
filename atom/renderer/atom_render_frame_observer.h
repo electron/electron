@@ -11,6 +11,7 @@
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
+#include "third_party/blink/public/platform/web_isolated_world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace base {
@@ -21,9 +22,19 @@ namespace atom {
 
 enum World {
   MAIN_WORLD = 0,
+
   // Use a high number far away from 0 to not collide with any other world
   // IDs created internally by Chrome.
-  ISOLATED_WORLD = 999
+  ISOLATED_WORLD = 999,
+
+  // Numbers for isolated worlds for extensions are set in
+  // lib/renderer/content-script-injector.ts, and are greater than or equal to
+  // this number, up to ISOLATED_WORLD_EXTENSIONS_END.
+  ISOLATED_WORLD_EXTENSIONS = 1 << 20,
+
+  // Last valid isolated world ID.
+  ISOLATED_WORLD_EXTENSIONS_END =
+      blink::IsolatedWorldId::kEmbedderWorldIdLimit - 1
 };
 
 // Helper class to forward the messages to the client.
@@ -40,32 +51,17 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
-  bool OnMessageReceived(const IPC::Message& message) override;
-  void DidCreateDocumentElement() override;
-
- protected:
-  virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
-                            bool internal,
-                            const std::string& channel,
-                            const base::ListValue& args,
-                            int32_t sender_id);
 
  private:
   bool ShouldNotifyClient(int world_id);
   void CreateIsolatedWorldContext();
   bool IsMainWorld(int world_id);
   bool IsIsolatedWorld(int world_id);
-  void OnBrowserMessage(bool internal,
-                        bool send_to_all,
-                        const std::string& channel,
-                        const base::ListValue& args,
-                        int32_t sender_id);
   void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
                           const std::string& channel);
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
-  bool document_created_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };

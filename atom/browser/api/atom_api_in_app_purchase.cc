@@ -9,9 +9,8 @@
 #include <vector>
 
 #include "atom/common/native_mate_converters/callback.h"
-#include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace mate {
 
@@ -92,7 +91,7 @@ void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
                  &in_app_purchase::FinishAllTransactions)
       .SetMethod("finishTransactionByDate",
                  &in_app_purchase::FinishTransactionByDate)
-      .SetMethod("getProducts", &in_app_purchase::GetProducts);
+      .SetMethod("getProducts", &InAppPurchase::GetProducts);
 }
 
 InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
@@ -101,13 +100,37 @@ InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
 
 InAppPurchase::~InAppPurchase() {}
 
-void InAppPurchase::PurchaseProduct(const std::string& product_id,
-                                    mate::Arguments* args) {
+v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
+    const std::string& product_id,
+    mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   int quantity = 1;
-  in_app_purchase::InAppPurchaseCallback callback;
   args->GetNext(&quantity);
-  args->GetNext(&callback);
-  in_app_purchase::PurchaseProduct(product_id, quantity, callback);
+
+  in_app_purchase::PurchaseProduct(
+      product_id, quantity,
+      base::BindOnce(atom::util::Promise::ResolvePromise<bool>,
+                     std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> InAppPurchase::GetProducts(
+    const std::vector<std::string>& productIDs,
+    mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  in_app_purchase::GetProducts(
+      productIDs, base::BindOnce(atom::util::Promise::ResolvePromise<
+                                     std::vector<in_app_purchase::Product>>,
+                                 std::move(promise)));
+
+  return handle;
 }
 
 void InAppPurchase::OnTransactionsUpdated(
@@ -140,4 +163,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_in_app_purchase, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_in_app_purchase, Initialize)

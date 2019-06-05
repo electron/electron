@@ -19,9 +19,9 @@ AtomNativeWidgetMac::AtomNativeWidgetMac(
 AtomNativeWidgetMac::~AtomNativeWidgetMac() {}
 
 NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
-    const views_bridge_mac::mojom::CreateWindowParams* params) {
-  return [[[AtomNSWindow alloc] initWithShell:shell_ styleMask:style_mask_]
-      autorelease];
+    const remote_cocoa::mojom::CreateWindowParams* params) {
+  return [[[AtomNSWindow alloc] initWithShell:shell_
+                                    styleMask:style_mask_] autorelease];
 }
 
 }  // namespace atom

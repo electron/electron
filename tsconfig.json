@@ -12,6 +12,7 @@
     "strict": true,
     "baseUrl": ".",
     "allowJs": true,
+    "noUnusedLocals": true,
     "outDir": "ts-gen",
     "paths": {
       "@electron/internal/*": ["lib/*"]

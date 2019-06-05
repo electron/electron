@@ -7,10 +7,11 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/electron_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/web_worker_observer.h"
@@ -19,8 +20,6 @@
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-
-#include "atom/common/node_includes.h"
 #include "third_party/electron_node/src/node_native_module.h"
 
 namespace atom {
@@ -35,25 +34,18 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
-    : node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
-      atom_bindings_(new AtomBindings(uv_default_loop())) {}
+    : node_bindings_(
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::RENDERER)),
+      electron_bindings_(new ElectronBindings(uv_default_loop())) {}
 
 AtomRendererClient::~AtomRendererClient() {
   asar::ClearArchives();
-}
-
-void AtomRendererClient::RenderThreadStarted() {
-  RendererClientBase::RenderThreadStarted();
 }
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
-}
-
-void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomRendererClient::RunScriptsAtDocumentStart(
@@ -112,10 +104,17 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  // If we have disabled the site instance overrides we should prevent loading
+  // any non-context aware native module
+  if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
+    env->ForceOnlyContextAwareNativeModules();
+  env->WarnNonContextAwareNativeModules();
+
   environments_.insert(env);
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(env->isolate(), env->process_object());
+  electron_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object());
   mate::Dictionary process_dict(env->isolate(), env->process_object());
   process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
@@ -153,13 +152,15 @@ void AtomRendererClient::WillReleaseScriptContext(
   // Destroy the node environment.  We only do this if node support has been
   // enabled for sub-frames to avoid a change-of-behavior / introduce crashes
   // for existing users.
-  // TODO(MarshallOfSOund): Free the environment regardless of this switch
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames))
+  // We also do this if we have disable electron site instance overrides to
+  // avoid memory leaks
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
+      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
     node::FreeEnvironment(env);
 
-  // AtomBindings is tracking node environments.
-  atom_bindings_->EnvironmentDestroyed(env);
+  // ElectronBindings is tracking node environments.
+  electron_bindings_->EnvironmentDestroyed(env);
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
@@ -207,6 +208,27 @@ void AtomRendererClient::SetupMainWorldOverrides(
 
   node::per_process::native_module_loader.CompileAndCall(
       context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
+      &isolated_bundle_args, nullptr);
+}
+
+void AtomRendererClient::SetupExtensionWorldOverrides(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame,
+    int world_id) {
+  auto* isolate = context->GetIsolate();
+
+  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
+
+  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
+      GetEnvironment(render_frame)->process_object(),
+      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
+      v8::Integer::New(isolate, world_id)};
+
+  node::per_process::native_module_loader.CompileAndCall(
+      context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
 

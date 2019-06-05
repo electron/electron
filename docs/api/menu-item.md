@@ -108,7 +108,7 @@ The following additional roles are available on _macOS_:
 * `moveTabToNewWindow` - Map to the `moveTabToNewWindow` action.
 * `window` - The submenu is a "Window" menu.
 * `help` - The submenu is a "Help" menu.
-* `services` - The submenu is a "Services" menu.
+* `services` - The submenu is a ["Services"](https://developer.apple.com/documentation/appkit/nsapplication/1428608-servicesmenu?language=objc) menu. This is only intended for use in the Application Menu and is *not* the same as the "Services" submenu used in context menus in macOS apps, which is not implemented in Electron.
 * `recentDocuments` - The submenu is an "Open Recent" menu.
 * `clearRecentDocuments` - Map to the `clearRecentDocuments` action.
 
@@ -121,6 +121,50 @@ Lowercase `role`, e.g. `toggledevtools`, is still supported.
 ### Instance Properties
 
 The following properties are available on instances of `MenuItem`:
+
+#### `menuItem.id`
+
+A `String` indicating the item's unique id, this property can be
+dynamically changed.
+
+#### `menuItem.label`
+
+A `String` indicating the item's visible label, this property can be
+dynamically changed.
+
+#### `menuItem.click`
+
+A `Function` that is fired when the MenuItem receives a click event.
+It can be called with `menuItem.click(event, focusedWindow, focusedWebContents)`.
+* `event` [KeyboardEvent](structures/keyboard-event.md)
+* `focusedWindow` [BrowserWindow](browser-window.md)
+* `focusedWebContents` [WebContents](web-contents.md)
+
+#### `menuItem.submenu`
+
+A `Menu` (optional) containing the menu
+item's submenu, if present.
+
+#### `menuItem.type`
+
+A `String` indicating the type of the item. Can be `normal`, `separator`, `submenu`, `checkbox` or `radio`.
+
+#### `menuItem.role`
+
+A `String` (optional) indicating the item's role, if set.
+
+#### `menuItem.accelerator`
+
+A `Accelerator` (optional) indicating the item's accelerator, if set.
+
+#### `menuItem.icon`
+
+A `NativeImage | String` (optional) indicating the
+item's icon, if set.
+
+#### `menuItem.sublabel`
+
+A `String` indicating the item's sublabel, this property can be dynamically changed.
 
 #### `menuItem.enabled`
 
@@ -145,10 +189,15 @@ will turn off that property for all adjacent items in the same menu.
 
 You can add a `click` function for additional behavior.
 
-#### `menuItem.label`
+#### `menuItem.registerAccelerator`
 
-A `String` representing the menu items visible label.
+A `Boolean` indicating if the accelerator should be registered with the
+system or just displayed, this property can be dynamically changed.
 
-#### `menuItem.click`
+#### `menuItem.commandId`
 
-A `Function` that is fired when the MenuItem receives a click event.
+A `Number` indicating an item's sequential unique id.
+
+#### `menuItem.menu`
+
+A `Menu` that the item is a part of.

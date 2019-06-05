@@ -66,7 +66,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
 #elif defined(OS_MACOSX)
   using NotificationCallback =
-      base::Callback<void(const std::string&, const base::DictionaryValue&)>;
+      base::RepeatingCallback<void(const std::string&,
+                                   const base::DictionaryValue&)>;
 
   void PostNotification(const std::string& name,
                         const base::DictionaryValue& user_info,
@@ -117,6 +118,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   bool IsDarkMode();
   bool IsInvertedColorScheme();
   bool IsHighContrastColorScheme();
+  v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);

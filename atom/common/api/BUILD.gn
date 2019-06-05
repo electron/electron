@@ -1,0 +1,12 @@
+import("//mojo/public/tools/bindings/mojom.gni")
+
+mojom("mojo") {
+  sources = [
+    "api.mojom",
+  ]
+
+  public_deps = [
+    "//mojo/public/mojom/base",
+    "//ui/gfx/geometry/mojo",
+  ]
+}

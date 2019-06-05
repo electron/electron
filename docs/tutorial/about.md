@@ -24,7 +24,6 @@ When a new version of Node.js is released, Electron usually waits about a month 
 
 In Electron, Node.js and Chromium share a single V8 instance—usually the version that Chromium is using. Most of the time this _just works_ but sometimes it means patching Node.js.
 
-
 ### Versioning
 
 As of version 2.0 Electron [follows `semver`](https://semver.org).

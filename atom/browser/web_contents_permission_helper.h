@@ -25,13 +25,13 @@ class WebContentsPermissionHelper
   };
 
   // Asynchronous Requests
-  void RequestFullscreenPermission(const base::Callback<void(bool)>& callback);
+  void RequestFullscreenPermission(base::OnceCallback<void(bool)> callback);
   void RequestMediaAccessPermission(const content::MediaStreamRequest& request,
                                     content::MediaResponseCallback callback);
   void RequestWebNotificationPermission(
-      const base::Callback<void(bool)>& callback);
+      base::OnceCallback<void(bool)> callback);
   void RequestPointerLockPermission(bool user_gesture);
-  void RequestOpenExternalPermission(const base::Callback<void(bool)>& callback,
+  void RequestOpenExternalPermission(base::OnceCallback<void(bool)> callback,
                                      bool user_gesture,
                                      const GURL& url);
 
@@ -44,7 +44,7 @@ class WebContentsPermissionHelper
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
   void RequestPermission(content::PermissionType permission,
-                         const base::Callback<void(bool)>& callback,
+                         base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
                          const base::DictionaryValue* details = nullptr);
 

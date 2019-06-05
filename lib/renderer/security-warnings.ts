@@ -3,6 +3,8 @@ import { invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-ut
 
 let shouldLog: boolean | null = null
 
+const { platform, execPath, env } = process
+
 /**
  * This method checks if a security message should be logged.
  * It does so by determining whether we're running as Electron,
@@ -15,8 +17,6 @@ const shouldLogSecurityWarnings = function (): boolean {
   if (shouldLog !== null) {
     return shouldLog
   }
-
-  const { platform, execPath, env } = process
 
   switch (platform) {
     case 'darwin':
@@ -64,16 +64,14 @@ const getIsRemoteProtocol = function () {
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
  */
 const isUnsafeEvalEnabled = function () {
-  return new Promise((resolve) => {
-    webFrame.executeJavaScript(`(${(() => {
-      try {
-        new Function('') // eslint-disable-line no-new,no-new-func
-      } catch {
-        return false
-      }
-      return true
-    }).toString()})()`, false, resolve)
-  })
+  return webFrame.executeJavaScript(`(${(() => {
+    try {
+      new Function('') // eslint-disable-line no-new,no-new-func
+    } catch {
+      return false
+    }
+    return true
+  }).toString()})()`, false)
 }
 
 const moreInformation = `\nFor more information and help, consult
