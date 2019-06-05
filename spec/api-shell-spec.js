@@ -4,7 +4,8 @@ const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { shell } = require('electron')
+const { shell, remote } = require('electron')
+const { BrowserWindow } = remote
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -49,11 +50,12 @@ describe('shell module', () => {
         process.env.DISPLAY = ''
       }
 
-      // Ensure an external window is activated via our window's blur event
+      // Ensure an external window is activated via a new window's blur event
+      const w = new BrowserWindow()
       let promiseResolved = false
       let blurEventEmitted = false
 
-      window.addEventListener('blur', () => {
+      w.on('blur', () => {
         blurEventEmitted = true
         if (promiseResolved) {
           done()
