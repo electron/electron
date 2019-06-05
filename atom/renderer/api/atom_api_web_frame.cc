@@ -101,9 +101,21 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
-    if (!result.empty() && !result[0].IsEmpty())
-      // Right now only single results per frame is supported.
-      promise_.Resolve(result[0]);
+    if (!result.empty()) {
+      if (!result[0].IsEmpty()) {
+        // Right now only single results per frame is supported.
+        promise_.Resolve(result[0]);
+      } else {
+        promise_.RejectWithErrorMessage(
+            "Script failed to execute, this normally means an error "
+            "was thrown. Check the renderer console for the error."
+            "was thrown, check the renderer console for the error");
+      }
+    } else {
+      promise_.RejectWithErrorMessage(
+          "WebFrame was removed before script could run. This normally means "
+          "the underlying frame was destroyed");
+    }
     delete this;
   }
 
