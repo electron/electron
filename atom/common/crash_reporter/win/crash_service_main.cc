@@ -4,6 +4,8 @@
 
 #include "atom/common/crash_reporter/win/crash_service_main.h"
 
+#include <string>
+
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/crash_reporter/win/crash_service.h"
 #include "base/at_exit.h"
@@ -36,18 +38,20 @@ bool CreateCrashServiceDirectory(const base::FilePath& temp_dir) {
   return true;
 }
 
-void RemoveArgs(std::vector<char*>& args) {
-  args.erase(std::remove_if(args.begin(), args.end(), [](std::string str) {
-    return base::StartsWith(str, "--type", base::CompareCase::SENSITIVE) ||
-           base::StartsWith(
-               str, std::string("--") + crash_reporter::kCrashesDirectoryKey,
-               base::CompareCase::INSENSITIVE_ASCII);
-  }));
+void RemoveArgs(std::vector<char*>* args) {
+  args->erase(
+      std::remove_if(args->begin(), args->end(), [](const std::string& str) {
+        return base::StartsWith(str, "--type", base::CompareCase::SENSITIVE) ||
+               base::StartsWith(
+                   str,
+                   std::string("--") + crash_reporter::kCrashesDirectoryKey,
+                   base::CompareCase::INSENSITIVE_ASCII);
+      }));
 }
 
 }  // namespace.
 
-int Main(std::vector<char*>& args) {
+int Main(std::vector<char*>* args) {
   // Ignore invalid parameter errors.
   _set_invalid_parameter_handler(InvalidParameterHandler);
 
@@ -72,7 +76,7 @@ int Main(std::vector<char*>& args) {
 
   // Crashpad cannot handle unknown arguments, so we need to remove it
   RemoveArgs(args);
-  return crashpad::HandlerMain(args.size(), args.data(), nullptr);
+  return crashpad::HandlerMain(args->size(), args->data(), nullptr);
 }
 
 }  // namespace crash_service

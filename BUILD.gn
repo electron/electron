@@ -463,10 +463,10 @@ static_library("electron_lib") {
       sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
       sources -= [
         "atom/browser/auto_updater_mac.mm",
+        "atom/common/crash_reporter/crash_reporter_crashpad.cc",
+        "atom/common/crash_reporter/crash_reporter_crashpad.h",
         "atom/common/crash_reporter/crash_reporter_mac.h",
         "atom/common/crash_reporter/crash_reporter_mac.mm",
-        "atom/common/crash_reporter/crash_reporter_crashpad.h",
-        "atom/common/crash_reporter/crash_reporter_crashpad.cc",
       ]
       defines += [ "MAS_BUILD" ]
     } else {
@@ -513,14 +513,12 @@ static_library("electron_lib") {
       "//ui/wm",
       "//ui/wm/public",
     ]
-    public_deps += [
-      "//third_party/crashpad/crashpad/handler"
-    ]
+    public_deps += [ "//third_party/crashpad/crashpad/handler" ]
     include_dirs += [
       # NOTE(nornagon): other chromium files use the full path to include
       # crashpad; this is just here for compatibility between GN and GYP, so that
       # the #includes can be agnostic about where crashpad is vendored.
-      "//third_party/crashpad"
+      "//third_party/crashpad",
     ]
 
     public_deps += [ "//sandbox/win:sandbox" ]
@@ -533,8 +531,8 @@ static_library("electron_lib") {
     ]
     include_dirs += [ "//third_party/breakpad" ]
     sources -= [
-      "atom/common/crash_reporter/crash_reporter_crashpad.h",
       "atom/common/crash_reporter/crash_reporter_crashpad.cc",
+      "atom/common/crash_reporter/crash_reporter_crashpad.h",
     ]
   }
 

@@ -4,6 +4,8 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 
+#include <memory>
+
 #include "atom/browser/browser.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"

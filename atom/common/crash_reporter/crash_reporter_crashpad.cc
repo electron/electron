@@ -4,6 +4,7 @@
 
 #include "atom/common/crash_reporter/crash_reporter_crashpad.h"
 
+#include <algorithm>
 #include <memory>
 
 #include "base/files/file_util.h"

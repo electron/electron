@@ -10,7 +10,7 @@
 namespace crash_service {
 
 // Program entry, should be called by main();
-int Main(std::vector<char*>& args);
+int Main(std::vector<char*>* args);
 
 }  // namespace crash_service
 

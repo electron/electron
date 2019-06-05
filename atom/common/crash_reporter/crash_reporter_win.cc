@@ -5,6 +5,7 @@
 #include "atom/common/crash_reporter/crash_reporter_win.h"
 
 #include <memory>
+#include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/atom_constants.h"
@@ -109,7 +110,8 @@ crashpad::CrashpadClient& CrashReporterWin::GetCrashpadClient() {
 }
 
 void CrashReporterWin::UpdatePipeName() {
-  std::string pipe_name = base::UTF16ToUTF8(crashpad_client_.GetHandlerIPCPipe());
+  std::string pipe_name =
+      base::UTF16ToUTF8(crashpad_client_.GetHandlerIPCPipe());
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   env->SetVar(atom::kCrashpadPipeName, pipe_name);
 

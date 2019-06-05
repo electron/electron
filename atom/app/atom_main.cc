@@ -171,7 +171,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   const base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
   if (cmd_line.GetSwitchValueASCII("type") ==
       crash_reporter::kCrashpadProcess) {
-    return crash_service::Main(argv);
+    return crash_service::Main(&argv);
   }
 
   if (!atom::CheckCommandLineArguments(arguments.argc, arguments.argv))
