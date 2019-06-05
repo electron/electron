@@ -46,7 +46,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356
  
  void PrintJobWorker::GetSettingsWithUI(int document_page_count,
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46bab60983 100644
+index 0c779b5f2c26b165f3094742f64f34e2a94570fb..af1bd18d21376f2bd6cac5e3fb661def5afa6f0e 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -69,7 +69,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46
  #include "printing/buildflags/buildflags.h"
  #include "printing/metafile_skia.h"
 @@ -64,6 +64,8 @@ using PrintSettingsCallback =
-     base::OnceCallback<void(scoped_refptr<PrinterQuery>)>;
+     base::OnceCallback<void(std::unique_ptr<PrinterQuery>)>;
  
  void ShowWarningMessageBox(const base::string16& message) {
 +  LOG(ERROR) << "Invalid printer settings " << message;
@@ -100,7 +100,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46
  }
  
  PrintViewManagerBase::~PrintViewManagerBase() {
-@@ -122,12 +127,14 @@ PrintViewManagerBase::~PrintViewManagerBase() {
+@@ -124,12 +127,14 @@ PrintViewManagerBase::~PrintViewManagerBase() {
    DisconnectFromCurrentPrintJob();
  }
  
@@ -118,7 +118,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -242,9 +249,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -245,9 +250,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -131,7 +131,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -336,7 +343,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
+@@ -339,7 +344,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
    PrintManager::OnPrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -175,7 +175,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46
    printing_succeeded_ = false;
    return true;
  }
-@@ -594,6 +600,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -598,6 +603,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -209,7 +209,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..30b6e042b12f23299b3b7eaecb8a8e71c221786d 100644
+index f3e23125001c0eebebdb2e211d069cd3feb523d8..8f20b5164c35c0ed0e6952058b98f93258700bf5 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -39,6 +40,8 @@ class PrintJob;
@@ -249,7 +249,7 @@ index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..30b6e042b12f23299b3b7eaecb8a8e71
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 1f79e7b127f35e2eaef923af5c4a5f0a7e5250a5..327b37dfbb84c60d7f0e339c3c4cb8ca3b3c9b26 100644
+index 505d662ee16f34c5581dae5635242127f35a8ebb..8f8bba58f80d0da0f07c8220d1613eb3c469dcf3 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -287,35 +287,46 @@ index 1f79e7b127f35e2eaef923af5c4a5f0a7e5250a5..327b37dfbb84c60d7f0e339c3c4cb8ca
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -138,11 +142,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -137,19 +141,14 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+ 
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
-   scoped_refptr<PrinterQuery> printer_query;
-+  #if 0
++#if 0
    if (!is_printing_enabled_.GetValue()) {
      // Reply with NULL query.
-     OnGetDefaultPrintSettingsReply(printer_query, reply_msg);
+     OnGetDefaultPrintSettingsReply(nullptr, reply_msg);
      return;
    }
-+  #endif
-   printer_query = queue_->PopPrinterQuery(0);
-   if (!printer_query.get()) {
+-  std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
+-  if (!printer_query) {
++  if (!printer_query.get()) {
      printer_query =
-@@ -228,11 +234,13 @@ void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
+-        queue_->CreatePrinterQuery(render_process_id_, reply_msg->routing_id());
+-  }
+-
+-  // Loads default settings. This is asynchronous, only the IPC message sender
+-  // will hang until the settings are retrieved.
+   auto* printer_query_ptr = printer_query.get();
+   printer_query_ptr->GetSettings(
+       PrinterQuery::GetSettingsAskParam::DEFAULTS, 0, false, DEFAULT_MARGINS,
+@@ -227,14 +226,15 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+ void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
-   scoped_refptr<PrinterQuery> printer_query;
-+  #if 0
++#if 0
    if (!is_printing_enabled_.GetValue()) {
      // Reply with NULL query.
-     OnUpdatePrintSettingsReply(printer_query, reply_msg);
+     OnUpdatePrintSettingsReply(nullptr, reply_msg);
      return;
    }
-+  #endif
-   printer_query = queue_->PopPrinterQuery(document_cookie);
-   if (!printer_query.get()) {
++#endif
+   std::unique_ptr<PrinterQuery> printer_query =
+       queue_->PopPrinterQuery(document_cookie);
+-  if (!printer_query) {
      printer_query = queue_->CreatePrinterQuery(
-@@ -295,7 +303,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+         content::ChildProcessHost::kInvalidUniqueID, MSG_ROUTING_NONE);
+   }
+@@ -295,7 +295,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
@@ -325,7 +336,7 @@ index 1f79e7b127f35e2eaef923af5c4a5f0a7e5250a5..327b37dfbb84c60d7f0e339c3c4cb8ca
  #endif
  
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index 04b76398ebee1bc3aeaf67ecf5b32272d56d5445..1e21ecb5fb903d56c76f338225b6df6fadc933a2 100644
+index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6305088d5 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
 @@ -24,6 +24,10 @@ struct PrintHostMsg_ScriptedPrint_Params;

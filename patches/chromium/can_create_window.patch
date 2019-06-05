@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 0334ac0cfb75a9d99f841aea388c9a3fc960141b..c341ea17c13ec6f63936c1b4d4faba9bc40362d1 100644
+index fffd340fb4e441d316b1717dee32938c6e3fbfec..7ada80426f20f0b796c9d227e02afc0b65ed3982 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3722,6 +3722,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3716,6 +3716,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,10 +17,10 @@ index 0334ac0cfb75a9d99f841aea388c9a3fc960141b..c341ea17c13ec6f63936c1b4d4faba9b
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 82882159b0bac6d47d678c485de0aacc7db06c2d..dd2299094b79d82da7ec1cd8f559050b6f0e2af5 100644
+index a7cb70caea1b8f757226c07b427cb205e7e4442e..d81791a728e7d724c536786daa8b7a1e3682b408 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -291,6 +291,10 @@ struct CreateNewWindowParams {
+@@ -292,6 +292,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -66,7 +66,7 @@ index 2b4c2c1004fb98da76eb244db4c35dba84085f45..04bfc1a4a804d1f5aa28f894e2feb816
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 1aa52af90279e16f667cb07677c11141d2efce01..3cb0f9b3e24fb79e43b724d7ad5e6ad99cb7450f 100644
+index 1e736bbe2615e4875a9defd9653b93398b6c88b5..fc52a9978618486b7481b9abb3073609dbb5b8b5 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -76,6 +76,7 @@
@@ -77,7 +77,7 @@ index 1aa52af90279e16f667cb07677c11141d2efce01..3cb0f9b3e24fb79e43b724d7ad5e6ad9
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/stream/media_stream_device_observer.h"
  #include "content/renderer/media/video_capture/video_capture_impl_manager.h"
-@@ -1356,6 +1357,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1359,6 +1360,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
