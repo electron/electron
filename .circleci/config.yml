@@ -103,7 +103,7 @@ env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
 
 env-ninja-status: &env-ninja-status
-  NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es ]"
+  NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es]"
 
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
