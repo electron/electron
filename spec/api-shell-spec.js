@@ -7,6 +7,8 @@ const os = require('os')
 const { shell, remote } = require('electron')
 const { BrowserWindow } = remote
 
+const { closeWindow } = require('./window-helpers')
+
 const { expect } = chai
 chai.use(dirtyChai)
 
@@ -24,6 +26,7 @@ describe('shell module', () => {
 
   describe('shell.openExternal()', () => {
     let envVars = {}
+    let w
 
     beforeEach(function () {
       envVars = {
@@ -33,7 +36,9 @@ describe('shell module', () => {
       }
     })
 
-    afterEach(() => {
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null
       // reset env vars to prevent side effects
       if (process.platform === 'linux') {
         process.env.DE = envVars.de
@@ -51,7 +56,7 @@ describe('shell module', () => {
       }
 
       // Ensure an external window is activated via a new window's blur event
-      const w = new BrowserWindow()
+      w = new BrowserWindow()
       let promiseResolved = false
       let blurEventEmitted = false
 
