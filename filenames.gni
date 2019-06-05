@@ -500,8 +500,6 @@ filenames = {
     "atom/common/crash_reporter/crash_reporter_mac.mm",
     "atom/common/crash_reporter/crash_reporter_win.h",
     "atom/common/crash_reporter/crash_reporter_win.cc",
-    "atom/common/crash_reporter/crash_reporter_crashpad.h",
-    "atom/common/crash_reporter/crash_reporter_crashpad.cc",
     "atom/common/crash_reporter/linux/crash_dump_handler.cc",
     "atom/common/crash_reporter/linux/crash_dump_handler.h",
     "atom/common/crash_reporter/win/crash_service_main.cc",

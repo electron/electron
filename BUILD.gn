@@ -445,26 +445,16 @@ static_library("electron_lib") {
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
-      "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
     ]
     sources += [
       "atom/browser/ui/views/autofill_popup_view.cc",
       "atom/browser/ui/views/autofill_popup_view.h",
     ]
-    include_dirs += [
-      # NOTE(nornagon): other chromium files use the full path to include
-      # crashpad; this is just here for compatibility between GN and GYP, so that
-      # the #includes can be agnostic about where crashpad is vendored.
-      "//third_party/crashpad",
-    ]
     if (is_mas_build) {
-      deps -= [ "//third_party/crashpad/crashpad/client" ]
       sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
       sources -= [
         "atom/browser/auto_updater_mac.mm",
-        "atom/common/crash_reporter/crash_reporter_crashpad.cc",
-        "atom/common/crash_reporter/crash_reporter_crashpad.h",
         "atom/common/crash_reporter/crash_reporter_mac.h",
         "atom/common/crash_reporter/crash_reporter_mac.mm",
       ]
@@ -491,10 +481,14 @@ static_library("electron_lib") {
       "//chrome/browser/ui/libgtkui",
       "//dbus",
       "//device/bluetooth",
+      "//third_party/breakpad:client",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
+      "//ui/views/controls/webview",
+      "//ui/wm",
     ]
     configs += [ ":gio_unix" ]
+    include_dirs += [ "//third_party/breakpad" ]
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
@@ -505,35 +499,29 @@ static_library("electron_lib") {
   if (is_win) {
     libs += [ "dwmapi.lib" ]
     deps += [
-      "//third_party/breakpad:breakpad_handler",
-      "//third_party/breakpad:breakpad_sender",
-      "//third_party/crashpad/crashpad/client",
       "//ui/native_theme:native_theme_browser",
       "//ui/views/controls/webview",
       "//ui/wm",
       "//ui/wm/public",
     ]
-    public_deps += [ "//third_party/crashpad/crashpad/handler" ]
+    public_deps += [
+      "//sandbox/win:sandbox",
+      "//third_party/crashpad/crashpad/handler",
+    ]
+  }
+
+  if ((is_mac && !is_mas_build) || is_win) {
     include_dirs += [
       # NOTE(nornagon): other chromium files use the full path to include
       # crashpad; this is just here for compatibility between GN and GYP, so that
       # the #includes can be agnostic about where crashpad is vendored.
       "//third_party/crashpad",
     ]
-
-    public_deps += [ "//sandbox/win:sandbox" ]
-  }
-  if (is_linux) {
-    deps += [
-      "//third_party/breakpad:client",
-      "//ui/views/controls/webview",
-      "//ui/wm",
-    ]
-    include_dirs += [ "//third_party/breakpad" ]
-    sources -= [
+    sources += [
       "atom/common/crash_reporter/crash_reporter_crashpad.cc",
       "atom/common/crash_reporter/crash_reporter_crashpad.h",
     ]
+    deps += [ "//third_party/crashpad/crashpad/client" ]
   }
 
   if (enable_pdf) {

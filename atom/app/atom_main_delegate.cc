@@ -48,12 +48,14 @@
 #if defined(OS_MACOSX)
 #include "atom/app/atom_main_delegate_mac.h"
 #endif
+
 #if defined(OS_WIN)
 #include "base/win/win_util.h"
 #if defined(_WIN64)
 #include "atom/common/crash_reporter/crash_reporter_win.h"
 #endif
 #endif
+
 namespace atom {
 
 namespace {

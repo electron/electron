@@ -38,6 +38,7 @@ CrashReporter::~CrashReporter() {}
 bool CrashReporter::IsInitialized() {
   return is_initialized_;
 }
+
 void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
                           const std::string& submit_url,
