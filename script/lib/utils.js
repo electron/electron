@@ -1,10 +1,8 @@
-// KEEP IN SYNC WITH DEPS FILE
-const YARN_VERSION = '1.15.2'
+const { GitProcess } = require('dugite')
+const fs = require('fs')
+const path = require('path')
 
 const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
-
-const { GitProcess } = require('dugite')
-const path = require('path')
 
 require('colors')
 const pass = '\u2713'.green
@@ -45,6 +43,5 @@ module.exports = {
   getCurrentBranch,
   getElectronExec,
   getAbsoluteElectronExec,
-  OUT_DIR,
-  YARN_VERSION
+  OUT_DIR
 }

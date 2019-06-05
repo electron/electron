@@ -22,6 +22,7 @@ for (const flag of unknownFlags) {
 }
 
 const utils = require('./lib/utils')
+const { YARN_VERSION } = require('./yarn')
 
 const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
@@ -144,7 +145,7 @@ async function installSpecModules () {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'
   })
-  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${utils.YARN_VERSION}`, 'install', '--frozen-lockfile'], {
+  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
