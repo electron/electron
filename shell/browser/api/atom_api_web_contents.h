@@ -138,6 +138,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
+  base::ProcessId GetOSProcessIdForFrame(const std::string& name,
+                                         const std::string& document_url) const;
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);

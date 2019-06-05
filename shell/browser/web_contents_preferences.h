@@ -47,7 +47,8 @@ class WebContentsPreferences
   void Merge(const base::DictionaryValue& new_web_preferences);
 
   // Append command paramters according to preferences.
-  void AppendCommandLineSwitches(base::CommandLine* command_line);
+  void AppendCommandLineSwitches(base::CommandLine* command_line,
+                                 bool is_subframe);
 
   // Modify the WebPreferences according to preferences.
   void OverrideWebkitPrefs(content::WebPreferences* prefs);

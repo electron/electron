@@ -59,6 +59,11 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
+bool IsSandboxEnabled(base::CommandLine* command_line) {
+  return command_line->HasSwitch(switches::kEnableSandbox) ||
+         !command_line->HasSwitch(service_manager::switches::kNoSandbox);
+}
+
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
 bool SubprocessNeedsResourceBundle(const std::string& process_type) {
@@ -281,10 +286,9 @@ content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
 
 content::ContentRendererClient*
 AtomMainDelegate::CreateContentRendererClient() {
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableSandbox) ||
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          service_manager::switches::kNoSandbox)) {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  if (IsSandboxEnabled(command_line)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);
