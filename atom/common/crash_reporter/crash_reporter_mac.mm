@@ -22,13 +22,13 @@ CrashReporterMac::CrashReporterMac() {}
 
 CrashReporterMac::~CrashReporterMac() {}
 
-void CrashReporterMac::InitBreakpad(const std::string& product_name,
-                                    const std::string& version,
-                                    const std::string& company_name,
-                                    const std::string& submit_url,
-                                    const base::FilePath& crashes_dir,
-                                    bool upload_to_server,
-                                    bool skip_system_crash_handler) {
+void CrashReporterMac::Init(const std::string& product_name,
+                            const std::string& version,
+                            const std::string& company_name,
+                            const std::string& submit_url,
+                            const base::FilePath& crashes_dir,
+                            bool upload_to_server,
+                            bool skip_system_crash_handler) {
   // check whether crashpad has been initialized.
   // Only need to initialize once.
   if (simple_string_dictionary_)

@@ -51,13 +51,13 @@ CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
 
 CrashReporterLinux::~CrashReporterLinux() {}
 
-void CrashReporterLinux::InitBreakpad(const std::string& product_name,
-                                      const std::string& version,
-                                      const std::string& company_name,
-                                      const std::string& submit_url,
-                                      const base::FilePath& crashes_dir,
-                                      bool upload_to_server,
-                                      bool skip_system_crash_handler) {
+void CrashReporterLinux::Init(const std::string& product_name,
+                              const std::string& version,
+                              const std::string& company_name,
+                              const std::string& submit_url,
+                              const base::FilePath& crashes_dir,
+                              bool upload_to_server,
+                              bool skip_system_crash_handler) {
   EnableCrashDumping(crashes_dir);
 
   crash_keys_.reset(new CrashKeyStorage());
