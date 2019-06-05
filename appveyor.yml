@@ -32,7 +32,6 @@ build_cloud: libcc-20
 image: libcc-20-vs2017-15.9
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
-  DISABLE_CRASH_REPORTER_TESTS: true
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
 notifications:
