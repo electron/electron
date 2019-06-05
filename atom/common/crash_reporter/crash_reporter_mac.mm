@@ -34,7 +34,7 @@ void CrashReporterMac::Init(const std::string& product_name,
   if (simple_string_dictionary_)
     return;
 
-  if (process_type_.empty()) {
+  if (process_type_.empty()) {  // browser process
     @autoreleasepool {
       base::FilePath framework_bundle_path = base::mac::FrameworkBundlePath();
       base::FilePath handler_path =
@@ -62,7 +62,7 @@ void CrashReporterMac::Init(const std::string& product_name,
   crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
   SetInitialCrashKeyValues(version);
-  if (process_type_.empty()) {
+  if (process_type_.empty()) {  // browser process
     database_ = crashpad::CrashReportDatabase::Initialize(crashes_dir);
     SetUploadToServer(upload_to_server);
   }

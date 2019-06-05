@@ -59,7 +59,7 @@ void CrashReporterWin::Init(const std::string& product_name,
   // Only need to initialize once.
   if (simple_string_dictionary_)
     return;
-  if (process_type_.empty()) {
+  if (process_type_.empty()) {  // browser process
     base::FilePath handler_path;
     base::PathService::Get(base::FILE_EXE, &handler_path);
 
@@ -70,7 +70,7 @@ void CrashReporterWin::Init(const std::string& product_name,
     args.push_back(base::StringPrintf("--type=%s", kCrashpadProcess));
     args.push_back(
         base::StringPrintf("--%s=%s", kCrashesDirectoryKey,
-                           base::UTF16ToASCII(crashes_dir.value()).c_str()));
+                           base::UTF16ToUTF8(crashes_dir.value()).c_str()));
     crashpad_client_.StartHandler(handler_path, crashes_dir, crashes_dir,
                                   submit_url, StringMap(), args, true, false);
     UpdatePipeName();
@@ -95,7 +95,7 @@ void CrashReporterWin::Init(const std::string& product_name,
   crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
   SetInitialCrashKeyValues(version);
-  if (process_type_.empty()) {
+  if (process_type_.empty()) {  // browser process
     database_ = crashpad::CrashReportDatabase::Initialize(crashes_dir);
     SetUploadToServer(upload_to_server);
   }

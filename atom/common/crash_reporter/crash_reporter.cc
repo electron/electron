@@ -31,6 +31,7 @@ CrashReporter::CrashReporter() {
     auto* cmd = base::CommandLine::ForCurrentProcess();
     process_type_ = cmd->GetSwitchValueASCII(switches::kProcessType);
   }
+  // process_type_ will be empty for browser process
 }
 
 CrashReporter::~CrashReporter() {}
