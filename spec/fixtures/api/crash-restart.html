@@ -19,7 +19,7 @@ crashReporter.start({
 })
 
 setImmediate(() => {
-  if (process.platform === 'darwin') {
+  if (process.platform !== 'linux') {
     crashReporter.addExtraParameter('extra2', 'extra2')
     crashReporter.removeExtraParameter('extra3')
   } else {
