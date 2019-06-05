@@ -465,6 +465,8 @@ static_library("electron_lib") {
         "atom/browser/auto_updater_mac.mm",
         "atom/common/crash_reporter/crash_reporter_mac.h",
         "atom/common/crash_reporter/crash_reporter_mac.mm",
+        "atom/common/crash_reporter/crash_reporter_crashpad.h",
+        "atom/common/crash_reporter/crash_reporter_crashpad.cc",
       ]
       defines += [ "MAS_BUILD" ]
     } else {
@@ -530,6 +532,10 @@ static_library("electron_lib") {
       "//ui/wm",
     ]
     include_dirs += [ "//third_party/breakpad" ]
+    sources -= [
+      "atom/common/crash_reporter/crash_reporter_crashpad.h",
+      "atom/common/crash_reporter/crash_reporter_crashpad.cc",
+    ]
   }
 
   if (enable_pdf) {
