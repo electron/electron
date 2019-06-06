@@ -42,13 +42,13 @@ index 775b64a8d20f89845812852a2904a1e6875c2b4a..5235b57bbf44fc7b30ca6943c43a290f
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 297b61198dd46114b3d8c89488a71ed01aa299c4..40b848a8b448bed2d167bf5f6c0f25971b603ed2 100644
+index 49b3729903580152b263de7066703434139d8cee..451a6d8bc2bf734d58975aa47e8ef88ec999a211 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2127,6 +2127,20 @@ bool RenderFrameHostManager::InitRenderView(
- scoped_refptr<SiteInstance>
- RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-     const NavigationRequest& request) {
+@@ -2135,6 +2135,20 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+   if (request.IsForMhtmlSubframe())
+     return base::WrapRefCounted(current_site_instance);
+ 
 +  BrowserContext* browser_context = nullptr;
 +  scoped_refptr<SiteInstance> candidate_site_instance;
 +  if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
@@ -65,8 +65,8 @@ index 297b61198dd46114b3d8c89488a71ed01aa299c4..40b848a8b448bed2d167bf5f6c0f2597
 +  }
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
-   SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2158,6 +2172,53 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+   bool no_renderer_swap_allowed = false;
+@@ -2165,6 +2179,53 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -120,7 +120,7 @@ index 297b61198dd46114b3d8c89488a71ed01aa299c4..40b848a8b448bed2d167bf5f6c0f2597
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2169,23 +2230,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2176,23 +2237,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  

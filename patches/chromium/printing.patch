@@ -249,7 +249,7 @@ index f3e23125001c0eebebdb2e211d069cd3feb523d8..8f20b5164c35c0ed0e6952058b98f932
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 505d662ee16f34c5581dae5635242127f35a8ebb..8f8bba58f80d0da0f07c8220d1613eb3c469dcf3 100644
+index 505d662ee16f34c5581dae5635242127f35a8ebb..463a2b2c825da66e7ec6f9e458468087af863d0a 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -287,7 +287,7 @@ index 505d662ee16f34c5581dae5635242127f35a8ebb..8f8bba58f80d0da0f07c8220d1613eb3
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -137,19 +141,14 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -137,11 +141,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -297,19 +297,11 @@ index 505d662ee16f34c5581dae5635242127f35a8ebb..8f8bba58f80d0da0f07c8220d1613eb3
      OnGetDefaultPrintSettingsReply(nullptr, reply_msg);
      return;
    }
--  std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
--  if (!printer_query) {
-+  if (!printer_query.get()) {
++#endif
+   std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
+   if (!printer_query) {
      printer_query =
--        queue_->CreatePrinterQuery(render_process_id_, reply_msg->routing_id());
--  }
--
--  // Loads default settings. This is asynchronous, only the IPC message sender
--  // will hang until the settings are retrieved.
-   auto* printer_query_ptr = printer_query.get();
-   printer_query_ptr->GetSettings(
-       PrinterQuery::GetSettingsAskParam::DEFAULTS, 0, false, DEFAULT_MARGINS,
-@@ -227,14 +226,15 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -227,14 +233,15 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
@@ -326,7 +318,7 @@ index 505d662ee16f34c5581dae5635242127f35a8ebb..8f8bba58f80d0da0f07c8220d1613eb3
      printer_query = queue_->CreatePrinterQuery(
          content::ChildProcessHost::kInvalidUniqueID, MSG_ROUTING_NONE);
    }
-@@ -295,7 +295,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -295,7 +302,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
