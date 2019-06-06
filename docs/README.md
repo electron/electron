@@ -85,7 +85,7 @@ an issue:
 
 These individual tutorials expand on topics discussed in the guide above.
 
-* [In Detail: Installing Electron](tutorial/installation.md)
+* [Installing Electron](tutorial/installation.md)
   * [Proxies](tutorial/installation.md#proxies)
   * [Custom Mirrors and Caches](tutorial/installation.md#custom-mirrors-and-caches)
   * [Troubleshooting](tutorial/installation.md#troubleshooting)
