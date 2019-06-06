@@ -62,8 +62,7 @@ int Main(std::vector<char*>* args) {
   base::FilePath operating_dir(
       cmd_line->GetSwitchValueNative(crash_reporter::kCrashesDirectoryKey));
   CreateCrashServiceDirectory(operating_dir);
-  base::FilePath log_file =
-      operating_dir.Append(base::FilePath(kStandardLogFile));
+  base::FilePath log_file = operating_dir.Append(kStandardLogFile);
 
   // Logging to stderr (to help with debugging failures on the
   // buildbots) and to a file.
