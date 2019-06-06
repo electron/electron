@@ -4,6 +4,10 @@ This page tracks the issues, contributions, and status of running the Electron T
 
 ## Rock960c
 
+# Run 05/30/2019 
+
+- Electron Version: master build from 05/21/2019
+
 Issue                                                           | Test | Status
 ----------------------------------------------------------------|------|-------
 [Tests failing on Rock960c](https://github.com/electron/electron/issues/18550) | | Open
@@ -14,3 +18,11 @@ Issue                                                           | Test | Status
 | | BrowserWindow module "after each" hook: closeTheWindow | fail
 | | BrowserWindow module "before each" hook: openTheWindow | fail
  
+
+# Run 06/06/2019
+
+- Electron Verion: v6.0.0-beta.5
+
+Issue                                                           | Test | Status
+----------------------------------------------------------------|------|-------
+Run all tests | tests 687 pass 665 fail 22 | | 
