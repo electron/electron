@@ -77,8 +77,8 @@ index 237923af2091dddce5c6a15cf2f1367642408d00..49eeeeccf67d70c73131f351734898d1
 +          request.state() == NavigationRequest::FAILED) &&
 +          !speculative_render_frame_host_;
 +      // Gives user a chance to choose a custom site instance.
-+      SiteInstanceImpl* affinity_site_instance = nullptr;
-+      scoped_refptr<SiteInstanceImpl> overriden_site_instance;
++      SiteInstance* affinity_site_instance = nullptr;
++      scoped_refptr<SiteInstance> overriden_site_instance;
 +      ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
 +          GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
 +              current_frame_host(), speculative_frame_host(), browser_context,
