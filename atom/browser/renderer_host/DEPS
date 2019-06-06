@@ -1,0 +1,6 @@
+include_rules = [
+  # renderer_host is intended to support the content layer's renderers. No
+  # reference to the tab contents is allowed.
+  "-chrome/browser/tab_contents",
+]
+
