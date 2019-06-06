@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/mac/atom_application.h"
 #include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
 #include "base/strings/sys_string_conversions.h"
@@ -146,6 +147,10 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)isDarkMode {
+  if (@available(macOS 10.14, *)) {
+    return [[NSApplication sharedApplication].effectiveAppearance.name
+        isEqualToString:NSAppearanceNameDarkAqua];
+  }
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* mode = [defaults stringForKey:@"AppleInterfaceStyle"];
   return mode && [mode isEqualToString:@"Dark"];
