@@ -80,13 +80,17 @@ The `downloadItem` object has the following methods:
 
 The API is only available in session's `will-download` callback function.
 If user doesn't set the save path via the API, Electron will use the original
-routine to determine the save path(Usually prompts a save dialog).
+routine to determine the save path; this usually prompts a save dialog.
+
+**[Deprecated](modernization/property-updates.md): use the `savePath` property instead.**
 
 #### `downloadItem.getSavePath()`
 
 Returns `String` - The save path of the download item. This will be either the path
 set via `downloadItem.setSavePath(path)` or the path selected from the shown
 save dialog.
+
+**[Deprecated](modernization/property-updates.md): use the `savePath` property instead.**
 
 #### `downloadItem.setSaveDialogOptions(options)`
 
@@ -97,9 +101,13 @@ This API allows the user to set custom options for the save dialog that opens
 for the download item by default.
 The API is only available in session's `will-download` callback function.
 
+**[Deprecated](modernization/property-updates.md): use the `saveDialogOptions` property instead.**
+
 #### `downloadItem.getSaveDialogOptions()`
 
 Returns `SaveDialogOptions` - Returns the object previously set by `downloadItem.setSaveDialogOptions(options)`.
+
+**[Deprecated](modernization/property-updates.md): use the `saveDialogOptions` property instead.**
 
 #### `downloadItem.pause()`
 
@@ -181,3 +189,22 @@ Returns `String` - ETag header value.
 
 Returns `Double` - Number of seconds since the UNIX epoch when the download was
 started.
+
+### Properties
+
+#### `downloadItem.saveDialogProperties`
+
+An `Object` property that determines the save file dialog options. The object passed is should have the same
+properties as the `options` parameter of [`dialog.showSaveDialog()`](dialog.md).
+
+This property allows the user to set custom options for the save dialog that opens
+for the download item by default.
+The API is only available in session's `will-download` callback function.
+
+#### `downloadItem.savePath`
+
+A `String` property that determines the save file path of the download item.
+
+The property is only available in session's `will-download` callback function.
+If user doesn't set the save path via the property, Electron will use the original
+routine to determine the save path; this usually prompts a save dialog.

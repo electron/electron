@@ -209,8 +209,12 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isDone", &DownloadItem::IsDone)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
       .SetMethod("getSavePath", &DownloadItem::GetSavePath)
+      .SetProperty("savePath", &DownloadItem::GetSavePath,
+                   &DownloadItem::SetSavePath)
       .SetMethod("setSaveDialogOptions", &DownloadItem::SetSaveDialogOptions)
       .SetMethod("getSaveDialogOptions", &DownloadItem::GetSaveDialogOptions)
+      .SetProperty("saveDialogOptions", &DownloadItem::GetSaveDialogOptions,
+                   &DownloadItem::SetSaveDialogOptions)
       .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
       .SetMethod("getETag", &DownloadItem::GetETag)
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
