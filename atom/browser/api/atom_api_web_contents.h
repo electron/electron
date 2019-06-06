@@ -509,6 +509,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
 
+  void ShowAutofillPopup(const gfx::RectF& bounds,
+                         const std::vector<base::string16>& values,
+                         const std::vector<base::string16>& labels) override;
+  void HideAutofillPopup() override;
+
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
 

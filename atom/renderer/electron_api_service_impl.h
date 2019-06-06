@@ -33,6 +33,8 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
 
+  void AcceptAutofillSuggestion(const base::string16& suggestion) override;
+
  private:
   ~ElectronApiServiceImpl() override;
   ElectronApiServiceImpl(content::RenderFrame* render_frame,

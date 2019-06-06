@@ -1094,7 +1094,6 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
-#if defined(TOOLKIT_VIEWS)
 void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
                                     const gfx::RectF& bounds,
                                     const std::vector<base::string16>& values,
@@ -1114,7 +1113,6 @@ void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
   CommonWebContentsDelegate::ShowAutofillPopup(
       frame_host, embedder_frame_host, offscreen, popup_bounds, values, labels);
 }
-#endif
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
@@ -1126,22 +1124,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 
   return handled;
 }
-
-/*
-bool WebContents::OnMessageReceived(const IPC::Message& message,
-                                    content::RenderFrameHost* frame_host) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-#if defined(TOOLKIT_VIEWS)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
-#endif
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-*/
 
 // There are three ways of destroying a webContents:
 // 1. call webContents.destroy();
@@ -2030,6 +2012,13 @@ void WebContents::SetTemporaryZoomLevel(double level) {
 
 void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
+}
+
+void WebContents::ShowAutofillPopup(const gfx::RectF& bounds,
+                                    const std::vector<base::string16>& values,
+                                    const std::vector<base::string16>& labels) {
+  content::RenderFrameHost* frame_host = bindings_.dispatch_context();
+  ShowAutofillPopup(frame_host, bounds, values, labels);
 }
 
 v8::Local<v8::Value> WebContents::GetPreloadPath(v8::Isolate* isolate) const {

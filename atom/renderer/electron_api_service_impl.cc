@@ -166,4 +166,7 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
   std::move(callback).Run(success);
 }
 
+void ElectronApiServiceImpl::AcceptAutofillSuggestion(
+    const base::string16& suggestion) {}
+
 }  // namespace atom

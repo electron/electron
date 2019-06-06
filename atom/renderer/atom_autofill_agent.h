@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "atom/common/api/api.mojom.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "third_party/blink/public/web/web_autofill_client.h"
@@ -38,10 +39,6 @@ class AutofillAgent : public content::RenderFrameObserver,
     bool requires_caret_at_end;
   };
 
-  /*
-  bool OnMessageReceived(const IPC::Message& message) override;
-  */
-
   // blink::WebAutofillClient:
   void TextFieldDidEndEditing(const blink::WebInputElement&) override;
   void TextFieldDidChange(const blink::WebFormControlElement&) override;
@@ -61,6 +58,9 @@ class AutofillAgent : public content::RenderFrameObserver,
   void OnAcceptSuggestion(base::string16 suggestion);
 
   void DoFocusChangeComplete();
+
+  const mojom::ElectronBrowserPtr& GetElectronBrowser();
+  mojom::ElectronBrowserPtr browser_ptr_;
 
   // True when the last click was on the focused node.
   bool focused_node_was_last_clicked_ = false;
