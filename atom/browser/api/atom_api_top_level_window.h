@@ -167,9 +167,11 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
+  // TODO(codebytere): remove in Electron v8.0.0
   virtual void SetBrowserView(v8::Local<v8::Value> value);
   virtual void AddBrowserView(v8::Local<v8::Value> value);
   virtual void RemoveBrowserView(v8::Local<v8::Value> value);
+  virtual void SetBrowserViews(std::vector<v8::Local<v8::Value>> views);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
   v8::Local<v8::Value> GetNativeWindowHandle();

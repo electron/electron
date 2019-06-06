@@ -787,11 +787,11 @@ describe('BrowserWindow module', () => {
 
     beforeEach(() => {
       bv = new BrowserView()
-      w.setBrowserView(bv)
+      w.browserViews = [bv]
     })
 
     afterEach(() => {
-      w.setBrowserView(null)
+      w.browserViews = [null]
       bv.destroy()
     })
 
@@ -800,7 +800,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('returns undefined if not attached', () => {
-      w.setBrowserView(null)
+      w.browserViews = [null]
       expect(BrowserWindow.fromBrowserView(bv)).to.be.null()
     })
   })

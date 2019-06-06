@@ -692,6 +692,7 @@ void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
   }
 }
 
+// TODO(codebytere): remove in Electron v8.0.0
 void TopLevelWindow::SetBrowserView(v8::Local<v8::Value> value) {
   ResetBrowserViews();
   AddBrowserView(value);
@@ -890,6 +891,13 @@ v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
         "BrowserWindow have multiple BrowserViews, "
         "Use getBrowserViews() instead");
     return v8::Null(isolate());
+  }
+}
+
+void TopLevelWindow::SetBrowserViews(std::vector<v8::Local<v8::Value>> views) {
+  ResetBrowserViews();
+  for (auto const& view : views) {
+    AddBrowserView(view);
   }
 }
 
@@ -1126,8 +1134,15 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMenu", &TopLevelWindow::SetMenu)
       .SetMethod("removeMenu", &TopLevelWindow::RemoveMenu)
       .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
-      .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
+      // TODO(codebytere): remove getter/setter in Electron v8.0.0
+      .SetMethod("getBrowserView", &TopLevelWindow::GetBrowserView)
+      .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
+      // TODO(codebytere): remove getter/setter in Electron v8.0.0
+      .SetMethod("_getBrowserViews", &TopLevelWindow::GetBrowserViews)
+      .SetMethod("_setBrowserViews", &TopLevelWindow::GetBrowserViews)
+      .SetProperty("browserViews", &TopLevelWindow::GetBrowserViews,
+                   &TopLevelWindow::SetBrowserViews)
       .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
       .SetMethod("getNativeWindowHandle",
                  &TopLevelWindow::GetNativeWindowHandle)
@@ -1169,8 +1184,6 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getContentView", &TopLevelWindow::GetContentView)
       .SetMethod("getParentWindow", &TopLevelWindow::GetParentWindow)
       .SetMethod("getChildWindows", &TopLevelWindow::GetChildWindows)
-      .SetMethod("getBrowserView", &TopLevelWindow::GetBrowserView)
-      .SetMethod("getBrowserViews", &TopLevelWindow::GetBrowserViews)
       .SetMethod("isModal", &TopLevelWindow::IsModal)
       .SetMethod("setThumbarButtons", &TopLevelWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)

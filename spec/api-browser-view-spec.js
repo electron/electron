@@ -101,6 +101,48 @@ describe('BrowserView module', () => {
     })
   })
 
+  describe('BrowserWindow.browserViews property', () => {
+    it('does not throw for valid args', () => {
+      view = new BrowserView()
+      w.browserViews = [view]
+    })
+
+    it('does not throw if called multiple times with same view', () => {
+      view = new BrowserView()
+      w.browserViews = [view]
+      w.browserViews = [view]
+      w.browserViews = [view]
+    })
+
+    it('returns the set view', () => {
+      view = new BrowserView()
+      w.browserViews = [view]
+      expect(view.id).to.not.be.null()
+
+      const view2 = w.getBrowserView()
+      expect(view2.webContents.id).to.equal(view.webContents.id)
+    })
+
+    it('returns multiple set views', () => {
+      const v1 = new BrowserView()
+      const v2 = new BrowserView()
+      w.browserViews = [v1, v2]
+
+      expect(v1.id).to.not.be.null()
+      expect(v2.id).to.not.be.null()
+
+      const views = w.browserViews
+      expect(views[0].webContents.id).to.equal(v1.webContents.id)
+      expect(views[1].webContents.id).to.equal(v2.webContents.id)
+    })
+
+    it('returns null if none is set', () => {
+      const views = w.browserViews
+      expect(views).to.be.an('array').that.is.empty()
+    })
+  })
+
+  // TODO(codebytere): remove when propertyification is complete
   describe('BrowserWindow.setBrowserView()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView()
@@ -115,6 +157,7 @@ describe('BrowserView module', () => {
     })
   })
 
+  // TODO(codebytere): remove when propertyification is complete
   describe('BrowserWindow.getBrowserView()', () => {
     it('returns the set view', () => {
       view = new BrowserView()

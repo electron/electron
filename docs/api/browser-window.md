@@ -1635,13 +1635,17 @@ removed in future Electron releases.
 #### `win.setBrowserView(browserView)` _Experimental_
 
 * `browserView` [BrowserView](browser-view.md) - Attach browserView to win.
-If there is some other browserViews was attached they will be removed from
+If there are other BrowserViews attached previously, they will be removed from
 this window.
+
+**[Deprecated](modernization/property-updates.md): Use `win.browserViews` property instead**
 
 #### `win.getBrowserView()` _Experimental_
 
-Returns `BrowserView | null` - an BrowserView what is attached. Returns `null`
-if none is attached. Throw error if multiple BrowserViews is attached.
+Returns `BrowserView | null` - a BrowserView that is attached. Returns `null`
+if none is attached. Throws an error if multiple BrowserViews are attached.
+
+**[Deprecated](modernization/property-updates.md): Use `win.browserViews` property instead**
 
 #### `win.addBrowserView(browserView)` _Experimental_
 
@@ -1661,6 +1665,8 @@ or setBrowserView.
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
+**[Deprecated](modernization/property-updates.md): Use `win.browserViews` property instead**
+
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
@@ -1669,6 +1675,22 @@ removed in future Electron releases.
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 
 ### Properties
+
+#### `win.browserViews`
+
+A `BrowserView[]` property that determines the BrowserViews currently attached to the window. Returns an empty array
+if no BrowserViews are attached.
+
+```js
+const win = new BrowserWindow({ height: 600, width: 600 })
+
+const view1 = new BrowserView()
+const view2 = new BrowserView()
+
+win.browserViews = [view1, view2]
+
+console.log(win.browserViews.length) // 2
+```
 
 #### `win.autoHideMenuBar`
 
