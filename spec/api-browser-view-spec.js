@@ -119,21 +119,47 @@ describe('BrowserView module', () => {
       w.browserViews = [view]
       expect(view.id).to.not.be.null()
 
-      const view2 = w.getBrowserView()
-      expect(view2.webContents.id).to.equal(view.webContents.id)
+      const views = w.browserViews
+      expect(views[0].webContents.id).to.equal(view.webContents.id)
+    })
+
+    it('returns same views as were added', () => {
+      let v1 = new BrowserView()
+      w.addBrowserView(v1)
+      let v2 = new BrowserView()
+      w.addBrowserView(v2)
+
+      expect(v1.id).to.not.be.null()
+      expect(v2.id).to.not.be.null()
+
+      const views = w.browserViews
+      expect(views).to.have.lengthOf(2)
+      expect(views[0].webContents.id).to.equal(v1.webContents.id)
+      expect(views[1].webContents.id).to.equal(v2.webContents.id)
+
+      v1.destroy()
+      v1 = null
+      v2.destroy()
+      v2 = null
     })
 
     it('returns multiple set views', () => {
-      const v1 = new BrowserView()
-      const v2 = new BrowserView()
+      let v1 = new BrowserView()
+      let v2 = new BrowserView()
       w.browserViews = [v1, v2]
 
       expect(v1.id).to.not.be.null()
       expect(v2.id).to.not.be.null()
 
       const views = w.browserViews
+      expect(views).to.have.lengthOf(2)
       expect(views[0].webContents.id).to.equal(v1.webContents.id)
       expect(views[1].webContents.id).to.equal(v2.webContents.id)
+
+      v1.destroy()
+      v1 = null
+      v2.destroy()
+      v2 = null
     })
 
     it('returns null if none is set', () => {
@@ -202,6 +228,7 @@ describe('BrowserView module', () => {
     })
   })
 
+  // TODO(codebytere): remove in Electron v8.0.0
   describe('BrowserWindow.getBrowserViews()', () => {
     it('returns same views as was added', () => {
       let view1 = new BrowserView()
@@ -227,10 +254,10 @@ describe('BrowserView module', () => {
       view = new BrowserView()
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
 
-      w.setBrowserView(view)
+      w.browserViews = [view]
       expect(view.webContents.getOwnerBrowserWindow()).to.equal(w)
 
-      w.setBrowserView(null)
+      w.browserViews = [null]
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
     })
   })
@@ -238,7 +265,7 @@ describe('BrowserView module', () => {
   describe('BrowserView.fromId()', () => {
     it('returns the view with given id', () => {
       view = new BrowserView()
-      w.setBrowserView(view)
+      w.browserViews = [view]
       expect(view.id).to.not.be.null()
 
       const view2 = BrowserView.fromId(view.id)
@@ -249,7 +276,7 @@ describe('BrowserView module', () => {
   describe('BrowserView.fromWebContents()', () => {
     it('returns the view with given id', () => {
       view = new BrowserView()
-      w.setBrowserView(view)
+      w.browserViews = [view]
       expect(view.id).to.not.be.null()
 
       const view2 = BrowserView.fromWebContents(view.webContents)
@@ -260,7 +287,7 @@ describe('BrowserView module', () => {
   describe('BrowserView.getAllViews()', () => {
     it('returns all views', () => {
       view = new BrowserView()
-      w.setBrowserView(view)
+      w.browserViews = [view]
       expect(view.id).to.not.be.null()
 
       const views = BrowserView.getAllViews()
@@ -282,7 +309,7 @@ describe('BrowserView module', () => {
   describe('window.open()', () => {
     it('works in BrowserView', (done) => {
       view = new BrowserView()
-      w.setBrowserView(view)
+      w.browserViews = [view]
       view.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
         e.preventDefault()
         expect(url).to.equal('http://host/')
