@@ -86,6 +86,6 @@ app.whenReady().then(() => {
         process.exit(runner.failures)
       })
     }
-    const runner = (isCI) ? mocha.forbidOnly().run(cb) : mocha.run(cb)
+    const runner = mocha.run(cb)
   })
 })
