@@ -659,7 +659,6 @@ describe('session module', () => {
       w.webContents.downloadURL(`${url}:${port}/?testFilename`)
     })
 
-    // TODO(codebytere): remove in Electron v8.0.0 after propertyification  completes
     it('can set options for the save dialog', (done) => {
       const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
       const port = downloadServer.address().port
@@ -684,37 +683,6 @@ describe('session module', () => {
         item.setSaveDialogOptions(options)
         item.on('done', function (e, state) {
           expect(item.getSaveDialogOptions()).to.deep.equal(options)
-          done()
-        })
-        item.cancel()
-      })
-      w.webContents.downloadURL(`${url}:${port}`)
-    })
-    
-    it('can set options for the save dialog (property)', (done) => {
-      const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
-      const port = downloadServer.address().port
-      const options = {
-        window: null,
-        title: 'title',
-        message: 'message',
-        buttonLabel: 'buttonLabel',
-        nameFieldLabel: 'nameFieldLabel',
-        defaultPath: '/',
-        filters: [{
-          name: '1', extensions: ['.1', '.2']
-        }, {
-          name: '2', extensions: ['.3', '.4', '.5']
-        }],
-        showsTagField: true,
-        securityScopedBookmarks: true
-      }
-
-      w.webContents.session.once('will-download', function (e, item) {
-        item.savePath = filePath
-        item.saveDialogOptions = options
-        item.on('done', function (e, state) {
-          expect(item.saveDialogOptions).to.deep.equal(options)
           done()
         })
         item.cancel()

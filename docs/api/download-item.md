@@ -101,13 +101,9 @@ This API allows the user to set custom options for the save dialog that opens
 for the download item by default.
 The API is only available in session's `will-download` callback function.
 
-**[Deprecated](modernization/property-updates.md): use the `saveDialogOptions` property instead.**
-
 #### `downloadItem.getSaveDialogOptions()`
 
 Returns `SaveDialogOptions` - Returns the object previously set by `downloadItem.setSaveDialogOptions(options)`.
-
-**[Deprecated](modernization/property-updates.md): use the `saveDialogOptions` property instead.**
 
 #### `downloadItem.pause()`
 
@@ -190,16 +186,7 @@ Returns `String` - ETag header value.
 Returns `Double` - Number of seconds since the UNIX epoch when the download was
 started.
 
-### Properties
-
-#### `downloadItem.saveDialogProperties`
-
-An `Object` property that determines the save file dialog options. The object passed is should have the same
-properties as the `options` parameter of [`dialog.showSaveDialog()`](dialog.md).
-
-This property allows the user to set custom options for the save dialog that opens
-for the download item by default.
-The API is only available in session's `will-download` callback function.
+### Instance Properties
 
 #### `downloadItem.savePath`
 

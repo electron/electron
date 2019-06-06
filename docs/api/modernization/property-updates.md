@@ -46,7 +46,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `name`
 * `DownloadItem` class
   * `savePath`
-  * `paused`
 * `BrowserWindow` module
   * `autohideMenuBar`
   * `resizable`
