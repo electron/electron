@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
 #include "atom/common/atom_constants.h"
 #include "base/environment.h"
 #include "base/memory/singleton.h"
@@ -116,15 +116,9 @@ void CrashReporterWin::UpdatePipeName() {
   env->SetVar(atom::kCrashpadPipeName, pipe_name);
 
   // Notify all WebContents of the pipe name.
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  auto pages = atom::api::WebContents::GetAll(isolate);
-  for (const auto& value : pages) {
-    mate::Handle<atom::api::WebContents> web_contents;
-    if (!mate::ConvertFromV8(isolate, value, &web_contents))
-      continue;
-    if (web_contents->GetType() == atom::api::WebContents::Type::REMOTE)
-      continue;
-    auto* frame_host = web_contents->web_contents()->GetMainFrame();
+  const auto& pages = atom::InspectableWebContentsImpl::GetAll();
+  for (auto* page : pages) {
+    auto* frame_host = page->GetWebContents()->GetMainFrame();
     if (!frame_host)
       continue;
 
