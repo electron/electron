@@ -58,7 +58,7 @@ class BundledDataSource : public content::URLDataSource {
   ~BundledDataSource() override {}
 
   // content::URLDataSource implementation.
-  std::string GetSource() const override { return kChromeUIDevToolsHost; }
+  std::string GetSource() override { return kChromeUIDevToolsHost; }
 
   void StartDataRequest(
       const std::string& path,
@@ -78,15 +78,15 @@ class BundledDataSource : public content::URLDataSource {
     callback.Run(nullptr);
   }
 
-  std::string GetMimeType(const std::string& path) const override {
+  std::string GetMimeType(const std::string& path) override {
     return GetMimeTypeForPath(path);
   }
 
-  bool ShouldAddContentSecurityPolicy() const override { return false; }
+  bool ShouldAddContentSecurityPolicy() override { return false; }
 
-  bool ShouldDenyXFrameOptions() const override { return false; }
+  bool ShouldDenyXFrameOptions() override { return false; }
 
-  bool ShouldServeMimeTypeAsContentTypeHeader() const override { return true; }
+  bool ShouldServeMimeTypeAsContentTypeHeader() override { return true; }
 
   void StartBundledDataRequest(const std::string& path,
                                const GotDataCallback& callback) {
