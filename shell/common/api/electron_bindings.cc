@@ -258,13 +258,15 @@ v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
 v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
     v8::Isolate* isolate) {
   auto allocated = blink::ProcessHeap::TotalAllocatedObjectSize();
-  auto marked = blink::ProcessHeap::TotalMarkedObjectSize();
+  // FIXME(MarshallOfSound): Either reimplement with the observer pattern
+  // or remove in next major
+  // auto marked = blink::ProcessHeap::TotalMarkedObjectSize();
   auto total = blink::ProcessHeap::TotalAllocatedSpace();
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("allocated", static_cast<double>(allocated >> 10));
-  dict.Set("marked", static_cast<double>(marked >> 10));
+  // dict.Set("marked", static_cast<double>(marked >> 10));
   dict.Set("total", static_cast<double>(total >> 10));
   return dict.GetHandle();
 }
