@@ -287,7 +287,7 @@ index 505d662ee16f34c5581dae5635242127f35a8ebb..463a2b2c825da66e7ec6f9e458468087
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -137,11 +141,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -137,8 +141,10 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -314,10 +314,7 @@ index 505d662ee16f34c5581dae5635242127f35a8ebb..463a2b2c825da66e7ec6f9e458468087
 +#endif
    std::unique_ptr<PrinterQuery> printer_query =
        queue_->PopPrinterQuery(document_cookie);
--  if (!printer_query) {
-     printer_query = queue_->CreatePrinterQuery(
-         content::ChildProcessHost::kInvalidUniqueID, MSG_ROUTING_NONE);
-   }
+  if (!printer_query) {
 @@ -295,7 +302,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,

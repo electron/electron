@@ -36,12 +36,12 @@ void StopWorker(int document_cookie) {
     return;
   scoped_refptr<printing::PrintQueriesQueue> queue =
       g_browser_process->print_job_manager()->queue();
-  scoped_refptr<printing::PrinterQuery> printer_query =
+  std::unique_ptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&printing::PrinterQuery::StopWorker, printer_query));
+        base::BindOnce(&printing::PrinterQuery::StopWorker, std::move(printer_query)));
   }
 }
 
