@@ -100,8 +100,10 @@ void SetupAtomURLRequestJobFactory(
 
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   auto* host_resolver = url_request_context->host_resolver();
+  auto* ftp_auth_cache = url_request_context->ftp_auth_cache();
   job_factory->SetProtocolHandler(
-      url::kFtpScheme, net::FtpProtocolHandler::Create(host_resolver));
+      url::kFtpScheme,
+      net::FtpProtocolHandler::Create(host_resolver, ftp_auth_cache));
 #endif
 }
 
@@ -301,6 +303,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         base::BindOnce(&content::CreateDevToolsNetworkTransactionFactory));
 
     builder->set_ct_verifier(std::make_unique<net::MultiLogCTVerifier>());
+
+    // Enable FTP, we override it later in SetupAtomURLRequestJobFactory
+#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
+    builder->set_ftp_enabled(true);
+#endif
 
     auto* network_service = content::GetNetworkServiceImpl();
     network_context_ = network_service->CreateNetworkContextWithBuilder(
