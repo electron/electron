@@ -4,8 +4,10 @@
 
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
+#include "atom/browser/mac/atom_application.h"
 #include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
+#include "base/mac/sdk_forward_declarations.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/display/screen.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
@@ -143,6 +145,10 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)isDarkMode {
+  if (@available(macOS 10.14, *)) {
+    return [[NSApplication sharedApplication].effectiveAppearance.name
+        isEqualToString:NSAppearanceNameDarkAqua];
+  }
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* mode = [defaults stringForKey:@"AppleInterfaceStyle"];
   return mode && [mode isEqualToString:@"Dark"];
@@ -322,9 +328,9 @@ const CGFloat kVerticalTitleMargin = 2;
 - (void)popUpContextMenu:(atom::AtomMenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
-    base::scoped_nsobject<AtomMenuController> menuController([
-        [AtomMenuController alloc] initWithModel:menu_model
-                           useDefaultAccelerator:NO]);
+    base::scoped_nsobject<AtomMenuController> menuController(
+        [[AtomMenuController alloc] initWithModel:menu_model
+                            useDefaultAccelerator:NO]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
