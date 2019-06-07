@@ -1,16 +1,12 @@
-'use strict'
-
 const v8Util = process.electronBinding('v8_util')
 
-class CallbacksRegistry {
-  constructor () {
-    this.nextId = 0
-    this.callbacks = {}
-  }
+export class CallbacksRegistry {
+  private nextId: number = 0
+  private callbacks: Record<number, Function> = {}
 
-  add (callback) {
+  add (callback: Function) {
     // The callback is already added.
-    let id = v8Util.getHiddenValue(callback, 'callbackId')
+    let id = v8Util.getHiddenValue<number>(callback, 'callbackId')
     if (id != null) return id
 
     id = this.nextId += 1
@@ -19,6 +15,7 @@ class CallbacksRegistry {
     // so that release errors can be tracked down easily.
     const regexp = /at (.*)/gi
     const stackString = (new Error()).stack
+    if (!stackString) return
 
     let filenameAndLine
     let match
@@ -30,24 +27,25 @@ class CallbacksRegistry {
       if (location.includes('electron/js2c')) continue
 
       const ref = /([^/^)]*)\)?$/gi.exec(location)
-      filenameAndLine = ref[1]
+      if (ref) filenameAndLine = ref![1]
       break
     }
+
     this.callbacks[id] = callback
     v8Util.setHiddenValue(callback, 'callbackId', id)
     v8Util.setHiddenValue(callback, 'location', filenameAndLine)
     return id
   }
 
-  get (id) {
+  get (id: number) {
     return this.callbacks[id] || function () {}
   }
 
-  apply (id, ...args) {
+  apply (id: number, ...args: any[]) {
     return this.get(id).apply(global, ...args)
   }
 
-  remove (id) {
+  remove (id: number) {
     const callback = this.callbacks[id]
     if (callback) {
       v8Util.deleteHiddenValue(callback, 'callbackId')
@@ -55,5 +53,3 @@ class CallbacksRegistry {
     }
   }
 }
-
-module.exports = CallbacksRegistry
