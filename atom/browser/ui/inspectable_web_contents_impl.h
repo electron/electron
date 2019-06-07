@@ -8,10 +8,12 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
 #include "atom/browser/ui/inspectable_web_contents.h"
+#include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
@@ -19,7 +21,6 @@
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "net/url_request/url_fetcher_delegate.h"
 #include "ui/gfx/geometry/rect.h"
 
 class PrefService;
@@ -35,8 +36,7 @@ class InspectableWebContentsImpl
       public content::DevToolsAgentHostClient,
       public content::WebContentsObserver,
       public content::WebContentsDelegate,
-      public DevToolsEmbedderMessageDispatcher::Delegate,
-      public net::URLFetcherDelegate {
+      public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
@@ -143,6 +143,9 @@ class InspectableWebContentsImpl
                                  int boundary_value) override {}
   void ReadyForTest() override {}
   void SetOpenNewWindowForPopups(bool value) override {}
+  void RecordPerformanceHistogram(const std::string& name,
+                                  double duration) override {}
+  void RecordUserMetricsAction(const std::string& name) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
@@ -165,7 +168,7 @@ class InspectableWebContentsImpl
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
-                              int32_t level,
+                              blink::mojom::ConsoleMessageLevel level,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;
@@ -197,9 +200,6 @@ class InspectableWebContentsImpl
                           std::unique_ptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
 
-  // net::URLFetcherDelegate:
-  void OnURLFetchComplete(const net::URLFetcher* source) override;
-
   void SendMessageAck(int request_id, const base::Value* arg1);
 
   bool frontend_loaded_;
@@ -214,8 +214,6 @@ class InspectableWebContentsImpl
   std::string dock_state_;
   bool activate_ = true;
 
-  using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
-  PendingRequestsMap pending_requests_;
   InspectableWebContentsDelegate* delegate_;  // weak references.
 
   PrefService* pref_service_;  // weak reference.
@@ -230,6 +228,10 @@ class InspectableWebContentsImpl
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
+
+  class NetworkResourceLoader;
+  std::set<std::unique_ptr<NetworkResourceLoader>, base::UniquePtrComparator>
+      loaders_;
 
   using ExtensionsAPIs = std::map<std::string, std::string>;
   ExtensionsAPIs extensions_api_;

@@ -12,6 +12,7 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
+#include "base/optional.h"
 #include "base/single_thread_task_runner.h"
 #include "base/task/post_task.h"
 #include "base/time/time.h"
@@ -20,14 +21,15 @@
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
 #include "components/viz/common/quads/render_pass.h"
-#include "content/browser/renderer_host/cursor_manager.h"
-#include "content/browser/renderer_host/render_widget_host_delegate.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"
+#include "content/browser/renderer_host/cursor_manager.h"  // nogncheck
+#include "content/browser/renderer_host/input/synthetic_gesture_target.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/common/view_messages.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
+#include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "media/base/video_frame.h"
 #include "third_party/blink/public/platform/web_input_event.h"
@@ -50,7 +52,6 @@ namespace atom {
 namespace {
 
 const float kDefaultScaleFactor = 1.0;
-const int kFrameRetryLimit = 2;
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   ui::EventType type = ui::EventType::ET_UNKNOWN;
@@ -120,105 +121,6 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
 
 }  // namespace
 
-class AtomCopyFrameGenerator {
- public:
-  AtomCopyFrameGenerator(OffScreenRenderWidgetHostView* view,
-                         int frame_rate_threshold_us)
-      : view_(view),
-        frame_duration_(
-            base::TimeDelta::FromMicroseconds(frame_rate_threshold_us)),
-        weak_ptr_factory_(this) {
-    last_time_ = base::Time::Now();
-  }
-
-  void GenerateCopyFrame(const gfx::Rect& damage_rect) {
-    if (!view_->render_widget_host() || !view_->IsPainting())
-      return;
-
-    auto request = std::make_unique<viz::CopyOutputRequest>(
-        viz::CopyOutputRequest::ResultFormat::RGBA_BITMAP,
-        base::BindOnce(
-            &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
-            weak_ptr_factory_.GetWeakPtr(), damage_rect));
-
-    request->set_area(gfx::Rect(view_->GetCompositorViewportPixelSize()));
-    view_->GetRootLayer()->RequestCopyOfOutput(std::move(request));
-  }
-
-  void set_frame_rate_threshold_us(int frame_rate_threshold_us) {
-    frame_duration_ =
-        base::TimeDelta::FromMicroseconds(frame_rate_threshold_us);
-  }
-
- private:
-  void CopyFromCompositingSurfaceHasResult(
-      const gfx::Rect& damage_rect,
-      std::unique_ptr<viz::CopyOutputResult> result) {
-    if (result->IsEmpty() || result->size().IsEmpty() ||
-        !view_->render_widget_host()) {
-      OnCopyFrameCaptureFailure(damage_rect);
-      return;
-    }
-
-    DCHECK(!result->IsEmpty());
-    auto source = std::make_unique<SkBitmap>(result->AsSkBitmap());
-    DCHECK(source->readyToDraw());
-    if (source) {
-      base::AutoLock autolock(lock_);
-      std::shared_ptr<SkBitmap> bitmap(source.release());
-
-      base::TimeTicks now = base::TimeTicks::Now();
-      base::TimeDelta next_frame_in = next_frame_time_ - now;
-      if (next_frame_in > frame_duration_ / 4) {
-        next_frame_time_ += frame_duration_;
-        base::PostDelayedTaskWithTraits(
-            FROM_HERE, {content::BrowserThread::UI},
-            base::BindOnce(&AtomCopyFrameGenerator::OnCopyFrameCaptureSuccess,
-                           weak_ptr_factory_.GetWeakPtr(), damage_rect, bitmap),
-            next_frame_in);
-      } else {
-        next_frame_time_ = now + frame_duration_;
-        OnCopyFrameCaptureSuccess(damage_rect, bitmap);
-      }
-
-      frame_retry_count_ = 0;
-    } else {
-      OnCopyFrameCaptureFailure(damage_rect);
-    }
-  }
-
-  void OnCopyFrameCaptureFailure(const gfx::Rect& damage_rect) {
-    const bool force_frame = (++frame_retry_count_ <= kFrameRetryLimit);
-    if (force_frame) {
-      // Retry with the same |damage_rect|.
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(&AtomCopyFrameGenerator::GenerateCopyFrame,
-                         weak_ptr_factory_.GetWeakPtr(), damage_rect));
-    }
-  }
-
-  void OnCopyFrameCaptureSuccess(const gfx::Rect& damage_rect,
-                                 const std::shared_ptr<SkBitmap>& bitmap) {
-    base::AutoLock lock(onPaintLock_);
-    view_->OnPaint(damage_rect, *bitmap);
-  }
-
-  base::Lock lock_;
-  base::Lock onPaintLock_;
-  OffScreenRenderWidgetHostView* view_;
-
-  base::Time last_time_;
-
-  int frame_retry_count_ = 0;
-  base::TimeTicks next_frame_time_ = base::TimeTicks::Now();
-  base::TimeDelta frame_duration_;
-
-  base::WeakPtrFactory<AtomCopyFrameGenerator> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomCopyFrameGenerator);
-};
-
 class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
  public:
   AtomBeginFrameTimer(int frame_rate_threshold_us,
@@ -253,7 +155,6 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
   DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
 };
 
-#if !defined(OS_MACOSX)
 class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
  public:
   explicit AtomDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
@@ -297,7 +198,6 @@ class AtomDelegatedFrameHostClient : public content::DelegatedFrameHostClient {
 
   DISALLOW_COPY_AND_ASSIGN(AtomDelegatedFrameHostClient);
 };
-#endif  // !defined(OS_MACOSX)
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
@@ -315,19 +215,23 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       frame_rate_(frame_rate),
       size_(initial_size),
       painting_(painting),
-      is_showing_(!render_widget_host_->is_hidden()),
+      is_showing_(false),
       cursor_manager_(new content::CursorManager(this)),
       mouse_wheel_phase_handler_(this),
+      backing_(new SkBitmap),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
 
   current_device_scale_factor_ = kDefaultScaleFactor;
 
-#if !defined(OS_MACOSX)
-  local_surface_id_allocator_.GenerateId();
-  local_surface_id_allocation_ =
-      local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_allocator_.GenerateId();
+  delegated_frame_host_allocation_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  compositor_allocator_.GenerateId();
+  compositor_allocation_ =
+      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+
   delegated_frame_host_client_.reset(new AtomDelegatedFrameHostClient(this));
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack),
@@ -335,59 +239,49 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       true /* should_register_frame_sink_id */);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
-#endif
-
-#if defined(OS_MACOSX)
-  last_frame_root_background_color_ = SK_ColorTRANSPARENT;
-  CreatePlatformWidget(is_guest_view_hack);
-#endif
 
   bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(background_color_);
 
-#if !defined(OS_MACOSX)
-  // On macOS the ui::Compositor is created/owned by the platform view.
   content::ImageTransportFactory* factory =
       content::ImageTransportFactory::GetInstance();
+
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
-  compositor_.reset(new ui::Compositor(
-      context_factory_private->AllocateFrameSinkId(),
-      content::GetContextFactory(), context_factory_private,
-      base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */));
+  compositor_.reset(
+      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
+                         content::GetContextFactory(), context_factory_private,
+                         base::ThreadTaskRunnerHandle::Get(),
+                         false /* enable_pixel_canvas */, this));
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
-#endif
+
   GetCompositor()->SetDelegate(this);
 
   ResizeRootLayer(false);
   render_widget_host_->SetView(this);
   InstallTransparency();
+
+  if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
+    video_consumer_.reset(new OffScreenVideoConsumer(
+        this, base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
+                                  weak_ptr_factory_.GetWeakPtr())));
+    video_consumer_->SetActive(IsPainting());
+    video_consumer_->SetFrameRate(GetFrameRate());
+  }
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
-#if defined(OS_MACOSX)
-  if (is_showing_)
-    browser_compositor_->SetRenderWidgetHostIsHidden(true);
-#else
   // Marking the DelegatedFrameHost as removed from the window hierarchy is
   // necessary to remove all connections to its old ui::Compositor.
   if (is_showing_)
     delegated_frame_host_->WasHidden();
   delegated_frame_host_->DetachFromCompositor();
-#endif
 
-  if (copy_frame_generator_.get())
-    copy_frame_generator_.reset(NULL);
-
-#if defined(OS_MACOSX)
-  DestroyPlatformWidget();
-#else
   delegated_frame_host_.reset(NULL);
   compositor_.reset(NULL);
   root_layer_.reset(NULL);
-#endif
 }
 
 content::BrowserAccessibilityManager*
@@ -422,8 +316,17 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
   DCHECK(begin_frame_args.IsValid());
   begin_frame_number_++;
 
-  if (renderer_compositor_frame_sink_)
-    renderer_compositor_frame_sink_->OnBeginFrame(begin_frame_args, {});
+  compositor_->context_factory_private()->IssueExternalBeginFrame(
+      compositor_.get(), begin_frame_args);
+}
+
+void OffScreenRenderWidgetHostView::OnDisplayDidFinishFrame(
+    const viz::BeginFrameAck& ack) {}
+
+void OffScreenRenderWidgetHostView::OnNeedsExternalBeginFrames(
+    bool needs_begin_frames) {
+  SetupFrameRate(true);
+  begin_frame_timer_->SetActive(needs_begin_frames);
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -437,7 +340,7 @@ void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
   parent_host_view_->Hide();
 
   ResizeRootLayer(false);
-  Show();
+  SetPainting(parent_host_view_->IsPainting());
 }
 
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
@@ -449,7 +352,7 @@ void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
   SetSize(new_bounds.size());
 }
 
-gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() const {
+gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() {
   return gfx::NativeView();
 }
 
@@ -464,11 +367,11 @@ ui::TextInputClient* OffScreenRenderWidgetHostView::GetTextInputClient() {
 
 void OffScreenRenderWidgetHostView::Focus() {}
 
-bool OffScreenRenderWidgetHostView::HasFocus() const {
+bool OffScreenRenderWidgetHostView::HasFocus() {
   return false;
 }
 
-bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
+bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
   return GetDelegatedFrameHost()->CanCopyFromCompositingSurface();
 }
 
@@ -478,17 +381,13 @@ void OffScreenRenderWidgetHostView::Show() {
 
   is_showing_ = true;
 
-#if defined(OS_MACOSX)
-  browser_compositor_->SetRenderWidgetHostIsHidden(false);
-#else
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(
       GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), false);
-#endif
+      GetRootLayer()->bounds().size(), base::nullopt);
 
   if (render_widget_host_)
-    render_widget_host_->WasShown(false);
+    render_widget_host_->WasShown(base::nullopt);
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
@@ -498,12 +397,8 @@ void OffScreenRenderWidgetHostView::Hide() {
   if (render_widget_host_)
     render_widget_host_->WasHidden();
 
-#if defined(OS_MACOSX)
-  browser_compositor_->SetRenderWidgetHostIsHidden(true);
-#else
   GetDelegatedFrameHost()->WasHidden();
   GetDelegatedFrameHost()->DetachFromCompositor();
-#endif
 
   is_showing_ = false;
 }
@@ -517,7 +412,7 @@ void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
   SynchronizeVisualProperties();
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
+gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() {
   if (IsPopupWidget())
     return popup_position_;
 
@@ -535,8 +430,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor()
-    const {
+base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
@@ -544,7 +438,7 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {
   NOTREACHED();
 }
 
-gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
+gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
   return size_;
 }
 
@@ -576,67 +470,17 @@ void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
     viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
   renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
 
-#if defined(OS_MACOSX)
-  browser_compositor_->DidCreateNewRendererCompositorFrameSink(
-      renderer_compositor_frame_sink_);
-#else
   if (GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
         renderer_compositor_frame_sink_);
   }
-#endif
 }
 
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     const viz::LocalSurfaceId& local_surface_id,
     viz::CompositorFrame frame,
     base::Optional<viz::HitTestRegionList> hit_test_region_list) {
-#if defined(OS_MACOSX)
-  last_frame_root_background_color_ = frame.metadata.root_background_color;
-#endif
-
-  if (frame.metadata.root_scroll_offset != last_scroll_offset_) {
-    last_scroll_offset_ = frame.metadata.root_scroll_offset;
-  }
-
-  if (!frame.render_pass_list.empty()) {
-    if (software_output_device_) {
-      if (!begin_frame_timer_.get() || IsPopupWidget()) {
-        software_output_device_->SetActive(painting_, false);
-      }
-
-      // The compositor will draw directly to the SoftwareOutputDevice which
-      // then calls OnPaint.
-      // We would normally call BrowserCompositorMac::SubmitCompositorFrame on
-      // macOS, however it contains compositor resize logic that we don't want.
-      // Consequently we instead call the SubmitCompositorFrame method directly.
-      GetDelegatedFrameHost()->SubmitCompositorFrame(
-          local_surface_id, std::move(frame), std::move(hit_test_region_list));
-    } else {
-      if (!copy_frame_generator_.get()) {
-        copy_frame_generator_.reset(
-            new AtomCopyFrameGenerator(this, frame_rate_threshold_us_));
-      }
-
-      // Determine the damage rectangle for the current frame. This is the same
-      // calculation that SwapDelegatedFrame uses.
-      viz::RenderPass* root_pass = frame.render_pass_list.back().get();
-      gfx::Size frame_size = root_pass->output_rect.size();
-      gfx::Rect damage_rect =
-          gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
-      damage_rect.Intersect(gfx::Rect(frame_size));
-
-      // We would normally call BrowserCompositorMac::SubmitCompositorFrame on
-      // macOS, however it contains compositor resize logic that we don't want.
-      // Consequently we instead call the SubmitCompositorFrame method directly.
-      GetDelegatedFrameHost()->SubmitCompositorFrame(
-          local_surface_id, std::move(frame), std::move(hit_test_region_list));
-
-      // Request a copy of the last compositor frame which will eventually call
-      // OnPaint asynchronously.
-      copy_frame_generator_->GenerateCopyFrame(damage_rect);
-    }
-  }
+  NOTREACHED();
 }
 
 void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
@@ -651,20 +495,24 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
     content::RenderWidgetHostView* parent_host_view,
     const gfx::Rect& pos) {
   DCHECK_EQ(parent_host_view_, parent_host_view);
+  DCHECK_EQ(widget_type_, content::WidgetType::kPopup);
 
   if (parent_host_view_->popup_host_view_) {
     parent_host_view_->popup_host_view_->CancelWidget();
   }
 
   parent_host_view_->set_popup_host_view(this);
-  parent_host_view_->popup_bitmap_.reset(new SkBitmap);
   parent_callback_ =
-      base::Bind(&OffScreenRenderWidgetHostView::OnPopupPaint,
-                 parent_host_view_->weak_ptr_factory_.GetWeakPtr());
+      base::BindRepeating(&OffScreenRenderWidgetHostView::OnPopupPaint,
+                          parent_host_view_->weak_ptr_factory_.GetWeakPtr());
 
   popup_position_ = pos;
 
   ResizeRootLayer(false);
+  SetPainting(parent_host_view_->IsPainting());
+  if (video_consumer_) {
+    video_consumer_->SizeChanged();
+  }
   Show();
 }
 
@@ -684,8 +532,7 @@ void OffScreenRenderWidgetHostView::TextInputStateChanged(
 
 void OffScreenRenderWidgetHostView::ImeCancelComposition() {}
 
-void OffScreenRenderWidgetHostView::RenderProcessGone(base::TerminationStatus,
-                                                      int) {
+void OffScreenRenderWidgetHostView::RenderProcessGone() {
   Destroy();
 }
 
@@ -698,7 +545,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
     } else {
       if (popup_host_view_)
         popup_host_view_->CancelWidget();
-      popup_bitmap_.reset();
       if (child_host_view_)
         child_host_view_->CancelWidget();
       if (!guest_host_views_.empty()) {
@@ -733,7 +579,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
 }
 
 void OffScreenRenderWidgetHostView::GetScreenInfo(
-    content::ScreenInfo* screen_info) const {
+    content::ScreenInfo* screen_info) {
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
@@ -748,6 +594,7 @@ void OffScreenRenderWidgetHostView::InitAsGuest(
     content::RenderWidgetHostView* parent_host_view,
     content::RenderWidgetHostViewGuest* guest_view) {
   parent_host_view_->AddGuestHostView(this);
+  SetPainting(parent_host_view_->IsPainting());
 }
 
 void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
@@ -763,12 +610,17 @@ viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
              : viz::SurfaceId();
 }
 
+std::unique_ptr<content::SyntheticGestureTarget>
+OffScreenRenderWidgetHostView::CreateSyntheticGestureTarget() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
     const gfx::Range&,
     const std::vector<gfx::Rect>&) {}
 
-gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize()
-    const {
+gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),
                                 current_device_scale_factor_);
 }
@@ -800,12 +652,8 @@ const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
 
 void OffScreenRenderWidgetHostView::DidNavigate() {
   ResizeRootLayer(true);
-#if defined(OS_MACOSX)
-  browser_compositor_->DidNavigate();
-#else
   if (delegated_frame_host_)
     delegated_frame_host_->DidNavigate();
-#endif
 }
 
 bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpaceLegacy(
@@ -829,8 +677,7 @@ bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpaceLegacy(
 bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
     const gfx::PointF& point,
     RenderWidgetHostViewBase* target_view,
-    gfx::PointF* transformed_point,
-    viz::EventSource source) {
+    gfx::PointF* transformed_point) {
   if (target_view == this) {
     *transformed_point = point;
     return true;
@@ -847,7 +694,6 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
   if (parent_host_view_) {
     if (parent_host_view_->popup_host_view_ == this) {
       parent_host_view_->set_popup_host_view(NULL);
-      parent_host_view_->popup_bitmap_.reset();
     } else if (parent_host_view_->child_host_view_ == this) {
       parent_host_view_->set_child_host_view(NULL);
       parent_host_view_->Show();
@@ -890,29 +736,21 @@ void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
   Invalidate();
 }
 
-std::unique_ptr<viz::SoftwareOutputDevice>
-OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
+std::unique_ptr<viz::HostDisplayClient>
+OffScreenRenderWidgetHostView::CreateHostDisplayClient(
     ui::Compositor* compositor) {
-  DCHECK_EQ(GetCompositor(), compositor);
-  DCHECK(!copy_frame_generator_);
-  DCHECK(!software_output_device_);
-
-  ResizeRootLayer(false);
-
-  software_output_device_ = new OffScreenOutputDevice(
-      transparent_, base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
-                               weak_ptr_factory_.GetWeakPtr()));
-  return base::WrapUnique(software_output_device_);
+  host_display_client_ = new OffScreenHostDisplayClient(
+      gfx::kNullAcceleratedWidget,
+      base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
+                          weak_ptr_factory_.GetWeakPtr()));
+  host_display_client_->SetActive(IsPainting());
+  return base::WrapUnique(host_display_client_);
 }
 
 bool OffScreenRenderWidgetHostView::InstallTransparency() {
   if (transparent_) {
     SetBackgroundColor(SkColor());
-#if defined(OS_MACOSX)
-    browser_compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
-#else
     compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
-#endif
     return true;
   }
   return false;
@@ -921,76 +759,99 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
 void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
     bool needs_begin_frames) {
   SetupFrameRate(true);
-
   begin_frame_timer_->SetActive(needs_begin_frames);
-
-  if (software_output_device_) {
-    software_output_device_->SetActive(painting_, false);
-  }
 }
 
-void OffScreenRenderWidgetHostView::SetWantsAnimateOnlyBeginFrames() {
-  if (GetDelegatedFrameHost()) {
-    GetDelegatedFrameHost()->SetWantsAnimateOnlyBeginFrames();
-  }
+void OffScreenRenderWidgetHostView::SetWantsAnimateOnlyBeginFrames() {}
+
+#if defined(OS_MACOSX)
+void OffScreenRenderWidgetHostView::SetActive(bool active) {}
+
+void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
+
+void OffScreenRenderWidgetHostView::SpeakSelection() {}
+
+bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
+  return false;
 }
+#endif
 
 void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
                                             const SkBitmap& bitmap) {
+  backing_.reset(new SkBitmap());
+  backing_->allocN32Pixels(bitmap.width(), bitmap.height(), !transparent_);
+  bitmap.readPixels(backing_->pixmap());
+
+  if (IsPopupWidget() && parent_callback_) {
+    parent_callback_.Run(this->popup_position_);
+  } else {
+    CompositeFrame(damage_rect);
+  }
+}
+
+gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
+  if (IsPopupWidget()) {
+    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
+                                   popup_position_.size());
+  } else {
+    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
+                                   GetViewBounds().size());
+  }
+}
+
+void OffScreenRenderWidgetHostView::CompositeFrame(
+    const gfx::Rect& damage_rect) {
   HoldResize();
 
-  if (parent_callback_) {
-    parent_callback_.Run(damage_rect, bitmap);
+  gfx::Size size_in_pixels = SizeInPixels();
+
+  SkBitmap frame;
+
+  // Optimize for the case when there is no popup
+  if (proxy_views_.size() == 0 && !popup_host_view_) {
+    frame = GetBacking();
   } else {
-    gfx::Rect damage(damage_rect);
+    frame.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
+                         false);
+    if (!GetBacking().drawsNothing()) {
+      SkCanvas canvas(frame);
+      canvas.writePixels(GetBacking(), 0, 0);
 
-    gfx::Size size_in_pixels = gfx::ConvertSizeToPixel(
-        current_device_scale_factor_, GetViewBounds().size());
+      if (popup_host_view_ && !popup_host_view_->GetBacking().drawsNothing()) {
+        gfx::Rect rect = popup_host_view_->popup_position_;
+        gfx::Point origin_in_pixels = gfx::ConvertPointToPixel(
+            current_device_scale_factor_, rect.origin());
+        canvas.writePixels(popup_host_view_->GetBacking(), origin_in_pixels.x(),
+                           origin_in_pixels.y());
+      }
 
-    SkBitmap backing;
-    backing.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
-                           false);
-    SkCanvas canvas(backing);
-
-    canvas.writePixels(bitmap, 0, 0);
-
-    if (popup_host_view_ && popup_bitmap_.get()) {
-      gfx::Rect rect = popup_host_view_->popup_position_;
-      gfx::Point origin_in_pixels =
-          gfx::ConvertPointToPixel(current_device_scale_factor_, rect.origin());
-      damage.Union(rect);
-      canvas.writePixels(*popup_bitmap_.get(), origin_in_pixels.x(),
-                         origin_in_pixels.y());
+      for (auto* proxy_view : proxy_views_) {
+        gfx::Rect rect = proxy_view->GetBounds();
+        gfx::Point origin_in_pixels = gfx::ConvertPointToPixel(
+            current_device_scale_factor_, rect.origin());
+        canvas.writePixels(*proxy_view->GetBitmap(), origin_in_pixels.x(),
+                           origin_in_pixels.y());
+      }
     }
-
-    for (auto* proxy_view : proxy_views_) {
-      gfx::Rect rect = proxy_view->GetBounds();
-      gfx::Point origin_in_pixels =
-          gfx::ConvertPointToPixel(current_device_scale_factor_, rect.origin());
-      damage.Union(rect);
-      canvas.writePixels(*proxy_view->GetBitmap(), origin_in_pixels.x(),
-                         origin_in_pixels.y());
-    }
-
-    damage.Intersect(GetViewBounds());
-    paint_callback_running_ = true;
-    callback_.Run(damage, backing);
-    paint_callback_running_ = false;
   }
+
+  paint_callback_running_ = true;
+  callback_.Run(gfx::IntersectRects(gfx::Rect(size_in_pixels), damage_rect),
+                frame);
+  paint_callback_running_ = false;
 
   ReleaseResize();
 }
 
-void OffScreenRenderWidgetHostView::OnPopupPaint(const gfx::Rect& damage_rect,
-                                                 const SkBitmap& bitmap) {
-  if (popup_host_view_ && popup_bitmap_.get())
-    popup_bitmap_.reset(new SkBitmap(bitmap));
-  InvalidateBounds(popup_host_view_->popup_position_);
+void OffScreenRenderWidgetHostView::OnPopupPaint(const gfx::Rect& damage_rect) {
+  InvalidateBounds(
+      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect));
 }
 
 void OffScreenRenderWidgetHostView::OnProxyViewPaint(
     const gfx::Rect& damage_rect) {
-  InvalidateBounds(damage_rect);
+  InvalidateBounds(
+      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect));
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
@@ -1020,7 +881,7 @@ void OffScreenRenderWidgetHostView::SynchronizeVisualProperties() {
     return;
   }
 
-  ResizeRootLayer(false);
+  ResizeRootLayer(true);
 }
 
 void OffScreenRenderWidgetHostView::SendMouseEvent(
@@ -1147,8 +1008,17 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
-  if (software_output_device_) {
-    software_output_device_->SetActive(painting_, !paint_callback_running_);
+  if (popup_host_view_) {
+    popup_host_view_->SetPainting(painting);
+  }
+
+  for (auto* guest_host_view : guest_host_views_)
+    guest_host_view->SetPainting(painting);
+
+  if (video_consumer_) {
+    video_consumer_->SetActive(IsPainting());
+  } else if (host_display_client_) {
+    host_display_client_->SetActive(IsPainting());
   }
 }
 
@@ -1173,6 +1043,10 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
 
   SetupFrameRate(true);
 
+  if (video_consumer_) {
+    video_consumer_->SetFrameRate(GetFrameRate());
+  }
+
   for (auto* guest_host_view : guest_host_views_)
     guest_host_view->SetFrameRate(frame_rate);
 }
@@ -1181,7 +1055,6 @@ int OffScreenRenderWidgetHostView::GetFrameRate() const {
   return frame_rate_;
 }
 
-#if !defined(OS_MACOSX)
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
   return compositor_.get();
 }
@@ -1190,18 +1063,15 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
   return root_layer_.get();
 }
 
-#if !defined(OS_MACOSX)
 const viz::LocalSurfaceIdAllocation&
 OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
-  return local_surface_id_allocation_;
+  return delegated_frame_host_allocation_;
 }
-#endif  // defined(OS_MACOSX)
 
 content::DelegatedFrameHost*
 OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
   return delegated_frame_host_.get();
 }
-#endif
 
 void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   if (!force && frame_rate_threshold_us_ != 0)
@@ -1209,31 +1079,23 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
-  if (copy_frame_generator_.get()) {
-    copy_frame_generator_->set_frame_rate_threshold_us(
-        frame_rate_threshold_us_);
-  }
-
   if (begin_frame_timer_.get()) {
     begin_frame_timer_->SetFrameRateThresholdUs(frame_rate_threshold_us_);
   } else {
     begin_frame_timer_.reset(new AtomBeginFrameTimer(
         frame_rate_threshold_us_,
-        base::Bind(&OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
-                   weak_ptr_factory_.GetWeakPtr())));
+        base::BindRepeating(
+            &OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
+            weak_ptr_factory_.GetWeakPtr())));
   }
 }
 
 void OffScreenRenderWidgetHostView::Invalidate() {
-  InvalidateBounds(GetViewBounds());
+  InvalidateBounds(gfx::Rect(GetRequestedRendererSize()));
 }
 
 void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
-  if (software_output_device_) {
-    software_output_device_->OnPaint(bounds);
-  } else if (copy_frame_generator_) {
-    copy_frame_generator_->GenerateCopyFrame(bounds);
-  }
+  CompositeFrame(bounds);
 }
 
 void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
@@ -1259,23 +1121,24 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
 
-#if defined(OS_MACOSX)
-  bool resized = UpdateNSViewAndDisplay();
-#else
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
-  local_surface_id_allocator_.GenerateId();
-  local_surface_id_allocation_ =
-      local_surface_id_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  compositor_allocator_.GenerateId();
+  compositor_allocation_ =
+      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
 
   GetCompositor()->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
-                                   local_surface_id_allocation_);
+                                   compositor_allocation_);
+
+  delegated_frame_host_allocator_.GenerateId();
+  delegated_frame_host_allocation_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+
   bool resized = true;
   GetDelegatedFrameHost()->EmbedSurface(
-      local_surface_id_allocation_.local_surface_id(), size,
+      delegated_frame_host_allocation_.local_surface_id(), size,
       cc::DeadlinePolicy::UseDefaultDeadline());
-#endif
 
   // Note that |render_widget_host_| will retrieve resize parameters from the
   // DelegatedFrameHost, so it must have SynchronizeVisualProperties called

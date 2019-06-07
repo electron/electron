@@ -164,9 +164,9 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
     const std::string& scheme) {
   auto* job_factory = request_context_getter->job_factory();
   if (!job_factory->HasProtocolHandler(scheme))
-    return PROTOCOL_NOT_REGISTERED;
+    return ProtocolError::NOT_REGISTERED;
   job_factory->SetProtocolHandler(scheme, nullptr);
-  return PROTOCOL_OK;
+  return ProtocolError::OK;
 }
 
 bool IsProtocolHandledInIO(
@@ -175,10 +175,6 @@ bool IsProtocolHandledInIO(
   bool is_handled =
       request_context_getter->job_factory()->IsHandledProtocol(scheme);
   return is_handled;
-}
-
-void PromiseCallback(util::Promise promise, bool handled) {
-  promise.Resolve(handled);
 }
 
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
@@ -190,7 +186,7 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme) {
   base::PostTaskWithTraitsAndReplyWithResult(
       FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&IsProtocolHandledInIO, base::RetainedRef(getter), scheme),
-      base::BindOnce(&PromiseCallback, std::move(promise)));
+      base::BindOnce(util::Promise::ResolvePromise<bool>, std::move(promise)));
 
   return handle;
 }
@@ -213,8 +209,8 @@ Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
     scoped_refptr<URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
   return request_context_getter->job_factory()->UninterceptProtocol(scheme)
-             ? PROTOCOL_OK
-             : PROTOCOL_NOT_INTERCEPTED;
+             ? ProtocolError::OK
+             : ProtocolError::NOT_INTERCEPTED;
 }
 
 void Protocol::OnIOCompleted(const CompletionCallback& callback,
@@ -226,7 +222,7 @@ void Protocol::OnIOCompleted(const CompletionCallback& callback,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
-  if (error == PROTOCOL_OK) {
+  if (error == ProtocolError::OK) {
     callback.Run(v8::Null(isolate()));
   } else {
     std::string str = ErrorCodeToString(error);
@@ -236,15 +232,15 @@ void Protocol::OnIOCompleted(const CompletionCallback& callback,
 
 std::string Protocol::ErrorCodeToString(ProtocolError error) {
   switch (error) {
-    case PROTOCOL_FAIL:
+    case ProtocolError::FAIL:
       return "Failed to manipulate protocol factory";
-    case PROTOCOL_REGISTERED:
+    case ProtocolError::REGISTERED:
       return "The scheme has been registered";
-    case PROTOCOL_NOT_REGISTERED:
+    case ProtocolError::NOT_REGISTERED:
       return "The scheme has not been registered";
-    case PROTOCOL_INTERCEPTED:
+    case ProtocolError::INTERCEPTED:
       return "The scheme has been intercepted";
-    case PROTOCOL_NOT_INTERCEPTED:
+    case ProtocolError::NOT_INTERCEPTED:
       return "The scheme has not been intercepted";
     default:
       return "Unexpected error";
@@ -317,4 +313,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_protocol, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_protocol, Initialize)

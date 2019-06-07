@@ -4,6 +4,8 @@
 
 #include "atom/browser/mac/in_app_purchase_observer.h"
 
+#include <vector>
+
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
@@ -74,7 +76,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 
   // Send the callback to the browser thread.
   base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                           base::Bind(callback_, converted));
+                           base::BindOnce(callback_, converted));
 }
 
 /**
@@ -182,8 +184,9 @@ Transaction::~Transaction() = default;
 
 TransactionObserver::TransactionObserver() : weak_ptr_factory_(this) {
   obeserver_ = [[InAppTransactionObserver alloc]
-      initWithCallback:base::Bind(&TransactionObserver::OnTransactionsUpdated,
-                                  weak_ptr_factory_.GetWeakPtr())];
+      initWithCallback:base::BindRepeating(
+                           &TransactionObserver::OnTransactionsUpdated,
+                           weak_ptr_factory_.GetWeakPtr())];
 }
 
 TransactionObserver::~TransactionObserver() {

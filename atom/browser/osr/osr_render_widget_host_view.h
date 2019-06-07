@@ -14,7 +14,8 @@
 #include <windows.h>
 #endif
 
-#include "atom/browser/osr/osr_output_device.h"
+#include "atom/browser/osr/osr_host_display_client.h"
+#include "atom/browser/osr/osr_video_consumer.h"
 #include "atom/browser/osr/osr_view_proxy.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
@@ -23,12 +24,12 @@
 #include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
-#include "content/browser/frame_host/render_widget_host_view_guest.h"
-#include "content/browser/renderer_host/delegated_frame_host.h"
-#include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "content/browser/web_contents/web_contents_view.h"
+#include "content/browser/frame_host/render_widget_host_view_guest.h"  // nogncheck
+#include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
+#include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
@@ -37,22 +38,11 @@
 #include "ui/compositor/layer_owner.h"
 #include "ui/gfx/geometry/point.h"
 
+#include "components/viz/host/host_display_client.h"
+#include "ui/compositor/external_begin_frame_client.h"
+
 #if defined(OS_WIN)
 #include "ui/gfx/win/window_impl.h"
-#endif
-
-#if defined(OS_MACOSX)
-#include "content/browser/renderer_host/browser_compositor_view_mac.h"
-#endif
-
-#if defined(OS_MACOSX)
-#ifdef __OBJC__
-@class CALayer;
-@class NSWindow;
-#else
-class CALayer;
-class NSWindow;
-#endif
 #endif
 
 namespace content {
@@ -64,13 +54,13 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
-#if defined(OS_MACOSX)
-class MacHelper;
-#else
 class AtomDelegatedFrameHostClient;
-#endif
+
+typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
+typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
+                                      public ui::ExternalBeginFrameClient,
                                       public ui::CompositorDelegate,
                                       public OffscreenViewProxyObserver {
  public:
@@ -87,26 +77,29 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       content::BrowserAccessibilityDelegate*,
       bool) override;
 
+  void OnDisplayDidFinishFrame(const viz::BeginFrameAck& ack) override;
+  void OnNeedsExternalBeginFrames(bool needs_begin_frames) override;
+
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
   void SetBounds(const gfx::Rect&) override;
-  gfx::NativeView GetNativeView(void) const override;
+  gfx::NativeView GetNativeView(void) override;
   gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
   ui::TextInputClient* GetTextInputClient() override;
   void Focus(void) override;
-  bool HasFocus(void) const override;
+  bool HasFocus(void) override;
   uint32_t GetCaptureSequenceNumber() const override;
-  bool IsSurfaceAvailableForCopy(void) const override;
+  bool IsSurfaceAvailableForCopy(void) override;
   void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
   void EnsureSurfaceSynchronizedForWebTest() override;
-  gfx::Rect GetViewBounds(void) const override;
-  gfx::Size GetVisibleViewportSize() const override;
+  gfx::Rect GetViewBounds(void) override;
+  gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
-  base::Optional<SkColor> GetBackgroundColor() const override;
+  base::Optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
@@ -138,7 +131,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const content::TextInputState& params) override;
   void ImeCancelComposition(void) override;
-  void RenderProcessGone(base::TerminationStatus, int) override;
+  void RenderProcessGone() override;
   void Destroy(void) override;
   void SetTooltipText(const base::string16&) override;
   content::CursorManager* GetCursorManager() override;
@@ -146,20 +139,17 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(content::ScreenInfo* results) const override;
+  void GetScreenInfo(content::ScreenInfo* results) override;
   void InitAsGuest(content::RenderWidgetHostView*,
                    content::RenderWidgetHostViewGuest*) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
+  std::unique_ptr<content::SyntheticGestureTarget>
+  CreateSyntheticGestureTarget() override;
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
-  gfx::Size GetCompositorViewportPixelSize() const override;
-
-#if defined(OS_MACOSX)
-  viz::ScopedSurfaceIdAllocator DidUpdateVisualProperties(
-      const cc::RenderFrameMetadata& metadata) override;
-#endif
+  gfx::Size GetCompositorViewportPixelSize() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
@@ -179,25 +169,16 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   bool TransformPointToCoordSpaceForView(
       const gfx::PointF& point,
       RenderWidgetHostViewBase* target_view,
-      gfx::PointF* transformed_point,
-      viz::EventSource source = viz::EventSource::ANY) override;
+      gfx::PointF* transformed_point) override;
 
   // ui::CompositorDelegate:
-  std::unique_ptr<viz::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+  std::unique_ptr<viz::HostDisplayClient> CreateHostDisplayClient(
       ui::Compositor* compositor) override;
 
   bool InstallTransparency();
 
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time, base::TimeDelta vsync_period);
-
-#if defined(OS_MACOSX)
-  void CreatePlatformWidget(bool is_guest_view_hack);
-  void DestroyPlatformWidget();
-  SkColor last_frame_root_background_color() const {
-    return last_frame_root_background_color_;
-  }
-#endif
 
   void CancelWidget();
   void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
@@ -207,12 +188,18 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
   void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
-  void OnPopupPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
+  void OnPopupPaint(const gfx::Rect& damage_rect);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
+
+  gfx::Size SizeInPixels();
+
+  void CompositeFrame(const gfx::Rect& damage_rect);
 
   bool IsPopupWidget() const {
     return widget_type_ == content::WidgetType::kPopup;
   }
+
+  const SkBitmap& GetBacking() { return *backing_.get(); }
 
   void HoldResize();
   void ReleaseResize();
@@ -229,12 +216,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   ui::Compositor* GetCompositor() const;
   ui::Layer* GetRootLayer() const;
-
-#if defined(OS_MACOSX)
-  content::BrowserCompositorMac* browser_compositor() const {
-    return browser_compositor_.get();
-  }
-#endif
 
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;
 
@@ -256,12 +237,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   }
 
  private:
-#if defined(OS_MACOSX)
-  display::Display GetDisplay();
-  void OnDidUpdateVisualPropertiesComplete(
-      const cc::RenderFrameMetadata& metadata);
-#endif
-
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
 
@@ -276,16 +251,13 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   OffScreenRenderWidgetHostView* parent_host_view_ = nullptr;
   OffScreenRenderWidgetHostView* popup_host_view_ = nullptr;
-  std::unique_ptr<SkBitmap> popup_bitmap_;
   OffScreenRenderWidgetHostView* child_host_view_ = nullptr;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
 
-  OffScreenOutputDevice* software_output_device_ = nullptr;
-
   const bool transparent_;
   OnPaintCallback callback_;
-  OnPaintCallback parent_callback_;
+  OnPopupPaintCallback parent_callback_;
 
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;
@@ -305,8 +277,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool paint_callback_running_ = false;
 
-  viz::LocalSurfaceIdAllocation local_surface_id_allocation_;
-  viz::ParentLocalSurfaceIdAllocator local_surface_id_allocator_;
+  viz::LocalSurfaceIdAllocation delegated_frame_host_allocation_;
+  viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
+
+  viz::LocalSurfaceIdAllocation compositor_allocation_;
+  viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;
@@ -314,27 +289,15 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
-  std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
+  OffScreenHostDisplayClient* host_display_client_;
+  std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
   // Provides |source_id| for BeginFrameArgs that we create.
   viz::StubBeginFrameSource begin_frame_source_;
   uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
 
-#if defined(OS_MACOSX)
-  std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
-
-  SkColor last_frame_root_background_color_;
-
-  // Can not be managed by smart pointer because its header can not be included
-  // in the file that has the destructor.
-  MacHelper* mac_helper_;
-
-  // Selected text on the renderer.
-  std::string selected_text_;
-#else
   std::unique_ptr<AtomDelegatedFrameHostClient> delegated_frame_host_client_;
-#endif
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
 
@@ -347,6 +310,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   uint32_t latest_capture_sequence_number_ = 0u;
 
   SkColor background_color_ = SkColor();
+
+  std::unique_ptr<SkBitmap> backing_;
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
 

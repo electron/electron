@@ -1,6 +1,8 @@
 if (!process.env.CI) require('dotenv-safe').load()
 
-const octokit = require('@octokit/rest')()
+const octokit = require('@octokit/rest')({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+})
 
 if (process.argv.length < 3) {
   console.log('Usage: find-release version')
@@ -10,8 +12,6 @@ if (process.argv.length < 3) {
 const version = process.argv[2]
 
 async function findRelease () {
-  octokit.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
-
   const releases = await octokit.repos.listReleases({
     owner: 'electron',
     repo: version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'

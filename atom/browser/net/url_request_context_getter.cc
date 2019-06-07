@@ -31,7 +31,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
-#include "content/public/browser/resource_context.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
@@ -48,6 +47,7 @@
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "services/network/ignore_errors_cert_verifier.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "services/network/url_request_context_builder_mojo.h"
 #include "url/url_constants.h"
@@ -55,6 +55,11 @@
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
 #include "net/url_request/ftp_protocol_handler.h"
 #endif
+
+#if BUILDFLAG(ENABLE_REPORTING)
+#include "net/reporting/reporting_policy.h"
+#include "net/reporting/reporting_service.h"
+#endif  // BUILDFLAG(ENABLE_REPORTING)
 
 using content::BrowserThread;
 
@@ -102,18 +107,9 @@ void SetupAtomURLRequestJobFactory(
 
 }  // namespace
 
-class ResourceContext : public content::ResourceContext {
- public:
-  ResourceContext() = default;
-  ~ResourceContext() override = default;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ResourceContext);
-};
-
 URLRequestContextGetter::Handle::Handle(
     base::WeakPtr<AtomBrowserContext> browser_context)
-    : resource_context_(new ResourceContext),
+    : resource_context_(new content::ResourceContext),
       browser_context_(browser_context),
       initialized_(false) {}
 
@@ -132,9 +128,13 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!main_request_context_getter_.get());
+  DCHECK(g_browser_process->io_thread());
+
   LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
       this, protocol_handlers, std::move(protocol_interceptors));
+  g_browser_process->io_thread()->RegisterURLRequestContextGetter(
+      main_request_context_getter_.get());
   return main_request_context_getter_;
 }
 
@@ -154,7 +154,8 @@ URLRequestContextGetter::Handle::GetNetworkContext() {
 network::mojom::NetworkContextParamsPtr
 URLRequestContextGetter::Handle::CreateNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
-      SystemNetworkContextManager::CreateDefaultNetworkContextParams();
+      SystemNetworkContextManager::GetInstance()
+          ->CreateDefaultNetworkContextParams();
 
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
@@ -164,8 +165,6 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           AtomBrowserClient::Get()->GetApplicationLocale());
-
-  network_context_params->enable_data_url_support = false;
 
   if (!browser_context_->IsOffTheRecord()) {
     auto base_path = browser_context_->GetPath();
@@ -177,8 +176,6 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
         base_path.Append(chrome::kNetworkPersistentStateFilename);
     network_context_params->cookie_path =
         base_path.Append(chrome::kCookieFilename);
-    network_context_params->channel_id_path =
-        base_path.Append(chrome::kChannelIDFilename);
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
     // TODO(deepak1556): Matches the existing behavior https://git.io/fxHMl,
@@ -216,13 +213,13 @@ void URLRequestContextGetter::Handle::LazyInitialize() {
 
 void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (main_request_context_getter_.get()) {
+
+  if (main_request_context_getter_) {
     if (BrowserThread::IsThreadInitialized(BrowserThread::IO)) {
       base::PostTaskWithTraits(
           FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&URLRequestContextGetter::NotifyContextShuttingDown,
-                         base::RetainedRef(main_request_context_getter_),
-                         std::move(resource_context_)));
+                         base::RetainedRef(main_request_context_getter_)));
     }
   }
 
@@ -251,18 +248,20 @@ URLRequestContextGetter::~URLRequestContextGetter() {
   DCHECK(context_shutting_down_);
 }
 
-void URLRequestContextGetter::NotifyContextShuttingDown(
-    std::unique_ptr<ResourceContext> resource_context) {
+void URLRequestContextGetter::NotifyContextShuttingDown() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  DCHECK(g_browser_process->io_thread());
+  DCHECK(context_handle_);
 
-  // todo(brenca): remove once C70 lands
-  if (url_request_context_ && url_request_context_->cookie_store()) {
-    url_request_context_->cookie_store()->FlushStore(base::NullCallback());
-  }
+  if (context_shutting_down_)
+    return;
+
+  g_browser_process->io_thread()->DeregisterURLRequestContextGetter(this);
 
   context_shutting_down_ = true;
-  resource_context.reset();
+  context_handle_->resource_context_.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
+  network_context_.reset();
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
@@ -274,6 +273,22 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (!url_request_context_) {
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
+
+    // Enable file:// support.
+    builder->set_file_enabled(true);
+
+#if BUILDFLAG(ENABLE_REPORTING)
+    if (base::FeatureList::IsEnabled(network::features::kReporting)) {
+      auto reporting_policy = net::ReportingPolicy::Create();
+      builder->set_reporting_policy(std::move(reporting_policy));
+    } else {
+      builder->set_reporting_policy(nullptr);
+    }
+
+    builder->set_network_error_logging_enabled(
+        base::FeatureList::IsEnabled(network::features::kNetworkErrorLogging));
+#endif  // BUILDFLAG(ENABLE_REPORTING)
+
     auto network_delegate = std::make_unique<AtomNetworkDelegate>();
     network_delegate_ = network_delegate.get();
     builder->set_network_delegate(std::move(network_delegate));
@@ -305,7 +320,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     const auto& custom_standard_schemes = atom::api::GetStandardSchemes();
     cookie_schemes.insert(cookie_schemes.end(), custom_standard_schemes.begin(),
                           custom_standard_schemes.end());
-    cookie_monster->SetCookieableSchemes(cookie_schemes);
+    cookie_monster->SetCookieableSchemes(cookie_schemes, base::NullCallback());
 
     // Setup handlers for custom job factory.
     top_job_factory_.reset(new AtomURLRequestJobFactory);

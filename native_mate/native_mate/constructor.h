@@ -6,8 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_WRAPPABLE_CLASS_H_
-#define NATIVE_MATE_WRAPPABLE_CLASS_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_CONSTRUCTOR_H_
+#define NATIVE_MATE_NATIVE_MATE_CONSTRUCTOR_H_
 
 #include "base/bind.h"
 #include "native_mate/function_template.h"
@@ -23,9 +23,9 @@ inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*()>& callback) {
   return callback.Run();
-};
+}
 
-template<typename P1>
+template <typename P1>
 inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1)>& callback) {
@@ -33,9 +33,9 @@ inline WrappableBase* InvokeFactory(
   if (!GetNextArgument(args, 0, true, &a1))
     return nullptr;
   return callback.Run(a1);
-};
+}
 
-template<typename P1, typename P2>
+template <typename P1, typename P2>
 inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1, P2)>& callback) {
@@ -45,9 +45,9 @@ inline WrappableBase* InvokeFactory(
       !GetNextArgument(args, 0, false, &a2))
     return nullptr;
   return callback.Run(a1, a2);
-};
+}
 
-template<typename P1, typename P2, typename P3>
+template <typename P1, typename P2, typename P3>
 inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1, P2, P3)>& callback) {
@@ -59,9 +59,9 @@ inline WrappableBase* InvokeFactory(
       !GetNextArgument(args, 0, false, &a3))
     return nullptr;
   return callback.Run(a1, a2, a3);
-};
+}
 
-template<typename P1, typename P2, typename P3, typename P4>
+template <typename P1, typename P2, typename P3, typename P4>
 inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1, P2, P3, P4)>& callback) {
@@ -75,9 +75,9 @@ inline WrappableBase* InvokeFactory(
       !GetNextArgument(args, 0, false, &a4))
     return nullptr;
   return callback.Run(a1, a2, a3, a4);
-};
+}
 
-template<typename P1, typename P2, typename P3, typename P4, typename P5>
+template <typename P1, typename P2, typename P3, typename P4, typename P5>
 inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1, P2, P3, P4, P5)>& callback) {
@@ -93,10 +93,14 @@ inline WrappableBase* InvokeFactory(
       !GetNextArgument(args, 0, false, &a5))
     return nullptr;
   return callback.Run(a1, a2, a3, a4, a5);
-};
+}
 
-template<typename P1, typename P2, typename P3, typename P4, typename P5,
-    typename P6>
+template <typename P1,
+          typename P2,
+          typename P3,
+          typename P4,
+          typename P5,
+          typename P6>
 inline WrappableBase* InvokeFactory(
     Arguments* args,
     const base::Callback<WrappableBase*(P1, P2, P3, P4, P5, P6)>& callback) {
@@ -114,11 +118,12 @@ inline WrappableBase* InvokeFactory(
       !GetNextArgument(args, 0, false, &a6))
     return nullptr;
   return callback.Run(a1, a2, a3, a4, a5, a6);
-};
+}
 
-template<typename Sig>
+template <typename Sig>
 void InvokeNew(const base::Callback<Sig>& factory,
-               v8::Isolate* isolate, Arguments* args) {
+               v8::Isolate* isolate,
+               Arguments* args) {
   if (!args->IsConstructCall()) {
     args->ThrowError("Requires constructor call");
     return;
@@ -145,4 +150,4 @@ void InvokeNew(const base::Callback<Sig>& factory,
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_WRAPPABLE_CLASS_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_CONSTRUCTOR_H_

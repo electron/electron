@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
@@ -37,8 +38,6 @@
 #include "base/win/scoped_gdi_object.h"
 #include "ui/gfx/icon_util.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -81,49 +80,71 @@ float GetScaleFactorFromOptions(mate::Arguments* args) {
   return scale_factor;
 }
 
-bool AddImageSkiaRep(gfx::ImageSkia* image,
-                     const unsigned char* data,
-                     size_t size,
-                     int width,
-                     int height,
-                     double scale_factor) {
-  auto decoded = std::make_unique<SkBitmap>();
+bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
+                            const unsigned char* data,
+                            size_t size,
+                            double scale_factor) {
+  SkBitmap bitmap;
+  if (!gfx::PNGCodec::Decode(data, size, &bitmap))
+    return false;
 
-  // Try PNG first.
-  if (!gfx::PNGCodec::Decode(data, size, decoded.get())) {
-    // Try JPEG.
-    decoded = gfx::JPEGCodec::Decode(data, size);
-    if (decoded) {
-      // `JPEGCodec::Decode()` doesn't tell `SkBitmap` instance it creates
-      // that all of its pixels are opaque, that's why the bitmap gets
-      // an alpha type `kPremul_SkAlphaType` instead of `kOpaque_SkAlphaType`.
-      // Let's fix it here.
-      // TODO(alexeykuzmin): This workaround should be removed
-      // when the `JPEGCodec::Decode()` code is fixed.
-      // See https://github.com/electron/electron/issues/11294.
-      decoded->setAlphaType(SkAlphaType::kOpaque_SkAlphaType);
-    }
-  }
-
-  if (!decoded) {
-    // Try Bitmap
-    if (width > 0 && height > 0) {
-      decoded.reset(new SkBitmap);
-      decoded->allocN32Pixels(width, height, false);
-      decoded->setPixels(
-          const_cast<void*>(reinterpret_cast<const void*>(data)));
-    } else {
-      return false;
-    }
-  }
-
-  image->AddRepresentation(gfx::ImageSkiaRep(*decoded, scale_factor));
+  image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
 }
 
-bool AddImageSkiaRep(gfx::ImageSkia* image,
-                     const base::FilePath& path,
-                     double scale_factor) {
+bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
+                             const unsigned char* data,
+                             size_t size,
+                             double scale_factor) {
+  auto bitmap = gfx::JPEGCodec::Decode(data, size);
+  if (!bitmap)
+    return false;
+
+  // `JPEGCodec::Decode()` doesn't tell `SkBitmap` instance it creates
+  // that all of its pixels are opaque, that's why the bitmap gets
+  // an alpha type `kPremul_SkAlphaType` instead of `kOpaque_SkAlphaType`.
+  // Let's fix it here.
+  // TODO(alexeykuzmin): This workaround should be removed
+  // when the `JPEGCodec::Decode()` code is fixed.
+  // See https://github.com/electron/electron/issues/11294.
+  bitmap->setAlphaType(SkAlphaType::kOpaque_SkAlphaType);
+
+  image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, scale_factor));
+  return true;
+}
+
+bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
+                               const unsigned char* data,
+                               size_t size,
+                               int width,
+                               int height,
+                               double scale_factor) {
+  // Try PNG first.
+  if (AddImageSkiaRepFromPNG(image, data, size, scale_factor))
+    return true;
+
+  // Try JPEG second.
+  if (AddImageSkiaRepFromJPEG(image, data, size, scale_factor))
+    return true;
+
+  if (width == 0 || height == 0)
+    return false;
+
+  auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
+  if (size < info.computeMinByteSize())
+    return false;
+
+  SkBitmap bitmap;
+  bitmap.allocN32Pixels(width, height, false);
+  bitmap.writePixels({info, data, bitmap.rowBytes()});
+
+  image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
+  return true;
+}
+
+bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
+                             const base::FilePath& path,
+                             double scale_factor) {
   std::string file_contents;
   {
     base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -134,7 +155,8 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   const unsigned char* data =
       reinterpret_cast<const unsigned char*>(file_contents.data());
   size_t size = file_contents.size();
-  return AddImageSkiaRep(image, data, size, 0, 0, scale_factor);
+
+  return AddImageSkiaRepFromBuffer(image, data, size, 0, 0, scale_factor);
 }
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
@@ -143,12 +165,12 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
   std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
   if (base::MatchPattern(filename, "*@*x"))
     // Don't search for other representations if the DPI has been specified.
-    return AddImageSkiaRep(image, path, GetScaleFactorFromPath(path));
+    return AddImageSkiaRepFromPath(image, path, GetScaleFactorFromPath(path));
   else
-    succeed |= AddImageSkiaRep(image, path, 1.0f);
+    succeed |= AddImageSkiaRepFromPath(image, path, 1.0f);
 
   for (const ScaleFactorPair& pair : kScaleFactorPairs)
-    succeed |= AddImageSkiaRep(
+    succeed |= AddImageSkiaRepFromPath(
         image, path.InsertBeforeExtensionASCII(pair.name), pair.scale);
   return succeed;
 }
@@ -423,19 +445,20 @@ void NativeImage::AddRepresentation(const mate::Dictionary& options) {
   v8::Local<v8::Value> buffer;
   GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
-    AddImageSkiaRep(
-        &image_skia,
-        reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
-        node::Buffer::Length(buffer), width, height, scale_factor);
-    skia_rep_added = true;
+    auto* data = reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer));
+    auto size = node::Buffer::Length(buffer);
+    skia_rep_added = AddImageSkiaRepFromBuffer(&image_skia, data, size, width,
+                                               height, scale_factor);
   } else if (options.Get("dataURL", &url)) {
     std::string mime_type, charset, data;
     if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
-      if (mime_type == "image/png" || mime_type == "image/jpeg") {
-        AddImageSkiaRep(&image_skia,
-                        reinterpret_cast<const unsigned char*>(data.c_str()),
-                        data.size(), width, height, scale_factor);
-        skia_rep_added = true;
+      auto* data_ptr = reinterpret_cast<const unsigned char*>(data.c_str());
+      if (mime_type == "image/png") {
+        skia_rep_added = AddImageSkiaRepFromPNG(&image_skia, data_ptr,
+                                                data.size(), scale_factor);
+      } else if (mime_type == "image/jpeg") {
+        skia_rep_added = AddImageSkiaRepFromJPEG(&image_skia, data_ptr,
+                                                 data.size(), scale_factor);
       }
     }
   }
@@ -506,9 +529,62 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 }
 
 // static
+mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
+    mate::Arguments* args,
+    v8::Local<v8::Value> buffer,
+    const mate::Dictionary& options) {
+  if (!node::Buffer::HasInstance(buffer)) {
+    args->ThrowError("buffer must be a node Buffer");
+    return mate::Handle<NativeImage>();
+  }
+
+  unsigned int width = 0;
+  unsigned int height = 0;
+  double scale_factor = 1.;
+
+  if (!options.Get("width", &width)) {
+    args->ThrowError("width is required");
+    return mate::Handle<NativeImage>();
+  }
+
+  if (!options.Get("height", &height)) {
+    args->ThrowError("height is required");
+    return mate::Handle<NativeImage>();
+  }
+
+  auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
+  auto size_bytes = info.computeMinByteSize();
+
+  if (size_bytes != node::Buffer::Length(buffer)) {
+    args->ThrowError("invalid buffer size");
+    return mate::Handle<NativeImage>();
+  }
+
+  options.Get("scaleFactor", &scale_factor);
+
+  if (width == 0 || height == 0) {
+    return CreateEmpty(args->isolate());
+  }
+
+  SkBitmap bitmap;
+  bitmap.allocN32Pixels(width, height, false);
+  bitmap.writePixels({info, node::Buffer::Data(buffer), bitmap.rowBytes()});
+
+  gfx::ImageSkia image_skia;
+  image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
+
+  return Create(args->isolate(), gfx::Image(image_skia));
+}
+
+// static
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args,
     v8::Local<v8::Value> buffer) {
+  if (!node::Buffer::HasInstance(buffer)) {
+    args->ThrowError("buffer must be a node Buffer");
+    return mate::Handle<NativeImage>();
+  }
+
   int width = 0;
   int height = 0;
   double scale_factor = 1.;
@@ -521,9 +597,9 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
   }
 
   gfx::ImageSkia image_skia;
-  AddImageSkiaRep(&image_skia,
-                  reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
-                  node::Buffer::Length(buffer), width, height, scale_factor);
+  AddImageSkiaRepFromBuffer(
+      &image_skia, reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
+      node::Buffer::Length(buffer), width, height, scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }
 
@@ -562,8 +638,10 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
       .SetMethod("getSize", &NativeImage::GetSize)
-      .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
-      .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
+      .SetMethod("_setTemplateImage", &NativeImage::SetTemplateImage)
+      .SetMethod("_isTemplateImage", &NativeImage::IsTemplateImage)
+      .SetProperty("isMacTemplateImage", &NativeImage::IsTemplateImage,
+                   &NativeImage::SetTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
@@ -607,20 +685,29 @@ bool Converter<mate::Handle<atom::api::NativeImage>>::FromV8(
 
 namespace {
 
+using atom::api::NativeImage;
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
-  dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
-  dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
-  dict.SetMethod("createFromDataURL",
-                 &atom::api::NativeImage::CreateFromDataURL);
-  dict.SetMethod("createFromNamedImage",
-                 &atom::api::NativeImage::CreateFromNamedImage);
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("NativeImage", NativeImage::GetConstructor(isolate)
+                              ->GetFunction(context)
+                              .ToLocalChecked());
+  mate::Dictionary native_image = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("nativeImage", native_image);
+
+  native_image.SetMethod("createEmpty", &NativeImage::CreateEmpty);
+  native_image.SetMethod("createFromPath", &NativeImage::CreateFromPath);
+  native_image.SetMethod("createFromBitmap", &NativeImage::CreateFromBitmap);
+  native_image.SetMethod("createFromBuffer", &NativeImage::CreateFromBuffer);
+  native_image.SetMethod("createFromDataURL", &NativeImage::CreateFromDataURL);
+  native_image.SetMethod("createFromNamedImage",
+                         &NativeImage::CreateFromNamedImage);
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_native_image, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_native_image, Initialize)

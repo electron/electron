@@ -32,10 +32,13 @@ class LoginHandler;
 
 class AtomNetworkDelegate : public net::NetworkDelegate {
  public:
-  using ResponseCallback = base::Callback<void(const base::DictionaryValue&)>;
-  using SimpleListener = base::Callback<void(const base::DictionaryValue&)>;
-  using ResponseListener = base::Callback<void(const base::DictionaryValue&,
-                                               const ResponseCallback&)>;
+  using ResponseCallback =
+      base::OnceCallback<void(const base::DictionaryValue&)>;
+  using SimpleListener =
+      base::RepeatingCallback<void(const base::DictionaryValue&)>;
+  using ResponseListener =
+      base::RepeatingCallback<void(const base::DictionaryValue&,
+                                   ResponseCallback)>;
 
   enum SimpleEvent {
     kOnSendHeaders,

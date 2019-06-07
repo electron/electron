@@ -9,8 +9,8 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_network_delegate.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"

@@ -12,10 +12,10 @@ Without this patch, calling `registerStandardSchemes` during initialization
 when in debug mode will cause a DCHECK to fire.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index a62f2ecf52bb95261750c9236bd2ba1f53d737f4..38b25c5befd88659b2769d69ef1323de60b34ec7 100644
+index a388e279e9ef62d4484182bdde02de264a263186..4e8c72ad1602f576014ea5c8bb1d572e1490a8ff 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -749,7 +749,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -752,7 +752,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
  #endif
  
      RegisterPathProvider();
@@ -40,7 +40,7 @@ index 456df421598153bde006ad0ecb0f1031360bb543..af06d78b91fa30e5daf993ad2c65c2c5
    return service_manager::ProcessType::kDefault;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index f836a17fa0568aa33e204725f96233aac236aac5..af1d5ef18fb414a681bee48d36c3f94ed789c077 100644
+index d4f3b8097c6aba8e15616c6d00070565064b1e9c..5672f4f1c328d30bb04dd8aaf4af63c51d52b3e6 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -88,6 +88,9 @@ class CONTENT_EXPORT ContentMainDelegate {

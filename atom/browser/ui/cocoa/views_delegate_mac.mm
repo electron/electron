@@ -27,7 +27,8 @@ void ViewsDelegateMac::OnBeforeWidgetInit(
       return;
   }
 
-  // Setting null here causes Widget to create the default NativeWidget implementation.
+  // Setting null here causes Widget to create the default NativeWidget
+  // implementation.
   params->native_widget = nullptr;
 }
 

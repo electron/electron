@@ -92,13 +92,14 @@ app.on('ready', () => {
     printBackground: true,
     printSelectionOnly: true,
     landscape: true
-  }, (error: Error, data: Buffer) => console.log(error))
+  }).then((data: Buffer) => console.log(data))
 
-  mainWindow.webContents.printToPDF({}, (err, data) => console.log(err))
+  mainWindow.webContents.printToPDF({}).then(data => console.log(data))
 
   mainWindow.webContents.executeJavaScript('return true;').then((v: boolean) => console.log(v))
+  mainWindow.webContents.executeJavaScript('return true;', true).then((v: boolean) => console.log(v))
   mainWindow.webContents.executeJavaScript('return true;', true)
-  mainWindow.webContents.executeJavaScript('return true;', true, (result: boolean) => console.log(result))
+  mainWindow.webContents.executeJavaScript('return true;', true).then((result: boolean) => console.log(result))
   mainWindow.webContents.insertText('blah, blah, blah')
   mainWindow.webContents.startDrag({ file: '/path/to/img.png', icon: nativeImage.createFromPath('/path/to/icon.png') })
   mainWindow.webContents.findInPage('blah')
@@ -137,10 +138,10 @@ app.on('ready', () => {
   })
 
   mainWindow.webContents.debugger.sendCommand('Network.enable')
-  mainWindow.webContents.capturePage((image) => {
+  mainWindow.webContents.capturePage().then(image => {
     console.log(image.toDataURL())
   })
-  mainWindow.webContents.capturePage({ x: 0, y: 0, width: 100, height: 200 }, (image) => {
+  mainWindow.webContents.capturePage({ x: 0, y: 0, width: 100, height: 200 }).then(image => {
     console.log(image.toPNG())
   })
 })
@@ -240,7 +241,8 @@ app.setUserTasks([
     iconPath: process.execPath,
     iconIndex: 0,
     title: 'New Window',
-    description: 'Create a new window'
+    description: 'Create a new window',
+    workingDirectory: path.dirname(process.execPath)
   }
 ])
 app.setUserTasks([])
@@ -264,7 +266,8 @@ app.setJumpList([
         args: '--run-tool-a',
         iconPath: process.execPath,
         iconIndex: 0,
-        description: 'Runs Tool A'
+        description: 'Runs Tool A',
+        workingDirectory: path.dirname(process.execPath)
       },
       {
         type: 'task',
@@ -273,7 +276,8 @@ app.setJumpList([
         args: '--run-tool-b',
         iconPath: process.execPath,
         iconIndex: 0,
-        description: 'Runs Tool B'
+        description: 'Runs Tool B',
+        workingDirectory: path.dirname(process.execPath)
       }]
   },
   {
@@ -466,11 +470,11 @@ const options = {
   traceOptions: 'record-until-full,enable-sampling'
 }
 
-contentTracing.startRecording(options, function () {
+contentTracing.startRecording(options).then(() => {
   console.log('Tracing started')
   setTimeout(function () {
-    contentTracing.stopRecording('', function (path) {
-      console.log('Tracing data recorded to ' + path)
+    contentTracing.stopRecording('').then(path => {
+      console.log(`Tracing data recorded to ${path}`)
     })
   }, 5000)
 })
@@ -834,7 +838,7 @@ app.on('ready', () => {
   })
 
   protocol.registerBufferProtocol('atom', (request, callback) => {
-    callback({ mimeType: 'text/html', data: new Buffer('<h5>Response</h5>') })
+    callback({ mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>') })
   })
 
   protocol.registerStringProtocol('atom', (request, callback) => {
@@ -849,7 +853,7 @@ app.on('ready', () => {
     console.log(error ? error.message : 'ok')
   })
 
-  protocol.isProtocolHandled('atom', (handled) => {
+  protocol.isProtocolHandled('atom').then(handled => {
     console.log(handled)
   })
 })
@@ -996,7 +1000,7 @@ shell.moveItemToTrash('/home/user/Desktop/test.txt')
 
 shell.openExternal('https://github.com', {
   activate: false
-})
+}).then(() => {})
 
 shell.beep()
 

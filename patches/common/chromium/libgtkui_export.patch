@@ -6,7 +6,7 @@ Subject: libgtkui_export.patch
 Export libgtkui symbols for the GN component build.
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index 32b0a390255dd39a7d02f094c0e59b205b00dabd..afa2d250beca30f50dbb1684d5217330c4d60bbb 100644
+index adea4a859d96e219acc92c9178574f089a57944c..df615a91c00d22cabafffebe151728010fe9c1c4 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@

@@ -110,10 +110,12 @@ app.on('window-all-closed', function () {
   app.quit()
 })
 
-app.on('web-contents-created', (event, contents) => {
-  contents.on('crashed', (event, killed) => {
-    console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
-  })
+app.on('gpu-process-crashed', (event, killed) => {
+  console.log(`GPU process crashed (killed=${killed})`)
+})
+
+app.on('renderer-process-crashed', (event, contents, killed) => {
+  console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
 })
 
 app.on('ready', function () {
@@ -156,58 +158,6 @@ app.on('ready', function () {
     process.exit(1)
   })
 
-  // For session's download test, listen 'will-download' event in browser, and
-  // reply the result to renderer for verifying
-  const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath, dialogOptions = {}) {
-    window.webContents.session.once('will-download', function (e, item) {
-      window.webContents.send('download-created',
-        item.getState(),
-        item.getURLChain(),
-        item.getMimeType(),
-        item.getReceivedBytes(),
-        item.getTotalBytes(),
-        item.getFilename(),
-        item.getSavePath())
-      if (preventDefault) {
-        e.preventDefault()
-        const url = item.getURL()
-        const filename = item.getFilename()
-        setImmediate(function () {
-          try {
-            item.getURL()
-          } catch (err) {
-            window.webContents.send('download-error', url, filename, err.message)
-          }
-        })
-      } else {
-        if (item.getState() === 'interrupted' && !needCancel) {
-          item.resume()
-        } else {
-          item.setSavePath(filePath)
-          item.setSaveDialogOptions(dialogOptions)
-        }
-        item.on('done', function (e, state) {
-          window.webContents.send('download-done',
-            state,
-            item.getURL(),
-            item.getMimeType(),
-            item.getReceivedBytes(),
-            item.getTotalBytes(),
-            item.getContentDisposition(),
-            item.getFilename(),
-            item.getSavePath(),
-            item.getSaveDialogOptions(),
-            item.getURLChain(),
-            item.getLastModifiedTime(),
-            item.getETag())
-        })
-        if (needCancel) item.cancel()
-      }
-    })
-    event.returnValue = 'done'
-  })
-
   ipcMain.on('prevent-next-input-event', (event, key, id) => {
     webContents.fromId(id).once('before-input-event', (event, input) => {
       if (key === input.key) event.preventDefault()
@@ -215,18 +165,8 @@ app.on('ready', function () {
     event.returnValue = null
   })
 
-  ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
-    let promise
-
-    if (hasCallback) {
-      promise = window.webContents.executeJavaScript(code, (result) => {
-        window.webContents.send('executeJavaScript-response', result)
-      })
-    } else {
-      promise = window.webContents.executeJavaScript(code)
-    }
-
-    promise.then((result) => {
+  ipcMain.on('executeJavaScript', function (event, code) {
+    window.webContents.executeJavaScript(code).then((result) => {
       window.webContents.send('executeJavaScript-promise-response', result)
     }).catch((error) => {
       window.webContents.send('executeJavaScript-promise-error', error)
@@ -235,10 +175,6 @@ app.on('ready', function () {
         window.webContents.send('executeJavaScript-promise-error-name', error.name)
       }
     })
-
-    if (!hasCallback) {
-      event.returnValue = 'success'
-    }
   })
 })
 
@@ -294,31 +230,6 @@ ipcMain.on('set-client-certificate-option', function (event, skip) {
     }
   })
   event.returnValue = 'done'
-})
-
-ipcMain.on('close-on-will-navigate', (event, id) => {
-  const contents = event.sender
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-navigate', (event, input) => {
-    window.close()
-    contents.send('closed-on-will-navigate')
-  })
-})
-
-ipcMain.on('close-on-will-redirect', (event, id) => {
-  const contents = event.sender
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-redirect', (event, input) => {
-    window.close()
-    contents.send('closed-on-will-redirect')
-  })
-})
-
-ipcMain.on('prevent-will-redirect', (event, id) => {
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-redirect', (event) => {
-    event.preventDefault()
-  })
 })
 
 ipcMain.on('create-window-with-options-cycle', (event) => {
@@ -409,47 +320,6 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
 ipcMain.on('crash-service-pid', (event, pid) => {
   process.crashServicePid = pid
   event.returnValue = null
-})
-
-ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
-  let contents = null
-  let destroy = () => {}
-  if (options.id) {
-    const w = BrowserWindow.fromId(options.id)
-    contents = w.webContents
-    destroy = () => w.close()
-  } else {
-    contents = webContents.create()
-    destroy = () => contents.destroy()
-  }
-
-  contents.once(options.name, () => destroy())
-
-  contents.once('destroyed', () => {
-    event.sender.send(options.responseEvent)
-  })
-
-  contents.loadURL(options.url)
-})
-
-ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
-  const focusListener = (event, win) => win.id
-  app.on('browser-window-focus', focusListener)
-  const windowCount = 3
-  const windowOptions = {
-    show: false,
-    width: 400,
-    height: 400,
-    webPreferences: {
-      backgroundThrottling: false
-    }
-  }
-  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
-  windows.forEach(win => win.show())
-  windows.forEach(win => win.focus())
-  windows.forEach(win => win.destroy())
-  app.removeListener('browser-window-focus', focusListener)
-  event.sender.send(testOptions.responseEvent)
 })
 
 // Suspend listeners until the next event and then restore them

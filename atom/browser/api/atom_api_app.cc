@@ -16,6 +16,7 @@
 #include "atom/browser/atom_paths.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/relauncher.h"
+#include "atom/common/application_info.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -23,7 +24,9 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/network_converter.h"
+#include "atom/common/native_mate_converters/once_callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -50,12 +53,6 @@
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
-
-// clang-format off
-// This header should be declared at the end to avoid
-// redefinition errors.
-#include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
-// clang-format on
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/jump_list.h"
@@ -88,6 +85,7 @@ struct Converter<Browser::UserTask> {
       return false;
     dict.Get("arguments", &(out->arguments));
     dict.Get("description", &(out->description));
+    dict.Get("workingDirectory", &(out->working_dir));
     return true;
   }
 };
@@ -161,6 +159,7 @@ struct Converter<JumpListItem> {
 
         dict.Get("args", &(out->arguments));
         dict.Get("description", &(out->description));
+        dict.Get("workingDirectory", &(out->working_dir));
         return true;
 
       case JumpListItem::Type::SEPARATOR:
@@ -187,6 +186,7 @@ struct Converter<JumpListItem> {
         dict.Set("iconPath", val.icon_path);
         dict.Set("iconIndex", val.icon_index);
         dict.Set("description", val.description);
+        dict.Set("workingDirectory", val.working_dir);
         break;
 
       case JumpListItem::Type::SEPARATOR:
@@ -430,7 +430,7 @@ int GetPathConstant(const std::string& name) {
 }
 
 bool NotificationCallbackWrapper(
-    const base::Callback<
+    const base::RepeatingCallback<
         void(const base::CommandLine::StringVector& command_line,
              const base::FilePath& current_directory)>& callback,
     const base::CommandLine::StringVector& cmd,
@@ -489,7 +489,7 @@ void OnClientCertificateSelected(
       if (cert->EqualsExcludingChain((*identities)[i]->certificate())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
             std::move((*identities)[i]),
-            base::Bind(&GotPrivateKey, delegate, std::move(cert)));
+            base::BindRepeating(&GotPrivateKey, delegate, std::move(cert)));
         break;
       }
     }
@@ -533,9 +533,9 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(util::Promise promise, gfx::Image* icon) {
-  if (icon && !icon->IsEmpty()) {
-    promise.Resolve(*icon);
+void OnIconDataAvailable(util::Promise promise, gfx::Image icon) {
+  if (!icon.IsEmpty()) {
+    promise.Resolve(icon);
   } else {
     promise.RejectWithErrorMessage("Failed to get file icon.");
   }
@@ -674,10 +674,11 @@ void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
   bool prevent_default = false;
   content::WebContents* web_contents = login_handler->GetWebContents();
   if (web_contents) {
-    prevent_default = Emit(
-        "login", WebContents::FromOrCreate(isolate(), web_contents),
-        request_details, login_handler->auth_info(),
-        base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
+    prevent_default =
+        Emit("login", WebContents::FromOrCreate(isolate(), web_contents),
+             request_details, *login_handler->auth_info(),
+             base::BindOnce(&PassLoginInformation,
+                            base::RetainedRef(login_handler)));
   }
 
   // Default behavior is to always cancel the auth.
@@ -722,10 +723,10 @@ void App::AllowCertificateError(
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
-    content::ResourceType resource_type,
+    bool is_main_frame_request,
     bool strict_enforcement,
     bool expired_previous_decision,
-    const base::Callback<void(content::CertificateRequestResultType)>&
+    const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
@@ -759,8 +760,8 @@ void App::SelectClientCertificate(
       Emit("select-client-certificate",
            WebContents::FromOrCreate(isolate(), web_contents),
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
-           base::Bind(&OnClientCertificateSelected, isolate(), shared_delegate,
-                      shared_identities));
+           base::BindOnce(&OnClientCertificateSelected, isolate(),
+                          shared_delegate, shared_identities));
 
   // Default to first certificate from the platform store.
   if (!prevent_default) {
@@ -768,8 +769,12 @@ void App::SelectClientCertificate(
         (*shared_identities)[0]->certificate();
     net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
         std::move((*shared_identities)[0]),
-        base::Bind(&GotPrivateKey, shared_delegate, std::move(cert)));
+        base::BindRepeating(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
+}
+
+void App::OnGpuInfoUpdate() {
+  Emit("gpu-info-update");
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {
@@ -802,6 +807,14 @@ void App::BrowserChildProcessKilled(
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
                        host->GetProcess().Handle());
+
+  // TODO(jeremy): this isn't really the right place to be creating
+  // `WebContents` instances, but this was implicitly happening before in
+  // `RenderProcessPreferences`, so this is at least more explicit...
+  content::WebContents* web_contents =
+      AtomBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
+  if (web_contents)
+    WebContents::FromOrCreate(v8::Isolate::GetCurrent(), web_contents);
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {
@@ -834,6 +847,26 @@ base::FilePath App::GetAppPath() const {
 void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
+
+#if !defined(OS_MACOSX)
+void App::SetAppLogsPath(mate::Arguments* args) {
+  base::FilePath custom_path;
+  if (args->GetNext(&custom_path)) {
+    if (!custom_path.IsAbsolute()) {
+      args->ThrowError("Path must be absolute");
+      return;
+    }
+    base::PathService::Override(DIR_APP_LOGS, custom_path);
+  } else {
+    base::FilePath path;
+    if (base::PathService::Get(DIR_USER_DATA, &path)) {
+      path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+      base::PathService::Override(DIR_APP_LOGS, path);
+    }
+  }
+}
+#endif
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
@@ -931,10 +964,10 @@ bool App::RequestSingleInstanceLock() {
   base::FilePath user_dir;
   base::PathService::Get(DIR_USER_DATA, &user_dir);
 
-  auto cb = base::Bind(&App::OnSecondInstance, base::Unretained(this));
+  auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
   process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::Bind(NotificationCallbackWrapper, cb)));
+      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb)));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
@@ -1040,30 +1073,31 @@ Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
 
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(const base::DictionaryValue& options,
-                            const net::CompletionCallback& callback) {
+                            net::CompletionRepeatingCallback callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     auto copy = base::DictionaryValue::From(
         base::Value::ToUniquePtrValue(options.Clone()));
     CertificateManagerModel::Create(
         browser_context.get(),
-        base::Bind(&App::OnCertificateManagerModelCreated,
-                   base::Unretained(this), base::Passed(&copy), callback));
+        base::BindRepeating(&App::OnCertificateManagerModelCreated,
+                            base::Unretained(this), base::Passed(&copy),
+                            callback));
     return;
   }
 
   int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
-  callback.Run(rv);
+  std::move(callback).Run(rv);
 }
 
 void App::OnCertificateManagerModelCreated(
     std::unique_ptr<base::DictionaryValue> options,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
   int rv =
       ImportIntoCertStore(certificate_manager_model_.get(), *(options.get()));
-  callback.Run(rv);
+  std::move(callback).Run(rv);
 }
 #endif
 
@@ -1252,6 +1286,21 @@ void App::EnableSandbox(mate::Arguments* args) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+void App::SetUserAgentFallback(const std::string& user_agent) {
+  AtomBrowserClient::Get()->SetUserAgent(user_agent);
+}
+
+std::string App::GetUserAgentFallback() {
+  return AtomBrowserClient::Get()->GetUserAgent();
+}
+
+void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
+  AtomBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
+}
+bool App::CanBrowserClientUseCustomSiteInstance() {
+  return AtomBrowserClient::Get()->CanUseCustomSiteInstance();
+}
+
 #if defined(OS_MACOSX)
 bool App::MoveToApplicationsFolder(mate::Arguments* args) {
   return ui::cocoa::AtomBundleMover::Move(args);
@@ -1264,9 +1313,9 @@ bool App::IsInApplicationsFolder() {
 int DockBounce(const std::string& type) {
   int request_id = -1;
   if (type == "critical")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
+    request_id = Browser::Get()->DockBounce(Browser::BounceType::CRITICAL);
   else if (type == "informational")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
+    request_id = Browser::Get()->DockBounce(Browser::BounceType::INFORMATIONAL);
   return request_id;
 }
 
@@ -1281,20 +1330,25 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
     auto browser = base::Unretained(Browser::Get());
     mate::Dictionary dock_obj = mate::Dictionary::CreateEmpty(isolate);
     dock_obj.SetMethod("bounce", &DockBounce);
-    dock_obj.SetMethod("cancelBounce",
-                       base::Bind(&Browser::DockCancelBounce, browser));
-    dock_obj.SetMethod("downloadFinished",
-                       base::Bind(&Browser::DockDownloadFinished, browser));
-    dock_obj.SetMethod("setBadge",
-                       base::Bind(&Browser::DockSetBadgeText, browser));
-    dock_obj.SetMethod("getBadge",
-                       base::Bind(&Browser::DockGetBadgeText, browser));
-    dock_obj.SetMethod("hide", base::Bind(&Browser::DockHide, browser));
-    dock_obj.SetMethod("show", base::Bind(&Browser::DockShow, browser));
+    dock_obj.SetMethod(
+        "cancelBounce",
+        base::BindRepeating(&Browser::DockCancelBounce, browser));
+    dock_obj.SetMethod(
+        "downloadFinished",
+        base::BindRepeating(&Browser::DockDownloadFinished, browser));
+    dock_obj.SetMethod(
+        "setBadge", base::BindRepeating(&Browser::DockSetBadgeText, browser));
+    dock_obj.SetMethod(
+        "getBadge", base::BindRepeating(&Browser::DockGetBadgeText, browser));
+    dock_obj.SetMethod("hide",
+                       base::BindRepeating(&Browser::DockHide, browser));
+    dock_obj.SetMethod("show",
+                       base::BindRepeating(&Browser::DockShow, browser));
     dock_obj.SetMethod("isVisible",
-                       base::Bind(&Browser::DockIsVisible, browser));
+                       base::BindRepeating(&Browser::DockIsVisible, browser));
     dock_obj.SetMethod("setMenu", &DockSetMenu);
-    dock_obj.SetMethod("setIcon", base::Bind(&Browser::DockSetIcon, browser));
+    dock_obj.SetMethod("setIcon",
+                       base::BindRepeating(&Browser::DockSetIcon, browser));
 
     dock_.Reset(isolate, dock_obj.GetHandle());
   }
@@ -1313,66 +1367,90 @@ void App::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "App"));
   auto browser = base::Unretained(Browser::Get());
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("quit", base::Bind(&Browser::Quit, browser))
-      .SetMethod("exit", base::Bind(&Browser::Exit, browser))
-      .SetMethod("focus", base::Bind(&Browser::Focus, browser))
-      .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
-      .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
-      .SetMethod("getName", base::Bind(&Browser::GetName, browser))
-      .SetMethod("setName", base::Bind(&Browser::SetName, browser))
-      .SetMethod("isReady", base::Bind(&Browser::is_ready, browser))
-      .SetMethod("whenReady", base::Bind(&Browser::WhenReady, browser))
+      .SetMethod("quit", base::BindRepeating(&Browser::Quit, browser))
+      .SetMethod("exit", base::BindRepeating(&Browser::Exit, browser))
+      .SetMethod("focus", base::BindRepeating(&Browser::Focus, browser))
+      .SetMethod("getVersion",
+                 base::BindRepeating(&Browser::GetVersion, browser))
+      .SetMethod("setVersion",
+                 base::BindRepeating(&Browser::SetVersion, browser))
+      .SetMethod("_getName", base::BindRepeating(&Browser::GetName, browser))
+      .SetMethod("_setName", base::BindRepeating(&Browser::SetName, browser))
+      .SetMethod("isReady", base::BindRepeating(&Browser::is_ready, browser))
+      .SetMethod("whenReady", base::BindRepeating(&Browser::WhenReady, browser))
       .SetMethod("addRecentDocument",
-                 base::Bind(&Browser::AddRecentDocument, browser))
+                 base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
-                 base::Bind(&Browser::ClearRecentDocuments, browser))
+                 base::BindRepeating(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
-                 base::Bind(&Browser::SetAppUserModelID, browser))
-      .SetMethod("isDefaultProtocolClient",
-                 base::Bind(&Browser::IsDefaultProtocolClient, browser))
-      .SetMethod("setAsDefaultProtocolClient",
-                 base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
-      .SetMethod("removeAsDefaultProtocolClient",
-                 base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
-      .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
-      .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
+                 base::BindRepeating(&Browser::SetAppUserModelID, browser))
+      .SetMethod(
+          "isDefaultProtocolClient",
+          base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))
+      .SetMethod(
+          "setAsDefaultProtocolClient",
+          base::BindRepeating(&Browser::SetAsDefaultProtocolClient, browser))
+      .SetMethod(
+          "removeAsDefaultProtocolClient",
+          base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
+      .SetMethod("_setBadgeCount",
+                 base::BindRepeating(&Browser::SetBadgeCount, browser))
+      .SetMethod("_getBadgeCount",
+                 base::BindRepeating(&Browser::GetBadgeCount, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
-                 base::Bind(&Browser::SetLoginItemSettings, browser))
+                 base::BindRepeating(&Browser::SetLoginItemSettings, browser))
+      .SetMethod("isEmojiPanelSupported",
+                 base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
+      .SetProperty("badgeCount",
+                   base::BindRepeating(&Browser::GetBadgeCount, browser),
+                   base::BindRepeating(&Browser::SetBadgeCount, browser))
+      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
+                   base::BindRepeating(&Browser::SetName, browser))
 #if defined(OS_MACOSX)
-      .SetMethod("hide", base::Bind(&Browser::Hide, browser))
-      .SetMethod("show", base::Bind(&Browser::Show, browser))
+      .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
+      .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
       .SetMethod("setUserActivity",
-                 base::Bind(&Browser::SetUserActivity, browser))
+                 base::BindRepeating(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
-                 base::Bind(&Browser::GetCurrentActivityType, browser))
-      .SetMethod("invalidateCurrentActivity",
-                 base::Bind(&Browser::InvalidateCurrentActivity, browser))
+                 base::BindRepeating(&Browser::GetCurrentActivityType, browser))
+      .SetMethod(
+          "invalidateCurrentActivity",
+          base::BindRepeating(&Browser::InvalidateCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
-                 base::Bind(&Browser::UpdateCurrentActivity, browser))
+                 base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
 #endif
 #if defined(OS_MACOSX) || defined(OS_LINUX)
       .SetMethod("setAboutPanelOptions",
-                 base::Bind(&Browser::SetAboutPanelOptions, browser))
+                 base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
       .SetMethod("showAboutPanel",
-                 base::Bind(&Browser::ShowAboutPanel, browser))
+                 base::BindRepeating(&Browser::ShowAboutPanel, browser))
+#endif
+#if defined(OS_MACOSX) || defined(OS_WIN)
+      .SetMethod("showEmojiPanel",
+                 base::BindRepeating(&Browser::ShowEmojiPanel, browser))
+      .SetProperty("accessibilitySupportEnabled",
+                   &App::IsAccessibilitySupportEnabled,
+                   &App::SetAccessibilitySupportEnabled)
 #endif
 #if defined(OS_WIN)
-      .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
+      .SetMethod("setUserTasks",
+                 base::BindRepeating(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
 #endif
 #if defined(OS_LINUX)
       .SetMethod("isUnityRunning",
-                 base::Bind(&Browser::IsUnityRunning, browser))
+                 base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
       .SetMethod("setAppPath", &App::SetAppPath)
       .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
+      .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
@@ -1383,9 +1461,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("requestSingleInstanceLock", &App::RequestSingleInstanceLock)
       .SetMethod("releaseSingleInstanceLock", &App::ReleaseSingleInstanceLock)
       .SetMethod("relaunch", &App::Relaunch)
-      .SetMethod("isAccessibilitySupportEnabled",
+      .SetMethod("_isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
-      .SetMethod("setAccessibilitySupportEnabled",
+      .SetMethod("_setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
@@ -1402,7 +1480,12 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX)
       .SetProperty("dock", &App::GetDockAPI)
 #endif
-      .SetMethod("enableSandbox", &App::EnableSandbox);
+      .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
+                   &App::SetUserAgentFallback)
+      .SetMethod("enableSandbox", &App::EnableSandbox)
+      .SetProperty("allowRendererProcessReuse",
+                   &App::CanBrowserClientUseCustomSiteInstance,
+                   &App::SetBrowserClientCanUseCustomSiteInstance);
 }
 
 }  // namespace api
@@ -1425,4 +1508,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_app, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_app, Initialize)

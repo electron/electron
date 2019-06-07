@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
 
+#include <utility>
 #include <vector>
 
 #include "atom/common/api/locker.h"
@@ -54,12 +55,14 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{ConvertToV8(isolate, raw)...};
-    v8::Local<v8::Value> ret(holder
-                                 ->Call(context, holder, args.size(),
-                                        args.empty() ? nullptr : &args.front())
-                                 .ToLocalChecked());
-    return handle_scope.Escape(ret);
+    std::vector<v8::Local<v8::Value>> args{
+        ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
+    v8::MaybeLocal<v8::Value> ret = holder->Call(
+        context, holder, args.size(), args.empty() ? nullptr : &args.front());
+    if (ret.IsEmpty())
+      return v8::Undefined(isolate);
+    else
+      return handle_scope.Escape(ret.ToLocalChecked());
   }
 };
 
@@ -77,11 +80,12 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{ConvertToV8(isolate, raw)...};
+    std::vector<v8::Local<v8::Value>> args{
+        ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     holder
         ->Call(context, holder, args.size(),
                args.empty() ? nullptr : &args.front())
-        .ToLocalChecked();
+        .IsEmpty();
   }
 };
 
@@ -100,7 +104,8 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{ConvertToV8(isolate, raw)...};
+    std::vector<v8::Local<v8::Value>> args{
+        ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
     v8::Local<v8::Value> result;
     auto maybe_result = holder->Call(context, holder, args.size(),
                                      args.empty() ? nullptr : &args.front());
@@ -136,20 +141,6 @@ struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
 };
 
 }  // namespace internal
-
-template <typename Sig>
-struct Converter<base::OnceCallback<Sig>> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     base::OnceCallback<Sig>* out) {
-    if (!val->IsFunction())
-      return false;
-
-    *out = base::BindOnce(&internal::V8FunctionInvoker<Sig>::Go, isolate,
-                          internal::SafeV8Function(isolate, val));
-    return true;
-  }
-};
 
 template <typename Sig>
 struct Converter<base::RepeatingCallback<Sig>> {

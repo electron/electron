@@ -10,9 +10,10 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "media/capture/mojom/video_capture_types.mojom.h"
+#include "ui/gfx/geometry/size_conversions.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -20,12 +21,10 @@ namespace api {
 
 constexpr static int kMaxFrameRate = 30;
 
-FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
-                                 content::WebContents* web_contents,
+FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
                                  const FrameCaptureCallback& callback,
                                  bool only_dirty)
     : content::WebContentsObserver(web_contents),
-      isolate_(isolate),
       callback_(callback),
       only_dirty_(only_dirty),
       weak_ptr_factory_(this) {
@@ -45,10 +44,9 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
     return;
 
   // Create and configure the video capturer.
+  gfx::Size size = GetRenderViewSize();
   video_capturer_ = host_->GetView()->CreateVideoCapturer();
-  video_capturer_->SetResolutionConstraints(
-      host_->GetView()->GetViewBounds().size(),
-      host_->GetView()->GetViewBounds().size(), true);
+  video_capturer_->SetResolutionConstraints(size, size, true);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
@@ -87,12 +85,11 @@ void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
 void FrameSubscriber::OnFrameCaptured(
     base::ReadOnlySharedMemoryRegion data,
     ::media::mojom::VideoFrameInfoPtr info,
-    const gfx::Rect& update_rect,
     const gfx::Rect& content_rect,
     viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) {
-  gfx::Size view_size = host_->GetView()->GetViewBounds().size();
-  if (view_size != content_rect.size()) {
-    video_capturer_->SetResolutionConstraints(view_size, view_size, true);
+  gfx::Size size = GetRenderViewSize();
+  if (size != content_rect.size()) {
+    video_capturer_->SetResolutionConstraints(size, size, true);
     video_capturer_->RequestRefreshFrame();
     return;
   }
@@ -149,26 +146,30 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())
     return;
 
-  v8::Locker locker(isolate_);
-  v8::HandleScope handle_scope(isolate_);
-
-  const_cast<SkBitmap&>(frame).setAlphaType(kPremul_SkAlphaType);
   const SkBitmap& bitmap = only_dirty_ ? SkBitmapOperations::CreateTiledBitmap(
                                              frame, damage.x(), damage.y(),
                                              damage.width(), damage.height())
                                        : frame;
 
-  size_t rgb_row_size = bitmap.width() * bitmap.bytesPerPixel();
-  auto* source = static_cast<const char*>(bitmap.getPixels());
+  // Copying SkBitmap does not copy the internal pixels, we have to manually
+  // allocate and write pixels otherwise crash may happen when the original
+  // frame is modified.
+  SkBitmap copy;
+  copy.allocPixels(SkImageInfo::Make(bitmap.width(), bitmap.height(),
+                                     kRGBA_8888_SkColorType,
+                                     kPremul_SkAlphaType));
+  SkPixmap pixmap;
+  bool success = bitmap.peekPixels(&pixmap) && copy.writePixels(pixmap, 0, 0);
+  CHECK(success);
 
-  v8::MaybeLocal<v8::Object> buffer =
-      node::Buffer::Copy(isolate_, source, rgb_row_size * bitmap.height());
-  auto local_buffer = buffer.ToLocalChecked();
+  callback_.Run(gfx::Image::CreateFrom1xBitmap(copy), damage);
+}
 
-  v8::Local<v8::Value> damage_rect =
-      mate::Converter<gfx::Rect>::ToV8(isolate_, damage);
-
-  callback_.Run(local_buffer, damage_rect);
+gfx::Size FrameSubscriber::GetRenderViewSize() const {
+  content::RenderWidgetHostView* view = host_->GetView();
+  gfx::Size size = view->GetViewBounds().size();
+  return gfx::ToRoundedSize(
+      gfx::ScaleSize(gfx::SizeF(size), view->GetDeviceScaleFactor()));
 }
 
 }  // namespace api

@@ -10,11 +10,10 @@
 #include "atom/browser/api/atom_api_system_preferences.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/node_includes.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_MACOSX)
 #include "base/mac/mac_util.h"
@@ -166,4 +165,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_global_shortcut, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_global_shortcut, Initialize)

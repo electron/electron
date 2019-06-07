@@ -14,7 +14,7 @@
 #include "atom/browser/notifications/win/windows_toast_notification.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
-#include "base/md5.h"
+#include "base/hash/md5.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
@@ -47,7 +47,7 @@ bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
 // static
 NotificationPresenter* NotificationPresenter::Create() {
   auto version = base::win::GetVersion();
-  if (version < base::win::VERSION_WIN8)
+  if (version < base::win::Version::WIN8)
     return new NotificationPresenterWin7;
   if (!WindowsToastNotification::Initialize())
     return nullptr;

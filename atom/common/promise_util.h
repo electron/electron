@@ -6,9 +6,13 @@
 #define ATOM_COMMON_PROMISE_UTIL_H_
 
 #include <string>
+#include <utility>
 
 #include "atom/common/api/locker.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/once_callback.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
 
@@ -39,6 +43,60 @@ class Promise {
     return v8::Local<v8::Context>::New(isolate_, context_);
   }
 
+  // helpers for promise resolution and rejection
+
+  template <typename T>
+  static void ResolvePromise(Promise promise, T result) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(
+              [](Promise promise, T result) { promise.Resolve(result); },
+              std::move(promise), std::move(result)));
+    } else {
+      promise.Resolve(result);
+    }
+  }
+
+  static void ResolveEmptyPromise(Promise promise) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce([](Promise promise) { promise.Resolve(); },
+                         std::move(promise)));
+    } else {
+      promise.Resolve();
+    }
+  }
+
+  static void RejectPromise(Promise promise, std::string errmsg) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                               base::BindOnce(
+                                   [](Promise promise, std::string errmsg) {
+                                     promise.RejectWithErrorMessage(errmsg);
+                                   },
+                                   std::move(promise), std::move(errmsg)));
+    } else {
+      promise.RejectWithErrorMessage(errmsg);
+    }
+  }
+
+  // Returns an already-resolved promise.
+  template <typename T>
+  static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate,
+                                                T result) {
+    Promise resolved(isolate);
+    resolved.Resolve(result);
+    return resolved.GetHandle();
+  }
+
+  static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate) {
+    Promise resolved(isolate);
+    resolved.Resolve();
+    return resolved.GetHandle();
+  }
+
   v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {
@@ -61,8 +119,25 @@ class Promise {
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
-  template <typename ReturnType, typename... ArgTypes>
-  v8::MaybeLocal<v8::Promise> Then(base::Callback<ReturnType(ArgTypes...)> cb) {
+  // Please note that using Then is effectively the same as calling .then
+  // in javascript.  This means (a) it is not type safe and (b) please note
+  // it is NOT type safe.
+  // If the base::Callback you provide here is of type void(boolean) and you
+  // resolve the promise with a string, Electron will compile successfully and
+  // then that promise will be rejected as soon as you try to use it as the
+  // mate converters doing work behind the scenes will throw an error for you.
+  // This can be really hard to trace so until either
+  //   * This helper becomes typesafe (by templating the class instead of each
+  //   method)
+  //   * or the world goes mad
+  // Please try your hardest not to use this method
+  // The world thanks you
+  template <typename... ResolveType>
+  v8::MaybeLocal<v8::Promise> Then(
+      base::OnceCallback<void(ResolveType...)> cb) {
+    static_assert(sizeof...(ResolveType) <= 1,
+                  "A promise's 'Then' callback should only receive at most one "
+                  "parameter");
     v8::HandleScope handle_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
@@ -124,6 +199,40 @@ class CopyablePromise {
   explicit CopyablePromise(const Promise& promise);
   CopyablePromise(const CopyablePromise&);
   ~CopyablePromise();
+
+  template <typename T>
+  static void ResolveCopyablePromise(const CopyablePromise& promise, T result) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(Promise::ResolvePromise<T>, promise.GetPromise(),
+                         std::move(result)));
+    } else {
+      promise.GetPromise().Resolve(result);
+    }
+  }
+
+  static void ResolveEmptyCopyablePromise(const CopyablePromise& promise) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(Promise::ResolveEmptyPromise, promise.GetPromise()));
+    } else {
+      promise.GetPromise().Resolve();
+    }
+  }
+
+  static void RejectCopyablePromise(const CopyablePromise& promise,
+                                    std::string errmsg) {
+    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(Promise::RejectPromise, promise.GetPromise(),
+                         std::move(errmsg)));
+    } else {
+      promise.GetPromise().RejectWithErrorMessage(errmsg);
+    }
+  }
 
   Promise GetPromise() const;
 

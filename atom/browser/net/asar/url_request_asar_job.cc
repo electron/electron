@@ -54,7 +54,7 @@ void URLRequestAsarJob::Initialize(
   std::shared_ptr<Archive> archive = GetOrCreateAsarArchive(asar_path);
   Archive::FileInfo file_info;
   if (!archive || !archive->GetFileInfo(relative_path, &file_info)) {
-    type_ = TYPE_ERROR;
+    type_ = JobType::kError;
     return;
   }
 
@@ -73,7 +73,7 @@ void URLRequestAsarJob::InitializeAsarJob(
     std::shared_ptr<Archive> archive,
     const base::FilePath& file_path,
     const Archive::FileInfo& file_info) {
-  type_ = TYPE_ASAR;
+  type_ = JobType::kAsar;
   file_task_runner_ = file_task_runner;
   stream_.reset(new net::FileStream(file_task_runner_));
   archive_ = archive;
@@ -84,16 +84,16 @@ void URLRequestAsarJob::InitializeAsarJob(
 void URLRequestAsarJob::InitializeFileJob(
     const scoped_refptr<base::TaskRunner> file_task_runner,
     const base::FilePath& file_path) {
-  type_ = TYPE_FILE;
+  type_ = JobType::kFile;
   file_task_runner_ = file_task_runner;
   stream_.reset(new net::FileStream(file_task_runner_));
   file_path_ = file_path;
 }
 
 void URLRequestAsarJob::Start() {
-  if (type_ == TYPE_ASAR || type_ == TYPE_FILE) {
+  if (type_ == JobType::kAsar || type_ == JobType::kFile) {
     auto* meta_info = new FileMetaInfo();
-    if (type_ == TYPE_ASAR) {
+    if (type_ == JobType::kAsar) {
       meta_info->file_path = archive_->path();
       meta_info->file_exists = true;
       meta_info->is_directory = false;
@@ -131,8 +131,8 @@ int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
 
   int rv = stream_->Read(
       dest, dest_size,
-      base::Bind(&URLRequestAsarJob::DidRead, weak_ptr_factory_.GetWeakPtr(),
-                 WrapRefCounted(dest)));
+      base::BindOnce(&URLRequestAsarJob::DidRead,
+                     weak_ptr_factory_.GetWeakPtr(), WrapRefCounted(dest)));
   if (rv >= 0) {
     remaining_bytes_ -= rv;
     DCHECK_GE(remaining_bytes_, 0);
@@ -144,7 +144,7 @@ int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
 bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
                                            int* http_status_code,
                                            bool* insecure_scheme_was_upgraded) {
-  if (type_ != TYPE_FILE)
+  if (type_ != JobType::kFile)
     return false;
 #if defined(OS_WIN)
   // Follow a Windows shortcut.
@@ -222,7 +222,7 @@ void URLRequestAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
 void URLRequestAsarJob::FetchMetaInfo(const base::FilePath& file_path,
                                       JobType type,
                                       FileMetaInfo* meta_info) {
-  if (type == TYPE_FILE) {
+  if (type == JobType::kFile) {
     base::File::Info file_info;
     meta_info->file_exists = base::GetFileInfo(file_path, &file_info);
     if (meta_info->file_exists) {
@@ -257,9 +257,9 @@ void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
 
   int flags =
       base::File::FLAG_OPEN | base::File::FLAG_READ | base::File::FLAG_ASYNC;
-  int rv = stream_->Open(
-      meta_info_.file_path, flags,
-      base::Bind(&URLRequestAsarJob::DidOpen, weak_ptr_factory_.GetWeakPtr()));
+  int rv = stream_->Open(meta_info_.file_path, flags,
+                         base::BindOnce(&URLRequestAsarJob::DidOpen,
+                                        weak_ptr_factory_.GetWeakPtr()));
   if (rv != net::ERR_IO_PENDING)
     DidOpen(rv);
 }
@@ -278,7 +278,7 @@ void URLRequestAsarJob::DidOpen(int result) {
   }
 
   int64_t file_size, read_offset;
-  if (type_ == TYPE_ASAR) {
+  if (type_ == JobType::kAsar) {
     file_size = file_info_.size;
     read_offset = file_info_.offset;
   } else {
@@ -297,9 +297,9 @@ void URLRequestAsarJob::DidOpen(int result) {
   seek_offset_ = byte_range_.first_byte_position() + read_offset;
 
   if (remaining_bytes_ > 0 && seek_offset_ != 0) {
-    int rv =
-        stream_->Seek(seek_offset_, base::Bind(&URLRequestAsarJob::DidSeek,
-                                               weak_ptr_factory_.GetWeakPtr()));
+    int rv = stream_->Seek(seek_offset_,
+                           base::BindOnce(&URLRequestAsarJob::DidSeek,
+                                          weak_ptr_factory_.GetWeakPtr()));
     if (rv != net::ERR_IO_PENDING) {
       // stream_->Seek() failed, so pass an intentionally erroneous value
       // into DidSeek().

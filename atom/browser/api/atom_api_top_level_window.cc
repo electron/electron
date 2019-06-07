@@ -18,6 +18,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/converter.h"
@@ -32,8 +33,6 @@
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 namespace mate {
@@ -568,6 +567,14 @@ void TopLevelWindow::SetSkipTaskbar(bool skip) {
   window_->SetSkipTaskbar(skip);
 }
 
+void TopLevelWindow::SetExcludedFromShownWindowsMenu(bool excluded) {
+  window_->SetExcludedFromShownWindowsMenu(excluded);
+}
+
+bool TopLevelWindow::IsExcludedFromShownWindowsMenu() {
+  return window_->IsExcludedFromShownWindowsMenu();
+}
+
 void TopLevelWindow::SetSimpleFullScreen(bool simple_fullscreen) {
   window_->SetSimpleFullScreen(simple_fullscreen);
 }
@@ -641,10 +648,11 @@ void TopLevelWindow::SetFocusable(bool focusable) {
 }
 
 void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  auto context = isolate->GetCurrentContext();
   mate::Handle<Menu> menu;
-  if (value->IsObject() &&
-      gin::V8ToString(
-          isolate, value->ToObject(isolate)->GetConstructorName()) == "Menu" &&
+  v8::Local<v8::Object> object;
+  if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
+      gin::V8ToString(isolate, object->GetConstructorName()) == "Menu" &&
       mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());
@@ -729,15 +737,15 @@ void TopLevelWindow::SetProgressBar(double progress, mate::Arguments* args) {
   std::string mode;
   args->GetNext(&options) && options.Get("mode", &mode);
 
-  NativeWindow::ProgressState state = NativeWindow::PROGRESS_NORMAL;
+  NativeWindow::ProgressState state = NativeWindow::ProgressState::kNormal;
   if (mode == "error")
-    state = NativeWindow::PROGRESS_ERROR;
+    state = NativeWindow::ProgressState::kError;
   else if (mode == "paused")
-    state = NativeWindow::PROGRESS_PAUSED;
+    state = NativeWindow::ProgressState::kPaused;
   else if (mode == "indeterminate")
-    state = NativeWindow::PROGRESS_INDETERMINATE;
+    state = NativeWindow::ProgressState::kIndeterminate;
   else if (mode == "none")
-    state = NativeWindow::PROGRESS_NONE;
+    state = NativeWindow::ProgressState::kNone;
 
   window_->SetProgressBar(progress, state);
 }
@@ -1062,19 +1070,31 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMaximumSize", &TopLevelWindow::SetMaximumSize)
       .SetMethod("getMaximumSize", &TopLevelWindow::GetMaximumSize)
       .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
-      .SetMethod("setResizable", &TopLevelWindow::SetResizable)
-      .SetMethod("isResizable", &TopLevelWindow::IsResizable)
-      .SetMethod("setMovable", &TopLevelWindow::SetMovable)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
-      .SetMethod("isMovable", &TopLevelWindow::IsMovable)
-      .SetMethod("setMinimizable", &TopLevelWindow::SetMinimizable)
-      .SetMethod("isMinimizable", &TopLevelWindow::IsMinimizable)
-      .SetMethod("setMaximizable", &TopLevelWindow::SetMaximizable)
-      .SetMethod("isMaximizable", &TopLevelWindow::IsMaximizable)
-      .SetMethod("setFullScreenable", &TopLevelWindow::SetFullScreenable)
-      .SetMethod("isFullScreenable", &TopLevelWindow::IsFullScreenable)
-      .SetMethod("setClosable", &TopLevelWindow::SetClosable)
-      .SetMethod("isClosable", &TopLevelWindow::IsClosable)
+      .SetMethod("_setResizable", &TopLevelWindow::SetResizable)
+      .SetMethod("_isResizable", &TopLevelWindow::IsResizable)
+      .SetProperty("resizable", &TopLevelWindow::IsResizable,
+                   &TopLevelWindow::SetResizable)
+      .SetMethod("_setMovable", &TopLevelWindow::SetMovable)
+      .SetMethod("_isMovable", &TopLevelWindow::IsMovable)
+      .SetProperty("movable", &TopLevelWindow::IsMovable,
+                   &TopLevelWindow::SetMovable)
+      .SetMethod("_setMinimizable", &TopLevelWindow::SetMinimizable)
+      .SetMethod("_isMinimizable", &TopLevelWindow::IsMinimizable)
+      .SetProperty("minimizable", &TopLevelWindow::IsMinimizable,
+                   &TopLevelWindow::SetMinimizable)
+      .SetMethod("_setMaximizable", &TopLevelWindow::SetMaximizable)
+      .SetMethod("_isMaximizable", &TopLevelWindow::IsMaximizable)
+      .SetProperty("maximizable", &TopLevelWindow::IsMaximizable,
+                   &TopLevelWindow::SetMaximizable)
+      .SetMethod("_setFullScreenable", &TopLevelWindow::SetFullScreenable)
+      .SetMethod("_isFullScreenable", &TopLevelWindow::IsFullScreenable)
+      .SetProperty("fullScreenable", &TopLevelWindow::IsFullScreenable,
+                   &TopLevelWindow::SetFullScreenable)
+      .SetMethod("_setClosable", &TopLevelWindow::SetClosable)
+      .SetMethod("_isClosable", &TopLevelWindow::IsClosable)
+      .SetProperty("closable", &TopLevelWindow::IsClosable,
+                   &TopLevelWindow::SetClosable)
       .SetMethod("setAlwaysOnTop", &TopLevelWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &TopLevelWindow::IsAlwaysOnTop)
       .SetMethod("center", &TopLevelWindow::Center)
@@ -1134,10 +1154,14 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addTabbedWindow", &TopLevelWindow::AddTabbedWindow)
       .SetMethod("setWindowButtonVisibility",
                  &TopLevelWindow::SetWindowButtonVisibility)
+      .SetProperty("excludedFromShownWindowsMenu",
+                   &TopLevelWindow::IsExcludedFromShownWindowsMenu,
+                   &TopLevelWindow::SetExcludedFromShownWindowsMenu)
 #endif
-      .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
-      .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
-      .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
+      .SetMethod("_setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
+      .SetMethod("_isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
+      .SetProperty("autoHideMenuBar", &TopLevelWindow::IsMenuBarAutoHide,
+                   &TopLevelWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarVisible", &TopLevelWindow::IsMenuBarVisible)
       .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
       .SetMethod("previewFile", &TopLevelWindow::PreviewFile)
@@ -1179,7 +1203,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  TopLevelWindow::SetConstructor(isolate, base::Bind(&TopLevelWindow::New));
+  TopLevelWindow::SetConstructor(isolate,
+                                 base::BindRepeating(&TopLevelWindow::New));
 
   mate::Dictionary constructor(isolate, TopLevelWindow::GetConstructor(isolate)
                                             ->GetFunction(context)
@@ -1195,4 +1220,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_top_level_window, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_top_level_window, Initialize)

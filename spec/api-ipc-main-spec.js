@@ -77,7 +77,7 @@ describe('ipc main module', () => {
       })
 
       ipcMain.once('error-message', (event, message) => {
-        const correctMsgStart = message.startsWith('Cannot call function \'getURL\' on missing remote object')
+        const correctMsgStart = message.startsWith('Cannot call method \'getURL\' on missing remote object')
         expect(correctMsgStart).to.be.true()
         done()
       })

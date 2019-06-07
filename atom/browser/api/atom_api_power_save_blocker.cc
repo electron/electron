@@ -6,17 +6,18 @@
 
 #include <string>
 
+#include "atom/common/node_includes.h"
+#include "base/bind_helpers.h"
 #include "base/task/post_task.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/service_manager_connection.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
+#include "gin/function_template.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 
-#include "atom/common/node_includes.h"
-
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<device::mojom::WakeLockType> {
@@ -36,17 +37,17 @@ struct Converter<device::mojom::WakeLockType> {
   }
 };
 
-}  // namespace mate
+}  // namespace gin
 
 namespace atom {
 
 namespace api {
 
+gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension),
-      is_wake_lock_active_(false) {
-  Init(isolate);
-}
+      is_wake_lock_active_(false) {}
 
 PowerSaveBlocker::~PowerSaveBlocker() {}
 
@@ -119,16 +120,13 @@ bool PowerSaveBlocker::IsStarted(int id) {
 }
 
 // static
-mate::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new PowerSaveBlocker(isolate));
+gin::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new PowerSaveBlocker(isolate));
 }
 
-// static
-void PowerSaveBlocker::BuildPrototype(
-    v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "PowerSaveBlocker"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(isolate)
       .SetMethod("start", &PowerSaveBlocker::Start)
       .SetMethod("stop", &PowerSaveBlocker::Stop)
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
@@ -145,10 +143,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
+  gin::Dictionary dict(isolate, exports);
   dict.Set("powerSaveBlocker", atom::api::PowerSaveBlocker::Create(isolate));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_power_save_blocker, Initialize);
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_power_save_blocker, Initialize)

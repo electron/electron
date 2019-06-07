@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_LOGIN_HANDLER_H_
 #define ATOM_BROWSER_LOGIN_HANDLER_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
@@ -26,7 +28,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
                const net::AuthChallengeInfo& auth_info,
                net::NetworkDelegate::AuthCallback callback,
                net::AuthCredentials* credentials,
-               const content::ResourceRequestInfo* resource_request_info);
+               content::ResourceRequestInfo* resource_request_info);
 
   // The auth is cancelled, must be called on UI thread.
   void CancelAuth();
@@ -57,7 +59,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   net::AuthCredentials* credentials_;
 
   // Who/where/what asked for the authentication.
-  scoped_refptr<const net::AuthChallengeInfo> auth_info_;
+  std::unique_ptr<const net::AuthChallengeInfo> auth_info_;
 
   // WebContents associated with the login request.
   content::ResourceRequestInfo::WebContentsGetter web_contents_getter_;

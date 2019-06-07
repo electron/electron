@@ -156,6 +156,26 @@ const char kOffscreen[] = "offscreen";
 
 const char kNodeIntegrationInSubFrames[] = "nodeIntegrationInSubFrames";
 
+// Disable window resizing when HTML Fullscreen API is activated.
+const char kDisableHtmlFullscreenWindowResize[] =
+    "disableHtmlFullscreenWindowResize";
+
+// Enables JavaScript support.
+const char kJavaScript[] = "javascript";
+
+// Enables image support.
+const char kImages[] = "images";
+
+// Make TextArea elements resizable.
+const char kTextAreasAreResizable[] = "textAreasAreResizable";
+
+// Enables WebGL support.
+const char kWebGL[] = "webgl";
+
+// Whether dragging and dropping a file or link onto the page causes a
+// navigation.
+const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
+
 }  // namespace options
 
 namespace switches {
@@ -212,6 +232,8 @@ const char kScrollBounce[] = "scroll-bounce";
 const char kHiddenPage[] = "hidden-page";
 const char kNativeWindowOpen[] = "native-window-open";
 const char kWebviewTag[] = "webview-tag";
+const char kDisableElectronSiteInstanceOverrides[] =
+    "disable-electron-site-instance-overrides";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
@@ -219,6 +241,10 @@ const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
 // Command switch passed to renderer process to control whether node
 // environments will be created in sub-frames.
 const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
+
+// Disable window resizing when HTML Fullscreen API is activated.
+const char kDisableHtmlFullscreenWindowResize[] =
+    "disable-html-fullscreen-window-resize";
 
 // Widevine options
 // Path to Widevine CDM binaries.
@@ -238,6 +264,9 @@ const char kAuthServerWhitelist[] = "auth-server-whitelist";
 // Whitelist containing servers for which Kerberos delegation is allowed.
 const char kAuthNegotiateDelegateWhitelist[] =
     "auth-negotiate-delegate-whitelist";
+
+// If set, include the port in generated Kerberos SPNs.
+const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
 
 }  // namespace switches
 

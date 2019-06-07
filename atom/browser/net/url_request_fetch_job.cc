@@ -147,9 +147,10 @@ void URLRequestFetchJob::Start() {
   FillRequestDetails(request_details.get(), request());
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
-                     handler(), std::move(request_details),
-                     base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
+      base::BindOnce(
+          &JsAsker::AskForOptions, base::Unretained(isolate()), handler(),
+          std::move(request_details),
+          base::BindOnce(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
 }
 
 void URLRequestFetchJob::StartAsync(

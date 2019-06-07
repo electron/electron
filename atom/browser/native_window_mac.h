@@ -87,6 +87,8 @@ class NativeWindowMac : public NativeWindow {
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
+  void SetExcludedFromShownWindowsMenu(bool excluded) override;
+  bool IsExcludedFromShownWindowsMenu() override;
   void SetSimpleFullScreen(bool simple_fullscreen) override;
   bool IsSimpleFullScreen() override;
   void SetKiosk(bool kiosk) override;
@@ -144,7 +146,7 @@ class NativeWindowMac : public NativeWindow {
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
 
-  enum TitleBarStyle {
+  enum class TitleBarStyle {
     NORMAL,
     HIDDEN,
     HIDDEN_INSET,
@@ -165,7 +167,7 @@ class NativeWindowMac : public NativeWindow {
 
  private:
   // Add custom layers to the content view.
-  void AddContentViewLayers();
+  void AddContentViewLayers(bool minimizable, bool closable);
 
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
@@ -198,7 +200,7 @@ class NativeWindowMac : public NativeWindow {
   NSApplicationPresentationOptions kiosk_options_;
 
   // The "titleBarStyle" option.
-  TitleBarStyle title_bar_style_ = NORMAL;
+  TitleBarStyle title_bar_style_ = TitleBarStyle::NORMAL;
 
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().

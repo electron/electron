@@ -126,7 +126,7 @@ LRESULT CALLBACK DesktopNotificationController::WndProc(HWND hwnd,
 }
 
 void DesktopNotificationController::StartAnimation() {
-  _ASSERT(hwnd_controller_);
+  DCHECK(hwnd_controller_);
 
   if (!is_animating_ && hwnd_controller_) {
     // NOTE: 15ms is shorter than what we'd need for 60 fps, but since
@@ -217,7 +217,7 @@ void DesktopNotificationController::AnimateAll() {
   }
 
   if (!keep_animating) {
-    _ASSERT(hwnd_controller_);
+    DCHECK(hwnd_controller_);
     if (hwnd_controller_)
       KillTimer(hwnd_controller_, TimerID_Animate);
     is_animating_ = false;
@@ -325,7 +325,7 @@ void DesktopNotificationController::CreateToast(NotificationLink&& data) {
     int toast_pos = 0;
     if (!instances_.empty()) {
       auto& item = instances_.back();
-      _ASSERT(item.hwnd);
+      DCHECK(item.hwnd);
 
       ScreenMetrics scr;
       auto* toast = Toast::Get(item.hwnd);
@@ -379,7 +379,7 @@ DesktopNotificationController::Notification::Notification(
 DesktopNotificationController::Notification::Notification(
     const shared_ptr<NotificationData>& data)
     : data_(data) {
-  _ASSERT(data != nullptr);
+  DCHECK(data != nullptr);
 }
 
 DesktopNotificationController::Notification::~Notification() = default;
@@ -391,7 +391,7 @@ bool DesktopNotificationController::Notification::operator==(
 
 void DesktopNotificationController::Notification::Close() {
   // No business calling this when not pointing to a valid instance
-  _ASSERT(data_);
+  DCHECK(data_);
 
   if (data_->controller)
     data_->controller->CloseNotification(*this);
@@ -401,7 +401,7 @@ void DesktopNotificationController::Notification::Set(std::wstring caption,
                                                       std::wstring body_text,
                                                       HBITMAP image) {
   // No business calling this when not pointing to a valid instance
-  _ASSERT(data_);
+  DCHECK(data_);
 
   // Do nothing when the notification has been closed
   if (!data_->controller)

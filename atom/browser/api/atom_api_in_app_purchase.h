@@ -12,6 +12,7 @@
 #include "atom/browser/mac/in_app_purchase.h"
 #include "atom/browser/mac/in_app_purchase_observer.h"
 #include "atom/browser/mac/in_app_purchase_product.h"
+#include "atom/common/promise_util.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -30,7 +31,11 @@ class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
   explicit InAppPurchase(v8::Isolate* isolate);
   ~InAppPurchase() override;
 
-  void PurchaseProduct(const std::string& product_id, mate::Arguments* args);
+  v8::Local<v8::Promise> PurchaseProduct(const std::string& product_id,
+                                         mate::Arguments* args);
+
+  v8::Local<v8::Promise> GetProducts(const std::vector<std::string>& productIDs,
+                                     mate::Arguments* args);
 
   // TransactionObserver:
   void OnTransactionsUpdated(

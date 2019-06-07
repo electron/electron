@@ -9,8 +9,8 @@
 #include "atom/browser/native_window_observer.h"
 
 #include "atom/browser/osr/osr_render_widget_host_view.h"
-#include "content/browser/renderer_host/render_view_host_delegate_view.h"
-#include "content/browser/web_contents/web_contents_view.h"
+#include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "content/public/browser/web_contents.h"
 
 #if defined(OS_MACOSX)
@@ -67,8 +67,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void SetOverscrollControllerEnabled(bool enabled) override;
 
 #if defined(OS_MACOSX)
-  bool IsEventTracking() const override;
-  void CloseTabAfterEventTracking() override;
+  bool CloseTabAfterEventTrackingIfNeeded() override;
 #endif
 
   // content::RenderViewHostDelegateView

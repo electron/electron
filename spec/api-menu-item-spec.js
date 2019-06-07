@@ -6,7 +6,7 @@ const { BrowserWindow, app, Menu, MenuItem } = remote
 const roles = require('../lib/browser/api/menu-item-roles')
 const { closeWindow } = require('./window-helpers')
 
-const { expect, assert } = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('MenuItems', () => {
@@ -246,7 +246,7 @@ describe('MenuItems', () => {
         'minimize': 'Minimize',
         'paste': 'Paste',
         'pasteandmatchstyle': 'Paste and Match Style',
-        'quit': (process.platform === 'darwin') ? `Quit ${app.getName()}` : (process.platform === 'win32') ? 'Exit' : 'Quit',
+        'quit': (process.platform === 'darwin') ? `Quit ${app.name}` : (process.platform === 'win32') ? 'Exit' : 'Quit',
         'redo': 'Redo',
         'reload': 'Reload',
         'resetzoom': 'Actual Size',
@@ -316,7 +316,7 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'appMenu' })
 
-      expect(item.label).to.equal(app.getName())
+      expect(item.label).to.equal(app.name)
       expect(item.submenu.items[0].role).to.equal('about')
       expect(item.submenu.items[1].type).to.equal('separator')
       expect(item.submenu.items[2].role).to.equal('services')
@@ -335,7 +335,7 @@ describe('MenuItems', () => {
           role: 'close'
         }]
       })
-      expect(item.label).to.equal(app.getName())
+      expect(item.label).to.equal(app.name)
       expect(item.submenu.items[0].role).to.equal('close')
     })
   })
@@ -492,12 +492,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+A' }
       ])
 
-      assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⌘A' : 'Ctrl+A')
-      assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⇧A' : 'Shift+A')
-      assert.strictEqual(menu.getAcceleratorTextAt(2),
-        isDarwin() ? '⌥A' : 'Alt+A')
+      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌘A' : 'Ctrl+A')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧A' : 'Shift+A')
+      expect(menu.getAcceleratorTextAt(2)).to.equal(isDarwin() ? '⌥A' : 'Alt+A')
     })
 
     it('should display modifiers correctly for special keys', () => {
@@ -507,12 +504,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+Tab' }
       ])
 
-      assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab')
-      assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
-      assert.strictEqual(menu.getAcceleratorTextAt(2),
-        isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
+      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
+      expect(menu.getAcceleratorTextAt(2)).to.equal(isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
     })
 
     it('should not display modifiers twice', () => {
@@ -521,10 +515,8 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Shift+Shift+Tab' }
       ])
 
-      assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⇧A' : 'Shift+A')
-      assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
+      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⇧A' : 'Shift+A')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
     })
 
     it('should display correctly for edge cases', () => {
@@ -533,10 +525,8 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Control+Plus' }
       ])
 
-      assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
-      assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
+      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
+      expect(menu.getAcceleratorTextAt(1)).to.equal(isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
     })
   })
 })

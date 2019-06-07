@@ -1,6 +1,5 @@
 'use strict'
 
-const assert = require('assert')
 const chai = require('chai')
 const ChildProcess = require('child_process')
 const dirtyChai = require('dirty-chai')
@@ -28,9 +27,9 @@ describe('WebContentsView', () => {
     const web = webContents.create({})
     w = new TopLevelWindow({ show: false })
     w.setContentView(new WebContentsView(web))
-    assert.throws(() => {
+    expect(() => {
       w.setContentView(new WebContentsView(web))
-    }, /The WebContents has already been added to a View/)
+    }).to.throw('The WebContents has already been added to a View')
   })
 
   describe('new WebContentsView()', () => {

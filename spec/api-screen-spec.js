@@ -29,6 +29,7 @@ describe('screen module', () => {
       expect(display).to.have.a.property('monochrome').that.is.a('boolean')
       expect(display).to.have.a.property('depthPerComponent').that.is.a('number')
       expect(display).to.have.a.property('colorDepth').that.is.a('number')
+      expect(display).to.have.a.property('colorSpace').that.is.a('string')
     })
 
     it('has a size object property', function () {

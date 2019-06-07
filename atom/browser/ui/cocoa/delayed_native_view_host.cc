@@ -12,7 +12,7 @@ DelayedNativeViewHost::DelayedNativeViewHost(gfx::NativeView native_view)
 DelayedNativeViewHost::~DelayedNativeViewHost() {}
 
 void DelayedNativeViewHost::ViewHierarchyChanged(
-    const ViewHierarchyChangedDetails& details) {
+    const views::ViewHierarchyChangedDetails& details) {
   NativeViewHost::ViewHierarchyChanged(details);
   if (details.is_add && GetWidget())
     Attach(native_view_);

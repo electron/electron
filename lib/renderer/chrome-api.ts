@@ -67,22 +67,20 @@ class Port {
 }
 
 // Inject chrome API to the |context|
-export function injectTo (extensionId: string, isBackgroundPage: boolean, context: any) {
+export function injectTo (extensionId: string, context: any) {
   const chrome = context.chrome = context.chrome || {}
-  let originResultID = 1
 
   ipcRendererInternal.on(`CHROME_RUNTIME_ONCONNECT_${extensionId}`, (
     _event: Electron.Event, tabId: number, portId: number, connectInfo: { name: string }
   ) => {
     chrome.runtime.onConnect.emit(new Port(tabId, portId, extensionId, connectInfo.name))
-  }
-  )
+  })
 
-  ipcRendererInternal.on(`CHROME_RUNTIME_ONMESSAGE_${extensionId}`, (
-    _event: Electron.Event, tabId: number, message: string, resultID: number
+  ipcRendererUtils.handle(`CHROME_RUNTIME_ONMESSAGE_${extensionId}`, (
+    _event: Electron.Event, tabId: number, message: string
   ) => {
-    chrome.runtime.onMessage.emit(message, new MessageSender(tabId, extensionId), (messageResult: any) => {
-      ipcRendererInternal.send(`CHROME_RUNTIME_ONMESSAGE_RESULT_${resultID}`, messageResult)
+    return new Promise(resolve => {
+      chrome.runtime.onMessage.emit(message, new MessageSender(tabId, extensionId), resolve)
     })
   })
 
@@ -115,56 +113,48 @@ export function injectTo (extensionId: string, isBackgroundPage: boolean, contex
 
     // https://developer.chrome.com/extensions/runtime#method-connect
     connect (...args: Array<any>) {
-      if (isBackgroundPage) {
-        console.error('chrome.runtime.connect is not supported in background page')
-        return
-      }
-
       // Parse the optional args.
       let targetExtensionId = extensionId
       let connectInfo = { name: '' }
       if (args.length === 1) {
-        connectInfo = args[0]
+        targetExtensionId = args[0]
       } else if (args.length === 2) {
         [targetExtensionId, connectInfo] = args
       }
 
-      const { tabId, portId } = ipcRendererInternal.sendSync('CHROME_RUNTIME_CONNECT', targetExtensionId, connectInfo)
+      const { tabId, portId } = ipcRendererUtils.invokeSync('CHROME_RUNTIME_CONNECT', targetExtensionId, connectInfo)
       return new Port(tabId, portId, extensionId, connectInfo.name)
     },
 
     // https://developer.chrome.com/extensions/runtime#method-sendMessage
     sendMessage (...args: Array<any>) {
-      if (isBackgroundPage) {
-        console.error('chrome.runtime.sendMessage is not supported in background page')
-        return
+      // Parse the optional args.
+      const targetExtensionId = extensionId
+      let message: string
+      let options: Object | undefined
+      let responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
+
+      if (typeof args[args.length - 1] === 'function') {
+        responseCallback = args.pop()
       }
 
-      // Parse the optional args.
-      let targetExtensionId = extensionId
-      let message
       if (args.length === 1) {
-        message = args[0]
+        [message] = args
       } else if (args.length === 2) {
-        // A case of not provide extension-id: (message, responseCallback)
-        if (typeof args[1] === 'function') {
-          ipcRendererInternal.once(`CHROME_RUNTIME_SENDMESSAGE_RESULT_${originResultID}`,
-            (_event: Electron.Event, result: any) => args[1](result)
-          )
-
-          message = args[0]
+        if (typeof args[0] === 'string') {
+          [extensionId, message] = args
         } else {
-          [targetExtensionId, message] = args
+          [message, options] = args
         }
       } else {
-        console.error('options is not supported')
-        ipcRendererInternal.once(`CHROME_RUNTIME_SENDMESSAGE_RESULT_${originResultID}`,
-          (event: Electron.Event, result: any) => args[2](result)
-        )
+        [extensionId, message, options] = args
       }
 
-      ipcRendererInternal.send('CHROME_RUNTIME_SENDMESSAGE', targetExtensionId, message, originResultID)
-      originResultID++
+      if (options) {
+        console.error('options are not supported')
+      }
+
+      ipcRendererUtils.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback)
     },
 
     onConnect: new Event(),
@@ -177,15 +167,10 @@ export function injectTo (extensionId: string, isBackgroundPage: boolean, contex
     executeScript (
       tabId: number,
       details: Chrome.Tabs.ExecuteScriptDetails,
-      resultCallback: Chrome.Tabs.ExecuteScriptCallback
+      resultCallback: Chrome.Tabs.ExecuteScriptCallback = () => {}
     ) {
-      if (resultCallback) {
-        ipcRendererInternal.once(`CHROME_TABS_EXECUTESCRIPT_RESULT_${originResultID}`,
-          (_event: Electron.Event, result: any) => resultCallback([result])
-        )
-      }
-      ipcRendererInternal.send('CHROME_TABS_EXECUTESCRIPT', originResultID, tabId, extensionId, details)
-      originResultID++
+      ipcRendererUtils.invoke('CHROME_TABS_EXECUTE_SCRIPT', tabId, extensionId, details)
+        .then((result: any) => resultCallback([result]))
     },
 
     // https://developer.chrome.com/extensions/tabs#method-sendMessage
@@ -193,15 +178,9 @@ export function injectTo (extensionId: string, isBackgroundPage: boolean, contex
       tabId: number,
       message: any,
       _options: Chrome.Tabs.SendMessageDetails,
-      responseCallback: Chrome.Tabs.SendMessageCallback
+      responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
     ) {
-      if (responseCallback) {
-        ipcRendererInternal.once(`CHROME_TABS_SEND_MESSAGE_RESULT_${originResultID}`,
-          (_event: Electron.Event, result: any) => responseCallback(result)
-        )
-      }
-      ipcRendererInternal.send('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, isBackgroundPage, message, originResultID)
-      originResultID++
+      ipcRendererUtils.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
     },
 
     onUpdated: new Event(),
@@ -231,4 +210,10 @@ export function injectTo (extensionId: string, isBackgroundPage: boolean, contex
 
   chrome.i18n = require('@electron/internal/renderer/extensions/i18n').setup(extensionId)
   chrome.webNavigation = require('@electron/internal/renderer/extensions/web-navigation').setup()
+
+  // Electron has no concept of a browserAction but we should stub these APIs for compatibility
+  chrome.browserAction = {
+    setIcon () {},
+    setPopup () {}
+  }
 }

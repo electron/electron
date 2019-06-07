@@ -14,6 +14,8 @@
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/atom_gpu_client.h"
+#include "atom/browser/feature_list.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
@@ -45,6 +47,10 @@
 
 #if defined(OS_MACOSX)
 #include "atom/app/atom_main_delegate_mac.h"
+#endif
+
+#if defined(OS_WIN)
+#include "base/win/win_util.h"
 #endif
 
 namespace atom {
@@ -136,14 +142,19 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #if defined(DEBUG)
   // Print logging to debug.log on Windows
   settings.logging_dest = logging::LOG_TO_ALL;
-  settings.log_file = L"debug.log";
+  base::FilePath log_filename;
+  base::PathService::Get(base::DIR_EXE, &log_filename);
+  log_filename = log_filename.AppendASCII("debug.log");
+  settings.log_file = log_filename.value().c_str();
   settings.lock_log = logging::LOCK_LOG_FILE;
   settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
-  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // defined(DEBUG)
 #else   // defined(OS_WIN)
-  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
@@ -181,6 +192,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Disable the ActiveVerifier, which is used by Chrome to track possible
   // bugs, but no use in Electron.
   base::win::DisableHandleVerifier();
+
+  if (IsBrowserProcess(command_line))
+    base::win::PinUser32();
 #endif
 
   content_client_ = std::make_unique<AtomContentClient>();
@@ -237,10 +251,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess(command_line))
     return;
 
-  // Disable setuid sandbox since it is not longer required on
-  // linux (namespace sandbox is available on most distros).
-  command_line->AppendSwitch(service_manager::switches::kDisableSetuidSandbox);
-
   // Allow file:// URIs to read other file:// URIs by default.
   command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
@@ -251,6 +261,10 @@ void AtomMainDelegate::PreSandboxStartup() {
 }
 
 void AtomMainDelegate::PreCreateMainMessageLoop() {
+  // This is initialized early because the service manager reads some feature
+  // flags and we need to make sure the feature list is initialized before the
+  // service manager reads the features.
+  InitializeFeatureList();
 #if defined(OS_MACOSX)
   RegisterAtomCrApp();
 #endif
@@ -259,6 +273,11 @@ void AtomMainDelegate::PreCreateMainMessageLoop() {
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
   browser_client_.reset(new AtomBrowserClient);
   return browser_client_.get();
+}
+
+content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
+  gpu_client_.reset(new AtomGpuClient);
+  return gpu_client_.get();
 }
 
 content::ContentRendererClient*

@@ -5,7 +5,9 @@
 #ifndef ATOM_BROWSER_API_EVENT_H_
 #define ATOM_BROWSER_API_EVENT_H_
 
+#include "base/optional.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
@@ -17,6 +19,7 @@ namespace mate {
 
 class Event : public Wrappable<Event>, public content::WebContentsObserver {
  public:
+  using MessageSyncCallback = atom::mojom::ElectronBrowser::MessageSyncCallback;
   static Handle<Event> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -24,13 +27,14 @@ class Event : public Wrappable<Event>, public content::WebContentsObserver {
 
   // Pass the sender and message to be replied.
   void SetSenderAndMessage(content::RenderFrameHost* sender,
-                           IPC::Message* message);
+                           base::Optional<MessageSyncCallback> callback);
 
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
 
-  // event.sendReply(array), used for replying synchronous message.
-  bool SendReply(const base::ListValue& result);
+  // event.sendReply(value), used for replying to synchronous messages and
+  // `invoke` calls.
+  bool SendReply(const base::Value& result);
 
  protected:
   explicit Event(v8::Isolate* isolate);
@@ -45,7 +49,7 @@ class Event : public Wrappable<Event>, public content::WebContentsObserver {
  private:
   // Replyer for the synchronous messages.
   content::RenderFrameHost* sender_ = nullptr;
-  IPC::Message* message_ = nullptr;
+  base::Optional<MessageSyncCallback> callback_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };

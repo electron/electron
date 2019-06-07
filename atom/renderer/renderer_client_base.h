@@ -20,8 +20,6 @@
 
 namespace atom {
 
-class PreferencesManager;
-
 class RendererClientBase : public content::ContentRendererClient {
  public:
   RendererClientBase();
@@ -34,6 +32,9 @@ class RendererClientBase : public content::ContentRendererClient {
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
                                        content::RenderFrame* render_frame) = 0;
+  virtual void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
+                                            content::RenderFrame* render_frame,
+                                            int world_id) = 0;
 
   bool isolated_world() const { return isolated_world_; }
 
@@ -51,7 +52,6 @@ class RendererClientBase : public content::ContentRendererClient {
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
-  void RenderViewCreated(content::RenderView*) override;
   std::unique_ptr<blink::WebSpeechSynthesizer> OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
@@ -64,7 +64,6 @@ class RendererClientBase : public content::ContentRendererClient {
   void DidSetUserAgent(const std::string& user_agent) override;
 
  private:
-  std::unique_ptr<PreferencesManager> preferences_manager_;
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif

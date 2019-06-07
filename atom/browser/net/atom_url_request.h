@@ -53,7 +53,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                           const net::RedirectInfo& info,
                           bool* defer_redirect) override;
   void OnAuthRequired(net::URLRequest* request,
-                      net::AuthChallengeInfo* auth_info) override;
+                      const net::AuthChallengeInfo& auth_info) override;
   void OnResponseStarted(net::URLRequest* request, int net_error) override;
   void OnReadCompleted(net::URLRequest* request, int bytes_read) override;
 
@@ -93,7 +93,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers) const;
   void InformDelegateAuthenticationRequired(
-      scoped_refptr<net::AuthChallengeInfo> auth_info) const;
+      const net::AuthChallengeInfo& auth_info) const;
   void InformDelegateResponseStarted(
       scoped_refptr<net::HttpResponseHeaders>) const;
   void InformDelegateResponseData(

@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Mon, 13 May 2019 15:48:36 -0700
+Subject: Disable custom libcxx on windows
+
+
+diff --git a/build/config/c++/c++.gni b/build/config/c++/c++.gni
+index b639ca7793c2a5d97df0a02efc462c476c3640d0..c6d543d781fe30574f671ee22e84ab0b95a50ccb 100644
+--- a/build/config/c++/c++.gni
++++ b/build/config/c++/c++.gni
+@@ -12,7 +12,8 @@ declare_args() {
+   # is not supported.
+   use_custom_libcxx =
+       is_fuchsia || is_android || is_mac || (is_ios && !use_xcode_clang) ||
+-      (is_win && is_clang) ||
++      # Do not use custom libcxx on windows
++      #(is_win && is_clang) ||
+       (is_linux &&
+        (!is_chromeos || default_toolchain != "//build/toolchain/cros:target"))
+ 

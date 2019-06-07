@@ -5,10 +5,9 @@
 #include "atom/browser/api/views/atom_api_label_button.h"
 
 #include "atom/common/api/constructor.h"
+#include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -72,9 +71,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("LabelButton", mate::CreateConstructor<LabelButton>(
-                              isolate, base::Bind(&LabelButton::New)));
+                              isolate, base::BindRepeating(&LabelButton::New)));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_label_button, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_label_button, Initialize)

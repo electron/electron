@@ -25,18 +25,19 @@ struct Converter<atom::TrayIcon::HighlightMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      atom::TrayIcon::HighlightMode* out) {
+    using HighlightMode = atom::TrayIcon::HighlightMode;
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "always") {
-        *out = atom::TrayIcon::HighlightMode::ALWAYS;
+        *out = HighlightMode::ALWAYS;
         return true;
       }
       if (mode == "selection") {
-        *out = atom::TrayIcon::HighlightMode::SELECTION;
+        *out = HighlightMode::SELECTION;
         return true;
       }
       if (mode == "never") {
-        *out = atom::TrayIcon::HighlightMode::NEVER;
+        *out = HighlightMode::NEVER;
         return true;
       }
     }
@@ -59,11 +60,7 @@ Tray::Tray(v8::Isolate* isolate,
   InitWith(isolate, wrapper);
 }
 
-Tray::~Tray() {
-  // Destroy the native tray in next tick.
-  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
-                                                  tray_icon_.release());
-}
+Tray::~Tray() = default;
 
 // static
 mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
@@ -159,7 +156,17 @@ void Tray::SetToolTip(const std::string& tool_tip) {
 }
 
 void Tray::SetTitle(const std::string& title) {
+#if defined(OS_MACOSX)
   tray_icon_->SetTitle(title);
+#endif
+}
+
+std::string Tray::GetTitle() {
+#if defined(OS_MACOSX)
+  return tray_icon_->GetTitle();
+#else
+  return "";
+#endif
 }
 
 void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
@@ -227,6 +234,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
+      .SetMethod("getTitle", &Tray::GetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)
@@ -251,7 +259,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Tray::SetConstructor(isolate, base::Bind(&Tray::New));
+  Tray::SetConstructor(isolate, base::BindRepeating(&Tray::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set(
@@ -261,4 +269,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_tray, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_tray, Initialize)

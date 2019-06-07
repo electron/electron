@@ -2,8 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef NATIVE_MATE_ARGUMENTS_H_
-#define NATIVE_MATE_ARGUMENTS_H_
+#ifndef NATIVE_MATE_NATIVE_MATE_ARGUMENTS_H_
+#define NATIVE_MATE_NATIVE_MATE_ARGUMENTS_H_
+
+#include <string>
+#include <vector>
 
 #include "base/macros.h"
 #include "native_mate/converter.h"
@@ -19,21 +22,19 @@ class Arguments {
   explicit Arguments(const v8::FunctionCallbackInfo<v8::Value>& info);
   ~Arguments();
 
-  v8::Local<v8::Object> GetHolder() const {
-    return info_->Holder();
-  }
+  v8::Local<v8::Object> GetHolder() const { return info_->Holder(); }
 
-  template<typename T>
+  template <typename T>
   bool GetHolder(T* out) {
     return ConvertFromV8(isolate_, info_->Holder(), out);
   }
 
-  template<typename T>
+  template <typename T>
   bool GetData(T* out) {
     return ConvertFromV8(isolate_, info_->Data(), out);
   }
 
-  template<typename T>
+  template <typename T>
   bool GetNext(T* out) {
     if (next_ >= info_->Length()) {
       insufficient_arguments_ = true;
@@ -46,7 +47,7 @@ class Arguments {
     return success;
   }
 
-  template<typename T>
+  template <typename T>
   bool GetRemaining(std::vector<T>* out) {
     if (next_ >= info_->Length()) {
       insufficient_arguments_ = true;
@@ -62,19 +63,13 @@ class Arguments {
     return true;
   }
 
-  v8::Local<v8::Object> GetThis() {
-    return info_->This();
-  }
+  v8::Local<v8::Object> GetThis() { return info_->This(); }
 
-  bool IsConstructCall() const {
-    return info_->IsConstructCall();
-  }
+  bool IsConstructCall() const { return info_->IsConstructCall(); }
 
-  int Length() const {
-    return info_->Length();
-  }
+  int Length() const { return info_->Length(); }
 
-  template<typename T>
+  template <typename T>
   void Return(const T& val) {
     info_->GetReturnValue().Set(ConvertToV8(isolate_, val));
   }
@@ -96,4 +91,4 @@ class Arguments {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_ARGUMENTS_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_ARGUMENTS_H_

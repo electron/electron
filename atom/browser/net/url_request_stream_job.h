@@ -24,7 +24,7 @@ class URLRequestStreamJob : public JsAsker, public net::URLRequestJob {
                       net::NetworkDelegate* network_delegate);
   ~URLRequestStreamJob() override;
 
-  void StartAsync(std::unique_ptr<mate::StreamSubscriber> subscriber,
+  void StartAsync(scoped_refptr<mate::StreamSubscriber> subscriber,
                   scoped_refptr<net::HttpResponseHeaders> response_headers,
                   bool ended,
                   int error);
@@ -62,7 +62,7 @@ class URLRequestStreamJob : public JsAsker, public net::URLRequestJob {
   base::TimeTicks request_start_time_;
   base::TimeTicks response_start_time_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
-  std::unique_ptr<mate::StreamSubscriber> subscriber_;
+  scoped_refptr<mate::StreamSubscriber> subscriber_;
 
   base::WeakPtrFactory<URLRequestStreamJob> weak_factory_;
 

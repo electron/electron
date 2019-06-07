@@ -11,6 +11,8 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/memory/ref_counted.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_thread.h"
 #include "v8/include/v8.h"
@@ -23,16 +25,24 @@ namespace mate {
 
 class Arguments;
 
-class StreamSubscriber {
+class StreamSubscriber
+    : public base::RefCountedDeleteOnSequence<StreamSubscriber> {
  public:
+  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
+
   StreamSubscriber(v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter,
-                   base::WeakPtr<atom::URLRequestStreamJob> url_job);
-  ~StreamSubscriber();
+                   base::WeakPtr<atom::URLRequestStreamJob> url_job,
+                   scoped_refptr<base::SequencedTaskRunner> ui_task_runner);
 
  private:
+  friend class base::DeleteHelper<StreamSubscriber>;
+  friend class base::RefCountedDeleteOnSequence<StreamSubscriber>;
+
   using JSHandlersMap = std::map<std::string, v8::Global<v8::Value>>;
-  using EventCallback = base::Callback<void(mate::Arguments* args)>;
+  using EventCallback = base::RepeatingCallback<void(mate::Arguments* args)>;
+
+  ~StreamSubscriber();
 
   void On(const std::string& event, EventCallback&& callback);  // NOLINT
   void Off(const std::string& event);

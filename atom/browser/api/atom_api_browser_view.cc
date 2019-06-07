@@ -68,7 +68,7 @@ void BrowserView::Init(v8::Isolate* isolate,
                        const mate::Dictionary& options) {
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
-  web_preferences.Set("isBrowserView", true);
+  web_preferences.Set("type", "browserView");
   mate::Handle<class WebContents> web_contents =
       WebContents::Create(isolate, web_preferences);
 
@@ -165,7 +165,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  BrowserView::SetConstructor(isolate, base::Bind(&BrowserView::New));
+  BrowserView::SetConstructor(isolate, base::BindRepeating(&BrowserView::New));
 
   mate::Dictionary browser_view(isolate, BrowserView::GetConstructor(isolate)
                                              ->GetFunction(context)
@@ -180,4 +180,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_browser_view, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_browser_view, Initialize)

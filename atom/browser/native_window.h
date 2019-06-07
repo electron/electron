@@ -44,8 +44,6 @@ namespace atom {
 class AtomMenuModel;
 class NativeBrowserView;
 
-struct DraggableRegion;
-
 #if defined(OS_MACOSX)
 typedef NSView* NativeWindowHandle;
 #else
@@ -136,6 +134,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
+  virtual void SetExcludedFromShownWindowsMenu(bool excluded) = 0;
+  virtual bool IsExcludedFromShownWindowsMenu() = 0;
   virtual void SetSimpleFullScreen(bool simple_fullscreen) = 0;
   virtual bool IsSimpleFullScreen() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
@@ -162,12 +162,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual NativeWindowHandle GetNativeWindowHandle() const = 0;
 
   // Taskbar/Dock APIs.
-  enum ProgressState {
-    PROGRESS_NONE,           // no progress, no marking
-    PROGRESS_INDETERMINATE,  // progress, indeterminate
-    PROGRESS_ERROR,          // progress, errored (red)
-    PROGRESS_PAUSED,         // progress, paused (yellow)
-    PROGRESS_NORMAL,         // progress, not marked (green)
+  enum class ProgressState {
+    kNone,           // no progress, no marking
+    kIndeterminate,  // progress, indeterminate
+    kError,          // progress, errored (red)
+    kPaused,         // progress, paused (yellow)
+    kNormal,         // progress, not marked (green)
   };
 
   virtual void SetProgressBar(double progress, const ProgressState state) = 0;

@@ -7,17 +7,17 @@ Removes usage of the _LSSetApplicationLaunchServicesServerConnectionStatus
 private API.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index 0b9d501e7b0da03c2bc668944d6b4172c71dae72..0ad797171bd359037bcf8d3e7c9e68d3408cd49c 100644
+index f0d320c6772acb67752a997f507c96844e3549b8..82f0c4f62be2f210db2c3ed1169c2a816c59cf1f 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -280,8 +280,10 @@ int GpuMain(const MainFunctionParams& parameters) {
-     std::unique_ptr<base::MessagePump> pump(new base::MessagePumpNSRunLoop());
-     main_message_loop.reset(new base::MessageLoop(std::move(pump)));
+@@ -283,8 +283,10 @@ int GpuMain(const MainFunctionParams& parameters) {
+         std::make_unique<base::SingleThreadTaskExecutor>(
+             base::MessagePump::Type::NS_RUNLOOP);
  
 +#ifndef MAS_BUILD
      // Tell LaunchServices to continue without a connection to the daemon.
      _LSSetApplicationLaunchServicesServerConnectionStatus(0, nullptr);
 +#endif
  #else
-     main_message_loop.reset(
-         new base::MessageLoop(base::MessageLoop::TYPE_DEFAULT));
+     main_thread_task_executor =
+         std::make_unique<base::SingleThreadTaskExecutor>(

@@ -76,6 +76,12 @@ extern const char kWebSecurity[];
 extern const char kAllowRunningInsecureContent[];
 extern const char kOffscreen[];
 extern const char kNodeIntegrationInSubFrames[];
+extern const char kDisableHtmlFullscreenWindowResize[];
+extern const char kJavaScript[];
+extern const char kImages[];
+extern const char kTextAreasAreResizable[];
+extern const char kWebGL[];
+extern const char kNavigateOnDragDrop[];
 
 }  // namespace options
 
@@ -111,6 +117,8 @@ extern const char kNativeWindowOpen[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
 extern const char kNodeIntegrationInSubFrames[];
+extern const char kDisableHtmlFullscreenWindowResize[];
+extern const char kDisableElectronSiteInstanceOverrides[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
@@ -119,6 +127,7 @@ extern const char kDiskCacheSize[];
 extern const char kIgnoreConnectionsLimit[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
+extern const char kEnableAuthNegotiatePort[];
 
 }  // namespace switches
 

@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/certificate_trust.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #import <Cocoa/Cocoa.h>
 #import <SecurityInterface/SFCertificateTrustPanel.h>
 
@@ -15,7 +19,7 @@
 
 @interface TrustDelegate : NSObject {
  @private
-  certificate_trust::ShowTrustCallback callback_;
+  std::unique_ptr<atom::util::Promise> promise_;
   SFCertificateTrustPanel* panel_;
   scoped_refptr<net::X509Certificate> cert_;
   SecTrustRef trust_;
@@ -23,12 +27,12 @@
   SecPolicyRef sec_policy_;
 }
 
-- (id)initWithCallback:(const certificate_trust::ShowTrustCallback&)callback
-                 panel:(SFCertificateTrustPanel*)panel
-                  cert:(const scoped_refptr<net::X509Certificate>&)cert
-                 trust:(SecTrustRef)trust
-             certChain:(CFArrayRef)certChain
-             secPolicy:(SecPolicyRef)secPolicy;
+- (id)initWithPromise:(atom::util::Promise)promise
+                panel:(SFCertificateTrustPanel*)panel
+                 cert:(const scoped_refptr<net::X509Certificate>&)cert
+                trust:(SecTrustRef)trust
+            certChain:(CFArrayRef)certChain
+            secPolicy:(SecPolicyRef)secPolicy;
 
 - (void)panelDidEnd:(NSWindow*)sheet
          returnCode:(int)returnCode
@@ -47,14 +51,14 @@
   [super dealloc];
 }
 
-- (id)initWithCallback:(const certificate_trust::ShowTrustCallback&)callback
-                 panel:(SFCertificateTrustPanel*)panel
-                  cert:(const scoped_refptr<net::X509Certificate>&)cert
-                 trust:(SecTrustRef)trust
-             certChain:(CFArrayRef)certChain
-             secPolicy:(SecPolicyRef)secPolicy {
+- (id)initWithPromise:(atom::util::Promise)promise
+                panel:(SFCertificateTrustPanel*)panel
+                 cert:(const scoped_refptr<net::X509Certificate>&)cert
+                trust:(SecTrustRef)trust
+            certChain:(CFArrayRef)certChain
+            secPolicy:(SecPolicyRef)secPolicy {
   if ((self = [super init])) {
-    callback_ = callback;
+    promise_.reset(new atom::util::Promise(std::move(promise)));
     panel_ = panel;
     cert_ = cert;
     trust_ = trust;
@@ -73,8 +77,7 @@
   // now.
   cert_db->NotifyObserversCertDBChanged();
 
-  callback_.Run();
-
+  promise_->Resolve();
   [self autorelease];
 }
 
@@ -82,10 +85,14 @@
 
 namespace certificate_trust {
 
-void ShowCertificateTrust(atom::NativeWindow* parent_window,
-                          const scoped_refptr<net::X509Certificate>& cert,
-                          const std::string& message,
-                          const ShowTrustCallback& callback) {
+v8::Local<v8::Promise> ShowCertificateTrust(
+    atom::NativeWindow* parent_window,
+    const scoped_refptr<net::X509Certificate>& cert,
+    const std::string& message) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   auto* sec_policy = SecPolicyCreateBasicX509();
   auto cert_chain =
       net::x509_util::CreateSecCertificateArrayForX509Certificate(cert.get());
@@ -98,18 +105,20 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
   auto msg = base::SysUTF8ToNSString(message);
 
   auto panel = [[SFCertificateTrustPanel alloc] init];
-  auto delegate = [[TrustDelegate alloc] initWithCallback:callback
-                                                    panel:panel
-                                                     cert:cert
-                                                    trust:trust
-                                                certChain:cert_chain
-                                                secPolicy:sec_policy];
+  auto delegate = [[TrustDelegate alloc] initWithPromise:std::move(promise)
+                                                   panel:panel
+                                                    cert:cert
+                                                   trust:trust
+                                               certChain:cert_chain
+                                               secPolicy:sec_policy];
   [panel beginSheetForWindow:window
                modalDelegate:delegate
               didEndSelector:@selector(panelDidEnd:returnCode:contextInfo:)
                  contextInfo:nil
                        trust:trust
                      message:msg];
+
+  return handle;
 }
 
 }  // namespace certificate_trust

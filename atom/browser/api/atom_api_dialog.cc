@@ -16,40 +16,64 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/promise_util.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_includes.h"
-
 namespace {
 
-void ShowMessageBox(int type,
-                    const std::vector<std::string>& buttons,
-                    int default_id,
-                    int cancel_id,
-                    int options,
-                    const std::string& title,
-                    const std::string& message,
-                    const std::string& detail,
-                    const std::string& checkbox_label,
-                    bool checkbox_checked,
-                    const gfx::ImageSkia& icon,
-                    atom::NativeWindow* window,
-                    mate::Arguments* args) {
-  v8::Local<v8::Value> peek = args->PeekNext();
-  atom::MessageBoxCallback callback;
-  if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(), peek,
-                                                        &callback)) {
-    atom::ShowMessageBox(window, static_cast<atom::MessageBoxType>(type),
-                         buttons, default_id, cancel_id, options, title,
-                         message, detail, checkbox_label, checkbox_checked,
-                         icon, callback);
-  } else {
-    int chosen = atom::ShowMessageBox(
-        window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
-        cancel_id, options, title, message, detail, icon);
-    args->Return(chosen);
-  }
+int ShowMessageBoxSync(int type,
+                       const std::vector<std::string>& buttons,
+                       int default_id,
+                       int cancel_id,
+                       int options,
+                       const std::string& title,
+                       const std::string& message,
+                       const std::string& detail,
+                       const std::string& checkbox_label,
+                       bool checkbox_checked,
+                       const gfx::ImageSkia& icon,
+                       atom::NativeWindow* window) {
+  return atom::ShowMessageBoxSync(
+      window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
+      cancel_id, options, title, message, detail, icon);
+}
+
+void ResolvePromiseObject(atom::util::Promise promise,
+                          int result,
+                          bool checkbox_checked) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
+
+  dict.Set("response", result);
+  dict.Set("checkboxChecked", checkbox_checked);
+
+  promise.Resolve(dict.GetHandle());
+}
+
+v8::Local<v8::Promise> ShowMessageBox(int type,
+                                      const std::vector<std::string>& buttons,
+                                      int default_id,
+                                      int cancel_id,
+                                      int options,
+                                      const std::string& title,
+                                      const std::string& message,
+                                      const std::string& detail,
+                                      const std::string& checkbox_label,
+                                      bool checkbox_checked,
+                                      const gfx::ImageSkia& icon,
+                                      atom::NativeWindow* window,
+                                      mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  atom::ShowMessageBox(
+      window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
+      cancel_id, options, title, message, detail, checkbox_label,
+      checkbox_checked, icon,
+      base::BindOnce(&ResolvePromiseObject, std::move(promise)));
+
+  return handle;
 }
 
 void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
@@ -90,6 +114,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
@@ -104,4 +129,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_dialog, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_dialog, Initialize)

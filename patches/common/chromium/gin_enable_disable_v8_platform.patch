@@ -5,10 +5,10 @@ Subject: gin_enable_disable_v8_platform.patch
 
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 5577bbbb4eb0a97fadf156a9233dc153d427e55e..c8d5b58d711012bf9761ce073af00f30f803081b 100644
+index 5f8aea7105a188846fd48d199bb4e0ca2017a0ab..2514f591208372d6654ff9c5be50a51a39a881cb 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -120,9 +120,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -98,9 +98,10 @@ IsolateHolder::~IsolateHolder() {
  // static
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -36,7 +36,7 @@ index 413e6c5bcc74cd01730c5d4dc66eb92aaf7df8de..6c5d101fef97e880bee20d2f76e4b339
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 006f6f4a768597f227dacbf46e974e33f4e63763..09dd4718f7ba00dfa909859a088639016675245a 100644
+index 770f3cb52990e2a4160050234e474889daab751c..ea9817bf4c0ab5d84ca21abcc573956e9f09b5d3 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -204,12 +204,14 @@ enum LoadV8FileResult {

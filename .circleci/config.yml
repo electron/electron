@@ -22,12 +22,12 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "8.3.3"
+    xcode: "9.4.1"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "8.3.3"
+    xcode: "9.4.1"
 
 # Build configurations options.
 env-debug-build: &env-debug-build
@@ -35,6 +35,7 @@ env-debug-build: &env-debug-build
 
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
+  CHECK_DIST_MANIFEST: '1'
 
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
@@ -143,13 +144,16 @@ step-gclient-sync: &step-gclient-sync
   run:
     name: Gclient sync
     command: |
-      gclient config \
-        --name "src/electron" \
-        --unmanaged \
-        $GCLIENT_EXTRA_ARGS \
-        "$CIRCLE_REPOSITORY_URL"
+      # If we did not restore a complete sync then we need to sync for realz
+      if [ ! -s "src/electron/.circle-sync-done" ]; then
+        gclient config \
+          --name "src/electron" \
+          --unmanaged \
+          $GCLIENT_EXTRA_ARGS \
+          "$CIRCLE_REPOSITORY_URL"
 
-      gclient sync --with_branch_heads --with_tags
+        gclient sync --with_branch_heads --with_tags
+      fi
 
 step-setup-env-for-build: &step-setup-env-for-build
   run:
@@ -176,14 +180,20 @@ step-restore-brew-cache: &step-restore-brew-cache
     keys:
       - v1-brew-cache-{{ arch }}
 
-step-install-nodejs-on-mac: &step-install-nodejs-on-mac
+step-get-more-space-on-mac: &step-get-more-space-on-mac
   run:
-    name: Install Node.js 10 on MacOS
+    name: Free up space on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install node@10
-        echo 'export PATH="/usr/local/opt/node@10/bin:$PATH"' >> $BASH_ENV
+        sudo rm -rf /Library/Developer/CoreSimulator
+      fi
+
+step-delete-git-directories: &step-delete-git-directories
+  run:
+    name: Delete src/.git directory on MacOS to free space
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        sudo rm -rf src/.git
       fi
 
 # On macOS the npm install command during gclient sync was run on a linux
@@ -214,6 +224,15 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
         python src/electron/script/update-external-binaries.py
       fi
 
+step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
+  run:
+    name: Import and trust self-signed codesigning cert on MacOS
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        cd src/electron
+        ./script/codesign/import-testing-cert-ci.sh
+      fi
+
 step-install-gnutar-on-mac: &step-install-gnutar-on-mac
   run:
     name: Install gnu-tar on macos
@@ -238,6 +257,8 @@ step-gn-check: &step-gn-check
       cd src
       gn check out/Default //electron:electron_lib
       gn check out/Default //electron:electron_app
+      gn check out/Default //electron:manifests
+      gn check out/Default //electron/atom/common/api:mojo
 
 step-electron-build: &step-electron-build
   run:
@@ -262,6 +283,28 @@ step-electron-dist-build: &step-electron-dist-build
     command: |
       cd src
       ninja -C out/Default electron:electron_dist_zip
+      if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+        if [ "`uname`" == "Darwin" ]; then
+          target_os=mac
+          target_cpu=x64
+          if [ x"$MAS_BUILD" == x"true" ]; then
+            target_os=mac_mas
+          fi
+        elif [ "`uname`" == "Linux" ]; then
+          target_os=linux
+          if [ x"$TARGET_ARCH" == x ]; then
+            target_cpu=x64
+          elif [ "$TARGET_ARCH" == "ia32" ]; then
+            target_cpu=x86
+          else
+            target_cpu="$TARGET_ARCH"
+          fi
+        else
+          echo "Unknown system: `uname`"
+          exit 1
+        fi
+        electron/script/check-zip-manifest.py out/Default/dist.zip electron/script/dist_zip.$target_os.$target_cpu.manifest
+      fi
 
 step-electron-dist-store: &step-electron-dist-store
   store_artifacts:
@@ -439,44 +482,29 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       export BUILD_PATH="$PWD/out/Default"
       electron/script/zip-symbols.py -b $BUILD_PATH
 
-step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
+step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
-    name: Native mksnapshot GN gen (arm/arm64)
+    name: Generate cross arch snapshot (arm/arm64)
     command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
+      if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         cd src
-        gn gen out/native_mksnapshot --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS v8_enable_embedded_builtins = false"
-      else
-        echo 'Skipping native mksnapshot GN gen for non arm build'
+        if [ "$TARGET_ARCH" == "arm" ]; then
+          export MKSNAPSHOT_PATH="clang_x86_v8_arm"
+        elif [ "$TARGET_ARCH" == "arm64" ]; then
+          export MKSNAPSHOT_PATH="clang_x64_v8_arm64"
+        fi
+        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
+        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
+        mkdir cross-arch-snapshots
+        cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
       fi
 
-step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
-  run:
-    name: Native mksnapshot build (arm/arm64)
-    no_output_timeout: 30m
-    command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
-        cd src
-        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-      else
-        echo 'Skipping native mksnapshot build for non arm build'
-      fi
-
-step-maybe-native-mksnapshot-strip: &step-maybe-native-mksnapshot-strip
-  run:
-    name: Native mksnapshot binary strip (arm/arm64)
-    command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
-        cd src
-        electron/script/strip-binaries.py --file $PWD/out/native_mksnapshot/mksnapshot --target-cpu="$TARGET_ARCH"
-      else
-        echo 'Skipping native mksnapshot binary strip'
-      fi
-
-step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
+step-maybe-cross-arch-snapshot-store: &step-maybe-cross-arch-snapshot-store
   store_artifacts:
-    path: src/out/native_mksnapshot/mksnapshot.zip
-    destination: native_mksnapshot.zip
+    path: src/cross-arch-snapshots
+    destination: cross-arch-snapshots
 
 step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
   run:
@@ -499,6 +527,14 @@ step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
         npm run create-typescript-definitions
       fi
 
+step-fix-known-hosts-linux: &step-fix-known-hosts-linux
+  run:
+    name: Fix Known Hosts on Linux
+    command: |
+      if [ "`uname`" == "Linux" ]; then
+        ./src/electron/.circleci/fix-known-hosts.sh
+      fi
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -513,13 +549,15 @@ steps-lint: &steps-lint
         name: Download GN Binary
         command: |
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-          buildtools_revision="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep buildtools_revision -A1 | tr -d '\n' | cut -d\' -f4)"
+          gn_version="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
 
-          git clone https://chromium.googlesource.com/chromium/buildtools "buildtools"
-          (cd "buildtools" && git checkout "$buildtools_revision")
+          cipd ensure -ensure-file - -root . <<-CIPD
+          \$ServiceURL https://chrome-infra-packages.appspot.com/
+          @Subdir buildtools/linux64
+          gn/gn/linux-amd64 $gn_version
+          CIPD
+
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
-
-          download_from_google_storage --bucket chromium-gn -s "buildtools/linux64/gn.sha1"
     - run:
         name: Run Lint
         command: |
@@ -539,37 +577,85 @@ steps-checkout: &steps-checkout
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
+    - *step-get-more-space-on-mac
     - *step-install-gnutar-on-mac
 
+    - run:
+        name: Generate DEPS Hash
+        command: node src/electron/script/generate-deps-hash.js
+    - run:
+        name: Touch Sync Done
+        command: touch src/electron/.circle-sync-done
+    # Restore exact src cache based on the hash of DEPS and patches/*
+    # If no cache is matched EXACTLY then the .circle-sync-done file is empty
+    # If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
+    - restore_cache:
+        paths:
+          - ./src
+        keys:
+          - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+        name: Restoring src cache
+    # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
+    # If the src cache was restored above then this will match an empty cache
+    # If the src cache was not restored above then this will match a close git cache
     - restore_cache:
         paths:
           - ~/.gclient-cache
         keys:
-          - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
-          - v1-gclient-cache-{{ arch }}-
+          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
+        name: Conditionally restoring git cache
     - run:
         name: Set GIT_CACHE_PATH to make gclient to use the cache
         command: |
           # CircleCI does not support interpolation when setting environment variables.
           # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
           echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+    # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
+    # Persist the git cache based on the hash of DEPS and .circle-sync-done
+    # If the src cache was restored above then this will persist an empty cache
     - save_cache:
         paths:
           - ~/.gclient-cache
-        key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+        key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+        name: Persisting git cache
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - run:
+        name: Run Electron Only Hooks
+        command: gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    - run:
+        name: Generate DEPS Hash
+        command: (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+    # Mark the sync as done for future cache saving
+    - run:
+        name: Mark Sync Done
+        command: echo DONE > src/electron/.circle-sync-done
+    # Minimize the size of the cache
+    - run:
+        name: Remove some unused data to avoid storing it in the workspace/cache
+        command: |
+          rm -rf src/android_webview
+          rm -rf src/ios
+          rm -rf src/third_party/blink/web_tests
+          rm -rf src/third_party/blink/perf_tests
+          rm -rf src/third_party/hunspell_dictionaries
+          rm -rf src/third_party/WebKit/LayoutTests
+    # Save the src cache based on the deps hash
+    - save_cache:
+        paths:
+          - ./src
+        key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+        name: Persisting src cache
     - save_cache:
         paths:
           - /usr/local/Homebrew
         key: v1-brew-cache-{{ arch }}
-
-    - run:
-        name: Remove some unused data to avoid storing it in the workspace
-        command: |
-          rm -rf src/android_webview
-          rm -rf src/ios
-          rm -rf src/third_party/WebKit/LayoutTests
+        name: Persisting brew cache
     - persist_to_workspace:
         root: .
         paths:
@@ -611,7 +697,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
     - *step-gn-gen-default
@@ -631,12 +716,8 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # mksnapshot
     - *step-mksnapshot-build
     - *step-mksnapshot-store
-
-    # native_mksnapshot
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-strip
-    - *step-maybe-native-mksnapshot-store
+    - *step-maybe-cross-arch-snapshot
+    - *step-maybe-cross-arch-snapshot-store
 
     # ffmpeg
     - *step-ffmpeg-gn-gen
@@ -661,10 +742,11 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
+    - *step-get-more-space-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
     - *step-gn-gen-default
+    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build
@@ -678,12 +760,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     # mksnapshot
     - *step-mksnapshot-build
     - *step-mksnapshot-store
-
-    # native_mksnapshot
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-strip
-    - *step-maybe-native-mksnapshot-store
 
     # chromedriver
     - *step-electron-chromedriver-build
@@ -715,18 +791,6 @@ steps-chromedriver-build: &steps-chromedriver-build
 
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
-
-    - *step-maybe-notify-slack-failure
-
-steps-native-mksnapshot-build: &steps-native-mksnapshot-build
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-store
 
     - *step-maybe-notify-slack-failure
 
@@ -795,7 +859,8 @@ steps-tests: &steps-tests
     - *step-mksnapshot-unzip
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
-    - *step-install-nodejs-on-mac
+    - *step-fix-known-hosts-linux
+    - *step-install-signing-cert-on-mac
 
     - run:
         name: Run Electron tests
@@ -811,7 +876,13 @@ steps-tests: &steps-tests
     - run:
         name: Check test results existence
         command: |
-          MOCHA_FILE='src/junit/test-results.xml'
+          MOCHA_FILE='src/junit/test-results-remote.xml'
+          # Check if it exists and not empty.
+          if [ ! -s "$MOCHA_FILE" ]; then
+            exit 1
+          fi
+
+          MOCHA_FILE='src/junit/test-results-main.xml'
           # Check if it exists and not empty.
           if [ ! -s "$MOCHA_FILE" ]; then
             exit 1
@@ -822,6 +893,21 @@ steps-tests: &steps-tests
     - *step-verify-mksnapshot
 
     - *step-maybe-notify-slack-failure
+
+steps-test-nan: &steps-test-nan
+  steps:
+    - attach_workspace:
+          at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-linux-for-headless-testing
+    - *step-fix-known-hosts-linux
+    - run:
+        name: Run Nan Tests
+        command: |
+          cd src
+          export ELECTRON_OUT_DIR=Default
+          node electron/script/nan-spec-runner.js
 
 chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
@@ -1017,16 +1103,6 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
 
-  linux-arm-native-mksnapshot:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm
-      <<: *env-release-build
-      <<: *env-enable-sccache
-      <<: *env-send-slack-notifications
-    <<: *steps-native-mksnapshot-build
-
   linux-arm64-debug:
     <<: *machine-linux-2xlarge
     environment:
@@ -1090,16 +1166,6 @@ jobs:
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
-
-  linux-arm64-native-mksnapshot:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm64
-      <<: *env-release-build
-      <<: *env-enable-sccache
-      <<: *env-send-slack-notifications
-    <<: *steps-native-mksnapshot-build
 
   osx-testing:
     <<: *machine-mac-large
@@ -1248,6 +1314,14 @@ jobs:
       <<: *env-stack-dumping
     <<: *steps-tests
 
+  linux-x64-testing-nan:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-nan
+
   linux-x64-release-tests:
     <<: *machine-linux-medium
     environment:
@@ -1280,6 +1354,15 @@ jobs:
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-tests
+
+  linux-ia32-testing-nan:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-nan
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
@@ -1442,6 +1525,9 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
+      - linux-x64-testing-nan:
+          requires:
+            - linux-x64-testing
 
       - linux-ia32-debug:
           requires:
@@ -1450,6 +1536,9 @@ workflows:
           requires:
             - linux-checkout
       - linux-ia32-testing-tests:
+          requires:
+            - linux-ia32-testing
+      - linux-ia32-testing-nan:
           requires:
             - linux-ia32-testing
 
@@ -1565,9 +1654,6 @@ workflows:
       - linux-arm-release:
           requires:
             - linux-checkout
-      - linux-arm-native-mksnapshot:
-          requires:
-            - linux-checkout
       - linux-arm-chromedriver:
           requires:
             - linux-checkout
@@ -1575,12 +1661,9 @@ workflows:
           requires:
             - linux-arm-release
             - linux-arm-chromedriver
-            - linux-arm-native-mksnapshot
+
 
       - linux-arm64-release:
-          requires:
-            - linux-checkout
-      - linux-arm64-native-mksnapshot:
           requires:
             - linux-checkout
       - linux-arm64-chromedriver:
@@ -1590,7 +1673,6 @@ workflows:
           requires:
             - linux-arm64-release
             - linux-arm64-chromedriver
-            - linux-arm64-native-mksnapshot
 
   nightly-mac-release-test:
     triggers:

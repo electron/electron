@@ -145,6 +145,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   std::string GetTitle();
   void FlashFrame(bool flash);
   void SetSkipTaskbar(bool skip);
+  void SetExcludedFromShownWindowsMenu(bool excluded);
+  bool IsExcludedFromShownWindowsMenu();
   void SetSimpleFullScreen(bool simple_fullscreen);
   bool IsSimpleFullScreen();
   void SetKiosk(bool kiosk);
@@ -209,7 +211,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetIcon(mate::Handle<NativeImage> icon);
 #endif
 #if defined(OS_WIN)
-  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
+  typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
+                                       v8::Local<v8::Value>)>
       MessageCallback;
   bool HookWindowMessage(UINT message, const MessageCallback& callback);
   bool IsWindowMessageHooked(UINT message);

@@ -13,6 +13,7 @@ declare namespace Electron {
   }
 
   interface App {
+    _setDefaultAppPaths(packagePath: string | null): void;
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
@@ -39,6 +40,11 @@ declare namespace Electron {
     matches: {
       some: (input: (pattern: string) => boolean | RegExpMatchArray | null) => boolean;
     }
+    /**
+     * Whether to match all frames, or only the top one.
+     * https://developer.chrome.com/extensions/content_scripts#frames
+     */
+    allFrames: boolean
   }
 
   interface RendererProcessPreference {
@@ -50,23 +56,36 @@ declare namespace Electron {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
 
+  interface RemoteInternal extends Electron.Remote {
+    getGuestWebContents(guestInstanceId: number): Electron.WebContents;
+  }
+
+  interface WebContentsInternal extends Electron.WebContents {
+    _sendInternal(channel: string, ...args: any[]): void;
+    _sendInternalToAll(channel: string, ...args: any[]): void;
+  }
+
   const deprecate: ElectronInternal.DeprecationUtil;
 }
 
 declare namespace ElectronInternal {
   type DeprecationHandler = (message: string) => void;
   interface DeprecationUtil {
+    warnOnce(oldName: string, newName?: string): () => void;
     setHandler(handler: DeprecationHandler): void;
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;
     log(message: string): void;
     function(fn: Function, newName: string): Function;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
+    fnToProperty(module: any, prop: string, getter: string, setter: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
 
     promisify<T extends (...args: any[]) => any>(fn: T): T;
-    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, convertPromiseValue: (v: any) => any): T;
+
+    // convertPromiseValue: Temporarily disabled until it's used
+    promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, /*convertPromiseValue: (v: any) => any*/): T;
   }
 
   // Internal IPC has _replyInternal and NO reply method
@@ -74,9 +93,38 @@ declare namespace ElectronInternal {
     _replyInternal(...args: any[]): void;
   }
 
-  interface IpcMainInternal extends Electron.EventEmitter {
+  interface IpcMainInternal extends NodeJS.EventEmitter {
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
+  }
+
+  interface WebFrameInternal extends Electron.WebFrame {
+    getWebFrameId(window: Window): number;
+    allowGuestViewElementDefinition(window: Window, context: any): void;
+  }
+
+  interface WebFrameResizeEvent extends Electron.Event {
+    newWidth: number;
+    newHeight: number;
+  }
+
+  interface WebViewEvent extends Event {
+    url: string;
+    isMainFrame: boolean;
+  }
+
+  abstract class WebViewElement extends HTMLElement {
+    static observedAttributes: Array<string>;
+
+    public contentWindow: Window;
+
+    public connectedCallback(): void;
+    public attributeChangedCallback(): void;
+    public disconnectedCallback(): void;
+
+    // Created in web-view-impl
+    public getWebContents(): Electron.WebContents;
+    public getWebContentsId(): number;
   }
 }
 

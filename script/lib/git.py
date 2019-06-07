@@ -40,18 +40,23 @@ def get_repo_root(path):
   return get_repo_root(parent_path)
 
 
-def am(repo, patch_data, threeway=False, directory=None,
+def am(repo, patch_data, threeway=False, directory=None, exclude=None,
     committer_name=None, committer_email=None):
   args = []
   if threeway:
     args += ['--3way']
   if directory is not None:
     args += ['--directory', directory]
+  if exclude is not None:
+    for path_pattern in exclude:
+      args += ['--exclude', path_pattern]
+
   root_args = ['-C', repo]
   if committer_name is not None:
     root_args += ['-c', 'user.name=' + committer_name]
   if committer_email is not None:
     root_args += ['-c', 'user.email=' + committer_email]
+  root_args += ['-c', 'commit.gpgsign=false']
   command = ['git'] + root_args + ['am'] + args
   proc = subprocess.Popen(
       command,
@@ -81,6 +86,17 @@ def apply_patch(repo, patch_path, directory=None, index=False, reverse=False):
   return applied_successfully
 
 
+def import_patches(repo, **kwargs):
+  """same as am(), but we save the upstream HEAD so we can refer to it when we
+  later export patches"""
+  update_ref(
+      repo=repo,
+      ref='refs/patches/upstream-head',
+      newvalue='HEAD'
+  )
+  am(repo=repo, **kwargs)
+
+
 def get_patch(repo, commit_hash):
   args = ['git', '-C', repo, 'diff-tree',
           '-p',
@@ -95,6 +111,12 @@ def get_head_commit(repo):
   args = ['git', '-C', repo, 'rev-parse', 'HEAD']
 
   return subprocess.check_output(args).strip()
+
+
+def update_ref(repo, ref, newvalue):
+  args = ['git', '-C', repo, 'update-ref', ref, newvalue]
+
+  return subprocess.check_call(args)
 
 
 def reset(repo):

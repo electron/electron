@@ -5,7 +5,6 @@
 #include "atom/browser/native_window_views.h"
 
 #if defined(OS_WIN)
-#include <objbase.h>
 #include <wrl/client.h>
 #endif
 
@@ -23,7 +22,6 @@
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_constants.h"
-#include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
@@ -59,10 +57,8 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
-#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
-#include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
@@ -188,11 +184,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new AtomDesktopNativeWidgetAura(widget());
-  atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
-      this, widget(),
-      static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
-  params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
+  params.native_widget = new AtomDesktopNativeWidgetAura(this);
 #elif defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -380,6 +372,9 @@ void NativeWindowViews::Show() {
 
   widget()->native_widget_private()->Show(GetRestoredState(), gfx::Rect());
 
+  // explicitly focus the window
+  widget()->Activate();
+
   NotifyWindowShow();
 
 #if defined(USE_X11)
@@ -470,24 +465,15 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #endif
 }
 
+#if defined(USE_X11)
 void NativeWindowViews::Maximize() {
-#if defined(OS_WIN)
-  // For window without WS_THICKFRAME style, we can not call Maximize().
-  if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
-    restore_bounds_ = GetBounds();
-    auto display =
-        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
-    SetBounds(display.work_area(), false);
-    return;
-  }
-#endif
-
   if (IsVisible())
     widget()->Maximize();
   else
     widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                             gfx::Rect());
 }
+#endif
 
 void NativeWindowViews::Unmaximize() {
 #if defined(OS_WIN)
@@ -719,6 +705,13 @@ bool NativeWindowViews::IsMaximizable() {
 #else
   return true;  // Not implemented on Linux.
 #endif
+}
+
+void NativeWindowViews::SetExcludedFromShownWindowsMenu(bool excluded) {}
+
+bool NativeWindowViews::IsExcludedFromShownWindowsMenu() {
+  // return false on unsupported platforms
+  return false;
 }
 
 void NativeWindowViews::SetFullScreenable(bool fullscreenable) {

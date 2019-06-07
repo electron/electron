@@ -29,19 +29,19 @@ namespace atom {
 
 const char* ResourceTypeToString(content::ResourceType type) {
   switch (type) {
-    case content::RESOURCE_TYPE_MAIN_FRAME:
+    case content::ResourceType::kMainFrame:
       return "mainFrame";
-    case content::RESOURCE_TYPE_SUB_FRAME:
+    case content::ResourceType::kSubFrame:
       return "subFrame";
-    case content::RESOURCE_TYPE_STYLESHEET:
+    case content::ResourceType::kStylesheet:
       return "stylesheet";
-    case content::RESOURCE_TYPE_SCRIPT:
+    case content::ResourceType::kScript:
       return "script";
-    case content::RESOURCE_TYPE_IMAGE:
+    case content::ResourceType::kImage:
       return "image";
-    case content::RESOURCE_TYPE_OBJECT:
+    case content::ResourceType::kObject:
       return "object";
-    case content::RESOURCE_TYPE_XHR:
+    case content::ResourceType::kXhr:
       return "xhr";
     default:
       return "other";
@@ -70,17 +70,16 @@ void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
   return listener.Run(*(details.get()));
 }
 
-void RunResponseListener(
-    const AtomNetworkDelegate::ResponseListener& listener,
-    std::unique_ptr<base::DictionaryValue> details,
-    int render_process_id,
-    int render_frame_id,
-    const AtomNetworkDelegate::ResponseCallback& callback) {
+void RunResponseListener(const AtomNetworkDelegate::ResponseListener& listener,
+                         std::unique_ptr<base::DictionaryValue> details,
+                         int render_process_id,
+                         int render_frame_id,
+                         AtomNetworkDelegate::ResponseCallback callback) {
   int32_t id = GetWebContentsID(render_process_id, render_frame_id);
   // id must be greater than zero
   if (id)
     details->SetInteger("webContentsId", id);
-  return listener.Run(*(details.get()), callback);
+  return listener.Run(*(details.get()), std::move(callback));
 }
 
 // Test whether the URL of |request| matches |patterns|.
@@ -101,7 +100,7 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   FillRequestDetails(details, request);
   details->SetInteger("id", request->identifier());
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
-  const auto* info = content::ResourceRequestInfo::ForRequest(request);
+  auto* info = content::ResourceRequestInfo::ForRequest(request);
   if (info) {
     details->SetString("resourceType",
                        ResourceTypeToString(info->GetResourceType()));
@@ -149,9 +148,8 @@ void ToDictionary(base::DictionaryValue* details, const GURL& location) {
 }
 
 void ToDictionary(base::DictionaryValue* details,
-                  const net::HostPortPair& host_port) {
-  if (host_port.host().empty())
-    details->SetString("ip", host_port.host());
+                  const net::IPEndPoint& remote_endpoint) {
+  details->SetString("ip", remote_endpoint.ToStringWithoutPort());
 }
 
 void ToDictionary(base::DictionaryValue* details, bool from_cache) {
@@ -328,9 +326,9 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
   if (!base::ContainsKey(simple_listeners_, kOnBeforeRedirect))
     return;
 
-  HandleSimpleEvent(kOnBeforeRedirect, request, new_location,
-                    request->response_headers(), request->GetSocketAddress(),
-                    request->was_cached());
+  HandleSimpleEvent(
+      kOnBeforeRedirect, request, new_location, request->response_headers(),
+      request->GetResponseRemoteEndpoint(), request->was_cached());
 }
 
 void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request,
@@ -432,25 +430,25 @@ bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
   return false;
 }
 
-// TODO(deepak1556) : Enable after hooking into the reporting service
-// https://crbug.com/704259
 bool AtomNetworkDelegate::OnCanQueueReportingReport(
     const url::Origin& origin) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnCanSendReportingReports(
     std::set<url::Origin> origins,
-    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {}
+    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {
+  std::move(result_callback).Run(std::move(origins));
+}
 
 bool AtomNetworkDelegate::OnCanSetReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
-  return false;
+  return true;
 }
 
 bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request,
@@ -485,12 +483,12 @@ int AtomNetworkDelegate::HandleResponseEvent(
   callbacks_[request->identifier()] = std::move(callback);
 
   ResponseCallback response =
-      base::Bind(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
-                 base::Unretained(this), request->identifier(), out);
+      base::BindOnce(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
+                     base::Unretained(this), request->identifier(), out);
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(RunResponseListener, info.listener, std::move(details),
-                     render_process_id, render_frame_id, response));
+                     render_process_id, render_frame_id, std::move(response)));
   return net::ERR_IO_PENDING;
 }
 

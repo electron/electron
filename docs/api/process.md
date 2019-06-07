@@ -15,6 +15,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `hang()`
 - `getCreationTime()`
 - `getHeapStatistics()`
+- `getBlinkMemoryInfo()`
 - `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
 - `getSystemVersion()`
@@ -84,7 +85,7 @@ instead of the `--no-deprecation` command line flag.
 ### `process.enablePromiseAPIs`
 
 A `Boolean` that controls whether or not deprecation warnings are printed to `stderr` when
-formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true` 
+formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true`
 will enable deprecation warnings.
 
 ### `process.resourcesPath`
@@ -170,22 +171,27 @@ Returns `Object`:
 
 Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
 
-### `process.getProcessMemoryInfo()`
+### `process.getBlinkMemoryInfo()`
 
 Returns `Object`:
 
-* `residentSet` Integer _Linux_ and _Windows_ - The amount of memory 
-currently pinned to actual physical RAM in Kilobytes.
-* `private` Integer - The amount of memory not shared by other processes, such as
-  JS heap or HTML content in Kilobytes.
-* `shared` Integer - The amount of memory shared between processes, typically
-  memory consumed by the Electron code itself in Kilobytes.
+* `allocated` Integer - Size of all allocated objects in Kilobytes.
+* `marked` Integer - Size of all marked objects in Kilobytes.
+* `total` Integer - Total allocated space in Kilobytes.
+
+Returns an object with Blink memory information.
+It can be useful for debugging rendering / DOM related memory issues.
+Note that all values are reported in Kilobytes.
+
+### `process.getProcessMemoryInfo()`
+
+Returns `Promise<ProcessMemoryInfo>` - Resolves with a [ProcessMemoryInfo](structures/process-memory-info.md)
 
 Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
 This api should be called after app ready.
 
-Chromium does not provide `residentSet` value for macOS. This is because macOS 
+Chromium does not provide `residentSet` value for macOS. This is because macOS
 performs in-memory compression of pages that haven't been recently used. As a
 result the resident set size value is not what one would expect. `private` memory
 is more representative of the actual pre-compression memory usage of the process
@@ -212,9 +218,10 @@ that all statistics are reported in Kilobytes.
 Returns `String` - The version of the host operating system.
 
 Examples:
-- macOS: `10.13.6`
-- Windows: `10.0.17763`
-- Linux: `4.15.0-45-generic`
+
+* `macOS` -> `10.13.6`
+* `Windows` -> `10.0.17763`
+* `Linux` -> `4.15.0-45-generic`
 
 **Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 

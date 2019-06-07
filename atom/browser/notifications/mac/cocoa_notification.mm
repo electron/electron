@@ -4,6 +4,9 @@
 
 #include "atom/browser/notifications/mac/cocoa_notification.h"
 
+#include <string>
+#include <utility>
+
 #include "atom/browser/notifications/notification_delegate.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "base/mac/mac_util.h"
@@ -12,8 +15,6 @@
 #include "skia/ext/skia_utils_mac.h"
 
 namespace atom {
-
-int g_identifier_ = 1;
 
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
@@ -29,7 +30,9 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
 
   NSString* identifier =
-      [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
+      [NSString stringWithFormat:@"%@:notification:%@",
+                                 [[NSBundle mainBundle] bundleIdentifier],
+                                 [[[NSUUID alloc] init] UUIDString]];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
@@ -109,6 +112,8 @@ void CocoaNotification::Dismiss() {
   NotificationDismissed();
 
   this->LogAction("dismissed");
+
+  notification_.reset(nil);
 }
 
 void CocoaNotification::NotificationDisplayed() {

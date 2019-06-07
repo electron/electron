@@ -8,7 +8,6 @@
 
 #include <wincrypt.h>
 
-#include "base/callback.h"
 #include "net/cert/cert_database.h"
 #include "net/cert/x509_util_win.h"
 
@@ -57,14 +56,16 @@ CERT_CHAIN_PARA GetCertificateChainParameters() {
   return params;
 }
 
-void ShowCertificateTrust(atom::NativeWindow* parent_window,
-                          const scoped_refptr<net::X509Certificate>& cert,
-                          const std::string& message,
-                          const ShowTrustCallback& callback) {
+v8::Local<v8::Promise> ShowCertificateTrust(
+    atom::NativeWindow* parent_window,
+    const scoped_refptr<net::X509Certificate>& cert,
+    const std::string& message) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  atom::util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   PCCERT_CHAIN_CONTEXT chain_context;
-
   auto cert_context = net::x509_util::CreateCertContextWithChain(cert.get());
-
   auto params = GetCertificateChainParameters();
 
   if (CertGetCertificateChain(NULL, cert_context.get(), NULL, NULL, &params,
@@ -79,7 +80,8 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
     CertFreeCertificateChain(chain_context);
   }
 
-  callback.Run();
+  promise.Resolve();
+  return handle;
 }
 
 }  // namespace certificate_trust

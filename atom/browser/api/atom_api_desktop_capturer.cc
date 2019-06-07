@@ -10,6 +10,7 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
@@ -25,8 +26,6 @@
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
 #endif  // defined(OS_WIN)
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -88,10 +87,6 @@ void DesktopCapturer::StartHandling(bool capture_window,
   capture_screen_ = capture_screen;
 
   {
-    // Remove this once
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=795340 is fixed.
-    base::ScopedAllowBaseSyncPrimitivesForTesting
-        scoped_allow_base_sync_primitives;
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
@@ -170,8 +165,12 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       std::vector<std::string> device_names;
       // Crucially, this list of device names will be in the same order as
       // |media_list_sources|.
-      webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
-          &device_names);
+      if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
+              &device_names)) {
+        Emit("error", "Failed to get sources.");
+        return;
+      }
+
       int device_name_index = 0;
       for (auto& source : screen_sources) {
         const auto& device_name = device_names[device_name_index++];
@@ -181,13 +180,13 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         const int64_t device_id =
             display::win::DisplayInfo::DeviceIdFromDeviceName(
                 wide_device_name.c_str());
-        source.display_id = base::Int64ToString(device_id);
+        source.display_id = base::NumberToString(device_id);
       }
     }
 #elif defined(OS_MACOSX)
     // On Mac, the IDs across the APIs match.
     for (auto& source : screen_sources) {
-      source.display_id = base::Int64ToString(source.media_list_source.id.id);
+      source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
 #endif  // defined(OS_WIN)
     // TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome
@@ -227,9 +226,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("desktopCapturer", atom::api::DesktopCapturer::Create(isolate));
+  dict.SetMethod("createDesktopCapturer", &atom::api::DesktopCapturer::Create);
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_desktop_capturer, Initialize);
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_desktop_capturer, Initialize)

@@ -12,6 +12,7 @@
 #include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "atom/common/platform_util.h"
+#include "base/base64.h"
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -37,10 +38,10 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
-#include "net/base/io_buffer.h"
 #include "net/http/http_response_headers.h"
-#include "net/url_request/url_fetcher.h"
-#include "net/url_request/url_fetcher_response_writer.h"
+#include "services/network/public/cpp/simple_url_loader.h"
+#include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "third_party/blink/public/common/logging/logging_utils.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
@@ -53,14 +54,14 @@ const double kPresetZoomFactors[] = {0.25, 0.333, 0.5,  0.666, 0.75, 0.9,
                                      2.5,  3.0,   4.0,  5.0};
 
 const char kChromeUIDevToolsURL[] =
-    "chrome-devtools://devtools/bundled/devtools_app.html?"
+    "devtools://devtools/bundled/devtools_app.html?"
     "remoteBase=%s&"
     "can_dock=%s&"
     "toolbarColor=rgba(223,223,223,1)&"
     "textColor=rgba(0,0,0,1)&"
     "experiments=true";
 const char kChromeUIDevToolsRemoteFrontendBase[] =
-    "https://chrome-devtools-frontend.appspot.com/";
+    "https://devtools-frontend.appspot.com/";
 const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 
 const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
@@ -74,20 +75,29 @@ const char kTitleFormat[] = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
-void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
-  dict->SetInteger("x", bounds.x());
-  dict->SetInteger("y", bounds.y());
-  dict->SetInteger("width", bounds.width());
-  dict->SetInteger("height", bounds.height());
+base::Value RectToDictionary(const gfx::Rect& bounds) {
+  base::Value dict(base::Value::Type::DICTIONARY);
+  dict.SetKey("x", base::Value(bounds.x()));
+  dict.SetKey("y", base::Value(bounds.y()));
+  dict.SetKey("width", base::Value(bounds.width()));
+  dict.SetKey("height", base::Value(bounds.height()));
+  return dict;
 }
 
-void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
-  int x = 0, y = 0, width = 800, height = 600;
-  dict.GetInteger("x", &x);
-  dict.GetInteger("y", &y);
-  dict.GetInteger("width", &width);
-  dict.GetInteger("height", &height);
-  *bounds = gfx::Rect(x, y, width, height);
+gfx::Rect DictionaryToRect(const base::Value* dict) {
+  const base::Value* found = dict->FindKey("x");
+  int x = found ? found->GetInt() : 0;
+
+  found = dict->FindKey("y");
+  int y = found ? found->GetInt() : 0;
+
+  found = dict->FindKey("width");
+  int width = found ? found->GetInt() : 800;
+
+  found = dict->FindKey("height");
+  int height = found ? found->GetInt() : 600;
+
+  return gfx::Rect(x, y, width, height);
 }
 
 bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
@@ -136,72 +146,90 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-// ResponseWriter -------------------------------------------------------------
+}  // namespace
 
-class ResponseWriter : public net::URLFetcherResponseWriter {
+class InspectableWebContentsImpl::NetworkResourceLoader
+    : public network::SimpleURLLoaderStreamConsumer {
  public:
-  ResponseWriter(base::WeakPtr<InspectableWebContentsImpl> bindings,
-                 int stream_id);
-  ~ResponseWriter() override;
+  NetworkResourceLoader(int stream_id,
+                        InspectableWebContentsImpl* bindings,
+                        std::unique_ptr<network::SimpleURLLoader> loader,
+                        network::mojom::URLLoaderFactory* url_loader_factory,
+                        const DispatchCallback& callback)
+      : stream_id_(stream_id),
+        bindings_(bindings),
+        loader_(std::move(loader)),
+        callback_(callback) {
+    loader_->SetOnResponseStartedCallback(base::BindOnce(
+        &NetworkResourceLoader::OnResponseStarted, base::Unretained(this)));
+    loader_->DownloadAsStream(url_loader_factory, this);
+  }
 
-  // URLFetcherResponseWriter overrides:
-  int Initialize(net::CompletionOnceCallback callback) override;
-  int Write(net::IOBuffer* buffer,
-            int num_bytes,
-            net::CompletionOnceCallback callback) override;
-  int Finish(int net_error, net::CompletionOnceCallback callback) override;
+  NetworkResourceLoader(const NetworkResourceLoader&) = delete;
+  NetworkResourceLoader& operator=(const NetworkResourceLoader&) = delete;
 
  private:
-  base::WeakPtr<InspectableWebContentsImpl> bindings_;
-  int stream_id_;
+  void OnResponseStarted(const GURL& final_url,
+                         const network::ResourceResponseHead& response_head) {
+    response_headers_ = response_head.headers;
+  }
 
-  DISALLOW_COPY_AND_ASSIGN(ResponseWriter);
+  void OnDataReceived(base::StringPiece chunk,
+                      base::OnceClosure resume) override {
+    base::Value chunkValue;
+
+    bool encoded = !base::IsStringUTF8(chunk);
+    if (encoded) {
+      std::string encoded_string;
+      base::Base64Encode(chunk, &encoded_string);
+      chunkValue = base::Value(std::move(encoded_string));
+    } else {
+      chunkValue = base::Value(chunk);
+    }
+    base::Value id(stream_id_);
+    base::Value encodedValue(encoded);
+
+    bindings_->CallClientFunction("DevToolsAPI.streamWrite", &id, &chunkValue,
+                                  &encodedValue);
+    std::move(resume).Run();
+  }
+
+  void OnComplete(bool success) override {
+    base::DictionaryValue response;
+    response.SetInteger("statusCode", response_headers_
+                                          ? response_headers_->response_code()
+                                          : 200);
+
+    auto headers = std::make_unique<base::DictionaryValue>();
+    size_t iterator = 0;
+    std::string name;
+    std::string value;
+    while (response_headers_ &&
+           response_headers_->EnumerateHeaderLines(&iterator, &name, &value))
+      headers->SetString(name, value);
+
+    response.Set("headers", std::move(headers));
+    callback_.Run(&response);
+
+    bindings_->loaders_.erase(bindings_->loaders_.find(this));
+  }
+
+  void OnRetry(base::OnceClosure start_retry) override {}
+
+  const int stream_id_;
+  InspectableWebContentsImpl* const bindings_;
+  std::unique_ptr<network::SimpleURLLoader> loader_;
+  DispatchCallback callback_;
+  scoped_refptr<net::HttpResponseHeaders> response_headers_;
 };
-
-ResponseWriter::ResponseWriter(
-    base::WeakPtr<InspectableWebContentsImpl> bindings,
-    int stream_id)
-    : bindings_(bindings), stream_id_(stream_id) {}
-
-ResponseWriter::~ResponseWriter() {}
-
-int ResponseWriter::Initialize(net::CompletionOnceCallback callback) {
-  return net::OK;
-}
-
-int ResponseWriter::Write(net::IOBuffer* buffer,
-                          int num_bytes,
-                          net::CompletionOnceCallback callback) {
-  std::string chunk = std::string(buffer->data(), num_bytes);
-  if (!base::IsStringUTF8(chunk))
-    return num_bytes;
-
-  base::Value* id = new base::Value(stream_id_);
-  base::Value* chunk_value = new base::Value(chunk);
-
-  base::PostTaskWithTraits(
-      FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&InspectableWebContentsImpl::CallClientFunction, bindings_,
-                     "DevToolsAPI.streamWrite", base::Owned(id),
-                     base::Owned(chunk_value), nullptr));
-  return num_bytes;
-}
-
-int ResponseWriter::Finish(int net_error,
-                           net::CompletionOnceCallback callback) {
-  return net::OK;
-}
-
-}  // namespace
 
 // Implemented separately on each platform.
 InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  std::unique_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
-  RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
-  registry->RegisterDictionaryPref(kDevToolsBoundsPref, std::move(bounds_dict));
+  registry->RegisterDictionaryPref(kDevToolsBoundsPref,
+                                   RectToDictionary(gfx::Rect(0, 0, 800, 600)));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
@@ -218,9 +246,9 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       is_guest_(is_guest),
       view_(CreateInspectableContentsView(this)),
       weak_factory_(this) {
-  auto* bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
-  if (bounds_dict) {
-    DictionaryToRect(*bounds_dict, &devtools_bounds_);
+  const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
+  if (bounds_dict->is_dict()) {
+    devtools_bounds_ = DictionaryToRect(bounds_dict);
     // Sometimes the devtools window is out of screen or has too small size.
     if (devtools_bounds_.height() < 100 || devtools_bounds_.width() < 100) {
       devtools_bounds_.set_height(600);
@@ -402,7 +430,7 @@ void InspectableWebContentsImpl::CallClientFunction(
   }
   javascript.append(");");
   GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-      base::UTF8ToUTF16(javascript));
+      base::UTF8ToUTF16(javascript), base::NullCallback());
 }
 
 gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
@@ -410,9 +438,7 @@ gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
 }
 
 void InspectableWebContentsImpl::SaveDevToolsBounds(const gfx::Rect& bounds) {
-  base::DictionaryValue bounds_dict;
-  RectToDictionary(bounds, &bounds_dict);
-  pref_service_->Set(kDevToolsBoundsPref, bounds_dict);
+  pref_service_->Set(kDevToolsBoundsPref, RectToDictionary(bounds));
   devtools_bounds_ = bounds;
 }
 
@@ -451,7 +477,8 @@ void InspectableWebContentsImpl::LoadCompleted() {
     }
     base::string16 javascript = base::UTF8ToUTF16(
         "Components.dockController.setDockSide(\"" + dock_state_ + "\");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+        javascript, base::NullCallback());
   }
 
   if (view_->GetDelegate())
@@ -489,19 +516,19 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     return;
   }
 
-  auto* browser_context = GetDevToolsWebContents()->GetBrowserContext();
+  auto resource_request = std::make_unique<network::ResourceRequest>();
+  resource_request->url = gurl;
+  resource_request->headers.AddHeadersFromString(headers);
 
-  net::URLFetcher* fetcher =
-      (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
-  pending_requests_[fetcher] = callback;
-  fetcher->SetRequestContext(
-      content::BrowserContext::GetDefaultStoragePartition(browser_context)
-          ->GetURLRequestContext());
-  fetcher->SetExtraRequestHeaders(headers);
-  fetcher->SaveResponseWithWriter(
-      std::unique_ptr<net::URLFetcherResponseWriter>(
-          new ResponseWriter(weak_factory_.GetWeakPtr(), stream_id)));
-  fetcher->Start();
+  auto* partition = content::BrowserContext::GetDefaultStoragePartition(
+      GetDevToolsWebContents()->GetBrowserContext());
+  auto factory = partition->GetURLLoaderFactoryForBrowserProcess();
+
+  auto simple_url_loader = network::SimpleURLLoader::Create(
+      std::move(resource_request), NO_TRAFFIC_ANNOTATION_YET);
+  auto resource_loader = std::make_unique<NetworkResourceLoader>(
+      stream_id, this, std::move(simple_url_loader), factory.get(), callback);
+  loaders_.insert(std::move(resource_loader));
 }
 
 void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
@@ -687,7 +714,8 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
   base::ListValue* params = &empty_params;
 
   base::DictionaryValue* dict = nullptr;
-  std::unique_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  std::unique_ptr<base::Value> parsed_message(
+      base::JSONReader::ReadDeprecated(message));
   if (!parsed_message || !parsed_message->GetAsDictionary(&dict) ||
       !dict->GetString(kFrontendHostMethod, &method) ||
       (dict->HasKey(kFrontendHostParams) &&
@@ -698,8 +726,8 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
   int id = 0;
   dict->GetInteger(kFrontendHostId, &id);
   embedder_message_dispatcher_->Dispatch(
-      base::Bind(&InspectableWebContentsImpl::SendMessageAck,
-                 weak_factory_.GetWeakPtr(), id),
+      base::BindRepeating(&InspectableWebContentsImpl::SendMessageAck,
+                          weak_factory_.GetWeakPtr(), id),
       method, params);
 }
 
@@ -712,7 +740,8 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
   if (message.length() < kMaxMessageChunkSize) {
     base::string16 javascript =
         base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + message + ");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+        javascript, base::NullCallback());
     return;
   }
 
@@ -734,8 +763,9 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
     return;
   frontend_host_ = content::DevToolsFrontendHost::Create(
       new_host,
-      base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                 weak_factory_.GetWeakPtr()));
+      base::BindRepeating(
+          &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+          weak_factory_.GetWeakPtr()));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
@@ -745,20 +775,19 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
   Detach();
   embedder_message_dispatcher_.reset();
 
-  for (const auto& pair : pending_requests_)
-    delete pair.first;
-
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsImpl::DidAddMessageToConsole(
     content::WebContents* source,
-    int32_t level,
+    blink::mojom::ConsoleMessageLevel level,
     const base::string16& message,
     int32_t line_no,
     const base::string16& source_id) {
-  logging::LogMessage("CONSOLE", line_no, level).stream()
+  logging::LogMessage("CONSOLE", line_no,
+                      blink::ConsoleMessageLevelToLogSeverity(level))
+          .stream()
       << "\"" << message << "\", source: " << source_id << " (" << line_no
       << ")";
   return true;
@@ -838,7 +867,7 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
     }
     frontend_host_ = content::DevToolsFrontendHost::Create(
         web_contents()->GetMainFrame(),
-        base::Bind(
+        base::BindRepeating(
             &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
             base::Unretained(this)));
     return;
@@ -864,35 +893,8 @@ void InspectableWebContentsImpl::DidFinishNavigation(
                                    base::GenerateGUID().c_str());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
-  frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script));
-}
-
-void InspectableWebContentsImpl::OnURLFetchComplete(
-    const net::URLFetcher* source) {
-  DCHECK(source);
-  auto it = pending_requests_.find(source);
-  DCHECK(it != pending_requests_.end());
-
-  base::DictionaryValue response;
-
-  net::HttpResponseHeaders* rh = source->GetResponseHeaders();
-  response.SetInteger("statusCode", rh ? rh->response_code() : 200);
-
-  {
-    auto headers = std::make_unique<base::DictionaryValue>();
-
-    size_t iterator = 0;
-    std::string name;
-    std::string value;
-    while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))
-      headers->SetString(name, value);
-
-    response.Set("headers", std::move(headers));
-  }
-
-  it->second.Run(&response);
-  pending_requests_.erase(it);
-  delete source;
+  frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),
+                                   base::NullCallback());
 }
 
 void InspectableWebContentsImpl::SendMessageAck(int request_id,

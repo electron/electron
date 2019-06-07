@@ -142,6 +142,10 @@ bool Browser::IsUnityRunning() {
   return unity::IsRunning();
 }
 
+bool Browser::IsEmojiPanelSupported() {
+  return false;
+}
+
 void Browser::ShowAboutPanel() {
   std::string app_name, version, copyright, icon_path, website;
 

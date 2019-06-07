@@ -187,9 +187,9 @@ class PdfViewerUI::ResourceRequester
 
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
-        base::Bind(&CallMigrationCallback<StreamResponseCallback>,
-                   base::Passed(&stream_response_cb_),
-                   base::Passed(&stream_info_)));
+        base::BindOnce(&CallMigrationCallback<StreamResponseCallback>,
+                       base::Passed(&stream_response_cb_),
+                       base::Passed(&stream_info_)));
   }
 
  private:
@@ -222,7 +222,6 @@ bool PdfViewerUI::OnMessageReceived(
     content::RenderFrameHost* render_frame_host) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(PdfViewerUI, message)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_PDFSaveURLAs, OnSaveURLAs)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
@@ -247,9 +246,9 @@ void PdfViewerUI::RenderFrameCreated(content::RenderFrameHost* rfh) {
   resource_requester_ = new ResourceRequester(std::move(callback));
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
-      base::Bind(&ResourceRequester::StartRequest, resource_requester_,
-                 GURL(src_), GURL(kPdfViewerUIOrigin), render_process_id,
-                 render_view_id, render_frame_id, resource_context));
+      base::BindOnce(&ResourceRequester::StartRequest, resource_requester_,
+                     GURL(src_), GURL(kPdfViewerUIOrigin), render_process_id,
+                     render_view_id, render_frame_id, resource_context));
 }
 
 void PdfViewerUI::OnSaveURLAs(const GURL& url,

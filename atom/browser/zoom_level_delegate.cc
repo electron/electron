@@ -160,8 +160,9 @@ void ZoomLevelDelegate::InitHostZoomMap(content::HostZoomMap* host_zoom_map) {
     // by calls to HostZoomMap::SetZoomLevelForHost().
     ExtractPerHostZoomLevels(host_zoom_dictionary);
   }
-  zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(base::Bind(
-      &ZoomLevelDelegate::OnZoomLevelChanged, base::Unretained(this)));
+  zoom_subscription_ =
+      host_zoom_map_->AddZoomLevelChangedCallback(base::BindRepeating(
+          &ZoomLevelDelegate::OnZoomLevelChanged, base::Unretained(this)));
 }
 
 }  // namespace atom

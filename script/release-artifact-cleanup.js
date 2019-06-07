@@ -12,15 +12,12 @@ const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
 const { getCurrentBranch } = require('./lib/utils.js')
 
-const octokit = require('@octokit/rest')()
-const path = require('path')
-
-const gitDir = path.resolve(__dirname, '..')
-
-octokit.authenticate({
-  type: 'token',
-  token: process.env.ELECTRON_GITHUB_TOKEN
+const octokit = require('@octokit/rest')({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
 })
+
+const path = require('path')
+const gitDir = path.resolve(__dirname, '..')
 
 function getLastBumpCommit (tag) {
   const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()

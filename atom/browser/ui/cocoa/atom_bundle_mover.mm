@@ -4,6 +4,8 @@
 
 #import "atom/browser/ui/cocoa/atom_bundle_mover.h"
 
+#include <string>
+
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
@@ -389,19 +391,14 @@ bool AtomBundleMover::Trash(NSString* path) {
   // This allows us to trash the app in macOS Sierra even when the app is
   // running inside an app translocation image.
   if (!result) {
+    auto* code = R"str(
+set theFile to POSIX file "%@"
+tell application "Finder"
+move theFile to trash
+end tell
+)str";
     NSAppleScript* appleScript = [[[NSAppleScript alloc]
-        initWithSource:
-            [NSString
-                stringWithFormat:
-                    @"\
-                    set theFile to POSIX file \"%@\" "
-                    @"\n\
-                       tell application \"Finder\" "
-                    @"\n\
-                        move theFile to trash \n\
-   "
-                    @"                   end tell",
-                    path]] autorelease];
+        initWithSource:[NSString stringWithFormat:@(code), path]] autorelease];
     NSDictionary* errorDict = nil;
     NSAppleEventDescriptor* scriptResult =
         [appleScript executeAndReturnError:&errorDict];

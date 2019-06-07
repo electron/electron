@@ -182,8 +182,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 // Empties the source menu items to the destination.
 - (void)moveMenuItems:(NSMenu*)source to:(NSMenu*)destination {
-  const long count = [source numberOfItems];
-  for (long index = 0; index < count; index++) {
+  const NSInteger count = [source numberOfItems];
+  for (NSInteger index = 0; index < count; index++) {
     NSMenuItem* removedItem = [[[source itemAtIndex:0] retain] autorelease];
     [source removeItemAtIndex:0];
     [destination addItem:removedItem];

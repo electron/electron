@@ -30,10 +30,10 @@ ResolveProxyHelper::~ResolveProxyHelper() {
 }
 
 void ResolveProxyHelper::ResolveProxy(const GURL& url,
-                                      const ResolveProxyCallback& callback) {
+                                      ResolveProxyCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   // Enqueue the pending request.
-  pending_requests_.push_back(PendingRequest(url, callback));
+  pending_requests_.push_back(PendingRequest(url, std::move(callback)));
 
   // If nothing is in progress, start.
   if (!binding_.is_bound()) {
@@ -76,7 +76,7 @@ void ResolveProxyHelper::OnProxyLookupComplete(
     proxy = proxy_info->ToPacString();
 
   if (!completed_request.callback.is_null())
-    completed_request.callback.Run(proxy);
+    std::move(completed_request.callback).Run(proxy);
 
   // Start the next request.
   if (!pending_requests_.empty())
@@ -85,8 +85,8 @@ void ResolveProxyHelper::OnProxyLookupComplete(
 
 ResolveProxyHelper::PendingRequest::PendingRequest(
     const GURL& url,
-    const ResolveProxyCallback& callback)
-    : url(url), callback(callback) {}
+    ResolveProxyCallback callback)
+    : url(url), callback(std::move(callback)) {}
 
 ResolveProxyHelper::PendingRequest::PendingRequest(
     ResolveProxyHelper::PendingRequest&& pending_request) = default;

@@ -2,12 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/common/node_includes.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
-// clang-format off
-#include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
-// clang-format on
 
 namespace {
 
@@ -43,6 +41,14 @@ bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
+bool IsComponentBuild() {
+#if defined(COMPONENT_BUILD)
+  return true;
+#else
+  return false;
+#endif
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -57,8 +63,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
+  dict.SetMethod("isComponentBuild", &IsComponentBuild);
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_features, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_features, Initialize)

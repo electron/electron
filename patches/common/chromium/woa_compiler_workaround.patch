@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Richard Townsend <richard.townsend@arm.com>
+Date: Mon, 3 Jun 2019 09:52:49 +0100
+Subject: build: pull in a fixed compiler for Windows on Arm
+
+Due to a code-generation defect in the version of Clang used for the M76
+branch related to virtual method thunks, it's necessary to build M76
+with a later version of Clang. This change pulls in a corrected version
+by setting ELECTRON_BUILDING_WOA=1 or similar in the environment.
+
+This PR is only intended to be a temporary workaround and will be
+removed when Electron's Chromium updates to a compiler unaffected by
+this issue.
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index c14a188f16c41002088b2f8451ea3cab7f2ff4e9..b067774bc2c1d833142ff848a9faa5d4bac0b4cd 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -40,6 +40,11 @@ CLANG_REVISION = '67510fac36d27b2e22c7cd955fc167136b737b93'
+ CLANG_SVN_REVISION = '361212'
+ CLANG_SUB_REVISION = 3
+ 
++if os.getenv('ELECTRON_BUILDING_WOA'):
++    CLANG_REVISION = '56bee1a90a71876cb5067b108bf5715fa1c4e843'
++    CLANG_SVN_REVISION = '361657'
++    CLANG_SUB_REVISION = 1
++
+ PACKAGE_VERSION = '%s-%s-%s' % (CLANG_SVN_REVISION, CLANG_REVISION[:8],
+                                 CLANG_SUB_REVISION)
+ RELEASE_VERSION = '9.0.0'

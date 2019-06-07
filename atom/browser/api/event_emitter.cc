@@ -4,14 +4,15 @@
 
 #include "atom/browser/api/event_emitter.h"
 
+#include <utility>
+
 #include "atom/browser/api/event.h"
+#include "atom/common/node_includes.h"
 #include "content/public/browser/render_frame_host.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/events/event_constants.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -43,16 +44,18 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
 
 namespace internal {
 
-v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
-                                    v8::Local<v8::Object> object,
-                                    content::RenderFrameHost* sender,
-                                    IPC::Message* message) {
+v8::Local<v8::Object> CreateJSEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> object,
+    content::RenderFrameHost* sender,
+    base::Optional<atom::mojom::ElectronBrowser::MessageSyncCallback>
+        callback) {
   v8::Local<v8::Object> event;
-  bool use_native_event = sender && message;
+  bool use_native_event = sender && callback;
 
   if (use_native_event) {
     mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
-    native_event->SetSenderAndMessage(sender, message);
+    native_event->SetSenderAndMessage(sender, std::move(callback));
     event = v8::Local<v8::Object>::Cast(native_event.ToV8());
   } else {
     event = CreateEventObject(isolate);

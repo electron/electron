@@ -20,6 +20,7 @@ class NodeDebugger {
   ~NodeDebugger();
 
   void Start();
+  void Stop();
 
  private:
   node::Environment* env_;

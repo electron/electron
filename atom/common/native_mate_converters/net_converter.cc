@@ -11,6 +11,7 @@
 
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -23,9 +24,8 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
+#include "services/network/public/cpp/resource_request.h"
 #include "storage/browser/blob/upload_blob_element_reader.h"
-
-#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -51,15 +51,15 @@ bool CertFromData(const std::string& data,
 }  // namespace
 
 // static
-v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
+v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
     v8::Isolate* isolate,
-    const net::AuthChallengeInfo* val) {
+    const net::AuthChallengeInfo& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("isProxy", val->is_proxy);
-  dict.Set("scheme", val->scheme);
-  dict.Set("host", val->challenger.host());
-  dict.Set("port", static_cast<uint32_t>(val->challenger.port()));
-  dict.Set("realm", val->realm);
+  dict.Set("isProxy", val.is_proxy);
+  dict.Set("scheme", val.scheme);
+  dict.Set("host", val.challenger.host());
+  dict.Set("port", static_cast<uint32_t>(val.challenger.port()));
+  dict.Set("realm", val.realm);
   return mate::ConvertToV8(isolate, dict);
 }
 
@@ -211,7 +211,8 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     if (localVal->IsArray()) {
       auto values = v8::Local<v8::Array>::Cast(localVal);
       for (uint32_t j = 0; j < values->Length(); j++) {
-        if (!addHeaderFromValue(key, values->Get(j))) {
+        if (!addHeaderFromValue(key,
+                                values->Get(context, j).ToLocalChecked())) {
           return false;
         }
       }
@@ -222,6 +223,22 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     }
   }
   return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
+    v8::Isolate* isolate,
+    const network::ResourceRequest& val) {
+  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  dict.Set("method", val.method);
+  dict.Set("url", val.url.spec());
+  dict.Set("referrer", val.referrer.spec());
+  mate::Dictionary headers(isolate, v8::Object::New(isolate));
+  for (net::HttpRequestHeaders::Iterator it(val.headers); it.GetNext();)
+    headers.Set(it.name(), it.value());
+  dict.Set("headers", headers);
+  // FIXME(zcbenz): Figure out how to support uploadData.
+  return dict.GetHandle();
 }
 
 }  // namespace mate

@@ -19,12 +19,12 @@ namespace atom {
 
 class NativeWindow;
 
-enum MessageBoxType {
-  MESSAGE_BOX_TYPE_NONE = 0,
-  MESSAGE_BOX_TYPE_INFORMATION,
-  MESSAGE_BOX_TYPE_WARNING,
-  MESSAGE_BOX_TYPE_ERROR,
-  MESSAGE_BOX_TYPE_QUESTION,
+enum class MessageBoxType {
+  kNone = 0,
+  kInformation,
+  kWarning,
+  kError,
+  kQuestion,
 };
 
 enum MessageBoxOptions {
@@ -32,19 +32,19 @@ enum MessageBoxOptions {
   MESSAGE_BOX_NO_LINK = 1 << 0,
 };
 
-typedef base::Callback<void(int code, bool checkbox_checked)>
-    MessageBoxCallback;
+int ShowMessageBoxSync(NativeWindow* parent_window,
+                       MessageBoxType type,
+                       const std::vector<std::string>& buttons,
+                       int default_id,
+                       int cancel_id,
+                       int options,
+                       const std::string& title,
+                       const std::string& message,
+                       const std::string& detail,
+                       const gfx::ImageSkia& icon);
 
-int ShowMessageBox(NativeWindow* parent_window,
-                   MessageBoxType type,
-                   const std::vector<std::string>& buttons,
-                   int default_id,
-                   int cancel_id,
-                   int options,
-                   const std::string& title,
-                   const std::string& message,
-                   const std::string& detail,
-                   const gfx::ImageSkia& icon);
+typedef base::OnceCallback<void(int code, bool checkbox_checked)>
+    MessageBoxCallback;
 
 void ShowMessageBox(NativeWindow* parent_window,
                     MessageBoxType type,
@@ -58,7 +58,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
-                    const MessageBoxCallback& callback);
+                    MessageBoxCallback callback);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.

@@ -8,14 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -38,13 +37,13 @@ void NodeDebugger::Start() {
   }
 
   node::DebugOptions options;
+  node::options_parser::DebugOptionsParser options_parser;
   std::vector<std::string> exec_args;
   std::vector<std::string> v8_args;
   std::vector<std::string> errors;
 
-  node::options_parser::DebugOptionsParser::instance.Parse(
-      &args, &exec_args, &v8_args, &options,
-      node::options_parser::kDisallowedInEnvironment, &errors);
+  options_parser.Parse(&args, &exec_args, &v8_args, &options,
+                       node::options_parser::kDisallowedInEnvironment, &errors);
 
   if (!errors.empty()) {
     // TODO(jeremy): what's the appropriate behaviour here?
@@ -52,17 +51,17 @@ void NodeDebugger::Start() {
                << base::JoinString(errors, " ");
   }
 
-  // Set process._debugWaitConnect if --inspect-brk was specified to stop
-  // the debugger on the first line
-  if (options.wait_for_connect()) {
-    mate::Dictionary process(env_->isolate(), env_->process_object());
-    process.Set("_breakFirstLine", true);
-  }
-
   const char* path = "";
-  if (inspector->Start(path, options, env_->inspector_host_port(),
+  if (inspector->Start(path, options,
+                       std::make_shared<node::HostPort>(options.host_port),
                        true /* is_main */))
     DCHECK(env_->inspector_agent()->IsListening());
+}
+
+void NodeDebugger::Stop() {
+  auto* inspector = env_->inspector_agent();
+  if (inspector && inspector->IsListening())
+    inspector->Stop();
 }
 
 }  // namespace atom

@@ -62,10 +62,10 @@ index f2fa349c2b32ae88766624af3109ece4b1d69909..bcaed59c5401bef071acba9b9919d906
 +
  #undef CHECK
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index 38b8f9f78f76050174096740596ac59a0fe18757..acc4719b7e9c4c4461fc6142f2ae9156b407915b 100644
+index d540144b293297791c087e0b968a47d368a73695..53cb9d2dc8f1962a70dc12b648d27c32be8aca4b 100644
 --- a/decrepit/evp/evp_do_all.c
 +++ b/decrepit/evp/evp_do_all.c
-@@ -66,6 +66,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
+@@ -78,6 +78,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
    callback(EVP_sha256(), "SHA256", NULL, arg);
    callback(EVP_sha384(), "SHA384", NULL, arg);
    callback(EVP_sha512(), "SHA512", NULL, arg);
@@ -73,7 +73,7 @@ index 38b8f9f78f76050174096740596ac59a0fe18757..acc4719b7e9c4c4461fc6142f2ae9156
  
    callback(EVP_md4(), "md4", NULL, arg);
    callback(EVP_md5(), "md5", NULL, arg);
-@@ -74,4 +75,5 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
+@@ -86,4 +87,5 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
    callback(EVP_sha256(), "sha256", NULL, arg);
    callback(EVP_sha384(), "sha384", NULL, arg);
    callback(EVP_sha512(), "sha512", NULL, arg);

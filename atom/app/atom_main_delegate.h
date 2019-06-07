@@ -27,6 +27,7 @@ class AtomMainDelegate : public content::ContentMainDelegate {
   void PreCreateMainMessageLoop() override;
   void PostEarlyInitialization(bool is_running_tests) override;
   content::ContentBrowserClient* CreateContentBrowserClient() override;
+  content::ContentGpuClient* CreateContentGpuClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
   int RunProcess(
@@ -48,6 +49,7 @@ class AtomMainDelegate : public content::ContentMainDelegate {
 
   std::unique_ptr<content::ContentBrowserClient> browser_client_;
   std::unique_ptr<content::ContentClient> content_client_;
+  std::unique_ptr<content::ContentGpuClient> gpu_client_;
   std::unique_ptr<content::ContentRendererClient> renderer_client_;
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
 

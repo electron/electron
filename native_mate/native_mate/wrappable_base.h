@@ -1,5 +1,9 @@
-#ifndef NATIVE_MATE_WRAPPABLE_BASE_H_
-#define NATIVE_MATE_WRAPPABLE_BASE_H_
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE.chromium file.
+
+#ifndef NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
+#define NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_
 
 namespace mate {
 
@@ -30,6 +34,7 @@ class WrappableBase {
 
   // Retrieve the v8 wrapper object cooresponding to this object.
   v8::Local<v8::Object> GetWrapper() const;
+  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const;
 
   // Returns the Isolate this object is created in.
   v8::Isolate* isolate() const { return isolate_; }
@@ -58,4 +63,4 @@ class WrappableBase {
 
 }  // namespace mate
 
-#endif  // NATIVE_MATE_WRAPPABLE_BASE_H_
+#endif  // NATIVE_MATE_NATIVE_MATE_WRAPPABLE_BASE_H_

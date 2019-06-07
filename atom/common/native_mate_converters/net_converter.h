@@ -21,12 +21,16 @@ class HttpResponseHeaders;
 struct CertPrincipal;
 }  // namespace net
 
+namespace network {
+struct ResourceRequest;
+}
+
 namespace mate {
 
 template <>
-struct Converter<const net::AuthChallengeInfo*> {
+struct Converter<net::AuthChallengeInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::AuthChallengeInfo* val);
+                                   const net::AuthChallengeInfo& val);
 };
 
 template <>
@@ -53,6 +57,12 @@ struct Converter<net::HttpResponseHeaders*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::HttpResponseHeaders* out);
+};
+
+template <>
+struct Converter<network::ResourceRequest> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const network::ResourceRequest& val);
 };
 
 }  // namespace mate

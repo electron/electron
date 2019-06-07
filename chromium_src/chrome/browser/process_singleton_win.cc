@@ -176,7 +176,8 @@ ProcessSingleton::ProcessSingleton(
       is_virtualized_(false),
       lock_file_(INVALID_HANDLE_VALUE),
       user_data_dir_(user_data_dir),
-      should_kill_remote_process_callback_(base::Bind(&TerminateAppWithError)) {
+      should_kill_remote_process_callback_(
+          base::BindRepeating(&TerminateAppWithError)) {
   // The user_data_dir may have not been created yet.
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 }
@@ -290,9 +291,10 @@ bool ProcessSingleton::Create() {
       if (lock_file_ != INVALID_HANDLE_VALUE) {
         // Set the window's title to the path of our user data directory so
         // other Chrome instances can decide if they should forward to us.
-        bool result = window_.CreateNamed(
-            base::Bind(&ProcessLaunchNotification, notification_callback_),
-            user_data_dir_.value());
+        bool result =
+            window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
+                                                    notification_callback_),
+                                user_data_dir_.value());
 
         // NB: Ensure that if the primary app gets started as elevated
         // admin inadvertently, secondary windows running not as elevated

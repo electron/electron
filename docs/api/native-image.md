@@ -71,7 +71,6 @@ images/
 └── icon@3x.png
 ```
 
-
 ```javascript
 const { Tray } = require('electron')
 let appIcon = new Tray('/Users/somebody/images/icon.png')
@@ -137,6 +136,19 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 console.log(image)
 ```
 
+### `nativeImage.createFromBitmap(buffer, options)`
+
+* `buffer` [Buffer][buffer]
+* `options` Object
+  * `width` Integer
+  * `height` Integer
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
+
+Returns `NativeImage`
+
+Creates a new `NativeImage` instance from `buffer` that contains the raw bitmap
+pixel data returned by `toBitmap()`. The specific format is platform-dependent.
+
 ### `nativeImage.createFromBuffer(buffer[, options])`
 
 * `buffer` [Buffer][buffer]
@@ -147,7 +159,7 @@ console.log(image)
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from `buffer`.
+Creates a new `NativeImage` instance from `buffer`. Tries to decode as PNG or JPEG first.
 
 ### `nativeImage.createFromDataURL(dataURL)`
 
@@ -160,12 +172,12 @@ Creates a new `NativeImage` instance from `dataURL`.
 ### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
 
 * `imageName` String
-* `hslShift` Number[]
+* `hslShift` Number[] (optional)
 
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the NSImage that maps to the
-given image name. See [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename?language=objc)
+given image name. See [`System Icons`](https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/system-icons/)
 for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules
@@ -184,6 +196,12 @@ The `hslShift` is applied to the image with the following rules
 
 This means that `[-1, 0, 1]` will make the image completely white and
 `[-1, 1, 0]` will make the image completely black.
+
+In some cases, the `NSImageName` doesn't match its string representation; one example of this is `NSFolderImageName`, whose string representation would actually be `NSFolder`. Therefore, you'll need to determine the correct string representation for your image before passing it in. This can be done with the following:
+
+`echo -e '#import <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); }' | clang -otest -x objective-c -framework Cocoa - && ./test`
+
+where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](https://developer.apple.com/documentation/appkit/nsimagename?language=objc).
 
 ## Class: NativeImage
 
@@ -204,7 +222,7 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 #### `image.toJPEG(quality)`
 
-* `quality` Integer (**required**) - Between 0 - 100.
+* `quality` Integer - Between 0 - 100.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
@@ -257,9 +275,13 @@ Returns [`Size`](structures/size.md)
 
 Marks the image as a template image.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - Whether the image is a template image.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `image.crop(rect)`
 
@@ -305,3 +327,11 @@ to explicitly add different scale factor representations to an image. This
 can be called on empty images.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+
+## Properties
+
+### `nativeImage.isMacTemplateImage` _macOS_
+
+A `Boolean` property that determines whether the image is considered a [template image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
+
+Please note that this property only has an effect on macOS.

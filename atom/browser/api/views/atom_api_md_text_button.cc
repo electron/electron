@@ -5,10 +5,9 @@
 #include "atom/browser/api/views/atom_api_md_text_button.h"
 
 #include "atom/common/api/constructor.h"
+#include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -48,10 +47,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("MdTextButton", mate::CreateConstructor<MdTextButton>(
-                               isolate, base::Bind(&MdTextButton::New)));
+  dict.Set("MdTextButton",
+           mate::CreateConstructor<MdTextButton>(
+               isolate, base::BindRepeating(&MdTextButton::New)));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_md_text_button, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_md_text_button, Initialize)

@@ -1,10 +1,8 @@
-deps_backport_detailed_line_info_for_cpu_profiler.patch
 add_realloc.patch
 build_gn.patch
-array_buffer.patch
 expose_mksnapshot.patch
-build-torque-with-x64-toolchain-on-arm.patch
-do_not_run_arm_arm64_mksnapshot_binaries.patch
 deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
-expose_protected_v8_platform_systemclocktimemillis.patch
+export_symbols_needed_for_windows_build.patch
+workaround_an_undefined_symbol_error.patch
+do_not_export_private_v8_symbols_on_windows.patch

@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "chrome/browser/net/chrome_net_log_helper.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/net_log/net_export_file_writer.h"
@@ -19,6 +18,7 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/common/content_switches.h"
+#include "net/log/net_log_capture_mode.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
@@ -95,8 +95,8 @@ void BrowserProcessImpl::PreCreateThreads(
   // Must be created before the IOThread.
   // Once IOThread class is no longer needed,
   // this can be created on first use.
-  system_network_context_manager_ =
-      std::make_unique<SystemNetworkContextManager>();
+  if (!SystemNetworkContextManager::GetInstance())
+    SystemNetworkContextManager::CreateInstance(local_state_.get());
 
   net_log_ = std::make_unique<net_log::ChromeNetLog>();
   // start net log trace if --log-net-log is passed in the command line.
@@ -105,16 +105,18 @@ void BrowserProcessImpl::PreCreateThreads(
         command_line.GetSwitchValuePath(network::switches::kLogNetLog);
     if (!log_file.empty()) {
       net_log_->StartWritingToFile(
-          log_file, GetNetCaptureModeFromCommandLine(command_line),
+          log_file,
+          net::GetNetCaptureModeFromCommandLine(
+              command_line, network::switches::kNetLogCaptureMode),
           command_line.GetCommandLineString(), std::string());
     }
   }
   // Initialize net log file exporter.
-  system_network_context_manager_->GetNetExportFileWriter()->Initialize();
+  system_network_context_manager()->GetNetExportFileWriter()->Initialize();
 
   // Manage global state of net and other IO thread related.
   io_thread_ = std::make_unique<IOThread>(
-      net_log_.get(), system_network_context_manager_.get());
+      net_log_.get(), SystemNetworkContextManager::GetInstance());
 }
 
 void BrowserProcessImpl::PostDestroyThreads() {
@@ -122,8 +124,11 @@ void BrowserProcessImpl::PostDestroyThreads() {
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
+  if (local_state_)
+    local_state_->CommitPendingWrite();
+
   // This expects to be destroyed before the task scheduler is torn down.
-  system_network_context_manager_.reset();
+  SystemNetworkContextManager::DeleteInstance();
 }
 
 bool BrowserProcessImpl::IsShuttingDown() {
@@ -189,8 +194,8 @@ IOThread* BrowserProcessImpl::io_thread() {
 
 SystemNetworkContextManager*
 BrowserProcessImpl::system_network_context_manager() {
-  DCHECK(system_network_context_manager_.get());
-  return system_network_context_manager_.get();
+  DCHECK(SystemNetworkContextManager::GetInstance());
+  return SystemNetworkContextManager::GetInstance();
 }
 
 network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {
@@ -334,4 +339,8 @@ printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
 #else
   return nullptr;
 #endif
+}
+
+StartupData* BrowserProcessImpl::startup_data() {
+  return nullptr;
 }

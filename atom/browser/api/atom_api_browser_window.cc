@@ -15,6 +15,7 @@
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
@@ -24,8 +25,6 @@
 #include "gin/converter.h"
 #include "native_mate/dictionary.h"
 #include "ui/gl/gpu_switching_manager.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -171,17 +170,6 @@ void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
   ScheduleUnresponsiveEvent(50);
 }
 
-bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
-                                      content::RenderFrameHost* rfh) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(BrowserWindow, message, rfh)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
-                        UpdateDraggableRegions)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-  return handled;
-}
-
 void BrowserWindow::OnCloseContents() {
   // On some machines it may happen that the window gets destroyed for twice,
   // checking web_contents() can effectively guard against that.
@@ -215,6 +203,11 @@ void BrowserWindow::OnCloseContents() {
 void BrowserWindow::OnRendererResponsive() {
   window_unresponsive_closure_.Cancel();
   Emit("responsive");
+}
+
+void BrowserWindow::OnDraggableRegionsUpdated(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::RequestPreferredWidth(int* width) {
@@ -277,7 +270,7 @@ void BrowserWindow::OnWindowFocus() {
 void BrowserWindow::OnWindowResize() {
 #if defined(OS_MACOSX)
   if (!draggable_regions_.empty())
-    UpdateDraggableRegions(nullptr, draggable_regions_);
+    UpdateDraggableRegions(draggable_regions_);
 #endif
   TopLevelWindow::OnWindowResize();
 }
@@ -315,28 +308,28 @@ void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::ResetBrowserViews();
   TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   TopLevelWindow::RemoveBrowserView(value);
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::ResetBrowserViews() {
   TopLevelWindow::ResetBrowserViews();
 #if defined(OS_MACOSX)
-  UpdateDraggableRegions(nullptr, draggable_regions_);
+  UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
@@ -378,13 +371,13 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 
 // Convert draggable regions in raw format to SkRegion format.
 std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
   auto sk_region = std::make_unique<SkRegion>();
-  for (const DraggableRegion& region : regions) {
+  for (const auto& region : regions) {
     sk_region->op(
-        region.bounds.x(), region.bounds.y(), region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+        region->bounds.x(), region->bounds.y(), region->bounds.right(),
+        region->bounds.bottom(),
+        region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
 }
@@ -393,8 +386,8 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresponsive_closure_.IsCancelled())
     return;
 
-  window_unresponsive_closure_.Reset(
-      base::Bind(&BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
+  window_unresponsive_closure_.Reset(base::BindRepeating(
+      &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
@@ -475,10 +468,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", mate::CreateConstructor<BrowserWindow>(
-                                isolate, base::Bind(&BrowserWindow::New)));
+  dict.Set("BrowserWindow",
+           mate::CreateConstructor<BrowserWindow>(
+               isolate, base::BindRepeating(&BrowserWindow::New)));
 }
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_window, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(atom_browser_window, Initialize)

@@ -5,7 +5,6 @@ import {
   webFrame,
   clipboard,
   crashReporter,
-  nativeImage,
   screen,
   shell
 } from 'electron'
@@ -34,7 +33,7 @@ remote.getCurrentWindow().on('close', () => {
   // blabla...
 })
 
-remote.getCurrentWindow().capturePage(buf => {
+remote.getCurrentWindow().capturePage().then(buf => {
   fs.writeFile('/tmp/screenshot.png', buf, err => {
     console.log(err)
   })
@@ -42,7 +41,7 @@ remote.getCurrentWindow().capturePage(buf => {
 
 remote.getCurrentWebContents().print()
 
-remote.getCurrentWindow().capturePage(buf => {
+remote.getCurrentWindow().capturePage().then(buf => {
   remote.require('fs').writeFile('/tmp/screenshot.png', buf, (err: Error) => {
     console.log(err)
   })
@@ -72,9 +71,10 @@ webFrame.setSpellCheckProvider('en-US', {
 
 webFrame.insertText('text')
 
-webFrame.executeJavaScript('JSON.stringify({})', false, (result) => {
-  console.log(result)
-}).then((result: string) => console.log('OK:' + result))
+webFrame.executeJavaScript('return true;').then((v: boolean) => console.log(v))
+webFrame.executeJavaScript('return true;', true).then((v: boolean) => console.log(v))
+webFrame.executeJavaScript('return true;', true)
+webFrame.executeJavaScript('return true;', true).then((result: boolean) => console.log(result))
 
 console.log(webFrame.getResourceUsage())
 webFrame.clearCache()
@@ -110,8 +110,7 @@ crashReporter.start({
 
 const desktopCapturer = require('electron').desktopCapturer
 
-desktopCapturer.getSources({ types: ['window', 'screen'] }, function (error, sources) {
-  if (error) throw error
+desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
   for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name == 'Electron') {
       (navigator as any).webkitGetUserMedia({
@@ -219,7 +218,7 @@ app.on('ready', () => {
 // shell
 // https://github.com/atom/electron/blob/master/docs/api/shell.md
 
-shell.openExternal('https://github.com')
+shell.openExternal('https://github.com').then(() => {})
 
 // <webview>
 // https://github.com/atom/electron/blob/master/docs/api/web-view-tag.md
@@ -239,8 +238,9 @@ webview.addEventListener('found-in-page', function (e) {
 
 const requestId = webview.findInPage('test')
 
-webview.addEventListener('new-window', function (e) {
-  require('electron').shell.openExternal(e.url)
+webview.addEventListener('new-window', async e => {
+  const { shell } = require('electron')
+  await shell.openExternal(e.url)
 })
 
 webview.addEventListener('close', function () {
@@ -252,7 +252,7 @@ webview.addEventListener('ipc-message', function (event) {
   console.log(event.channel) // Prints "pong"
 })
 webview.send('ping')
-webview.capturePage((image) => { console.log(image) })
+webview.capturePage().then(image => { console.log(image) })
 
 {
   const opened: boolean = webview.isDevToolsOpened()

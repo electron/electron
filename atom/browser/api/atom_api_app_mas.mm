@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_app.h"
 
+#include <string>
+
 #import <Cocoa/Cocoa.h>
 
 #include "base/strings/sys_string_conversions.h"
@@ -19,13 +21,13 @@ void OnStopAccessingSecurityScopedResource(NSURL* bookmarkUrl) {
 }
 
 // Get base64 encoded NSData, create a bookmark for it and start accessing it.
-base::Callback<void()> App::StartAccessingSecurityScopedResource(
+base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
     mate::Arguments* args) {
   std::string data;
   args->GetNext(&data);
   NSString* base64str = base::SysUTF8ToNSString(data);
-  NSData* bookmarkData =
-      [[NSData alloc] initWithBase64EncodedString:base64str options:0];
+  NSData* bookmarkData = [[NSData alloc] initWithBase64EncodedString:base64str
+                                                             options:0];
 
   // Create bookmarkUrl from NSData.
   BOOL isStale = false;
@@ -55,9 +57,10 @@ base::Callback<void()> App::StartAccessingSecurityScopedResource(
   [bookmarkUrl retain];
 
   // Return a js callback which will close the bookmark.
-  return base::Bind(&OnStopAccessingSecurityScopedResource, bookmarkUrl);
+  return base::BindRepeating(&OnStopAccessingSecurityScopedResource,
+                             bookmarkUrl);
 }
 
-}  // namespace atom
-
 }  // namespace api
+
+}  // namespace atom

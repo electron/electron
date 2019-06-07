@@ -7,6 +7,7 @@
 #include "atom/browser/browser.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/map_converter.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"

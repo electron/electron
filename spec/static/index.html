@@ -17,6 +17,12 @@
   const electron = require('electron')
   const { remote, ipcRenderer } = electron
 
+  // Set up chai-as-promised here first to avoid conflicts
+  // It must be loaded first or really strange things happen inside
+  // chai that cause test failures
+  // DO NOT MOVE, REMOVE OR EDIT THIS LINE
+  require('chai').use(require('chai-as-promised'))
+
   // Check if we are running in CI.
   const isCi = remote.getGlobal('isCi')
 
@@ -88,21 +94,24 @@
     }
 
     const runner = mocha.run(() => {
-      if (isCi && runner.hasOnly) {
-        try {
-          throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
-        } catch (error) {
-          console.error(error.stack || error)
+      // Ensure the callback is called after runner is defined
+      setTimeout(() => {
+        if (isCi && runner.hasOnly) {
+          try {
+            throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+          } catch (error) {
+            console.error(error.stack || error)
+          }
+          ipcRenderer.send('process.exit', 1)
+          return
         }
-        ipcRenderer.send('process.exit', 1)
-        return
-      }
 
-      Mocha.utils.highlightTags('code')
+        Mocha.utils.highlightTags('code')
 
-      if (isCi) {
-        ipcRenderer.send('process.exit', runner.failures)
-      }
+        if (isCi) {
+          ipcRenderer.send('process.exit', runner.failures)
+        }
+      }, 0)
     })
   })
 })()

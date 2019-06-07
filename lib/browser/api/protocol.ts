@@ -1,11 +1,11 @@
 import { app, session } from 'electron'
 
 // Global protocol APIs.
-const protocol = process.atomBinding('protocol')
+const protocol = process.electronBinding('protocol')
 
 // Fallback protocol APIs of default session.
 Object.setPrototypeOf(protocol, new Proxy({}, {
-  get (target, property) {
+  get (_target, property) {
     if (!app.isReady()) return
 
     const protocol = session.defaultSession!.protocol
@@ -21,7 +21,7 @@ Object.setPrototypeOf(protocol, new Proxy({}, {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(session.defaultSession!.protocol))
   },
 
-  getOwnPropertyDescriptor (target) {
+  getOwnPropertyDescriptor () {
     return { configurable: true, enumerable: true }
   }
 }))
