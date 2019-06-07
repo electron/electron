@@ -58,7 +58,6 @@ class BrowserProcessImpl : public BrowserProcess {
   rappor::RapporServiceImpl* rappor_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
-  net::URLRequestContextGetter* system_request_context() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()
       override;
   variations::VariationsService* variations_service() override;
