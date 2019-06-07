@@ -2,8 +2,7 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as url from 'url'
 
-// Todo: Import once extensions have been turned into TypeScript
-const Event = require('@electron/internal/renderer/extensions/event')
+import Event from '@electron/internal/renderer/extensions/event'
 
 class Tab {
   public id: number
