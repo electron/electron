@@ -1,1 +1,3 @@
 prevent_gldeletequeries_from_deleting_a_live_query.patch
+fix_undefined_behavior_in_offset.patch
+fixed_all_oob_accesses_in_vertexprogram_and_pixelprogram.patch

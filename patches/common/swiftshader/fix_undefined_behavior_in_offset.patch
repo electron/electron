@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nicolas Capens <capn@google.com>
+Date: Thu, 22 Nov 2018 10:32:35 -0500
+Subject: Fix undefined behavior in OFFSET().
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Accessing members of a null pointer is undefined behavior, even when
+only used to obtain the address again. So use a non-zero value as the
+base pointer address instead. 32 was chosen to provide sufficient
+alignment guarantees.
+
+Bug b/119823623
+
+Change-Id: Ia6d24dd6c2740261948860c45eb35cc489a3a827
+Reviewed-on: https://swiftshader-review.googlesource.com/c/22788
+Tested-by: Nicolas Capens <nicolascapens@google.com>
+Reviewed-by: Alexis Hétu <sugoi@google.com>
+
+diff --git a/src/Common/Types.hpp b/src/Common/Types.hpp
+index cd08ed5704caa7f6454a619fd4ccbb9e2ddcee2c..837df461ab0676d94e6ee1276d75d289f06851ef 100644
+--- a/src/Common/Types.hpp
++++ b/src/Common/Types.hpp
+@@ -151,7 +151,10 @@ namespace sw
+ 		return v;
+ 	}
+ 
+-	#define OFFSET(s,m) (int)(size_t)&reinterpret_cast<const volatile char&>((((s*)0)->m))
++	// The OFFSET macro is a generalization of the offsetof() macro defined in <cstddef>.
++	// It allows e.g. getting the offset of array elements, even when indexed dynamically.
++	// We cast the address '32' and subtract it again, because null-dereference is undefined behavior.
++	#define OFFSET(s,m) ((int)(size_t)&reinterpret_cast<const volatile char&>((((s*)32)->m)) - 32)
+ }
+ 
+ #endif   // sw_Types_hpp
