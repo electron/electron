@@ -693,8 +693,9 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
-      .SetMethod("setPreloads", &Session::SetPreloads)
-      .SetMethod("getPreloads", &Session::GetPreloads)
+      .SetMethod("_setPreloads", &Session::SetPreloads)
+      .SetMethod("_getPreloads", &Session::GetPreloads)
+      .SetProperty("preloads", &Session::GetPreloads, &Session::SetPreloads)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)

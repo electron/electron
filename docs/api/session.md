@@ -416,10 +416,14 @@ this session just before normal `preload` scripts run.
 
 **Note:** For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
 
+**[Deprecated](modernization/property-updates.md): use the `preloads` property instead.**
+
 #### `ses.getPreloads()`
 
 Returns `String[]` an array of paths to preload scripts that have been
 registered.
+
+**[Deprecated](modernization/property-updates.md): use the `preloads` property instead.**
 
 ### Instance Properties
 
@@ -451,6 +455,13 @@ app.on('ready', function () {
   })
 })
 ```
+
+#### `ses.preloads`
+
+A `String[]` property containing absolute paths to preload scripts for this session.
+
+This determines scripts that will be executed on ALL web contents that are associated with
+this session just before normal `preload` scripts run.
 
 #### `ses.netLog`
 

@@ -23,8 +23,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `DownloadItem` class
   * `savePath`
   * `paused`
-* `Session` module
-  * `preloads`
 * `webContents` module
   * `zoomFactor`
   * `zoomLevel`
@@ -57,5 +55,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `closable`
 * `NativeImage`
   * `isMacTemplateImage`
+* `Session` module
+  * `preloads`
 * `SystemPreferences` module
   * `appLevelAppearance`

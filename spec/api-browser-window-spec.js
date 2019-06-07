@@ -1073,15 +1073,15 @@ describe('BrowserWindow module', () => {
       const defaultSession = session.defaultSession
 
       beforeEach(() => {
-        expect(defaultSession.getPreloads()).to.deep.equal([])
-        defaultSession.setPreloads(preloads)
+        expect(defaultSession.preloads).to.deep.equal([])
+        defaultSession.preloads = preloads
       })
       afterEach(() => {
-        defaultSession.setPreloads([])
+        defaultSession.preloads = []
       })
 
       it('can set multiple session preload script', function () {
-        expect(defaultSession.getPreloads()).to.deep.equal(preloads)
+        expect(defaultSession.preloads).to.deep.equal(preloads)
       })
 
       const generateSpecs = (description, sandbox) => {
