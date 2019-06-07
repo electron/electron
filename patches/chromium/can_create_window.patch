@@ -32,7 +32,7 @@ index a7cb70caea1b8f757226c07b427cb205e7e4442e..d81791a728e7d724c536786daa8b7a1e
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 53e67715469ce47147b66393ecc6a20d0d657977..2dd31166cc52ccb528b338b63fde7d2fb4bbf63d 100644
+index 04faf0107f342b76d9d4e624a3355291351dedce..a1849f651c3bdbf8e9ab2f59f6a7532c4a8fc3f1 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -519,6 +519,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,10 +45,10 @@ index 53e67715469ce47147b66393ecc6a20d0d657977..2dd31166cc52ccb528b338b63fde7d2f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2b4c2c1004fb98da76eb244db4c35dba84085f45..04bfc1a4a804d1f5aa28f894e2feb816bbe80ffc 100644
+index 34b4fd350acee079f91590ab3321d28591c4e1a1..22067af7d6c44c521a7218221b95a97896c89134 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -177,6 +177,7 @@ class RenderFrameHost;
+@@ -178,6 +178,7 @@ class RenderFrameHost;
  class RenderProcessHost;
  class RenderViewHost;
  class ResourceContext;
@@ -56,7 +56,7 @@ index 2b4c2c1004fb98da76eb244db4c35dba84085f45..04bfc1a4a804d1f5aa28f894e2feb816
  class SerialDelegate;
  class SiteInstance;
  class SpeechRecognitionManagerDelegate;
-@@ -805,6 +806,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -806,6 +807,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

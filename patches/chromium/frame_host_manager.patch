@@ -42,7 +42,7 @@ index 775b64a8d20f89845812852a2904a1e6875c2b4a..5235b57bbf44fc7b30ca6943c43a290f
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 237923af2091dddce5c6a15cf2f1367642408d00..49eeeeccf67d70c73131f351734898d13fb697f9 100644
+index 237923af2091dddce5c6a15cf2f1367642408d00..ddbcf12216ff299a911ffa224053870f07d3f692 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2131,6 +2131,20 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
@@ -179,7 +179,7 @@ index b1f7dc24b370159a103f75d9df9e4f5ce1457a98..8b3da989cd4dc4a683aa875e4380e8c1
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2dd31166cc52ccb528b338b63fde7d2fb4bbf63d..ce64276225d5b0acf684e9e70c600a64a56fe96e 100644
+index a1849f651c3bdbf8e9ab2f59f6a7532c4a8fc3f1..ca9bd83ac3bc1fc97dce639f5d9d412290d75ce5 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -204,10 +204,10 @@ index 2dd31166cc52ccb528b338b63fde7d2fb4bbf63d..ce64276225d5b0acf684e9e70c600a64
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 04bfc1a4a804d1f5aa28f894e2feb816bbe80ffc..5bf7340b106bd3ce826ff3322106ef94cbe19d29 100644
+index 22067af7d6c44c521a7218221b95a97896c89134..8716c552d6d0cdc45791f6c294f42effba0643d8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -211,8 +211,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -212,8 +212,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:

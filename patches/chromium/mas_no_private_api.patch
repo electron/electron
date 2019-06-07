@@ -233,7 +233,7 @@ index e59ac93d0e1554a2df5d8c74db2beba25d090228..6657c48664bdec4964b382f80309d1bf
  
  }  // namespace
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index fcf50dc3bd9a94536d7fc457c4e7b413a83dc672..6252cb195ff77aa31295c4958fd6b80c8a0df8bd 100644
+index b6bea74d9f9c2fcfba381477895e4c15741318fc..4a02e5659e85c507d480d7fb9b63ee10bad1fe85 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -36,6 +36,7 @@
@@ -263,7 +263,7 @@ index fcf50dc3bd9a94536d7fc457c4e7b413a83dc672..6252cb195ff77aa31295c4958fd6b80c
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -319,8 +323,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -303,8 +307,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
