@@ -136,12 +136,20 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
+  SetDefaults();
+
   last_preference_ = preference_.Clone();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
   instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
                    instances_.end());
+}
+
+void WebContentsPreferences::SetDefaults() {
+  if (IsEnabled(options::kSandbox)) {
+    SetBool(options::kNativeWindowOpen, true);
+  }
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
@@ -157,6 +165,10 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
   }
 }
 
+void WebContentsPreferences::SetBool(const base::StringPiece& key, bool value) {
+  preference_.SetKey(key, base::Value(value));
+}
+
 bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
                                        bool default_value) const {
   auto* current_value =
@@ -169,6 +181,8 @@ bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
   if (preference_.is_dict())
     static_cast<base::DictionaryValue*>(&preference_)->MergeDictionary(&extend);
+
+  SetDefaults();
 }
 
 void WebContentsPreferences::Clear() {
