@@ -464,20 +464,30 @@ describe('<webview> tag', function () {
   })
 
   describe('allowpopups attribute', () => {
-    it('can not open new window when not set', async () => {
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        src: `file://${fixtures}/pages/window-open-hide.html`
-      })
-      expect(message).to.equal('null')
-    })
+    const generateSpecs = (description, webpreferences = '') => {
+      describe(description, () => {
+        it('can not open new window when not set', async () => {
+          const message = await startLoadingWebViewAndWaitForMessage(webview, {
+            webpreferences,
+            src: `file://${fixtures}/pages/window-open-hide.html`
+          })
+          expect(message).to.equal('null')
+        })
 
-    it('can open new window when set', async () => {
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        allowpopups: 'on',
-        src: `file://${fixtures}/pages/window-open-hide.html`
+        it('can open new window when set', async () => {
+          const message = await startLoadingWebViewAndWaitForMessage(webview, {
+            webpreferences,
+            allowpopups: 'on',
+            src: `file://${fixtures}/pages/window-open-hide.html`
+          })
+          expect(message).to.equal('window')
+        })
       })
-      expect(message).to.equal('window')
-    })
+    }
+
+    generateSpecs('without sandbox')
+    generateSpecs('with sandbox', 'sandbox=yes')
+    generateSpecs('with nativeWindowOpen', 'nativeWindowOpen=yes')
   })
 
   describe('webpreferences attribute', () => {

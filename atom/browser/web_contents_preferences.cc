@@ -79,12 +79,20 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
+  SetDefaults();
+
   last_dict_ = std::move(*dict_.CreateDeepCopy());
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
   instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
                    instances_.end());
+}
+
+void WebContentsPreferences::SetDefaults() {
+  if (IsEnabled(options::kSandbox)) {
+    SetBool(options::kNativeWindowOpen, true);
+  }
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
@@ -98,6 +106,10 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
   return existing;
 }
 
+void WebContentsPreferences::SetBool(const base::StringPiece& key, bool value) {
+  dict_.SetKey(key, base::Value(value));
+}
+
 bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
                                        bool default_value) {
   bool bool_value = default_value;
@@ -107,6 +119,8 @@ bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
 
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
   dict_.MergeDictionary(&extend);
+
+  SetDefaults();
 }
 
 bool WebContentsPreferences::GetPreloadPath(
