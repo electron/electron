@@ -22,6 +22,7 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/net/preconnect_manager_tab_helper.h"
 #include "atom/browser/ui/drag_util.h"
 #include "atom/browser/ui/inspectable_web_contents.h"
 #include "atom/browser/ui/inspectable_web_contents_view.h"
@@ -397,7 +398,8 @@ void WebContents::InitWithSessionAndOptions(
 #endif
 
   // Save the preferences in C++.
-  new WebContentsPreferences(web_contents(), options);
+  WebContentsPreferences* web_prefs =
+      new WebContentsPreferences(web_contents(), options);
 
   // Initialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
@@ -413,6 +415,13 @@ void WebContents::InitWithSessionAndOptions(
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
+
+  PreconnectManagerTabHelper::CreateForWebContents(web_contents());
+
+  PreconnectManagerTabHelper::FromWebContents(web_contents())
+      ->SetNumberOfSocketsToPreconnect(
+          PreconnectManagerTabHelper::GetNumberOfSocketsToPreconnect(
+              web_prefs));
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;

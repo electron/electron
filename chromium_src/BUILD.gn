@@ -5,6 +5,7 @@
 import("//build/config/ui.gni")
 import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
+import("//third_party/protobuf/proto_library.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
 # Builds some of the chrome sources that Electron depends on.
@@ -37,6 +38,12 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/predictors/preconnect_manager.cc",
+    "//chrome/browser/predictors/preconnect_manager.h",
+    "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
+    "//chrome/browser/predictors/proxy_lookup_client_impl.h",
+    "//chrome/browser/predictors/resolve_host_client_impl.cc",
+    "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ui/autofill/popup_view_common.cc",
@@ -55,6 +62,7 @@ static_library("chrome") {
     "//content/public/browser",
   ]
   deps = [
+    "//chrome/browser/:resource_prefetch_predictor_proto",
     "//components/feature_engagement:buildflags",
   ]
 

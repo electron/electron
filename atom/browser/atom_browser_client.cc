@@ -29,9 +29,11 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/network_context_service.h"
 #include "atom/browser/net/network_context_service_factory.h"
+#include "atom/browser/net/preconnect_manager_tab_helper.h"
 #include "atom/browser/net/proxying_url_loader_factory.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "atom/browser/notifications/platform_notification_service.h"
+#include "atom/browser/renderer_host/atom_render_message_filter.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/browser/ui/devtools_manager_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -53,6 +55,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
@@ -340,6 +343,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
+  int number_of_sockets_to_preconnect = -1;
   ProcessPreferences prefs;
   auto* web_preferences =
       WebContentsPreferences::From(GetWebContentsFromProcessID(process_id));
@@ -350,7 +354,15 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
+    number_of_sockets_to_preconnect =
+        PreconnectManagerTabHelper::GetNumberOfSocketsToPreconnect(
+            web_preferences);
   }
+
+  Profile* profile = static_cast<Profile*>(host->GetBrowserContext());
+  host->AddFilter(new AtomRenderMessageFilter(process_id, profile,
+                                              number_of_sockets_to_preconnect));
+
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);

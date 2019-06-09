@@ -4,7 +4,7 @@
 //
 #include <memory>
 
-#include "atom/atom/browser/net/preconnect_manager_factory.h"
+#include "atom/browser/net/preconnect_manager_factory.h"
 
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/browser/profiles/profile.h"

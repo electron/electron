@@ -18,6 +18,9 @@
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
+namespace network_hints {
+class PrescientNetworkingDispatcher;
+}
 namespace atom {
 
 class RendererClientBase : public content::ContentRendererClient {
@@ -36,6 +39,7 @@ class RendererClientBase : public content::ContentRendererClient {
                                             content::RenderFrame* render_frame,
                                             int world_id) = 0;
 
+  blink::WebPrescientNetworking* GetPrescientNetworking() override;
   bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
@@ -64,6 +68,8 @@ class RendererClientBase : public content::ContentRendererClient {
   void DidSetUserAgent(const std::string& user_agent) override;
 
  private:
+  std::unique_ptr<network_hints::PrescientNetworkingDispatcher>
+      prescient_networking_dispatcher_;
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif
