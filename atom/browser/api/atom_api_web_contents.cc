@@ -253,7 +253,9 @@ void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
 
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents), type_(Type::REMOTE) {
+    : content::WebContentsObserver(web_contents),
+      type_(Type::REMOTE),
+      weak_factory_(this) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                      false);
   Init(isolate);
@@ -268,7 +270,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          std::unique_ptr<content::WebContents> web_contents,
                          Type type)
-    : content::WebContentsObserver(web_contents.get()), type_(type) {
+    : content::WebContentsObserver(web_contents.get()),
+      type_(type),
+      weak_factory_(this) {
   DCHECK(type != Type::REMOTE)
       << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
@@ -277,8 +281,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                             mate::Dictionary::CreateEmpty(isolate));
 }
 
-WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options) {
+WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
+    : weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 

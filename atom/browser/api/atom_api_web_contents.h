@@ -118,6 +118,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+
   // Destroy the managed content::WebContents instance.
   //
   // Note: The |async| should only be |true| when users are expecting to use the
@@ -562,6 +564,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   mojo::BindingSet<mojom::ElectronBrowser, content::RenderFrameHost*> bindings_;
   std::map<content::RenderFrameHost*, std::vector<mojo::BindingId>>
       frame_to_bindings_map_;
+
+  base::WeakPtrFactory<WebContents> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
