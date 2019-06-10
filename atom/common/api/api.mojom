@@ -13,9 +13,10 @@ interface ElectronRenderer {
       int32 sender_id);
 
   TakeHeapSnapshot(handle file) => (bool success);
+};
 
-  // TODO: move this into a separate interface
-  AcceptAutofillSuggestion(mojo_base.mojom.String16 suggestion);
+interface ElectronAutofillAgent {
+  AcceptDataListSuggestion(mojo_base.mojom.String16 value);
 };
 
 struct DraggableRegion {

@@ -569,9 +569,7 @@ void WebContents::SetContentsBounds(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-#if defined(TOOLKIT_VIEWS)
   HideAutofillPopup();
-#endif
   if (managed_web_contents())
     managed_web_contents()->GetView()->SetDelegate(nullptr);
   for (ExtendedWebContentsObserver& observer : observers_)
@@ -2019,6 +2017,10 @@ void WebContents::ShowAutofillPopup(const gfx::RectF& bounds,
                                     const std::vector<base::string16>& labels) {
   content::RenderFrameHost* frame_host = bindings_.dispatch_context();
   ShowAutofillPopup(frame_host, bounds, values, labels);
+}
+
+void WebContents::HideAutofillPopup() {
+  CommonWebContentsDelegate::HideAutofillPopup();
 }
 
 v8::Local<v8::Value> WebContents::GetPreloadPath(v8::Isolate* isolate) const {

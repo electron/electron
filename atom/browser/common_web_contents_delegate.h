@@ -105,7 +105,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       const content::NativeWebKeyboardEvent& event) override;
 
   // Autofill related events.
-#if defined(TOOLKIT_VIEWS)
   void ShowAutofillPopup(content::RenderFrameHost* frame_host,
                          content::RenderFrameHost* embedder_frame_host,
                          bool offscreen,
@@ -113,7 +112,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
                          const std::vector<base::string16>& values,
                          const std::vector<base::string16>& labels);
   void HideAutofillPopup();
-#endif
 
   // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,

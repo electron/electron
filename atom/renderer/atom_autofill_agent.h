@@ -10,6 +10,8 @@
 #include "atom/common/api/api.mojom.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "mojo/public/cpp/bindings/associated_binding.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/web/web_autofill_client.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_form_control_element.h"
@@ -18,10 +20,14 @@
 namespace atom {
 
 class AutofillAgent : public content::RenderFrameObserver,
-                      public blink::WebAutofillClient {
+                      public blink::WebAutofillClient,
+                      public mojom::ElectronAutofillAgent {
  public:
-  explicit AutofillAgent(content::RenderFrame* frame);
+  explicit AutofillAgent(content::RenderFrame* frame,
+                         blink::AssociatedInterfaceRegistry* registry);
   ~AutofillAgent() override;
+
+  void BindRequest(mojom::ElectronAutofillAgentAssociatedRequest request);
 
   // content::RenderFrameObserver:
   void OnDestruct() override;
@@ -48,6 +54,9 @@ class AutofillAgent : public content::RenderFrameObserver,
   void OpenTextDataListChooser(const blink::WebInputElement&) override;
   void DataListOptionsChanged(const blink::WebInputElement&) override;
 
+  // mojom::ElectronAutofillAgent
+  void AcceptDataListSuggestion(const base::string16& suggestion) override;
+
   bool IsUserGesture() const;
   void HidePopup();
   void ShowPopup(const blink::WebFormControlElement&,
@@ -55,7 +64,6 @@ class AutofillAgent : public content::RenderFrameObserver,
                  const std::vector<base::string16>&);
   void ShowSuggestions(const blink::WebFormControlElement& element,
                        const ShowSuggestionsOptions& options);
-  void OnAcceptSuggestion(base::string16 suggestion);
 
   void DoFocusChangeComplete();
 
@@ -69,6 +77,8 @@ class AutofillAgent : public content::RenderFrameObserver,
   // afterwards. This helps track whether an event happened after a node was
   // already focused, or if it caused the focus to change.
   bool was_focused_before_now_ = false;
+
+  mojo::AssociatedBinding<mojom::ElectronAutofillAgent> binding_;
 
   base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_;
 

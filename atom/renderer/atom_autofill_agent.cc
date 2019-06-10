@@ -49,12 +49,22 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 }
 }  // namespace
 
-AutofillAgent::AutofillAgent(content::RenderFrame* frame)
-    : content::RenderFrameObserver(frame), weak_ptr_factory_(this) {
+AutofillAgent::AutofillAgent(content::RenderFrame* frame,
+                             blink::AssociatedInterfaceRegistry* registry)
+    : content::RenderFrameObserver(frame),
+      binding_(this),
+      weak_ptr_factory_(this) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
+  registry->AddInterface(
+      base::Bind(&AutofillAgent::BindRequest, base::Unretained(this)));
 }
 
 AutofillAgent::~AutofillAgent() = default;
+
+void AutofillAgent::BindRequest(
+    mojom::ElectronAutofillAgentAssociatedRequest request) {
+  binding_.Bind(std::move(request));
+}
 
 void AutofillAgent::OnDestruct() {
   delete this;
@@ -165,19 +175,6 @@ void AutofillAgent::DidCompleteFocusChangeInFrame() {
   DoFocusChangeComplete();
 }
 
-/*
-bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AutofillAgent, message)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameMsg_AcceptSuggestion,
-                        OnAcceptSuggestion)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-*/
-
 bool AutofillAgent::IsUserGesture() const {
   return blink::WebUserGestureIndicator::IsProcessingUserGesture(
       render_frame()->GetWebFrame());
@@ -195,7 +192,7 @@ void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
   GetElectronBrowser()->ShowAutofillPopup(bounds, values, labels);
 }
 
-void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
+void AutofillAgent::AcceptDataListSuggestion(const base::string16& suggestion) {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsFormControlElement()) {
     ToWebInputElement(&element)->SetAutofillValue(

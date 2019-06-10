@@ -214,9 +214,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     NativeWindow* owner_window) {
   if (owner_window) {
     owner_window_ = owner_window->GetWeakPtr();
-#if defined(TOOLKIT_VIEWS)
     autofill_popup_.reset(new AutofillPopup());
-#endif
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
   } else {
