@@ -824,6 +824,10 @@ void WebContents::OnInterfaceRequestFromFrame(
   registry_.TryBindInterface(interface_name, interface_pipe, render_frame_host);
 }
 
+void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
+  set_fullscreen_frame(rfh);
+}
+
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())

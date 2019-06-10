@@ -328,9 +328,12 @@ void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     const blink::WebFullscreenOptions& options) {
   if (!owner_window_)
     return;
+  if (IsFullscreenForTabOrPending(source)) {
+    DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
+    return;
+  }
   SetHtmlApiFullscreen(true);
   owner_window_->NotifyWindowEnterHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
@@ -339,7 +342,6 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
