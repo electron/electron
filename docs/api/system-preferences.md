@@ -62,7 +62,7 @@ Returns `Boolean` - Whether the Swipe between pages setting is on.
 ### `systemPreferences.postNotification(event, userInfo[, deliverImmediately])` _macOS_
 
 * `event` String
-* `userInfo` Record<string, unknown>
+* `userInfo` Object
 * `deliverImmediately` Boolean (optional) - `true` to post notifications immediately even when the subscribing app is inactive.
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
@@ -71,7 +71,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Record<string, unknown>
+* `userInfo` Object
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -79,7 +79,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postWorkspaceNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Record<string, unknown>
+* `userInfo` Object
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -89,7 +89,7 @@ that contains the user information dictionary sent along with the notification.
 * `event` String
 * `callback` Function
   * `event` String
-  * `userInfo` Record<string, unknown>
+  * `userInfo` Object
 
 Returns `Number` - The ID of this subscription
 
@@ -109,50 +109,14 @@ example values of `event` are:
 * `AppleColorPreferencesChangedNotification`
 * `AppleShowScrollBarsSettingChanged`
 
-**[Deprecated](modernization/promisification.md)**
-
-### `systemPreferences.subscribeNotification(event)` _macOS_
-
-* `event` String
-
-Returns `Promise<Object>` - Resolves with an object containing the following items:
-  * `id` Number - The ID of this subscription, which can be used to unsubscribe the
-`event`.
-  * `event` String
-  * `userInfo` Record<string, unknown>
-
-Subscribes to native notifications of macOS.
-
-Under the hood this API subscribes to `NSDistributedNotificationCenter`,
-example values of `event` are:
-
-* `AppleInterfaceThemeChangedNotification`
-* `AppleAquaColorVariantChanged`
-* `AppleColorPreferencesChangedNotification`
-* `AppleShowScrollBarsSettingChanged`
-
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
 * `event` String
 * `callback` Function
   * `event` String
-  * `userInfo` Record<string, unknown>
+  * `userInfo` Object
 
 Returns `Number` - The ID of this subscription
-
-Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
-This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
-
-**[Deprecated](modernization/promisification.md)**
-
-### `systemPreferences.subscribeLocalNotification(event)` _macOS_
-
-* `event` String
-
-Returns `Promise<Object>` - Resolves with an object containing the following items:
-  * `id` Number - The ID of this subscription
-  * `event` String
-  * `userInfo` Record<string, unknown>
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
@@ -162,40 +126,26 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 * `event` String
 * `callback` Function
   * `event` String
-  * `userInfo` Record<string, unknown>
-
-Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
-This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
-
-**[Deprecated](modernization/promisification.md)**
-
-### `systemPreferences.subscribeWorkspaceNotification(event)` _macOS_
-
-* `event` String
-
-Returns `Promise<Object>` - Resolves with an object containing the following items:
-  * `id` Number - The ID of this subscription
-  * `event` String
-  * `userInfo` Record<string, unknown>
+  * `userInfo` Object
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
 
 ### `systemPreferences.unsubscribeNotification(id)` _macOS_
 
-* `id` Number
+* `id` Integer
 
 Removes the subscriber with `id`.
 
 ### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
 
-* `id` Number
+* `id` Integer
 
 Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificationCenter`.
 
 ### `systemPreferences.unsubscribeWorkspaceNotification(id)` _macOS_
 
-* `id` Number
+* `id` Integer
 
 Same as `unsubscribeNotification`, but removes the subscriber from `NSWorkspace.sharedWorkspace.notificationCenter`.
 
