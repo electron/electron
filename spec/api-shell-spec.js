@@ -2,7 +2,10 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { shell } = require('electron')
+const { shell, remote } = require('electron')
+const { BrowserWindow } = remote
+
+const { closeWindow } = require('./window-helpers')
 
 describe('shell module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -18,6 +21,7 @@ describe('shell module', () => {
 
   describe('shell.openExternal()', () => {
     let envVars = {}
+    let w
 
     beforeEach(function () {
       envVars = {
@@ -27,7 +31,9 @@ describe('shell module', () => {
       }
     })
 
-    afterEach(() => {
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null
       // reset env vars to prevent side effects
       if (process.platform === 'linux') {
         process.env.DE = envVars.de
@@ -44,7 +50,24 @@ describe('shell module', () => {
         process.env.DISPLAY = ''
       }
 
-      shell.openExternal(url).then(() => done())
+      // Ensure an external window is activated via a new window's blur event
+      w = new BrowserWindow()
+      let promiseResolved = false
+      let blurEventEmitted = false
+
+      w.on('blur', () => {
+        blurEventEmitted = true
+        if (promiseResolved) {
+          done()
+        }
+      })
+
+      shell.openExternal(url).then(() => {
+        promiseResolved = true
+        if (blurEventEmitted || process.platform === 'linux') {
+          done()
+        }
+      })
     })
 
     it('opens an external link synchronously', () => {
