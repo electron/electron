@@ -455,6 +455,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
       mojo::ScopedMessagePipeHandle* interface_pipe) override;
+  void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
