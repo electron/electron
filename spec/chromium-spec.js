@@ -86,20 +86,6 @@ describe('chromium feature', () => {
     })
   })
 
-  describe('sending request of http protocol urls', () => {
-    it('does not crash', (done) => {
-      const server = http.createServer((req, res) => {
-        res.end()
-        server.close()
-        done()
-      })
-      server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port
-        $.get(`http://127.0.0.1:${port}`)
-      })
-    })
-  })
-
   describe('accessing key names also used as Node.js module names', () => {
     it('does not crash', (done) => {
       w = new BrowserWindow({ show: false })
