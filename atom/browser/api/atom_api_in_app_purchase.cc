@@ -61,7 +61,7 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("formattedPrice", val.formattedPrice);
 
     // Downloadable Content Information
-    dict.Set("isDownloadable", val.downloadable);
+    dict.Set("isDownloadable", val.isDownloadable);
 
     return dict.GetHandle();
   }
