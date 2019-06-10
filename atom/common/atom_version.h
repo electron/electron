@@ -9,7 +9,7 @@
 #define ATOM_MINOR_VERSION 0
 #define ATOM_PATCH_VERSION 0
 // clang-format off
-#define ATOM_PRE_RELEASE_VERSION -nightly.20190609
+#define ATOM_PRE_RELEASE_VERSION -nightly.20190610
 // clang-format on
 
 #ifndef ATOM_STRINGIFY
