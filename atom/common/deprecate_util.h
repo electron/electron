@@ -12,9 +12,9 @@
 namespace atom {
 
 v8::Maybe<bool> EmitDeprecationWarning(node::Environment* env,
-                                       const char* warning,
-                                       const char* type,
-                                       const char* code);
+                                       std::string warning_msg,
+                                       std::string warning_type,
+                                       std::string warning_code);
 
 }  // namespace atom
 

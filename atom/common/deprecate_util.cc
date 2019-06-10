@@ -9,11 +9,15 @@
 namespace atom {
 
 v8::Maybe<bool> EmitDeprecationWarning(node::Environment* env,
-                                       const char* warning,
-                                       const char* type = nullptr,
-                                       const char* code = nullptr) {
+                                       std::string warning_msg,
+                                       std::string warning_type = "",
+                                       std::string warning_code = "") {
   v8::HandleScope handle_scope(env->isolate());
   v8::Context::Scope context_scope(env->context());
+
+  const char* warning = warning_msg.empty() ? nullptr : warning_msg.c_str();
+  const char* type = warning_type.empty() ? nullptr : warning_type.c_str();
+  const char* code = warning_code.empty() ? nullptr : warning_code.c_str();
 
   v8::Local<v8::Object> process = env->process_object();
   v8::Local<v8::Value> emit_warning;
@@ -49,8 +53,6 @@ v8::Maybe<bool> EmitDeprecationWarning(node::Environment* env,
     }
   }
 
-  // MakeCallback() unneeded because emitWarning is internal code, it calls
-  // process.emit('warning', ...), but does so on the nextTick.
   if (emit_warning.As<v8::Function>()
           ->Call(env->context(), process, argc, args)
           .IsEmpty()) {
