@@ -931,13 +931,22 @@ describe('app module', () => {
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
 
       const types = []
-      for (const { pid, type, cpu } of appMetrics) {
-        expect(pid).to.be.above(0, 'pid is not > 0')
-        expect(type).to.be.a('string').that.does.not.equal('')
+      for (const entry of appMetrics) {
+        expect(entry.pid).to.be.above(0, 'pid is not > 0')
+        expect(entry.type).to.be.a('string').that.does.not.equal('')
+        expect(entry.creationTime).to.be.a('number').that.is.greaterThan(0)
 
-        types.push(type)
-        expect(cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
-        expect(cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
+        types.push(entry.type)
+        expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
+        expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
+
+        if (process.platform !== 'linux') {
+          expect(entry.sandboxed).to.be.a('boolean')
+        }
+
+        if (process.platform === 'win32') {
+          expect(entry.integrityLevel).to.be.a('string')
+        }
       }
 
       if (process.platform === 'darwin') {

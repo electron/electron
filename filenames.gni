@@ -122,6 +122,8 @@ filenames = {
     "atom/browser/api/gpu_info_enumerator.h",
     "atom/browser/api/gpuinfo_manager.cc",
     "atom/browser/api/gpuinfo_manager.h",
+    "atom/browser/api/process_metric.cc",
+    "atom/browser/api/process_metric.h",
     "atom/browser/api/save_page_handler.cc",
     "atom/browser/api/save_page_handler.h",
     "atom/browser/auto_updater.cc",
