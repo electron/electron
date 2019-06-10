@@ -13,12 +13,12 @@ removed when Electron's Chromium updates to a compiler unaffected by
 this issue.
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index c14a188f16c41002088b2f8451ea3cab7f2ff4e9..b067774bc2c1d833142ff848a9faa5d4bac0b4cd 100755
+index 84455a1e7f5415976d92d35a018b9ec5568e725a..3fefffd91370b72ae120acbb844f9297ac2267a5 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
-@@ -40,6 +40,11 @@ CLANG_REVISION = '67510fac36d27b2e22c7cd955fc167136b737b93'
- CLANG_SVN_REVISION = '361212'
- CLANG_SUB_REVISION = 3
+@@ -40,6 +40,11 @@ CLANG_REVISION = '80fee25776c2fb61e74c1ecb1a523375c2500b69'
+ CLANG_SVN_REVISION = '362913'
+ CLANG_SUB_REVISION = 1
  
 +if os.getenv('ELECTRON_BUILDING_WOA'):
 +    CLANG_REVISION = '56bee1a90a71876cb5067b108bf5715fa1c4e843'

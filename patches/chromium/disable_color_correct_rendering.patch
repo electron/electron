@@ -203,7 +203,7 @@ index b7a65f6dae8f2fcba0ba127cb50f0f338a26b9d0..bc1d0d3dd92d1adc6c94803755a23c28
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index f34cfb51693648a7b342d21a61c601090209355a..b488efc71edf5d79e16c25d3d7be2d8ea9fa2ec8 100644
+index 1c2082357a654193f0decdd9798881f708519535..3c8cc31e5f6acd4ba16ee8a53b9c1aa801bff26a 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -191,6 +191,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -215,7 +215,7 @@ index f34cfb51693648a7b342d21a61c601090209355a..b488efc71edf5d79e16c25d3d7be2d8e
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b87645377b3c2a77f1ff824a5c3ba1f6c0c66ba0..a28fa2b886dc3e439f3fd11d8c9a3211f9461515 100644
+index 8eaab8ab45ed06e33f00531b2978fdcff27318b8..1bae0400787efee1cc4e69077e951b0d3affb62c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -216,6 +216,7 @@
@@ -235,10 +235,10 @@ index b87645377b3c2a77f1ff824a5c3ba1f6c0c66ba0..a28fa2b886dc3e439f3fd11d8c9a3211
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index d54a31c58acbf6dd7bd169478c77ca765fa91ed3..36a555add5db971d11dc76efe43915f92c8c4af3 100644
+index cc8e8d5bb88df72be85d0ac32331efe444f90b33..18abf45d6a3b9d47f6b26c8328d2b3d99f97af22 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2818,6 +2818,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2825,6 +2825,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
