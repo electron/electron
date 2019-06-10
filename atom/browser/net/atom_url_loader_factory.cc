@@ -249,8 +249,8 @@ void AtomURLLoaderFactory::StartLoading(
           std::move(loader), routing_id, request_id, options, new_request,
           std::move(client), traffic_annotation);
     } else {
-      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
-                       new_request, std::move(client), traffic_annotation,
+      StartLoadingHttp(std::move(loader), new_request, std::move(client),
+                       traffic_annotation,
                        mate::Dictionary::CreateEmpty(args->isolate()));
     }
     return;
@@ -276,8 +276,8 @@ void AtomURLLoaderFactory::StartLoading(
                        std::move(head), dict, args->isolate(), response);
       break;
     case ProtocolType::kHttp:
-      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
-                       request, std::move(client), traffic_annotation, dict);
+      StartLoadingHttp(std::move(loader), request, std::move(client),
+                       traffic_annotation, dict);
       break;
     case ProtocolType::kStream:
       StartLoadingStream(std::move(loader), std::move(client), std::move(head),
@@ -359,9 +359,6 @@ void AtomURLLoaderFactory::StartLoadingFile(
 // static
 void AtomURLLoaderFactory::StartLoadingHttp(
     network::mojom::URLLoaderRequest loader,
-    int32_t routing_id,
-    int32_t request_id,
-    uint32_t options,
     const network::ResourceRequest& original_request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
