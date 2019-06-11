@@ -122,9 +122,8 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     } as T
   },
 
-  // convertPromiseValue: Temporarily disabled until it's used
   // deprecate a callback-based function in favor of one returning a Promise
-  promisifyMultiArg: <T extends (...args: any[]) => any>(fn: T /* convertPromiseValue: (v: any) => any */): T => {
+  promisifyMultiArg: <T extends (...args: any[]) => any>(fn: T, convertPromiseValue?: (v: any) => any): T => {
     const fnName = fn.name || 'function'
     const oldName = `${fnName} with callbacks`
     const newName = `${fnName} with Promises`
@@ -140,6 +139,7 @@ const deprecate: ElectronInternal.DeprecationUtil = {
       if (process.enablePromiseAPIs) warn()
       return promise
         .then((res: any) => {
+          if (convertPromiseValue) { res = convertPromiseValue(res) }
           process.nextTick(() => {
             // eslint-disable-next-line standard/no-callback-literal
             cb!.length > 2 ? cb!(null, ...res) : cb!(...res)
