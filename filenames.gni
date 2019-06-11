@@ -253,6 +253,8 @@ filenames = {
     "atom/browser/net/resolve_proxy_helper.h",
     "atom/browser/net/system_network_context_manager.cc",
     "atom/browser/net/system_network_context_manager.h",
+    "atom/browser/net/url_pipe_loader.cc",
+    "atom/browser/net/url_pipe_loader.h",
     "atom/browser/net/url_request_about_job.cc",
     "atom/browser/net/url_request_about_job.h",
     "atom/browser/net/url_request_async_asar_job.cc",

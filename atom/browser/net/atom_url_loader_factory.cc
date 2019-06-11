@@ -12,6 +12,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/asar/asar_url_loader.h"
 #include "atom/browser/net/node_stream_loader.h"
+#include "atom/browser/net/url_pipe_loader.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -248,8 +249,8 @@ void AtomURLLoaderFactory::StartLoading(
           std::move(loader), routing_id, request_id, options, new_request,
           std::move(client), traffic_annotation);
     } else {
-      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
-                       new_request, std::move(client), traffic_annotation,
+      StartLoadingHttp(std::move(loader), new_request, std::move(client),
+                       traffic_annotation,
                        mate::Dictionary::CreateEmpty(args->isolate()));
     }
     return;
@@ -275,8 +276,8 @@ void AtomURLLoaderFactory::StartLoading(
                        std::move(head), dict, args->isolate(), response);
       break;
     case ProtocolType::kHttp:
-      StartLoadingHttp(std::move(loader), routing_id, request_id, options,
-                       request, std::move(client), traffic_annotation, dict);
+      StartLoadingHttp(std::move(loader), request, std::move(client),
+                       traffic_annotation, dict);
       break;
     case ProtocolType::kStream:
       StartLoadingStream(std::move(loader), std::move(client), std::move(head),
@@ -358,21 +359,18 @@ void AtomURLLoaderFactory::StartLoadingFile(
 // static
 void AtomURLLoaderFactory::StartLoadingHttp(
     network::mojom::URLLoaderRequest loader,
-    int32_t routing_id,
-    int32_t request_id,
-    uint32_t options,
     const network::ResourceRequest& original_request,
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     const mate::Dictionary& dict) {
-  network::ResourceRequest request;
-  request.headers = original_request.headers;
-  request.cors_exempt_headers = original_request.cors_exempt_headers;
+  auto request = std::make_unique<network::ResourceRequest>();
+  request->headers = original_request.headers;
+  request->cors_exempt_headers = original_request.cors_exempt_headers;
 
-  dict.Get("url", &request.url);
-  dict.Get("referrer", &request.referrer);
-  if (!dict.Get("method", &request.method))
-    request.method = original_request.method;
+  dict.Get("url", &request->url);
+  dict.Get("referrer", &request->referrer);
+  if (!dict.Get("method", &request->method))
+    request->method = original_request.method;
 
   scoped_refptr<AtomBrowserContext> browser_context =
       AtomBrowserContext::From("", false);
@@ -392,9 +390,10 @@ void AtomURLLoaderFactory::StartLoadingHttp(
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory =
       content::BrowserContext::GetDefaultStoragePartition(browser_context.get())
           ->GetURLLoaderFactoryForBrowserProcess();
-  url_loader_factory->CreateLoaderAndStart(
-      std::move(loader), routing_id, request_id, options, std::move(request),
-      std::move(client), traffic_annotation);
+  new URLPipeLoader(
+      url_loader_factory, std::move(request), std::move(loader),
+      std::move(client),
+      static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation));
 }
 
 // static
