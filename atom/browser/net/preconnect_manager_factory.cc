@@ -26,9 +26,11 @@ class PreconnectManagerWrapper : public KeyedService {
       base::WeakPtr<predictors::PreconnectManager::Delegate> delegate,
       Profile* profile)
       : ptr_(new predictors::PreconnectManager(delegate, profile)) {
-    ptr_->SetNetworkContextForTesting(
+    if (profile) {
+      ptr_->SetNetworkContextForTesting(
         content::BrowserContext::GetDefaultStoragePartition(profile)
-            ->GetNetworkContext());
+                ->GetNetworkContext());
+    }
   }
   ~PreconnectManagerWrapper() override {
     delete ptr_;
