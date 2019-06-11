@@ -108,14 +108,15 @@ void OpenExternal(const GURL& url,
     return;
   }
 
+  bool activate = options.activate;
   __block OpenExternalCallback c = std::move(callback);
-  dispatch_async(
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        __block std::string error = OpenURL(ns_url, options.activate);
-        dispatch_async(dispatch_get_main_queue(), ^{
-          std::move(c).Run(error);
-        });
-      });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+                 ^{
+                   __block std::string error = OpenURL(ns_url, activate);
+                   dispatch_async(dispatch_get_main_queue(), ^{
+                     std::move(c).Run(error);
+                   });
+                 });
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {
