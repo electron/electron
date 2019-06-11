@@ -98,7 +98,7 @@ index 93c52d2b928cba6e98723e19b005fb7bd7089a58..4dc645e770a2a039ed8e4ff4de555767
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 39874b7d879423467f11c2149178a6e50c4a02d1..3ee3dcb5cc56c3ef148c21fc2bd6557c6e237926 100644
+index 94a1676b666091bc642ebd0149b3af099622f830..14120fff1c5fb36b5873a16e7feee82f65eb3ee2 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -117,6 +117,8 @@ viz_component("service") {
@@ -111,18 +111,18 @@ index 39874b7d879423467f11c2149178a6e50c4a02d1..3ee3dcb5cc56c3ef148c21fc2bd6557c
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 8fe397588eb47224d48a8642b814583d11cc9c09..a7072c8e16434d3b15db1599f43d8fab5a97bdf3 100644
+index 33e40ae68dcf47ab9f6fcaa73eda2a33e958abd5..7b4c2f67df4d1cd19d4ed8b177b1faa8b61a1319 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -18,6 +18,7 @@
- #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
+@@ -20,6 +20,7 @@
+ #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl_non_ddl.h"
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -243,6 +244,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -247,6 +248,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
