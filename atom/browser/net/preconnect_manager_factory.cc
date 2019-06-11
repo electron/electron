@@ -49,7 +49,7 @@ namespace atom {
 predictors::PreconnectManager* PreconnectManagerFactory::GetForProfile(
     Profile* profile) {
   PreconnectManagerWrapper* ret = static_cast<PreconnectManagerWrapper*>(
-             GetInstance()->GetServiceForBrowserContext(profile, true));
+      GetInstance()->GetServiceForBrowserContext(profile, true));
   return ret ? ret->GetPtr() : nullptr;
 }
 
