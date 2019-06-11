@@ -28,8 +28,8 @@ class PreconnectManagerWrapper : public KeyedService {
       : ptr_(new predictors::PreconnectManager(delegate, profile)) {
     if (profile) {
       ptr_->SetNetworkContextForTesting(
-        content::BrowserContext::GetDefaultStoragePartition(profile)
-                ->GetNetworkContext());
+          content::BrowserContext::GetDefaultStoragePartition(profile)
+              ->GetNetworkContext());
     }
   }
   ~PreconnectManagerWrapper() override {
