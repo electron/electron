@@ -35,14 +35,16 @@ class URLPipeLoader : public network::mojom::URLLoader,
                 std::unique_ptr<network::ResourceRequest> request,
                 network::mojom::URLLoaderRequest loader,
                 network::mojom::URLLoaderClientPtr client,
-                const net::NetworkTrafficAnnotationTag& annotation);
+                const net::NetworkTrafficAnnotationTag& annotation,
+                base::DictionaryValue upload_data);
 
  private:
   ~URLPipeLoader() override;
 
   void Start(scoped_refptr<network::SharedURLLoaderFactory> factory,
              std::unique_ptr<network::ResourceRequest> request,
-             const net::NetworkTrafficAnnotationTag& annotation);
+             const net::NetworkTrafficAnnotationTag& annotation,
+             base::DictionaryValue upload_data);
   void NotifyComplete(int result);
   void OnResponseStarted(const GURL& final_url,
                          const network::ResourceResponseHead& response_head);
