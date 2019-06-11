@@ -15,7 +15,8 @@ URLPipeLoader::URLPipeLoader(
     std::unique_ptr<network::ResourceRequest> request,
     network::mojom::URLLoaderRequest loader,
     network::mojom::URLLoaderClientPtr client,
-    const net::NetworkTrafficAnnotationTag& annotation)
+    const net::NetworkTrafficAnnotationTag& annotation,
+    base::DictionaryValue upload_data)
     : binding_(this, std::move(loader)),
       client_(std::move(client)),
       weak_factory_(this) {
@@ -26,7 +27,7 @@ URLPipeLoader::URLPipeLoader(
   base::SequencedTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::BindOnce(&URLPipeLoader::Start, weak_factory_.GetWeakPtr(), factory,
-                     std::move(request), annotation));
+                     std::move(request), annotation, std::move(upload_data)));
 }
 
 URLPipeLoader::~URLPipeLoader() = default;
@@ -34,10 +35,19 @@ URLPipeLoader::~URLPipeLoader() = default;
 void URLPipeLoader::Start(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
     std::unique_ptr<network::ResourceRequest> request,
-    const net::NetworkTrafficAnnotationTag& annotation) {
+    const net::NetworkTrafficAnnotationTag& annotation,
+    base::DictionaryValue upload_data) {
   loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
   loader_->SetOnResponseStartedCallback(base::Bind(
       &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
+
+  // TODO(zcbenz): The old protocol API only supports string as upload data,
+  // we should seek to support more types in future.
+  std::string content_type, data;
+  if (upload_data.GetString("contentType", &content_type) &&
+      upload_data.GetString("data", &data))
+    loader_->AttachStringForUpload(data, content_type);
+
   loader_->DownloadAsStream(factory.get(), this);
 }
 

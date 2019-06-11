@@ -372,6 +372,10 @@ void AtomURLLoaderFactory::StartLoadingHttp(
   if (!dict.Get("method", &request->method))
     request->method = original_request.method;
 
+  base::DictionaryValue upload_data;
+  if (request->method != "GET" && request->method != "HEAD")
+    dict.Get("uploadData", &upload_data);
+
   scoped_refptr<AtomBrowserContext> browser_context =
       AtomBrowserContext::From("", false);
   v8::Local<v8::Value> value;
@@ -393,7 +397,8 @@ void AtomURLLoaderFactory::StartLoadingHttp(
   new URLPipeLoader(
       url_loader_factory, std::move(request), std::move(loader),
       std::move(client),
-      static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation));
+      static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
+      std::move(upload_data));
 }
 
 // static
