@@ -11,7 +11,6 @@
 
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/promise_util.h"
-#include "base/callback_forward.h"
 #include "base/files/file_path.h"
 #include "native_mate/dictionary.h"
 
