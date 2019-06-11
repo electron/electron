@@ -1,7 +1,8 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
-import { BrowserWindow, session } from 'electron'
+import { BrowserWindow, session, ipcMain } from 'electron'
 import { emittedOnce } from './events-helpers';
+import { closeAllWindows } from './window-helpers';
 import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -68,5 +69,21 @@ describe('reporting api', () => {
       bw.destroy()
       server.close()
     }
+  })
+})
+
+describe('window.postMessage', () => {
+  afterEach(async () => {
+    await closeAllWindows()
+  })
+
+  it('sets the source and origin correctly', async () => {
+    const w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`)
+    const [, message] = await emittedOnce(ipcMain, 'complete')
+    expect(message.data).to.equal('testing')
+    expect(message.origin).to.equal('file://')
+    expect(message.sourceEqualsOpener).to.equal(true)
+    expect(message.eventOrigin).to.equal('file://')
   })
 })

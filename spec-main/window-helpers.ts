@@ -39,3 +39,9 @@ export const closeWindow = async (
     }
   }
 }
+
+export async function closeAllWindows() {
+  for (const w of BrowserWindow.getAllWindows()) {
+    await closeWindow(w, {assertNotWindows: false})
+  }
+}

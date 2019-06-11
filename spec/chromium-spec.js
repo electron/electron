@@ -721,27 +721,6 @@ describe('chromium feature', () => {
   })
 
   describe('window.postMessage', () => {
-    it('sets the source and origin correctly', (done) => {
-      let b = null
-      listener = (event) => {
-        window.removeEventListener('message', listener)
-        b.close()
-        const message = JSON.parse(event.data)
-        expect(message.data).to.equal('testing')
-        expect(message.origin).to.equal('file://')
-        expect(message.sourceEqualsOpener).to.be.true()
-        expect(event.origin).to.equal('file://')
-        done()
-      }
-      window.addEventListener('message', listener)
-      app.once('browser-window-created', (event, { webContents }) => {
-        webContents.once('did-finish-load', () => {
-          b.postMessage('testing', '*')
-        })
-      })
-      b = window.open(`file://${fixtures}/pages/window-open-postMessage.html`, '', 'show=no')
-    })
-
     it('throws an exception when the targetOrigin cannot be converted to a string', () => {
       const b = window.open('')
       expect(() => {
