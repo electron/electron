@@ -237,7 +237,33 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
   for (net::HttpRequestHeaders::Iterator it(val.headers); it.GetNext();)
     headers.Set(it.name(), it.value());
   dict.Set("headers", headers);
-  // FIXME(zcbenz): Figure out how to support uploadData.
+  if (val.request_body) {
+    const auto& elements = *val.request_body->elements();
+    v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
+    for (size_t i = 0; i < elements.size(); ++i) {
+      const auto& element = elements[i];
+      mate::Dictionary upload_data(isolate, v8::Object::New(isolate));
+      switch (element.type()) {
+        case network::mojom::DataElementType::kFile:
+          upload_data.Set("file", element.path().value());
+          break;
+        case network::mojom::DataElementType::kBytes:
+          upload_data.Set("bytes", node::Buffer::Copy(isolate, element.bytes(),
+                                                      element.length())
+                                       .ToLocalChecked());
+          break;
+        case network::mojom::DataElementType::kBlob:
+          upload_data.Set("blobUUID", element.blob_uuid());
+          break;
+        default:
+          NOTREACHED() << "Found unsupported data element";
+      }
+      arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
+               upload_data.GetHandle())
+          .Check();
+    }
+    dict.Set("uploadData", arr);
+  }
   return dict.GetHandle();
 }
 
