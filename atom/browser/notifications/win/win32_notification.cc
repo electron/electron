@@ -47,8 +47,12 @@ void Win32Notification::Show(const NotificationOptions& options) {
 
   if (existing) {
     existing->tag_.clear();
+
     this->notification_ref_ = std::move(existing->notification_ref_);
     this->notification_ref_.Set(options.title, options.msg, image);
+    // Need to remove the entry in the notifications set that
+    // NotificationPresenter is holding
+    existing->Destroy();
   } else {
     this->notification_ref_ =
         presenter->AddNotification(options.title, options.msg, image);
