@@ -87,7 +87,7 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
     })
 
-    it.only('yields an error when setting a cookie with missing required fields', () => {
+    it('yields an error when setting a cookie with missing required fields', () => {
       const { cookies } = session.defaultSession
       const name = '1'
       const value = '1'
@@ -97,7 +97,7 @@ describe('session module', () => {
       })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
-    it.only('yields an error when setting a cookie with an invalid domain', () => {
+    it('yields an error when setting a cookie with an invalid domain', () => {
       const { cookies } = session.defaultSession
       const name = '1'
       const value = '1'
