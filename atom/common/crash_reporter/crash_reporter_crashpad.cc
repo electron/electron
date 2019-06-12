@@ -39,16 +39,9 @@ void CrashReporterCrashpad::SetCrashKeyValue(const base::StringPiece& key,
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
-void CrashReporterCrashpad::SetInitialCrashKeyValues(
-    const std::string& version) {
-  SetCrashKeyValue("prod", ATOM_PRODUCT_NAME);
-  SetCrashKeyValue("process_type",
-                   process_type_.empty() ? "browser" : process_type_);
-  SetCrashKeyValue("ver", version);
-
-  for (const auto& upload_parameter : upload_parameters_) {
+void CrashReporterCrashpad::SetInitialCrashKeyValues() {
+  for (const auto& upload_parameter : upload_parameters_)
     SetCrashKeyValue(upload_parameter.first, upload_parameter.second);
-  }
 }
 
 void CrashReporterCrashpad::AddExtraParameter(const std::string& key,

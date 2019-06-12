@@ -49,7 +49,6 @@ void CrashReporterWin::SetUnhandledExceptionFilter() {
 #endif
 
 void CrashReporterWin::Init(const std::string& product_name,
-                            const std::string& version,
                             const std::string& company_name,
                             const std::string& submit_url,
                             const base::FilePath& crashes_dir,
@@ -94,7 +93,7 @@ void CrashReporterWin::Init(const std::string& product_name,
   simple_string_dictionary_.reset(new crashpad::SimpleStringDictionary());
   crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
-  SetInitialCrashKeyValues(version);
+  SetInitialCrashKeyValues();
   if (process_type_.empty()) {  // browser process
     database_ = crashpad::CrashReportDatabase::Initialize(crashes_dir);
     SetUploadToServer(upload_to_server);

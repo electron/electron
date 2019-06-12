@@ -51,14 +51,16 @@ void CrashReporter::Start(const std::string& product_name,
   is_initialized_ = true;
   SetUploadParameters(extra_parameters);
 
-  Init(product_name, ATOM_VERSION_STRING, company_name, submit_url, crashes_dir,
-       upload_to_server, skip_system_crash_handler);
+  Init(product_name, company_name, submit_url, crashes_dir, upload_to_server,
+       skip_system_crash_handler);
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   upload_parameters_ = parameters;
   upload_parameters_["process_type"] =
       process_type_.empty() ? "browser" : process_type_;
+  upload_parameters_["prod"] = ATOM_PRODUCT_NAME;
+  upload_parameters_["ver"] = ATOM_VERSION_STRING;
 
   // Setting platform dependent parameters.
   SetUploadParameters();
@@ -95,7 +97,6 @@ CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
 }
 
 void CrashReporter::Init(const std::string& product_name,
-                         const std::string& version,
                          const std::string& company_name,
                          const std::string& submit_url,
                          const base::FilePath& crashes_dir,

@@ -29,7 +29,6 @@ class CrashReporterLinux : public CrashReporter {
   static CrashReporterLinux* GetInstance();
 
   void Init(const std::string& product_name,
-            const std::string& version,
             const std::string& company_name,
             const std::string& submit_url,
             const base::FilePath& crashes_dir,

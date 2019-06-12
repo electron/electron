@@ -34,7 +34,8 @@ class CrashReporterCrashpad : public CrashReporter {
   void SetUploadsEnabled(bool enable_uploads);
   void SetCrashKeyValue(const base::StringPiece& key,
                         const base::StringPiece& value);
-  void SetInitialCrashKeyValues(const std::string& version);
+  void SetInitialCrashKeyValues();
+
   std::vector<UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir) override;
 
