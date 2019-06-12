@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 98c3bb35943f82200154faf038abb8dd6e7091d8..8eaab8ab45ed06e33f00531b2978fdcff27318b8 100644
+index b0fffeb10039835f6b3458e4bf8337706aa55f70..3ea6b27626f490355cfa58ff90664efb315017d7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -416,6 +416,10 @@ class RendererSandboxedProcessLauncherDelegate

@@ -152,7 +152,7 @@ index 237923af2091dddce5c6a15cf2f1367642408d00..ddbcf12216ff299a911ffa224053870f
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 0fffada06ffa9a57810fe8ea32bdf6cef936f5f7..b4da106f13e48bf250abfcc07dd18d405800258a 100644
+index f346b897349b791bff3062cadd7ade47cdef91d8..170b0fbaa3884570629f2c5c972ff39940df42ca 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -352,6 +352,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
