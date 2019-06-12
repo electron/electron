@@ -3,8 +3,8 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 const getStorage = (storageType: string, extensionId: number, callback: Function) => {
   if (typeof callback !== 'function') throw new TypeError('No callback provided')
 
-  ipcRendererUtils.invoke('CHROME_STORAGE_READ', storageType, extensionId)
-    .then((data: any) => {
+  ipcRendererUtils.invoke<string>('CHROME_STORAGE_READ', storageType, extensionId)
+    .then(data => {
       if (data !== null) {
         callback(JSON.parse(data))
       } else {
@@ -80,9 +80,7 @@ const getStorageManager = (storageType: string, extensionId: number) => {
   }
 }
 
-module.exports = {
-  setup: (extensionId: number) => ({
-    sync: getStorageManager('sync', extensionId),
-    local: getStorageManager('local', extensionId)
-  })
-}
+export const setup = (extensionId: number) => ({
+  sync: getStorageManager('sync', extensionId),
+  local: getStorageManager('local', extensionId)
+})

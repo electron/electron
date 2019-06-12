@@ -1,4 +1,4 @@
-class Event {
+export class Event {
   private listeners: Function[] = []
 
   addListener (callback: Function) {
@@ -12,11 +12,9 @@ class Event {
     }
   }
 
-  emit (...args: any) {
+  emit (...args: any[]) {
     for (const listener of this.listeners) {
       listener(...args)
     }
   }
 }
-
-export default Event

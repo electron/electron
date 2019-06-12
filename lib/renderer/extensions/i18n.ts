@@ -13,8 +13,8 @@ interface Placeholder {
 
 const getMessages = (extensionId: number) => {
   try {
-    const data = ipcRendererUtils.invokeSync('CHROME_GET_MESSAGES', extensionId)
-    return JSON.parse(data as any) || {}
+    const data = ipcRendererUtils.invokeSync<string>('CHROME_GET_MESSAGES', extensionId)
+    return JSON.parse(data) || {}
   } catch {
     return {}
   }
@@ -34,7 +34,8 @@ const replacePlaceholders = (message: string, placeholders: Record<string, Place
   if (placeholders) {
     Object.keys(placeholders).forEach((name: string) => {
       let { content } = placeholders[name]
-      content = replaceNumberedSubstitutions(content, substitutions as string[])
+      const substitutionsArray = Array.isArray(substitutions) ? substitutions : []
+      content = replaceNumberedSubstitutions(content, substitutionsArray)
       message = message.replace(new RegExp(`\\$${name}\\$`, 'gi'), content)
     })
   }
