@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <string>
-
 #include "atom/common/deprecate_util.h"
 
 namespace atom {
 
+// msg/type/code arguments match Node's process.emitWarning() method. See
+// https://nodejs.org/api/process.html#process_process_emitwarning_warning_type_code_ctor
 v8::Maybe<bool> EmitDeprecationWarning(node::Environment* env,
                                        std::string warning_msg,
                                        std::string warning_type = "",
@@ -38,17 +38,14 @@ v8::Maybe<bool> EmitDeprecationWarning(node::Environment* env,
     return v8::Nothing<bool>();
   }
   if (type != nullptr) {
-    if (!v8::String::NewFromOneByte(env->isolate(),
-                                    reinterpret_cast<const uint8_t*>(type),
-                                    v8::NewStringType::kNormal)
+    if (!v8::String::NewFromUtf8(env->isolate(), type,
+                                 v8::NewStringType::kNormal)
              .ToLocal(&args[argc++])) {
       return v8::Nothing<bool>();
     }
-    if (code != nullptr &&
-        !v8::String::NewFromOneByte(env->isolate(),
-                                    reinterpret_cast<const uint8_t*>(code),
-                                    v8::NewStringType::kNormal)
-             .ToLocal(&args[argc++])) {
+    if (code != nullptr && !v8::String::NewFromUtf8(env->isolate(), code,
+                                                    v8::NewStringType::kNormal)
+                                .ToLocal(&args[argc++])) {
       return v8::Nothing<bool>();
     }
   }
