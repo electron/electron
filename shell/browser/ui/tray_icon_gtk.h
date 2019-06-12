@@ -27,11 +27,17 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   void SetToolTip(const std::string& tool_tip) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
 
- private:
-  // views::StatusIconLinux::Delegate:
+  // views::StatusIconLinux::Delegate
   void OnClick() override;
   bool HasClickAction() override;
+  // The following four methods are only used by StatusIconLinuxDbus, which we
+  // aren't yet using, so they are given stub implementations.
+  const gfx::ImageSkia& GetImage() const override;
+  const base::string16& GetToolTip() const override;
+  const ui::MenuModel* GetMenuModel() const override;
+  void OnImplInitialized(bool success) override;
 
+ private:
   std::unique_ptr<views::StatusIconLinux> icon_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);

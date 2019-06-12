@@ -37,6 +37,14 @@ void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
   icon_->UpdatePlatformContextMenu(menu_model);
 }
 
+const gfx::ImageSkia& TrayIconGtk::GetImage() {}
+
+const base::string16& TrayIconGtk::GetToolTip() {}
+
+const ui::MenuModel* TrayIconGtk::GetMenuModel() {}
+
+void TrayIconGtk::OnImplInitialized() {}
+
 void TrayIconGtk::OnClick() {
   NotifyClicked();
 }
