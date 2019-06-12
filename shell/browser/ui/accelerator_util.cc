@@ -89,7 +89,7 @@ void GenerateAcceleratorTable(AcceleratorTable* table,
 
 bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
                                     const ui::Accelerator& accelerator) {
-  if (base::ContainsKey(*table, accelerator)) {
+  if (base::Contains(*table, accelerator)) {
     const accelerator_util::MenuItem& item = (*table)[accelerator];
     if (item.model->IsEnabledAt(item.position)) {
       const auto event_flags =

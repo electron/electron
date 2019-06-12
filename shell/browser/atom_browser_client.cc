@@ -182,7 +182,7 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
   // for the frame host passed into RegisterPendingProcess.
-  if (base::ContainsKey(pending_processes_, process_id))
+  if (base::Contains(pending_processes_, process_id))
     return pending_processes_[process_id];
 
   // Certain render process will be created with no associated render view,

@@ -43,7 +43,7 @@ bool UvTaskRunner::PostNonNestableDelayedTask(const base::Location& from_here,
 // static
 void UvTaskRunner::OnTimeout(uv_timer_t* timer) {
   UvTaskRunner* self = static_cast<UvTaskRunner*>(timer->data);
-  if (!ContainsKey(self->tasks_, timer))
+  if (!base::Contains(self->tasks_, timer))
     return;
 
   std::move(self->tasks_[timer]).Run();
