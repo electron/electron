@@ -65,7 +65,7 @@ env-ia32: &env-ia32
   TARGET_ARCH: ia32
 
 env-arm: &env-arm
-  GN_EXTRA_ARGS: 'target_cpu = "arm"'
+  GN_EXTRA_ARGS: 'target_cpu = "arm" enable_vulkan = false'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
   BUILD_NATIVE_MKSNAPSHOT: 1
   TARGET_ARCH: arm
