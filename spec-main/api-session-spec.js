@@ -92,9 +92,9 @@ describe('session module', () => {
       const name = '1'
       const value = '1'
 
-      await expect((async () => {
-        await cookies.set({ url: '', name, value })
-      })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
+      await expect(
+        cookies.set({ url: '', name, value })
+      ).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
     it('yields an error when setting a cookie with an invalid URL', async () => {
@@ -102,9 +102,9 @@ describe('session module', () => {
       const name = '1'
       const value = '1'
 
-      await expect((async () => {
-        await cookies.set({ url: 'asdf', name, value })
-      })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
+      await expect(
+        cookies.set({ url: 'asdf', name, value })
+      ).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
     it('should overwrite previous cookies', async () => {
