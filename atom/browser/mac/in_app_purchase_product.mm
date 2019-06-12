@@ -150,9 +150,7 @@
   }
 
   // Downloadable Content Information
-  if (product.downloadable == true) {
-    productStruct.downloadable = true;
-  }
+  productStruct.isDownloadable = [product downloadable];
 
   return productStruct;
 }
