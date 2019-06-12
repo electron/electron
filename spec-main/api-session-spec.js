@@ -96,6 +96,15 @@ describe('session module', () => {
       })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
+    it('yields an error when setting a cookie with an invalid domain', async () => {
+      await expect((async () => {
+        const { cookies } = session.defaultSession
+        const name = '1'
+        const value = '1'
+        await cookies.set({ url: 'asdf', name, value })
+      })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
+    })
+
     it('should overwrite previous cookies', async () => {
       const { cookies } = session.defaultSession
       const name = 'DidOverwrite'
