@@ -186,6 +186,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
 #endif
+  bool BindAssociatedInterfaceRequestFromFrame(
+      content::RenderFrameHost* render_frame_host,
+      const std::string& interface_name,
+      mojo::ScopedInterfaceEndpointHandle* handle) override;
 
   bool HandleExternalProtocol(
       const GURL& url,

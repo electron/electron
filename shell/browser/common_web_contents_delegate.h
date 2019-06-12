@@ -107,15 +107,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
 
-  // Autofill related events.
-  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
-                         content::RenderFrameHost* embedder_frame_host,
-                         bool offscreen,
-                         const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels);
-  void HideAutofillPopup();
-
   // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
                           const std::string& content,
@@ -176,9 +167,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   bool native_fullscreen_ = false;
 
   // UI related helper classes.
-#if defined(TOOLKIT_VIEWS)
-  std::unique_ptr<AutofillPopup> autofill_popup_;
-#endif
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;
 
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;

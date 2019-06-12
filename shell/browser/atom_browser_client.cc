@@ -39,6 +39,7 @@
 #include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
+#include "electron/atom/common/api/api.mojom.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "net/base/escape.h"
@@ -53,6 +54,7 @@
 #include "shell/browser/api/atom_api_protocol_ns.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_navigation_throttle.h"
@@ -1048,6 +1050,21 @@ bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
   return true;
 }
 #endif  // defined(OS_WIN)
+
+bool AtomBrowserClient::BindAssociatedInterfaceRequestFromFrame(
+    content::RenderFrameHost* render_frame_host,
+    const std::string& interface_name,
+    mojo::ScopedInterfaceEndpointHandle* handle) {
+  if (interface_name == atom::mojom::ElectronAutofillDriver::Name_) {
+    atom::AutofillDriverFactory::BindAutofillDriver(
+        atom::mojom::ElectronAutofillDriverAssociatedRequest(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+
+  return false;
+}
 
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))

@@ -14,6 +14,7 @@
 #include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -305,7 +306,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Properties.
   int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
-  content::WebContents* HostWebContents();
+  content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
@@ -469,13 +470,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
-#if defined(TOOLKIT_VIEWS)
-  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
-                         const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels);
-#endif
-
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
@@ -513,11 +507,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  void ShowAutofillPopup(const gfx::RectF& bounds,
-                         const std::vector<base::string16>& values,
-                         const std::vector<base::string16>& labels) override;
-  void HideAutofillPopup() override;
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);

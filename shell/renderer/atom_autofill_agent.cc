@@ -9,7 +9,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
-#include "services/service_manager/public/cpp/interface_provider.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/platform/web_keyboard_event.h"
 #include "third_party/blink/public/platform/web_string.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -182,7 +182,7 @@ bool AutofillAgent::IsUserGesture() const {
 }
 
 void AutofillAgent::HidePopup() {
-  GetElectronBrowser()->HideAutofillPopup();
+  GetAutofillDriver()->HideAutofillPopup();
 }
 
 void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
@@ -190,7 +190,7 @@ void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
                               const std::vector<base::string16>& labels) {
   gfx::RectF bounds =
       render_frame()->GetRenderView()->ElementBoundsInWindow(element);
-  GetElectronBrowser()->ShowAutofillPopup(bounds, values, labels);
+  GetAutofillDriver()->ShowAutofillPopup(bounds, values, labels);
 }
 
 void AutofillAgent::AcceptDataListSuggestion(const base::string16& suggestion) {
@@ -218,13 +218,14 @@ void AutofillAgent::DoFocusChangeComplete() {
   focused_node_was_last_clicked_ = false;
 }
 
-const mojom::ElectronBrowserPtr& AutofillAgent::GetElectronBrowser() {
-  if (!browser_ptr_) {
-    render_frame()->GetRemoteInterfaces()->GetInterface(
-        mojo::MakeRequest(&browser_ptr_));
+const mojom::ElectronAutofillDriverAssociatedPtr&
+AutofillAgent::GetAutofillDriver() {
+  if (!autofill_driver_) {
+    render_frame()->GetRemoteAssociatedInterfaces()->GetInterface(
+        mojo::MakeRequest(&autofill_driver_));
   }
 
-  return browser_ptr_;
+  return autofill_driver_;
 }
 
 }  // namespace electron
