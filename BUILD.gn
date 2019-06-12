@@ -735,6 +735,7 @@ if (is_mac) {
     }
     defines = [ "HELPER_EXECUTABLE" ]
     sources = filenames.app_sources
+    sources += [ "atom/common/atom_constants.cc" ]
     include_dirs = [ "." ]
     info_plist = "atom/renderer/resources/mac/Info.plist"
     extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
@@ -840,6 +841,7 @@ if (is_mac) {
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
     sources = filenames.app_sources
+    sources += [ "atom/common/atom_constants.cc" ]
     include_dirs = [ "." ]
     deps = [
       ":electron_app_framework_bundle_data",
