@@ -29,7 +29,7 @@ struct Product {
   std::string formattedPrice;
 
   // Downloadable Content Information
-  bool downloadable = false;
+  bool isDownloadable = false;
 
   Product(const Product&);
   Product();

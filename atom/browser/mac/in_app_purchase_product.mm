@@ -141,15 +141,13 @@
 
     if (product.priceLocale != nil) {
       productStruct.formattedPrice =
-          [[self formatPrice:product.price withLocal:product.priceLocale]
-              UTF8String];
+          [[self formatPrice:product.price
+                   withLocal:product.priceLocale] UTF8String];
     }
   }
 
   // Downloadable Content Information
-  if (product.downloadable == true) {
-    productStruct.downloadable = true;
-  }
+  productStruct.isDownloadable = [product downloadable];
 
   return productStruct;
 }
