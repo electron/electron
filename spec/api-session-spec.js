@@ -145,6 +145,20 @@ describe('session module', () => {
       expect(error).to.have.property('message').which.equals('Setting cookie failed')
     })
 
+    it('yields an error when setting a cookie with an invalid URL', async () => {
+      let error
+      try {
+        const { cookies } = session.defaultSession
+        const name = '1'
+        const value = '1'
+        await cookies.set({ url: 'asdf', name, value })
+      } catch (e) {
+        error = e
+      }
+      expect(error).is.an('Error')
+      expect(error).to.have.property('message').which.equals('Setting cookie failed')
+    })
+
     it('should overwrite previous cookies', async () => {
       let error
       try {
