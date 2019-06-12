@@ -4,6 +4,10 @@
 
 #include "atom/browser/atom_autofill_driver_factory.h"
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "atom/browser/atom_autofill_driver.h"
 #include "base/bind.h"
 #include "base/callback.h"

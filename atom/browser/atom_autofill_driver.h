@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_AUTOFILL_DRIVER_H_
 #define ATOM_BROWSER_ATOM_AUTOFILL_DRIVER_H_
 
-#include <vector>
+#include <memory>
 
 #if defined(TOOLKIT_VIEWS)
 #include "atom/browser/ui/autofill_popup.h"
@@ -18,7 +18,7 @@ namespace atom {
 
 class AutofillDriver : public mojom::ElectronAutofillDriver {
  public:
-  AutofillDriver(content::RenderFrameHost* render_frame_host);
+  explicit AutofillDriver(content::RenderFrameHost* render_frame_host);
 
   ~AutofillDriver() override;
 

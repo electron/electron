@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_AUTOFILL_DRIVER_FACTORY_H_
 #define ATOM_BROWSER_ATOM_AUTOFILL_DRIVER_FACTORY_H_
 
+#include <memory>
 #include <unordered_map>
 
 #include "base/callback_forward.h"
@@ -19,7 +20,7 @@ class AutofillDriver;
 class AutofillDriverFactory : public content::WebContentsObserver,
                               public base::SupportsUserData::Data {
  public:
-  AutofillDriverFactory(content::WebContents* web_contents);
+  explicit AutofillDriverFactory(content::WebContents* web_contents);
 
   ~AutofillDriverFactory() override;
 
