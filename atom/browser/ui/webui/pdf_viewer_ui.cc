@@ -11,7 +11,6 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/loader/layered_resource_handler.h"
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
-#include "atom/common/api/api_messages.h"
 #include "atom/common/atom_constants.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/task/post_task.h"

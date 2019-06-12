@@ -37,14 +37,6 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IPC_MESSAGE_LOG_ENABLED)
-#define IPC_MESSAGE_MACROS_LOG_ENABLED
-#include "content/public/common/content_ipc_logging.h"
-#define IPC_LOG_TABLE_ADD_ENTRY(msg_id, logger) \
-  content::RegisterIPCLogger(msg_id, logger)
-#include "atom/common/common_message_generator.h"
-#endif
-
 #if defined(OS_MACOSX)
 #include "atom/app/atom_main_delegate_mac.h"
 #endif

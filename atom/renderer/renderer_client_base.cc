@@ -200,7 +200,8 @@ void RendererClientBase::RenderThreadStarted() {
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
 #if defined(TOOLKIT_VIEWS)
-  new AutofillAgent(render_frame);
+  new AutofillAgent(render_frame,
+                    render_frame->GetAssociatedInterfaceRegistry());
 #endif
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
   new PepperHelper(render_frame);

@@ -4,7 +4,6 @@
 
 #include "atom/renderer/atom_sandboxed_renderer_client.h"
 
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/electron_bindings.h"
 #include "atom/common/application_info.h"
 #include "atom/common/native_mate_converters/string16_converter.h"

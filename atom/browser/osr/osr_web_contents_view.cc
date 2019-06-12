@@ -4,7 +4,6 @@
 
 #include "atom/browser/osr/osr_web_contents_view.h"
 
-#include "atom/common/api/api_messages.h"
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_view_host.h"
 #include "third_party/blink/public/platform/web_screen_info.h"

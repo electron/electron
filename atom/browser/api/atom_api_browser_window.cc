@@ -10,7 +10,6 @@
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/constructor.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
