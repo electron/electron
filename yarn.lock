@@ -22,25 +22,10 @@
   dependencies:
     regenerator-runtime "^0.12.0"
 
-"@electron/docs-parser@^0.1.1":
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.1.7.tgz#1df6f6bf492ccc73ede3599dbc811c60e18c69a0"
-  integrity sha512-O/pipWAJxW+70sbmFq2PNwtzyjE6piXu3WG20ObyTAVoRvI51hUbRoQ6idcnYO7r3JKACueb2liQOKkV6AlUmQ==
-  dependencies:
-    "@types/markdown-it" "^0.0.7"
-    chai "^4.2.0"
-    chalk "^2.4.2"
-    fs-extra "^7.0.1"
-    lodash.camelcase "^4.3.0"
-    markdown-it "^8.4.2"
-    minimist "^1.2.0"
-    ora "^3.4.0"
-    pretty-ms "^5.0.0"
-
-"@electron/docs-parser@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.2.1.tgz#14bcc7ec5afa1b2e89dc6dbdb7152dc74c2b5c46"
-  integrity sha512-vQNxIQzIudFp3TECH9TEkPZUvLrDzZO5wZPmgN5e3c69yqmMj779I86Ny8giQfY93jFpRZ/+gRqIwVfD6gFEWA==
+"@electron/docs-parser@^0.2.1", "@electron/docs-parser@^0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.2.2.tgz#7c9acd6cc10559c86a27bb0653ec13df10955f02"
+  integrity sha512-FKXktu5i6cHL+AkvWv34j2lpBXNpqfHN7YwhswcBqRFXsj24phpih/sY2NKx6OrFP9R3ReJeg681/luAf/3k8Q==
   dependencies:
     "@types/markdown-it" "^0.0.7"
     chai "^4.2.0"
@@ -204,9 +189,9 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.14.6.tgz#9cbfcb62c50947217f4d88d4d274cc40c22625a9"
 
 "@types/node@^11.13.7":
-  version "11.13.13"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.13.tgz#a3d2a8a908ce322f24f0f8c88160b44c7dd5c452"
-  integrity sha512-GFWH7e4Q/OGLAO545bupVju+nE1YtLSwYAdLfSzAXnTPqoqKoXCOEtB7Cluvg9B/h2nGLhyzCDyCInYvrOE2nw==
+  version "11.13.14"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.14.tgz#03e9416f7d699d71742e5a1e455def7bd55f8fb9"
+  integrity sha512-9NjFOB6UUGjJLNANmyIouuaN8YPsPgC4DCOd5lU+DL7HSX/RCfzz0JOtHlspEJq1Ll/JUu/8Cm4wzxpZ8w5sjQ==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.0"
@@ -3973,9 +3958,9 @@ ms@2.0.0:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
 
 ms@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.1.tgz#30a5864eb3ebb0a66f2ebe6d727af06a09d86e0a"
-  integrity sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
+  integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
 mute-stream@0.0.7:
   version "0.0.7"
