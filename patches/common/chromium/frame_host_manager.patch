@@ -6,8 +6,42 @@ Subject: frame_host_manager.patch
 Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance.
 
+diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
+index 8aca9384edb69012628fc9afb98f647aeec7d593..10fe96e6c9bfc7f33a81ad9b75c75d4dda776d7c 100644
+--- a/content/browser/browsing_instance.cc
++++ b/content/browser/browsing_instance.cc
+@@ -53,6 +53,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
+   return instance;
+ }
+ 
++scoped_refptr<SiteInstanceImpl> BrowsingInstance::CreateSiteInstanceForURL(
++    const GURL& url) {
++  scoped_refptr<SiteInstanceImpl> instance = new SiteInstanceImpl(this);
++  instance->SetSite(url);
++  return instance;
++}
++
+ void BrowsingInstance::RegisterSiteInstance(SiteInstanceImpl* site_instance) {
+   DCHECK(site_instance->browsing_instance_.get() == this);
+   DCHECK(site_instance->HasSite());
+diff --git a/content/browser/browsing_instance.h b/content/browser/browsing_instance.h
+index d439dfbb603876f942ff40fe1a505f9498f57c23..fd576eb894e06fe6c5cb21351b2b95b0a8444dce 100644
+--- a/content/browser/browsing_instance.h
++++ b/content/browser/browsing_instance.h
+@@ -100,6 +100,11 @@ class CONTENT_EXPORT BrowsingInstance final
+   // SiteInstance per site.
+   scoped_refptr<SiteInstanceImpl> GetSiteInstanceForURL(const GURL& url);
+ 
++  // Create a new SiteInstance for the given URL bound the current
++  // BrowsingInstance.
++  scoped_refptr<SiteInstanceImpl> CreateSiteInstanceForURL(
++      const GURL& url);
++
+   // Adds the given SiteInstance to our map, to ensure that we do not create
+   // another SiteInstance for the same site.
+   void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905cccde218 100644
+index f9f8e5204d1d92e87370f859c294919d2a1991c3..760965f134e3326676428b9fc6906f9ff740aac2 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -1978,6 +1978,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -50,7 +84,7 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905
 +        overriden_site_instance =
 +            candidate_site_instance
 +                ? candidate_site_instance
-+                : SiteInstance::CreateForURL(browser_context,
++                : current_site_instance->CreateRelatedSiteInstance(
 +                                             request.common_params().url);
 +        break;
 +      case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_CURRENT:
@@ -107,8 +141,35 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..ff42619d67b916bacb63f99b2391c905
    return dest_site_instance;
  }
  
+diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
+index e1a7560631bd07f812315cb9932475cf890d8a6b..34b947c34a3eb676286f43fcb23100134f751dfb 100644
+--- a/content/browser/site_instance_impl.cc
++++ b/content/browser/site_instance_impl.cc
+@@ -236,6 +236,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
+   return browsing_instance_->HasSiteInstance(url);
+ }
+ 
++scoped_refptr<SiteInstance> SiteInstanceImpl::CreateRelatedSiteInstance(const GURL& url) {
++  return browsing_instance_->CreateSiteInstanceForURL(url);
++}
++
+ scoped_refptr<SiteInstance> SiteInstanceImpl::GetRelatedSiteInstance(
+     const GURL& url) {
+   return browsing_instance_->GetSiteInstanceForURL(url);
+diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
+index da2696d679953096356e0c73891ff97854f76b54..c4c8e29a7723c4a22e6e52bd2f9ff792241b963a 100644
+--- a/content/browser/site_instance_impl.h
++++ b/content/browser/site_instance_impl.h
+@@ -70,6 +70,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
+   BrowserContext* GetBrowserContext() const override;
+   const GURL& GetSiteURL() const override;
+   scoped_refptr<SiteInstance> GetRelatedSiteInstance(const GURL& url) override;
++	scoped_refptr<SiteInstance> CreateRelatedSiteInstance(const GURL& url) override;
+   bool IsRelatedSiteInstance(const SiteInstance* instance) override;
+   size_t GetRelatedActiveContentsCount() override;
+   bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 9d00218ae972b34073c84f2de78dee934962c3d8..e474d899fbcebfbaf4cb2ec0b63cc963292ee39a 100644
+index 64c4d9eb2dfb8f53f7a6c8f00140b0cf22f18a49..0aff71c4339d0eacecf6b6d86ab750738696c31e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -48,6 +48,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -129,7 +190,7 @@ index 9d00218ae972b34073c84f2de78dee934962c3d8..e474d899fbcebfbaf4cb2ec0b63cc963
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 09aca495389e48a8dbc1ea45b8bb636aa13d2486..2cc843982a697dbd693ca1d5fda3a8ab68c96f73 100644
+index fdb9d7b8859270b36453e25349f7d84c44a6ce92..9f0a966d8abf72b606906b14f00748b4466f8b0a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -206,8 +206,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
@@ -170,3 +231,19 @@ index 09aca495389e48a8dbc1ea45b8bb636aa13d2486..2cc843982a697dbd693ca1d5fda3a8ab
    // Allows the embedder to set any number of custom BrowserMainParts
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
+diff --git a/content/public/browser/site_instance.h b/content/public/browser/site_instance.h
+index 3b4c1cfacdad7ecc99b61cc0c2e4e71b72a855b6..d587f1e9211aa0e7636aa255a724ec9bb7399024 100644
+--- a/content/public/browser/site_instance.h
++++ b/content/public/browser/site_instance.h
+@@ -116,6 +116,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {
+   //   corresponds to a site URL with the host "example.com".
+   virtual const GURL& GetSiteURL() const = 0;
+ 
++	// Create a SiteInstance for the given URL that shares the current
++	// BrowsingInstance.
++	virtual scoped_refptr<SiteInstance> CreateRelatedSiteInstance(
++	    const GURL& url) = 0;
++
+   // Gets a SiteInstance for the given URL that shares the current
+   // BrowsingInstance, creating a new SiteInstance if necessary.  This ensures
+   // that a BrowsingInstance only has one SiteInstance per site, so that pages

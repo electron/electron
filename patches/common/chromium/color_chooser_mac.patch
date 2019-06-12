@@ -63,7 +63,7 @@ diff --git a/chrome/browser/ui/cocoa/color_chooser_mac.mm b/chrome/browser/ui/co
 index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d132b7d51 100644
 --- a/chrome/browser/ui/cocoa/color_chooser_mac.mm
 +++ b/chrome/browser/ui/cocoa/color_chooser_mac.mm
-@@ -39,16 +39,18 @@ void ColorChooserMac::DidChooseColorInColorPanel(SkColor color) {
+@@ -39,16 +39,18 @@
      web_contents_->DidChooseColorInColorChooser(color);
  }
  
@@ -87,7 +87,7 @@ index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d
  }
  
  void ColorChooserMac::SetSelectedColor(SkColor color) {
-@@ -67,9 +69,14 @@ void ColorChooserMac::SetSelectedColor(SkColor color) {
+@@ -67,9 +69,14 @@ - (id)initWithChooser:(ColorChooserMac*)chooser {
      chooser_ = chooser;
      NSColorPanel* panel = [NSColorPanel sharedColorPanel];
      [panel setShowsAlpha:NO];
@@ -103,7 +103,7 @@ index bf47154f0a880f1c6143065e5c6d060f1df73765..e7cdab7a23d96345cc6e8ec578a8616d
    }
    return self;
  }
-@@ -82,19 +89,21 @@ void ColorChooserMac::SetSelectedColor(SkColor color) {
+@@ -82,19 +89,21 @@ - (void)dealloc {
    // the ColorPanelCocoa is still the target.
    BOOL respondsToPrivateTargetMethod =
        [panel respondsToSelector:@selector(__target)];
@@ -134,7 +134,7 @@ diff --git a/chrome/browser/ui/cocoa/color_panel_cocoa_unittest.mm b/chrome/brow
 index 83185ceb9bbd29bf38fce7f72c23f3a5b15ba6c8..823365fdfc0bceceeed6f5edc00b3462715a4751 100644
 --- a/chrome/browser/ui/cocoa/color_panel_cocoa_unittest.mm
 +++ b/chrome/browser/ui/cocoa/color_panel_cocoa_unittest.mm
-@@ -28,28 +28,6 @@ class ColorPanelCocoaTest : public CocoaTest {
+@@ -28,28 +28,6 @@ void SetUp() override {
    }
  };
  
@@ -163,7 +163,7 @@ index 83185ceb9bbd29bf38fce7f72c23f3a5b15ba6c8..823365fdfc0bceceeed6f5edc00b3462
  TEST_F(ColorPanelCocoaTest, ClearTargetOnEnd) {
    NSColorPanel* nscolor_panel = [NSColorPanel sharedColorPanel];
    @autoreleasepool {
-@@ -61,19 +39,12 @@ TEST_F(ColorPanelCocoaTest, ClearTargetOnEnd) {
+@@ -61,19 +39,12 @@ void SetUp() override {
  
      // Confirm the NSColorPanel's configuration by the ColorChooserMac's
      // ColorPanelCocoa.
