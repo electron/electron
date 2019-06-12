@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import * as fs from 'fs'
 import * as path from 'path'
 
 const Module = require('module')
@@ -189,20 +188,12 @@ if (nodeIntegration) {
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
-const { isParentDir } = require('@electron/internal/common/path-utils')
-
-let absoluteAppPath: string
-const getAppPath = function () {
-  if (absoluteAppPath === undefined) {
-    absoluteAppPath = fs.realpathSync(appPath!)
-  }
-  return absoluteAppPath
-}
+const { isPreloadAllowed } = require('@electron/internal/common/path-utils')
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
-    if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
+    if (!isPreloadAllowed(appPath, Module._resolveFilename(preloadScript, null, true))) {
       throw new Error('Preload scripts outside of app path are not allowed')
     }
     Module._load(preloadScript)

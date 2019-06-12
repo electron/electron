@@ -13,10 +13,10 @@ declare namespace Electron {
   }
 
   interface App {
-    _setDefaultAppPaths(packagePath: string | null): void;
+    _setDefaultAppPaths(packagePath: string): void;
     setVersion(version: string): void;
     setDesktopName(name: string): void;
-    setAppPath(path: string | null): void;
+    setAppPath(path: string): void;
   }
 
   interface SerializedError {

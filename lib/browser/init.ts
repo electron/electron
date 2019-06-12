@@ -146,7 +146,7 @@ if (packageJson.v8Flags != null) {
   require('v8').setFlagsFromString(packageJson.v8Flags)
 }
 
-app._setDefaultAppPaths(packagePath)
+app._setDefaultAppPaths(packagePath!)
 
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools')

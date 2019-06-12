@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import * as path from 'path'
 
 import { deprecate, Menu } from 'electron'
@@ -48,7 +49,7 @@ app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
   app.setPath('userData', path.join(app.getPath('appData'), app.name!))
   app.setPath('userCache', path.join(app.getPath('cache'), app.name!))
-  app.setAppPath(packagePath)
+  app.setAppPath(fs.realpathSync(packagePath))
 
   // Add support for --user-data-dir=
   if (app.commandLine.hasSwitch('user-data-dir')) {
