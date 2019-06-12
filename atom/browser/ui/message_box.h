@@ -35,11 +35,11 @@ struct MessageBoxSettings {
   std::vector<std::string> buttons;
   int default_id;
   int cancel_id;
-  int options;
-  std::string title = "";
-  std::string message = "";
-  std::string detail = "";
-  std::string checkbox_label = "";
+  int options = 0;
+  std::string title;
+  std::string message;
+  std::string detail;
+  std::string checkbox_label;
   bool checkbox_checked = false;
   gfx::ImageSkia icon;
 

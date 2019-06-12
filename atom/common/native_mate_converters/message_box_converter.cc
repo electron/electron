@@ -18,18 +18,18 @@ bool Converter<atom::MessageBoxSettings>::FromV8(
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
-  dict.Get("window", &(out->parent_window));
-  dict.Get("type", &(out->type));
-  dict.Get("buttons", &(out->buttons));
-  dict.Get("defaultId", &(out->default_id));
-  dict.Get("cancelId", &(out->cancel_id));
-  dict.Get("options", &(out->options));
-  dict.Get("title", &(out->title));
-  dict.Get("message", &(out->message));
-  dict.Get("detail", &(out->detail));
-  dict.Get("checkboxLabel", &(out->checkbox_label));
-  dict.Get("checkboxChecked", &(out->checkbox_checked));
-  dict.Get("icon", &(out->icon));
+  dict.Get("window", &out->parent_window);
+  dict.Get("type", &out->type);
+  dict.Get("buttons", &out->buttons);
+  dict.Get("defaultId", &out->default_id);
+  dict.Get("cancelId", &out->cancel_id);
+  dict.Get("options", &out->options);
+  dict.Get("title", &out->title);
+  dict.Get("message", &out->message);
+  dict.Get("detail", &out->detail);
+  dict.Get("checkboxLabel", &out->checkbox_label);
+  dict.Get("checkboxChecked", &out->checkbox_checked);
+  dict.Get("icon", &out->icon);
   return true;
 }
 

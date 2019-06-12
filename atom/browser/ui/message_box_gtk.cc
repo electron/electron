@@ -212,9 +212,8 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
     settings.type = 3;  // MessageBoxType::kError
     settings.buttons = {"OK"};
     settings.title = "Error";
-    settings.message = base::UTF16ToUTF8(title).c_str();
-    settings.detail = base::UTF16ToUTF8(content).c_str();
-    settings.icon = gfx::ImageSkia();
+    settings.message = base::UTF16ToUTF8(title);
+    settings.detail = base::UTF16ToUTF8(content);
 
     GtkMessageBox(settings).RunSynchronous();
   } else {
