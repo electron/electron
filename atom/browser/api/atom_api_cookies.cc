@@ -261,6 +261,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                            : base::Time::FromDoubleT(last_access_date);
   }
 
+  auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   GURL url(url_string);
   if (url.is_empty()) {
     std::move(completion_callback).Run(false);
@@ -277,7 +278,6 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
           url, name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
-  auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     std::move(completion_callback).Run(false);
     return;
