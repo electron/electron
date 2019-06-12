@@ -620,8 +620,8 @@ static_library("electron_lib") {
     ]
   }
 
-  sources += ["atom/renderer/api/custom_media_stream.cc"]
-  deps += ["//media/capture:capture_lib"]
+  sources += [ "atom/renderer/api/custom_media_stream.cc" ]
+  deps += [ "//media/capture:capture_lib" ]
 
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]

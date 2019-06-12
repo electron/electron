@@ -1,6 +1,8 @@
-#include <iostream>
-#include <memory>
-#include <utility>
+// Copyright (c) 2014 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#include "atom/renderer/api/custom_media_stream.h"
 
 #define INSIDE_BLINK \
   1  // we need to be able to convert WebMediaStreamTrack to
@@ -24,6 +26,11 @@
 #include <third_party/blink/renderer/modules/mediastream/media_stream_track.h>
 #include <third_party/blink/renderer/platform/bindings/to_v8.h>
 
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/node_includes.h"
@@ -31,8 +38,6 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
-
-#include "atom/renderer/api/custom_media_stream.h"
 
 namespace {
 struct ControlObject;
@@ -205,7 +210,7 @@ struct Frame : mate::Wrappable<Frame> {
 };
 
 struct NonGCFrame final : CustomMediaStream::VideoFrame {
-  NonGCFrame(scoped_refptr<media::VideoFrame> frame) : frame_(frame) {}
+  explicit NonGCFrame(scoped_refptr<media::VideoFrame> frame) : frame_(frame) {}
 
   CustomMediaStream::Format format() override {
     return {frame_->visible_rect().width(), frame_->visible_rect().height()};

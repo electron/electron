@@ -1,7 +1,12 @@
-#ifndef __CUSTOM_MEDIA_STREAM_H__
-#define __CUSTOM_MEDIA_STREAM_H__
+// Copyright (c) 2014 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ATOM_RENDERER_API_CUSTOM_MEDIA_STREAM_H_
+#define ATOM_RENDERER_API_CUSTOM_MEDIA_STREAM_H_
 
 #include <v8.h>
+#include <memory>
 
 namespace CustomMediaStream {
 
@@ -50,15 +55,14 @@ struct VideoFrameReleaser {
   void operator()(VideoFrame* frame) const;
   // private:
   friend VideoFrameCallbackHolder;
-  VideoFrameReleaser(std::shared_ptr<VideoFrameCallbackHolder>);
+  explicit VideoFrameReleaser(VideoFrameCallbackHolderPtr);
   VideoFrameReleaser(VideoFrameReleaser const&);
   ~VideoFrameReleaser();
 
   VideoFrameCallbackHolderPtr callback_;
 };
 
-inline VideoFrameReleaser::VideoFrameReleaser(
-    std::shared_ptr<VideoFrameCallbackHolder> cb)
+inline VideoFrameReleaser::VideoFrameReleaser(VideoFrameCallbackHolderPtr cb)
     : callback_(cb) {}
 inline VideoFrameReleaser::VideoFrameReleaser(VideoFrameReleaser const&) =
     default;
@@ -71,7 +75,8 @@ struct VideoFrameCallbackHolder
   using FramePtr = std::unique_ptr<VideoFrame, detail::VideoFrameReleaser>;
 
   FramePtr allocate(Timestamp ts, Format const* format) {
-    return {callback_->allocateFrame(ts, format), shared_from_this()};
+    return {callback_->allocateFrame(ts, format),
+            detail::VideoFrameReleaser(shared_from_this())};
   }
 
   FramePtr allocate(Timestamp ts, Format const& f) { return allocate(ts, &f); }
@@ -119,4 +124,4 @@ inline void VideoFrameReleaser::operator()(VideoFrame* frame) const {
 
 }  // namespace CustomMediaStream
 
-#endif
+#endif  // ATOM_RENDERER_API_CUSTOM_MEDIA_STREAM_H_
