@@ -97,7 +97,7 @@ describe('session module', () => {
       })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
-    it('yields an error when setting a cookie with an invalid domain', () => {
+    it('yields an error when setting a cookie with an invalid URL', () => {
       const { cookies } = session.defaultSession
       const name = '1'
       const value = '1'
