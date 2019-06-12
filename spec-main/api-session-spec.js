@@ -87,20 +87,22 @@ describe('session module', () => {
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true)
     })
 
-    it('yields an error when setting a cookie with missing required fields', async () => {
-      await expect((async () => {
-        const { cookies } = session.defaultSession
-        const name = '1'
-        const value = '1'
+    it.only('yields an error when setting a cookie with missing required fields', () => {
+      const { cookies } = session.defaultSession
+      const name = '1'
+      const value = '1'
+
+      expect((async () => {
         await cookies.set({ url: '', name, value })
       })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
 
-    it('yields an error when setting a cookie with an invalid domain', async () => {
-      await expect((async () => {
-        const { cookies } = session.defaultSession
-        const name = '1'
-        const value = '1'
+    it.only('yields an error when setting a cookie with an invalid domain', () => {
+      const { cookies } = session.defaultSession
+      const name = '1'
+      const value = '1'
+
+      expect((async () => {
         await cookies.set({ url: 'asdf', name, value })
       })()).to.eventually.be.rejectedWith('Failed to get cookie domain')
     })
