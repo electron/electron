@@ -442,11 +442,6 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                           mate::Arguments* args) {
-  using StatusCallback =
-      base::RepeatingCallback<void(blink::mojom::PermissionStatus)>;
-  using RequestHandler =
-      base::Callback<void(content::WebContents*, content::PermissionType,
-                          StatusCallback, const base::DictionaryValue&)>;
   auto* permission_manager = static_cast<AtomPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   if (val->IsNull()) {
@@ -454,13 +449,13 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
         AtomPermissionManager::RequestHandler());
     return;
   }
-  auto handler = std::make_unique<RequestHandler>();
+  auto handler = std::make_unique<AtomPermissionManager::RequestHandler>();
   if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowError("Must pass null or function");
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](RequestHandler* handler, content::WebContents* web_contents,
+      [](AtomPermissionManager::RequestHandler* handler, content::WebContents* web_contents,
          content::PermissionType permission_type,
          AtomPermissionManager::StatusCallback callback,
          const base::DictionaryValue& details) {
