@@ -177,17 +177,17 @@ index f3867356e3d641416e00e6d115ae9ae2a0be90ab..b1d192d2b20ccb63fba07093101d745e
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..bbca3a43b5ba8bcf1e3a4dab4509b903b7117f36
+index 0000000000000000000000000000000000000000..f5fc4f37c10bdc8aca8c1618985d46d10c830437
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,168 @@
+@@ -0,0 +1,156 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
 +
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
 +
-+#include "base/memory/shared_memory.h"
++#include "base/memory/unsafe_shared_memory_region.h"
 +#include "base/threading/thread_checker.h"
 +#include "components/viz/common/resources/resource_sizes.h"
 +#include "components/viz/service/display_embedder/output_device_backing.h"
@@ -280,44 +280,32 @@ index 0000000000000000000000000000000000000000..bbca3a43b5ba8bcf1e3a4dab4509b903
 +    return;
 +  }
 +
++  base::UnsafeSharedMemoryRegion region =
++      base::UnsafeSharedMemoryRegion::Create(required_bytes);
++  if (!region.IsValid()) {
++    DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
++    return;
++  }
++
 +  #if defined(WIN32)
-+    base::SharedMemory shm;
-+    if (!shm.CreateAnonymous(required_bytes)) {
-+      DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
-+      return;
-+    }
-+
-+    canvas_ = skia::CreatePlatformCanvasWithSharedSection(
-+        viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+        shm.handle().GetHandle(), skia::CRASH_ON_FAILURE);
-+
-+    // Transfer handle ownership to the browser process.
-+    mojo::ScopedSharedBufferHandle scoped_handle = mojo::WrapSharedMemoryHandle(
-+        shm.TakeHandle(), required_bytes,
-+        mojo::UnwrappedSharedMemoryHandleProtection::kReadWrite);
++  canvas_ = skia::CreatePlatformCanvasWithSharedSection(
++      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
++      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
 +  #else
-+    auto shm = mojo::CreateWritableSharedMemoryRegion(required_bytes);
-+    if (!shm.IsValid()) {
-+      DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
-+      return;
-+    }
++  shm_mapping_ = region.Map();
++  if (!shm_mapping_.IsValid()) {
++    DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
++    return;
++  }
 +
-+    shm_mapping_ = shm.Map();
-+    if (!shm_mapping_.IsValid()) {
-+      DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
-+      return;
-+    }
-+
-+    canvas_ = skia::CreatePlatformCanvasWithPixels(
-+        viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+        static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
-+
-+    mojo::ScopedSharedBufferHandle scoped_handle =
-+        mojo::WrapWritableSharedMemoryRegion(std::move(shm));
++  canvas_ = skia::CreatePlatformCanvasWithPixels(
++      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
++      static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
 +  #endif
 +
++  // Transfer region ownership to the browser process.
 +  layered_window_updater_->OnAllocatedSharedMemory(viewport_pixel_size_,
-+                                                   std::move(scoped_handle));
++                                                   std::move(region));
 +}
 +
 +SkCanvas* SoftwareOutputDeviceProxy::BeginPaintDelegated() {
