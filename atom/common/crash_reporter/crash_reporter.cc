@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "atom/browser/browser.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/map_converter.h"
@@ -25,7 +26,7 @@ const char kCrashesDirectoryKey[] = "crashes-directory";
 
 CrashReporter::CrashReporter() {
   std::unique_ptr<base::Environment> env = base::Environment::Create();
-  if (env->HasVar("ELECTRON_RUN_AS_NODE")) {
+  if (env->HasVar(atom::kRunAsNode)) {
     process_type_ = "node";
   } else {
     auto* cmd = base::CommandLine::ForCurrentProcess();

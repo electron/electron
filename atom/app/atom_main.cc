@@ -40,6 +40,7 @@
 
 #include "atom/app/node_main.h"
 #include "atom/common/atom_command_line.h"
+#include "atom/common/atom_constants.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
@@ -49,10 +50,6 @@
 #endif
 
 namespace {
-
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
-const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
-#endif
 
 ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -128,7 +125,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #endif
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  bool run_as_node = IsEnvSet(kRunAsNode);
+  bool run_as_node = IsEnvSet(atom::kRunAsNode);
 #else
   bool run_as_node = false;
 #endif
@@ -194,7 +191,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (IsEnvSet(kRunAsNode)) {
+  if (IsEnvSet(atom::kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return atom::NodeMain(argc, argv);
@@ -215,7 +212,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (IsEnvSet(kRunAsNode)) {
+  if (IsEnvSet(atom::kRunAsNode)) {
     return AtomInitializeICUandStartNode(argc, argv);
   }
 #endif

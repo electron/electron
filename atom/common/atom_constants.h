@@ -32,6 +32,10 @@ extern const char kSecureProtocolDescription[];
 extern const char kCrashpadPipeName[];
 #endif
 
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
+extern const char kRunAsNode[];
+#endif
+
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 // The MIME type used for the PDF plugin.
 extern const char kPdfPluginMimeType[];
