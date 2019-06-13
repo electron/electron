@@ -51,10 +51,8 @@ app._setDefaultAppPaths = (packagePath) => {
   app.setAppPath(packagePath)
 
   // Add support for --user-data-dir=
-  const userDataDirFlag = '--user-data-dir='
-  const userDataArg = process.argv.find(arg => arg.startsWith(userDataDirFlag))
-  if (userDataArg) {
-    const userDataDir = userDataArg.substr(userDataDirFlag.length)
+  if (app.commandLine.hasSwitch('user-data-dir')) {
+    const userDataDir = app.commandLine.getSwitchValue('user-data-dir')
     if (path.isAbsolute(userDataDir)) app.setPath('userData', userDataDir)
   }
 }
