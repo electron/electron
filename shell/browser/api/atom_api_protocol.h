@@ -99,8 +99,23 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Register the protocol with certain request job.
   template <typename RequestJob>
   void RegisterProtocol(const std::string& scheme,
-                        const Handler& handler,
+                        v8::Local<v8::Value> __handler__todo,
                         mate::Arguments* args) {
+    LOG(INFO) << scheme;
+
+    auto handler = std::make_unique<Handler>();
+    // Handler h1;
+    if (!mate::ConvertFromV8(args->isolate(), __handler__todo, handler.get())) {
+      args->ThrowError("TODO");
+      return;
+    }
+    LOG(INFO) << "worked";
+
+    if (scheme == "test") {
+      args->ThrowError("Aaaaaaa.");
+      return;
+    }
+
     CompletionCallback callback;
     args->GetNext(&callback);
     auto* getter = static_cast<URLRequestContextGetter*>(
@@ -108,7 +123,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
     base::PostTaskWithTraitsAndReplyWithResult(
         FROM_HERE, {content::BrowserThread::IO},
         base::BindOnce(&Protocol::RegisterProtocolInIO<RequestJob>,
-                       base::RetainedRef(getter), isolate(), scheme, handler),
+                       base::RetainedRef(getter), isolate(), scheme, *handler),
         base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
   }
   template <typename RequestJob>
@@ -117,6 +132,12 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
+    // if (isolate)
+    // isolate->ThrowException(v8::Exception::Error(mate::StringToV8(isolate,
+    // "my random error")));
+
+    // LOG(INFO) << "Why two times??";
+
     auto* job_factory = request_context_getter->job_factory();
     if (job_factory->IsHandledProtocol(scheme))
       return ProtocolError::REGISTERED;
