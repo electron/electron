@@ -37,11 +37,20 @@ void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
   icon_->UpdatePlatformContextMenu(menu_model);
 }
 
-const gfx::ImageSkia& TrayIconGtk::GetImage() {}
+const gfx::ImageSkia& TrayIconGtk::GetImage() const {
+  NOTREACHED();
+  return gfx::ImageSkia();
+}
 
-const base::string16& TrayIconGtk::GetToolTip() {}
+const base::string16& TrayIconGtk::GetToolTip() const {
+  NOTREACHED();
+  return base::string16();
+}
 
-const ui::MenuModel* TrayIconGtk::GetMenuModel() {}
+const ui::MenuModel* TrayIconGtk::GetMenuModel() const {
+  NOTREACHED();
+  return nullptr;
+}
 
 void TrayIconGtk::OnImplInitialized() {}
 
