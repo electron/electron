@@ -1205,6 +1205,13 @@ base::ProcessId WebContents::GetOSProcessID() const {
   return base::GetProcId(process_handle);
 }
 
+base::ProcessId WebContents::GetOSProcessIdForFrame(int frame_id) const {
+  if (auto* frame = GetFrameByRoutingID(frame_id)) {
+    return base::GetProcId(frame->GetProcess()->GetProcess().Handle());
+  }
+  return base::kNullProcessId;
+}
+
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
@@ -1727,17 +1734,12 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
                                         int32_t frame_id,
                                         const std::string& channel,
                                         const base::ListValue& args) {
-  auto frames = web_contents()->GetAllFrames();
-  auto iter = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
-    return f->GetRoutingID() == frame_id;
-  });
-  if (iter == frames.end())
-    return false;
-  if (!(*iter)->IsRenderFrameLive())
+  auto* frame = GetFrameByRoutingID(frame_id);
+  if (!frame || !frame->IsRenderFrameLive())
     return false;
 
   mojom::ElectronRendererAssociatedPtr electron_ptr;
-  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(
+  frame->GetRemoteAssociatedInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
   electron_ptr->Message(internal, send_to_all, channel, args.Clone(),
                         0 /* sender_id */);
@@ -2186,6 +2188,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
+      .SetMethod("getOSProcessIdForFrame", &WebContents::GetOSProcessIdForFrame)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
@@ -2288,6 +2291,15 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {
   return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
+}
+
+content::RenderFrameHost* WebContents::GetFrameByRoutingID(int frame_id) const {
+  auto frames = web_contents()->GetAllFrames();
+  auto it = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
+    return f->GetRoutingID() == frame_id;
+  });
+
+  return (it != frames.end()) ? *it : nullptr;
 }
 
 // static

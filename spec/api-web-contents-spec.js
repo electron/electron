@@ -567,6 +567,55 @@ describe('webContents module', () => {
     })
   })
 
+  describe('getOSProcessIdForFrame()', () => {
+    let server = null
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        res.end(`<iframe src="${server.cross_site_url}" />`)
+      })
+      server.listen(0, '127.0.0.1', () => {
+        server.url = `http://127.0.0.1:${server.address().port}`
+        server.cross_site_url = `http://localhost:${server.address().port}`
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+      server = null
+    })
+
+    const preload = path.join(fixtures, 'module', 'preload-pid.js')
+
+    it('returns a valid procress id', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload,
+          nodeIntegrationInSubFrames: true
+        }
+      })
+
+      const promise1 = emittedOnce(ipcMain, 'pid-main')
+      const promise2 = emittedOnce(ipcMain, 'pid-frame')
+
+      await w.loadURL(server.url)
+
+      const [{ frameId: frameIdMain }, pidMain] = await promise1
+      const [{ frameId: frameIdFrame }, pidFrame] = await promise2
+
+      expect(w.webContents.getOSProcessIdForFrame(frameIdMain)).to.equal(pidMain)
+      expect(w.webContents.getOSProcessIdForFrame(frameIdFrame)).to.equal(pidFrame)
+    })
+
+    it('returns 0 for invalid frames', async () => {
+      await w.loadURL('about:blank')
+      expect(w.webContents.getOSProcessIdForFrame(999)).to.equal(0)
+    })
+  })
+
   describe('zoom api', () => {
     const zoomScheme = remote.getGlobal('zoomScheme')
     const hostZoomMap = {

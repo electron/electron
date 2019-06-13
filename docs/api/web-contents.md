@@ -1657,7 +1657,14 @@ more details.
 #### `contents.getOSProcessId()`
 
 Returns `Integer` - The operating system `pid` of the associated renderer
-process.
+process hosting the main frame.
+
+#### `contents.getOSProcessIdForFrame(frameId)`
+
+* `frameId` Integer - The ID of the renderer frame.
+
+Returns `Integer` - The operating system `pid` of the associated renderer
+process hosting `frameId`.
 
 #### `contents.getProcessId()`
 

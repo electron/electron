@@ -136,6 +136,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
+  base::ProcessId GetOSProcessIdForFrame(int frame_id) const;
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
@@ -473,6 +474,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
  private:
   AtomBrowserContext* GetBrowserContext() const;
+
+  content::RenderFrameHost* GetFrameByRoutingID(int frame_id) const;
 
   // Binds the given request for the ElectronBrowser API. When the
   // RenderFrameHost is destroyed, all related bindings will be removed.
