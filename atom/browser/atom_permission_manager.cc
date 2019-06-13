@@ -188,13 +188,14 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const auto callback =
         base::BindRepeating(&AtomPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
-    auto copied_details = base::DictionaryValue();
-    if (details != nullptr) {
-      copied_details.MergeDictionary(details);
-    }
-    copied_details.SetString("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
-    copied_details.SetBoolean("isMainFrame", render_frame_host->GetParent() == nullptr);
-    request_handler_.Run(web_contents, permission, callback, copied_details);
+    auto mutable_details =
+        details == nullptr ? base::DictionaryValue() : details->Clone();
+    mutable_details.SetPath(
+        "requestingUrl",
+        base::Value(render_frame_host->GetLastCommittedURL().spec()));
+    mutable_details.SetPath(
+        "isMainFrame", base::Value(render_frame_host->GetParent() == nullptr));
+    request_handler_.Run(web_contents, permission, callback, mutable_details);
   }
 
   return request_id;
@@ -247,14 +248,15 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
   }
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
-  auto copied_details = base::DictionaryValue();
-  if (details != nullptr) {
-    copied_details.MergeDictionary(details);
-  }
-  copied_details.SetString("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
-  copied_details.SetBoolean("isMainFrame", render_frame_host->GetParent() == nullptr);
+  auto mutable_details =
+      details == nullptr ? base::DictionaryValue() : details->Clone();
+  mutable_details.SetPath(
+      "requestingUrl",
+      base::Value(render_frame_host->GetLastCommittedURL().spec()));
+  mutable_details.SetPath(
+      "isMainFrame", base::Value(render_frame_host->GetParent() == nullptr));
   return check_handler_.Run(web_contents, permission, requesting_origin,
-                            copied_details);
+                            mutable_details);
 }
 
 blink::mojom::PermissionStatus
