@@ -263,7 +263,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
   auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   GURL url(url_string);
-  if (url.is_empty()) {
+  if (!url.is_valid()) {
     std::move(completion_callback).Run(false);
     return;
   }
