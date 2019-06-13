@@ -17,4 +17,4 @@ class WebNavigation {
   }
 }
 
-exports.setup = () => new WebNavigation()
+export const setup = () => new WebNavigation()
