@@ -30,7 +30,7 @@ class AtomPermissionManager : public content::PermissionManager {
   using RequestHandler = base::Callback<void(content::WebContents*,
                                              content::PermissionType,
                                              const StatusCallback&,
-                                             const base::DictionaryValue&)>;
+                                             const base::Value&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);

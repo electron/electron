@@ -175,12 +175,13 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const auto callback =
         base::Bind(&AtomPermissionManager::OnPermissionResponse,
                    base::Unretained(this), request_id, i);
-    if (details == nullptr) {
-      request_handler_.Run(web_contents, permission, callback,
-                           base::DictionaryValue());
-    } else {
-      request_handler_.Run(web_contents, permission, callback, *details);
-    }
+    auto mutable_details =
+        details == nullptr ? base::DictionaryValue() : details->Clone();
+    mutable_details.SetStringKey(
+        "requestingUrl", render_frame_host->GetLastCommittedURL().spec());
+    mutable_details.SetBoolKey("isMainFrame",
+                               render_frame_host->GetParent() == nullptr);
+    request_handler_.Run(web_contents, permission, callback, mutable_details);
   }
 
   return request_id;
