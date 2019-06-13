@@ -455,10 +455,11 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](AtomPermissionManager::RequestHandler* handler, content::WebContents* web_contents,
+      [](AtomPermissionManager::RequestHandler* handler,
+         content::WebContents* web_contents,
          content::PermissionType permission_type,
          AtomPermissionManager::StatusCallback callback,
-         const base::DictionaryValue& details) {
+         const base::Value& details) {
         handler->Run(web_contents, permission_type,
                      base::AdaptCallbackForRepeating(std::move(callback)),
                      details);
