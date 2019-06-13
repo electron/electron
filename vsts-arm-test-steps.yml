@@ -6,8 +6,8 @@ steps:
 
 - bash: |
     cd src/electron
-    npm install --verbose
-  displayName: 'NPM install'
+    node script/yarn.js install --frozen-lockfile
+  displayName: 'Yarn install'
 
 - bash: |
     export ZIP_DEST=$PWD/src/out/Default
@@ -56,7 +56,7 @@ steps:
     cd src
     export npm_config_nodedir=$PWD/out/Default/gen/node_headers
     cd electron/spec
-    npm install --verbose
+    node ../script/yarn.js install --frozen-lockfile
   displayName: Install test modules
 
 - bash: |
