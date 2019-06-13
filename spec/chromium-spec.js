@@ -32,6 +32,11 @@ describe('chromium feature', () => {
     listener = null
   })
 
+  afterEach(async () => {
+    await closeWindow(w)
+    w = null
+  })
+
   describe('command line switches', () => {
     describe('--lang switch', () => {
       const currentLocale = app.getLocale()
@@ -77,8 +82,6 @@ describe('chromium feature', () => {
       })
     })
   })
-
-  afterEach(() => closeWindow(w).then(() => { w = null }))
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
@@ -1463,6 +1466,19 @@ describe('chromium feature', () => {
         expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've looped back to element-3, it's instead in ${focusedElementId}`)
       })
     })
+  })
+})
+
+describe('console functions', () => {
+  it('should exist', () => {
+    expect(console.warn).to.be.a('function')
+    expect(console.log).to.be.a('function')
+    expect(console.info).to.be.a('function')
+    expect(console.error).to.be.a('function')
+    expect(console.debug).to.be.a('function')
+    expect(console.trace).to.be.a('function')
+    expect(console.time).to.be.a('function')
+    expect(console.timeEnd).to.be.a('function')
   })
 })
 
