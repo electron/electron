@@ -305,24 +305,6 @@ AtomBrowserContext::GetClientHintsControllerDelegate() {
   return nullptr;
 }
 
-net::URLRequestContextGetter*
-AtomBrowserContext::CreateRequestContextForStoragePartition(
-    const base::FilePath& partition_path,
-    bool in_memory,
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector request_interceptors) {
-  NOTREACHED();
-  return nullptr;
-}
-
-net::URLRequestContextGetter*
-AtomBrowserContext::CreateMediaRequestContextForStoragePartition(
-    const base::FilePath& partition_path,
-    bool in_memory) {
-  NOTREACHED();
-  return nullptr;
-}
-
 ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
     resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
