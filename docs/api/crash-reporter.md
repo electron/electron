@@ -66,26 +66,7 @@ reports temporarily. You can test this out by calling `process.crash()` to crash
 first call `start` you can call `addExtraParameter` on macOS or call `start`
 again with the new/updated `extra` parameters on Linux and Windows.
 
-**Note:** To collect crash reports from child process in Windows, you need to add this extra code as well.
-This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName`
-and `crashesDirectory` with appropriate values.
-
-```js
-const args = [
-  `--reporter-url=${submitURL}`,
-  `--application-name=${productName}`,
-  `--crashes-directory=${crashesDirectory}`
-]
-const env = {
-  ELECTRON_INTERNAL_CRASH_SERVICE: 1
-}
-spawn(process.execPath, args, {
-  env: env,
-  detached: true
-})
-```
-
-**Note:** On macOS, Electron uses a new `crashpad` client for crash collection and reporting.
+**Note:** On macOS and windows, Electron uses a new `crashpad` client for crash collection and reporting.
 If you want to enable crash reporting, initializing `crashpad` from the main process using `crashReporter.start` is required
 regardless of which process you want to collect crashes from. Once initialized this way, the crashpad handler collects
 crashes from all processes. You still have to call `crashReporter.start` from the renderer or child process, otherwise crashes from
@@ -104,14 +85,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-### `crashReporter.getUploadToServer()` _Linux_ _macOS_
+### `crashReporter.getUploadToServer()`
 
 Returns `Boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
 **Note:** This API can only be called from the main process.
 
-### `crashReporter.setUploadToServer(uploadToServer)` _Linux_ _macOS_
+### `crashReporter.setUploadToServer(uploadToServer)`
 
 * `uploadToServer` Boolean _macOS_ - Whether reports should be submitted to the server.
 
@@ -120,15 +101,15 @@ called before `start` is called.
 
 **Note:** This API can only be called from the main process.
 
-### `crashReporter.addExtraParameter(key, value)` _macOS_
+### `crashReporter.addExtraParameter(key, value)` _macOS_ _Windows_
 
 * `key` String - Parameter key, must be less than 64 characters long.
 * `value` String - Parameter value, must be less than 64 characters long.
 
 Set an extra parameter to be sent with the crash report. The values
-specified here will be sent in addition to any values set via the `extra` option when `start` was called. This API is only available on macOS, if you need to add/update extra parameters on Linux and Windows after your first call to `start` you can call `start` again with the updated `extra` options.
+specified here will be sent in addition to any values set via the `extra` option when `start` was called. This API is only available on macOS and windows, if you need to add/update extra parameters on Linux after your first call to `start` you can call `start` again with the updated `extra` options.
 
-### `crashReporter.removeExtraParameter(key)` _macOS_
+### `crashReporter.removeExtraParameter(key)` _macOS_ _Windows_
 
 * `key` String - Parameter key, must be less than 64 characters long.
 

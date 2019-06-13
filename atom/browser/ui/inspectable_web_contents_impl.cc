@@ -3,10 +3,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
+
 #include <memory>
 #include <utility>
-
-#include "atom/browser/ui/inspectable_web_contents_impl.h"
 
 #include "atom/browser/ui/inspectable_web_contents_delegate.h"
 #include "atom/browser/ui/inspectable_web_contents_view.h"
@@ -74,6 +74,9 @@ const char kFrontendHostParams[] = "params";
 const char kTitleFormat[] = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
+
+// Stores all instances of InspectableWebContentsImpl.
+InspectableWebContentsImpl::List g_web_contents_instances_;
 
 base::Value RectToDictionary(const gfx::Rect& bounds) {
   base::Value dict(base::Value::Type::DICTIONARY);
@@ -227,6 +230,12 @@ class InspectableWebContentsImpl::NetworkResourceLoader
 InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
+// static
+const InspectableWebContentsImpl::List& InspectableWebContentsImpl::GetAll() {
+  return g_web_contents_instances_;
+}
+
+// static
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
                                    RectToDictionary(gfx::Rect(0, 0, 800, 600)));
@@ -270,9 +279,11 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
           display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
+  g_web_contents_instances_.push_back(this);
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
+  g_web_contents_instances_.remove(this);
   // Unsubscribe from devtools and Clean up resources.
   if (GetDevToolsWebContents()) {
     if (managed_devtools_web_contents_)

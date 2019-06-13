@@ -19,7 +19,6 @@ let window = null
 
 // will be used by crash-reporter spec.
 process.port = 0
-process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -297,11 +296,6 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   fs.readFile(__filename, () => {
     Promise.reject(new Error(message))
   })
-})
-
-ipcMain.on('crash-service-pid', (event, pid) => {
-  process.crashServicePid = pid
-  event.returnValue = null
 })
 
 // Suspend listeners until the next event and then restore them

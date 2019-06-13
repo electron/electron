@@ -43,6 +43,9 @@
 
 #if defined(OS_WIN)
 #include "base/win/win_util.h"
+#if defined(_WIN64)
+#include "atom/common/crash_reporter/crash_reporter_win.h"
+#endif
 #endif
 
 namespace atom {
@@ -127,6 +130,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
+#if defined(_WIN64)
+  crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
+#endif
+
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.
   if (IsBrowserProcess(command_line))

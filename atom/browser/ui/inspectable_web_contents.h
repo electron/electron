@@ -25,6 +25,8 @@ namespace atom {
 class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
 
+// TODO(zcbenz): Remove this abstract wrapper and rename
+// InspectableWebContentsImpl to InspectableWebContents instead.
 class InspectableWebContents {
  public:
   // The returned InspectableWebContents takes ownership of the passed-in
