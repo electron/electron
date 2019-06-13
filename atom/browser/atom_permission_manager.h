@@ -32,11 +32,11 @@ class AtomPermissionManager : public content::PermissionControllerDelegate {
   using RequestHandler = base::Callback<void(content::WebContents*,
                                              content::PermissionType,
                                              StatusCallback,
-                                             const base::DictionaryValue&)>;
+                                             const base::Value&)>;
   using CheckHandler = base::Callback<bool(content::WebContents*,
                                            content::PermissionType,
                                            const GURL& requesting_origin,
-                                           const base::DictionaryValue&)>;
+                                           const base::Value&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
