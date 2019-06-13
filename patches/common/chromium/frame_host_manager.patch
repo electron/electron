@@ -42,7 +42,7 @@ index 775b64a8d20f89845812852a2904a1e6875c2b4a..5235b57bbf44fc7b30ca6943c43a290f
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 297b61198dd46114b3d8c89488a71ed01aa299c4..3ae6ae21d0e66fab01df067fa4cd7484e89f96be 100644
+index 297b61198dd46114b3d8c89488a71ed01aa299c4..40b848a8b448bed2d167bf5f6c0f25971b603ed2 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2127,6 +2127,20 @@ bool RenderFrameHostManager::InitRenderView(
