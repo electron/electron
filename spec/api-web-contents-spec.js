@@ -559,7 +559,7 @@ describe('webContents module', () => {
   })
 
   describe('getOSProcessId()', () => {
-    it('returns a valid procress id', async () => {
+    it('returns a valid process id', async () => {
       expect(w.webContents.getOSProcessId()).to.equal(0)
 
       await w.loadURL('about:blank')
@@ -588,7 +588,7 @@ describe('webContents module', () => {
 
     const preload = path.join(fixtures, 'module', 'preload-pid.js')
 
-    it('returns a valid procress id', async () => {
+    it('returns a valid process id', async () => {
       w.destroy()
       w = new BrowserWindow({
         show: false,
