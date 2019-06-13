@@ -518,6 +518,7 @@ static_library("electron_lib") {
     ]
     configs += [ ":gio_unix" ]
     include_dirs += [ "//third_party/breakpad" ]
+    configs += [ "//build/config/linux:x11" ]
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
