@@ -183,12 +183,14 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const auto callback =
         base::Bind(&AtomPermissionManager::OnPermissionResponse,
                    base::Unretained(this), request_id, i);
-    if (details == nullptr) {
-      request_handler_.Run(web_contents, permission, callback,
-                           base::DictionaryValue());
-    } else {
-      request_handler_.Run(web_contents, permission, callback, *details);
-    }
+    auto mutable_details =
+        details == nullptr ? base::DictionaryValue() : details->Clone();
+    mutable_details.SetKey(
+        "requestingUrl",
+        base::Value(render_frame_host->GetLastCommittedURL().spec()));
+    mutable_details.SetKey(
+        "isMainFrame", base::Value(render_frame_host->GetParent() == nullptr));
+    request_handler_.Run(web_contents, permission, callback, mutable_details);
   }
 
   return request_id;
@@ -241,8 +243,15 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
   }
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
+  auto mutable_details =
+      details == nullptr ? base::DictionaryValue() : details->Clone();
+  mutable_details.SetKey(
+      "requestingUrl",
+      base::Value(render_frame_host->GetLastCommittedURL().spec()));
+  mutable_details.SetKey(
+      "isMainFrame", base::Value(render_frame_host->GetParent() == nullptr));
   return check_handler_.Run(web_contents, permission, requesting_origin,
-                            *details);
+                            mutable_details);
 }
 
 blink::mojom::PermissionStatus
