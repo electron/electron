@@ -102,6 +102,10 @@ static_library("chrome") {
         "//chrome/browser/ui/cocoa/color_chooser_mac.h",
         "//chrome/browser/ui/cocoa/color_chooser_mac.mm",
       ]
+      deps += [
+        "//components/remote_cocoa/app_shim",
+        "//components/remote_cocoa/browser",
+      ]
     }
 
     if (is_win) {
