@@ -190,11 +190,10 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
                             base::Unretained(this), request_id, i);
     auto mutable_details =
         details == nullptr ? base::DictionaryValue() : details->Clone();
-    mutable_details.SetPath(
-        "requestingUrl",
-        base::Value(render_frame_host->GetLastCommittedURL().spec()));
-    mutable_details.SetPath(
-        "isMainFrame", base::Value(render_frame_host->GetParent() == nullptr));
+    mutable_details.SetStringKey(
+        "requestingUrl", render_frame_host->GetLastCommittedURL().spec());
+    mutable_details.SetBoolKey("isMainFrame",
+                               render_frame_host->GetParent() == nullptr);
     request_handler_.Run(web_contents, permission, callback, mutable_details);
   }
 
@@ -250,11 +249,10 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto mutable_details =
       details == nullptr ? base::DictionaryValue() : details->Clone();
-  mutable_details.SetPath(
-      "requestingUrl",
-      base::Value(render_frame_host->GetLastCommittedURL().spec()));
-  mutable_details.SetPath(
-      "isMainFrame", base::Value(render_frame_host->GetParent() == nullptr));
+  mutable_details.SetStringKey("requestingUrl",
+                               render_frame_host->GetLastCommittedURL().spec());
+  mutable_details.SetBoolKey("isMainFrame",
+                             render_frame_host->GetParent() == nullptr);
   return check_handler_.Run(web_contents, permission, requesting_origin,
                             mutable_details);
 }

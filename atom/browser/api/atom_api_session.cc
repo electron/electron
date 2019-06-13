@@ -588,13 +588,18 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
         AtomPermissionManager::RequestHandler());
     return;
   }
-  auto handler = std::make_unique<AtomPermissionManager::RequestHandler>();
+  using StatusCallback =
+      base::RepeatingCallback<void(blink::mojom::PermissionStatus)>;
+  using RequestHandler =
+      base::Callback<void(content::WebContents*, content::PermissionType,
+                          StatusCallback, const base::Value&)>;
+  auto handler = std::make_unique<RequestHandler>();
   if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
     args->ThrowError("Must pass null or function");
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](AtomPermissionManager::RequestHandler* handler,
+      [](RequestHandler* handler,
          content::WebContents* web_contents,
          content::PermissionType permission_type,
          AtomPermissionManager::StatusCallback callback,
