@@ -4,7 +4,8 @@ Date: Wed, 14 Nov 2018 20:38:46 +0530
 Subject: frame_host_manager.patch
 
 Allows embedder to intercept site instances chosen by chromium
-and respond with custom instance.
+and respond with custom instance. Also allows for us to at-runtime
+enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
 index 12e1c5cff95aa6d0a907a249208e23371cf29785..e64703c0edac7f7e9af211b0130a776e6ce3f953 100644
@@ -41,91 +42,100 @@ index 775b64a8d20f89845812852a2904a1e6875c2b4a..5235b57bbf44fc7b30ca6943c43a290f
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 297b61198dd46114b3d8c89488a71ed01aa299c4..1f0ec6c02e8b189c9170441e2c8709cc1b561c84 100644
+index 297b61198dd46114b3d8c89488a71ed01aa299c4..40b848a8b448bed2d167bf5f6c0f25971b603ed2 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2127,6 +2127,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2127,6 +2127,20 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
-+  BrowserContext* browser_context =
-+      delegate_->GetControllerForRenderManager().GetBrowserContext();
-+  // If the navigation can swap SiteInstances, compute the SiteInstance it
-+  // should use.
-+  // TODO(clamy): We should also consider as a candidate SiteInstance the
-+  // speculative SiteInstance that was computed on redirects.
-+  scoped_refptr<SiteInstance> candidate_site_instance =
-+      speculative_render_frame_host_
-+          ? speculative_render_frame_host_->GetSiteInstance()
-+          : nullptr;
++  BrowserContext* browser_context = nullptr;
++  scoped_refptr<SiteInstance> candidate_site_instance;
++  if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
++    browser_context =
++        delegate_->GetControllerForRenderManager().GetBrowserContext();
++    // If the navigation can swap SiteInstances, compute the SiteInstance it
++    // should use.
++    // TODO(clamy): We should also consider as a candidate SiteInstance the
++    // speculative SiteInstance that was computed on redirects.
++    candidate_site_instance =
++        speculative_render_frame_host_
++            ? speculative_render_frame_host_->GetSiteInstance()
++            : nullptr;
++  }
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2158,6 +2168,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2158,6 +2172,53 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
 +
-+    bool has_response_started =
-+        (request.state() == NavigationRequest::RESPONSE_STARTED ||
-+         request.state() == NavigationRequest::FAILED) &&
-+        !speculative_render_frame_host_;
-+    // Gives user a chance to choose a custom site instance.
-+    SiteInstance* affinity_site_instance = nullptr;
-+    scoped_refptr<SiteInstance> overriden_site_instance;
-+    ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
-+        GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
-+            current_frame_host(), speculative_frame_host(), browser_context,
-+            request.common_params().url, has_response_started,
-+            &affinity_site_instance);
-+    switch (siteInstanceType) {
-+      case ContentBrowserClient::SiteInstanceForNavigationType::
-+          FORCE_CANDIDATE_OR_NEW:
-+        overriden_site_instance =
-+            candidate_site_instance
-+                ? candidate_site_instance
-+                : current_site_instance->CreateRelatedSiteInstance(
-+                                             request.common_params().url);
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_CURRENT:
-+        overriden_site_instance = render_frame_host_->GetSiteInstance();
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_AFFINITY:
-+        DCHECK(affinity_site_instance);
-+        overriden_site_instance =
-+            scoped_refptr<SiteInstance>(affinity_site_instance);
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::ASK_CHROMIUM:
-+        DCHECK(!affinity_site_instance);
-+        break;
-+      default:
-+        break;
-+    }
-+    if (overriden_site_instance) {
-+      if (siteInstanceType ==
-+          ContentBrowserClient::SiteInstanceForNavigationType::
-+              FORCE_CANDIDATE_OR_NEW) {
-+        GetContentClient()->browser()->RegisterPendingSiteInstance(
-+            render_frame_host_.get(), overriden_site_instance.get());
++    if (!GetContentClient()->browser()->CanUseCustomSiteInstance()) {
++      bool has_response_started =
++          (request.state() == NavigationRequest::RESPONSE_STARTED ||
++          request.state() == NavigationRequest::FAILED) &&
++          !speculative_render_frame_host_;
++      // Gives user a chance to choose a custom site instance.
++      SiteInstance* affinity_site_instance = nullptr;
++      scoped_refptr<SiteInstance> overriden_site_instance;
++      ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
++          GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
++              current_frame_host(), speculative_frame_host(), browser_context,
++              request.common_params().url, has_response_started,
++              &affinity_site_instance);
++      switch (siteInstanceType) {
++        case ContentBrowserClient::SiteInstanceForNavigationType::
++            FORCE_CANDIDATE_OR_NEW:
++          overriden_site_instance =
++              candidate_site_instance
++                  ? candidate_site_instance
++                  : current_site_instance->CreateRelatedSiteInstance(
++                                              request.common_params().url);
++          break;
++        case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_CURRENT:
++          overriden_site_instance = render_frame_host_->GetSiteInstance();
++          break;
++        case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_AFFINITY:
++          DCHECK(affinity_site_instance);
++          overriden_site_instance =
++              scoped_refptr<SiteInstance>(affinity_site_instance);
++          break;
++        case ContentBrowserClient::SiteInstanceForNavigationType::ASK_CHROMIUM:
++          DCHECK(!affinity_site_instance);
++          break;
++        default:
++          break;
 +      }
-+      return overriden_site_instance;
++      if (overriden_site_instance) {
++        if (siteInstanceType ==
++            ContentBrowserClient::SiteInstanceForNavigationType::
++                FORCE_CANDIDATE_OR_NEW) {
++          GetContentClient()->browser()->RegisterPendingSiteInstance(
++              render_frame_host_.get(), overriden_site_instance.get());
++        }
++        return overriden_site_instance;
++      }
 +    }
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2169,23 +2224,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2169,23 +2230,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
--  // If the navigation can swap SiteInstances, compute the SiteInstance it
--  // should use.
--  // TODO(clamy): We should also consider as a candidate SiteInstance the
--  // speculative SiteInstance that was computed on redirects.
++  if (GetContentClient()->browser()->CanUseCustomSiteInstance()) {
+   // If the navigation can swap SiteInstances, compute the SiteInstance it
+   // should use.
+   // TODO(clamy): We should also consider as a candidate SiteInstance the
+   // speculative SiteInstance that was computed on redirects.
 -  SiteInstance* candidate_site_instance =
--      speculative_render_frame_host_
--          ? speculative_render_frame_host_->GetSiteInstance()
--          : nullptr;
--
++  candidate_site_instance =
+       speculative_render_frame_host_
+           ? speculative_render_frame_host_->GetSiteInstance()
+           : nullptr;
++  }
+ 
    scoped_refptr<SiteInstance> dest_site_instance = GetSiteInstanceForNavigation(
        request.common_params().url, request.source_site_instance(),
 -      request.dest_site_instance(), candidate_site_instance,
@@ -169,13 +179,17 @@ index a46901055bdf17b6b0dab14edf753b234dc04a12..29c201b0c95eb0c7a35f47d6f3ab5b48
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index d15061de5254fd4f248fed92f47a1b1fcf34cd68..671d2259d50bfbb5b56a79907c1c86218ee04469 100644
+index ac0151af07e440b7e4b7a291530abe108b5cd7d9..f40a4ff5f08e906e62dd838eb5af63ade92037d2 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -52,6 +52,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+@@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
++bool ContentBrowserClient::CanUseCustomSiteInstance() {
++  return false;
++}
++
 +ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::ShouldOverrideSiteInstanceForNavigation(
 +    content::RenderFrameHost* current_rfh,
 +    content::RenderFrameHost* speculative_rfh,
@@ -190,10 +204,10 @@ index d15061de5254fd4f248fed92f47a1b1fcf34cd68..671d2259d50bfbb5b56a79907c1c8621
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e5cddbc3a28e0f90bd1d1ae6ebe28d5f2d0299c7..fcc5a0e5cd830afe459c1defe968b01e3f05f764 100644
+index 93fd647a472466633d608e05c0b66653c696073d..a179e37db44e67143d63af2746e43b8231b30b17 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -211,8 +211,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -211,8 +211,40 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:
@@ -214,6 +228,9 @@ index e5cddbc3a28e0f90bd1d1ae6ebe28d5f2d0299c7..fcc5a0e5cd830afe459c1defe968b01e
 +  };
    virtual ~ContentBrowserClient() {}
  
++  // Electron: Allows disabling the below ShouldOverride patch
++  virtual bool CanUseCustomSiteInstance();
++
 +  // Electron: Allows overriding the SiteInstance when navigating.
 +  virtual SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
 +    content::RenderFrameHost* current_rfh,

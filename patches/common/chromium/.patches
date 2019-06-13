@@ -9,7 +9,6 @@ browser_compositor_mac.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
-frame_host_manager.patch
 out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
@@ -59,7 +58,6 @@ command-ismediakey.patch
 tts.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
-cross_site_document_resource_handler.patch
 content_allow_embedder_to_prevent_locking_scheme_registry.patch
 support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
@@ -80,3 +78,5 @@ partially_revert_fb4ab3be3fc0024d00358d5b7816d3215a8ff20c.patch
 disable_custom_libcxx_on_windows.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
 woa_compiler_workaround.patch
+cross_site_document_resource_handler.patch
+frame_host_manager.patch

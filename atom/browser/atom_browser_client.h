@@ -67,6 +67,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   std::string GetUserAgent() const override;
   void SetUserAgent(const std::string& user_agent);
 
+  void SetCanUseCustomSiteInstance(bool should_disable);
+  bool CanUseCustomSiteInstance() override;
+
  protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,
@@ -233,6 +236,8 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";
+
+  bool disable_process_restart_tricks_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

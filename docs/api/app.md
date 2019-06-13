@@ -1386,3 +1386,16 @@ A `Boolean` property that returns  `true` if the app is packaged, `false` otherw
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
+
+### `app.allowRendererProcessReuse`
+
+A `Boolean` which when `true` disables the overrides that Electron has in place
+to ensure renderer processes are restarted on every navigation.  The current
+default value for this property is `false`.
+
+The intention is for these overrides to become disabled by default and then at
+some point in the future this property will be removed.  This property impacts
+which native modules you can use in the renderer process.  For more information
+on the direction Electron is going with renderer process restarts and usage of
+native modules in the renderer process please check out this
+[Tracking Issue](https://github.com/electron/electron/issues/18397).

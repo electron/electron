@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index ae459238a1bd31e219f1b1a2cb539d4c071dcf33..63e11474acb2af5406015b7a3d39dc51cf160506 100644
+index b07b5f0b6eddfb9c754bed039c061de98a361f0e..4d1f8c2c5499291f55bf17cd7a0f45c3655c2985 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3709,6 +3709,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3712,6 +3712,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,10 +17,10 @@ index ae459238a1bd31e219f1b1a2cb539d4c071dcf33..63e11474acb2af5406015b7a3d39dc51
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 82882159b0bac6d47d678c485de0aacc7db06c2d..dd2299094b79d82da7ec1cd8f559050b6f0e2af5 100644
+index 577fd09ef05584962b5357028702d54f36719c6a..6dd3dcb250a5744d62b13b0ee5544d8270d8d882 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -291,6 +291,10 @@ struct CreateNewWindowParams {
+@@ -298,6 +298,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;

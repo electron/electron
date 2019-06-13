@@ -397,6 +397,14 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
     web_preferences->OverrideWebkitPrefs(prefs);
 }
 
+void AtomBrowserClient::SetCanUseCustomSiteInstance(bool should_disable) {
+  disable_process_restart_tricks_ = should_disable;
+}
+
+bool AtomBrowserClient::CanUseCustomSiteInstance() {
+  return disable_process_restart_tricks_;
+}
+
 content::ContentBrowserClient::SiteInstanceForNavigationType
 AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
     content::RenderFrameHost* current_rfh,
@@ -503,6 +511,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       web_preferences->AppendCommandLineSwitches(command_line);
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
+    if (CanUseCustomSiteInstance()) {
+      command_line->AppendSwitch(
+          switches::kDisableElectronSiteInstanceOverrides);
+    }
   }
 }
 
