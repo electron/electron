@@ -68,6 +68,10 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
 
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
+  void set_fullscreen_frame(content::RenderFrameHost* rfh) {
+    fullscreen_frame_ = rfh;
+  }
+
  protected:
 #if BUILDFLAG(ENABLE_OSR)
   virtual OffScreenWebContentsView* GetOffScreenWebContentsView() const;
@@ -200,6 +204,9 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
   scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+
+  // Stores the frame thats currently in fullscreen, nullptr if there is none.
+  content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
   base::WeakPtrFactory<CommonWebContentsDelegate> weak_factory_;
 
