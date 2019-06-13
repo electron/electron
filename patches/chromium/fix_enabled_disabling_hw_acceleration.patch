@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 14 Jun 2019 08:09:35 -0700
+Subject: fix: enabled disabling hw acceleration
+
+Refs Chromium CL https://chromium-review.googlesource.com/c/chromium/src/+/1599993
+broke hardware acceleration. It appears to have been attempting to access shred_context_state_
+before that member variable had been initialized, which caused a memory access crash.
+
+diff --git a/components/viz/service/main/viz_main_impl.cc b/components/viz/service/main/viz_main_impl.cc
+index 53292ae76db018cf6b720dea605e57121bf5e362..e0c59fdd30293f2c456b300d13122c2ad7e2edf3 100644
+--- a/components/viz/service/main/viz_main_impl.cc
++++ b/components/viz/service/main/viz_main_impl.cc
+@@ -263,7 +263,7 @@ void VizMainImpl::CreateFrameSinkManagerInternal(
+       gpu_service_->gpu_channel_manager()->gpu_preferences(),
+       gpu_service_->shared_image_manager(),
+       gpu_service_->gpu_channel_manager()->program_cache(),
+-      gpu_service_->GetContextState());
++      nullptr);
+ 
+   viz_compositor_thread_runner_->CreateFrameSinkManager(
+       std::move(params), task_executor_.get(), gpu_service_.get());
