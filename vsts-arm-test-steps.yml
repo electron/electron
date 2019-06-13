@@ -69,6 +69,7 @@ steps:
 
 - bash: |
    cd src
+   export MOCHA_REPORTER=tap
    ./out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
