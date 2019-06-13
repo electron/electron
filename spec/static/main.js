@@ -52,16 +52,15 @@ if (process.platform !== 'darwin') {
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
-const print = function (_, args) {
+const print = function (_, method, args) {
   const output = util.format.apply(null, args)
   if (outputToFile) {
     fs.appendFileSync(outputToFile, output + '\n')
   } else {
-    console.error(output)
+    console[method](output)
   }
 }
-ipcMain.on('console.log', print)
-ipcMain.on('console.error', print)
+ipcMain.on('console-call', print)
 
 ipcMain.on('process.exit', function (event, code) {
   process.exit(code)

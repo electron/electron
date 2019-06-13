@@ -39,11 +39,14 @@
 
   // Rediret all output to browser.
   if (isCi) {
-    global.__defineGetter__('console', function () {
-      return {
-        log: (...args) => ipcRenderer.send('console.log', args),
-        error: (...args) => ipcRenderer.send('console.error', args)
+    const fakeConsole = {}
+    for (const k in console) {
+      if (console.hasOwnProperty(k) && k !== 'assert') {
+        fakeConsole[k] = (...args) => ipcRenderer.send('console-call', k, args)
       }
+    }
+    global.__defineGetter__('console', function () {
+      return fakeConsole
     })
   }
 

@@ -1471,14 +1471,14 @@ describe('chromium feature', () => {
 
 describe('console functions', () => {
   it('should exist', () => {
-    expect(console.warn).to.be.a('function')
-    expect(console.log).to.be.a('function')
-    expect(console.info).to.be.a('function')
-    expect(console.error).to.be.a('function')
-    expect(console.debug).to.be.a('function')
-    expect(console.trace).to.be.a('function')
-    expect(console.time).to.be.a('function')
-    expect(console.timeEnd).to.be.a('function')
+    expect(console.log, 'log').to.be.a('function')
+    expect(console.error, 'error').to.be.a('function')
+    expect(console.warn, 'warn').to.be.a('function')
+    expect(console.info, 'info').to.be.a('function')
+    expect(console.debug, 'debug').to.be.a('function')
+    expect(console.trace, 'trace').to.be.a('function')
+    expect(console.time, 'time').to.be.a('function')
+    expect(console.timeEnd, 'timeEnd').to.be.a('function')
   })
 })
 
