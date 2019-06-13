@@ -162,6 +162,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       network::mojom::NetworkService* network_service) override;
   bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() const override;
+#if defined(OS_WIN)
+  bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
+#endif
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

@@ -6,6 +6,7 @@
 #ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 #define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -38,6 +39,9 @@ class InspectableWebContentsImpl
       public content::WebContentsDelegate,
       public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
+  using List = std::list<InspectableWebContentsImpl*>;
+
+  static const List& GetAll();
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
   InspectableWebContentsImpl(content::WebContents* web_contents,

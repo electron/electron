@@ -27,6 +27,14 @@ const char kSecureProtocolDescription[] =
     "The connection to this site is using a strong protocol version "
     "and cipher suite.";
 
+#if defined(OS_WIN)
+const char kCrashpadPipeName[] = "ELECTRON_CRASHPAD_PIPE_NAME";
+#endif
+
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
+const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
+#endif
+
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 const char kPdfPluginMimeType[] = "application/x-google-chrome-pdf";
 const char kPdfPluginPath[] = "chrome://pdf-viewer/";
