@@ -40,6 +40,9 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
  private:
   std::unique_ptr<views::StatusIconLinux> icon_;
 
+  gfx::ImageSkia dummy_image_;
+  base::string16 dummy_string_;
+
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };
 
