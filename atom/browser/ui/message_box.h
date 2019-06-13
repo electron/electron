@@ -31,11 +31,11 @@ enum MessageBoxOptions {
 
 struct MessageBoxSettings {
   atom::NativeWindow* parent_window = nullptr;
-  int type;
+  MessageBoxType type = atom::MessageBoxType::kNone;
   std::vector<std::string> buttons;
   int default_id;
   int cancel_id;
-  int options = 0;
+  int options = atom::MessageBoxOptions::MESSAGE_BOX_NONE;
   std::string title;
   std::string message;
   std::string detail;

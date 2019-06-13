@@ -93,12 +93,9 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   atom::MessageBoxSettings settings;
   settings.parent_window = window;
-  settings.type = 0;  // MessageBoxType::kNone
   settings.buttons = buttons;
   settings.default_id = default_id;
   settings.cancel_id = cancel_id;
-  settings.icon = gfx::ImageSkia();
-  settings.options = atom::MessageBoxOptions::MESSAGE_BOX_NONE;
   settings.message = base::UTF16ToUTF8(message_text);
 
   atom::ShowMessageBox(

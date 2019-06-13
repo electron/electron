@@ -39,11 +39,10 @@ class GtkMessageBox : public NativeWindowObserver {
       : cancel_id_(settings.cancel_id),
         parent_(static_cast<NativeWindow*>(settings.parent_window)) {
     // Create dialog.
-    MessageBoxType type = static_cast<atom::MessageBoxType>(settings.type);
     dialog_ =
         gtk_message_dialog_new(nullptr,                         // parent
                                static_cast<GtkDialogFlags>(0),  // no flags
-                               GetMessageType(type),            // type
+                               GetMessageType(settings.type),   // type
                                GTK_BUTTONS_NONE,                // no buttons
                                "%s", settings.message.c_str());
     if (!settings.detail.empty())
@@ -209,7 +208,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
     atom::MessageBoxSettings settings;
-    settings.type = 3;  // MessageBoxType::kError
+    settings.type = atom::MessageBoxType::kError;
     settings.buttons = {"OK"};
     settings.title = "Error";
     settings.message = base::UTF16ToUTF8(title);

@@ -16,10 +16,12 @@ bool Converter<atom::MessageBoxSettings>::FromV8(
     v8::Local<v8::Value> val,
     atom::MessageBoxSettings* out) {
   mate::Dictionary dict;
+  int type = 0;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   dict.Get("window", &out->parent_window);
-  dict.Get("type", &out->type);
+  dict.Get("type", &type);
+  out->type = static_cast<atom::MessageBoxType>(type);
   dict.Get("buttons", &out->buttons);
   dict.Get("defaultId", &out->default_id);
   dict.Get("cancelId", &out->cancel_id);

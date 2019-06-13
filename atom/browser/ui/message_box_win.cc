@@ -200,10 +200,9 @@ int ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
   bool cb_checked = settings.checkbox_checked;
 
   return ShowTaskDialogUTF16(
-      settings.parent_window, static_cast<atom::MessageBoxType>(settings.type),
-      utf16_buttons, settings.default_id, settings.cancel_id, settings.options,
-      title_16, message_16, detail_16, checkbox_label_16, &cb_checked,
-      settings.icon);
+      settings.parent_window, settings.type, utf16_buttons, settings.default_id,
+      settings.cancel_id, settings.options, title_16, message_16, detail_16,
+      checkbox_label_16, &cb_checked, settings.icon);
 }
 
 void RunMessageBoxInNewThread(base::Thread* thread,

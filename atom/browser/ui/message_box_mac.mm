@@ -31,8 +31,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   [alert setMessageText:base::SysUTF8ToNSString(settings.message)];
   [alert setInformativeText:base::SysUTF8ToNSString(settings.detail)];
 
-  MessageBoxType type = static_cast<atom::MessageBoxType>(settings.type);
-  switch (type) {
+  switch (settings.type) {
     case MessageBoxType::kInformation:
       alert.alertStyle = NSInformationalAlertStyle;
       break;
