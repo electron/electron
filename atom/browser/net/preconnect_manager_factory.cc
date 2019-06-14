@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "atom/browser/net/preconnect_manager_factory.h"
-
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
