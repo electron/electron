@@ -16,6 +16,9 @@
 
 namespace crash_reporter {
 
+extern const char kCrashpadProcess[];
+extern const char kCrashesDirectoryKey[];
+
 class CrashReporter {
  public:
   typedef std::map<std::string, std::string> StringMap;
@@ -24,6 +27,7 @@ class CrashReporter {
   static CrashReporter* GetInstance();
   static void StartInstance(const mate::Dictionary& options);
 
+  bool IsInitialized();
   void Start(const std::string& product_name,
              const std::string& company_name,
              const std::string& submit_url,
@@ -46,19 +50,19 @@ class CrashReporter {
   CrashReporter();
   virtual ~CrashReporter();
 
-  virtual void InitBreakpad(const std::string& product_name,
-                            const std::string& version,
-                            const std::string& company_name,
-                            const std::string& submit_url,
-                            const base::FilePath& crashes_dir,
-                            bool upload_to_server,
-                            bool skip_system_crash_handler);
+  virtual void Init(const std::string& product_name,
+                    const std::string& company_name,
+                    const std::string& submit_url,
+                    const base::FilePath& crashes_dir,
+                    bool upload_to_server,
+                    bool skip_system_crash_handler);
   virtual void SetUploadParameters();
 
   StringMap upload_parameters_;
-  bool is_browser_;
+  std::string process_type_;
 
  private:
+  bool is_initialized_ = false;
   void SetUploadParameters(const StringMap& parameters);
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporter);

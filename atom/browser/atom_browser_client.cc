@@ -80,6 +80,10 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "v8/include/v8.h"
 
+#if defined(OS_WIN)
+#include "sandbox/win/src/sandbox_policy.h"
+#endif
+
 #if defined(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
 #elif defined(OS_WIN)
@@ -906,6 +910,18 @@ std::string AtomBrowserClient::GetUserAgent() const {
 void AtomBrowserClient::SetUserAgent(const std::string& user_agent) {
   user_agent_override_ = user_agent;
 }
+
+#if defined(OS_WIN)
+bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
+  // Allow crashpad to communicate via named pipe.
+  sandbox::ResultCode result = policy->AddRule(
+      sandbox::TargetPolicy::SUBSYS_FILES,
+      sandbox::TargetPolicy::FILES_ALLOW_ANY, L"\\??\\pipe\\crashpad_*");
+  if (result != sandbox::SBOX_ALL_OK)
+    return false;
+  return true;
+}
+#endif  // defined(OS_WIN)
 
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
