@@ -1057,4 +1057,182 @@ describe('net module', () => {
       })
     })
   })
+
+  describe('IncomingMessage API', () => {
+    it('response object should implement the IncomingMessage API', (done) => {
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+
+      respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.setHeader(customHeaderName, customHeaderValue)
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+
+        urlRequest.on('response', (response) => {
+          expect(response.statusCode).to.equal(200)
+          expect(response.statusMessage).to.equal('OK')
+
+          const headers = response.headers
+          expect(headers).to.be.an('object')
+          const headerValue = headers[customHeaderName.toLowerCase()]
+          expect(headerValue).to.equal(customHeaderValue)
+
+          const httpVersion = response.httpVersion
+          expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1)
+
+          const httpVersionMajor = response.httpVersionMajor
+          expect(httpVersionMajor).to.be.a('number').and.to.be.at.least(1)
+
+          const httpVersionMinor = response.httpVersionMinor
+          expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0)
+
+          response.on('data', chunk => {})
+          response.on('end', () => { done() })
+        })
+        urlRequest.end()
+      })
+    })
+
+    it('should discard duplicate headers', (done) => {
+      const includedHeader = 'max-forwards'
+      const discardableHeader = 'Max-Forwards'
+
+      const includedHeaderValue = 'max-fwds-val'
+      const discardableHeaderValue = 'max-fwds-val-two'
+
+      respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.setHeader(discardableHeader, discardableHeaderValue)
+        response.setHeader(includedHeader, includedHeaderValue)
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+
+        urlRequest.on('response', response => {
+          expect(response.statusCode).to.equal(200)
+          expect(response.statusMessage).to.equal('OK')
+
+          const headers = response.headers
+          expect(headers).to.be.an('object')
+
+          expect(headers).to.have.property(includedHeader)
+          expect(headers).to.not.have.property(discardableHeader)
+          expect(headers[includedHeader]).to.equal(includedHeaderValue)
+
+          response.on('data', chunk => {})
+          response.on('end', () => { done() })
+        })
+        urlRequest.end()
+      })
+    })
+
+    it('should join repeated non-discardable value with ,', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.setHeader('referrer-policy', ['first-text', 'second-text'])
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+
+        urlRequest.on('response', response => {
+          expect(response.statusCode).to.equal(200)
+          expect(response.statusMessage).to.equal('OK')
+
+          const headers = response.headers
+          expect(headers).to.be.an('object')
+          expect(headers).to.have.property('referrer-policy')
+          expect(headers['referrer-policy']).to.equal('first-text, second-text')
+
+          response.on('data', chunk => {})
+          response.on('end', () => { done() })
+        })
+        urlRequest.end()
+      })
+    })
+
+    it('should be able to pipe a net response into a writable stream', (done) => {
+      const bodyData = randomString(1)
+      Promise.all([
+        respondOnce.toSingleURL((request, response) => response.end(bodyData)),
+        respondOnce.toSingleURL((request, response) => {
+          let receivedBodyData = ''
+          request.on('data', (chunk) => {
+            receivedBodyData += chunk.toString()
+          })
+          request.on('end', (chunk: Buffer | undefined) => {
+            if (chunk) {
+              receivedBodyData += chunk.toString()
+            }
+            expect(receivedBodyData).to.be.equal(bodyData)
+            response.end()
+          })
+        })
+      ]).then(([netServerUrl, nodeServerUrl]) => {
+        const netRequest = net.request(netServerUrl)
+        netRequest.on('response', (netResponse) => {
+          const serverUrl = url.parse(nodeServerUrl)
+          const nodeOptions = {
+            method: 'POST',
+            path: serverUrl.path,
+            port: serverUrl.port
+          }
+          const nodeRequest = http.request(nodeOptions, res => {
+            res.on('data', (chunk) => {})
+            res.on('end', () => {
+              done()
+            })
+          });
+          // TODO: IncomingMessage should properly extend ReadableStream in the
+          // docs
+          (netResponse as any).pipe(nodeRequest)
+        })
+        netRequest.end()
+      })
+    })
+
+    it('should not emit any event after close', (done) => {
+      const bodyData = randomString(kOneKiloByte)
+      respondOnce.toSingleURL((request, response) => {
+        response.end(bodyData)
+      }).then(serverUrl => {
+        let requestCloseEventEmitted = false
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          response.on('data', () => { })
+          response.on('end', () => { })
+          response.on('error', () => {
+            expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+          })
+          response.on('aborted', () => {
+            expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+          })
+        })
+        urlRequest.on('finish', () => {
+          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+        })
+        urlRequest.on('error', () => {
+          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+        })
+        urlRequest.on('abort', () => {
+          expect(requestCloseEventEmitted).to.be.false('request close event emitted')
+        })
+        urlRequest.on('close', () => {
+          requestCloseEventEmitted = true
+          // Wait so that all async events get scheduled.
+          setTimeout(() => {
+            done()
+          }, 100)
+        })
+        urlRequest.end()
+      })
+    })
+  })
 })
