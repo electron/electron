@@ -312,7 +312,9 @@ struct WebContents::FrameDispatchHelper {
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents,
                          Type type)
-    : content::WebContentsObserver(web_contents), type_(type) {
+    : content::WebContentsObserver(web_contents),
+      type_(type),
+      weak_factory_(this) {
   const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   if (type == REMOTE) {
     web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
@@ -326,8 +328,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 }
 
-WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options) {
+WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
+    : weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 

@@ -99,6 +99,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   static int64_t GetIDForContents(content::WebContents* web_contents);
 
+  base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+
   // Notifies to destroy any guest web contents before destroying self.
   void DestroyWebContents(bool async);
 
@@ -468,6 +470,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
+
+  base::WeakPtrFactory<WebContents> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
