@@ -44,15 +44,19 @@ respondOnce.toURL = (url: string, fn: http.RequestListener) => {
   })
 }
 
+respondOnce.toSingleURL = (fn: http.RequestListener) => {
+  const requestUrl = '/requestUrl'
+  return respondOnce.toURL(requestUrl, fn).then(url => `${url}${requestUrl}`)
+}
+
 describe('net module', () => {
   describe('HTTP basics', () => {
     it('should be able to issue a basic GET request', (done) => {
-      const requestUrl = '/requestUrl'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.method).to.equal('GET')
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request(`${serverUrl}${requestUrl}`)
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           expect(response.statusCode).to.equal(200)
           response.on('data', () => {})
@@ -65,14 +69,13 @@ describe('net module', () => {
     })
 
     it('should be able to issue a basic POST request', (done) => {
-      const requestUrl = '/requestUrl'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.method).to.equal('POST')
         response.end()
       }).then(serverUrl => {
         const urlRequest = net.request({
           method: 'POST',
-          url: `${serverUrl}${requestUrl}`
+          url: serverUrl
         })
         urlRequest.on('response', (response) => {
           expect(response.statusCode).to.equal(200)
@@ -86,14 +89,13 @@ describe('net module', () => {
     })
 
     it('should fetch correct data in a GET request', (done) => {
-      const requestUrl = '/requestUrl'
       const bodyData = 'Hello World!'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.method).to.equal('GET')
         response.write(bodyData)
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request(`${serverUrl}${requestUrl}`)
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           let expectedBodyData = ''
           expect(response.statusCode).to.equal(200)
@@ -110,9 +112,8 @@ describe('net module', () => {
     })
 
     it('should post the correct data in a POST request', (done) => {
-      const requestUrl = '/requestUrl'
       const bodyData = 'Hello World!'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         let postedBodyData = ''
         expect(request.method).to.equal('POST')
         request.on('data', (chunk: Buffer) => {
@@ -125,7 +126,7 @@ describe('net module', () => {
       }).then(serverUrl => {
         const urlRequest = net.request({
           method: 'POST',
-          url: `${serverUrl}${requestUrl}`
+          url: serverUrl
         })
         urlRequest.on('response', (response) => {
           expect(response.statusCode).to.equal(200)
@@ -140,8 +141,7 @@ describe('net module', () => {
     })
 
     it('should support chunked encoding', (done) => {
-      const requestUrl = '/requestUrl'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.chunkedEncoding = true
@@ -157,7 +157,7 @@ describe('net module', () => {
       }).then(serverUrl => {
         const urlRequest = net.request({
           method: 'POST',
-          url: `${serverUrl}${requestUrl}`
+          url: serverUrl
         })
 
         let chunkIndex = 0
@@ -191,9 +191,8 @@ describe('net module', () => {
 
   describe('ClientRequest API', () => {
     it('request/response objects should emit expected events', (done) => {
-      const requestUrl = '/requestUrl'
       const bodyData = randomString(kOneMegaByte)
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.write(bodyData)
@@ -218,10 +217,7 @@ describe('net module', () => {
           done()
         }
 
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           requestResponseEventEmitted = true
           const statusCode = response.statusCode
@@ -262,19 +258,15 @@ describe('net module', () => {
     })
 
     it('should be able to set a custom HTTP request header before first write', (done) => {
-      const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
@@ -295,19 +287,15 @@ describe('net module', () => {
     })
 
     it('should be able to set a non-string object as a header value', (done) => {
-      const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Integer-Value'
       const customHeaderValue = 900
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString())
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
@@ -327,19 +315,15 @@ describe('net module', () => {
     })
 
     it('should not be able to set a custom HTTP request header after first write', (done) => {
-      const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.headers[customHeaderName.toLowerCase()]).to.equal(undefined)
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
@@ -358,19 +342,15 @@ describe('net module', () => {
     })
 
     it('should be able to remove a custom HTTP request header before first write', (done) => {
-      const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.headers[customHeaderName.toLowerCase()]).to.equal(undefined)
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
@@ -389,19 +369,15 @@ describe('net module', () => {
     })
 
     it('should not be able to remove a custom HTTP request header after first write', (done) => {
-      const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
       const customHeaderValue = 'Some-Customer-Header-Value'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
         response.statusCode = 200
         response.statusMessage = 'OK'
         response.end()
       }).then(serverUrl => {
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
           expect(statusCode).to.equal(200)
@@ -422,11 +398,10 @@ describe('net module', () => {
     })
 
     it('should be able to set cookie header line', (done) => {
-      const requestUrl = '/requestUrl'
       const cookieHeaderName = 'Cookie'
       const cookieHeaderValue = 'test=12345'
       const customSession = session.fromPartition('test-cookie-header')
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         expect(request.headers[cookieHeaderName.toLowerCase()]).to.equal(cookieHeaderValue)
         response.statusCode = 200
         response.statusMessage = 'OK'
@@ -439,7 +414,7 @@ describe('net module', () => {
         }).then(() => { // resolved
           const urlRequest = net.request({
             method: 'GET',
-            url: `${serverUrl}${requestUrl}`,
+            url: serverUrl,
             session: customSession
           })
           urlRequest.on('response', (response) => {
@@ -460,17 +435,13 @@ describe('net module', () => {
     })
 
     it('should be able to abort an HTTP request before first write', (done) => {
-      const requestUrl = '/requestUrl'
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         response.end()
         expect.fail('Unexpected request event')
       }).then(serverUrl => {
         let requestAbortEventEmitted = false
 
-        const urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           expect.fail('Unexpected response event')
         })
@@ -494,19 +465,15 @@ describe('net module', () => {
     })
 
     it('it should be able to abort an HTTP request before request end', (done) => {
-      const requestUrl = '/requestUrl'
       let requestReceivedByServer = false
       let urlRequest: ClientRequest | null = null
-      respondOnce.toURL(requestUrl, (request, response) => {
+      respondOnce.toSingleURL((request, response) => {
         requestReceivedByServer = true
         urlRequest!.abort()
       }).then(serverUrl => {
         let requestAbortEventEmitted = false
 
-        urlRequest = net.request({
-          method: 'GET',
-          url: `${serverUrl}${requestUrl}`
-        })
+        urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
           expect.fail('Unexpected response event')
         })
