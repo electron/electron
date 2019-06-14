@@ -448,6 +448,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(SkColor theme_color) override;
+  void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;

@@ -837,6 +837,10 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
   }
 }
 
+void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
+  set_fullscreen_frame(rfh);
+}
+
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())
