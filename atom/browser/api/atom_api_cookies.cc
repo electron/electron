@@ -258,7 +258,7 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
                                     : base::Time::UnixEpoch();
 
   GURL url(url_string ? *url_string : "");
-  if (url.is_empty()) {
+  if (!url.is_valid()) {
     promise.RejectWithErrorMessage(InclusionStatusToString(
         net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN));
     return handle;
