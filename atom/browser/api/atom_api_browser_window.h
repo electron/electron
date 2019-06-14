@@ -116,7 +116,7 @@ class BrowserWindow : public TopLevelWindow,
 #endif
 
   v8::Global<v8::Value> web_contents_;
-  api::WebContents* api_web_contents_;
+  base::WeakPtr<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_;
 
