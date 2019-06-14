@@ -12,13 +12,12 @@
 #include <vector>
 
 #include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/process_metric.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/promise_util.h"
-#include "base/process/process_iterator.h"
-#include "base/process/process_metrics.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
@@ -48,17 +47,6 @@ namespace atom {
 #if defined(OS_WIN)
 enum class JumpListResult : int;
 #endif
-
-struct ProcessMetric {
-  int type;
-  base::ProcessId pid;
-  std::unique_ptr<base::ProcessMetrics> metrics;
-
-  ProcessMetric(int type,
-                base::ProcessId pid,
-                std::unique_ptr<base::ProcessMetrics> metrics);
-  ~ProcessMetric();
-};
 
 namespace api {
 
