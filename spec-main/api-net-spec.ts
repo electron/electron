@@ -198,7 +198,7 @@ describe('net module', () => {
 
   describe('ClientRequest API', () => {
     it('request/response objects should emit expected events', (done) => {
-      const bodyData = randomString(kOneMegaByte)
+      const bodyData = randomString(kOneKiloByte)
       respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200
         response.statusMessage = 'OK'
@@ -604,7 +604,7 @@ describe('net module', () => {
         urlRequest!.abort()
       }).then(serverUrl => {
         let requestFinishEventEmitted = false
-        let requestAbortEventCount = 0
+        let abortEmitted = false
 
         urlRequest = net.request(serverUrl)
         urlRequest.on('response', () => {
@@ -617,17 +617,15 @@ describe('net module', () => {
           expect.fail('Unexpected error event')
         })
         urlRequest.on('abort', () => {
-          ++requestAbortEventCount
+          expect(abortEmitted).to.be.false('abort event should not be emitted more than once')
+          abortEmitted = true
           urlRequest!.abort()
         })
         urlRequest.on('close', () => {
-          // Let all pending async events to be emitted
-          setTimeout(() => {
-            expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
-            expect(requestReceivedByServer).to.be.true('request should be received by server')
-            expect(requestAbortEventCount).to.equal(1)
-            done()
-          }, 500)
+          expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event')
+          expect(requestReceivedByServer).to.be.true('request should be received by server')
+          expect(abortEmitted).to.be.true('request should emit "abort" event')
+          done()
         })
 
         urlRequest.end(randomString(kOneKiloByte))
