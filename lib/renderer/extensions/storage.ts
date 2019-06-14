@@ -1,11 +1,9 @@
-'use strict'
+import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
-const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils')
-
-const getStorage = (storageType, extensionId, callback) => {
+const getStorage = (storageType: string, extensionId: number, callback: Function) => {
   if (typeof callback !== 'function') throw new TypeError('No callback provided')
 
-  ipcRendererUtils.invoke('CHROME_STORAGE_READ', storageType, extensionId)
+  ipcRendererUtils.invoke<string>('CHROME_STORAGE_READ', storageType, extensionId)
     .then(data => {
       if (data !== null) {
         callback(JSON.parse(data))
@@ -17,7 +15,7 @@ const getStorage = (storageType, extensionId, callback) => {
     })
 }
 
-const setStorage = (storageType, extensionId, storage, callback) => {
+const setStorage = (storageType: string, extensionId: number, storage: Record<string, any>, callback: Function) => {
   const json = JSON.stringify(storage)
   ipcRendererUtils.invoke('CHROME_STORAGE_WRITE', storageType, extensionId, json)
     .then(() => {
@@ -25,13 +23,13 @@ const setStorage = (storageType, extensionId, storage, callback) => {
     })
 }
 
-const getStorageManager = (storageType, extensionId) => {
+const getStorageManager = (storageType: string, extensionId: number) => {
   return {
-    get (keys, callback) {
-      getStorage(storageType, extensionId, storage => {
+    get (keys: string[], callback: Function) {
+      getStorage(storageType, extensionId, (storage: Record<string, any>) => {
         if (keys == null) return callback(storage)
 
-        let defaults = {}
+        let defaults: Record<string, any> = {}
         switch (typeof keys) {
           case 'string':
             keys = [keys]
@@ -48,8 +46,8 @@ const getStorageManager = (storageType, extensionId) => {
         // eslint-disable-next-line standard/no-callback-literal
         if (keys.length === 0) return callback({})
 
-        const items = {}
-        keys.forEach(function (key) {
+        const items: Record<string, any> = {}
+        keys.forEach((key: string) => {
           let value = storage[key]
           if (value == null) value = defaults[key]
           items[key] = value
@@ -58,22 +56,17 @@ const getStorageManager = (storageType, extensionId) => {
       })
     },
 
-    set (items, callback) {
-      getStorage(storageType, extensionId, storage => {
-        Object.keys(items).forEach(function (name) {
-          storage[name] = items[name]
-        })
-
+    set (items: Record<string, any>, callback: Function) {
+      getStorage(storageType, extensionId, (storage: Record<string, any>) => {
+        Object.keys(items).forEach(name => { storage[name] = items[name] })
         setStorage(storageType, extensionId, storage, callback)
       })
     },
 
-    remove (keys, callback) {
-      getStorage(storageType, extensionId, storage => {
-        if (!Array.isArray(keys)) {
-          keys = [keys]
-        }
-        keys.forEach(function (key) {
+    remove (keys: string[], callback: Function) {
+      getStorage(storageType, extensionId, (storage: Record<string, any>) => {
+        if (!Array.isArray(keys)) keys = [keys]
+        keys.forEach((key: string) => {
           delete storage[key]
         })
 
@@ -81,15 +74,13 @@ const getStorageManager = (storageType, extensionId) => {
       })
     },
 
-    clear (callback) {
+    clear (callback: Function) {
       setStorage(storageType, extensionId, {}, callback)
     }
   }
 }
 
-module.exports = {
-  setup: extensionId => ({
-    sync: getStorageManager('sync', extensionId),
-    local: getStorageManager('local', extensionId)
-  })
-}
+export const setup = (extensionId: number) => ({
+  sync: getStorageManager('sync', extensionId),
+  local: getStorageManager('local', extensionId)
+})
