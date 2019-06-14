@@ -379,6 +379,8 @@ Returns `String` - The user agent for guest page.
 
 * `css` String
 
+Returns `Promise<void>`
+
 Injects CSS into the guest page.
 
 ### `<webview>.executeJavaScript(code[, userGesture])`
@@ -490,6 +492,8 @@ Executes editing command `replaceMisspelling` in page.
 
 * `text` String
 
+Returns `Promise<void>`
+
 Inserts `text` to the focused element.
 
 ### `<webview>.findInPage(text[, options])`
@@ -531,6 +535,8 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     the web page. Default is `false`.
   * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
 
+Returns `Promise<void>`
+
 Prints `webview`'s web page. Same as `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options)`
@@ -562,6 +568,8 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 * `channel` String
 * `...args` any[]
 
+Returns `Promise<void>`
+
 Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. The renderer process can handle the message by
 listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) module.
@@ -572,6 +580,8 @@ examples.
 ### `<webview>.sendInputEvent(event)`
 
 * `event` Object
+
+Returns `Promise<void>`
 
 Sends an input `event` to the page.
 
@@ -607,12 +617,16 @@ Returns `Number` - the current zoom level.
 * `minimumLevel` Number
 * `maximumLevel` Number
 
+Returns `Promise<void>`
+
 Sets the maximum and minimum pinch-to-zoom level.
 
 ### `<webview>.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
 
 * `minimumLevel` Number
 * `maximumLevel` Number
+
+Returns `Promise<void>`
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
