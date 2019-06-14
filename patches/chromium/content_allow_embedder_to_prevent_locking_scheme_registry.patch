@@ -12,10 +12,10 @@ Without this patch, calling `registerStandardSchemes` during initialization
 when in debug mode will cause a DCHECK to fire.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index a388e279e9ef62d4484182bdde02de264a263186..4e8c72ad1602f576014ea5c8bb1d572e1490a8ff 100644
+index 2d853dec6f7606f0ef090a9311b3815ffeb4031f..c6b3a49ee6febb3ddd61e6fde26ab5782549be47 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -752,7 +752,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -755,7 +755,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
  #endif
  
      RegisterPathProvider();
