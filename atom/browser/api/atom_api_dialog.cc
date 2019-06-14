@@ -15,6 +15,7 @@
 #include "atom/common/native_mate_converters/file_dialog_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/message_box_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/promise_util.h"
@@ -22,21 +23,8 @@
 
 namespace {
 
-int ShowMessageBoxSync(int type,
-                       const std::vector<std::string>& buttons,
-                       int default_id,
-                       int cancel_id,
-                       int options,
-                       const std::string& title,
-                       const std::string& message,
-                       const std::string& detail,
-                       const std::string& checkbox_label,
-                       bool checkbox_checked,
-                       const gfx::ImageSkia& icon,
-                       atom::NativeWindow* window) {
-  return atom::ShowMessageBoxSync(
-      window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
-      cancel_id, options, title, message, detail, icon);
+int ShowMessageBoxSync(const atom::MessageBoxSettings& settings) {
+  return atom::ShowMessageBoxSync(settings);
 }
 
 void ResolvePromiseObject(atom::util::Promise promise,
@@ -50,28 +38,14 @@ void ResolvePromiseObject(atom::util::Promise promise,
   promise.Resolve(dict.GetHandle());
 }
 
-v8::Local<v8::Promise> ShowMessageBox(int type,
-                                      const std::vector<std::string>& buttons,
-                                      int default_id,
-                                      int cancel_id,
-                                      int options,
-                                      const std::string& title,
-                                      const std::string& message,
-                                      const std::string& detail,
-                                      const std::string& checkbox_label,
-                                      bool checkbox_checked,
-                                      const gfx::ImageSkia& icon,
-                                      atom::NativeWindow* window,
+v8::Local<v8::Promise> ShowMessageBox(const atom::MessageBoxSettings& settings,
                                       mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   atom::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   atom::ShowMessageBox(
-      window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
-      cancel_id, options, title, message, detail, checkbox_label,
-      checkbox_checked, icon,
-      base::BindOnce(&ResolvePromiseObject, std::move(promise)));
+      settings, base::BindOnce(&ResolvePromiseObject, std::move(promise)));
 
   return handle;
 }

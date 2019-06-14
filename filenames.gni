@@ -523,6 +523,8 @@ filenames = {
     "atom/common/native_mate_converters/content_converter.h",
     "atom/common/native_mate_converters/file_dialog_converter.cc",
     "atom/common/native_mate_converters/file_dialog_converter.h",
+    "atom/common/native_mate_converters/message_box_converter.cc",
+    "atom/common/native_mate_converters/message_box_converter.h",
     "atom/common/native_mate_converters/file_path_converter.h",
     "atom/common/native_mate_converters/gfx_converter.cc",
     "atom/common/native_mate_converters/gfx_converter.h",
