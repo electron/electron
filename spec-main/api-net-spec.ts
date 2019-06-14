@@ -4,6 +4,7 @@ import * as http from 'http'
 import { AddressInfo } from 'net'
 
 const kOneKiloByte = 1024
+const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
 function randomBuffer (size: number, start: number = 0, end: number = 255) {
   const range = 1 + end - start
@@ -12,6 +13,11 @@ function randomBuffer (size: number, start: number = 0, end: number = 255) {
     buffer[i] = start + Math.floor(Math.random() * range)
   }
   return buffer
+}
+
+function randomString (length: number) {
+  const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0))
+  return buffer.toString()
 }
 
 function respondOnce(fn: http.RequestListener) {
@@ -123,7 +129,7 @@ describe('net module', () => {
         })
         urlRequest.on('response', (response) => {
           expect(response.statusCode).to.equal(200)
-          response.on('data', (chunk) => {})
+          response.on('data', () => {})
           response.on('end', () => {
             done()
           })
@@ -178,6 +184,175 @@ describe('net module', () => {
           sentChunks.push(chunk)
           expect(urlRequest.write(chunk)).to.equal(true)
         }
+        urlRequest.end()
+      })
+    })
+  })
+
+  describe('ClientRequest API', () => {
+    it('request/response objects should emit expected events', (done) => {
+      const requestUrl = '/requestUrl'
+      const bodyData = randomString(kOneMegaByte)
+      respondOnce.toURL(requestUrl, (request, response) => {
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.write(bodyData)
+        response.end()
+      }).then(serverUrl => {
+        let requestResponseEventEmitted = false
+        let requestFinishEventEmitted = false
+        let requestCloseEventEmitted = false
+        let responseDataEventEmitted = false
+        let responseEndEventEmitted = false
+
+        function maybeDone (done: () => void) {
+          if (!requestCloseEventEmitted || !responseEndEventEmitted) {
+            return
+          }
+
+          expect(requestResponseEventEmitted).to.equal(true)
+          expect(requestFinishEventEmitted).to.equal(true)
+          expect(requestCloseEventEmitted).to.equal(true)
+          expect(responseDataEventEmitted).to.equal(true)
+          expect(responseEndEventEmitted).to.equal(true)
+          done()
+        }
+
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          requestResponseEventEmitted = true
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          const buffers: Buffer[] = []
+          response.on('data', (chunk) => {
+            buffers.push(chunk)
+            responseDataEventEmitted = true
+          })
+          response.on('end', () => {
+            const receivedBodyData = Buffer.concat(buffers)
+            expect(receivedBodyData.toString()).to.equal(bodyData)
+            responseEndEventEmitted = true
+            maybeDone(done)
+          })
+          response.on('error', (error: Error) => {
+            expect(error).to.be.an('Error')
+          })
+          response.on('aborted', () => {
+            expect.fail('response aborted')
+          })
+        })
+        urlRequest.on('finish', () => {
+          requestFinishEventEmitted = true
+        })
+        urlRequest.on('error', (error) => {
+          expect(error).to.be.an('Error')
+        })
+        urlRequest.on('abort', () => {
+          expect.fail('request aborted')
+        })
+        urlRequest.on('close', () => {
+          requestCloseEventEmitted = true
+          maybeDone(done)
+        })
+        urlRequest.end()
+      })
+    })
+
+    it('should be able to set a custom HTTP request header before first write', (done) => {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      respondOnce.toURL(requestUrl, (request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          response.on('data', () => {
+          })
+          response.on('end', () => {
+            done()
+          })
+        })
+        urlRequest.setHeader(customHeaderName, customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
+        urlRequest.write('')
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
+        urlRequest.end()
+      })
+    })
+
+    it('should be able to set a non-string object as a header value', (done) => {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Integer-Value'
+      const customHeaderValue = 900
+      respondOnce.toURL(requestUrl, (request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString())
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          response.on('data', () => {})
+          response.on('end', () => {
+            done()
+          })
+        })
+        urlRequest.setHeader(customHeaderName, customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
+        urlRequest.write('')
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
+        urlRequest.end()
+      })
+    })
+
+    it('should not be able to set a custom HTTP request header after first write', (done) => {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      respondOnce.toURL(requestUrl, (request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(undefined)
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          response.on('data', () => {})
+          response.on('end', () => {
+            done()
+          })
+        })
+        urlRequest.write('')
+        expect(() => {
+          urlRequest.setHeader(customHeaderName, customHeaderValue)
+        }).to.throw()
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(undefined)
         urlRequest.end()
       })
     })
