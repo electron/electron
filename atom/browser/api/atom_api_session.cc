@@ -599,8 +599,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
-      [](RequestHandler* handler,
-         content::WebContents* web_contents,
+      [](RequestHandler* handler, content::WebContents* web_contents,
          content::PermissionType permission_type,
          AtomPermissionManager::StatusCallback callback,
          const base::Value& details) {
