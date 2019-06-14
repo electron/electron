@@ -104,7 +104,7 @@ with `callback(error, cookies)` on complete.
 #### `cookies.set(details)`
 
 * `details` Object
-  * `url` String - The url to associate the cookie with.
+  * `url` String - The url to associate the cookie with. The promise will be rejected if the url is invalid.
   * `name` String (optional) - The name of the cookie. Empty by default if omitted.
   * `value` String (optional) - The value of the cookie. Empty by default if omitted.
   * `domain` String (optional) - The domain of the cookie; this will be normalized with a preceding dot so that it's also valid for subdomains. Empty by default if omitted.
