@@ -1235,4 +1235,63 @@ describe('net module', () => {
       })
     })
   })
+
+  describe('Stability and performance', () => {
+    it('should free unreferenced, never-started request objects without crash', (done) => {
+      net.request('https://test')
+      process.nextTick(() => {
+        const v8Util = process.electronBinding('v8_util')
+        v8Util.requestGarbageCollectionForTesting()
+        done()
+      })
+    })
+
+    it('should collect on-going requests without crash', (done) => {
+      let finishResponse: (() => void) | null = null
+      respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.write(randomString(kOneKiloByte))
+        finishResponse = () => {
+          response.write(randomString(kOneKiloByte))
+          response.end()
+        }
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => { })
+          response.on('end', () => {
+            done()
+          })
+          process.nextTick(() => {
+            // Trigger a garbage collection.
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+            finishResponse!()
+          })
+        })
+        urlRequest.end()
+      })
+    })
+
+    it('should collect unreferenced, ended requests without crash', (done) => {
+      respondOnce.toSingleURL((request, response) => {
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request(serverUrl)
+        urlRequest.on('response', (response) => {
+          response.on('data', () => {})
+          response.on('end', () => {})
+        })
+        urlRequest.on('close', () => {
+          process.nextTick(() => {
+            const v8Util = process.electronBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
+            done()
+          })
+        })
+        urlRequest.end()
+      })
+    })
+  })
 })
