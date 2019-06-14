@@ -99,8 +99,7 @@ describe('net module', () => {
       const bodyData = 'Hello World!'
       respondOnce.toSingleURL((request, response) => {
         expect(request.method).to.equal('GET')
-        response.write(bodyData)
-        response.end()
+        response.end(bodyData)
       }).then(serverUrl => {
         const urlRequest = net.request(serverUrl)
         urlRequest.on('response', (response) => {
@@ -200,10 +199,7 @@ describe('net module', () => {
     it('request/response objects should emit expected events', (done) => {
       const bodyData = randomString(kOneKiloByte)
       respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 200
-        response.statusMessage = 'OK'
-        response.write(bodyData)
-        response.end()
+        response.end(bodyData)
       }).then(serverUrl => {
         let requestResponseEventEmitted = false
         let requestFinishEventEmitted = false
@@ -1154,7 +1150,7 @@ describe('net module', () => {
     })
 
     it('should be able to pipe a net response into a writable stream', (done) => {
-      const bodyData = randomString(1)
+      const bodyData = randomString(kOneKiloByte)
       Promise.all([
         respondOnce.toSingleURL((request, response) => response.end(bodyData)),
         respondOnce.toSingleURL((request, response) => {
@@ -1247,8 +1243,6 @@ describe('net module', () => {
     it('should collect on-going requests without crash', (done) => {
       let finishResponse: (() => void) | null = null
       respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 200
-        response.statusMessage = 'OK'
         response.write(randomString(kOneKiloByte))
         finishResponse = () => {
           response.write(randomString(kOneKiloByte))
