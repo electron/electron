@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { net } from 'electron'
+import { net, session, ClientRequest } from 'electron'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 
@@ -356,5 +356,179 @@ describe('net module', () => {
         urlRequest.end()
       })
     })
+
+    it('should be able to remove a custom HTTP request header before first write', (done) => {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      respondOnce.toURL(requestUrl, (request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(undefined)
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          response.on('data', () => {})
+          response.on('end', () => {
+            done()
+          })
+        })
+        urlRequest.setHeader(customHeaderName, customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        urlRequest.removeHeader(customHeaderName)
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(undefined)
+        urlRequest.write('')
+        urlRequest.end()
+      })
+    })
+
+    it('should not be able to remove a custom HTTP request header after first write', (done) => {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      respondOnce.toURL(requestUrl, (request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue)
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.end()
+      }).then(serverUrl => {
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          const statusCode = response.statusCode
+          expect(statusCode).to.equal(200)
+          response.on('data', () => {})
+          response.on('end', () => {
+            done()
+          })
+        })
+        urlRequest.setHeader(customHeaderName, customHeaderValue)
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        urlRequest.write('')
+        expect(() => {
+          urlRequest.removeHeader(customHeaderName)
+        }).to.throw()
+        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
+        urlRequest.end()
+      })
+    })
+
+    it('should be able to set cookie header line', (done) => {
+      const requestUrl = '/requestUrl'
+      const cookieHeaderName = 'Cookie'
+      const cookieHeaderValue = 'test=12345'
+      const customSession = session.fromPartition('test-cookie-header')
+      respondOnce.toURL(requestUrl, (request, response) => {
+        expect(request.headers[cookieHeaderName.toLowerCase()]).to.equal(cookieHeaderValue)
+        response.statusCode = 200
+        response.statusMessage = 'OK'
+        response.end()
+      }).then(serverUrl => {
+        customSession.cookies.set({
+          url: `${serverUrl}`,
+          name: 'test',
+          value: '11111'
+        }).then(() => { // resolved
+          const urlRequest = net.request({
+            method: 'GET',
+            url: `${serverUrl}${requestUrl}`,
+            session: customSession
+          })
+          urlRequest.on('response', (response) => {
+            const statusCode = response.statusCode
+            expect(statusCode).to.equal(200)
+            response.on('data', () => {})
+            response.on('end', () => {
+              done()
+            })
+          })
+          urlRequest.setHeader(cookieHeaderName, cookieHeaderValue)
+          expect(urlRequest.getHeader(cookieHeaderName)).to.equal(cookieHeaderValue)
+          urlRequest.end()
+        }, (error) => {
+          done(error)
+        })
+      })
+    })
+
+    it('should be able to abort an HTTP request before first write', (done) => {
+      const requestUrl = '/requestUrl'
+      respondOnce.toURL(requestUrl, (request, response) => {
+        response.end()
+        expect.fail('Unexpected request event')
+      }).then(serverUrl => {
+        let requestAbortEventEmitted = false
+
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          expect.fail('Unexpected response event')
+        })
+        urlRequest.on('finish', () => {
+          expect.fail('Unexpected finish event')
+        })
+        urlRequest.on('error', () => {
+          expect.fail('Unexpected error event')
+        })
+        urlRequest.on('abort', () => {
+          requestAbortEventEmitted = true
+        })
+        urlRequest.on('close', () => {
+          expect(requestAbortEventEmitted).to.equal(true)
+          done()
+        })
+        urlRequest.abort()
+        expect(urlRequest.write('')).to.equal(false)
+        urlRequest.end()
+      })
+    })
+
+    it('it should be able to abort an HTTP request before request end', (done) => {
+      const requestUrl = '/requestUrl'
+      let requestReceivedByServer = false
+      let urlRequest: ClientRequest | null = null
+      respondOnce.toURL(requestUrl, (request, response) => {
+        requestReceivedByServer = true
+        urlRequest!.abort()
+      }).then(serverUrl => {
+        let requestAbortEventEmitted = false
+
+        urlRequest = net.request({
+          method: 'GET',
+          url: `${serverUrl}${requestUrl}`
+        })
+        urlRequest.on('response', (response) => {
+          expect.fail('Unexpected response event')
+        })
+        urlRequest.on('finish', () => {
+          expect.fail('Unexpected finish event')
+        })
+        urlRequest.on('error', () => {
+          expect.fail('Unexpected error event')
+        })
+        urlRequest.on('abort', () => {
+          requestAbortEventEmitted = true
+        })
+        urlRequest.on('close', () => {
+          expect(requestReceivedByServer).to.equal(true)
+          expect(requestAbortEventEmitted).to.equal(true)
+          done()
+        })
+
+        urlRequest.chunkedEncoding = true
+        urlRequest.write(randomString(kOneKiloByte))
+      })
+    })
+
   })
 })
