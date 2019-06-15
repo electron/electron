@@ -50,7 +50,7 @@ will not return and instead log a warning to the console.
 You can pass the name of the extension to the `BrowserWindow.removeDevToolsExtension`
 API to remove it. The name of the extension is returned by
 `BrowserWindow.addDevToolsExtension` and you can get the names of all installed
-DevTools Extensions using the `BrowserWindow.getDevToolsExtensions` API. 
+DevTools Extensions using the `BrowserWindow.getDevToolsExtensions` API.
 
 ## Supported DevTools Extensions
 
