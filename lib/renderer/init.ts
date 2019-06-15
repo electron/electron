@@ -54,6 +54,7 @@ v8Util.setHiddenValue(global, 'ipcNative', {
 
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
+const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils')
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init')
 webFrameInit()
 
@@ -111,7 +112,8 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    require('@electron/internal/renderer/content-scripts-injector')()
+    const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
+    require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
   }
 }
 
