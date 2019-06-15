@@ -9,7 +9,7 @@ majority of changes originally come from these PRs:
   * https://github.com/electron/electron/pull/8596
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 961e1560aa914942c01372c354059d6d6b72c50f..aa51b2b2b0e1950f7a660d48bda5e61ecea8951c 100644
+index 961e1560aa914942c01372c354059d6d6b72c50f..5e364fa6637e8453b0be701637c7d5b96aa77b7b 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -26,8 +26,28 @@ index 961e1560aa914942c01372c354059d6d6b72c50f..aa51b2b2b0e1950f7a660d48bda5e61e
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
+@@ -265,10 +265,18 @@ void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
+   // We can't use OnFailure() here since query_ does not support notifications.
+ 
+   DCHECK(query_);
+-  query_->PostTask(FROM_HERE,
++  if (result == PrintingContext::CANCEL) {
++    print_job_->PostTask(
++      FROM_HERE,
++      base::BindOnce(&NotificationCallback, base::RetainedRef(print_job_),
++                     JobEventDetails::USER_INIT_CANCELED, 0,
++                     base::RetainedRef(document_)));
++  } else {
++    query_->PostTask(FROM_HERE,
+                    base::BindOnce(&PrinterQuery::GetSettingsDone,
+                                   base::WrapRefCounted(query_),
+                                   printing_context_->settings(), result));
++  }
+ }
+ 
+ void PrintJobWorker::GetSettingsWithUI(
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 007b003dd58d44acd6e1351c237fca6463d90602..4ddbf18e335609623aba42cc39a7c977fe8c5229 100644
+index 007b003dd58d44acd6e1351c237fca6463d90602..da7c14d03a740e5d2ca2099a15c6105b74c101b4 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -121,6 +141,31 @@ index 007b003dd58d44acd6e1351c237fca6463d90602..4ddbf18e335609623aba42cc39a7c977
  #endif
  
    ReleasePrinterQuery();
+@@ -436,9 +441,12 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+           content::NotificationService::NoDetails());
+       break;
+     }
+-    case JobEventDetails::USER_INIT_DONE:
+-    case JobEventDetails::DEFAULT_INIT_DONE:
+     case JobEventDetails::USER_INIT_CANCELED: {
++      ReleasePrintJob();
++      break;
++    }
++    case JobEventDetails::USER_INIT_DONE:
++    case JobEventDetails::DEFAULT_INIT_DONE: {
+       NOTREACHED();
+       break;
+     }
+@@ -532,9 +540,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrinterQuery* query) {
+   DCHECK(!quit_inner_loop_);
+   DCHECK(query);
+ 
+-  // Disconnect the current |print_job_|.
+-  DisconnectFromCurrentPrintJob();
+-
+   // We can't print if there is no renderer.
+   if (!web_contents()->GetRenderViewHost() ||
+       !web_contents()->GetRenderViewHost()->IsRenderViewLive()) {
 @@ -594,6 +599,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
@@ -130,6 +175,26 @@ index 007b003dd58d44acd6e1351c237fca6463d90602..4ddbf18e335609623aba42cc39a7c977
 +
    if (!print_job_)
      return;
+ 
+@@ -604,7 +612,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+   }
+ 
+   registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
+-                    content::Source<PrintJob>(print_job_.get()));
++                    content::NotificationService::AllSources());
+   // Don't close the worker thread.
+   print_job_ = nullptr;
+ }
+@@ -678,6 +686,10 @@ bool PrintViewManagerBase::PrintNowInternal(
+   // Don't print / print preview interstitials or crashed tabs.
+   if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
+     return false;
++  
++  registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
++                 content::NotificationService::AllSources());
++
+   return rfh->Send(message.release());
+ }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
 index a2569836d04ff968e690215f56f6de3b6d884874..6ddec22641b74d5484c2e0d4f62e5d71d8d783e9 100644
