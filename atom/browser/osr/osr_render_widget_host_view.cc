@@ -12,6 +12,7 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
+#include "base/optional.h"
 #include "base/single_thread_task_runner.h"
 #include "base/task/post_task.h"
 #include "base/time/time.h"
@@ -264,8 +265,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
     video_consumer_.reset(new OffScreenVideoConsumer(
-        this, base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
-                         weak_ptr_factory_.GetWeakPtr())));
+        this, base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
+                                  weak_ptr_factory_.GetWeakPtr())));
     video_consumer_->SetActive(IsPainting());
     video_consumer_->SetFrameRate(GetFrameRate());
   }
@@ -383,10 +384,10 @@ void OffScreenRenderWidgetHostView::Show() {
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(
       GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), false);
+      GetRootLayer()->bounds().size(), base::nullopt);
 
   if (render_widget_host_)
-    render_widget_host_->WasShown(false);
+    render_widget_host_->WasShown(base::nullopt);
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
@@ -502,8 +503,8 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
   parent_host_view_->set_popup_host_view(this);
   parent_callback_ =
-      base::Bind(&OffScreenRenderWidgetHostView::OnPopupPaint,
-                 parent_host_view_->weak_ptr_factory_.GetWeakPtr());
+      base::BindRepeating(&OffScreenRenderWidgetHostView::OnPopupPaint,
+                          parent_host_view_->weak_ptr_factory_.GetWeakPtr());
 
   popup_position_ = pos;
 
@@ -740,8 +741,8 @@ OffScreenRenderWidgetHostView::CreateHostDisplayClient(
     ui::Compositor* compositor) {
   host_display_client_ = new OffScreenHostDisplayClient(
       gfx::kNullAcceleratedWidget,
-      base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
-                 weak_ptr_factory_.GetWeakPtr()));
+      base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
+                          weak_ptr_factory_.GetWeakPtr()));
   host_display_client_->SetActive(IsPainting());
   return base::WrapUnique(host_display_client_);
 }
@@ -1083,8 +1084,9 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   } else {
     begin_frame_timer_.reset(new AtomBeginFrameTimer(
         frame_rate_threshold_us_,
-        base::Bind(&OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
-                   weak_ptr_factory_.GetWeakPtr())));
+        base::BindRepeating(
+            &OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
+            weak_ptr_factory_.GetWeakPtr())));
   }
 }
 

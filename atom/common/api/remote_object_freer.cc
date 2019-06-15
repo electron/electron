@@ -4,7 +4,6 @@
 
 #include "atom/common/api/remote_object_freer.h"
 
-#include "atom/common/api/api_messages.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"

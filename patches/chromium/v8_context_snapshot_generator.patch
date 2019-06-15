@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Thu, 20 Sep 2018 17:47:58 -0700
+Subject: v8_context_snapshot_generator.patch
+
+v8_context_snapshot_generator is a build time executable.
+The patch adds the config.
+
+diff --git a/tools/v8_context_snapshot/BUILD.gn b/tools/v8_context_snapshot/BUILD.gn
+index 2d7b357cfc2cd60e6e880a8c93b32166376540b5..002e9e67f8009e780182150705417c500a01c5cd 100644
+--- a/tools/v8_context_snapshot/BUILD.gn
++++ b/tools/v8_context_snapshot/BUILD.gn
+@@ -109,6 +109,7 @@ if (use_v8_context_snapshot) {
+     configs += [
+       "//v8:external_startup_data",
+       ":disable_icf",
++      "//electron/build/config:build_time_executable"
+     ]
+   }
+ }

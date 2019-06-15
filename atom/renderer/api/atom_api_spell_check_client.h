@@ -6,6 +6,7 @@
 #define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -38,9 +39,9 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
  private:
   class SpellcheckRequest;
   // blink::WebTextCheckClient:
-  void RequestCheckingOfText(
-      const blink::WebString& textToCheck,
-      blink::WebTextCheckingCompletion* completionCallback) override;
+  void RequestCheckingOfText(const blink::WebString& textToCheck,
+                             std::unique_ptr<blink::WebTextCheckingCompletion>
+                                 completionCallback) override;
   bool IsSpellCheckingEnabled() const override;
 
   // blink::WebSpellCheckPanelHostClient:
@@ -68,7 +69,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // The javascript function will callback OnSpellCheckDone
   // with the results of all the misspelled words.
   void SpellCheckWords(const SpellCheckScope& scope,
-                       const std::vector<base::string16>& words);
+                       const std::set<base::string16>& words);
 
   // Returns whether or not the given word is a contraction of valid words
   // (e.g. "word:word").

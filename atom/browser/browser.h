@@ -128,8 +128,12 @@ class Browser : public WindowListObserver {
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
 
-  // Invalidates the current user activity.
+  // Invalidates an activity and marks it as no longer eligible for
+  // continuation
   void InvalidateCurrentActivity();
+
+  // Marks this activity object as inactive without invalidating it.
+  void ResignCurrentActivity();
 
   // Updates the current user activity
   void UpdateCurrentActivity(const std::string& type,

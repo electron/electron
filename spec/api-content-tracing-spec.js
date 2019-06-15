@@ -15,10 +15,6 @@ const timeout = async (milliseconds) => {
   })
 }
 
-const getPathInATempFolder = (filename) => {
-  return path.join(app.getPath('temp'), filename)
-}
-
 describe('contentTracing', () => {
   beforeEach(function () {
     // FIXME: The tests are skipped on arm/arm64.
@@ -38,7 +34,7 @@ describe('contentTracing', () => {
     return resultFilePath
   }
 
-  const outputFilePath = getPathInATempFolder('trace.json')
+  const outputFilePath = path.join(app.getPath('temp'), 'trace.json')
   beforeEach(() => {
     if (fs.existsSync(outputFilePath)) {
       fs.unlinkSync(outputFilePath)
@@ -115,6 +111,18 @@ describe('contentTracing', () => {
   describe('stopRecording', function () {
     this.timeout(5e3)
 
+    it('does not crash on empty string', async () => {
+      const options = {
+        categoryFilter: '*',
+        traceOptions: 'record-until-full,enable-sampling'
+      }
+
+      await contentTracing.startRecording(options)
+      const path = await contentTracing.stopRecording('')
+      expect(path).to.be.a('string').that.is.not.empty()
+      expect(fs.statSync(path).isFile()).to.be.true()
+    })
+
     it('calls its callback with a result file path', async () => {
       const resultFilePath = await record(/* options */ {}, outputFilePath)
       expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath)
@@ -122,6 +130,11 @@ describe('contentTracing', () => {
 
     it('creates a temporary file when an empty string is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '')
+      expect(resultFilePath).to.be.a('string').that.is.not.empty()
+    })
+
+    it('creates a temporary file when no path is passed', async function () {
+      const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined)
       expect(resultFilePath).to.be.a('string').that.is.not.empty()
     })
   })

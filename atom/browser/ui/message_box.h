@@ -10,10 +10,7 @@
 
 #include "base/callback_forward.h"
 #include "base/strings/string16.h"
-
-namespace gfx {
-class ImageSkia;
-}
+#include "ui/gfx/image/image_skia.h"
 
 namespace atom {
 
@@ -32,32 +29,31 @@ enum MessageBoxOptions {
   MESSAGE_BOX_NO_LINK = 1 << 0,
 };
 
-int ShowMessageBoxSync(NativeWindow* parent_window,
-                       MessageBoxType type,
-                       const std::vector<std::string>& buttons,
-                       int default_id,
-                       int cancel_id,
-                       int options,
-                       const std::string& title,
-                       const std::string& message,
-                       const std::string& detail,
-                       const gfx::ImageSkia& icon);
+struct MessageBoxSettings {
+  atom::NativeWindow* parent_window = nullptr;
+  MessageBoxType type = atom::MessageBoxType::kNone;
+  std::vector<std::string> buttons;
+  int default_id;
+  int cancel_id;
+  int options = atom::MessageBoxOptions::MESSAGE_BOX_NONE;
+  std::string title;
+  std::string message;
+  std::string detail;
+  std::string checkbox_label;
+  bool checkbox_checked = false;
+  gfx::ImageSkia icon;
+
+  MessageBoxSettings();
+  MessageBoxSettings(const MessageBoxSettings&);
+  ~MessageBoxSettings();
+};
+
+int ShowMessageBoxSync(const MessageBoxSettings& settings);
 
 typedef base::OnceCallback<void(int code, bool checkbox_checked)>
     MessageBoxCallback;
 
-void ShowMessageBox(NativeWindow* parent_window,
-                    MessageBoxType type,
-                    const std::vector<std::string>& buttons,
-                    int default_id,
-                    int cancel_id,
-                    int options,
-                    const std::string& title,
-                    const std::string& message,
-                    const std::string& detail,
-                    const std::string& checkbox_label,
-                    bool checkbox_checked,
-                    const gfx::ImageSkia& icon,
+void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early

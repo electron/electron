@@ -9,6 +9,7 @@ const qs = require('querystring')
 const http = require('http')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
+const { createNetworkSandbox } = require('./network-helper')
 const { ipcRenderer, remote } = require('electron')
 const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, webContents } = remote
 
@@ -112,374 +113,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('BrowserWindow constructor', () => {
-    it('allows passing void 0 as the webContents', async () => {
-      await openTheWindow({
-        webContents: void 0
-      })
-    })
-  })
-
-  describe('BrowserWindow.close()', () => {
-    let server
-
-    before((done) => {
-      server = http.createServer((request, response) => {
-        switch (request.url) {
-          case '/404':
-            response.statusCode = '404'
-            response.end()
-            break
-          case '/301':
-            response.statusCode = '301'
-            response.setHeader('Location', '/200')
-            response.end()
-            break
-          case '/200':
-            response.statusCode = '200'
-            response.end('hello')
-            break
-          case '/title':
-            response.statusCode = '200'
-            response.end('<title>Hello</title>')
-            break
-          default:
-            done('unsupported endpoint')
-        }
-      }).listen(0, '127.0.0.1', () => {
-        server.url = 'http://127.0.0.1:' + server.address().port
-        done()
-      })
-    })
-
-    after(() => {
-      server.close()
-      server = null
-    })
-
-    it('should emit unload handler', (done) => {
-      w.webContents.once('did-finish-load', () => { w.close() })
-      w.once('closed', () => {
-        const test = path.join(fixtures, 'api', 'unload')
-        const content = fs.readFileSync(test)
-        fs.unlinkSync(test)
-        expect(String(content)).to.equal('unload')
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'unload.html'))
-    })
-    it('should emit beforeunload handler', (done) => {
-      w.once('onbeforeunload', () => { done() })
-      w.webContents.once('did-finish-load', () => { w.close() })
-      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false.html'))
-    })
-    it('should not crash when invoked synchronously inside navigation observer', (done) => {
-      const events = [
-        { name: 'did-start-loading', url: `${server.url}/200` },
-        { name: 'dom-ready', url: `${server.url}/200` },
-        { name: 'page-title-updated', url: `${server.url}/title` },
-        { name: 'did-stop-loading', url: `${server.url}/200` },
-        { name: 'did-finish-load', url: `${server.url}/200` },
-        { name: 'did-frame-finish-load', url: `${server.url}/200` },
-        { name: 'did-fail-load', url: `${server.url}/404` }
-      ]
-      const responseEvent = 'window-webContents-destroyed'
-
-      function * genNavigationEvent () {
-        let eventOptions = null
-        while ((eventOptions = events.shift()) && events.length) {
-          const w = new BrowserWindow({ show: false })
-          eventOptions.id = w.id
-          eventOptions.responseEvent = responseEvent
-          ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
-          yield 1
-        }
-      }
-
-      const gen = genNavigationEvent()
-      ipcRenderer.on(responseEvent, () => {
-        if (!gen.next().value) done()
-      })
-      gen.next()
-    })
-  })
-
-  describe('window.close()', () => {
-    it('should emit unload handler', (done) => {
-      w.once('closed', () => {
-        const test = path.join(fixtures, 'api', 'close')
-        const content = fs.readFileSync(test)
-        fs.unlinkSync(test)
-        expect(String(content)).to.equal('close')
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close.html'))
-    })
-    it('should emit beforeunload handler', (done) => {
-      w.once('onbeforeunload', () => { done() })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-    })
-  })
-
-  describe('BrowserWindow.destroy()', () => {
-    it('prevents users to access methods of webContents', () => {
-      const contents = w.webContents
-      w.destroy()
-      expect(() => {
-        contents.getProcessId()
-      }).to.throw('Object has been destroyed')
-    })
-    it('should not crash when destroying windows with pending events', (done) => {
-      const responseEvent = 'destroy-test-completed'
-      ipcRenderer.on(responseEvent, () => done())
-      ipcRenderer.send('test-browserwindow-destroy', { responseEvent })
-    })
-  })
-
-  describe('BrowserWindow.loadURL(url)', () => {
-    it('should emit did-start-loading event', (done) => {
-      w.webContents.on('did-start-loading', () => { done() })
-      w.loadURL('about:blank')
-    })
-    it('should emit ready-to-show event', (done) => {
-      w.on('ready-to-show', () => { done() })
-      w.loadURL('about:blank')
-    })
-    it('should emit did-fail-load event for files that do not exist', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(code).to.equal(-6)
-        expect(desc).to.equal('ERR_FILE_NOT_FOUND')
-        expect(isMainFrame).to.be.true()
-        done()
-      })
-      w.loadURL('file://a.txt')
-    })
-    it('should emit did-fail-load event for invalid URL', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(desc).to.equal('ERR_INVALID_URL')
-        expect(code).to.equal(-300)
-        expect(isMainFrame).to.be.true()
-        done()
-      })
-      w.loadURL('http://example:port')
-    })
-    it('should set `mainFrame = false` on did-fail-load events in iframes', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(isMainFrame).to.be.false()
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'))
-    })
-    it('does not crash in did-fail-provisional-load handler', (done) => {
-      w.webContents.once('did-fail-provisional-load', () => {
-        w.loadURL('http://127.0.0.1:11111')
-        done()
-      })
-      w.loadURL('http://127.0.0.1:11111')
-    })
-    it('should emit did-fail-load event for URL exceeding character limit', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(desc).to.equal('ERR_INVALID_URL')
-        expect(code).to.equal(-300)
-        expect(isMainFrame).to.be.true()
-        done()
-      })
-      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
-      w.loadURL(`data:image/png;base64,${data}`)
-    })
-
-    it('should return a promise', () => {
-      const p = w.loadURL('about:blank')
-      expect(p).to.have.property('then')
-    })
-
-    it('should return a promise that resolves', async () => {
-      expect(w.loadURL('about:blank')).to.eventually.be.fulfilled()
-    })
-
-    it('should return a promise that rejects on a load failure', async () => {
-      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
-      const p = w.loadURL(`data:image/png;base64,${data}`)
-      await expect(p).to.eventually.be.rejected()
-    })
-
-    it('should return a promise that resolves even if pushState occurs during navigation', async () => {
-      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
-      const p = w.loadURL('data:text/html,<script>window.history.pushState({}, "/foo")</script>')
-      await expect(p).to.eventually.be.fulfilled()
-    })
-
-    describe('POST navigations', () => {
-      afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
-
-      it('supports specifying POST data', async () => {
-        await w.loadURL(server.url, { postData: postData })
-      })
-      it('sets the content type header on URL encoded forms', async () => {
-        await w.loadURL(server.url)
-        const requestDetails = new Promise(resolve => {
-          w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-            resolve(details)
-          })
-        })
-        w.webContents.executeJavaScript(`
-          form = document.createElement('form')
-          document.body.appendChild(form)
-          form.method = 'POST'
-          form.target = '_blank'
-          form.submit()
-        `)
-        const details = await requestDetails
-        expect(details.requestHeaders['content-type']).to.equal('application/x-www-form-urlencoded')
-      })
-      it('sets the content type header on multi part forms', async () => {
-        await w.loadURL(server.url)
-        const requestDetails = new Promise(resolve => {
-          w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-            resolve(details)
-          })
-        })
-        w.webContents.executeJavaScript(`
-          form = document.createElement('form')
-          document.body.appendChild(form)
-          form.method = 'POST'
-          form.target = '_blank'
-          form.enctype = 'multipart/form-data'
-          file = document.createElement('input')
-          file.type = 'file'
-          file.name = 'file'
-          form.appendChild(file)
-          form.submit()
-        `)
-        const details = await requestDetails
-        expect(details.requestHeaders['content-type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary')).to.be.true()
-      })
-    })
-
-    it('should support support base url for data urls', (done) => {
-      ipcMain.once('answer', (event, test) => {
-        expect(test).to.equal('test')
-        done()
-      })
-      w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}` })
-    })
-  })
-
-  describe('will-navigate event', () => {
-    it('allows the window to be closed from the event listener', (done) => {
-      ipcRenderer.send('close-on-will-navigate', w.id)
-      ipcRenderer.once('closed-on-will-navigate', () => { done() })
-      w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
-    })
-  })
-
-  describe('will-redirect event', () => {
-    it('is emitted on redirects', (done) => {
-      w.webContents.on('will-redirect', (event, url) => {
-        done()
-      })
-      w.loadURL(`${server.url}/302`)
-    })
-
-    it('is emitted after will-navigate on redirects', (done) => {
-      let navigateCalled = false
-      w.webContents.on('will-navigate', () => {
-        navigateCalled = true
-      })
-      w.webContents.on('will-redirect', (event, url) => {
-        expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
-        done()
-      })
-      w.loadURL(`${server.url}/navigate-302`)
-    })
-
-    it('is emitted before did-stop-loading on redirects', (done) => {
-      let stopCalled = false
-      w.webContents.on('did-stop-loading', () => {
-        stopCalled = true
-      })
-      w.webContents.on('will-redirect', (event, url) => {
-        expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
-        done()
-      })
-      w.loadURL(`${server.url}/302`)
-    })
-
-    it('allows the window to be closed from the event listener', (done) => {
-      ipcRenderer.send('close-on-will-redirect', w.id)
-      ipcRenderer.once('closed-on-will-redirect', () => { done() })
-      w.loadURL(`${server.url}/302`)
-    })
-
-    it.skip('can be prevented', (done) => {
-      ipcRenderer.send('prevent-will-redirect', w.id)
-      w.webContents.on('will-navigate', (e, url) => {
-        expect(url).to.equal(`${server.url}/302`)
-      })
-      w.webContents.on('did-stop-loading', () => {
-        expect(w.webContents.getURL()).to.equal(
-          `${server.url}/navigate-302`,
-          'url should not have changed after navigation event'
-        )
-        done()
-      })
-      w.webContents.on('will-redirect', (e, url) => {
-        expect(url).to.equal(`${server.url}/200`)
-      })
-      w.loadURL(`${server.url}/navigate-302`)
-    })
-  })
-
-  describe('BrowserWindow.show()', () => {
-    before(function () {
-      if (isCI) {
-        this.skip()
-      }
-    })
-
-    it('should focus on window', () => {
-      w.show()
-      expect(w.isFocused()).to.be.true()
-    })
-    it('should make the window visible', () => {
-      w.show()
-      expect(w.isVisible()).to.be.true()
-    })
-    it('emits when window is shown', (done) => {
-      w.once('show', () => {
-        expect(w.isVisible()).to.be.true()
-        done()
-      })
-      w.show()
-    })
-  })
-
-  describe('BrowserWindow.hide()', () => {
-    before(function () {
-      if (isCI) {
-        this.skip()
-      }
-    })
-
-    it('should defocus on window', () => {
-      w.hide()
-      expect(w.isFocused()).to.be.false()
-    })
-    it('should make the window not visible', () => {
-      w.show()
-      w.hide()
-      expect(w.isVisible()).to.be.false()
-    })
-    it('emits when window is hidden', (done) => {
-      w.show()
-      w.once('hide', () => {
-        expect(w.isVisible()).to.be.false()
-        done()
-      })
-      w.hide()
-    })
-  })
-
   describe('BrowserWindow.showInactive()', () => {
     it('should not focus on window', () => {
       w.showInactive()
@@ -510,6 +143,16 @@ describe('BrowserWindow module', () => {
         done()
       })
       w.webContents.openDevTools({ mode: 'undocked' })
+    })
+  })
+
+  describe('BrowserWindow autoHideMenuBar property', () => {
+    it('has an autoHideMenuBar property', () => {
+      expect(w).to.have.a.property('autoHideMenuBar')
+
+      // TODO(codebytere): remove when propertyification is complete
+      expect(w.setAutoHideMenuBar).to.be.a('function')
+      expect(w.isMenuBarAutoHide).to.be.a('function')
     })
   })
 
@@ -1927,6 +1570,7 @@ describe('BrowserWindow module', () => {
           expect(test.hasCrash).to.be.true()
           expect(test.hasHang).to.be.true()
           expect(test.heapStatistics).to.be.an('object')
+          expect(test.blinkMemoryInfo).to.be.an('object')
           expect(test.processMemoryInfo).to.be.an('object')
           expect(test.systemVersion).to.be.a('string')
           expect(test.cpuUsage).to.be.an('object')
@@ -1986,15 +1630,27 @@ describe('BrowserWindow module', () => {
     })
 
     describe('nativeWindowOpen option', () => {
-      beforeEach(() => {
+      const networkSandbox = createNetworkSandbox(protocol)
+
+      beforeEach(async () => {
+        // used to create cross-origin navigation situations
+        await networkSandbox.serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
+        await networkSandbox.serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
+
         w.destroy()
         w = new BrowserWindow({
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // tests relies on preloads in opened windows
+            nodeIntegrationInSubFrames: true
           }
         })
+      })
+
+      afterEach(async () => {
+        await networkSandbox.reset()
       })
 
       it('opens window of about:blank with cross-scripting enabled', (done) => {
@@ -2041,7 +1697,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2058,7 +1716,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2072,14 +1732,13 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
       })
       it('retains the original web preferences when window.location is changed to a new origin', async () => {
-        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
-        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
-
         w.destroy()
         w = new BrowserWindow({
           show: true,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2092,7 +1751,33 @@ describe('BrowserWindow module', () => {
         expect(typeofProcess).to.eql('undefined')
       })
 
+      it('window.opener is not null when window.location is changed to a new origin', async () => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
+          }
+        })
+
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', path.join(fixtures, 'api', 'window-open-preload.js'))
+        const p = emittedOnce(ipcMain, 'answer')
+        w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
+        const [, , , windowOpenerIsNull] = await p
+        expect(windowOpenerIsNull).to.be.false('window.opener is null')
+      })
+
       it('should have nodeIntegration disabled in child windows', async () => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nativeWindowOpen: true
+          }
+        })
         const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
         const [, typeofProcess] = await p
@@ -2651,24 +2336,24 @@ describe('BrowserWindow module', () => {
         show: false
       })
 
-      w.setMinimizable(false)
-      w.setMinimizable(true)
+      w.minimizable = false
+      w.minimizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setResizable(false)
-      w.setResizable(true)
+      w.resizable = false
+      w.resizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setMaximizable(false)
-      w.setMaximizable(true)
+      w.maximizable = false
+      w.maximizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setFullScreenable(false)
-      w.setFullScreenable(true)
+      w.fullScreenable = false
+      w.fullScreenable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setClosable(false)
-      w.setClosable(true)
+      w.closable = false
+      w.closable = true
       expect(w.getSize()).to.deep.equal([300, 200])
     })
 
@@ -2676,13 +2361,14 @@ describe('BrowserWindow module', () => {
       it('can be changed with resizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, resizable: false })
-        expect(w.isResizable()).to.be.false()
+        expect(w.resizable).to.be.false()
 
         if (process.platform === 'darwin') {
-          expect(w.isMaximizable()).to.to.true()
+          expect(w.maximizable).to.to.true()
         }
       })
 
+      // TODO(codebytere): remove when propertyification is complete
       it('can be changed with setResizable method', () => {
         expect(w.isResizable()).to.be.true()
         w.setResizable(false)
@@ -2691,15 +2377,23 @@ describe('BrowserWindow module', () => {
         expect(w.isResizable()).to.be.true()
       })
 
+      it('can be changed with resizable property', () => {
+        expect(w.resizable).to.be.true()
+        w.resizable = false
+        expect(w.resizable).to.be.false()
+        w.resizable = true
+        expect(w.resizable).to.be.true()
+      })
+
       it('works for a frameless window', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, frame: false })
-        expect(w.isResizable()).to.be.true()
+        expect(w.resizable).to.be.true()
 
         if (process.platform === 'win32') {
           w.destroy()
           w = new BrowserWindow({ show: false, thickFrame: false })
-          expect(w.isResizable()).to.be.false()
+          expect(w.resizable).to.be.false()
         }
       })
 
@@ -2771,7 +2465,23 @@ describe('BrowserWindow module', () => {
       return
     }
 
-    describe('movable state', () => {
+    describe('movable state (property)', () => {
+      it('can be changed with movable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, movable: false })
+        expect(w.movable).to.be.false()
+      })
+      it('can be changed with movable property', () => {
+        expect(w.movable).to.be.true()
+        w.movable = false
+        expect(w.movable).to.be.false()
+        w.movable = true
+        expect(w.movable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('movable state (methods)', () => {
       it('can be changed with movable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, movable: false })
@@ -2786,7 +2496,24 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('minimizable state', () => {
+    describe('minimizable state (property)', () => {
+      it('can be changed with minimizable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, minimizable: false })
+        expect(w.minimizable).to.be.false()
+      })
+
+      it('can be changed with minimizable property', () => {
+        expect(w.minimizable).to.be.true()
+        w.minimizable = false
+        expect(w.minimizable).to.be.false()
+        w.minimizable = true
+        expect(w.minimizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('minimizable state (methods)', () => {
       it('can be changed with minimizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, minimizable: false })
@@ -2802,7 +2529,40 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('maximizable state', () => {
+    describe('maximizable state (property)', () => {
+      it('can be changed with maximizable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, maximizable: false })
+        expect(w.maximizable).to.be.false()
+      })
+
+      it('can be changed with maximizable property', () => {
+        expect(w.maximizable).to.be.true()
+        w.maximizable = false
+        expect(w.maximizable).to.be.false()
+        w.maximizable = true
+        expect(w.maximizable).to.be.true()
+      })
+
+      it('is not affected when changing other states', () => {
+        w.maximizable = false
+        expect(w.maximizable).to.be.false()
+        w.minimizable = false
+        expect(w.maximizable).to.be.false()
+        w.closable = false
+        expect(w.maximizable).to.be.false()
+
+        w.maximizable = true
+        expect(w.maximizable).to.be.true()
+        w.closable = true
+        expect(w.maximizable).to.be.true()
+        w.fullScreenable = false
+        expect(w.maximizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('maximizable state (methods)', () => {
       it('can be changed with maximizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, maximizable: false })
@@ -2839,6 +2599,23 @@ describe('BrowserWindow module', () => {
       if (process.platform !== 'win32') return
 
       it('is reset to its former state', () => {
+        w.maximizable = false
+        w.resizable = false
+        w.resizable = true
+        expect(w.maximizable).to.be.false()
+        w.maximizable = true
+        w.resizable = false
+        w.resizable = true
+        expect(w.maximizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('maximizable state (Windows only) (methods)', () => {
+      // Only implemented on windows.
+      if (process.platform !== 'win32') return
+
+      it('is reset to its former state', () => {
         w.setMaximizable(false)
         w.setResizable(false)
         w.setResizable(true)
@@ -2850,12 +2627,30 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('fullscreenable state', () => {
+    describe('fullscreenable state (property)', () => {
       before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
+      })
+
+      it('can be changed with fullscreenable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, fullscreenable: false })
+        expect(w.fullScreenable).to.be.false()
+      })
+
+      it('can be changed with fullScreenable property', () => {
+        expect(w.fullScreenable).to.be.true()
+        w.fullScreenable = false
+        expect(w.fullScreenable).to.be.false()
+        w.fullScreenable = true
+        expect(w.fullScreenable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('fullscreenable state (methods)', () => {
+      before(function () {
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('can be changed with fullscreenable option', () => {
@@ -2899,21 +2694,18 @@ describe('BrowserWindow module', () => {
 
     describe('fullscreen state with resizable set', () => {
       before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('resizable flag should be set to true and restored', (done) => {
         w.destroy()
         w = new BrowserWindow({ resizable: false })
         w.once('enter-full-screen', () => {
-          expect(w.isResizable()).to.be.true()
+          expect(w.resizable).to.be.true()
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          expect(w.isResizable()).to.be.false()
+          expect(w.resizable).to.be.false()
           done()
         })
         w.setFullScreen(true)
@@ -2960,7 +2752,24 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('closable state', () => {
+    describe('closable state (property)', () => {
+      it('can be changed with closable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, closable: false })
+        expect(w.closable).to.be.false()
+      })
+
+      it('can be changed with setClosable method', () => {
+        expect(w.closable).to.be.true()
+        w.closable = false
+        expect(w.closable).to.be.false()
+        w.closable = true
+        expect(w.closable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('closable state (methods)', () => {
       it('can be changed with closable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, closable: false })
@@ -3765,23 +3574,4 @@ const isScaleFactorRounding = () => {
   if (Math.round(scaleFactor) !== scaleFactor) return true
   // Return true if scale factor is odd number above 2
   return scaleFactor > 2 && scaleFactor % 2 === 1
-}
-
-function serveFileFromProtocol (protocolName, filePath) {
-  return new Promise((resolve, reject) => {
-    protocol.registerBufferProtocol(protocolName, (request, callback) => {
-      // Disabled due to false positive in StandardJS
-      // eslint-disable-next-line standard/no-callback-literal
-      callback({
-        mimeType: 'text/html',
-        data: fs.readFileSync(filePath)
-      })
-    }, (error) => {
-      if (error != null) {
-        reject(error)
-      } else {
-        resolve()
-      }
-    })
-  })
 }

@@ -19,7 +19,6 @@ let window = null
 
 // will be used by crash-reporter spec.
 process.port = 0
-process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -53,16 +52,15 @@ if (process.platform !== 'darwin') {
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
-const print = function (_, args) {
+const print = function (_, method, args) {
   const output = util.format.apply(null, args)
   if (outputToFile) {
     fs.appendFileSync(outputToFile, output + '\n')
   } else {
-    console.error(output)
+    console[method](output)
   }
 }
-ipcMain.on('console.log', print)
-ipcMain.on('console.error', print)
+ipcMain.on('console-call', print)
 
 ipcMain.on('process.exit', function (event, code) {
   process.exit(code)
@@ -158,58 +156,6 @@ app.on('ready', function () {
     process.exit(1)
   })
 
-  // For session's download test, listen 'will-download' event in browser, and
-  // reply the result to renderer for verifying
-  const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath, dialogOptions = {}) {
-    window.webContents.session.once('will-download', function (e, item) {
-      window.webContents.send('download-created',
-        item.getState(),
-        item.getURLChain(),
-        item.getMimeType(),
-        item.getReceivedBytes(),
-        item.getTotalBytes(),
-        item.getFilename(),
-        item.getSavePath())
-      if (preventDefault) {
-        e.preventDefault()
-        const url = item.getURL()
-        const filename = item.getFilename()
-        setImmediate(function () {
-          try {
-            item.getURL()
-          } catch (err) {
-            window.webContents.send('download-error', url, filename, err.message)
-          }
-        })
-      } else {
-        if (item.getState() === 'interrupted' && !needCancel) {
-          item.resume()
-        } else {
-          item.setSavePath(filePath)
-          item.setSaveDialogOptions(dialogOptions)
-        }
-        item.on('done', function (e, state) {
-          window.webContents.send('download-done',
-            state,
-            item.getURL(),
-            item.getMimeType(),
-            item.getReceivedBytes(),
-            item.getTotalBytes(),
-            item.getContentDisposition(),
-            item.getFilename(),
-            item.getSavePath(),
-            item.getSaveDialogOptions(),
-            item.getURLChain(),
-            item.getLastModifiedTime(),
-            item.getETag())
-        })
-        if (needCancel) item.cancel()
-      }
-    })
-    event.returnValue = 'done'
-  })
-
   ipcMain.on('prevent-next-input-event', (event, key, id) => {
     webContents.fromId(id).once('before-input-event', (event, input) => {
       if (key === input.key) event.preventDefault()
@@ -237,25 +183,7 @@ ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
 })
 
 for (const eventName of [
-  'remote-require',
-  'remote-get-global',
-  'remote-get-builtin'
-]) {
-  ipcMain.on(`handle-next-${eventName}`, function (event, valuesMap = {}) {
-    event.sender.once(eventName, (event, name) => {
-      if (valuesMap.hasOwnProperty(name)) {
-        event.returnValue = valuesMap[name]
-      } else {
-        event.preventDefault()
-      }
-    })
-  })
-}
-
-for (const eventName of [
   'desktop-capturer-get-sources',
-  'remote-get-current-window',
-  'remote-get-current-web-contents',
   'remote-get-guest-web-contents'
 ]) {
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {
@@ -282,31 +210,6 @@ ipcMain.on('set-client-certificate-option', function (event, skip) {
     }
   })
   event.returnValue = 'done'
-})
-
-ipcMain.on('close-on-will-navigate', (event, id) => {
-  const contents = event.sender
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-navigate', (event, input) => {
-    window.close()
-    contents.send('closed-on-will-navigate')
-  })
-})
-
-ipcMain.on('close-on-will-redirect', (event, id) => {
-  const contents = event.sender
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-redirect', (event, input) => {
-    window.close()
-    contents.send('closed-on-will-redirect')
-  })
-})
-
-ipcMain.on('prevent-will-redirect', (event, id) => {
-  const window = BrowserWindow.fromId(id)
-  window.webContents.once('will-redirect', (event) => {
-    event.preventDefault()
-  })
 })
 
 ipcMain.on('create-window-with-options-cycle', (event) => {
@@ -392,52 +295,6 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   fs.readFile(__filename, () => {
     Promise.reject(new Error(message))
   })
-})
-
-ipcMain.on('crash-service-pid', (event, pid) => {
-  process.crashServicePid = pid
-  event.returnValue = null
-})
-
-ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
-  let contents = null
-  let destroy = () => {}
-  if (options.id) {
-    const w = BrowserWindow.fromId(options.id)
-    contents = w.webContents
-    destroy = () => w.close()
-  } else {
-    contents = webContents.create()
-    destroy = () => contents.destroy()
-  }
-
-  contents.once(options.name, () => destroy())
-
-  contents.once('destroyed', () => {
-    event.sender.send(options.responseEvent)
-  })
-
-  contents.loadURL(options.url)
-})
-
-ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
-  const focusListener = (event, win) => win.id
-  app.on('browser-window-focus', focusListener)
-  const windowCount = 3
-  const windowOptions = {
-    show: false,
-    width: 400,
-    height: 400,
-    webPreferences: {
-      backgroundThrottling: false
-    }
-  }
-  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
-  windows.forEach(win => win.show())
-  windows.forEach(win => win.focus())
-  windows.forEach(win => win.destroy())
-  app.removeListener('browser-window-focus', focusListener)
-  event.sender.send(testOptions.responseEvent)
 })
 
 // Suspend listeners until the next event and then restore them

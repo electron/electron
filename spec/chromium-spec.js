@@ -32,6 +32,11 @@ describe('chromium feature', () => {
     listener = null
   })
 
+  afterEach(async () => {
+    await closeWindow(w)
+    w = null
+  })
+
   describe('command line switches', () => {
     describe('--lang switch', () => {
       const currentLocale = app.getLocale()
@@ -78,25 +83,9 @@ describe('chromium feature', () => {
     })
   })
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
-
   describe('heap snapshot', () => {
     it('does not crash', function () {
       process.electronBinding('v8_util').takeHeapSnapshot()
-    })
-  })
-
-  describe('sending request of http protocol urls', () => {
-    it('does not crash', (done) => {
-      const server = http.createServer((req, res) => {
-        res.end()
-        server.close()
-        done()
-      })
-      server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port
-        $.get(`http://127.0.0.1:${port}`)
-      })
     })
   })
 
@@ -400,7 +389,7 @@ describe('chromium feature', () => {
           }).catch(done)
         })
       })
-      b = window.open('chrome-devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
+      b = window.open('devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
     })
 
     it('disables JavaScript when it is disabled on the parent window', (done) => {
@@ -735,27 +724,6 @@ describe('chromium feature', () => {
   })
 
   describe('window.postMessage', () => {
-    it('sets the source and origin correctly', (done) => {
-      let b = null
-      listener = (event) => {
-        window.removeEventListener('message', listener)
-        b.close()
-        const message = JSON.parse(event.data)
-        expect(message.data).to.equal('testing')
-        expect(message.origin).to.equal('file://')
-        expect(message.sourceEqualsOpener).to.be.true()
-        expect(event.origin).to.equal('file://')
-        done()
-      }
-      window.addEventListener('message', listener)
-      app.once('browser-window-created', (event, { webContents }) => {
-        webContents.once('did-finish-load', () => {
-          b.postMessage('testing', '*')
-        })
-      })
-      b = window.open(`file://${fixtures}/pages/window-open-postMessage.html`, '', 'show=no')
-    })
-
     it('throws an exception when the targetOrigin cannot be converted to a string', () => {
       const b = window.open('')
       expect(() => {
@@ -1278,6 +1246,11 @@ describe('chromium feature', () => {
 
     it('should download a pdf when plugins are disabled', (done) => {
       this.createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
+      // NOTE(nornagon): this test has been skipped for ages, so there's no way
+      // to refactor it confidently. The 'set-download-option' ipc was removed
+      // around May 2019, so if you're working on the pdf viewer and arrive at
+      // this test and want to know what 'set-download-option' did, look here:
+      // https://github.com/electron/electron/blob/d87b3ead760ae2d20f2401a8dac4ce548f8cd5f5/spec/static/main.js#L164
       ipcRenderer.sendSync('set-download-option', false, false)
       ipcRenderer.once('download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) => {
         expect(state).to.equal('completed')
@@ -1493,6 +1466,19 @@ describe('chromium feature', () => {
         expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've looped back to element-3, it's instead in ${focusedElementId}`)
       })
     })
+  })
+})
+
+describe('console functions', () => {
+  it('should exist', () => {
+    expect(console.log, 'log').to.be.a('function')
+    expect(console.error, 'error').to.be.a('function')
+    expect(console.warn, 'warn').to.be.a('function')
+    expect(console.info, 'info').to.be.a('function')
+    expect(console.debug, 'debug').to.be.a('function')
+    expect(console.trace, 'trace').to.be.a('function')
+    expect(console.time, 'time').to.be.a('function')
+    expect(console.timeEnd, 'timeEnd').to.be.a('function')
   })
 })
 

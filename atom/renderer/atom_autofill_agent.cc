@@ -4,11 +4,12 @@
 
 #include "atom/renderer/atom_autofill_agent.h"
 
+#include <utility>
 #include <vector>
 
-#include "atom/common/api/api_messages.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "third_party/blink/public/platform/web_keyboard_event.h"
 #include "third_party/blink/public/platform/web_string.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -49,12 +50,22 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 }
 }  // namespace
 
-AutofillAgent::AutofillAgent(content::RenderFrame* frame)
-    : content::RenderFrameObserver(frame), weak_ptr_factory_(this) {
+AutofillAgent::AutofillAgent(content::RenderFrame* frame,
+                             blink::AssociatedInterfaceRegistry* registry)
+    : content::RenderFrameObserver(frame),
+      binding_(this),
+      weak_ptr_factory_(this) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
+  registry->AddInterface(
+      base::Bind(&AutofillAgent::BindRequest, base::Unretained(this)));
 }
 
 AutofillAgent::~AutofillAgent() = default;
+
+void AutofillAgent::BindRequest(
+    mojom::ElectronAutofillAgentAssociatedRequest request) {
+  binding_.Bind(std::move(request));
+}
 
 void AutofillAgent::OnDestruct() {
   delete this;
@@ -64,7 +75,7 @@ void AutofillAgent::DidChangeScrollOffset() {
   HidePopup();
 }
 
-void AutofillAgent::FocusedNodeChanged(const blink::WebNode&) {
+void AutofillAgent::FocusedElementChanged(const blink::WebElement&) {
   focused_node_was_last_clicked_ = false;
   was_focused_before_now_ = false;
   HidePopup();
@@ -165,24 +176,13 @@ void AutofillAgent::DidCompleteFocusChangeInFrame() {
   DoFocusChangeComplete();
 }
 
-bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AutofillAgent, message)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameMsg_AcceptSuggestion,
-                        OnAcceptSuggestion)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
 bool AutofillAgent::IsUserGesture() const {
   return blink::WebUserGestureIndicator::IsProcessingUserGesture(
       render_frame()->GetWebFrame());
 }
 
 void AutofillAgent::HidePopup() {
-  Send(new AtomAutofillFrameHostMsg_HidePopup(render_frame()->GetRoutingID()));
+  GetElectronBrowser()->HideAutofillPopup();
 }
 
 void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
@@ -190,11 +190,10 @@ void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
                               const std::vector<base::string16>& labels) {
   gfx::RectF bounds =
       render_frame()->GetRenderView()->ElementBoundsInWindow(element);
-  Send(new AtomAutofillFrameHostMsg_ShowPopup(render_frame()->GetRoutingID(),
-                                              bounds, values, labels));
+  GetElectronBrowser()->ShowAutofillPopup(bounds, values, labels);
 }
 
-void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
+void AutofillAgent::AcceptDataListSuggestion(const base::string16& suggestion) {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsFormControlElement()) {
     ToWebInputElement(&element)->SetAutofillValue(
@@ -217,6 +216,15 @@ void AutofillAgent::DoFocusChangeComplete() {
 
   was_focused_before_now_ = true;
   focused_node_was_last_clicked_ = false;
+}
+
+const mojom::ElectronBrowserPtr& AutofillAgent::GetElectronBrowser() {
+  if (!browser_ptr_) {
+    render_frame()->GetRemoteInterfaces()->GetInterface(
+        mojo::MakeRequest(&browser_ptr_));
+  }
+
+  return browser_ptr_;
 }
 
 }  // namespace atom

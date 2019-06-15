@@ -576,11 +576,11 @@ Hides all application windows without minimizing them.
 Shows application windows after they were hidden. Does not automatically focus
 them.
 
-### `app.setAppLogsPath(path)`
+### `app.setAppLogsPath([path])`
 
 * `path` String (optional) - A custom path for your logs. Must be absolute.
 
-Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(newPath)`.
+Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(pathName, newPath)`.
 
 On _macOS_, this directory will be set by deafault to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
 
@@ -641,9 +641,9 @@ On _Linux_ and _macOS_, icons depend on the application associated with file mim
 * `name` String
 * `path` String
 
-Overrides the `path` to a special directory or file associated with `name`. If
-the path specifies a directory that does not exist, the directory will be
-created by this method. On failure an `Error` is thrown.
+Overrides the `path` to a special directory or file associated with `name`.
+If the path specifies a directory that does not exist, an `Error` is thrown.
+In that case, the directory should be created with `fs.mkdirSync` or similar.
 
 You can only override paths of a `name` defined in `app.getPath`.
 
@@ -667,7 +667,7 @@ to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.setName(name)`
 
@@ -675,7 +675,7 @@ preferred over `name` by Electron.
 
 Overrides the current application's name.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.getLocale()`
 
@@ -796,7 +796,7 @@ Returns `Object`:
 
 ### `app.setJumpList(categories)` _Windows_
 
-* `categories` [JumpListCategory[]](structures/jump-list-category.md) or `null` - Array of `JumpListCategory` objects.
+* `categories` [JumpListCategory[]](structures/jump-list-category.md) | `null` - Array of `JumpListCategory` objects.
 
 Sets or removes a custom Jump List for the application, and returns one of the
 following strings:
@@ -964,10 +964,11 @@ Returns `String` - The type of the currently running activity.
 
 ### `app.invalidateCurrentActivity()` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
-  [`NSUserActivity.activityType`][activity-type].
-
 Invalidates the current [Handoff][handoff] user activity.
+
+### `app.resignCurrentActivity()` _macOS_
+
+Marks the current [Handoff][handoff] user activity as inactive without invalidating it.
 
 ### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
@@ -1027,7 +1028,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 Returns `Promise<unknown>`
 
 For `infoType` equal to `complete`:
- Promise is fulfilled with `Object` containing all the GPU Information as in [chromium's GPUInfo object](https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/gpu/config/gpu_info.cc). This includes the version and driver information that's shown on `chrome://gpu` page.
+ Promise is fulfilled with `Object` containing all the GPU Information as in [chromium's GPUInfo object](https://chromium.googlesource.com/chromium/src/+/4178e190e9da409b055e5dff469911ec6f6b716f/gpu/config/gpu_info.cc). This includes the version and driver information that's shown on `chrome://gpu` page.
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
@@ -1070,13 +1071,13 @@ On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
 Returns `Integer` - The current value displayed in the counter badge.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.isUnityRunning()` _Linux_
 
@@ -1152,7 +1153,7 @@ technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
@@ -1165,7 +1166,7 @@ This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
-**[Deprecated Soon](modernization/property-updates.md)**
+**[Deprecated](modernization/property-updates.md)**
 
 ### `app.showAboutPanel()` _macOS_ _Linux_
 
@@ -1306,3 +1307,16 @@ This is the user agent that will be used when no user agent is set at the
 `webContents` or `session` level.  It is useful for ensuring that your entire
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
+
+### `app.allowRendererProcessReuse`
+
+A `Boolean` which when `true` disables the overrides that Electron has in place
+to ensure renderer processes are restarted on every navigation.  The current
+default value for this property is `false`.
+
+The intention is for these overrides to become disabled by default and then at
+some point in the future this property will be removed.  This property impacts
+which native modules you can use in the renderer process.  For more information
+on the direction Electron is going with renderer process restarts and usage of
+native modules in the renderer process please check out this
+[Tracking Issue](https://github.com/electron/electron/issues/18397).

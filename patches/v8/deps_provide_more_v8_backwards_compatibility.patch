@@ -1,0 +1,346 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Henningsen <anna@addaleax.net>
+Date: Fri, 28 Sep 2018 22:43:38 -0400
+Subject: deps: provide more V8 backwards compatibility
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add back a number deprecated APIs, using shims that
+should work well enough at least for the duration of Node 11
+and do not come with significant maintenance overhead.
+
+Refs: https://github.com/nodejs/node/issues/23122
+
+PR-URL: https://github.com/nodejs/node/pull/23158
+Reviewed-By: Rich Trott <rtrott@gmail.com>
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Sakthipriyan Vairamani <thechargingvolcano@gmail.com>
+Reviewed-By: Yang Guo <yangguo@chromium.org>
+Reviewed-By: Michaël Zasso <targos@protonmail.com>
+
+diff --git a/include/v8.h b/include/v8.h
+index cc603dc4aae69de4b09f06ed0bca48cdae8eebd3..c59b0fa69880c237e3b60f190160d8b94862bf36 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -1108,6 +1108,10 @@ class V8_EXPORT PrimitiveArray {
+  public:
+   static Local<PrimitiveArray> New(Isolate* isolate, int length);
+   int Length() const;
++  V8_DEPRECATED("Use Isolate* version",
++      void Set(int index, Local<Primitive> item));
++  V8_DEPRECATED("Use Isolate* version",
++      Local<Primitive> Get(int index));
+   void Set(Isolate* isolate, int index, Local<Primitive> item);
+   Local<Primitive> Get(Isolate* isolate, int index);
+ };
+@@ -1816,6 +1820,8 @@ class V8_EXPORT StackTrace {
+   /**
+    * Returns a StackFrame at a particular index.
+    */
++  V8_DEPRECATED("Use Isolate version",
++                Local<StackFrame> GetFrame(uint32_t index) const);
+   Local<StackFrame> GetFrame(Isolate* isolate, uint32_t index) const;
+ 
+   /**
+@@ -2509,6 +2515,13 @@ class V8_EXPORT Value : public Data {
+ 
+   Local<Boolean> ToBoolean(Isolate* isolate) const;
+ 
++  inline V8_DEPRECATED("Use maybe version",
++                       Local<Boolean> ToBoolean() const);
++  inline V8_DEPRECATED("Use maybe version", Local<String> ToString() const);
++  inline V8_DEPRECATED("Use maybe version", Local<Object> ToObject() const);
++  inline V8_DEPRECATED("Use maybe version",
++                       Local<Integer> ToInteger() const);
++
+   /**
+    * Attempts to convert a string to an array index.
+    * Returns an empty handle if the conversion fails.
+@@ -2525,7 +2538,14 @@ class V8_EXPORT Value : public Data {
+       Local<Context> context) const;
+   V8_WARN_UNUSED_RESULT Maybe<int32_t> Int32Value(Local<Context> context) const;
+ 
++  V8_DEPRECATED("Use maybe version", bool BooleanValue() const);
++  V8_DEPRECATED("Use maybe version", double NumberValue() const);
++  V8_DEPRECATED("Use maybe version", int64_t IntegerValue() const);
++  V8_DEPRECATED("Use maybe version", uint32_t Uint32Value() const);
++  V8_DEPRECATED("Use maybe version", int32_t Int32Value() const);
++
+   /** JS == */
++  V8_DEPRECATED("Use maybe version", bool Equals(Local<Value> that) const);
+   V8_WARN_UNUSED_RESULT Maybe<bool> Equals(Local<Context> context,
+                                            Local<Value> that) const;
+   bool StrictEquals(Local<Value> that) const;
+@@ -2632,6 +2652,8 @@ class V8_EXPORT String : public Name {
+    * Returns the number of bytes in the UTF-8 encoded
+    * representation of this string.
+    */
++  V8_DEPRECATED("Use Isolate version instead", int Utf8Length() const);
++
+   int Utf8Length(Isolate* isolate) const;
+ 
+   /**
+@@ -2688,12 +2710,23 @@ class V8_EXPORT String : public Name {
+   // 16-bit character codes.
+   int Write(Isolate* isolate, uint16_t* buffer, int start = 0, int length = -1,
+             int options = NO_OPTIONS) const;
++  V8_DEPRECATED("Use Isolate* version",
++                int Write(uint16_t* buffer, int start = 0, int length = -1,
++                          int options = NO_OPTIONS) const);
+   // One byte characters.
+   int WriteOneByte(Isolate* isolate, uint8_t* buffer, int start = 0,
+                    int length = -1, int options = NO_OPTIONS) const;
++  V8_DEPRECATED("Use Isolate* version",
++                int WriteOneByte(uint8_t* buffer, int start = 0,
++                                 int length = -1, int options = NO_OPTIONS)
++                    const);
+   // UTF-8 encoded characters.
+   int WriteUtf8(Isolate* isolate, char* buffer, int length = -1,
+                 int* nchars_ref = nullptr, int options = NO_OPTIONS) const;
++  V8_DEPRECATED("Use Isolate* version",
++                int WriteUtf8(char* buffer, int length = -1,
++                              int* nchars_ref = nullptr,
++                              int options = NO_OPTIONS) const);
+ 
+   /**
+    * A zero length string.
+@@ -2861,6 +2894,9 @@ class V8_EXPORT String : public Name {
+    */
+   static Local<String> Concat(Isolate* isolate, Local<String> left,
+                               Local<String> right);
++  static V8_DEPRECATED("Use Isolate* version",
++                       Local<String> Concat(Local<String> left,
++                                            Local<String> right));
+ 
+   /**
+    * Creates a new external string using the data defined in the given
+@@ -2925,6 +2961,8 @@ class V8_EXPORT String : public Name {
+    */
+   class V8_EXPORT Utf8Value {
+    public:
++    V8_DEPRECATED("Use Isolate version",
++                  explicit Utf8Value(Local<v8::Value> obj));
+     Utf8Value(Isolate* isolate, Local<v8::Value> obj);
+     ~Utf8Value();
+     char* operator*() { return str_; }
+@@ -2948,6 +2986,7 @@ class V8_EXPORT String : public Name {
+    */
+   class V8_EXPORT Value {
+    public:
++    V8_DEPRECATED("Use Isolate version", explicit Value(Local<v8::Value> obj));
+     Value(Isolate* isolate, Local<v8::Value> obj);
+     ~Value();
+     uint16_t* operator*() { return str_; }
+@@ -5281,6 +5320,8 @@ class V8_EXPORT BooleanObject : public Object {
+ class V8_EXPORT StringObject : public Object {
+  public:
+   static Local<Value> New(Isolate* isolate, Local<String> value);
++  V8_DEPRECATED("Use Isolate* version",
++                static Local<Value> New(Local<String> value));
+ 
+   Local<String> ValueOf() const;
+ 
+@@ -10384,6 +10425,29 @@ template <class T> Value* Value::Cast(T* value) {
+ }
+ 
+ 
++Local<Boolean> Value::ToBoolean() const {
++  return ToBoolean(Isolate::GetCurrent());
++}
++
++
++Local<String> Value::ToString() const {
++  return ToString(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(Local<String>());
++}
++
++
++Local<Object> Value::ToObject() const {
++  return ToObject(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(Local<Object>());
++}
++
++
++Local<Integer> Value::ToInteger() const {
++  return ToInteger(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(Local<Integer>());
++}
++
++
+ Boolean* Boolean::Cast(v8::Value* value) {
+ #ifdef V8_ENABLE_CHECKS
+   CheckCast(value);
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 6a501f67ebf900ee30d55bd05ccc58845d71f418..1b39655a1221b3df0012f5cc26697841d2c100d6 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -2171,6 +2171,10 @@ int PrimitiveArray::Length() const {
+   return array->length();
+ }
+ 
++void PrimitiveArray::Set(int index, Local<Primitive> item) {
++  return Set(Isolate::GetCurrent(), index, item);
++}
++
+ void PrimitiveArray::Set(Isolate* v8_isolate, int index,
+                          Local<Primitive> item) {
+   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+@@ -2184,6 +2188,10 @@ void PrimitiveArray::Set(Isolate* v8_isolate, int index,
+   array->set(index, *i_item);
+ }
+ 
++Local<Primitive> PrimitiveArray::Get(int index) {
++  return Get(Isolate::GetCurrent(), index);
++}
++
+ Local<Primitive> PrimitiveArray::Get(Isolate* v8_isolate, int index) {
+   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+   i::Handle<i::FixedArray> array = Utils::OpenHandle(this);
+@@ -2867,6 +2875,10 @@ void Message::PrintCurrentStackTrace(Isolate* isolate, FILE* out) {
+ 
+ // --- S t a c k T r a c e ---
+ 
++Local<StackFrame> StackTrace::GetFrame(uint32_t index) const {
++  return GetFrame(Isolate::GetCurrent(), index);
++}
++
+ Local<StackFrame> StackTrace::GetFrame(Isolate* v8_isolate,
+                                        uint32_t index) const {
+   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+@@ -3453,6 +3465,34 @@ MaybeLocal<BigInt> Value::ToBigInt(Local<Context> context) const {
+   RETURN_ESCAPED(result);
+ }
+ 
++bool Value::BooleanValue() const {
++  return BooleanValue(Isolate::GetCurrent());
++}
++
++
++double Value::NumberValue() const {
++  return NumberValue(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(std::numeric_limits<double>::quiet_NaN());
++}
++
++
++int64_t Value::IntegerValue() const {
++  return NumberValue(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(0);
++}
++
++
++uint32_t Value::Uint32Value() const {
++  return Uint32Value(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(0);
++}
++
++
++int32_t Value::Int32Value() const {
++  return Int32Value(Isolate::GetCurrent()->GetCurrentContext())
++      .FromMaybe(0);
++}
++
+ bool Value::BooleanValue(Isolate* v8_isolate) const {
+   return Utils::OpenHandle(this)->BooleanValue(
+       reinterpret_cast<i::Isolate*>(v8_isolate));
+@@ -3801,6 +3841,11 @@ MaybeLocal<Uint32> Value::ToArrayIndex(Local<Context> context) const {
+   return Local<Uint32>();
+ }
+ 
++bool Value::Equals(Local<Value> that) const {
++  return Equals(Isolate::GetCurrent()->GetCurrentContext(), that)
++      .FromMaybe(false);
++}
++
+ Maybe<bool> Value::Equals(Local<Context> context, Local<Value> that) const {
+   i::Isolate* isolate = Utils::OpenHandle(*context)->GetIsolate();
+   auto self = Utils::OpenHandle(this);
+@@ -5033,6 +5078,10 @@ bool String::ContainsOnlyOneByte() const {
+   return helper.Check(*str);
+ }
+ 
++int String::Utf8Length() const {
++  return Utf8Length(Isolate::GetCurrent());
++}
++
+ int String::Utf8Length(Isolate* isolate) const {
+   i::Handle<i::String> str = Utils::OpenHandle(this);
+   str = i::String::Flatten(reinterpret_cast<i::Isolate*>(isolate), str);
+@@ -5185,6 +5234,14 @@ static int WriteUtf8Impl(i::Vector<const Char> string, char* write_start,
+ }
+ }  // anonymous namespace
+ 
++
++int String::WriteUtf8(char* buffer, int capacity,
++                      int* nchars_ref, int options) const {
++  return WriteUtf8(Isolate::GetCurrent(),
++                   buffer, capacity, nchars_ref, options);
++}
++
++
+ int String::WriteUtf8(Isolate* v8_isolate, char* buffer, int capacity,
+                       int* nchars_ref, int options) const {
+   i::Handle<i::String> str = Utils::OpenHandle(this);
+@@ -5223,6 +5280,17 @@ static inline int WriteHelper(i::Isolate* isolate, const String* string,
+   return end - start;
+ }
+ 
++int String::WriteOneByte(uint8_t* buffer, int start,
++                         int length, int options) const {
++  return WriteOneByte(Isolate::GetCurrent(), buffer, start, length, options);
++}
++
++
++int String::Write(uint16_t* buffer, int start, int length,
++                  int options) const {
++  return Write(Isolate::GetCurrent(), buffer, start, length, options);
++}
++
+ int String::WriteOneByte(Isolate* isolate, uint8_t* buffer, int start,
+                          int length, int options) const {
+   return WriteHelper(reinterpret_cast<i::Isolate*>(isolate), this, buffer,
+@@ -6132,6 +6200,11 @@ MaybeLocal<String> String::NewFromTwoByte(Isolate* isolate,
+   return result;
+ }
+ 
++Local<String> v8::String::Concat(Local<String> left,
++                                 Local<String> right) {
++  return Concat(Isolate::GetCurrent(), left, right);
++}
++
+ Local<String> v8::String::Concat(Isolate* v8_isolate, Local<String> left,
+                                  Local<String> right) {
+   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+@@ -6401,6 +6474,10 @@ bool v8::BooleanObject::ValueOf() const {
+   return jsvalue->value().IsTrue(isolate);
+ }
+ 
++Local<v8::Value> v8::StringObject::New(Local<String> value) {
++  return New(Isolate::GetCurrent(), value);
++}
++
+ Local<v8::Value> v8::StringObject::New(Isolate* v8_isolate,
+                                        Local<String> value) {
+   i::Handle<i::String> string = Utils::OpenHandle(*value);
+@@ -8589,6 +8666,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8_isolate) {
+   return microtask_queue->IsRunningMicrotasks();
+ }
+ 
++String::Utf8Value::Utf8Value(v8::Local<v8::Value> obj)
++  : Utf8Value(Isolate::GetCurrent(), obj) {}
++
+ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
+     : str_(nullptr), length_(0) {
+   if (obj.IsEmpty()) return;
+@@ -8606,6 +8686,9 @@ String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
+ 
+ String::Utf8Value::~Utf8Value() { i::DeleteArray(str_); }
+ 
++String::Value::Value(v8::Local<v8::Value> obj)
++  : Value(Isolate::GetCurrent(), obj) {}
++
+ String::Value::Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
+     : str_(nullptr), length_(0) {
+   if (obj.IsEmpty()) return;

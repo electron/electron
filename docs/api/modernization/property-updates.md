@@ -12,17 +12,10 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `BrowserWindow`
   * `fullscreen`
   * `simpleFullscreen`
-  * `movable`
-  * `resizable`
-  * `maximizable`
-  * `minimizable`
-  * `fullscreenable`
-  * `closable`
   * `alwaysOnTop`
   * `title`
   * `documentEdited`
   * `hasShadow`
-  * `autohideMenuBar`
   * `menubarVisible`
   * `visibleOnAllWorkspaces`
 * `crashReporter` module
@@ -32,8 +25,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `paused`
 * `Session` module
   * `preloads`
-* `SystemPreferences` module
-  * `appLevelAppearance`
 * `webContents` module
   * `zoomFactor`
   * `zoomLevel`
@@ -56,5 +47,15 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `applicationMenu`
   * `badgeCount`
   * `name`
+* `BrowserWindow` module
+  * `autohideMenuBar`
+  * `resizable`
+  * `maximizable`
+  * `minimizable`
+  * `fullscreenable`
+  * `movable`
+  * `closable`
 * `NativeImage`
   * `isMacTemplateImage`
+* `SystemPreferences` module
+  * `appLevelAppearance`

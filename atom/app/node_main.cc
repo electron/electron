@@ -25,6 +25,10 @@
 #include "gin/v8_initializer.h"
 #include "native_mate/dictionary.h"
 
+#if defined(_WIN64)
+#include "atom/common/crash_reporter/crash_reporter_win.h"
+#endif
+
 namespace atom {
 
 int NodeMain(int argc, char* argv[]) {
@@ -48,10 +52,13 @@ int NodeMain(int argc, char* argv[]) {
     gin::V8Initializer::LoadV8Natives();
 
     // V8 requires a task scheduler apparently
-    base::ThreadPool::CreateAndStartWithDefaultParams("Electron");
+    base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
+#if defined(_WIN64)
+    crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
+#endif
 
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
@@ -116,7 +123,7 @@ int NodeMain(int argc, char* argv[]) {
   // gin::IsolateHolder waits for tasks running in ThreadPool in its
   // destructor and thus must be destroyed before ThreadPool starts skipping
   // CONTINUE_ON_SHUTDOWN tasks.
-  base::ThreadPool::GetInstance()->Shutdown();
+  base::ThreadPoolInstance::Get()->Shutdown();
 
   v8::V8::Dispose();
 

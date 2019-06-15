@@ -29,43 +29,42 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 
-#define ELECTRON_BUILTIN_MODULES(V)          \
-  V(atom_browser_app)                        \
-  V(atom_browser_auto_updater)               \
-  V(atom_browser_browser_view)               \
-  V(atom_browser_content_tracing)            \
-  V(atom_browser_debugger)                   \
-  V(atom_browser_dialog)                     \
-  V(atom_browser_download_item)              \
-  V(atom_browser_event)                      \
-  V(atom_browser_global_shortcut)            \
-  V(atom_browser_in_app_purchase)            \
-  V(atom_browser_menu)                       \
-  V(atom_browser_net)                        \
-  V(atom_browser_power_monitor)              \
-  V(atom_browser_power_save_blocker)         \
-  V(atom_browser_protocol)                   \
-  V(atom_browser_render_process_preferences) \
-  V(atom_browser_session)                    \
-  V(atom_browser_system_preferences)         \
-  V(atom_browser_top_level_window)           \
-  V(atom_browser_tray)                       \
-  V(atom_browser_web_contents)               \
-  V(atom_browser_web_contents_view)          \
-  V(atom_browser_view)                       \
-  V(atom_browser_web_view_manager)           \
-  V(atom_browser_window)                     \
-  V(atom_common_asar)                        \
-  V(atom_common_clipboard)                   \
-  V(atom_common_command_line)                \
-  V(atom_common_crash_reporter)              \
-  V(atom_common_features)                    \
-  V(atom_common_native_image)                \
-  V(atom_common_notification)                \
-  V(atom_common_screen)                      \
-  V(atom_common_shell)                       \
-  V(atom_common_v8_util)                     \
-  V(atom_renderer_ipc)                       \
+#define ELECTRON_BUILTIN_MODULES(V)  \
+  V(atom_browser_app)                \
+  V(atom_browser_auto_updater)       \
+  V(atom_browser_browser_view)       \
+  V(atom_browser_content_tracing)    \
+  V(atom_browser_debugger)           \
+  V(atom_browser_dialog)             \
+  V(atom_browser_download_item)      \
+  V(atom_browser_event)              \
+  V(atom_browser_global_shortcut)    \
+  V(atom_browser_in_app_purchase)    \
+  V(atom_browser_menu)               \
+  V(atom_browser_net)                \
+  V(atom_browser_power_monitor)      \
+  V(atom_browser_power_save_blocker) \
+  V(atom_browser_protocol)           \
+  V(atom_browser_session)            \
+  V(atom_browser_system_preferences) \
+  V(atom_browser_top_level_window)   \
+  V(atom_browser_tray)               \
+  V(atom_browser_web_contents)       \
+  V(atom_browser_web_contents_view)  \
+  V(atom_browser_view)               \
+  V(atom_browser_web_view_manager)   \
+  V(atom_browser_window)             \
+  V(atom_common_asar)                \
+  V(atom_common_clipboard)           \
+  V(atom_common_command_line)        \
+  V(atom_common_crash_reporter)      \
+  V(atom_common_features)            \
+  V(atom_common_native_image)        \
+  V(atom_common_notification)        \
+  V(atom_common_screen)              \
+  V(atom_common_shell)               \
+  V(atom_common_v8_util)             \
+  V(atom_renderer_ipc)               \
   V(atom_renderer_web_frame)
 
 #define ELECTRON_VIEW_MODULES(V) \
@@ -307,25 +306,23 @@ node::Environment* NodeBindings::CreateEnvironment(
 #endif
 
   // Feed node the path to initialization script.
-  base::FilePath::StringType process_type;
+  std::string process_type;
   switch (browser_env_) {
     case BrowserEnvironment::BROWSER:
-      process_type = FILE_PATH_LITERAL("browser");
+      process_type = "browser";
       break;
     case BrowserEnvironment::RENDERER:
-      process_type = FILE_PATH_LITERAL("renderer");
+      process_type = "renderer";
       break;
     case BrowserEnvironment::WORKER:
-      process_type = FILE_PATH_LITERAL("worker");
+      process_type = "worker";
       break;
   }
   base::FilePath resources_path =
       GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
-  base::FilePath script_path =
-      resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
-          .Append(process_type)
-          .Append(FILE_PATH_LITERAL("init.js"));
-  args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
+  std::string init_script = "electron/js2c/" + process_type + "_init";
+
+  args.insert(args.begin() + 1, init_script);
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
@@ -347,7 +344,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   process.Set("resourcesPath", resources_path);
   // Do not set DOM globals for renderer process.
   if (browser_env_ != BrowserEnvironment::BROWSER)
-    process.Set("_noBrowserGlobals", resources_path);
+    process.Set("_noBrowserGlobals", true);
   // The path to helper app.
   base::FilePath helper_exec_path;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);

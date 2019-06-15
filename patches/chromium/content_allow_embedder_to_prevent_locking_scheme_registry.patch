@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 21 Nov 2018 14:31:34 -0800
+Subject: content: allow embedder to prevent locking scheme registry
+
+The //content layer requires all schemes to be registered during startup,
+because Add*Scheme aren't threadsafe. However, Electron exposes the option to
+register additional schemes via JavaScript in the main process before the app
+is ready, but after the //content layer has already locked the registry.
+
+Without this patch, calling `registerStandardSchemes` during initialization
+when in debug mode will cause a DCHECK to fire.
+
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index a388e279e9ef62d4484182bdde02de264a263186..4e8c72ad1602f576014ea5c8bb1d572e1490a8ff 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -752,7 +752,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+ #endif
+ 
+     RegisterPathProvider();
+-    RegisterContentSchemes(true);
++    RegisterContentSchemes(delegate_->ShouldLockSchemeRegistry());
+ 
+ #if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+     int icudata_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
+diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
+index 456df421598153bde006ad0ecb0f1031360bb543..af06d78b91fa30e5daf993ad2c65c2c5e35a17a5 100644
+--- a/content/public/app/content_main_delegate.cc
++++ b/content/public/app/content_main_delegate.cc
+@@ -55,6 +55,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
+   return 0;
+ }
+ 
++bool ContentMainDelegate::ShouldLockSchemeRegistry() {
++  return true;
++}
++
+ service_manager::ProcessType ContentMainDelegate::OverrideProcessType() {
+   return service_manager::ProcessType::kDefault;
+ }
+diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
+index d4f3b8097c6aba8e15616c6d00070565064b1e9c..5672f4f1c328d30bb04dd8aaf4af63c51d52b3e6 100644
+--- a/content/public/app/content_main_delegate.h
++++ b/content/public/app/content_main_delegate.h
+@@ -88,6 +88,9 @@ class CONTENT_EXPORT ContentMainDelegate {
+   virtual void ZygoteForked() {}
+ #endif  // defined(OS_LINUX)
+ 
++  // Allows the embedder to prevent locking the scheme registry.
++  virtual bool ShouldLockSchemeRegistry();
++
+   // Fatal errors during initialization are reported by this function, so that
+   // the embedder can implement graceful exit by displaying some message and
+   // returning initialization error code. Default behavior is CHECK(false).

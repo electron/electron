@@ -1,0 +1,493 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:09 -0700
+Subject: pepper_flash.patch
+
+Allows building chrome pepper flash integration for Electron.
+
+diff --git a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
+index 735da93c3cabb8c6139971295740ba14a30d1b69..533f53fbc42397608e3762e370cc935c045ce3f1 100644
+--- a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
++++ b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h
+@@ -5,6 +5,7 @@
+ #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
+ #define CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
+ 
++#include "base/component_export.h"
+ #include "base/macros.h"
+ #include "ppapi/host/host_factory.h"
+ 
+@@ -12,7 +13,8 @@ namespace content {
+ class BrowserPpapiHost;
+ }  // namespace content
+ 
+-class ChromeBrowserPepperHostFactory : public ppapi::host::HostFactory {
++class COMPONENT_EXPORT(PEPPER_FLASH) ChromeBrowserPepperHostFactory
++    : public ppapi::host::HostFactory {
+  public:
+   // Non-owning pointer to the filter must outlive this class.
+   explicit ChromeBrowserPepperHostFactory(content::BrowserPpapiHost* host);
+diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
+index 83cedb4c9e1323259afd041e571240cd971e1241..3686ae2fab5f400cf119a54aea547a72655c2b0a 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
++++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
+@@ -7,10 +7,12 @@
+ #include <string>
+ 
+ #include "base/task/post_task.h"
++#if 0
+ #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "components/content_settings/core/browser/host_content_settings_map.h"
+ #include "components/content_settings/core/common/content_settings.h"
++#endif
+ #include "content/public/browser/browser_ppapi_host.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
+@@ -59,6 +61,7 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
+       RenderProcessHost::FromID(render_process_id_);
+   if (!render_process_host)
+     return PP_ERROR_FAILED;
++#if 0
+   Profile* profile =
+       Profile::FromBrowserContext(render_process_host->GetBrowserContext());
+   HostContentSettingsMap* content_settings =
+@@ -70,5 +73,6 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
+                                           std::string());
+   if (setting == CONTENT_SETTING_ALLOW)
+     return PP_OK;
+-  return PP_ERROR_FAILED;
++#endif
++  return PP_OK;
+ }
+diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
+index 9d249be9345202f1022f550f73cb8bdd1b327c56..e63ca22a2ebe3f380f6d06ac4f1b1eb8e5ff7e53 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
++++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
+@@ -8,9 +8,11 @@
+ #include "base/task/post_task.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/content_settings/cookie_settings_factory.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "components/content_settings/core/browser/cookie_settings.h"
++#endif
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_ppapi_host.h"
+ #include "content/public/browser/browser_task_traits.h"
+@@ -43,6 +45,7 @@ using content::ServiceManagerConnection;
+ 
+ namespace {
+ 
++#if 0
+ // Get the CookieSettings on the UI thread for the given render process ID.
+ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
+     int render_process_id) {
+@@ -56,6 +59,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
+   }
+   return NULL;
+ }
++#endif
+ 
+ void PepperBindConnectorRequest(
+     service_manager::mojom::ConnectorRequest connector_request) {
+@@ -73,7 +77,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
+                                                PP_Instance instance,
+                                                PP_Resource resource)
+     : ResourceHost(host->GetPpapiHost(), instance, resource),
++#if 0
+       host_(host),
++#endif
+       delay_timer_(FROM_HERE, base::TimeDelta::FromSeconds(45), this,
+                    &PepperFlashBrowserHost::OnDelayTimerFired),
+       weak_factory_(this) {
+@@ -125,6 +131,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
+ 
+ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
+     ppapi::host::HostMessageContext* context) {
++#if 0
+   // Getting the Flash LSO settings requires using the CookieSettings which
+   // belong to the profile which lives on the UI thread. We lazily initialize
+   // |cookie_settings_| by grabbing the reference from the UI thread and then
+@@ -145,9 +152,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
+                    context->MakeReplyMessageContext(), document_url,
+                    plugin_url));
+   }
+-  return PP_OK_COMPLETIONPENDING;
++#endif
++  return PP_FLASHLSORESTRICTIONS_IN_MEMORY;
+ }
+ 
++#if 0
+ void PepperFlashBrowserHost::GetLocalDataRestrictions(
+     ppapi::host::ReplyMessageContext reply_context,
+     const GURL& document_url,
+@@ -176,6 +185,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
+             PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
+                 static_cast<int32_t>(restrictions)));
+ }
++#endif
+ 
+ device::mojom::WakeLock* PepperFlashBrowserHost::GetWakeLock() {
+   // Here is a lazy binding, and will not reconnect after connection error.
+diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
+index 154120ce5156d77dd302b85cb17e2f14fb69cc2d..5152fd847c012fc2f40017687db426fab955a905 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
++++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
+@@ -23,9 +23,11 @@ namespace content {
+ class BrowserPpapiHost;
+ }
+ 
++#if 0
+ namespace content_settings {
+ class CookieSettings;
+ }
++#endif
+ 
+ class GURL;
+ 
+@@ -49,15 +51,19 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
+       const base::Time& t);
+   int32_t OnGetLocalDataRestrictions(ppapi::host::HostMessageContext* context);
+ 
++#if 0
+   void GetLocalDataRestrictions(
+       ppapi::host::ReplyMessageContext reply_context,
+       const GURL& document_url,
+       const GURL& plugin_url,
+       scoped_refptr<content_settings::CookieSettings> cookie_settings);
++#endif
+ 
+   device::mojom::WakeLock* GetWakeLock();
+ 
++#if 0
+   content::BrowserPpapiHost* host_;
++#endif
+   int render_process_id_;
+ 
+   // Requests a wake lock to prevent going to sleep, and a timer to cancel it
+@@ -65,8 +71,10 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
+   device::mojom::WakeLockPtr wake_lock_;
+   base::DelayTimer delay_timer_;
+ 
++#if 0
+   // For fetching the Flash LSO settings.
+   scoped_refptr<content_settings::CookieSettings> cookie_settings_;
++#endif
+   base::WeakPtrFactory<PepperFlashBrowserHost> weak_factory_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
+diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
+index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0363853e1 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
++++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
+@@ -20,6 +20,7 @@
+ #include "content/public/browser/child_process_security_policy.h"
+ #include "content/public/browser/render_frame_host.h"
+ #include "content/public/common/pepper_plugin_info.h"
++#include "net/base/network_interfaces.h"
+ #include "ppapi/c/pp_errors.h"
+ #include "ppapi/host/dispatch_host_message.h"
+ #include "ppapi/host/host_message_context.h"
+@@ -128,7 +129,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
+   content::ChildProcessSecurityPolicy::GetInstance()->GrantReadFile(
+       render_process_id, voucher_file);
+ 
++#if 0
+   fetcher_ = new DeviceIDFetcher(render_process_id);
++#endif
+   monitor_finder_ = new MonitorFinder(render_process_id, render_frame_id);
+   monitor_finder_->GetMonitor();
+ }
+@@ -151,12 +154,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
+ 
+ int32_t PepperFlashDRMHost::OnHostMsgGetDeviceID(
+     ppapi::host::HostMessageContext* context) {
++#if 0
+   if (!fetcher_->Start(base::Bind(&PepperFlashDRMHost::GotDeviceID,
+                                   weak_factory_.GetWeakPtr(),
+                                   context->MakeReplyMessageContext()))) {
+     return PP_ERROR_INPROGRESS;
+   }
+-  return PP_OK_COMPLETIONPENDING;
++#endif
++  static std::string id;
++  if (id.empty())
++    id = net::GetHostName();
++  context->reply_msg = PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id);
++  return PP_OK;
+ }
+ 
+ int32_t PepperFlashDRMHost::OnHostMsgGetHmonitor(
+@@ -185,6 +194,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
+   return PP_OK;
+ }
+ 
++#if 0
+ void PepperFlashDRMHost::GotDeviceID(
+     ppapi::host::ReplyMessageContext reply_context,
+     const std::string& id,
+@@ -197,3 +207,4 @@ void PepperFlashDRMHost::GotDeviceID(
+   host()->SendReply(reply_context,
+                     PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id));
+ }
++#endif
+diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
+index aa4433cccff4bc637ce5e71039de3c4352e7cd6b..d9630fdf6b87e11fb9657814895dff36b04ccea8 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
++++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
+@@ -11,7 +11,9 @@
+ 
+ #include "base/macros.h"
+ #include "base/memory/weak_ptr.h"
++#if 0
+ #include "chrome/browser/renderer_host/pepper/device_id_fetcher.h"
++#endif
+ #include "ppapi/host/host_message_context.h"
+ #include "ppapi/host/resource_host.h"
+ 
+@@ -49,7 +51,9 @@ class PepperFlashDRMHost : public ppapi::host::ResourceHost {
+                    const std::string& id,
+                    int32_t result);
+ 
++#if 0
+   scoped_refptr<DeviceIDFetcher> fetcher_;
++#endif
+   scoped_refptr<MonitorFinder> monitor_finder_;
+ 
+   base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;
+diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
+index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab4cb4b434 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
++++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
+@@ -8,17 +8,21 @@
+ 
+ #include "base/stl_util.h"
+ #include "base/task/post_task.h"
++#if 0
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/profiles/profile_manager.h"
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/common/pepper_permission_util.h"
++#endif
+ #include "content/public/browser/browser_ppapi_host.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/child_process_security_policy.h"
+ #include "content/public/browser/render_view_host.h"
++#if 0
+ #include "extensions/buildflags/buildflags.h"
++#endif
+ #include "ppapi/c/pp_errors.h"
+ #include "ppapi/host/dispatch_host_message.h"
+ #include "ppapi/host/host_message_context.h"
+@@ -27,12 +31,11 @@
+ #include "ppapi/shared_impl/file_system_util.h"
+ #include "storage/browser/fileapi/isolated_context.h"
+ 
+-#if BUILDFLAG(ENABLE_EXTENSIONS)
++#if 0
+ #include "extensions/browser/extension_registry.h"
+ #include "extensions/common/constants.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_set.h"
+-#endif
+ 
+ namespace {
+ 
+@@ -42,6 +45,7 @@ const char* kPredefinedAllowedCrxFsOrigins[] = {
+ };
+ 
+ }  // namespace
++#endif
+ 
+ // static
+ PepperIsolatedFileSystemMessageFilter*
+@@ -69,8 +73,10 @@ PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
+       profile_directory_(profile_directory),
+       document_url_(document_url),
+       ppapi_host_(ppapi_host) {
++#if 0
+   for (size_t i = 0; i < base::size(kPredefinedAllowedCrxFsOrigins); ++i)
+     allowed_crxfs_origins_.insert(kPredefinedAllowedCrxFsOrigins[i]);
++#endif
+ }
+ 
+ PepperIsolatedFileSystemMessageFilter::
+@@ -96,6 +102,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
+   return PP_ERROR_FAILED;
+ }
+ 
++#if 0
+ Profile* PepperIsolatedFileSystemMessageFilter::GetProfile() {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   ProfileManager* profile_manager = g_browser_process->profile_manager();
+@@ -122,6 +129,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
+   return storage::IsolatedContext::ScopedFSHandle();
+ #endif
+ }
++#endif
+ 
+ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+     ppapi::host::HostMessageContext* context,
+@@ -130,7 +138,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+     case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_INVALID:
+       break;
+     case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_CRX:
+-      return OpenCrxFileSystem(context);
++      return PP_ERROR_NOTSUPPORTED;
+     case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_PLUGINPRIVATE:
+       return OpenPluginPrivateFileSystem(context);
+   }
+@@ -140,6 +148,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+   return PP_ERROR_FAILED;
+ }
+ 
++#if 0
+ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+     ppapi::host::HostMessageContext* context) {
+ #if BUILDFLAG(ENABLE_EXTENSIONS)
+@@ -180,6 +189,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+   return PP_ERROR_NOTSUPPORTED;
+ #endif
+ }
++#endif
+ 
+ int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
+     ppapi::host::HostMessageContext* context) {
+diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
+index 1d5ff1f6aa14812f2a6552f601900b03f3e3c8e7..5b6d0297c874146c21af37b983b2d8ee387b31ce 100644
+--- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
++++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
+@@ -20,7 +20,9 @@
+ #include "storage/browser/fileapi/isolated_context.h"
+ #include "url/gurl.h"
+ 
++#if 0
+ class Profile;
++#endif
+ 
+ namespace content {
+ class BrowserPpapiHost;
+@@ -54,6 +56,7 @@ class PepperIsolatedFileSystemMessageFilter
+ 
+   ~PepperIsolatedFileSystemMessageFilter() override;
+ 
++#if 0
+   Profile* GetProfile();
+ 
+   // Returns filesystem id of isolated filesystem if valid, or empty string
+@@ -61,10 +64,13 @@ class PepperIsolatedFileSystemMessageFilter
+   // allows access on that thread.
+   storage::IsolatedContext::ScopedFSHandle CreateCrxFileSystem(
+       Profile* profile);
++#endif
+ 
+   int32_t OnOpenFileSystem(ppapi::host::HostMessageContext* context,
+                            PP_IsolatedFileSystemType_Private type);
++#if 0
+   int32_t OpenCrxFileSystem(ppapi::host::HostMessageContext* context);
++#endif
+   int32_t OpenPluginPrivateFileSystem(ppapi::host::HostMessageContext* context);
+ 
+   const int render_process_id_;
+@@ -75,8 +81,10 @@ class PepperIsolatedFileSystemMessageFilter
+   // Not owned by this object.
+   ppapi::host::PpapiHost* ppapi_host_;
+ 
++#if 0
+   // Set of origins that can use CrxFs private APIs from NaCl.
+   std::set<std::string> allowed_crxfs_origins_;
++#endif
+ 
+   DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
+ };
+diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
+index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..c98a7bd07ddd9527fc67b05b24463ed4b05ec316 100644
+--- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
++++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
+@@ -10,8 +10,10 @@
+ #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
+ #include "chrome/renderer/pepper/pepper_flash_menu_host.h"
+ #include "chrome/renderer/pepper/pepper_flash_renderer_host.h"
++#if 0
+ #include "chrome/renderer/pepper/pepper_uma_host.h"
+ #include "components/pdf/renderer/pepper_pdf_host.h"
++#endif
+ #include "content/public/renderer/renderer_ppapi_host.h"
+ #include "ppapi/host/ppapi_host.h"
+ #include "ppapi/host/resource_host.h"
+@@ -86,6 +88,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+     }
+   }
+ 
++#if 0
+   if (host_->GetPpapiHost()->permissions().HasPermission(
+           ppapi::PERMISSION_PDF)) {
+     switch (message.type()) {
+@@ -104,6 +107,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+       return std::make_unique<PepperUMAHost>(host_, instance, resource);
+     }
+   }
++#endif
+ 
+   return nullptr;
+ }
+diff --git a/chrome/renderer/pepper/pepper_flash_renderer_host.cc b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
+index 36edbfd997d0dfaa998a4e288caf29af418a28f5..7f4012a4a5b8194a1e44f35f458612099e09fbe4 100644
+--- a/chrome/renderer/pepper/pepper_flash_renderer_host.cc
++++ b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
+@@ -13,7 +13,9 @@
+ #include "base/no_destructor.h"
+ #include "base/stl_util.h"
+ #include "base/strings/string_util.h"
++#if 0
+ #include "components/pdf/renderer/pepper_pdf_host.h"
++#endif
+ #include "content/public/renderer/pepper_plugin_instance.h"
+ #include "content/public/renderer/render_thread.h"
+ #include "content/public/renderer/renderer_ppapi_host.h"
+@@ -133,9 +135,11 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
+ }
+ 
+ void RecordFlashNavigateUsage(FlashNavigateUsage usage) {
++#if 0
+   DCHECK_NE(FLASH_NAVIGATE_USAGE_ENUM_COUNT, usage);
+   UMA_HISTOGRAM_ENUMERATION(
+       "Plugin.FlashNavigateUsage", usage, FLASH_NAVIGATE_USAGE_ENUM_COUNT);
++#endif
+ }
+ 
+ }  // namespace
+@@ -376,6 +380,8 @@ int32_t PepperFlashRendererHost::OnIsRectTopmost(
+ 
+ int32_t PepperFlashRendererHost::OnInvokePrinting(
+     ppapi::host::HostMessageContext* host_context) {
++#if 0
+   pdf::PepperPDFHost::InvokePrintingForInstance(pp_instance());
+-  return PP_OK;
++#endif
++  return PP_ERROR_FAILED;
+ }
+diff --git a/chrome/renderer/pepper/pepper_helper.h b/chrome/renderer/pepper/pepper_helper.h
+index e021c964da3d467530775164a67d5cadaf6dc741..e035f0fb9e2baa6a9148b43765b09c52bc45599b 100644
+--- a/chrome/renderer/pepper/pepper_helper.h
++++ b/chrome/renderer/pepper/pepper_helper.h
+@@ -6,12 +6,14 @@
+ #define CHROME_RENDERER_PEPPER_PEPPER_HELPER_H_
+ 
+ #include "base/compiler_specific.h"
++#include "base/component_export.h"
+ #include "base/macros.h"
+ #include "content/public/renderer/render_frame_observer.h"
+ 
+ // This class listens for Pepper creation events from the RenderFrame and
+ // attaches the parts required for Chrome-specific plugin support.
+-class PepperHelper : public content::RenderFrameObserver {
++class COMPONENT_EXPORT(PEPPER_FLASH) PepperHelper
++    : public content::RenderFrameObserver {
+  public:
+   explicit PepperHelper(content::RenderFrame* render_frame);
+   ~PepperHelper() override;

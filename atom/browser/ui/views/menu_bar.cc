@@ -286,9 +286,8 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
   menu_delegate->AddObserver(this);
 }
 
-void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
-  if (!theme)
-    theme = ui::NativeTheme::GetInstanceForNativeUi();
+void MenuBar::RefreshColorCache() {
+  const ui::NativeTheme* theme = GetNativeTheme();
   if (theme) {
 #if defined(USE_X11)
     background_color_ = libgtkui::GetBgColor("GtkMenuBar#menubar");
@@ -306,8 +305,8 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 #endif
 }
 
-void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
-  RefreshColorCache(theme);
+void MenuBar::OnThemeChanged() {
+  RefreshColorCache();
   UpdateViewColors();
 }
 

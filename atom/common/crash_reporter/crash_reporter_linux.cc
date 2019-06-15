@@ -51,22 +51,18 @@ CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
 
 CrashReporterLinux::~CrashReporterLinux() {}
 
-void CrashReporterLinux::InitBreakpad(const std::string& product_name,
-                                      const std::string& version,
-                                      const std::string& company_name,
-                                      const std::string& submit_url,
-                                      const base::FilePath& crashes_dir,
-                                      bool upload_to_server,
-                                      bool skip_system_crash_handler) {
+void CrashReporterLinux::Init(const std::string& product_name,
+                              const std::string& company_name,
+                              const std::string& submit_url,
+                              const base::FilePath& crashes_dir,
+                              bool upload_to_server,
+                              bool skip_system_crash_handler) {
   EnableCrashDumping(crashes_dir);
 
-  crash_keys_.reset(new CrashKeyStorage());
-
-  crash_keys_->SetKeyValue("prod", ATOM_PRODUCT_NAME);
-  crash_keys_->SetKeyValue("ver", version.c_str());
   upload_url_ = submit_url;
   upload_to_server_ = upload_to_server;
 
+  crash_keys_.reset(new CrashKeyStorage());
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter)
     crash_keys_->SetKeyValue(iter->first.c_str(), iter->second.c_str());

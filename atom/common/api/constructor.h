@@ -14,8 +14,9 @@ namespace mate {
 // only ONCE in the program's whole lifetime, otherwise we would have memory
 // leak.
 template <typename T, typename Sig>
-v8::Local<v8::Function> CreateConstructor(v8::Isolate* isolate,
-                                          const base::Callback<Sig>& func) {
+v8::Local<v8::Function> CreateConstructor(
+    v8::Isolate* isolate,
+    const base::RepeatingCallback<Sig>& func) {
 #ifndef NDEBUG
   static bool called = false;
   CHECK(!called) << "CreateConstructor can only be called for one type once";

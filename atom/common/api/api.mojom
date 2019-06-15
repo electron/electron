@@ -1,6 +1,8 @@
 module atom.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
+import "mojo/public/mojom/base/string16.mojom";
+import "ui/gfx/geometry/mojo/geometry.mojom";
 
 interface ElectronRenderer {
   Message(
@@ -10,7 +12,18 @@ interface ElectronRenderer {
       mojo_base.mojom.ListValue arguments,
       int32 sender_id);
 
+  UpdateCrashpadPipeName(string pipe_name);
+
   TakeHeapSnapshot(handle file) => (bool success);
+};
+
+interface ElectronAutofillAgent {
+  AcceptDataListSuggestion(mojo_base.mojom.String16 value);
+};
+
+struct DraggableRegion {
+  bool draggable;
+  gfx.mojom.Rect bounds;
 };
 
 interface ElectronBrowser {
@@ -20,6 +33,12 @@ interface ElectronBrowser {
       bool internal,
       string channel,
       mojo_base.mojom.ListValue arguments);
+
+  // Emits an event on |channel| from the ipcMain JavaScript object in the main
+  // process, and returns the response.
+  Invoke(
+      string channel,
+      mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and waits synchronously for a response.
@@ -44,4 +63,16 @@ interface ElectronBrowser {
   MessageHost(
     string channel,
     mojo_base.mojom.ListValue arguments);
+
+  UpdateDraggableRegions(
+    array<DraggableRegion> regions);
+
+  SetTemporaryZoomLevel(double zoom_level);
+
+  [Sync]
+  DoGetZoomLevel() => (double result);
+
+  // TODO: move these into a separate interface
+  ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);
+  HideAutofillPopup();
 };

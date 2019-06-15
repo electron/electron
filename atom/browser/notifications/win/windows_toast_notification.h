@@ -112,13 +112,13 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
 
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,
-      IInspectable* args);
+      IInspectable* args) override;
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,
-      ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e);
+      ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) override;
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,
-      ABI::Windows::UI::Notifications::IToastFailedEventArgs* e);
+      ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) override;
 
  private:
   base::WeakPtr<Notification> notification_;  // weak ref.

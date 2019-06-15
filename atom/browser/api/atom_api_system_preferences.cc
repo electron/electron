@@ -102,10 +102,13 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
       .SetMethod("getEffectiveAppearance",
                  &SystemPreferences::GetEffectiveAppearance)
-      .SetMethod("getAppLevelAppearance",
+      .SetMethod("_getAppLevelAppearance",
                  &SystemPreferences::GetAppLevelAppearance)
-      .SetMethod("setAppLevelAppearance",
+      .SetMethod("_setAppLevelAppearance",
                  &SystemPreferences::SetAppLevelAppearance)
+      .SetProperty("appLevelAppearance",
+                   &SystemPreferences::GetAppLevelAppearance,
+                   &SystemPreferences::SetAppLevelAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)

@@ -1070,19 +1070,31 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMaximumSize", &TopLevelWindow::SetMaximumSize)
       .SetMethod("getMaximumSize", &TopLevelWindow::GetMaximumSize)
       .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
-      .SetMethod("setResizable", &TopLevelWindow::SetResizable)
-      .SetMethod("isResizable", &TopLevelWindow::IsResizable)
-      .SetMethod("setMovable", &TopLevelWindow::SetMovable)
       .SetMethod("moveTop", &TopLevelWindow::MoveTop)
-      .SetMethod("isMovable", &TopLevelWindow::IsMovable)
-      .SetMethod("setMinimizable", &TopLevelWindow::SetMinimizable)
-      .SetMethod("isMinimizable", &TopLevelWindow::IsMinimizable)
-      .SetMethod("setMaximizable", &TopLevelWindow::SetMaximizable)
-      .SetMethod("isMaximizable", &TopLevelWindow::IsMaximizable)
-      .SetMethod("setFullScreenable", &TopLevelWindow::SetFullScreenable)
-      .SetMethod("isFullScreenable", &TopLevelWindow::IsFullScreenable)
-      .SetMethod("setClosable", &TopLevelWindow::SetClosable)
-      .SetMethod("isClosable", &TopLevelWindow::IsClosable)
+      .SetMethod("_setResizable", &TopLevelWindow::SetResizable)
+      .SetMethod("_isResizable", &TopLevelWindow::IsResizable)
+      .SetProperty("resizable", &TopLevelWindow::IsResizable,
+                   &TopLevelWindow::SetResizable)
+      .SetMethod("_setMovable", &TopLevelWindow::SetMovable)
+      .SetMethod("_isMovable", &TopLevelWindow::IsMovable)
+      .SetProperty("movable", &TopLevelWindow::IsMovable,
+                   &TopLevelWindow::SetMovable)
+      .SetMethod("_setMinimizable", &TopLevelWindow::SetMinimizable)
+      .SetMethod("_isMinimizable", &TopLevelWindow::IsMinimizable)
+      .SetProperty("minimizable", &TopLevelWindow::IsMinimizable,
+                   &TopLevelWindow::SetMinimizable)
+      .SetMethod("_setMaximizable", &TopLevelWindow::SetMaximizable)
+      .SetMethod("_isMaximizable", &TopLevelWindow::IsMaximizable)
+      .SetProperty("maximizable", &TopLevelWindow::IsMaximizable,
+                   &TopLevelWindow::SetMaximizable)
+      .SetMethod("_setFullScreenable", &TopLevelWindow::SetFullScreenable)
+      .SetMethod("_isFullScreenable", &TopLevelWindow::IsFullScreenable)
+      .SetProperty("fullScreenable", &TopLevelWindow::IsFullScreenable,
+                   &TopLevelWindow::SetFullScreenable)
+      .SetMethod("_setClosable", &TopLevelWindow::SetClosable)
+      .SetMethod("_isClosable", &TopLevelWindow::IsClosable)
+      .SetProperty("closable", &TopLevelWindow::IsClosable,
+                   &TopLevelWindow::SetClosable)
       .SetMethod("setAlwaysOnTop", &TopLevelWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &TopLevelWindow::IsAlwaysOnTop)
       .SetMethod("center", &TopLevelWindow::Center)
@@ -1146,9 +1158,10 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                    &TopLevelWindow::IsExcludedFromShownWindowsMenu,
                    &TopLevelWindow::SetExcludedFromShownWindowsMenu)
 #endif
-      .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
-      .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
-      .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
+      .SetMethod("_setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
+      .SetMethod("_isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
+      .SetProperty("autoHideMenuBar", &TopLevelWindow::IsMenuBarAutoHide,
+                   &TopLevelWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarVisible", &TopLevelWindow::IsMenuBarVisible)
       .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
       .SetMethod("previewFile", &TopLevelWindow::PreviewFile)

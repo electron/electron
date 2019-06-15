@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:47:04 -0700
+Subject: webview_cross_drag.patch
+
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index ee5760ecbe0f836d0e49f53527252a48f4344b03..a413be0448816152f99d234a4e409bf0e9816be7 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -775,6 +775,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+ 
+ bool WebContentsViewAura::IsValidDragTarget(
+     RenderWidgetHostImpl* target_rwh) const {
++  return true;
+   return target_rwh->GetProcess()->GetID() == drag_start_process_id_ ||
+       GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+       drag_start_view_id_;
+diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
+index c4638ac6e86d6a816848cdbbdfa3e70d45086d90..18bd2fb8171568745549d490ee93887418890157 100644
+--- a/content/browser/web_contents/web_drag_dest_mac.mm
++++ b/content/browser/web_contents/web_drag_dest_mac.mm
+@@ -336,6 +336,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+ }
+ 
+ - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
++  return YES;
+   return targetRWH->GetProcess()->GetID() == dragStartProcessID_ ||
+          GetRenderViewHostID(webContents_->GetRenderViewHost()) !=
+              dragStartViewID_;

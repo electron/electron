@@ -27,42 +27,37 @@
 
 namespace atom {
 
+MessageBoxSettings::MessageBoxSettings() = default;
+MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
+MessageBoxSettings::~MessageBoxSettings() = default;
+
 namespace {
 
 class GtkMessageBox : public NativeWindowObserver {
  public:
-  GtkMessageBox(NativeWindow* parent_window,
-                MessageBoxType type,
-                const std::vector<std::string>& buttons,
-                int default_id,
-                int cancel_id,
-                const std::string& title,
-                const std::string& message,
-                const std::string& detail,
-                const std::string& checkbox_label,
-                bool checkbox_checked,
-                const gfx::ImageSkia& icon)
-      : cancel_id_(cancel_id),
-        parent_(static_cast<NativeWindow*>(parent_window)) {
+  explicit GtkMessageBox(const MessageBoxSettings& settings)
+      : cancel_id_(settings.cancel_id),
+        parent_(static_cast<NativeWindow*>(settings.parent_window)) {
     // Create dialog.
     dialog_ =
         gtk_message_dialog_new(nullptr,                         // parent
                                static_cast<GtkDialogFlags>(0),  // no flags
-                               GetMessageType(type),            // type
+                               GetMessageType(settings.type),   // type
                                GTK_BUTTONS_NONE,                // no buttons
-                               "%s", message.c_str());
-    if (!detail.empty())
+                               "%s", settings.message.c_str());
+    if (!settings.detail.empty())
       gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog_),
-                                               "%s", detail.c_str());
-    if (!title.empty())
-      gtk_window_set_title(GTK_WINDOW(dialog_), title.c_str());
+                                               "%s", settings.detail.c_str());
+    if (!settings.title.empty())
+      gtk_window_set_title(GTK_WINDOW(dialog_), settings.title.c_str());
 
-    if (!icon.isNull()) {
+    if (!settings.icon.isNull()) {
       // No easy way to obtain this programmatically, but GTK+'s docs
       // define GTK_ICON_SIZE_DIALOG to be 48 pixels
       static constexpr int pixel_width = 48;
       static constexpr int pixel_height = 48;
-      GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(*icon.bitmap());
+      GdkPixbuf* pixbuf =
+          libgtkui::GdkPixbufFromSkBitmap(*settings.icon.bitmap());
       GdkPixbuf* scaled_pixbuf = gdk_pixbuf_scale_simple(
           pixbuf, pixel_width, pixel_height, GDK_INTERP_BILINEAR);
       GtkWidget* w = gtk_image_new_from_pixbuf(scaled_pixbuf);
@@ -72,25 +67,26 @@ class GtkMessageBox : public NativeWindowObserver {
       g_clear_pointer(&pixbuf, g_object_unref);
     }
 
-    if (!checkbox_label.empty()) {
+    if (!settings.checkbox_label.empty()) {
       GtkWidget* message_area =
           gtk_message_dialog_get_message_area(GTK_MESSAGE_DIALOG(dialog_));
       GtkWidget* check_button =
-          gtk_check_button_new_with_label(checkbox_label.c_str());
+          gtk_check_button_new_with_label(settings.checkbox_label.c_str());
       g_signal_connect(check_button, "toggled",
                        G_CALLBACK(OnCheckboxToggledThunk), this);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_button),
-                                   checkbox_checked);
+                                   settings.checkbox_checked);
       gtk_container_add(GTK_CONTAINER(message_area), check_button);
       gtk_widget_show(check_button);
     }
 
     // Add buttons.
     GtkDialog* dialog = GTK_DIALOG(dialog_);
-    for (size_t i = 0; i < buttons.size(); ++i) {
-      gtk_dialog_add_button(dialog, TranslateToStock(i, buttons[i]), i);
+    for (size_t i = 0; i < settings.buttons.size(); ++i) {
+      gtk_dialog_add_button(dialog, TranslateToStock(i, settings.buttons[i]),
+                            i);
     }
-    gtk_dialog_set_default_response(dialog, default_id);
+    gtk_dialog_set_default_response(dialog, settings.default_id);
 
     // Parent window.
     if (parent_) {
@@ -200,46 +196,25 @@ void GtkMessageBox::OnCheckboxToggled(GtkWidget* widget) {
 
 }  // namespace
 
-int ShowMessageBoxSync(NativeWindow* parent,
-                       MessageBoxType type,
-                       const std::vector<std::string>& buttons,
-                       int default_id,
-                       int cancel_id,
-                       int options,
-                       const std::string& title,
-                       const std::string& message,
-                       const std::string& detail,
-                       const gfx::ImageSkia& icon) {
-  return GtkMessageBox(parent, type, buttons, default_id, cancel_id, title,
-                       message, detail, "", false, icon)
-      .RunSynchronous();
+int ShowMessageBoxSync(const MessageBoxSettings& settings) {
+  return GtkMessageBox(settings).RunSynchronous();
 }
 
-void ShowMessageBox(NativeWindow* parent,
-                    MessageBoxType type,
-                    const std::vector<std::string>& buttons,
-                    int default_id,
-                    int cancel_id,
-                    int options,
-                    const std::string& title,
-                    const std::string& message,
-                    const std::string& detail,
-                    const std::string& checkbox_label,
-                    bool checkbox_checked,
-                    const gfx::ImageSkia& icon,
+void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  (new GtkMessageBox(parent, type, buttons, default_id, cancel_id, title,
-                     message, detail, checkbox_label, checkbox_checked, icon))
-      ->RunAsynchronous(std::move(callback));
+  (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkMessageBox(nullptr, MessageBoxType::kError, {"OK"}, -1, 0, "Error",
-                  base::UTF16ToUTF8(title).c_str(),
-                  base::UTF16ToUTF8(content).c_str(), "", false,
-                  gfx::ImageSkia())
-        .RunSynchronous();
+    atom::MessageBoxSettings settings;
+    settings.type = atom::MessageBoxType::kError;
+    settings.buttons = {"OK"};
+    settings.title = "Error";
+    settings.message = base::UTF16ToUTF8(title);
+    settings.detail = base::UTF16ToUTF8(content);
+
+    GtkMessageBox(settings).RunSynchronous();
   } else {
     fprintf(stderr,
             ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY ANSI_FOREGROUND_RED

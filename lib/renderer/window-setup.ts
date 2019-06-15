@@ -20,11 +20,7 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 const { defineProperty } = Object
 
 // Helper function to resolve relative url.
-const a = window.document.createElement('a')
-const resolveURL = function (url: string) {
-  a.href = url
-  return a.href
-}
+const resolveURL = (url: string, base: string) => new URL(url, base).href
 
 // Use this method to ensure values expected as strings in the main process
 // are convertible to strings in the renderer process. This ensures exceptions
@@ -128,7 +124,7 @@ class BrowserWindowProxy {
     return this._location
   }
   public set location (url: string | any) {
-    url = resolveURL(url)
+    url = resolveURL(url, this.location.href)
     this._invokeWebContentsMethodSync('loadURL', url)
   }
 
@@ -193,7 +189,7 @@ export const windowSetup = (
     // Make the browser window or guest view emit "new-window" event.
     (window as any).open = function (url?: string, frameName?: string, features?: string) {
       if (url != null && url !== '') {
-        url = resolveURL(url)
+        url = resolveURL(url, location.href)
       }
       const guestId = ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, toString(frameName), toString(features))
       if (guestId != null) {

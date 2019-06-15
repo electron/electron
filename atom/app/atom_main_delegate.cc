@@ -37,16 +37,15 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IPC_MESSAGE_LOG_ENABLED)
-#define IPC_MESSAGE_MACROS_LOG_ENABLED
-#include "content/public/common/content_ipc_logging.h"
-#define IPC_LOG_TABLE_ADD_ENTRY(msg_id, logger) \
-  content::RegisterIPCLogger(msg_id, logger)
-#include "atom/common/common_message_generator.h"
-#endif
-
 #if defined(OS_MACOSX)
 #include "atom/app/atom_main_delegate_mac.h"
+#endif
+
+#if defined(OS_WIN)
+#include "base/win/win_util.h"
+#if defined(_WIN64)
+#include "atom/common/crash_reporter/crash_reporter_win.h"
+#endif
 #endif
 
 namespace atom {
@@ -131,6 +130,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
+#if defined(_WIN64)
+  crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
+#endif
+
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.
   if (IsBrowserProcess(command_line))
@@ -145,10 +148,12 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   settings.lock_log = logging::LOCK_LOG_FILE;
   settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
-  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // defined(DEBUG)
 #else   // defined(OS_WIN)
-  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
@@ -186,6 +191,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Disable the ActiveVerifier, which is used by Chrome to track possible
   // bugs, but no use in Electron.
   base::win::DisableHandleVerifier();
+
+  if (IsBrowserProcess(command_line))
+    base::win::PinUser32();
 #endif
 
   content_client_ = std::make_unique<AtomContentClient>();

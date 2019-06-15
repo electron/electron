@@ -47,6 +47,7 @@
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "services/network/ignore_errors_cert_verifier.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "services/network/url_request_context_builder_mojo.h"
 #include "url/url_constants.h"
@@ -54,6 +55,11 @@
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
 #include "net/url_request/ftp_protocol_handler.h"
 #endif
+
+#if BUILDFLAG(ENABLE_REPORTING)
+#include "net/reporting/reporting_policy.h"
+#include "net/reporting/reporting_service.h"
+#endif  // BUILDFLAG(ENABLE_REPORTING)
 
 using content::BrowserThread;
 
@@ -122,9 +128,13 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!main_request_context_getter_.get());
+  DCHECK(g_browser_process->io_thread());
+
   LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
       this, protocol_handlers, std::move(protocol_interceptors));
+  g_browser_process->io_thread()->RegisterURLRequestContextGetter(
+      main_request_context_getter_.get());
   return main_request_context_getter_;
 }
 
@@ -203,13 +213,13 @@ void URLRequestContextGetter::Handle::LazyInitialize() {
 
 void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (main_request_context_getter_.get()) {
+
+  if (main_request_context_getter_) {
     if (BrowserThread::IsThreadInitialized(BrowserThread::IO)) {
       base::PostTaskWithTraits(
           FROM_HERE, {BrowserThread::IO},
           base::BindOnce(&URLRequestContextGetter::NotifyContextShuttingDown,
-                         base::RetainedRef(main_request_context_getter_),
-                         std::move(resource_context_)));
+                         base::RetainedRef(main_request_context_getter_)));
     }
   }
 
@@ -238,18 +248,20 @@ URLRequestContextGetter::~URLRequestContextGetter() {
   DCHECK(context_shutting_down_);
 }
 
-void URLRequestContextGetter::NotifyContextShuttingDown(
-    std::unique_ptr<content::ResourceContext> resource_context) {
+void URLRequestContextGetter::NotifyContextShuttingDown() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  DCHECK(g_browser_process->io_thread());
+  DCHECK(context_handle_);
 
-  // todo(brenca): remove once C70 lands
-  if (url_request_context_ && url_request_context_->cookie_store()) {
-    url_request_context_->cookie_store()->FlushStore(base::NullCallback());
-  }
+  if (context_shutting_down_)
+    return;
+
+  g_browser_process->io_thread()->DeregisterURLRequestContextGetter(this);
 
   context_shutting_down_ = true;
-  resource_context.reset();
+  context_handle_->resource_context_.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
+  network_context_.reset();
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
@@ -264,6 +276,18 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Enable file:// support.
     builder->set_file_enabled(true);
+
+#if BUILDFLAG(ENABLE_REPORTING)
+    if (base::FeatureList::IsEnabled(network::features::kReporting)) {
+      auto reporting_policy = net::ReportingPolicy::Create();
+      builder->set_reporting_policy(std::move(reporting_policy));
+    } else {
+      builder->set_reporting_policy(nullptr);
+    }
+
+    builder->set_network_error_logging_enabled(
+        base::FeatureList::IsEnabled(network::features::kNetworkErrorLogging));
+#endif  // BUILDFLAG(ENABLE_REPORTING)
 
     auto network_delegate = std::make_unique<AtomNetworkDelegate>();
     network_delegate_ = network_delegate.get();

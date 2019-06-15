@@ -31,6 +31,7 @@ class AtomContentClient : public content::ContentClient {
   void AddContentDecryptionModules(
       std::vector<content::CdmInfo>* cdms,
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
+  bool IsDataResourceGzipped(int resource_id) const override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);

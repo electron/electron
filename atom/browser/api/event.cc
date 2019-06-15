@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/browser/render_frame_host.h"
@@ -58,7 +57,7 @@ void Event::PreventDefault(v8::Isolate* isolate) {
       .Check();
 }
 
-bool Event::SendReply(const base::ListValue& result) {
+bool Event::SendReply(const base::Value& result) {
   if (!callback_ || sender_ == nullptr)
     return false;
 

@@ -1,3 +1,5 @@
+declare var internalBinding: any;
+
 declare namespace NodeJS {
   interface FeaturesBinding {
     isDesktopCapturerEnabled(): boolean;
@@ -29,12 +31,12 @@ declare namespace NodeJS {
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
-    // Additional methods
-    getRenderProcessPreferences(): Array<Electron.RendererProcessPreference> | null;
-
     // Additional events
     once(event: 'document-start', listener: () => any): this;
     once(event: 'document-end', listener: () => any): this;
+
+    // Additional properties
+    _firstFileName?: string;
   }
 }
 

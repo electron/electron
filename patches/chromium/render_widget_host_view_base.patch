@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:46:21 -0700
+Subject: render_widget_host_view_base.patch
+
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
+index a2902adc59b6b4083334130f3a8e29fca0c440d2..34673d9ab62311c458a581f98865014f01c4bcc0 100644
+--- a/content/browser/renderer_host/render_widget_host_view_base.cc
++++ b/content/browser/renderer_host/render_widget_host_view_base.cc
+@@ -660,6 +660,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
+   return frame_sink_id.is_valid() ? frame_sink_id : GetFrameSinkId();
+ }
+ 
++RenderWidgetHostViewBase* RenderWidgetHostViewBase::CreateViewForWidget(
++    RenderWidgetHost* render_widget_host,
++    RenderWidgetHost* embedder_render_widget_host,
++    WebContentsView* web_contents_view) {
++  return web_contents_view->CreateViewForWidget(
++    render_widget_host,
++    !!embedder_render_widget_host);
++}
++
+ void RenderWidgetHostViewBase::ProcessMouseEvent(
+     const blink::WebMouseEvent& event,
+     const ui::LatencyInfo& latency) {
+diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
+index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0720b7fcb 100644
+--- a/content/browser/renderer_host/render_widget_host_view_base.h
++++ b/content/browser/renderer_host/render_widget_host_view_base.h
+@@ -24,9 +24,11 @@
+ #include "components/viz/common/surfaces/surface_id.h"
+ #include "components/viz/host/hit_test/hit_test_query.h"
+ #include "content/browser/renderer_host/event_with_latency_info.h"
++#include "content/browser/web_contents/web_contents_view.h"
+ #include "content/common/content_export.h"
+ #include "content/common/tab_switch_time_recorder.h"
+ #include "content/public/browser/render_frame_metadata_provider.h"
++#include "content/public/browser/render_widget_host.h"
+ #include "content/public/browser/render_widget_host_view.h"
+ #include "content/public/common/input_event_ack_state.h"
+ #include "content/public/common/screen_info.h"
+@@ -75,10 +77,12 @@ class CursorManager;
+ class MouseWheelPhaseHandler;
+ class RenderWidgetHostImpl;
+ class RenderWidgetHostViewBaseObserver;
++class RenderWidgetHostViewGuest;
+ class SyntheticGestureTarget;
+ class TextInputManager;
+ class TouchSelectionControllerClientManager;
+ class WebContentsAccessibility;
++class WebContentsView;
+ class WebCursor;
+ class DelegatedFrameHost;
+ struct TextInputState;
+@@ -136,6 +140,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+                                      bool destination_is_loaded,
+                                      bool destination_is_frozen) final;
+ 
++  virtual void InitAsGuest(RenderWidgetHostView* parent_host_view,
++                           RenderWidgetHostViewGuest* guest_view) {}
++
+   // This only needs to be overridden by RenderWidgetHostViewBase subclasses
+   // that handle content embedded within other RenderWidgetHostViews.
+   gfx::PointF TransformPointToRootCoordSpaceF(
+@@ -364,6 +371,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+   virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
+                                    const ui::LatencyInfo& latency);
+ 
++  virtual RenderWidgetHostViewBase* CreateViewForWidget(
++      RenderWidgetHost* render_widget_host,
++      RenderWidgetHost* embedder_render_widget_host,
++      WebContentsView* web_contents_view);
++
+   // Transform a point that is in the coordinate space of a Surface that is
+   // embedded within the RenderWidgetHostViewBase's Surface to the
+   // coordinate space of an embedding, or embedded, Surface. Typically this

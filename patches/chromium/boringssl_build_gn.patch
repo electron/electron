@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:48:05 -0700
+Subject: boringssl BUILD.gn
+
+Build BoringSSL with some extra functions that nodejs needs.
+
+diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
+index 250ed854247a6f2f17690ffb95524eb57c72598b..6399d955196fb2d79f18dfcf7cbb2dbd5bd0bcae 100644
+--- a/third_party/boringssl/BUILD.gn
++++ b/third_party/boringssl/BUILD.gn
+@@ -45,6 +45,19 @@ config("no_asm_config") {
+ 
+ all_sources = crypto_sources + ssl_sources
+ all_headers = crypto_headers + ssl_headers
++if (is_electron_build) {
++  # Needed to build a nodejs-compatible boringssl.
++  all_sources += [
++    "src/decrepit/evp/evp_do_all.c",
++    "src/decrepit/xts/xts.c",
++  ]
++
++  all_sources += [
++    "src/decrepit/ripemd/internal.h",
++    "src/decrepit/ripemd/ripemd.c",
++    "src/decrepit/cfb/cfb.c",
++  ]
++}
+ 
+ # Windows' assembly is built with NASM. The other platforms use the platform
+ # assembler. Exclude Windows ARM64 because NASM targets x86 and x64 only.

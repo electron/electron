@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 22 Oct 2018 10:47:13 -0700
+Subject: expose_mksnapshot.patch
+
+Needed in order to target mksnapshot for mksnapshot zip.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index fc4571440d5e7b8af281b01d9a66cd563f5ab03d..2d35a0b051f4130485c783807132ddcc543f4de4 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -3799,8 +3799,6 @@ if (current_toolchain == v8_generator_toolchain) {
+ 
+ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+   v8_executable("mksnapshot") {
+-    visibility = [ ":*" ]  # Only targets in this file can depend on this.
+-
+     sources = [
+       "src/snapshot/embedded/embedded-file-writer.cc",
+       "src/snapshot/embedded/embedded-file-writer.h",

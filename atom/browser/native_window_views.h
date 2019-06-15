@@ -15,7 +15,6 @@
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
-#include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "base/win/scoped_gdi_object.h"
 #endif
@@ -30,16 +29,11 @@ class GlobalMenuBarX11;
 class RootView;
 class WindowStateWatcher;
 
-#if defined(OS_WIN)
-class AtomDesktopWindowTreeHostWin;
-#elif defined(USE_X11)
+#if defined(USE_X11)
 class EventDisabler;
 #endif
 
 class NativeWindowViews : public NativeWindow,
-#if defined(OS_WIN)
-                          public MessageHandlerDelegate,
-#endif
                           public views::WidgetObserver,
                           public ui::EventHandler {
  public:
@@ -142,6 +136,16 @@ class NativeWindowViews : public NativeWindow,
   void DecrementChildModals();
 
 #if defined(OS_WIN)
+  // Catch-all message handling and filtering. Called before
+  // HWNDMessageHandler's built-in handling, which may pre-empt some
+  // expectations in Views/Aura if messages are consumed. Returns true if the
+  // message was consumed by the delegate and should not be processed further
+  // by the HWNDMessageHandler. In this case, |result| is returned. |result| is
+  // not modified otherwise.
+  bool PreHandleMSG(UINT message,
+                    WPARAM w_param,
+                    LPARAM l_param,
+                    LRESULT* result);
   void SetIcon(HICON small_icon, HICON app_icon);
 #elif defined(USE_X11)
   void SetIcon(const gfx::ImageSkia& icon);
@@ -180,11 +184,6 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
 #if defined(OS_WIN)
-  // MessageHandlerDelegate:
-  bool PreHandleMSG(UINT message,
-                    WPARAM w_param,
-                    LPARAM l_param,
-                    LRESULT* result) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void SetForwardMouseMessages(bool forward);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
@@ -237,8 +236,6 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
 #if defined(OS_WIN)
-  // Weak ref.
-  AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
 
   ui::WindowShowState last_window_state_;
 

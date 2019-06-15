@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 22 Oct 2018 10:47:11 -0700
+Subject: add_realloc.patch
+
+Blink overrides ArrayBuffer's allocator with its own one, while Node simply
+uses malloc and free, so we need to use v8's allocator in Node. As part of the
+10.6.0 upgrade, we needed to make SerializerDelegate accept an allocator
+argument in its constructor, and override ReallocateBufferMemory and
+FreeBufferMemory to use the allocator. We cannot simply allocate and then memcpy
+when we override ReallocateBufferMemory, so we therefore need to implement
+Realloc on the v8 side.
+
+diff --git a/include/v8.h b/include/v8.h
+index c54b088404229dccf015e20b6a5bab19d3d94e69..cc603dc4aae69de4b09f06ed0bca48cdae8eebd3 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -4624,6 +4624,13 @@ class V8_EXPORT ArrayBuffer : public Object {
+      */
+     virtual void* AllocateUninitialized(size_t length) = 0;
+ 
++    /**
++     * Free the memory block of size |length|, pointed to by |data|.
++     * That memory must be previously allocated by |Allocate| and not yet freed
++     * with a call to |Free| or |Realloc|
++     */
++    virtual void* Realloc(void* data, size_t length);
++
+     /**
+      * Free the memory block of size |length|, pointed to by |data|.
+      * That memory is guaranteed to be previously allocated by |Allocate|.
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 9b2c117e1ae756e3c9d3f3b0dc36a7b348c53b51..6a501f67ebf900ee30d55bd05ccc58845d71f418 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -515,6 +515,10 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
+   i::V8::SetSnapshotBlob(snapshot_blob);
+ }
+ 
++void* v8::ArrayBuffer::Allocator::Realloc(void* data, size_t length) {
++  UNIMPLEMENTED();
++}
++
+ namespace {
+ 
+ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {

@@ -29,7 +29,6 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_contents_zoom_controller.h"
 #include "atom/browser/web_view_guest_delegate.h"
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/color_util.h"
@@ -50,6 +49,7 @@
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
+#include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -251,24 +251,11 @@ void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
 
 }  // namespace
 
-struct WebContents::FrameDispatchHelper {
-  WebContents* api_web_contents;
-  content::RenderFrameHost* rfh;
-
-  bool Send(IPC::Message* msg) { return rfh->Send(msg); }
-
-  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg) {
-    api_web_contents->OnSetTemporaryZoomLevel(rfh, level, reply_msg);
-  }
-
-  void OnGetZoomLevel(IPC::Message* reply_msg) {
-    api_web_contents->OnGetZoomLevel(rfh, reply_msg);
-  }
-};
-
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents), type_(Type::REMOTE) {
+    : content::WebContentsObserver(web_contents),
+      type_(Type::REMOTE),
+      weak_factory_(this) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                      false);
   Init(isolate);
@@ -283,7 +270,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          std::unique_ptr<content::WebContents> web_contents,
                          Type type)
-    : content::WebContentsObserver(web_contents.get()), type_(type) {
+    : content::WebContentsObserver(web_contents.get()),
+      type_(type),
+      weak_factory_(this) {
   DCHECK(type != Type::REMOTE)
       << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
@@ -292,8 +281,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                             mate::Dictionary::CreateEmpty(isolate));
 }
 
-WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options) {
+WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
+    : weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -584,9 +573,7 @@ void WebContents::SetContentsBounds(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-#if defined(TOOLKIT_VIEWS)
   HideAutofillPopup();
-#endif
   if (managed_web_contents())
     managed_web_contents()->GetView()->SetDelegate(nullptr);
   for (ExtendedWebContentsObserver& observer : observers_)
@@ -838,6 +825,10 @@ void WebContents::OnInterfaceRequestFromFrame(
   registry_.TryBindInterface(interface_name, interface_pipe, render_frame_host);
 }
 
+void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
+  set_fullscreen_frame(rfh);
+}
+
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())
@@ -923,6 +914,14 @@ void WebContents::Message(bool internal,
                  internal, channel, std::move(arguments));
 }
 
+void WebContents::Invoke(const std::string& channel,
+                         base::Value arguments,
+                         InvokeCallback callback) {
+  // webContents.emit('-ipc-invoke', new Event(), channel, arguments);
+  EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
+                 std::move(callback), channel, std::move(arguments));
+}
+
 void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               base::Value arguments,
@@ -953,6 +952,12 @@ void WebContents::MessageHost(const std::string& channel,
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  base::nullopt, channel, std::move(arguments));
+}
+
+void WebContents::UpdateDraggableRegions(
+    std::vector<mojom::DraggableRegionPtr> regions) {
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnDraggableRegionsUpdated(regions);
 }
 
 void WebContents::RenderFrameDeleted(
@@ -1095,7 +1100,6 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
-#if defined(TOOLKIT_VIEWS)
 void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
                                     const gfx::RectF& bounds,
                                     const std::vector<base::string16>& values,
@@ -1115,33 +1119,12 @@ void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
   CommonWebContentsDelegate::ShowAutofillPopup(
       frame_host, embedder_frame_host, offscreen, popup_bounds, values, labels);
 }
-#endif
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
     IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
                              handled = false)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
-bool WebContents::OnMessageReceived(const IPC::Message& message,
-                                    content::RenderFrameHost* frame_host) {
-  bool handled = true;
-  FrameDispatchHelper helper = {this, frame_host};
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-    IPC_MESSAGE_FORWARD_DELAY_REPLY(
-        AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
-        FrameDispatchHelper::OnSetTemporaryZoomLevel)
-    IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
-                                    FrameDispatchHelper::OnGetZoomLevel)
-#if defined(TOOLKIT_VIEWS)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
-#endif
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1216,7 +1199,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   render_widget_host_impl->disable_hidden_ = !background_throttling_;
 
   if (render_widget_host_impl->is_hidden()) {
-    render_widget_host_impl->WasShown(false);
+    render_widget_host_impl->WasShown(base::nullopt);
   }
 }
 
@@ -2029,20 +2012,23 @@ double WebContents::GetZoomFactor() const {
   return content::ZoomLevelToZoomFactor(level);
 }
 
-void WebContents::OnSetTemporaryZoomLevel(content::RenderFrameHost* rfh,
-                                          double level,
-                                          IPC::Message* reply_msg) {
+void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
-  double new_level = zoom_controller_->GetZoomLevel();
-  AtomFrameHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg,
-                                                           new_level);
-  rfh->Send(reply_msg);
 }
 
-void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
-                                 IPC::Message* reply_msg) {
-  AtomFrameHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
-  rfh->Send(reply_msg);
+void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
+  std::move(callback).Run(GetZoomLevel());
+}
+
+void WebContents::ShowAutofillPopup(const gfx::RectF& bounds,
+                                    const std::vector<base::string16>& values,
+                                    const std::vector<base::string16>& labels) {
+  content::RenderFrameHost* frame_host = bindings_.dispatch_context();
+  ShowAutofillPopup(frame_host, bounds, values, labels);
+}
+
+void WebContents::HideAutofillPopup() {
+  CommonWebContentsDelegate::HideAutofillPopup();
 }
 
 v8::Local<v8::Value> WebContents::GetPreloadPath(v8::Isolate* isolate) const {
@@ -2072,7 +2058,7 @@ v8::Local<v8::Value> WebContents::GetLastWebPreferences(
 }
 
 bool WebContents::IsRemoteModuleEnabled() const {
-  if (web_contents()->GetVisibleURL().SchemeIs("chrome-devtools")) {
+  if (web_contents()->GetVisibleURL().SchemeIs("devtools")) {
     return false;
   }
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {

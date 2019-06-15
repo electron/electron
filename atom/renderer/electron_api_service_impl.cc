@@ -8,8 +8,10 @@
 #include <utility>
 #include <vector>
 
+#include "atom/common/atom_constants.h"
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/environment.h"
 #include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
 #include "electron/atom/common/api/event_emitter_caller.h"
@@ -145,6 +147,14 @@ void ElectronApiServiceImpl::Message(bool internal,
                      sender_id);
       }
   }
+}
+
+void ElectronApiServiceImpl::UpdateCrashpadPipeName(
+    const std::string& pipe_name) {
+#if defined(OS_WIN)
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  env->SetVar(kCrashpadPipeName, pipe_name);
+#endif
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(

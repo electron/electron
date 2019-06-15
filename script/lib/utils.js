@@ -1,7 +1,8 @@
-const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
-
 const { GitProcess } = require('dugite')
+const fs = require('fs')
 const path = require('path')
+
+const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 require('colors')
 const pass = '\u2713'.green

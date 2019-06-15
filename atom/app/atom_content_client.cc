@@ -268,4 +268,8 @@ void AtomContentClient::AddContentDecryptionModules(
   }
 }
 
+bool AtomContentClient::IsDataResourceGzipped(int resource_id) const {
+  return ui::ResourceBundle::GetSharedInstance().IsGzipped(resource_id);
+}
+
 }  // namespace atom

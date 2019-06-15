@@ -22,7 +22,6 @@
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_constants.h"
-#include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
@@ -58,7 +57,6 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
-#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/screen.h"
@@ -186,11 +184,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new AtomDesktopNativeWidgetAura(widget());
-  atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
-      this, widget(),
-      static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
-  params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
+  params.native_widget = new AtomDesktopNativeWidgetAura(this);
 #elif defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.

@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:28 -0700
+Subject: render_widget_host_view_mac.patch
+
+
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index 188fe917cb4e60458ca0aff4a467d18b2be915ea..62f8697c4a11a0df3be84ef8efe0ff90399e39ff 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -142,6 +142,11 @@ void ExtractUnderlines(NSAttributedString* string,
+ 
+ }  // namespace
+ 
++@interface NSWindow (AtomCustomMethods)
++- (BOOL)acceptsFirstMouse;
++- (BOOL)disableAutoHideCursor;
++@end
++
+ // These are not documented, so use only after checking -respondsToSelector:.
+ @interface NSApplication (UndocumentedSpeechMethods)
+ - (void)speakString:(NSString*)string;
+@@ -403,6 +408,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+ }
+ 
+ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
++  if ([self.window respondsToSelector:@selector(acceptsFirstMouse)] &&
++      [self.window acceptsFirstMouse])
++    return YES;
+   return [self acceptsMouseEventsWhenInactive];
+ }
+ 
+@@ -792,6 +800,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+                               eventType == NSKeyDown &&
+                               !(modifierFlags & NSCommandKeyMask);
+ 
++  if ([theEvent.window respondsToSelector:@selector(disableAutoHideCursor)] &&
++      [theEvent.window disableAutoHideCursor])
++    shouldAutohideCursor = NO;
++
+   // We only handle key down events and just simply forward other events.
+   if (eventType != NSKeyDown) {
+     hostHelper_->ForwardKeyboardEvent(event, latency_info);
+@@ -1505,9 +1517,11 @@ - (NSAccessibilityRole)accessibilityRole {
+ // Since this implementation doesn't have to wait any IPC calls, this doesn't
+ // make any key-typing jank. --hbono 7/23/09
+ //
++#ifndef MAS_BUILD
+ extern "C" {
+ extern NSString* NSTextInputReplacementRangeAttributeName;
+ }
++#endif
+ 
+ - (NSArray*)validAttributesForMarkedText {
+   // This code is just copied from WebKit except renaming variables.
+@@ -1516,7 +1530,10 @@ - (NSArray*)validAttributesForMarkedText {
+         initWithObjects:NSUnderlineStyleAttributeName,
+                         NSUnderlineColorAttributeName,
+                         NSMarkedClauseSegmentAttributeName,
+-                        NSTextInputReplacementRangeAttributeName, nil]);
++#ifndef MAS_BUILD
++                        NSTextInputReplacementRangeAttributeName,
++#endif
++                        nil]);
+   }
+   return validAttributesForMarkedText_.get();
+ }
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index d450d958e760bd4934f47505d4ff18069f210cfe..a9a043d191e0bc08061879bb3494f3ba1a9bea10 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -62,6 +62,7 @@
+ #include "ui/events/keycodes/dom/dom_keyboard_layout_map.h"
+ #include "ui/gfx/geometry/dip_util.h"
+ #include "ui/gfx/mac/coordinate_conversion.h"
++#include "ui/gl/gpu_switching_manager.h"
+ 
+ using blink::WebInputEvent;
+ using blink::WebMouseEvent;

@@ -42,6 +42,10 @@ network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
   return auth_static_params;
 }
 
+}  // namespace
+
+namespace atom {
+
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
@@ -57,7 +61,7 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   return auth_dynamic_params;
 }
 
-}  // namespace
+}  // namespace atom
 
 // SharedURLLoaderFactory backed by a SystemNetworkContextManager and its
 // network context. Transparently handles crashes.
@@ -167,13 +171,12 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
-  network_context_params->enable_brotli =
-      base::FeatureList::IsEnabled(features::kBrotliEncoding);
+  network_context_params->enable_brotli = true;
 
   network_context_params->enable_referrers = true;
 
   network_context_params->proxy_resolver_factory =
-      ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
+      ChromeMojoProxyResolverFactory::CreateWithSelfOwnedReceiver();
 
   return network_context_params;
 }
@@ -192,7 +195,7 @@ void SystemNetworkContextManager::SetUp(
     *network_context_params = CreateDefaultNetworkContextParams();
   }
   *http_auth_static_params = CreateHttpAuthStaticParams();
-  *http_auth_dynamic_params = CreateHttpAuthDynamicParams();
+  *http_auth_dynamic_params = atom::CreateHttpAuthDynamicParams();
 }
 
 // static
@@ -231,7 +234,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     return;
 
   network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-  network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
+  network_service->ConfigureHttpAuthPrefs(atom::CreateHttpAuthDynamicParams());
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.

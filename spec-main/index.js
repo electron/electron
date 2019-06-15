@@ -13,7 +13,7 @@ process.on('uncaughtException', (err) => {
 // Tell ts-node which tsconfig to use
 process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json')
 
-const { app } = require('electron')
+const { app, protocol } = require('electron')
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -22,6 +22,12 @@ app.on('window-all-closed', () => null)
 // TODO: This API should _probably_ only be enabled for the specific test that needs it
 // not the entire test suite
 app.commandLine.appendSwitch('ignore-certificate-errors')
+
+global.standardScheme = 'app'
+protocol.registerSchemesAsPrivileged([
+  { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
+  { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
+])
 
 app.whenReady().then(() => {
   require('ts-node/register')
@@ -80,6 +86,6 @@ app.whenReady().then(() => {
         process.exit(runner.failures)
       })
     }
-    const runner = (isCI) ? mocha.forbidOnly().run(cb) : mocha.run(cb)
+    const runner = mocha.run(cb)
   })
 })

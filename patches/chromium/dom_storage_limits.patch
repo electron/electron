@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jacob Quant <jacobq@gmail.com>
+Date: Tue, 6 Nov 2018 15:26:00 -0600
+Subject: dom_storage_limits.patch
+
+This patch circumvents the restriction on DOM storage objects,
+namely `localStorage` and `sessionStorage`, which chromium otherwise
+limits to approximately 10MiB.
+
+That restriction originates from a recommendation
+[in the Web Storage API specification](https://html.spec.whatwg.org/multipage/webstorage.html#disk-space-2)
+that is motivated by the concern that hostile code could abuse this
+feature to exhaust available storage capacity.
+However, in the case of  Electron, where the application developers
+have control over all of the code being executed,
+this safety precaution becomes a hindrance that does not add much value.
+For example, if a malicious developer wanted to consume disk space
+on a victim's machine they could do so via Node's native file system API.
+
+By disabling this restriction or increasing the quota,
+electron application developers can use `localStorage`
+as their application's "back end", without being having
+to limit the amount of data stored to 10MiB.
+
+There may still be some benefit to keeping this restriction for applications that load remote content.
+Although all remote data should be from a trusted source and transferred using
+a secure channel, it is nevertheless advisable to include additional layers of protection
+to mitigate risks associated with potential compromise of those other technologies.
+With that in mind, an acceptable alternative to disabling the limit at compile-time
+(as this patch currently does) would be to instead allow it to be disabled at run-time
+for a given `BrowserWindow` via a `webPreferences` option,
+similar to [`nodeIntegration`](https://electronjs.org/docs/tutorial/security#2-disable-nodejs-integration-for-remote-content).
+
+diff --git a/content/common/dom_storage/dom_storage_map.cc b/content/common/dom_storage/dom_storage_map.cc
+index fd088fb170bead6452ded14016f21f0c29659e03..b90b6cf9132d16bc3b2076c3fa313916e2b5ea7d 100644
+--- a/content/common/dom_storage/dom_storage_map.cc
++++ b/content/common/dom_storage/dom_storage_map.cc
+@@ -185,10 +185,12 @@ bool DOMStorageMap::SetItemInternal(MapType* map_type,
+   size_t new_item_size = size_in_storage(key, value);
+   size_t new_storage_used = storage_used_ - old_item_size + new_item_size;
+ 
++#if 0
+   // Only check quota if the size is increasing, this allows
+   // shrinking changes to pre-existing files that are over budget.
+   if (new_item_size > old_item_size && new_storage_used > quota_)
+     return false;
++#endif
+ 
+   (*map_type)[key] = value;
+   ResetKeyIterator();
+diff --git a/content/common/dom_storage/dom_storage_types.h b/content/common/dom_storage/dom_storage_types.h
+index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06dca03ada 100644
+--- a/content/common/dom_storage/dom_storage_types.h
++++ b/content/common/dom_storage/dom_storage_types.h
+@@ -21,6 +21,7 @@ typedef std::map<base::string16, base::NullableString16> DOMStorageValuesMap;
+ 
+ // The quota for each storage area.
+ // This value is enforced in renderer processes and the browser process.
++// However, Electron's dom_storage_limits.patch removes the code that checks this limit.
+ const size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
+ 
+ // In the browser process we allow some overage to
+diff --git a/third_party/blink/renderer/modules/storage/cached_storage_area.cc b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
+index 6a3a3718443aebf24fd60e00f8f01ba76575ebfa..fb8250553164ebaf1a5ccae4a1c8e2f660ea6e14 100644
+--- a/third_party/blink/renderer/modules/storage/cached_storage_area.cc
++++ b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
+@@ -106,11 +106,13 @@ bool CachedStorageArea::SetItem(const String& key,
+                                 Source* source) {
+   DCHECK(areas_->Contains(source));
+ 
++#if 0
+   // A quick check to reject obviously overbudget items to avoid priming the
+   // cache.
+   if ((key.length() + value.length()) * 2 >
+       mojom::blink::StorageArea::kPerStorageAreaQuota)
+     return false;
++#endif
+ 
+   EnsureLoaded();
+   String old_value;
+diff --git a/third_party/blink/renderer/modules/storage/storage_area_map.cc b/third_party/blink/renderer/modules/storage/storage_area_map.cc
+index 0da8a1e891edad60355792c40b7d15e90c1086e8..df71418d598d5bdf41e9a8a4340999d9d277aeef 100644
+--- a/third_party/blink/renderer/modules/storage/storage_area_map.cc
++++ b/third_party/blink/renderer/modules/storage/storage_area_map.cc
+@@ -113,10 +113,12 @@ bool StorageAreaMap::SetItemInternal(const String& key,
+   size_t new_quota_used = quota_used_ - old_item_size + new_item_size;
+   size_t new_memory_used = memory_used_ - old_item_memory + new_item_memory;
+ 
++#if 0
+   // Only check quota if the size is increasing, this allows
+   // shrinking changes to pre-existing files that are over budget.
+   if (check_quota && new_item_size > old_item_size && new_quota_used > quota_)
+     return false;
++#endif
+ 
+   keys_values_.Set(key, value);
+   ResetKeyIterator();

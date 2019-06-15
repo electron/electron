@@ -2,7 +2,6 @@ import { Buffer } from 'buffer'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as util from 'util'
-import * as v8 from 'v8'
 
 const Module = require('module')
 
@@ -15,11 +14,6 @@ require('../common/reset-search-paths')
 
 // Import common settings.
 require('@electron/internal/common/init')
-
-const globalPaths = Module.globalPaths
-
-// Expose public APIs.
-globalPaths.push(path.join(__dirname, 'api', 'exports'))
 
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
@@ -112,7 +106,7 @@ if (process.resourcesPath) {
   for (packagePath of searchPaths) {
     try {
       packagePath = path.join(process.resourcesPath, packagePath)
-      packageJson = require(path.join(packagePath, 'package.json'))
+      packageJson = Module._load(path.join(packagePath, 'package.json'))
       break
     } catch {
       continue
@@ -146,15 +140,16 @@ if (packageJson.desktopName != null) {
   app.setDesktopName(`${app.name}.desktop`)
 }
 
-// Set v8 flags
+// Set v8 flags, delibrately lazy load so that apps that do not use this
+// feature do not pay the price
 if (packageJson.v8Flags != null) {
-  v8.setFlagsFromString(packageJson.v8Flags)
+  require('v8').setFlagsFromString(packageJson.v8Flags)
 }
 
 app._setDefaultAppPaths(packagePath)
 
 // Load the chrome devtools support.
-require('@electron/internal/browser/chrome-devtools')
+require('@electron/internal/browser/devtools')
 
 // Load the chrome extension support.
 require('@electron/internal/browser/chrome-extension')
@@ -194,7 +189,7 @@ app.on('window-all-closed', () => {
 
 Promise.all([
   import('@electron/internal/browser/default-menu'),
-  app.whenReady
+  app.whenReady()
 ]).then(([{ setDefaultApplicationMenu }]) => {
   // Create default menu
   setDefaultApplicationMenu()
@@ -202,6 +197,7 @@ Promise.all([
 
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
+  process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false)
   Module._load(path.join(packagePath, mainStartupScript), Module, true)
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)')

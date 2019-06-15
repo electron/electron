@@ -58,9 +58,9 @@ class ProcessSingleton {
   // Chrome process was launched. Return true if the command line will be
   // handled within the current browser instance or false if the remote process
   // should handle it (i.e., because the current process is shutting down).
-  using NotificationCallback =
-      base::Callback<bool(const base::CommandLine::StringVector& command_line,
-                          const base::FilePath& current_directory)>;
+  using NotificationCallback = base::RepeatingCallback<bool(
+      const base::CommandLine::StringVector& command_line,
+      const base::FilePath& current_directory)>;
 
   ProcessSingleton(const base::FilePath& user_data_dir,
                    const NotificationCallback& notification_callback);
@@ -94,7 +94,7 @@ class ProcessSingleton {
 #if defined(OS_WIN)
   // Called to query whether to kill a hung browser process that has visible
   // windows. Return true to allow killing the hung process.
-  using ShouldKillRemoteProcessCallback = base::Callback<bool()>;
+  using ShouldKillRemoteProcessCallback = base::RepeatingCallback<bool()>;
   void OverrideShouldKillRemoteProcessCallbackForTesting(
       const ShouldKillRemoteProcessCallback& display_dialog_callback);
 #endif
@@ -120,7 +120,7 @@ class ProcessSingleton {
       const base::TimeDelta& timeout);
   void OverrideCurrentPidForTesting(base::ProcessId pid);
   void OverrideKillCallbackForTesting(
-      const base::Callback<void(int)>& callback);
+      const base::RepeatingCallback<void(int)>& callback);
 #endif
 
  private:

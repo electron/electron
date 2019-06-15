@@ -70,9 +70,23 @@ Returns:
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
-This event is like `did-finish-load` but emitted when the load failed or was
-cancelled, e.g. `window.stop()` is invoked.
+This event is like `did-finish-load` but emitted when the load failed.
 The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+
+#### Event: 'did-fail-provisional-load'
+
+Returns:
+
+* `event` Event
+* `errorCode` Integer
+* `errorDescription` String
+* `validatedURL` String
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+This event is like `did-fail-load` but emitted when the load was cancelled
+(e.g. `window.stop()` was invoked).
 
 #### Event: 'did-frame-finish-load'
 
@@ -738,7 +752,7 @@ Calling `event.preventDefault()` will make it return empty sources.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.require()` is called in the renderer process.
@@ -749,7 +763,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `globalName` String
 
 Emitted when `remote.getGlobal()` is called in the renderer process.
@@ -760,7 +774,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.getBuiltin()` is called in the renderer process.
@@ -771,7 +785,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWindow()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -781,7 +795,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -791,7 +805,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `guestWebContents` [WebContents](web-contents.md)
 
 Emitted when `<webview>.getWebContents()` is called in the renderer process.
@@ -1382,7 +1396,7 @@ Opens the developer tools for the shared worker context.
 
 Opens the developer tools for the service worker context.
 
-#### `contents.send(channel[, arg1][, arg2][, ...])`
+#### `contents.send(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
@@ -1423,7 +1437,7 @@ app.on('ready', () => {
 </html>
 ```
 
-#### `contents.sendToFrame(frameId, channel[, arg1][, arg2][, ...])`
+#### `contents.sendToFrame(frameId, channel, ...args)`
 
 * `frameId` Integer
 * `channel` String

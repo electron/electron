@@ -1,6 +1,6 @@
 import * as path from 'path'
 
-import * as electron from 'electron'
+import { deprecate, Menu } from 'electron'
 import { EventEmitter } from 'events'
 
 const bindings = process.electronBinding('app')
@@ -9,8 +9,6 @@ const { app, App } = bindings
 
 // Only one app object permitted.
 export default app
-
-const { deprecate, Menu } = electron
 
 let dockMenu: Electron.Menu | null = null
 
@@ -53,10 +51,8 @@ app._setDefaultAppPaths = (packagePath) => {
   app.setAppPath(packagePath)
 
   // Add support for --user-data-dir=
-  const userDataDirFlag = '--user-data-dir='
-  const userDataArg = process.argv.find(arg => arg.startsWith(userDataDirFlag))
-  if (userDataArg) {
-    const userDataDir = userDataArg.substr(userDataDirFlag.length)
+  if (app.commandLine.hasSwitch('user-data-dir')) {
+    const userDataDir = app.commandLine.getSwitchValue('user-data-dir')
     if (path.isAbsolute(userDataDir)) app.setPath('userData', userDataDir)
   }
 }
@@ -79,9 +75,9 @@ for (const name of events) {
 }
 
 // Property Deprecations
-deprecate.fnToProperty(app, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
-deprecate.fnToProperty(app, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
-deprecate.fnToProperty(app, 'name', '_getName', '_setName')
+deprecate.fnToProperty(App.prototype, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
+deprecate.fnToProperty(App.prototype, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
+deprecate.fnToProperty(App.prototype, 'name', '_getName', '_setName')
 
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')

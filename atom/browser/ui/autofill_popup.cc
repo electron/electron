@@ -8,10 +8,11 @@
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/autofill_popup.h"
-#include "atom/common/api/api_messages.h"
+#include "atom/common/api/api.mojom.h"
 #include "base/i18n/rtl.h"
 #include "chrome/browser/ui/autofill/popup_view_common.h"
 #include "electron/buildflags/buildflags.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
@@ -110,8 +111,10 @@ void AutofillPopup::SetItems(const std::vector<base::string16>& values,
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
-  frame_host_->Send(new AtomAutofillFrameMsg_AcceptSuggestion(
-      frame_host_->GetRoutingID(), GetValueAt(index)));
+  mojom::ElectronAutofillAgentAssociatedPtr autofill_agent;
+  frame_host_->GetRemoteAssociatedInterfaces()->GetInterface(
+      mojo::MakeRequest(&autofill_agent));
+  autofill_agent->AcceptDataListSuggestion(GetValueAt(index));
 }
 
 void AutofillPopup::UpdatePopupBounds() {

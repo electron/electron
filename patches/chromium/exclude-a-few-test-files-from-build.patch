@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Thu, 20 Sep 2018 17:50:45 -0700
+Subject: exclude-a-few-test-files-from-build.patch
+
+Compilation of those files fails with the Chromium 68.
+Remove the patch during the Chromium 69 upgrade.
+
+diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
+index 64ae02a700342c446aec62756180e25434eea46d..b1da69c1810fc502334dfc26130afec02a1c85db 100644
+--- a/third_party/blink/renderer/platform/BUILD.gn
++++ b/third_party/blink/renderer/platform/BUILD.gn
+@@ -1715,7 +1715,7 @@ jumbo_source_set("blink_platform_unittests_sources") {
+     "graphics/paint/drawing_display_item_test.cc",
+     "graphics/paint/drawing_recorder_test.cc",
+     "graphics/paint/float_clip_rect_test.cc",
+-    "graphics/paint/geometry_mapper_test.cc",
++    #"graphics/paint/geometry_mapper_test.cc",
+     "graphics/paint/geometry_mapper_transform_cache_test.cc",
+     "graphics/paint/paint_chunk_test.cc",
+     "graphics/paint/paint_chunker_test.cc",

@@ -17,15 +17,13 @@
     <key>CFBundleIconFile</key>
     <string>electron.icns</string>
     <key>CFBundleVersion</key>
-    <string>7.0.0-nightly.20190521</string>
+    <string>7.0.0-nightly.20190614</string>
     <key>CFBundleShortVersionString</key>
-    <string>7.0.0-nightly.20190521</string>
+    <string>7.0.0-nightly.20190614</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.10.0</string>
-    <key>NSMainNibFile</key>
-    <string>MainMenu</string>
     <key>NSPrincipalClass</key>
     <string>AtomApplication</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>

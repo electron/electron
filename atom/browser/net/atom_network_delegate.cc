@@ -70,17 +70,16 @@ void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
   return listener.Run(*(details.get()));
 }
 
-void RunResponseListener(
-    const AtomNetworkDelegate::ResponseListener& listener,
-    std::unique_ptr<base::DictionaryValue> details,
-    int render_process_id,
-    int render_frame_id,
-    const AtomNetworkDelegate::ResponseCallback& callback) {
+void RunResponseListener(const AtomNetworkDelegate::ResponseListener& listener,
+                         std::unique_ptr<base::DictionaryValue> details,
+                         int render_process_id,
+                         int render_frame_id,
+                         AtomNetworkDelegate::ResponseCallback callback) {
   int32_t id = GetWebContentsID(render_process_id, render_frame_id);
   // id must be greater than zero
   if (id)
     details->SetInteger("webContentsId", id);
-  return listener.Run(*(details.get()), callback);
+  return listener.Run(*(details.get()), std::move(callback));
 }
 
 // Test whether the URL of |request| matches |patterns|.
@@ -431,25 +430,25 @@ bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
   return false;
 }
 
-// TODO(deepak1556) : Enable after hooking into the reporting service
-// https://crbug.com/704259
 bool AtomNetworkDelegate::OnCanQueueReportingReport(
     const url::Origin& origin) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnCanSendReportingReports(
     std::set<url::Origin> origins,
-    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {}
+    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {
+  std::move(result_callback).Run(std::move(origins));
+}
 
 bool AtomNetworkDelegate::OnCanSetReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
-  return false;
+  return true;
 }
 
 bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
-  return false;
+  return true;
 }
 
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request,
@@ -484,12 +483,12 @@ int AtomNetworkDelegate::HandleResponseEvent(
   callbacks_[request->identifier()] = std::move(callback);
 
   ResponseCallback response =
-      base::Bind(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
-                 base::Unretained(this), request->identifier(), out);
+      base::BindOnce(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
+                     base::Unretained(this), request->identifier(), out);
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(RunResponseListener, info.listener, std::move(details),
-                     render_process_id, render_frame_id, response));
+                     render_process_id, render_frame_id, std::move(response)));
   return net::ERR_IO_PENDING;
 }
 

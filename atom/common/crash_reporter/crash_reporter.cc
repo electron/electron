@@ -4,11 +4,15 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 
+#include <memory>
+
 #include "atom/browser/browser.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/map_converter.h"
 #include "base/command_line.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
@@ -17,12 +21,25 @@
 
 namespace crash_reporter {
 
+const char kCrashpadProcess[] = "crash-handler";
+const char kCrashesDirectoryKey[] = "crashes-directory";
+
 CrashReporter::CrashReporter() {
-  auto* cmd = base::CommandLine::ForCurrentProcess();
-  is_browser_ = cmd->GetSwitchValueASCII(switches::kProcessType).empty();
+  std::unique_ptr<base::Environment> env = base::Environment::Create();
+  if (env->HasVar(atom::kRunAsNode)) {
+    process_type_ = "node";
+  } else {
+    auto* cmd = base::CommandLine::ForCurrentProcess();
+    process_type_ = cmd->GetSwitchValueASCII(switches::kProcessType);
+  }
+  // process_type_ will be empty for browser process
 }
 
 CrashReporter::~CrashReporter() {}
+
+bool CrashReporter::IsInitialized() {
+  return is_initialized_;
+}
 
 void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
@@ -31,15 +48,19 @@ void CrashReporter::Start(const std::string& product_name,
                           bool upload_to_server,
                           bool skip_system_crash_handler,
                           const StringMap& extra_parameters) {
+  is_initialized_ = true;
   SetUploadParameters(extra_parameters);
 
-  InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
-               crashes_dir, upload_to_server, skip_system_crash_handler);
+  Init(product_name, company_name, submit_url, crashes_dir, upload_to_server,
+       skip_system_crash_handler);
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   upload_parameters_ = parameters;
-  upload_parameters_["process_type"] = is_browser_ ? "browser" : "renderer";
+  upload_parameters_["process_type"] =
+      process_type_.empty() ? "browser" : process_type_;
+  upload_parameters_["prod"] = ATOM_PRODUCT_NAME;
+  upload_parameters_["ver"] = ATOM_VERSION_STRING;
 
   // Setting platform dependent parameters.
   SetUploadParameters();
@@ -75,13 +96,12 @@ CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
   return result;
 }
 
-void CrashReporter::InitBreakpad(const std::string& product_name,
-                                 const std::string& version,
-                                 const std::string& company_name,
-                                 const std::string& submit_url,
-                                 const base::FilePath& crashes_dir,
-                                 bool auto_submit,
-                                 bool skip_system_crash_handler) {}
+void CrashReporter::Init(const std::string& product_name,
+                         const std::string& company_name,
+                         const std::string& submit_url,
+                         const base::FilePath& crashes_dir,
+                         bool auto_submit,
+                         bool skip_system_crash_handler) {}
 
 void CrashReporter::SetUploadParameters() {}
 

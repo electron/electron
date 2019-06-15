@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "atom/common/draggable_region.h"
 #include "base/macros.h"
 #include "content/public/browser/web_contents.h"
 #include "third_party/skia/include/core/SkColor.h"

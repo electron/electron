@@ -23,46 +23,6 @@ const comparePaths = (path1, path2) => {
 describe('remote module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
-  let w = null
-
-  afterEach(() => closeWindow(w).then(() => { w = null }))
-
-  describe('remote.getGlobal filtering', () => {
-    it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-get-global', { test: 'Hello World!' })
-      expect(remote.getGlobal('test')).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-global')
-      expect(() => remote.getGlobal('test')).to.throw(`Blocked remote.getGlobal('test')`)
-    })
-  })
-
-  describe('remote.getBuiltin filtering', () => {
-    it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-get-builtin', { test: 'Hello World!' })
-      expect(remote.getBuiltin('test')).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-builtin')
-      expect(() => remote.getBuiltin('test')).to.throw(`Blocked remote.getBuiltin('test')`)
-    })
-  })
-
-  describe('remote.require filtering', () => {
-    it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-require', { test: 'Hello World!' })
-      expect(remote.require('test')).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-require')
-      expect(() => remote.require('test')).to.throw(`Blocked remote.require('test')`)
-    })
-  })
-
   describe('remote.require', () => {
     it('should returns same object for the same module', () => {
       const dialog1 = remote.require('electron')
@@ -463,30 +423,6 @@ describe('remote module', () => {
     })
   })
 
-  describe('remote.getCurrentWindow filtering', () => {
-    it('can return custom value', () => {
-      ipcRenderer.send('handle-next-remote-get-current-window', 'Hello World!')
-      expect(remote.getCurrentWindow()).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-current-window')
-      expect(() => remote.getCurrentWindow()).to.throw('Blocked remote.getCurrentWindow()')
-    })
-  })
-
-  describe('remote.getCurrentWebContents filtering', () => {
-    it('can return custom value', () => {
-      ipcRenderer.send('handle-next-remote-get-current-web-contents', 'Hello World!')
-      expect(remote.getCurrentWebContents()).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-current-web-contents')
-      expect(() => remote.getCurrentWebContents()).to.throw('Blocked remote.getCurrentWebContents()')
-    })
-  })
-
   describe('remote class', () => {
     const cl = remote.require(path.join(fixtures, 'module', 'class.js'))
     const base = cl.base
@@ -552,6 +488,9 @@ describe('remote module', () => {
   })
 
   describe('remote function in renderer', () => {
+    let w = null
+
+    afterEach(() => closeWindow(w).then(() => { w = null }))
     afterEach(() => {
       ipcMain.removeAllListeners('done')
     })

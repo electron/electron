@@ -270,10 +270,16 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hwnd,
     case WM_MOUSEACTIVATE:
       return MA_NOACTIVATE;
 
-    case WM_TIMER:
+    case WM_TIMER: {
       if (wparam == TimerID_AutoDismiss) {
-        Get(hwnd)->AutoDismiss();
+        auto* inst = Get(hwnd);
+
+        Notification notification(inst->data_);
+        inst->data_->controller->OnNotificationDismissed(notification);
+
+        inst->AutoDismiss();
       }
+    }
       return 0;
 
     case WM_LBUTTONDOWN: {

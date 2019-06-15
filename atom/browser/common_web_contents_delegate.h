@@ -68,6 +68,10 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
 
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
+  void set_fullscreen_frame(content::RenderFrameHost* rfh) {
+    fullscreen_frame_ = rfh;
+  }
+
  protected:
 #if BUILDFLAG(ENABLE_OSR)
   virtual OffScreenWebContentsView* GetOffScreenWebContentsView() const;
@@ -105,7 +109,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       const content::NativeWebKeyboardEvent& event) override;
 
   // Autofill related events.
-#if defined(TOOLKIT_VIEWS)
   void ShowAutofillPopup(content::RenderFrameHost* frame_host,
                          content::RenderFrameHost* embedder_frame_host,
                          bool offscreen,
@@ -113,7 +116,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
                          const std::vector<base::string16>& values,
                          const std::vector<base::string16>& labels);
   void HideAutofillPopup();
-#endif
 
   // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
@@ -202,6 +204,9 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
   scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+
+  // Stores the frame thats currently in fullscreen, nullptr if there is none.
+  content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
   base::WeakPtrFactory<CommonWebContentsDelegate> weak_factory_;
 

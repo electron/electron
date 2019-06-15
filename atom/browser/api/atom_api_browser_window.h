@@ -51,12 +51,12 @@ class BrowserWindow : public TopLevelWindow,
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
-  bool OnMessageReceived(const IPC::Message& message,
-                         content::RenderFrameHost* rfh) override;
 
   // ExtendedWebContentsObserver:
   void OnCloseContents() override;
   void OnRendererResponsive() override;
+  void OnDraggableRegionsUpdated(
+      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -91,12 +91,12 @@ class BrowserWindow : public TopLevelWindow,
   // Helpers.
 
   // Called when the window needs to update its draggable region.
-  void UpdateDraggableRegions(content::RenderFrameHost* rfh,
-                              const std::vector<DraggableRegion>& regions);
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Convert draggable regions in raw format to SkRegion format.
   std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
-      const std::vector<DraggableRegion>& regions);
+      const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
@@ -112,11 +112,11 @@ class BrowserWindow : public TopLevelWindow,
   base::CancelableClosure window_unresponsive_closure_;
 
 #if defined(OS_MACOSX)
-  std::vector<DraggableRegion> draggable_regions_;
+  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
 #endif
 
   v8::Global<v8::Value> web_contents_;
-  api::WebContents* api_web_contents_;
+  base::WeakPtr<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_;
 

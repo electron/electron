@@ -28,7 +28,7 @@ class FrameSubscriber : public content::WebContentsObserver,
                         public viz::mojom::FrameSinkVideoConsumer {
  public:
   using FrameCaptureCallback =
-      base::Callback<void(const gfx::Image&, const gfx::Rect&)>;
+      base::RepeatingCallback<void(const gfx::Image&, const gfx::Rect&)>;
 
   FrameSubscriber(content::WebContents* web_contents,
                   const FrameCaptureCallback& callback,

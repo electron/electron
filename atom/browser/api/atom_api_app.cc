@@ -70,6 +70,25 @@ namespace mate {
 
 #if defined(OS_WIN)
 template <>
+struct Converter<atom::ProcessIntegrityLevel> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   atom::ProcessIntegrityLevel value) {
+    switch (value) {
+      case atom::ProcessIntegrityLevel::Untrusted:
+        return mate::StringToV8(isolate, "untrusted");
+      case atom::ProcessIntegrityLevel::Low:
+        return mate::StringToV8(isolate, "low");
+      case atom::ProcessIntegrityLevel::Medium:
+        return mate::StringToV8(isolate, "medium");
+      case atom::ProcessIntegrityLevel::High:
+        return mate::StringToV8(isolate, "high");
+      default:
+        return mate::StringToV8(isolate, "unknown");
+    }
+  }
+};
+
+template <>
 struct Converter<Browser::UserTask> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -357,30 +376,9 @@ struct Converter<content::CertificateRequestResultType> {
 
 namespace atom {
 
-ProcessMetric::ProcessMetric(int type,
-                             base::ProcessId pid,
-                             std::unique_ptr<base::ProcessMetrics> metrics) {
-  this->type = type;
-  this->pid = pid;
-  this->metrics = std::move(metrics);
-}
-
-ProcessMetric::~ProcessMetric() = default;
-
 namespace api {
 
 namespace {
-
-class AppIdProcessIterator : public base::ProcessIterator {
- public:
-  AppIdProcessIterator() : base::ProcessIterator(nullptr) {}
-
- protected:
-  bool IncludeEntry() override {
-    return (entry().parent_pid() == base::GetCurrentProcId() ||
-            entry().pid() == base::GetCurrentProcId());
-  }
-};
 
 IconLoader::IconSize GetIconSizeByString(const std::string& size) {
   if (size == "small") {
@@ -550,7 +548,7 @@ App::App(v8::Isolate* isolate) {
 
   base::ProcessId pid = base::GetCurrentProcId();
   auto process_metric = std::make_unique<atom::ProcessMetric>(
-      content::PROCESS_TYPE_BROWSER, pid,
+      content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
   app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
@@ -723,7 +721,7 @@ void App::AllowCertificateError(
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
-    content::ResourceType resource_type,
+    bool is_main_frame_request,
     bool strict_enforcement,
     bool expired_previous_decision,
     const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
@@ -807,6 +805,14 @@ void App::BrowserChildProcessKilled(
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
                        host->GetProcess().Handle());
+
+  // TODO(jeremy): this isn't really the right place to be creating
+  // `WebContents` instances, but this was implicitly happening before in
+  // `RenderProcessPreferences`, so this is at least more explicit...
+  content::WebContents* web_contents =
+      AtomBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
+  if (web_contents)
+    WebContents::FromOrCreate(v8::Isolate::GetCurrent(), web_contents);
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {
@@ -817,15 +823,13 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
   auto pid = base::GetProcId(handle);
 
 #if defined(OS_MACOSX)
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(
-          handle, content::BrowserChildProcessHost::GetPortProvider()));
+  auto metrics = base::ProcessMetrics::CreateProcessMetrics(
+      handle, content::BrowserChildProcessHost::GetPortProvider());
 #else
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(handle));
+  auto metrics = base::ProcessMetrics::CreateProcessMetrics(handle);
 #endif
-  app_metrics_[pid] = std::make_unique<atom::ProcessMetric>(process_type, pid,
-                                                            std::move(metrics));
+  app_metrics_[pid] = std::make_unique<atom::ProcessMetric>(
+      process_type, handle, std::move(metrics));
 }
 
 void App::ChildProcessDisconnected(base::ProcessId pid) {
@@ -1207,9 +1211,21 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 #endif
 
     pid_dict.Set("cpu", cpu_dict);
-    pid_dict.Set("pid", process_metric.second->pid);
+    pid_dict.Set("pid", process_metric.second->process.Pid());
     pid_dict.Set("type", content::GetProcessTypeNameInEnglish(
                              process_metric.second->type));
+    pid_dict.Set("creationTime",
+                 process_metric.second->process.CreationTime().ToJsTime());
+
+#if defined(OS_MACOSX)
+    pid_dict.Set("sandboxed", process_metric.second->IsSandboxed());
+#elif defined(OS_WIN)
+    auto integrity_level = process_metric.second->GetIntegrityLevel();
+    auto sandboxed = ProcessMetric::IsSandboxed(integrity_level);
+    pid_dict.Set("integrityLevel", integrity_level);
+    pid_dict.Set("sandboxed", sandboxed);
+#endif
+
     result.push_back(pid_dict);
   }
 
@@ -1284,6 +1300,13 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
 
 std::string App::GetUserAgentFallback() {
   return AtomBrowserClient::Get()->GetUserAgent();
+}
+
+void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
+  AtomBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
+}
+bool App::CanBrowserClientUseCustomSiteInstance() {
+  return AtomBrowserClient::Get()->CanUseCustomSiteInstance();
 }
 
 #if defined(OS_MACOSX)
@@ -1402,6 +1425,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "invalidateCurrentActivity",
           base::BindRepeating(&Browser::InvalidateCurrentActivity, browser))
+      .SetMethod("resignCurrentActivity",
+                 base::BindRepeating(&Browser::ResignCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
                  base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
@@ -1467,7 +1492,10 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
-      .SetMethod("enableSandbox", &App::EnableSandbox);
+      .SetMethod("enableSandbox", &App::EnableSandbox)
+      .SetProperty("allowRendererProcessReuse",
+                   &App::CanBrowserClientUseCustomSiteInstance,
+                   &App::SetBrowserClientCanUseCustomSiteInstance);
 }
 
 }  // namespace api
