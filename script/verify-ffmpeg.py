@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import argparse
 import os
 import shutil
@@ -52,7 +53,7 @@ def main():
     returncode = 0
 
   if returncode == 0:
-    print 'ok Non proprietary ffmpeg does not contain proprietary codes.'
+    print('ok Non proprietary ffmpeg does not contain proprietary codes.')
   return returncode
 
 

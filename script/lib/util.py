@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import atexit
 import contextlib
 import datetime
@@ -64,7 +65,7 @@ def download(text, url, path):
     if hasattr(ssl, '_create_unverified_context'):
       ssl._create_default_https_context = ssl._create_unverified_context
 
-    print "Downloading %s to %s" % (url, path)
+    print("Downloading %s to %s" % (url, path))
     web_file = urllib2.urlopen(url)
     file_size = int(web_file.info().getheaders("Content-Length")[0])
     downloaded_size = 0
@@ -83,12 +84,12 @@ def download(text, url, path):
       if not ci:
         percent = downloaded_size * 100. / file_size
         status = "\r%s  %10d  [%3.1f%%]" % (text, downloaded_size, percent)
-        print status,
+        print(status, end=' ')
 
     if ci:
-      print "%s done." % (text)
+      print("%s done." % (text))
     else:
-      print
+      print()
   return path
 
 
@@ -148,15 +149,15 @@ def execute(argv, env=None, cwd=None):
   if env is None:
     env = os.environ
   if is_verbose_mode():
-    print ' '.join(argv)
+    print(' '.join(argv))
   try:
     output = subprocess.check_output(argv, stderr=subprocess.STDOUT,
                                      env=env, cwd=cwd)
     if is_verbose_mode():
-      print output
+      print(output)
     return output
   except subprocess.CalledProcessError as e:
-    print e.output
+    print(e.output)
     raise e
 
 
@@ -164,11 +165,11 @@ def execute_stdout(argv, env=None, cwd=None):
   if env is None:
     env = os.environ
   if is_verbose_mode():
-    print ' '.join(argv)
+    print(' '.join(argv))
     try:
       subprocess.check_call(argv, env=env, cwd=cwd)
     except subprocess.CalledProcessError as e:
-      print e.output
+      print(e.output)
       raise e
   else:
     execute(argv, env, cwd)

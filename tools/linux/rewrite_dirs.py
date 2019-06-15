@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 """Rewrites paths in -I, -L and other option to be relative to a sysroot."""
+from __future__ import print_function
 
 import sys
 import os
@@ -63,7 +64,7 @@ def main(argv):
 
   for line in sys.stdin.readlines():
     line = RewriteLine(line.strip(), opts)
-    print line
+    print(line)
   return 0
 
 
