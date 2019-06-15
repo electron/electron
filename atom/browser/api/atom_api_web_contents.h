@@ -111,6 +111,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+
   // Destroy the managed content::WebContents instance.
   //
   // Note: The |async| should only be |true| when users are expecting to use the
@@ -544,6 +546,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // The ID of the process of the currently committed RenderViewHost.
   // -1 means no speculative RVH has been committed yet.
   int currently_committed_process_id_ = -1;
+
+  base::WeakPtrFactory<WebContents> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
