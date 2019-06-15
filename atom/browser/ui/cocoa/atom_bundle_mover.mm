@@ -74,21 +74,17 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
     if ([fileManager fileExistsAtPath:destinationPath]) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
-        // Give the running app focus and terminate myself
-        [[NSTask
-            launchedTaskWithLaunchPath:@"/usr/bin/open"
-                             arguments:[NSArray
-                                           arrayWithObject:destinationPath]]
-            waitUntilExit];
-        atom::Browser::Get()->Quit();
-        return true;
+        // We don't know if the app is another app of the same name,
+        // or the same app, so throw an error and leave it to the user
+        // to determine next steps
+        args->ThrowError("An app of the same name appears to already exist in "
+                         "Applications.");
       } else {
         if (!Trash([applicationsDirectory
-                stringByAppendingPathComponent:bundleName])) {
+                stringByAppendingPathComponent:bundleName]))
           args->ThrowError("Failed to delete existing application");
-          return false;
-        }
       }
+      return false;
     }
 
     if (!CopyBundle(bundlePath, destinationPath)) {
