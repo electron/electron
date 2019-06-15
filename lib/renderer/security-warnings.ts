@@ -100,7 +100,7 @@ const warnAboutInsecureResources = function () {
   }
 
   const warning = `This renderer process loads resources using insecure
-  protocols.This exposes users of this app to unnecessary security risks.
+  protocols. This exposes users of this app to unnecessary security risks.
   Consider loading the following resources over HTTPS or FTPS. \n ${resources}
   \n ${moreInformation}`
 
@@ -152,8 +152,6 @@ const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPref
  * #6 on the checklist: Define a Content-Security-Policy and use restrictive
  * rules (i.e. script-src 'self')
  *
- * #7 on the checklist: Disable eval
- *
  * Logs a warning message about unset or insecure CSP
  */
 const warnAboutInsecureCSP = function () {
@@ -170,7 +168,7 @@ const warnAboutInsecureCSP = function () {
 }
 
 /**
- * #8 on the checklist: Do not set allowRunningInsecureContent to true
+ * #7 on the checklist: Do not set allowRunningInsecureContent to true
  *
  * Logs a warning message about disabled webSecurity.
  */
@@ -186,7 +184,7 @@ const warnAboutInsecureContentAllowed = function (webPreferences?: Electron.WebP
 }
 
 /**
- * #9 on the checklist: Do not enable experimental features
+ * #8 on the checklist: Do not enable experimental features
  *
  * Logs a warning message about experimental features.
  */
@@ -204,7 +202,7 @@ const warnAboutExperimentalFeatures = function (webPreferences?: Electron.WebPre
 }
 
 /**
- * #10 on the checklist: Do not use enableBlinkFeatures
+ * #9 on the checklist: Do not use enableBlinkFeatures
  *
  * Logs a warning message about enableBlinkFeatures
  */
@@ -224,7 +222,7 @@ const warnAboutEnableBlinkFeatures = function (webPreferences?: Electron.WebPref
 }
 
 /**
- * #11 on the checklist: Do Not Use allowpopups
+ * #10 on the checklist: Do Not Use allowpopups
  *
  * Logs a warning message about allowed popups
  */
@@ -247,7 +245,29 @@ const warnAboutAllowedPopups = function () {
 }
 
 // Currently missing since we can't easily programmatically check for it:
-//   #12WebViews: Verify the options and params of all `<webview>` tags
+//   #11 Verify WebView Options Before Creation
+//   #12 Disable or limit navigation
+//   #13 Disable or limit creation of new windows
+//   #14 Do not use `openExternal` with untrusted content
+
+// #15 on the checklist: Disable the `remote` module
+// Logs a warning message about the remote module
+
+const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
+  if (!webPreferences || !webPreferences.enableRemoteModule) return
+
+  if (getIsRemoteProtocol()) {
+    const warning = `This renderer process has "enableRemoteModule" enabled
+    and attempted to load remote content from '${window.location}'. This
+    exposes users of this app to unnecessary security risks.\n ${moreInformation}`
+
+    console.warn('%cElectron Security Warning (enableRemoteModule)',
+      'font-weight: bold;', warning)
+  }
+}
+
+// Currently missing since we can't easily programmatically check for it:
+//   #16 Filter the `remote` module
 
 const logSecurityWarnings = function (
   webPreferences: Electron.WebPreferences | undefined, nodeIntegration: boolean
@@ -260,6 +280,7 @@ const logSecurityWarnings = function (
   warnAboutEnableBlinkFeatures(webPreferences)
   warnAboutInsecureCSP()
   warnAboutAllowedPopups()
+  warnAboutRemoteModuleWithRemoteContent(webPreferences)
 }
 
 const getWebPreferences = function () {
