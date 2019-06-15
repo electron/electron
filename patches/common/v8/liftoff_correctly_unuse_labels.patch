@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Hammacher <clemensh@chromium.org>
+Date: Tue, 29 Jan 2019 15:04:04 +0100
+Subject: [Liftoff] Correctly unuse Labels
+
+On Liftoff bailout, instead of binding all unbound labels (to avoid
+triggering DCHECKS in their destructor), just Unuse them.
+
+R=mstarzinger@chromium.org
+
+Bug: chromium:924843
+Change-Id: Icf581bca06eaa7369ab2bbd5d805112289d6a801
+Reviewed-on: https://chromium-review.googlesource.com/c/1442645
+Reviewed-by: Michael Starzinger <mstarzinger@chromium.org>
+Commit-Queue: Clemens Hammacher <clemensh@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#59172}
+
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index 8c5203479ef54cc66776ef6a27b0d739169b02dc..5e89fcd07143cc4e6d6a44af4c194a9400fd8850 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -174,7 +174,7 @@ class LiftoffCompiler {
+         compilation_zone_(compilation_zone),
+         safepoint_table_builder_(compilation_zone_) {}
+ 
+-  ~LiftoffCompiler() { BindUnboundLabels(nullptr); }
++  ~LiftoffCompiler() { UnuseLabels(nullptr); }
+ 
+   bool ok() const { return ok_; }
+ 
+@@ -199,7 +199,7 @@ class LiftoffCompiler {
+     TRACE("unsupported: %s\n", reason);
+     decoder->errorf(decoder->pc_offset(), "unsupported liftoff operation: %s",
+                     reason);
+-    BindUnboundLabels(decoder);
++    UnuseLabels(decoder);
+   }
+ 
+   bool DidAssemblerBailout(FullDecoder* decoder) {
+@@ -225,23 +225,21 @@ class LiftoffCompiler {
+     return safepoint_table_builder_.GetCodeOffset();
+   }
+ 
+-  void BindUnboundLabels(FullDecoder* decoder) {
++  void UnuseLabels(FullDecoder* decoder) {
+ #ifdef DEBUG
+-    // Bind all labels now, otherwise their destructor will fire a DCHECK error
++    auto Unuse = [](Label* label) {
++      label->Unuse();
++      label->UnuseNear();
++    };
++    // Unuse all labels now, otherwise their destructor will fire a DCHECK error
+     // if they where referenced before.
+     uint32_t control_depth = decoder ? decoder->control_depth() : 0;
+     for (uint32_t i = 0; i < control_depth; ++i) {
+       Control* c = decoder->control_at(i);
+-      Label* label = c->label.get();
+-      if (!label->is_bound()) __ bind(label);
+-      if (c->else_state) {
+-        Label* else_label = c->else_state->label.get();
+-        if (!else_label->is_bound()) __ bind(else_label);
+-      }
+-    }
+-    for (auto& ool : out_of_line_code_) {
+-      if (!ool.label.get()->is_bound()) __ bind(ool.label.get());
++      Unuse(c->label.get());
++      if (c->else_state) Unuse(c->else_state->label.get());
+     }
++    for (auto& ool : out_of_line_code_) Unuse(ool.label.get());
+ #endif
+   }
+ 
+@@ -451,7 +449,7 @@ class LiftoffCompiler {
+ 
+   void OnFirstError(FullDecoder* decoder) {
+     ok_ = false;
+-    BindUnboundLabels(decoder);
++    UnuseLabels(decoder);
+     asm_.AbortCompilation();
+   }
+ 
+diff --git a/test/mjsunit/regress/wasm/regress-924843.js b/test/mjsunit/regress/wasm/regress-924843.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b59548540ccbd514eb65da4619698f87d2b48c70
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-924843.js
+@@ -0,0 +1,17 @@
++// Copyright 2019 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++load('test/mjsunit/wasm/wasm-constants.js');
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++const sig = builder.addType(makeSig([kWasmI32, kWasmI32, kWasmI32], [kWasmI32]));
++builder.addFunction(undefined, sig)
++  .addBody([
++    kExprGetLocal, 2,
++    kExprIf, kWasmStmt,
++      kExprBlock, kWasmStmt
++  ]);
++builder.addExport('main', 0);
++assertThrows(() => builder.instantiate(), WebAssembly.CompileError);

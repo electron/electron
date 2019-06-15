@@ -9,3 +9,4 @@ deps_provide_more_v8_backwards_compatibility.patch
 dcheck.patch
 expose_protected_v8_platform_systemclocktimemillis.patch
 do_not_export_private_v8_symbols_on_windows.patch
+liftoff_correctly_unuse_labels.patch
