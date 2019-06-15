@@ -92,6 +92,7 @@ const warnAboutInsecureResources = function () {
   const resources = window.performance
     .getEntriesByType('resource')
     .filter(({ name }) => /^(http|ftp):/gi.test(name || ''))
+    .filter(({ name }) => new URL(name).hostname !== 'localhost')
     .map(({ name }) => `- ${name}`)
     .join('\n')
 
