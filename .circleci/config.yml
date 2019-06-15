@@ -102,6 +102,9 @@ env-mac-large: &env-mac-large
 env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
 
+env-ninja-status: &env-ninja-status
+  NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es]"
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -535,6 +538,12 @@ step-fix-known-hosts-linux: &step-fix-known-hosts-linux
         ./src/electron/.circleci/fix-known-hosts.sh
       fi
 
+step-ninja-summary: &step-ninja-summary
+  run:
+    name: Print ninja summary
+    command: |
+      python depot_tools/post_build_ninja_summary.py -C src/out/Default
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -683,6 +692,7 @@ steps-electron-build: &steps-electron-build
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-ninja-summary
 
     # Node.js headers
     - *step-nodejs-headers-build
@@ -706,6 +716,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-ninja-summary
 
     # Node.js headers
     - *step-nodejs-headers-build
@@ -958,6 +969,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-x64-debug-gn-check:
@@ -973,6 +985,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-x64-testing-gn-check:
@@ -998,6 +1011,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-x64-publish:
@@ -1015,6 +1029,7 @@ jobs:
       <<: *env-ia32
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-ia32-testing:
@@ -1024,6 +1039,7 @@ jobs:
       <<: *env-ia32
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-ia32-chromedriver:
@@ -1044,6 +1060,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-ia32-publish:
@@ -1062,6 +1079,7 @@ jobs:
       <<: *env-arm
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-arm-testing:
@@ -1071,6 +1089,7 @@ jobs:
       <<: *env-arm
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
@@ -1092,6 +1111,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-arm-publish:
@@ -1110,6 +1130,7 @@ jobs:
       <<: *env-arm64
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-arm64-debug-gn-check:
@@ -1127,6 +1148,7 @@ jobs:
       <<: *env-arm64
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
@@ -1156,6 +1178,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-arm64-publish:
@@ -1173,6 +1196,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   osx-debug-gn-check:
@@ -1204,6 +1228,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   osx-publish:
@@ -1221,6 +1246,7 @@ jobs:
       <<: *env-mas
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   mas-debug-gn-check:
@@ -1255,6 +1281,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status      
     <<: *steps-electron-build-for-tests
 
   mas-publish:
