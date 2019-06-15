@@ -66,7 +66,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   }
 
   web_contents_.Reset(isolate, web_contents.ToV8());
-  api_web_contents_ = web_contents.get();
+  api_web_contents_ = web_contents->GetWeakPtr();
   api_web_contents_->AddObserver(this);
   Observe(api_web_contents_->web_contents());
 
@@ -97,7 +97,9 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
 }
 
 BrowserWindow::~BrowserWindow() {
-  api_web_contents_->RemoveObserver(this);
+  // FIXME This is a hack rather than a proper fix preventing shutdown crashes.
+  if (api_web_contents_)
+    api_web_contents_->RemoveObserver(this);
   // Note that the OnWindowClosed will not be called after the destructor runs,
   // since the window object is managed by the TopLevelWindow class.
   if (web_contents())
