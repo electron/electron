@@ -78,6 +78,21 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
+  it('should not warn about Node.js integration with remote content from localhost', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: true
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      expect(message).to.not.include('Node.js Integration with Remote Content')
+      done()
+    })
+
+    w.loadURL(`http://localhost:8881/base-page-security.html`)
+  })
+
   const generateSpecs = (description, webPreferences) => {
     describe(description, () => {
       it('should warn about disabled webSecurity', (done) => {
@@ -186,6 +201,20 @@ describe('security warnings', () => {
         })
 
         w.loadURL(`http://127.0.0.1:8881/insecure-resources.html`)
+        w.webContents.openDevTools()
+      })
+
+      it('should not warn about insecure resources from localhost', (done) => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+        w.webContents.once('console-message', (e, level, message) => {
+          expect(message).to.not.include('Insecure Resources')
+          done()
+        })
+
+        w.loadURL(`http://localhost:8881/insecure-resources.html`)
         w.webContents.openDevTools()
       })
 
