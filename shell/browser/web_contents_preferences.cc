@@ -314,11 +314,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kNativeWindowOpen))
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
-  // The preload script.
-  base::FilePath::StringType preload;
-  if (GetPreloadPath(&preload))
-    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
-
   // Custom args for renderer process
   auto* customArgs =
       preference_.FindKeyOfType(options::kCustomArgs, base::Value::Type::LIST);

@@ -52,6 +52,12 @@ declare namespace Electron {
     contentScripts: ContentScript[];
   }
 
+  type InitRendererPayload = {
+    appPath: string;
+    contentScripts: ContentScriptEntry;
+    preloadScripts: string[];
+  }
+
   interface IpcRendererInternal extends Electron.IpcRenderer {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }

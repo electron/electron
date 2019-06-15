@@ -54,6 +54,11 @@ v8Util.setHiddenValue(global, 'ipcNative', {
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils')
+
+const {
+  appPath, contentScripts, preloadScripts
+} = ipcRendererUtils.invokeSync('ELECTRON_INIT_RENDERER') as Electron.InitRendererPayload
+
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init')
 webFrameInit()
 
@@ -78,19 +83,11 @@ const webviewTag = hasSwitch('webview-tag')
 const isHiddenPage = hasSwitch('hidden-page')
 const usesNativeWindowOpen = hasSwitch('native-window-open')
 
-const preloadScript = parseOption('preload', null)
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[]
-const appPath = parseOption('app-path', null)
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value))
 const openerId = parseOption('opener-id', null, value => parseInt(value))
 
 // The arguments to be passed to isolated world.
 const isolatedWorldArgs = { ipcRendererInternal, guestInstanceId, isHiddenPage, openerId, usesNativeWindowOpen }
-
-// The webContents preload script is loaded after the session preload scripts.
-if (preloadScript) {
-  preloadScripts.push(preloadScript)
-}
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -111,7 +108,6 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
     require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
   }
 }
