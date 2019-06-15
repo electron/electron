@@ -56,6 +56,8 @@ declare namespace Electron {
     appPath: string;
     contentScripts: ContentScriptEntry;
     preloadScripts: string[];
+    webPreferences: Electron.WebPreferences & { openerId: number };
+    isRemoteModuleEnabled: boolean;
   }
 
   interface IpcRendererInternal extends Electron.IpcRenderer {

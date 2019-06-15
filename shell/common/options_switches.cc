@@ -218,15 +218,10 @@ const char kAppUserModelId[] = "app-user-model-id";
 
 // The command line switch versions of the options.
 const char kBackgroundColor[] = "background-color";
-const char kNodeIntegration[] = "node-integration";
-const char kDisableRemoteModule[] = "disable-remote-module";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[] = "guest-instance-id";
-const char kOpenerID[] = "opener-id";
 const char kScrollBounce[] = "scroll-bounce";
 const char kHiddenPage[] = "hidden-page";
-const char kNativeWindowOpen[] = "native-window-open";
-const char kWebviewTag[] = "webview-tag";
 const char kDisableElectronSiteInstanceOverrides[] =
     "disable-electron-site-instance-overrides";
 

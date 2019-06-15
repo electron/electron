@@ -282,17 +282,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
 
-  // Check if we have node integration specified.
-  if (IsEnabled(options::kNodeIntegration))
-    command_line->AppendSwitch(switches::kNodeIntegration);
-
   // Whether to enable node integration in Worker.
   if (IsEnabled(options::kNodeIntegrationInWorker))
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
-
-  // Check if webview tag creation is enabled, default to nodeIntegration value.
-  if (IsEnabled(options::kWebviewTag))
-    command_line->AppendSwitch(switches::kWebviewTag);
 
   // Sandbox can be enabled for renderer processes hosting cross-origin frames
   // unless nodeIntegrationInSubFrames is enabled
@@ -310,10 +302,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(::switches::kNoZygote);
   }
 
-  // Check if nativeWindowOpen is enabled.
-  if (IsEnabled(options::kNativeWindowOpen))
-    command_line->AppendSwitch(switches::kNativeWindowOpen);
-
   // Custom args for renderer process
   auto* customArgs =
       preference_.FindKeyOfType(options::kCustomArgs, base::Value::Type::LIST);
@@ -323,10 +311,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
         command_line->AppendArg(customArg.GetString());
     }
   }
-
-  // Whether to enable the remote module
-  if (!IsRemoteModuleEnabled())
-    command_line->AppendSwitch(switches::kDisableRemoteModule);
 
   // Run Electron APIs and preload script in isolated world
   if (IsEnabled(options::kContextIsolation))
@@ -352,12 +336,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                     base::NumberToString(guest_instance_id));
-
-  // Pass the opener's window id.
-  int opener_id;
-  if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
-    command_line->AppendSwitchASCII(switches::kOpenerID,
-                                    base::NumberToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.

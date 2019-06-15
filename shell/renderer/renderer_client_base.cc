@@ -112,12 +112,6 @@ void RendererClientBase::DidCreateScriptContext(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
   SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
-
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  bool enableRemoteModule =
-      !command_line->HasSwitch(switches::kDisableRemoteModule);
-  SetHiddenValue(context, "enableRemoteModule",
-                 mate::ConvertToV8(isolate, enableRemoteModule));
 }
 
 void RendererClientBase::AddRenderBindings(

@@ -1,5 +1,4 @@
 import { webFrame } from 'electron'
-import { invoke } from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 let shouldLog: boolean | null = null
 
@@ -114,8 +113,8 @@ const warnAboutInsecureResources = function () {
  *
  * Logs a warning message about Node integration.
  */
-const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
-  if (!nodeIntegration) return
+const warnAboutNodeWithRemoteContent = function (webPreferences: Electron.WebPreferences) {
+  if (webPreferences.nodeIntegration === false) return
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has Node.js integration enabled
@@ -138,8 +137,8 @@ const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
  *
  * Logs a warning message about disabled webSecurity.
  */
-const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || webPreferences.webSecurity !== false) return
+const warnAboutDisabledWebSecurity = function (webPreferences: Electron.WebPreferences) {
+  if (webPreferences.webSecurity !== false) return
 
   const warning = `This renderer process has "webSecurity" disabled. This
   exposes users of this app to severe security risks.\n${moreInformation}`
@@ -172,8 +171,8 @@ const warnAboutInsecureCSP = function () {
  *
  * Logs a warning message about disabled webSecurity.
  */
-const warnAboutInsecureContentAllowed = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || !webPreferences.allowRunningInsecureContent) return
+const warnAboutInsecureContentAllowed = function (webPreferences: Electron.WebPreferences) {
+  if (!webPreferences.allowRunningInsecureContent) return
 
   const warning = `This renderer process has "allowRunningInsecureContent"
   enabled. This exposes users of this app to severe security risks.\n
@@ -188,8 +187,8 @@ const warnAboutInsecureContentAllowed = function (webPreferences?: Electron.WebP
  *
  * Logs a warning message about experimental features.
  */
-const warnAboutExperimentalFeatures = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || (!webPreferences.experimentalFeatures)) {
+const warnAboutExperimentalFeatures = function (webPreferences: Electron.WebPreferences) {
+  if (!webPreferences.experimentalFeatures) {
     return
   }
 
@@ -206,9 +205,8 @@ const warnAboutExperimentalFeatures = function (webPreferences?: Electron.WebPre
  *
  * Logs a warning message about enableBlinkFeatures
  */
-const warnAboutEnableBlinkFeatures = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences ||
-    !webPreferences.hasOwnProperty('enableBlinkFeatures') ||
+const warnAboutEnableBlinkFeatures = function (webPreferences: Electron.WebPreferences) {
+  if (!webPreferences.hasOwnProperty('enableBlinkFeatures') ||
     (webPreferences.enableBlinkFeatures && webPreferences.enableBlinkFeatures.length === 0)) {
     return
   }
@@ -269,10 +267,8 @@ const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electr
 // Currently missing since we can't easily programmatically check for it:
 //   #16 Filter the `remote` module
 
-const logSecurityWarnings = function (
-  webPreferences: Electron.WebPreferences | undefined, nodeIntegration: boolean
-) {
-  warnAboutNodeWithRemoteContent(nodeIntegration)
+const logSecurityWarnings = function (webPreferences: Electron.WebPreferences) {
+  warnAboutNodeWithRemoteContent(webPreferences)
   warnAboutDisabledWebSecurity(webPreferences)
   warnAboutInsecureResources()
   warnAboutInsecureContentAllowed(webPreferences)
@@ -283,19 +279,10 @@ const logSecurityWarnings = function (
   warnAboutRemoteModuleWithRemoteContent(webPreferences)
 }
 
-const getWebPreferences = async function () {
-  try {
-    return invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
-  } catch (error) {
-    console.warn(`getLastWebPreferences() failed: ${error}`)
-  }
-}
-
-export function securityWarnings (nodeIntegration: boolean) {
-  const loadHandler = async function () {
+export function securityWarnings (webPreferences: Electron.WebPreferences) {
+  const loadHandler = function () {
     if (shouldLogSecurityWarnings()) {
-      const webPreferences = await getWebPreferences()
-      logSecurityWarnings(webPreferences, nodeIntegration)
+      logSecurityWarnings(webPreferences)
     }
   }
   window.addEventListener('load', loadHandler, { once: true })

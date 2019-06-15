@@ -56,8 +56,12 @@ const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-rendere
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils')
 
 const {
-  appPath, contentScripts, preloadScripts
+  appPath, contentScripts, preloadScripts, webPreferences, isRemoteModuleEnabled
 } = ipcRendererUtils.invokeSync('ELECTRON_INIT_RENDERER') as Electron.InitRendererPayload
+
+const { contextIsolation, nativeWindowOpen: usesNativeWindowOpen, nodeIntegration, webviewTag, openerId } = webPreferences
+
+v8Util.setHiddenValue(global, 'enableRemoteModule', isRemoteModuleEnabled)
 
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init')
 webFrameInit()
@@ -77,14 +81,8 @@ const parseOption = function<T> (
     : defaultValue
 }
 
-const contextIsolation = hasSwitch('context-isolation')
-const nodeIntegration = hasSwitch('node-integration')
-const webviewTag = hasSwitch('webview-tag')
 const isHiddenPage = hasSwitch('hidden-page')
-const usesNativeWindowOpen = hasSwitch('native-window-open')
-
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value))
-const openerId = parseOption('opener-id', null, value => parseInt(value))
 
 // The arguments to be passed to isolated world.
 const isolatedWorldArgs = { ipcRendererInternal, guestInstanceId, isHiddenPage, openerId, usesNativeWindowOpen }
@@ -202,5 +200,5 @@ for (const preloadScript of preloadScripts) {
 // Warn about security issues
 if (process.isMainFrame) {
   const { securityWarnings } = require('@electron/internal/renderer/security-warnings')
-  securityWarnings(nodeIntegration)
+  securityWarnings(webPreferences)
 }
