@@ -19,6 +19,7 @@ declare namespace NodeJS {
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
   }
+
   interface Process {
     /**
      * DO NOT USE DIRECTLY, USE process.electronBinding
@@ -29,6 +30,7 @@ declare namespace NodeJS {
     electronBinding(name: 'v8_util'): V8UtilBinding;
     electronBinding(name: 'app'): { app: Electron.App, App: Function };
     electronBinding(name: 'command_line'): Electron.CommandLine;
+    electronBinding(name: 'desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer };
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
