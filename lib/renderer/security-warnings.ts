@@ -1,5 +1,5 @@
 import { webFrame } from 'electron'
-import { invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { invoke } from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 let shouldLog: boolean | null = null
 
@@ -262,18 +262,18 @@ const logSecurityWarnings = function (
   warnAboutAllowedPopups()
 }
 
-const getWebPreferences = function () {
+const getWebPreferences = async function () {
   try {
-    return invokeSync('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
+    return invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
   } catch (error) {
     console.warn(`getLastWebPreferences() failed: ${error}`)
   }
 }
 
 export function securityWarnings (nodeIntegration: boolean) {
-  const loadHandler = function () {
+  const loadHandler = async function () {
     if (shouldLogSecurityWarnings()) {
-      const webPreferences = getWebPreferences()
+      const webPreferences = await getWebPreferences()
       logSecurityWarnings(webPreferences, nodeIntegration)
     }
   }
