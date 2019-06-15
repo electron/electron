@@ -281,10 +281,9 @@ content::ContentGpuClient* AtomMainDelegate::CreateContentGpuClient() {
 
 content::ContentRendererClient*
 AtomMainDelegate::CreateContentRendererClient() {
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableSandbox) ||
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          service_manager::switches::kNoSandbox)) {
+  bool is_sandboxed = !base::CommandLine::ForCurrentProcess()->HasSwitch(
+      service_manager::switches::kNoSandbox);
+  if (is_sandboxed) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);

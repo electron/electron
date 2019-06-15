@@ -1291,7 +1291,8 @@ void App::EnableSandbox(mate::Arguments* args) {
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   RemoveNoSandboxSwitch(command_line);
-  command_line->AppendSwitch(switches::kEnableSandbox);
+
+  Browser::Get()->EnableSandbox();
 }
 
 void App::SetUserAgentFallback(const std::string& user_agent) {

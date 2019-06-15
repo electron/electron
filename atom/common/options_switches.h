@@ -89,7 +89,6 @@ extern const char kNavigateOnDragDrop[];
 
 namespace switches {
 
-extern const char kEnableSandbox[];
 extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];

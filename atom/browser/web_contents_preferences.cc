@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -293,12 +294,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kWebviewTag))
     command_line->AppendSwitch(switches::kWebviewTag);
 
-  // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
-  // pass `--enable-sandbox` to the renderer so it won't have any node.js
-  // integration.
-  if (IsEnabled(options::kSandbox)) {
-    command_line->AppendSwitch(switches::kEnableSandbox);
-  } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
+  // Disable Chromium sandbox if the `sandbox` option is `false` and
+  // `app.enableSandbox()` has not been called
+  if (!IsEnabled(options::kSandbox) && !Browser::Get()->sandbox_enabled()) {
     command_line->AppendSwitch(service_manager::switches::kNoSandbox);
     command_line->AppendSwitch(::switches::kNoZygote);
   }
