@@ -1,14 +1,12 @@
-'use strict'
-
 const { nativeImage, NativeImage } = process.electronBinding('native_image')
 
-const objectMap = function (source, mapper) {
+const objectMap = function (source: Object, mapper: (value: any) => any) {
   const sourceEntries = Object.entries(source)
   const targetEntries = sourceEntries.map(([key, val]) => [key, mapper(val)])
   return Object.fromEntries(targetEntries)
 }
 
-const serialize = function (value) {
+export function serialize (value: any): any {
   if (value instanceof NativeImage) {
     return {
       buffer: value.toBitmap(),
@@ -26,7 +24,7 @@ const serialize = function (value) {
   }
 }
 
-const deserialize = function (value) {
+export function deserialize (value: any): any {
   if (value && value.__ELECTRON_SERIALIZED_NativeImage__) {
     return nativeImage.createFromBitmap(value.buffer, value.size)
   } else if (Array.isArray(value)) {
@@ -38,9 +36,4 @@ const deserialize = function (value) {
   } else {
     return value
   }
-}
-
-module.exports = {
-  serialize,
-  deserialize
 }

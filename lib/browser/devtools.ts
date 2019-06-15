@@ -1,14 +1,12 @@
-'use strict'
-
-const { dialog, Menu } = require('electron')
-const fs = require('fs')
-const url = require('url')
+import { dialog, Menu } from 'electron'
+import * as fs from 'fs'
+import * as url from 'url'
 
 const ipcMainUtils = require('@electron/internal/browser/ipc-main-internal-utils')
 
-const convertToMenuTemplate = function (items, handler) {
+const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
-    const transformed = item.type === 'subMenu' ? {
+    const transformed: Electron.MenuItemConstructorOptions = item.type === 'subMenu' ? {
       type: 'submenu',
       label: item.label,
       enabled: item.enabled,
@@ -34,7 +32,7 @@ const convertToMenuTemplate = function (items, handler) {
   })
 }
 
-const getEditMenuItems = function () {
+const getEditMenuItems = function (): Electron.MenuItemConstructorOptions[] {
   return [
     { role: 'undo' },
     { role: 'redo' },
@@ -42,18 +40,18 @@ const getEditMenuItems = function () {
     { role: 'cut' },
     { role: 'copy' },
     { role: 'paste' },
-    { role: 'pasteAndMatchStyle' },
+    { role: 'pasteandmatchstyle' },
     { role: 'delete' },
-    { role: 'selectAll' }
+    { role: 'selectall' }
   ]
 }
 
-const isChromeDevTools = function (pageURL) {
+const isChromeDevTools = function (pageURL: string) {
   const { protocol } = url.parse(pageURL)
   return protocol === 'devtools:'
 }
 
-const assertChromeDevTools = function (contents, api) {
+const assertChromeDevTools = function (contents: Electron.WebContents, api: string) {
   const pageURL = contents._getURL()
   if (!isChromeDevTools(pageURL)) {
     console.error(`Blocked ${pageURL} from calling ${api}`)
@@ -61,7 +59,7 @@ const assertChromeDevTools = function (contents, api) {
   }
 }
 
-ipcMainUtils.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event, items, isEditMenu) {
+ipcMainUtils.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Electron.IpcMainEvent, items: ContextMenuItem[], isEditMenu: boolean) {
   return new Promise(resolve => {
     assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()')
 
@@ -73,7 +71,7 @@ ipcMainUtils.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event, items, i
   })
 })
 
-ipcMainUtils.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event) {
+ipcMainUtils.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: Electron.IpcMainEvent) {
   assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()')
 
   const result = await dialog.showOpenDialog({})
@@ -85,7 +83,7 @@ ipcMainUtils.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event) {
   return [path, data]
 })
 
-ipcMainUtils.handle('ELECTRON_INSPECTOR_CONFIRM', async function (event, message = '', title = '') {
+ipcMainUtils.handle('ELECTRON_INSPECTOR_CONFIRM', async function (event: Electron.IpcMainEvent, message: string = '', title: string = '') {
   assertChromeDevTools(event.sender, 'window.confirm()')
 
   const options = {
