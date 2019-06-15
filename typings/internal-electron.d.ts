@@ -52,6 +52,17 @@ declare namespace Electron {
     contentScripts: ContentScript[];
   }
 
+  type WebPreferencesPayload = {
+    preloadScripts: string[];
+    contextIsolation: boolean;
+    nodeIntegration: boolean;
+    nativeWindowOpen: boolean;
+    webviewTag: boolean;
+    isHiddenPage: boolean;
+    guestInstanceId: number;
+    openerId: number;
+  }
+
   interface IpcRendererInternal extends Electron.IpcRenderer {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }

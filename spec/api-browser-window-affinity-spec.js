@@ -119,7 +119,7 @@ describe('BrowserWindow with affinity module', () => {
         })
       ])
       const [, w2] = await Promise.all([
-        testNodeIntegration(false),
+        testNodeIntegration(true),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeTrue,
           preload,
@@ -154,7 +154,7 @@ describe('BrowserWindow with affinity module', () => {
         })
       ])
       const [, w2] = await Promise.all([
-        testNodeIntegration(true),
+        testNodeIntegration(false),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeFalse,
           preload,

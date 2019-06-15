@@ -183,9 +183,6 @@ namespace switches {
 // Enable chromium sandbox.
 const char kEnableSandbox[] = "enable-sandbox";
 
-// Enable plugins.
-const char kEnablePlugins[] = "enable-plugins";
-
 // Ppapi Flash path.
 const char kPpapiFlashPath[] = "ppapi-flash-path";
 
@@ -220,27 +217,12 @@ const char kAppUserModelId[] = "app-user-model-id";
 const char kAppPath[] = "app-path";
 
 // The command line switch versions of the options.
-const char kBackgroundColor[] = "background-color";
-const char kPreloadScript[] = "preload";
-const char kPreloadScripts[] = "preload-scripts";
-const char kNodeIntegration[] = "node-integration";
-const char kDisableRemoteModule[] = "disable-remote-module";
-const char kContextIsolation[] = "context-isolation";
-const char kGuestInstanceID[] = "guest-instance-id";
-const char kOpenerID[] = "opener-id";
 const char kScrollBounce[] = "scroll-bounce";
-const char kHiddenPage[] = "hidden-page";
-const char kNativeWindowOpen[] = "native-window-open";
-const char kWebviewTag[] = "webview-tag";
 const char kDisableElectronSiteInstanceOverrides[] =
     "disable-electron-site-instance-overrides";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
-
-// Command switch passed to renderer process to control whether node
-// environments will be created in sub-frames.
-const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
 
 // Widevine options
 // Path to Widevine CDM binaries.

@@ -80,8 +80,7 @@ void AtomRendererClient::DidCreateScriptContext(
       render_frame->IsMainFrame() && !render_frame->GetWebFrame()->Opener();
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      GetWebPreferences(render_frame).node_integration_in_subframes;
   bool should_load_node =
       is_main_frame || is_devtools || allow_node_in_subframes;
   if (!should_load_node) {
@@ -155,7 +154,7 @@ void AtomRendererClient::WillReleaseScriptContext(
   // We also do this if we have disable electron site instance overrides to
   // avoid memory leaks
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
+  if (GetWebPreferences(render_frame).node_integration_in_subframes ||
       command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
     node::FreeEnvironment(env);
 

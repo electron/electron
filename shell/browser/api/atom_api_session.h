@@ -79,8 +79,8 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
   void CreateInterruptedDownload(const mate::Dictionary& options);
-  void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
-  std::vector<base::FilePath::StringType> GetPreloads() const;
+  void SetPreloads(const std::vector<base::FilePath>& preloads);
+  std::vector<base::FilePath> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);

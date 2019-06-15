@@ -223,8 +223,64 @@ bool WebContentsPreferences::GetPreference(const base::StringPiece& name,
   return GetAsString(&preference_, name, value);
 }
 
+mojom::WebPreferencesPtr WebContentsPreferences::ToMojo() const {
+  auto result = mojom::WebPreferences::New();
+
+  if (!GetAsString(&preference_, options::kBackgroundColor,
+                   &result->background_color) &&
+      !IsEnabled(options::kOffscreen)) {
+    // For non-OSR WebContents, we expect to have white background, see
+    // https://github.com/electron/electron/issues/13764 for more.
+    result->background_color = "#fff";
+  }
+
+  result->context_isolation = IsEnabled(options::kContextIsolation);
+  result->enable_plugins = IsEnabled(options::kPlugins);
+  result->enable_remote_module = IsRemoteModuleEnabled();
+  result->node_integration = IsEnabled(options::kNodeIntegration);
+  result->node_integration_in_subframes =
+      IsEnabled(options::kNodeIntegrationInSubFrames);
+  result->native_window_open = IsEnabled(options::kNativeWindowOpen);
+  result->webview_tag = IsEnabled(options::kWebviewTag);
+  result->is_hidden_page = IsHiddenPage();
+
+  GetAsInteger(&preference_, options::kGuestInstanceID,
+               &result->guest_instance_id);
+  GetAsInteger(&preference_, options::kOpenerID, &result->opener_id);
+
+  return result;
+}
+
+bool WebContentsPreferences::IsHiddenPage() const {
+  int guest_instance_id = 0;
+  if (GetAsInteger(&preference_, options::kGuestInstanceID,
+                   &guest_instance_id)) {
+    // Webview `document.visibilityState` tracks window visibility so we need
+    // to let it know if the window happens to be hidden right now.
+    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
+    if (manager) {
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        auto* relay = NativeWindowRelay::FromWebContents(embedder);
+        if (relay) {
+          auto* window = relay->GetNativeWindow();
+          if (window) {
+            const bool visible = window->IsVisible() && !window->IsMinimized();
+            if (!visible) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 bool WebContentsPreferences::IsRemoteModuleEnabled() const {
-  return IsEnabled(options::kEnableRemoteModule, true);
+  bool is_devtools = web_contents_->GetVisibleURL().SchemeIs("chrome-devtools");
+  return !is_devtools && IsEnabled(options::kEnableRemoteModule, true);
 }
 
 bool WebContentsPreferences::GetPreloadPath(
@@ -273,26 +329,14 @@ WebContentsPreferences* WebContentsPreferences::From(
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line,
     bool is_subframe) {
-  // Check if plugins are enabled.
-  if (IsEnabled(options::kPlugins))
-    command_line->AppendSwitch(switches::kEnablePlugins);
-
   // Experimental flags.
   if (IsEnabled(options::kExperimentalFeatures))
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
 
-  // Check if we have node integration specified.
-  if (IsEnabled(options::kNodeIntegration))
-    command_line->AppendSwitch(switches::kNodeIntegration);
-
   // Whether to enable node integration in Worker.
   if (IsEnabled(options::kNodeIntegrationInWorker))
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
-
-  // Check if webview tag creation is enabled, default to nodeIntegration value.
-  if (IsEnabled(options::kWebviewTag))
-    command_line->AppendSwitch(switches::kWebviewTag);
 
   // Sandbox can be enabled for renderer processes hosting cross-origin frames
   // unless nodeIntegrationInSubFrames is enabled
@@ -310,15 +354,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(::switches::kNoZygote);
   }
 
-  // Check if nativeWindowOpen is enabled.
-  if (IsEnabled(options::kNativeWindowOpen))
-    command_line->AppendSwitch(switches::kNativeWindowOpen);
-
-  // The preload script.
-  base::FilePath::StringType preload;
-  if (GetPreloadPath(&preload))
-    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
-
   // Custom args for renderer process
   auto* customArgs =
       preference_.FindKeyOfType(options::kCustomArgs, base::Value::Type::LIST);
@@ -329,40 +364,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
-  // Whether to enable the remote module
-  if (!IsRemoteModuleEnabled())
-    command_line->AppendSwitch(switches::kDisableRemoteModule);
-
-  // Run Electron APIs and preload script in isolated world
-  if (IsEnabled(options::kContextIsolation))
-    command_line->AppendSwitch(switches::kContextIsolation);
-
-  // --background-color.
-  std::string s;
-  if (GetAsString(&preference_, options::kBackgroundColor, &s)) {
-    command_line->AppendSwitchASCII(switches::kBackgroundColor, s);
-  } else if (!IsEnabled(options::kOffscreen)) {
-    // For non-OSR WebContents, we expect to have white background, see
-    // https://github.com/electron/electron/issues/13764 for more.
-    command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
-  }
-
   // --offscreen
   if (IsEnabled(options::kOffscreen)) {
     command_line->AppendSwitch(options::kOffscreen);
   }
-
-  // --guest-instance-id, which is used to identify guest WebContents.
-  int guest_instance_id = 0;
-  if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
-    command_line->AppendSwitchASCII(switches::kGuestInstanceID,
-                                    base::NumberToString(guest_instance_id));
-
-  // Pass the opener's window id.
-  int opener_id;
-  if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
-    command_line->AppendSwitchASCII(switches::kOpenerID,
-                                    base::NumberToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.
@@ -383,6 +388,8 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
+  std::string s;
+
   // Enable blink features.
   if (GetAsString(&preference_, options::kEnableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures, s);
@@ -390,30 +397,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // Disable blink features.
   if (GetAsString(&preference_, options::kDisableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures, s);
-
-  if (guest_instance_id) {
-    // Webview `document.visibilityState` tracks window visibility so we need
-    // to let it know if the window happens to be hidden right now.
-    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder) {
-        auto* relay = NativeWindowRelay::FromWebContents(embedder);
-        if (relay) {
-          auto* window = relay->GetNativeWindow();
-          if (window) {
-            const bool visible = window->IsVisible() && !window->IsMinimized();
-            if (!visible) {
-              command_line->AppendSwitch(switches::kHiddenPage);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if (IsEnabled(options::kNodeIntegrationInSubFrames))
-    command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents

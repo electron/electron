@@ -144,12 +144,6 @@ void AtomSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
   process.SetReadOnly("isMainFrame", is_main_frame);
-
-  // Pass in CLI flags needed to setup the renderer
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kGuestInstanceID))
-    b.Set(options::kGuestInstanceID,
-          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
@@ -205,8 +199,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
   bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      GetWebPreferences(render_frame).node_integration_in_subframes;
   bool should_load_preload =
       is_main_frame || is_devtools || allow_node_in_sub_frames;
   if (!should_load_preload)

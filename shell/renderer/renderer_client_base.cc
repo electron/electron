@@ -19,7 +19,9 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/color_util.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/atom_autofill_agent.h"
@@ -82,6 +84,14 @@ void SetHiddenValue(v8::Handle<v8::Context> context,
   context->Global()->SetPrivate(context, privateKey, value);
 }
 
+v8::Local<v8::Value> ConvertOptionalToV8(v8::Isolate* isolate, int value) {
+  if (value) {
+    return mate::ConvertToV8(isolate, value);
+  } else {
+    return v8::Null(isolate);
+  }
+}
+
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
@@ -91,8 +101,7 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
-  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kContextIsolation);
+
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,
@@ -112,12 +121,8 @@ void RendererClientBase::DidCreateScriptContext(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
   SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
-
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  bool enableRemoteModule =
-      !command_line->HasSwitch(switches::kDisableRemoteModule);
-  SetHiddenValue(context, "enableRemoteModule",
-                 mate::ConvertToV8(isolate, enableRemoteModule));
+  SetHiddenValue(context, "webPreferences",
+                 GetWebPreferences(render_frame, isolate));
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -231,21 +236,67 @@ void RendererClientBase::RenderFrameCreated(
       GURL(kPdfViewerUIOrigin), "file", "", true);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
+  const auto& web_preferences = GetWebPreferences(render_frame);
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {
-    blink::WebView* webview = render_view->GetWebView();
-    if (webview) {
-      base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-      if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
+    if (blink::WebView* webview = render_view->GetWebView()) {
+      if (web_preferences.guest_instance_id) {  // webview.
         webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
       } else {  // normal window.
-        std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
+        std::string name = web_preferences.background_color;
         SkColor color =
             name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
         webview->SetBaseBackgroundColor(color);
       }
     }
   }
+}
+
+const mojom::WebPreferences& RendererClientBase::GetWebPreferences(
+    content::RenderFrame* render_frame) const {
+  static mojom::WebPreferences default_value;
+
+  auto it = web_preferences_.find(render_frame);
+  if (it == web_preferences_.end()) {
+    if (!render_frame) {
+      return default_value;
+    }
+
+    mojom::ElectronBrowserPtr browser_ptr;
+    render_frame->GetRemoteInterfaces()->GetInterface(
+        mojo::MakeRequest(&browser_ptr));
+
+    mojom::WebPreferencesPtr web_preferences;
+    if (!browser_ptr->DoGetWebPreferences(&web_preferences)) {
+      return default_value;
+    }
+
+    return web_preferences_[render_frame] =
+               web_preferences->To<mojom::WebPreferences>();
+  }
+
+  return it->second;
+}
+
+v8::Local<v8::Value> RendererClientBase::GetWebPreferences(
+    content::RenderFrame* render_frame,
+    v8::Isolate* isolate) const {
+  const auto& web_preferences = GetWebPreferences(render_frame);
+  auto dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("preloadScripts", web_preferences.preload_paths);
+  dict.Set(options::kContextIsolation, web_preferences.context_isolation);
+  dict.Set(options::kEnableRemoteModule, web_preferences.enable_remote_module);
+  dict.Set(options::kNodeIntegration, web_preferences.node_integration);
+  dict.Set(options::kNativeWindowOpen, web_preferences.native_window_open);
+  dict.Set(options::kWebviewTag, web_preferences.webview_tag);
+  dict.Set("isHiddenPage",
+           mate::ConvertToV8(isolate, web_preferences.is_hidden_page));
+  dict.Set(options::kGuestInstanceID,
+           ConvertOptionalToV8(isolate, web_preferences.guest_instance_id));
+  dict.Set(options::kOpenerID,
+           ConvertOptionalToV8(isolate, web_preferences.opener_id));
+
+  return dict.GetHandle();
 }
 
 void RendererClientBase::DidClearWindowObject(
@@ -268,12 +319,11 @@ bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-      command_line->HasSwitch(switches::kEnablePlugins))
+      GetWebPreferences(render_frame).enable_plugins)
     return false;
 
   *plugin = nullptr;
@@ -304,7 +354,8 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
-  if (isolated_world())
+  auto* render_frame = content::RenderFrame::FromWebFrame(frame);
+  if (GetWebPreferences(render_frame).context_isolation)
     return frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
   else
     return frame->MainWorldScriptContext();

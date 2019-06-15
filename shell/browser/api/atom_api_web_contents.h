@@ -285,7 +285,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the preload script path of current WebContents.
-  std::vector<base::FilePath::StringType> GetPreloadPaths() const;
+  std::vector<base::FilePath> GetPreloadPaths() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
@@ -513,6 +513,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
+  void DoGetWebPreferences(DoGetWebPreferencesCallback callback) override;
 
   void ShowAutofillPopup(const gfx::RectF& bounds,
                          const std::vector<base::string16>& values,

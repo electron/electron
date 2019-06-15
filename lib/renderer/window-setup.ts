@@ -176,7 +176,7 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
+  guestInstanceId: number, openerId: number, isHiddenPage: boolean, nativeWindowOpen: boolean
 ) => {
   if (guestInstanceId == null) {
     // Override default window.close.
@@ -185,7 +185,7 @@ export const windowSetup = (
     }
   }
 
-  if (!usesNativeWindowOpen) {
+  if (!nativeWindowOpen) {
     // Make the browser window or guest view emit "new-window" event.
     (window as any).open = function (url?: string, frameName?: string, features?: string) {
       if (url != null && url !== '') {

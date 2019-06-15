@@ -624,14 +624,13 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
 
-void Session::SetPreloads(
-    const std::vector<base::FilePath::StringType>& preloads) {
+void Session::SetPreloads(const std::vector<base::FilePath>& preloads) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
   prefs->set_preloads(preloads);
 }
 
-std::vector<base::FilePath::StringType> Session::GetPreloads() const {
+std::vector<base::FilePath> Session::GetPreloads() const {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
   return prefs->preloads();

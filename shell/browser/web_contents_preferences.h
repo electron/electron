@@ -10,6 +10,7 @@
 
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "electron/shell/common/api/api.mojom.h"
 
 namespace base {
 class CommandLine;
@@ -59,6 +60,8 @@ class WebContentsPreferences
   // Return true if the particular preference value exists.
   bool GetPreference(const base::StringPiece& name, std::string* value) const;
 
+  mojom::WebPreferencesPtr ToMojo() const;
+
   // Whether to enable the remote module
   bool IsRemoteModuleEnabled() const;
 
@@ -81,6 +84,8 @@ class WebContentsPreferences
 
   // Set preference value to given bool
   void SetBool(const base::StringPiece& key, bool value);
+
+  bool IsHiddenPage() const;
 
   static std::vector<WebContentsPreferences*> instances_;
 

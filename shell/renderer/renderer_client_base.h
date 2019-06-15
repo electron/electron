@@ -7,9 +7,11 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include)
@@ -36,7 +38,8 @@ class RendererClientBase : public content::ContentRendererClient {
                                             content::RenderFrame* render_frame,
                                             int world_id) = 0;
 
-  bool isolated_world() const { return isolated_world_; }
+  const mojom::WebPreferences& GetWebPreferences(
+      content::RenderFrame* render_frame) const;
 
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
@@ -64,10 +67,14 @@ class RendererClientBase : public content::ContentRendererClient {
   void DidSetUserAgent(const std::string& user_agent) override;
 
  private:
+  v8::Local<v8::Value> GetWebPreferences(content::RenderFrame* render_frame,
+                                         v8::Isolate* isolate) const;
+
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif
-  bool isolated_world_;
+  mutable std::unordered_map<content::RenderFrame*, mojom::WebPreferences>
+      web_preferences_;
   std::string renderer_client_id_;
   // An increasing ID used for indentifying an V8 context in this process.
   int64_t next_context_id_ = 0;

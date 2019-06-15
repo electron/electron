@@ -1,5 +1,6 @@
 module electron.mojom;
 
+import "mojo/public/mojom/base/file_path.mojom";
 import "mojo/public/mojom/base/values.mojom";
 import "mojo/public/mojom/base/string16.mojom";
 import "ui/gfx/geometry/mojo/geometry.mojom";
@@ -24,6 +25,21 @@ interface ElectronAutofillAgent {
 struct DraggableRegion {
   bool draggable;
   gfx.mojom.Rect bounds;
+};
+
+struct WebPreferences {
+  array<mojo_base.mojom.FilePath> preload_paths;
+  string background_color;
+  bool context_isolation;
+  bool enable_plugins;
+  bool enable_remote_module;
+  bool node_integration;
+  bool node_integration_in_subframes;
+  bool native_window_open;
+  bool webview_tag;
+  bool is_hidden_page;
+  int32 guest_instance_id;
+  int32 opener_id;
 };
 
 interface ElectronBrowser {
@@ -71,6 +87,9 @@ interface ElectronBrowser {
 
   [Sync]
   DoGetZoomLevel() => (double result);
+
+  [Sync]
+  DoGetWebPreferences() => (WebPreferences result);
 
   // TODO: move these into a separate interface
   ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);

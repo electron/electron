@@ -69,7 +69,6 @@
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
-#include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
@@ -150,12 +149,6 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   g_io_thread_application_locale.Get() = locale;
 }
-
-#if defined(OS_WIN)
-const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
-#else
-const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
-#endif
 
 }  // namespace
 
@@ -538,19 +531,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    if (web_contents->GetVisibleURL().SchemeIs("devtools")) {
-      command_line->AppendSwitch(switches::kDisableRemoteModule);
-    }
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(
           command_line, IsRendererSubFrame(process_id));
-    auto preloads =
-        SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
-    if (!preloads.empty())
-      command_line->AppendSwitchNative(
-          switches::kPreloadScripts,
-          base::JoinString(preloads, kPathDelimiter));
     if (CanUseCustomSiteInstance()) {
       command_line->AppendSwitch(
           switches::kDisableElectronSiteInstanceOverrides);
