@@ -117,6 +117,10 @@ const warnAboutInsecureResources = function () {
 const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
   if (!nodeIntegration) return
 
+  if (window && window.location && window.location.hostname === 'localhost') {
+    return
+  }
+
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has Node.js integration enabled
     and attempted to load remote content from '${window.location}'. This
