@@ -101,7 +101,7 @@ const warnAboutInsecureResources = function () {
 
   const warning = `This renderer process loads resources using insecure
   protocols. This exposes users of this app to unnecessary security risks.
-  Consider loading the following resources over HTTPS or FTPS. \n ${resources}
+  Consider loading the following resources over HTTPS or FTPS. \n${resources}
   \n ${moreInformation}`
 
   console.warn('%cElectron Security Warning (Insecure Resources)',
