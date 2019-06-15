@@ -24,7 +24,7 @@ function getAbsoluteElectronExec () {
   return path.resolve(__dirname, '../../..', getElectronExec())
 }
 
-async function handleGitCall(args, gitDir) {
+async function handleGitCall (args, gitDir) {
   const details = await GitProcess.exec(args, gitDir)
   if (details.exitCode === 0) {
     return details.stdout.trim()
