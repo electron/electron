@@ -13,6 +13,16 @@
 
 namespace electron {
 
+#if !defined(OS_LINUX)
+struct ProcessMemoryInfo {
+  size_t working_set_size = 0;
+  size_t peak_working_set_size = 0;
+#if defined(OS_WIN)
+  size_t private_bytes = 0;
+#endif
+};
+#endif
+
 #if defined(OS_WIN)
 enum class ProcessIntegrityLevel {
   Unknown,
@@ -32,6 +42,10 @@ struct ProcessMetric {
                 base::ProcessHandle handle,
                 std::unique_ptr<base::ProcessMetrics> metrics);
   ~ProcessMetric();
+
+#if !defined(OS_LINUX)
+  ProcessMemoryInfo GetMemoryInfo() const;
+#endif
 
 #if defined(OS_WIN)
   ProcessIntegrityLevel GetIntegrityLevel() const;

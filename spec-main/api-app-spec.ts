@@ -966,6 +966,13 @@ describe('app module', () => {
         expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
         expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
 
+        expect(entry.memory).to.have.property('workingSetSize').that.is.greaterThan(0)
+        expect(entry.memory).to.have.property('peakWorkingSetSize').that.is.greaterThan(0)
+
+        if (process.platform === 'win32') {
+          expect(entry.memory).to.have.property('privateBytes').that.is.greaterThan(0)
+        }
+
         if (process.platform !== 'linux') {
           expect(entry.sandboxed).to.be.a('boolean')
         }
