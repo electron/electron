@@ -89,6 +89,7 @@ describe('security warnings', () => {
       expect(message).to.not.include('Node.js Integration with Remote Content')
       done()
     })
+    w.webContents.once('did-finish-load', done)
 
     w.loadURL(`http://localhost:8881/base-page-security.html`)
   })
