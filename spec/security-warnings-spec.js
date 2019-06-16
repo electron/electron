@@ -204,13 +204,13 @@ describe('security warnings', () => {
         w.webContents.openDevTools()
       })
 
-      it('should not warn about insecure resources from localhost', (done) => {
+      it('should not warn about insecure-resources.html from localhost', (done) => {
         w = new BrowserWindow({
           show: false,
           webPreferences
         })
         w.webContents.once('console-message', (e, level, message) => {
-          expect(message).to.not.include('Insecure Resources')
+          expect(message).to.not.include('insecure-resources.html')
           done()
         })
 
