@@ -515,9 +515,17 @@ describe('webContents module', () => {
 
   it('supports inserting CSS', async () => {
     w.loadURL('about:blank')
-    w.webContents.insertCSS('body { background-repeat: round; }')
+    await w.webContents.insertCSS('body { background-repeat: round; }')
     const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
     expect(result).to.equal('round')
+  })
+
+  it('supports removing inserted CSS', async () => {
+    w.loadURL('about:blank')
+    const key = await w.webContents.insertCSS('body { background-repeat: round; }')
+    await w.webContents.removeInsertedCSS(key)
+    const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+    expect(result).to.equal('repeat')
   })
 
   it('supports inspecting an element in the devtools', (done) => {

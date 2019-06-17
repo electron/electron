@@ -987,13 +987,32 @@ Returns `String` - The user agent for this web page.
 
 * `css` String
 
-Returns `Promise<void>`
+Returns `Promise<String>` - A promise that resolves with a key for the inserted
+CSS that can later be used to remove the CSS via
+`contents.removeInsertedCSS(key)`.
 
-Injects CSS into the current web page.
+Injects CSS into the current web page and returns a unique key for the inserted
+stylesheet.
 
 ```js
 contents.on('did-finish-load', function () {
   contents.insertCSS('html, body { background-color: #f00; }')
+})
+```
+
+#### `contents.removeInsertedCSS(key)`
+
+* `key` String
+
+Returns `Promise<void>` - Resolves if the removal was successful.
+
+Removes the inserted CSS from the current web page. The stylesheet is identified
+by its key, which is returned from `contents.insertCSS(css)`.
+
+```js
+contents.on('did-finish-load', async function () {
+  const key = await contents.insertCSS('html, body { background-color: #f00; }')
+  contents.removeInsertedCSS(key)
 })
 ```
 

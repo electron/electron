@@ -379,9 +379,21 @@ Returns `String` - The user agent for guest page.
 
 * `css` String
 
-Returns `Promise<void>`
+Returns `Promise<String>` - A promise that resolves with a key for the inserted
+CSS that can later be used to remove the CSS via
+`<webview>.removeInsertedCSS(key)`.
 
-Injects CSS into the guest page.
+Injects CSS into the current web page and returns a unique key for the inserted
+stylesheet.
+
+### `<webview>.removeInsertedCSS(key)`
+
+* `key` String
+
+Returns `Promise<void>` - Resolves if the removal was successful.
+
+Removes the inserted CSS from the current web page. The stylesheet is identified
+by its key, which is returned from `<webview>.insertCSS(css)`.
 
 ### `<webview>.executeJavaScript(code[, userGesture])`
 
