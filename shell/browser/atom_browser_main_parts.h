@@ -71,6 +71,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   IconManager* GetIconManager();
 
   Browser* browser() { return browser_.get(); }
+  BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
 
  protected:
   // content::BrowserMainParts:

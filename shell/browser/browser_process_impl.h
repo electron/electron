@@ -65,7 +65,6 @@ class BrowserProcessImpl : public BrowserProcess {
   extensions::EventRouterForwarder* extension_event_router_forwarder() override;
   NotificationUIManager* notification_ui_manager() override;
   NotificationPlatformBridge* notification_platform_bridge() override;
-  IOThread* io_thread() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
   WatchDogThread* watchdog_thread() override;
@@ -113,6 +112,8 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
+
+  IOThread* io_thread() const { return io_thread_.get(); }
 
  private:
 #if BUILDFLAG(ENABLE_PRINTING)

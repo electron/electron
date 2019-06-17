@@ -183,11 +183,6 @@ NotificationPlatformBridge* BrowserProcessImpl::notification_platform_bridge() {
   return nullptr;
 }
 
-IOThread* BrowserProcessImpl::io_thread() {
-  DCHECK(io_thread_.get());
-  return io_thread_.get();
-}
-
 SystemNetworkContextManager*
 BrowserProcessImpl::system_network_context_manager() {
   DCHECK(SystemNetworkContextManager::GetInstance());
