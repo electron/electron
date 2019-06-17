@@ -450,7 +450,7 @@ describe('session module', () => {
 
     it('rejects the request when the callback is called with -2', async () => {
       session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
-        expect(hostname).to.equal('127.0.0.1')
+        expect(hostname).to.equal('localhost')
         expect(certificate.issuerName).to.equal('Intermediate CA')
         expect(certificate.subjectName).to.equal('localhost')
         expect(certificate.issuer.commonName).to.equal('Intermediate CA')
@@ -464,7 +464,7 @@ describe('session module', () => {
         callback(-2)
       })
 
-      const url = `https://127.0.0.1:${server.address().port}`
+      const url = `https://localhost:${server.address().port}`
       await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/)
       expect(w.webContents.getTitle()).to.equal(url)
     })
