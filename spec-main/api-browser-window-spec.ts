@@ -721,13 +721,16 @@ describe('BrowserWindow module', () => {
     })
 
     describe('BrowserWindow.setContentSize(width, height)', () => {
-      it('sets the content size', () => {
+      it('sets the content size', (done) => {
         const size = [456, 789]
         w.setContentSize(size[0], size[1])
-        const after = w.getContentSize()
-        expect(after).to.deep.equal(size)
+        setImmediate(() => {
+          const after = w.getContentSize()
+          expect(after).to.deep.equal(size)
+          done()
+        })
       })
-      it('works for a frameless window', () => {
+      it('works for a frameless window', (done) => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
@@ -737,8 +740,11 @@ describe('BrowserWindow module', () => {
         })
         const size = [456, 789]
         w.setContentSize(size[0], size[1])
-        const after = w.getContentSize()
-        expect(after).to.deep.equal(size)
+        setImmediate(() => {
+          const after = w.getContentSize()
+          expect(after).to.deep.equal(size)
+          done()
+        })
       })
     })
 
