@@ -28,11 +28,18 @@ function initialize () {
     link.addEventListener('auxclick', openLinkExternally)
   }
 
-  document.querySelector('.electron-version').innerText = `Electron v${process.versions.electron}`
-  document.querySelector('.chrome-version').innerText = `Chromium v${process.versions.chrome}`
-  document.querySelector('.node-version').innerText = `Node v${process.versions.node}`
-  document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
-  document.querySelector('.command-example').innerText = `${electronPath} path-to-app`
+  function replaceText (selector, text) {
+    const element = document.querySelector(selector)
+    if (element) {
+      element.innerText = text
+    }
+  }
+
+  replaceText('.electron-version', `Electron v${process.versions.electron}`)
+  replaceText('.chrome-version', `Chromium v${process.versions.chrome}`)
+  replaceText('.node-version', `Node v${process.versions.node}`)
+  replaceText('.v8-version', `v8 v${process.versions.v8}`)
+  replaceText('.command-example', `${electronPath} path-to-app`)
 
   function getOcticonSvg (name) {
     const octiconPath = path.resolve(__dirname, 'node_modules', 'octicons', 'build', 'svg', `${name}.svg`)
