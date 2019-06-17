@@ -19,7 +19,7 @@ function getInfoForCurrentVersion () {
   json.version = process.versions.electron
   json.date = getDate()
 
-  var names = ['node', 'v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']
+  var names = ['node', 'v8', 'uv', 'zlib', 'boringssl', 'modules', 'chrome']
   for (var i in names) {
     var name = names[i]
     json[name] = process.versions[name]
