@@ -93,7 +93,7 @@ describe('security warnings', () => {
       }
     })
 
-    w.loadURL(`http://localhost:8881/base-page-security-load-message.html`)
+    w.loadURL(`http://localhost:8881/base-page-security-onload-message.html`)
   })
 
   const generateSpecs = (description, webPreferences) => {
