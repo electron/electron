@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Mon, 17 Jun 2019 12:59:27 -0400
+Subject: include iothread in browser process
+
+Chromium removed the IOThread class as they are no longer using it: 
+https://chromium-review.googlesource.com/c/chromium/src/+/1659012
+
+However, we need it until we are done migrating over to the network service.
+See https://github.com/electron/electron/issues/15791 for more details.
+
+diff --git a/chrome/browser/browser_process.h b/chrome/browser/browser_process.h
+index 1d5ab8c4032d0ef25925581ef7de97e5041c23c5..e6442ab0742d4332bf82e73576e80173d54a8c71 100644
+--- a/chrome/browser/browser_process.h
++++ b/chrome/browser/browser_process.h
+@@ -28,6 +28,7 @@ class DownloadStatusUpdater;
+ class GpuModeManager;
+ class IconManager;
+ class IntranetRedirectDetector;
++class IOThread;
+ class MediaFileSystemRegistry;
+ class NotificationPlatformBridge;
+ class NotificationUIManager;
+@@ -159,6 +160,16 @@ class BrowserProcess {
+   virtual NotificationUIManager* notification_ui_manager() = 0;
+   virtual NotificationPlatformBridge* notification_platform_bridge() = 0;
+ 
++  // Returns the state object for the thread that we perform I/O
++  // coordination on (network requests, communication with renderers,
++  // etc.
++  //
++  // Can be NULL close to startup and shutdown.
++  //
++  // NOTE: If you want to post a task to the IO thread, see
++  // browser_task_traits.h.
++  virtual IOThread* io_thread() = 0;
++
+   // Replacement for IOThread (And ChromeNetLog). It owns and manages the
+   // NetworkContext which will use the network service when the network service
+   // is enabled. When the network service is not enabled, its NetworkContext is
