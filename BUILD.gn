@@ -687,7 +687,7 @@ if (is_mac) {
 
     electron_version = read_file("ELECTRON_VERSION", "trim string")
     extra_substitutions = [
-      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
+      "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
     ]
 
@@ -738,7 +738,8 @@ if (is_mac) {
     sources += [ "atom/common/atom_constants.cc" ]
     include_dirs = [ "." ]
     info_plist = "atom/renderer/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
+    extra_substitutions =
+        [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
     ldflags = [
       "-rpath",
       "@executable_path/../../..",
@@ -779,7 +780,7 @@ if (is_mac) {
     libs = [ "AppKit.framework" ]
     info_plist = "atom/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
-        [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
+        [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
   }
 
   bundle_data("electron_login_helper_app") {
@@ -851,7 +852,11 @@ if (is_mac) {
       deps += [ ":electron_login_helper_app" ]
     }
     info_plist = "atom/browser/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id" ]
+    electron_version = read_file("ELECTRON_VERSION", "trim string")
+    extra_substitutions = [
+      "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id",
+      "ELECTRON_VERSION=$electron_version",
+    ]
     ldflags = [
       "-rpath",
       "@executable_path/../Frameworks",
