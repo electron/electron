@@ -40,11 +40,6 @@ namespace api {
 class Session : public mate::TrackableObject<Session>,
                 public content::DownloadManager::Observer {
  public:
-  enum class CacheAction {
-    CLEAR,
-    STATS,
-  };
-
   // Gets or creates Session from the |browser_context|.
   static mate::Handle<Session> CreateFrom(v8::Isolate* isolate,
                                           AtomBrowserContext* browser_context);
