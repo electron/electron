@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-#include "atom/common/atom_version.h"
+#include "atom/common/electron_version.h"
 #include "atom/common/platform_util.h"
 #include "base/environment.h"
 #include "base/logging.h"
@@ -50,7 +50,7 @@ std::string GetApplicationName() {
 
   // attempt #3: Electron's name
   if (ret.empty()) {
-    ret = ATOM_PRODUCT_NAME;
+    ret = ELECTRON_PRODUCT_NAME;
   }
 
   return ret;
@@ -59,9 +59,9 @@ std::string GetApplicationName() {
 std::string GetApplicationVersion() {
   std::string ret;
 
-  // ensure ATOM_PRODUCT_NAME and ATOM_PRODUCT_STRING match up
-  if (GetApplicationName() == ATOM_PRODUCT_NAME)
-    ret = ATOM_VERSION_STRING;
+  // ensure ELECTRON_PRODUCT_NAME and GetApplicationVersion match up
+  if (GetApplicationName() == ELECTRON_PRODUCT_NAME)
+    ret = ELECTRON_VERSION_STRING;
 
   // try to use the string set in app.setVersion()
   if (ret.empty())

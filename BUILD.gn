@@ -51,8 +51,8 @@ if (is_mas_build) {
 
 config("branding") {
   defines = [
-    "ATOM_PRODUCT_NAME=\"$electron_product_name\"",
-    "ATOM_PROJECT_NAME=\"$electron_project_name\"",
+    "ELECTRON_PRODUCT_NAME=\"$electron_product_name\"",
+    "ELECTRON_PROJECT_NAME=\"$electron_project_name\"",
   ]
 }
 

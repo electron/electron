@@ -96,7 +96,7 @@ device::mojom::WakeLock* PowerSaveBlocker::GetWakeLock() {
 
     wake_lock_provider->GetWakeLockWithoutContext(
         device::mojom::WakeLockType::kPreventAppSuspension,
-        device::mojom::WakeLockReason::kOther, ATOM_PRODUCT_NAME,
+        device::mojom::WakeLockReason::kOther, ELECTRON_PRODUCT_NAME,
         mojo::MakeRequest(&wake_lock_));
   }
   return wake_lock_.get();

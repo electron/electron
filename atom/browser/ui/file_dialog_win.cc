@@ -71,7 +71,7 @@ struct RunState {
 
 bool CreateDialogThread(RunState* run_state) {
   auto thread =
-      std::make_unique<base::Thread>(ATOM_PRODUCT_NAME "FileDialogThread");
+      std::make_unique<base::Thread>(ELECTRON_PRODUCT_NAME "FileDialogThread");
   thread->init_com_with_mta(false);
   if (!thread->Start())
     return false;

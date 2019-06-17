@@ -11,8 +11,8 @@
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/electron_bindings.h"
-#include "atom/common/atom_version.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
+#include "atom/common/electron_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
@@ -88,7 +88,7 @@ int NodeMain(int argc, char* argv[]) {
 
     mate::Dictionary versions;
     if (process.Get("versions", &versions)) {
-      versions.SetReadOnly(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
+      versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     }
 
     node::LoadEnvironment(env);

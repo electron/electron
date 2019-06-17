@@ -31,7 +31,7 @@ int AtomInitializeICUandStartNode(int argc, char* argv[]) {
       atom::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
-          .Append(ATOM_PRODUCT_NAME " Framework.framework"));
+          .Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
   return atom::NodeMain(argc, argv);
 }

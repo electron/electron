@@ -1,0 +1,34 @@
+// Copyright (c) 2013 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ATOM_COMMON_ELECTRON_VERSION_H_
+#define ATOM_COMMON_ELECTRON_VERSION_H_
+
+#define ELECTRON_MAJOR_VERSION 7
+#define ELECTRON_MINOR_VERSION 0
+#define ELECTRON_PATCH_VERSION 0
+// clang-format off
+#define ELECTRON_PRE_RELEASE_VERSION -nightly.20190616
+// clang-format on
+
+#ifndef ELECTRON_STRINGIFY
+#define ELECTRON_STRINGIFY(n) ELECTRON_STRINGIFY_HELPER(n)
+#define ELECTRON_STRINGIFY_HELPER(n) #n
+#endif
+
+#ifndef ELECTRON_PRE_RELEASE_VERSION
+#define ELECTRON_VERSION_STRING                                          \
+  ELECTRON_STRINGIFY(ELECTRON_MAJOR_VERSION)                             \
+  "." ELECTRON_STRINGIFY(ELECTRON_MINOR_VERSION) "." ELECTRON_STRINGIFY( \
+      ELECTRON_PATCH_VERSION)
+#else
+#define ELECTRON_VERSION_STRING                                          \
+  ELECTRON_STRINGIFY(ELECTRON_MAJOR_VERSION)                             \
+  "." ELECTRON_STRINGIFY(ELECTRON_MINOR_VERSION) "." ELECTRON_STRINGIFY( \
+      ELECTRON_PATCH_VERSION) ELECTRON_STRINGIFY(ELECTRON_PRE_RELEASE_VERSION)
+#endif
+
+#define ELECTRON_VERSION "v" ELECTRON_VERSION_STRING
+
+#endif  // ATOM_COMMON_ELECTRON_VERSION_H_

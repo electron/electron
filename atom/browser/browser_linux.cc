@@ -10,7 +10,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/application_info.h"
-#include "atom/common/atom_version.h"
+#include "atom/common/electron_version.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"

@@ -226,7 +226,7 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
   auto thread =
-      std::make_unique<base::Thread>(ATOM_PRODUCT_NAME "MessageBoxThread");
+      std::make_unique<base::Thread>(ELECTRON_PRODUCT_NAME "MessageBoxThread");
   thread->init_com_with_mta(false);
   if (!thread->Start()) {
     std::move(callback).Run(settings.cancel_id, settings.checkbox_checked);

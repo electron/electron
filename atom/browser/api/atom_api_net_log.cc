@@ -8,7 +8,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/system_network_context_manager.h"
-#include "atom/common/atom_version.h"
+#include "atom/common/electron_version.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
@@ -77,7 +77,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
 
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
-  auto channel_string = std::string("Electron " ATOM_VERSION);
+  auto channel_string = std::string("Electron " ELECTRON_VERSION);
   base::Value custom_constants = base::Value::FromUniquePtrValue(
       net_log::ChromeNetLog::GetPlatformConstants(command_line_string,
                                                   channel_string));
