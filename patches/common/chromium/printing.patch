@@ -9,7 +9,7 @@ majority of changes originally come from these PRs:
   * https://github.com/electron/electron/pull/8596
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..d124a4558affaf244ea82ab37f823db6e345d499 100644
+index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..5ec4e16b833735dccbe834e6efdc92d730a94bc3 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -26,8 +26,33 @@ index 691c476708b6bcef9f231bc990b81dd06c4c0cc4..d124a4558affaf244ea82ab37f823db6
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
+@@ -265,12 +265,19 @@ void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
+   // MessageLoopCurrent::Get()->SetNestableTasksAllowed(false);
+ 
+   // We can't use OnFailure() here since query_ does not support notifications.
+-
+   DCHECK(query_);
+-  query_->PostTask(FROM_HERE,
+-                   base::BindOnce(&PrinterQuery::GetSettingsDone,
+-                                  base::WrapRefCounted(query_),
+-                                  printing_context_->settings(), result));
++  if (result == PrintingContext::CANCEL) {
++    print_job_->PostTask(
++      FROM_HERE,
++      base::BindOnce(&NotificationCallback, base::RetainedRef(print_job_),
++                    JobEventDetails::USER_INIT_CANCELED, 0,
++                    base::RetainedRef(document_)));
++  } else {
++    query_->PostTask(FROM_HERE,
++                base::BindOnce(&PrinterQuery::GetSettingsDone,
++                                base::WrapRefCounted(query_),
++                                printing_context_->settings(), result));
++  }
+ }
+ 
+ void PrintJobWorker::GetSettingsWithUI(
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 309477ec68ed90f4d0229d92f37a6456e779c51c..84fd2dce14f3c95aba6df2170417b0612287070e 100644
+index 309477ec68ed90f4d0229d92f37a6456e779c51c..f79e3071fa54197bcf8cef3d8d3c0412cdba1049 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -121,6 +146,31 @@ index 309477ec68ed90f4d0229d92f37a6456e779c51c..84fd2dce14f3c95aba6df2170417b061
  #endif
  
    ReleasePrinterQuery();
+@@ -436,9 +441,12 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+           content::NotificationService::NoDetails());
+       break;
+     }
+-    case JobEventDetails::USER_INIT_DONE:
+-    case JobEventDetails::DEFAULT_INIT_DONE:
+     case JobEventDetails::USER_INIT_CANCELED: {
++      ReleasePrintJob();
++      break;
++    }
++    case JobEventDetails::USER_INIT_DONE:
++    case JobEventDetails::DEFAULT_INIT_DONE: {
+       NOTREACHED();
+       break;
+     }
+@@ -532,9 +540,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrinterQuery* query) {
+   DCHECK(!quit_inner_loop_);
+   DCHECK(query);
+ 
+-  // Disconnect the current |print_job_|.
+-  DisconnectFromCurrentPrintJob();
+-
+   // We can't print if there is no renderer.
+   if (!web_contents()->GetRenderViewHost() ||
+       !web_contents()->GetRenderViewHost()->IsRenderViewLive()) {
 @@ -594,6 +599,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
@@ -130,6 +180,26 @@ index 309477ec68ed90f4d0229d92f37a6456e779c51c..84fd2dce14f3c95aba6df2170417b061
 +
    if (!print_job_)
      return;
+ 
+@@ -604,7 +612,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+   }
+ 
+   registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
+-                    content::Source<PrintJob>(print_job_.get()));
++                    content::NotificationService::AllSources());
+   // Don't close the worker thread.
+   print_job_ = nullptr;
+ }
+@@ -678,6 +686,10 @@ bool PrintViewManagerBase::PrintNowInternal(
+   // Don't print / print preview interstitials or crashed tabs.
+   if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
+     return false;
++
++  registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
++                 content::NotificationService::AllSources());
++
+   return rfh->Send(message.release());
+ }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
 index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..0838041cfe45d26dca65b549452535820191ae44 100644
