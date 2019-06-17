@@ -205,7 +205,7 @@ describe('security warnings', () => {
         w.webContents.openDevTools()
       })
 
-      it('should not warn about insecure-resources.html from localhost', (done) => {
+      it('should not warn about loading insecure-resources.html from localhost', (done) => {
         w = new BrowserWindow({
           show: false,
           webPreferences
