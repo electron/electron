@@ -4,58 +4,24 @@
 
 #include "atom/common/deprecate_util.h"
 
+#include "atom/common/native_mate_converters/callback.h"
+#include "base/callback.h"
+#include "native_mate/converter.h"
+#include "native_mate/dictionary.h"
+
 namespace atom {
 
-// msg/type/code arguments match Node's process.emitWarning() method. See
-// https://nodejs.org/api/process.html#process_process_emitwarning_warning_type_code_ctor
-v8::Maybe<bool> EmitDeprecationWarning(node::Environment* env,
-                                       std::string warning_msg,
-                                       std::string warning_type = "",
-                                       std::string warning_code = "") {
-  v8::HandleScope handle_scope(env->isolate());
-  v8::Context::Scope context_scope(env->context());
+void EmitDeprecationWarning(node::Environment* env,
+                            const std::string& warning_msg,
+                            const std::string& warning_type) {
+  mate::Dictionary process(env->isolate(), env->process_object());
 
-  const char* warning = warning_msg.empty() ? nullptr : warning_msg.c_str();
-  const char* type = warning_type.empty() ? nullptr : warning_type.c_str();
-  const char* code = warning_code.empty() ? nullptr : warning_code.c_str();
+  base::RepeatingCallback<void(base::StringPiece, base::StringPiece,
+                               base::StringPiece)>
+      emit_warning;
+  process.Get("emitWarning", &emit_warning);
 
-  v8::Local<v8::Object> process = env->process_object();
-  v8::Local<v8::Value> emit_warning;
-  if (!process->Get(env->context(), env->emit_warning_string())
-           .ToLocal(&emit_warning)) {
-    return v8::Nothing<bool>();
-  }
-
-  if (!emit_warning->IsFunction())
-    return v8::Just(false);
-
-  int argc = 0;
-  v8::Local<v8::Value> args[3];  // warning, type, code
-
-  if (!v8::String::NewFromUtf8(env->isolate(), warning,
-                               v8::NewStringType::kNormal)
-           .ToLocal(&args[argc++])) {
-    return v8::Nothing<bool>();
-  }
-  if (type != nullptr) {
-    if (!v8::String::NewFromUtf8(env->isolate(), type,
-                                 v8::NewStringType::kNormal)
-             .ToLocal(&args[argc++])) {
-      return v8::Nothing<bool>();
-    }
-    if (code != nullptr && !v8::String::NewFromUtf8(env->isolate(), code,
-                                                    v8::NewStringType::kNormal)
-                                .ToLocal(&args[argc++])) {
-      return v8::Nothing<bool>();
-    }
-  }
-
-  if (emit_warning.As<v8::Function>()
-          ->Call(env->context(), process, argc, args)
-          .IsEmpty()) {
-    return v8::Nothing<bool>();
-  }
-  return v8::Just(true);
+  emit_warning.Run(warning_msg, warning_type, "");
 }
 
 }  // namespace atom
