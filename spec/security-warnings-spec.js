@@ -89,7 +89,7 @@ describe('security warnings', () => {
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
-          expect(message).include('Disabled webSecurity')
+          expect(message).to.include('Disabled webSecurity')
           done()
         })
 
@@ -99,7 +99,10 @@ describe('security warnings', () => {
       it('should warn about insecure Content-Security-Policy', (done) => {
         w = new BrowserWindow({
           show: false,
-          webPreferences
+          webPreferences: {
+            enableRemoteModule: false,
+            ...webPreferences
+          }
         })
 
         w.webContents.once('console-message', (e, level, message) => {
@@ -185,10 +188,22 @@ describe('security warnings', () => {
         w.loadURL(`http://127.0.0.1:8881/insecure-resources.html`)
         w.webContents.openDevTools()
       })
+
+      it('should warn about enabled remote module with remote content', (done) => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+        w.webContents.once('console-message', (e, level, message) => {
+          expect(message).to.include('enableRemoteModule')
+          done()
+        })
+
+        w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+      })
     })
   }
 
   generateSpecs('without sandbox', {})
   generateSpecs('with sandbox', { sandbox: true })
-  generateSpecs('with remote module disabled', { enableRemoteModule: false })
 })
