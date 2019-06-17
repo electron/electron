@@ -39,6 +39,7 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
 #include "shell/browser/api/atom_api_download_item.h"
@@ -423,6 +424,8 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
   browser_context_->SetCertVerifyProc(proc);
+  // This causes the cert verifier cache to be cleared.
+  content::GetNetworkService()->OnCertDBChanged();
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
