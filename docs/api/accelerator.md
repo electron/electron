@@ -79,3 +79,20 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
   * `numsub` - numpad `-` key
   * `nummult` - numpad `*` key
   * `numdiv` - numpad `÷` key
+
+```
+[
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+    'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+    'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20', 'F21', 'F22', 'F23', 'F24',
+    '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '{', '}', '|',
+    '?', '>', '<', '`', '-', '=', '[', ']', '\\', ';', '\'', ',', '.', '/',
+    'Plus', 'Space', 'Tab', 'Capslock', 'Numlock', 'Backspace', 'Delete', 'Insert', 'Return',
+    'Up', 'Down', 'Left', 'Right', 'Home', 'End', 'PageUp', 'PageDown', 'Escape', 'PrintScreen',
+    'VolumeUp', 'VolumeDown', 'VolumeMute', 'MediaNextTrack', 'MediaPreviousTrack', 'MediaStop', 'MediaPlayPause',
+    'numdec', 'numadd', 'numsub', 'nummult', 'numdiv',
+    'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6', 'num7', 'num8', 'num9',
+]
+```
