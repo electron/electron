@@ -10,6 +10,7 @@ const args = require('minimist')(process.argv.slice(2), {
 })
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
+const { getCurrentBranch } = require('./lib/utils.js')
 
 const GitHub = require('github')
 const path = require('path')
@@ -25,18 +26,6 @@ github.authenticate({
 function getLastBumpCommit (tag) {
   const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
   return JSON.parse(data)
-}
-
-async function getCurrentBranch (gitDir) {
-  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
-  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (branchDetails.exitCode === 0) {
-    return branchDetails.stdout.trim()
-  }
-
-  const error = GitProcess.parseError(branchDetails.stderr)
-  console.error(`${fail} couldn't get current branch: `, error)
-  process.exit(1)
 }
 
 async function revertBumpCommit (tag) {
