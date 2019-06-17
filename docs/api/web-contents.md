@@ -987,6 +987,8 @@ Returns `String` - The user agent for this web page.
 
 * `css` String
 
+Returns `Promise<void>`
+
 Injects CSS into the current web page.
 
 ```js
@@ -1065,6 +1067,8 @@ Returns `Number` - the current zoom level.
 * `minimumLevel` Number
 * `maximumLevel` Number
 
+Returns `Promise<void>`
+
 Sets the maximum and minimum pinch-to-zoom level.
 
 > **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
@@ -1077,6 +1081,8 @@ Sets the maximum and minimum pinch-to-zoom level.
 
 * `minimumLevel` Number
 * `maximumLevel` Number
+
+Returns `Promise<void>`
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
@@ -1138,6 +1144,8 @@ Executes the editing command `replaceMisspelling` in web page.
 #### `contents.insertText(text)`
 
 * `text` String
+
+Returns `Promise<void>`
 
 Inserts `text` to the focused element.
 
