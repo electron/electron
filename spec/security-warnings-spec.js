@@ -87,11 +87,13 @@ describe('security warnings', () => {
     })
     w.webContents.once('console-message', (e, level, message) => {
       expect(message).to.not.include('Node.js Integration with Remote Content')
-      done()
-    })
-    w.webContents.once('did-finish-load', () => done())
 
-    w.loadURL(`http://localhost:8881/base-page-security.html`)
+      if (message === 'loaded') {
+        done()
+      }
+    })
+
+    w.loadURL(`http://localhost:8881/base-page-security-load-message.html`)
   })
 
   const generateSpecs = (description, webPreferences) => {
