@@ -985,7 +985,6 @@ if (is_mac) {
     if (is_win) {
       sources += [
         # TODO: we should be generating our .rc files more like how chrome does
-        "shell/browser/resources/win/atom.ico",
         "shell/browser/resources/win/atom.rc",
         "shell/browser/resources/win/resource.h",
       ]
@@ -1013,6 +1012,7 @@ if (is_mac) {
       # See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
       ldflags += [ "/DEF:" + rebase_path("build/electron.def", root_build_dir) ]
       inputs = [
+        "shell/browser/resources/win/atom.ico",
         "build/electron.def",
       ]
     }
