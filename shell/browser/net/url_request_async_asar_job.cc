@@ -41,7 +41,7 @@ void BeforeStartInUI(base::WeakPtr<URLRequestAsyncAsarJob> job,
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&URLRequestAsyncAsarJob::StartAsync, job,
-                     std::move(request_options), args, error));
+                     std::move(request_options), error));
 }
 
 }  // namespace
@@ -65,7 +65,6 @@ void URLRequestAsyncAsarJob::Start() {
 }
 
 void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options,
-                                        mate::Arguments* args,
                                         int error) {
   if (error != net::OK) {
     NotifyStartError(
@@ -87,16 +86,6 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options,
         dict->FindKeyOfType("headers", base::Value::Type::DICTIONARY);
     if (headersValue) {
       for (const auto& iter : headersValue->DictItems()) {
-        // ------------ WIP
-
-        if (!iter.second.is_string()) {
-          LOG(ERROR) << "Should fail here";
-          args->ThrowError("Some error msg");
-          return;  // correct to return here?
-        }
-
-        // ------------ END OF WIP
-
         response_headers_->AddHeader(iter.first + ": " +
                                      iter.second.GetString());
       }

@@ -18,9 +18,7 @@ class URLRequestAsyncAsarJob : public asar::URLRequestAsarJob, public JsAsker {
   URLRequestAsyncAsarJob(net::URLRequest*, net::NetworkDelegate*);
   ~URLRequestAsyncAsarJob() override;
 
-  void StartAsync(std::unique_ptr<base::Value> options,
-                  mate::Arguments* args,
-                  int error);
+  void StartAsync(std::unique_ptr<base::Value> options, int error);
 
   // URLRequestJob:
   void Start() override;
