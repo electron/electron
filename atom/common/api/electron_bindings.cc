@@ -13,7 +13,7 @@
 #include "atom/browser/browser.h"
 #include "atom/common/api/locker.h"
 #include "atom/common/application_info.h"
-#include "atom/common/atom_version.h"
+#include "atom/common/electron_version.h"
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -106,7 +106,7 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
-    versions.SetReadOnly(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
+    versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
   }
 }

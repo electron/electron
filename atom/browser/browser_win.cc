@@ -12,7 +12,7 @@
 
 #include "atom/browser/ui/win/jump_list.h"
 #include "atom/common/application_info.h"
-#include "atom/common/atom_version.h"
+#include "atom/common/electron_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
@@ -338,7 +338,7 @@ std::string Browser::GetExecutableFileVersion() const {
     return base::UTF16ToUTF8(version_info->product_version());
   }
 
-  return ATOM_VERSION_STRING;
+  return ELECTRON_VERSION_STRING;
 }
 
 std::string Browser::GetExecutableFileProductName() const {

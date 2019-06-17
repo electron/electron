@@ -8,7 +8,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/common/atom_constants.h"
-#include "atom/common/atom_version.h"
+#include "atom/common/electron_version.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/map_converter.h"
 #include "base/command_line.h"
@@ -59,8 +59,8 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   upload_parameters_ = parameters;
   upload_parameters_["process_type"] =
       process_type_.empty() ? "browser" : process_type_;
-  upload_parameters_["prod"] = ATOM_PRODUCT_NAME;
-  upload_parameters_["ver"] = ATOM_VERSION_STRING;
+  upload_parameters_["prod"] = ELECTRON_PRODUCT_NAME;
+  upload_parameters_["ver"] = ELECTRON_VERSION_STRING;
 
   // Setting platform dependent parameters.
   SetUploadParameters();
