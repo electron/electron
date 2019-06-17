@@ -3,19 +3,24 @@
 # https://help.github.com/articles/about-codeowners
 # https://git-scm.com/docs/gitignore
 
-# Everything that falls through the cracks:
-* @electron/reviewers
+# Most stuff in here is owned by the Community & Safety WG...
+/.github/*                              @electron/wg-community
 
-# filename patterns
-*browser_view* @electron/browserview
-*notification* @electron/notifications
-*pdf* @electron/printing
-*printing* @electron/printing
-*updater* @electron/updater
+# ...except the Admin WG maintains this file.
+/.github/CODEOWNERS                     @electron/wg-admin
 
-# directories
-/.github/ @electron/electrocats
-/default_app/ @electron/docs
-/docs/ @electron/docs
-/docs-translations/ @electron/i18n
-/npm/ @electron/electrocats
+# Upgrades WG
+/patches/                               @electron/wg-upgrades
+
+# Releases WG
+/npm/                                   @electron/wg-releases
+/script/release-notes                   @electron/wg-releases
+/script/prepare-release.js              @electron/wg-releases
+/script/bump-version.js                 @electron/wg-releases
+/script/ci-release-build.js             @electron/wg-releases
+/script/release.js                      @electron/wg-releases
+/script/upload-to-github.js             @electron/wg-releases
+/script/release-artifact-cleanup.js     @electron/wg-releases
+/script/get-last-major-for-master.js    @electron/wg-releases
+/script/find-release.js                 @electron/wg-releases
+/script/download-circleci-artifacts.js  @electron/wg-releases
