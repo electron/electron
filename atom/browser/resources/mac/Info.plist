@@ -7,7 +7,7 @@
     <key>CFBundleExecutable</key>
     <string>${PRODUCT_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>${ATOM_BUNDLE_ID}</string>
+    <string>${ELECTRON_BUNDLE_ID}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -17,9 +17,9 @@
     <key>CFBundleIconFile</key>
     <string>electron.icns</string>
     <key>CFBundleVersion</key>
-    <string>7.0.0-nightly.20190616</string>
+    <string>${ELECTRON_VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>7.0.0-nightly.20190616</string>
+    <string>${ELECTRON_VERSION}</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>LSMinimumSystemVersion</key>

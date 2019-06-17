@@ -56,7 +56,6 @@ async function main () {
   // update all version-related files
   await Promise.all([
     updateVersion(version),
-    updateInfoPlist(version),
     updatePackageJSON(version),
     updateVersionH(components),
     updateWinRC(components)
@@ -117,18 +116,6 @@ async function updatePackageJSON (version) {
     file.version = version
     await writeFile(filePath, JSON.stringify(file, null, 2))
   })
-}
-
-// update CFBundle version information and overwrite pre-existing file
-// TODO(codebytere): provide these version fields at GN build time
-async function updateInfoPlist (version) {
-  const filePath = path.resolve(__dirname, '..', 'atom', 'browser', 'resources', 'mac', 'Info.plist')
-  const file = plist.parse(await readFile(filePath, { encoding: 'utf8' }))
-
-  file.CFBundleVersion = version
-  file.CFBundleShortVersionString = version
-
-  await writeFile(filePath, plist.build(file))
 }
 
 // push bump commit to release branch
