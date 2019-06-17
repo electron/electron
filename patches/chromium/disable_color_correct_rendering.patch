@@ -203,7 +203,7 @@ index 3b93c6b3a41d0dd5174b2acb15fe4f3d1714e4d4..a8de22d3f29d5e290af1c5612e666b45
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 136a5b9400f15fe818425b423c27747331078faf..286c7fb0f93cfe7b084d1ddbdeb310eacd046d99 100644
+index b1b5971a4cf4bb024b2b17cc5711025fe497e542..9b7ceaeaba29a93974b44d0402904b07837e3f65 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -191,6 +191,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -235,10 +235,10 @@ index 13f8f34fbaa38f19f1d70d3f44a94600979c9e74..f3f8b61c2579ec703cdb1f617c2b82dd
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 73feffee2273672e1686261b801a25e5068055c0..861af090a299c01c86ba0a0c51c9a06762c523af 100644
+index 32e2502465a0320a5f2cb36b0aa280415051ad7b..54daa17e4ef524f97f43eb7a2fe5ddfda153a52e 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2822,6 +2822,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2832,6 +2832,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
