@@ -196,12 +196,11 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text)
     })
 
-    // TODO: fake test
-    // it.only('fails when sending string', async () => {
-    //   const handler = (request, callback) => callback(text)
-    //   await registerBufferProtocol(protocolName, handler)
-    //   expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
-    // })
+    it('fails when sending string', async () => {
+      const handler = (request, callback) => callback(text)
+      await registerBufferProtocol(protocolName, handler)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
+    })
   })
 
   describe('protocol.registerFileProtocol', () => {
