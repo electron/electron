@@ -577,7 +577,7 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          node script/yarn install
+          node script/yarn install --frozen-lockfile
           node script/yarn lint
 
 steps-checkout: &steps-checkout
