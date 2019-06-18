@@ -40,12 +40,9 @@ void BeforeStartInUI(base::WeakPtr<URLRequestAsyncAsarJob> job,
 
   // sanitize custom headers
   if (request_options && request_options->is_dict()) {
-    base::DictionaryValue* dict =
-        static_cast<base::DictionaryValue*>(request_options.get());
-    base::Value* headersValue =
-        dict->FindKeyOfType("headers", base::Value::Type::DICTIONARY);
-    if (headersValue) {
-      for (const auto& iter : headersValue->DictItems()) {
+    base::Value* headersDict = request_options->FindDictKey("headers");
+    if (headersDict) {
+      for (const auto& iter : headersDict->DictItems()) {
         if (!iter.second.is_string()) {
           args->ThrowError("Header value has to be a string");
           return;
