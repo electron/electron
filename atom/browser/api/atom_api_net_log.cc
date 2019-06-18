@@ -8,7 +8,6 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/system_network_context_manager.h"
-#include "atom/common/electron_version.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
@@ -16,6 +15,7 @@
 #include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
+#include "electron/electron_version.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"

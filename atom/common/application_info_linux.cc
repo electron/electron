@@ -10,11 +10,11 @@
 #include <memory>
 #include <string>
 
-#include "atom/common/electron_version.h"
 #include "atom/common/platform_util.h"
 #include "base/environment.h"
 #include "base/logging.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "electron/electron_version.h"
 
 namespace {
 

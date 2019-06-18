@@ -5,11 +5,11 @@
 #include "atom/common/application_info.h"
 
 #include "atom/browser/browser.h"
-#include "atom/common/electron_version.h"
 #include "base/no_destructor.h"
 #include "base/strings/stringprintf.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/common/user_agent.h"
+#include "electron/electron_version.h"
 
 namespace atom {
 
