@@ -102,7 +102,7 @@ const warnAboutInsecureResources = function () {
   const warning = `This renderer process loads resources using insecure
   protocols. This exposes users of this app to unnecessary security risks.
   Consider loading the following resources over HTTPS or FTPS. \n${resources}
-  \n ${moreInformation}`
+  \n${moreInformation}`
 
   console.warn('%cElectron Security Warning (Insecure Resources)',
     'font-weight: bold;', warning)
@@ -120,7 +120,7 @@ const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has Node.js integration enabled
     and attempted to load remote content from '${window.location}'. This
-    exposes users of this app to severe security risks.\n ${moreInformation}`
+    exposes users of this app to severe security risks.\n${moreInformation}`
 
     console.warn('%cElectron Security Warning (Node.js Integration with Remote Content)',
       'font-weight: bold;', warning)
@@ -142,7 +142,7 @@ const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPref
   if (!webPreferences || webPreferences.webSecurity !== false) return
 
   const warning = `This renderer process has "webSecurity" disabled. This
-  exposes users of this app to severe security risks.\n ${moreInformation}`
+  exposes users of this app to severe security risks.\n${moreInformation}`
 
   console.warn('%cElectron Security Warning (Disabled webSecurity)',
     'font-weight: bold;', warning)
@@ -160,7 +160,7 @@ const warnAboutInsecureCSP = function () {
 
     const warning = `This renderer process has either no Content Security
     Policy set or a policy with "unsafe-eval" enabled. This exposes users of
-    this app to unnecessary security risks.\n ${moreInformation}`
+    this app to unnecessary security risks.\n${moreInformation}`
 
     console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
       'font-weight: bold;', warning)
@@ -195,7 +195,7 @@ const warnAboutExperimentalFeatures = function (webPreferences?: Electron.WebPre
 
   const warning = `This renderer process has "experimentalFeatures" enabled.
   This exposes users of this app to some security risk. If you do not need
-  this feature, you should disable it.\n ${moreInformation}`
+  this feature, you should disable it.\n${moreInformation}`
 
   console.warn('%cElectron Security Warning (experimentalFeatures)',
     'font-weight: bold;', warning)
@@ -215,7 +215,7 @@ const warnAboutEnableBlinkFeatures = function (webPreferences?: Electron.WebPref
 
   const warning = `This renderer process has additional "enableBlinkFeatures"
   enabled. This exposes users of this app to some security risk. If you do not
-  need this feature, you should disable it.\n ${moreInformation}`
+  need this feature, you should disable it.\n${moreInformation}`
 
   console.warn('%cElectron Security Warning (enableBlinkFeatures)',
     'font-weight: bold;', warning)
