@@ -291,7 +291,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                  EXCLUDE_FAILURE_TO_STORE);
     return;
   }
-  if (url.is_empty()) {
+  if (!url.is_valid()) {
     std::move(completion_callback)
         .Run(net::CanonicalCookie::CookieInclusionStatus::
                  EXCLUDE_INVALID_DOMAIN);
