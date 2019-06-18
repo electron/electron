@@ -69,7 +69,7 @@ steps:
 
 - bash: |
    cd src
-   ./out/Default/electron electron/spec --ci --enable-logging -g inspector
+   ./out/Default/electron electron/spec --ci --enable-logging -g "inspector does does"
   displayName: 'Just run inspector tests'
   timeoutInMinutes: 10
   env:

@@ -2,6 +2,7 @@ resources:
   containers:
   - container: arm32v7-test-container
     image: electronbuilds/arm32v7:0.0.2
+    options: --shm-size 128m
 
 jobs:
 - job: Test_Arm32v7
