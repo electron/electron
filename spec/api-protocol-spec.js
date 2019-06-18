@@ -235,6 +235,19 @@ describe('protocol module', () => {
       expect(r.headers).to.include('x-great-header: sogreat')
     })
 
+    it('throws an error when custom headers are invalid', (done) => {
+      const handler = (request, callback) => {
+        expect(() => callback({
+          path: filePath,
+          headers: { 'X-Great-Header': 42 }
+        })).to.throw()
+        done()
+      }
+      registerFileProtocol(protocolName, handler).then(() => {
+        ajax(protocolName + '://fake-host')
+      })
+    })
+
     it('sends object as response', async () => {
       const handler = (request, callback) => callback({ path: filePath })
       await registerFileProtocol(protocolName, handler)
