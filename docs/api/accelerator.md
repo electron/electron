@@ -89,7 +89,7 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
     'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20', 'F21', 'F22', 'F23', 'F24',
     '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '{', '}', '|',
     '?', '>', '<', '`', '-', '=', '[', ']', '\\', ';', '\'', ',', '.', '/',
-    'Plus', 'Space', 'Tab', 'Capslock', 'Numlock', 'Backspace', 'Delete', 'Insert', 'Return',
+    'Plus', 'Space', 'Tab', 'Capslock', 'Numlock', 'Backspace', 'Delete', 'Insert', 'Return', 'Scrolllock',
     'Up', 'Down', 'Left', 'Right', 'Home', 'End', 'PageUp', 'PageDown', 'Escape', 'PrintScreen',
     'VolumeUp', 'VolumeDown', 'VolumeMute', 'MediaNextTrack', 'MediaPreviousTrack', 'MediaStop', 'MediaPlayPause',
     'numdec', 'numadd', 'numsub', 'nummult', 'numdiv',
