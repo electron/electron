@@ -259,7 +259,7 @@ const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electr
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has "enableRemoteModule" enabled
     and attempted to load remote content from '${window.location}'. This
-    exposes users of this app to unnecessary security risks.\n ${moreInformation}`
+    exposes users of this app to unnecessary security risks.\n${moreInformation}`
 
     console.warn('%cElectron Security Warning (enableRemoteModule)',
       'font-weight: bold;', warning)
