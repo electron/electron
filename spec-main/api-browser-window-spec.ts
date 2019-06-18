@@ -724,11 +724,11 @@ describe('BrowserWindow module', () => {
       it('sets the content size', (done) => {
         const size = [456, 789]
         w.setContentSize(size[0], size[1])
-        setImmediate(() => {
+        setTimeout(() => {
           const after = w.getContentSize()
           expect(after).to.deep.equal(size)
           done()
-        })
+        }, 1000)
       })
       it('works for a frameless window', (done) => {
         w.destroy()
@@ -740,11 +740,11 @@ describe('BrowserWindow module', () => {
         })
         const size = [456, 789]
         w.setContentSize(size[0], size[1])
-        setImmediate(() => {
+        setTimeout(() => {
           const after = w.getContentSize()
           expect(after).to.deep.equal(size)
           done()
-        })
+        }, 1000)
       })
     })
 
