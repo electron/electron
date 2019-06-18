@@ -511,6 +511,8 @@ filenames = {
     "atom/common/key_weak_map.h",
     "atom/common/keyboard_util.cc",
     "atom/common/keyboard_util.h",
+    "atom/common/deprecate_util.cc",
+    "atom/common/deprecate_util.h",
     "atom/common/mouse_util.cc",
     "atom/common/mouse_util.h",
     "atom/common/mac/main_application_bundle.h",
