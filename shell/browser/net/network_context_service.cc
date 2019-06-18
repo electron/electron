@@ -4,14 +4,8 @@
 
 #include "shell/browser/net/network_context_service.h"
 
-#include <memory>
-#include <string>
-#include <utility>
-
-#include "base/bind_helpers.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "services/network/network_service.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/browser_process_impl.h"
