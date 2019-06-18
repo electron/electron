@@ -233,6 +233,22 @@ describe('security warnings', () => {
 
         w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
       })
+
+      it('should not warn about enabled remote module with remote content from localhost', (done) => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+        w.webContents.once('console-message', (e, level, message) => {
+          expect(message).to.not.include('enableRemoteModule')
+
+          if (message === 'loaded') {
+            done()
+          }
+        })
+
+        w.loadURL(`http://localhost:8881/base-page-security-onload-message.html`)
+      })
     })
   }
 

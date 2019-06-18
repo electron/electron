@@ -261,6 +261,10 @@ const warnAboutAllowedPopups = function () {
 const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
   if (!webPreferences || !webPreferences.enableRemoteModule) return
 
+  if (window && window.location && window.location.hostname === 'localhost') {
+    return
+  }
+
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has "enableRemoteModule" enabled
     and attempted to load remote content from '${window.location}'. This
