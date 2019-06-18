@@ -1,6 +1,10 @@
+const { GitProcess } = require('dugite')
+const path = require('path')
+
 const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
-const path = require('path')
+require('colors')
+const fail = '\u2717'.red
 
 function getElectronExec () {
   switch (process.platform) {
@@ -19,7 +23,34 @@ function getAbsoluteElectronExec () {
   return path.resolve(__dirname, '../../..', getElectronExec())
 }
 
+async function handleGitCall (args, gitDir) {
+  const details = await GitProcess.exec(args, gitDir)
+  if (details.exitCode === 0) {
+    const output = details.stdout.replace(/^\*|\s+|\s+$/, '')
+    return output.trim()
+  } else {
+    const error = GitProcess.parseError(details.stderr)
+    console.log(`${fail} couldn't parse git process call: `, error)
+    process.exit(1)
+  }
+}
+
+async function getCurrentBranch (gitDir) {
+  let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)
+  if (branch !== 'master' && !branch.match(/[0-9]+-[0-9]+-x/)) {
+    const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir)
+    const branches = (await handleGitCall(['branch', '--contains', lastCommit], gitDir)).split('\n')
+    branch = branches.filter(b => b === 'master' || b.match(/[0-9]+-[0-9]+-x/))[0]
+    if (!branch) {
+      console.log(`${fail} no release branch exists for this ref`)
+      process.exit(1)
+    }
+  }
+  return branch
+}
+
 module.exports = {
+  getCurrentBranch,
   getElectronExec,
   getAbsoluteElectronExec,
   OUT_DIR

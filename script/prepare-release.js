@@ -14,6 +14,7 @@ const pass = '\u2713'.green
 const path = require('path')
 const readline = require('readline')
 const releaseNotesGenerator = require('./release-notes/index.js')
+const { getCurrentBranch } = require('./lib/utils.js')
 const versionType = args._[0]
 const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 
@@ -50,23 +51,6 @@ async function getNewVersion (dryRun) {
   } catch (err) {
     console.log(`${fail} Could not bump version, error was:`, err)
     throw err
-  }
-}
-
-async function getCurrentBranch (gitDir) {
-  console.log(`Determining current git branch`)
-  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
-  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (branchDetails.exitCode === 0) {
-    const currentBranch = branchDetails.stdout.trim()
-    console.log(`${pass} Successfully determined current git branch is ` +
-      `${currentBranch}`)
-    return currentBranch
-  } else {
-    const error = GitProcess.parseError(branchDetails.stderr)
-    console.log(`${fail} Could not get details for the current branch,
-      error was ${branchDetails.stderr}`, error)
-    process.exit(1)
   }
 }
 
