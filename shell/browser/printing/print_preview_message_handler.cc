@@ -113,7 +113,7 @@ void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  if (status != printing::mojom::PdfCompositor::Status::SUCCESS) {
+  if (status != printing::mojom::PdfCompositor::Status::kSuccess) {
     DLOG(ERROR) << "Compositing pdf failed with error " << status;
     RejectPromise(ids.request_id);
     return;
