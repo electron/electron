@@ -31,6 +31,7 @@
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "ipc/ipc_buildflags.h"
+#include "sandbox/linux/services/credentials.h"
 #include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -286,6 +287,16 @@ AtomMainDelegate::CreateContentRendererClient() {
       !base::CommandLine::ForCurrentProcess()->HasSwitch(
           service_manager::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
+#if defined(OS_LINUX)
+    uid_t uid = 0;
+    gid_t gid = 0;
+    if (!sandbox::Credentials::GetRESIds(&uid, &gid) || uid == 0) {
+      LOG(FATAL) << "Running as root without --"
+                 << service_manager::switches::kNoSandbox
+                 << " is not supported. See https://crbug.com/638180.";
+      exit(EXIT_FAILURE);
+    }
+#endif
   } else {
     renderer_client_.reset(new AtomRendererClient);
   }
