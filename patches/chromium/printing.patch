@@ -46,7 +46,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356
  
  void PrintJobWorker::GetSettingsWithUI(int document_page_count,
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 0c779b5f2c26b165f3094742f64f34e2a94570fb..af1bd18d21376f2bd6cac5e3fb661def5afa6f0e 100644
+index 9cffbb0fee47f934d3bc8c4ab46a7929b176b236..e2059813299f4c7bcc631688fdb85ff083e170cd 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@

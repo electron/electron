@@ -98,7 +98,7 @@ index d9a9730a78b9aec833c64282ca868dbba5594d82..d98426e9f78931bd43061ec994559d59
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d51b7cff8f55c9020a59927ce58c7f248760706d..74af9ca9a3428306d733128f08c0bd8e9ac274f7 100644
+index 24b8293729a107dfc8a364b2baf17573ebc091a5..0477ff4edfd1b79fb31f06c571f483924aaf044b 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -117,6 +117,8 @@ viz_component("service") {
@@ -111,10 +111,10 @@ index d51b7cff8f55c9020a59927ce58c7f248760706d..74af9ca9a3428306d733128f08c0bd8e
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index c01f3bcea39c64dc50fa4f1be52538e2ad8b6643..e4b713e1a2c89b2e9c161f7e061086ffbf10b79a 100644
+index a7915a8517aae29ec07b525c008bd324eb2381ca..52f118f7989048535f2f0bfaa767cba3cf7e35f9 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -20,6 +20,7 @@
+@@ -21,6 +21,7 @@
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl_non_ddl.h"
@@ -122,7 +122,7 @@ index c01f3bcea39c64dc50fa4f1be52538e2ad8b6643..e4b713e1a2c89b2e9c161f7e061086ff
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -249,6 +250,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -229,6 +230,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  

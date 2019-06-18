@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 7513200e928e2d14c888dda1e8f83be9f6e1d3bc..214c478616d52a17c4346ec25628ee6ff6e555fa 100644
+index 40ea97c8e03b94f457b5ae64c50cf4904b3e1eab..188c190f3230e7fcde6b6e92518a1ae282f7df76 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3728,6 +3728,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3727,6 +3727,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,7 +17,7 @@ index 7513200e928e2d14c888dda1e8f83be9f6e1d3bc..214c478616d52a17c4346ec25628ee6f
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index e8ad0f81004cb14ef48aa479fb4ce4f2cea4ac30..d94be732bde689ad40980ea07cb2414e55e2f18f 100644
+index 3f78b3f387509d57295f8fde1588c4d2d3574b94..a8c5b4373eb0e01f901e2a2a9cd1091f3d4fa4a7 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -299,6 +299,10 @@ struct CreateNewWindowParams {

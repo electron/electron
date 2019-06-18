@@ -8,7 +8,7 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index d514c10160dd12f225c42e927977660cacbc9c43..49345f1d4d75c8b96efe485202d89774a05b6e34 100644
+index d05076cab4eb218a1deb575f6e03fce8bf2721ae..85526819991bc54215f6d15cfe5ad14c4a30fa8b 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
 @@ -671,6 +671,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(

@@ -56,7 +56,6 @@ command-ismediakey.patch
 tts.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
-content_allow_embedder_to_prevent_locking_scheme_registry.patch
 support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
 autofill_size_calculation.patch
