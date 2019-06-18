@@ -159,12 +159,12 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text)
     })
 
-    // TODO: fake test
-    // it.only('fails when sending object other than string', async () => {
-    //   const handler = (request, callback) => callback(new Date())
-    //   await registerStringProtocol(protocolName, handler)
-    //   expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
-    // })
+    it('fails when sending object other than string', async () => {
+      const notAString = () => {}
+      const handler = (request, callback) => callback(notAString)
+      await registerStringProtocol(protocolName, handler)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
+    })
   })
 
   describe('protocol.registerBufferProtocol', () => {
