@@ -2,7 +2,6 @@
 
 const { GitProcess } = require('dugite')
 const utils = require('./lib/version-utils')
-const plist = require('plist')
 const fs = require('fs')
 const semver = require('semver')
 const path = require('path')

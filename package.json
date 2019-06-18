@@ -41,7 +41,6 @@
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
     "octicons": "^7.3.0",
-    "plist": "^3.0.1",
     "pre-flight": "^1.1.0",
     "remark-cli": "^4.0.0",
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
