@@ -393,6 +393,8 @@ describe('node feature', () => {
               done()
             }
           }
+        } else if (process.arch.indexOf('arm') === 0) {
+          console.log('output currently is: ', output)
         }
       }
       child.stderr.on('data', dataListener)
