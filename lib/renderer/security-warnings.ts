@@ -75,7 +75,7 @@ const isUnsafeEvalEnabled = function () {
 }
 
 const moreInformation = `\nFor more information and help, consult
-https://electronjs.org/docs/tutorial/security.\n This warning will not show up
+https://electronjs.org/docs/tutorial/security.\nThis warning will not show up
 once the app is packaged.`
 
 /**
