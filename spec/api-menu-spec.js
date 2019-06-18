@@ -863,7 +863,7 @@ describe('Menu module', () => {
               label: 'Test Item',
               accelerator: 'T',
               click: (a, b, e) => {
-                event = e // save event to variable
+                event = e
               },
               id: 'test'
             }
@@ -873,7 +873,6 @@ describe('Menu module', () => {
       Menu.setApplicationMenu(menu)
       expect(Menu.getApplicationMenu()).to.not.be.null()
 
-      // check if event corresponds to the accelerator pressed
       await sendRobotjsKey('t')
       expect(event).to.deep.equal({
         shiftKey: false,
