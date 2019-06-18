@@ -112,7 +112,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       await registerBufferProtocol(protocolName, emptyHandler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('does not crash when callback is called in next tick', async () => {
@@ -159,11 +159,12 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text)
     })
 
-    it('fails when sending object other than string', async () => {
-      const handler = (request, callback) => callback(new Date())
-      await registerStringProtocol(protocolName, handler)
-      expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
-    })
+    // TODO: fake test
+    // it.only('fails when sending object other than string', async () => {
+    //   const handler = (request, callback) => callback(new Date())
+    //   await registerStringProtocol(protocolName, handler)
+    //   expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
+    // })
   })
 
   describe('protocol.registerBufferProtocol', () => {
@@ -195,11 +196,12 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text)
     })
 
-    it('fails when sending string', async () => {
-      const handler = (request, callback) => callback(text)
-      await registerBufferProtocol(protocolName, handler)
-      expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
-    })
+    // TODO: fake test
+    // it.only('fails when sending string', async () => {
+    //   const handler = (request, callback) => callback(text)
+    //   await registerBufferProtocol(protocolName, handler)
+    //   expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
+    // })
   })
 
   describe('protocol.registerFileProtocol', () => {
@@ -252,13 +254,13 @@ describe('protocol module', () => {
       const fakeFilePath = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
       const handler = (request, callback) => callback(fakeFilePath)
       await registerFileProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('fails when sending unsupported content', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerFileProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
   })
 
@@ -282,13 +284,13 @@ describe('protocol module', () => {
     it('fails when sending invalid url', async () => {
       const handler = (request, callback) => callback({ url: 'url' })
       await registerHttpProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('fails when sending unsupported content', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerHttpProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('works when target URL redirects', async () => {
@@ -478,7 +480,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       await interceptStringProtocol('http', emptyHandler)
-      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
   })
 
