@@ -345,7 +345,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (model) {
     NSEvent* event = [NSApp currentEvent];
     model->ActivatedAt(modelIndex,
-                       ui::EventFlagsFromModifiers([event modifierFlags]));
+                       ui::EventFlagsFromNSEventWithModifiers(event, [event modifierFlags]));
   }
 }
 

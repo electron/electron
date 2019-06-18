@@ -77,12 +77,14 @@ v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
+  int click_flags = (ui::EF_RIGHT_MOUSE_BUTTON | ui::EF_LEFT_MOUSE_BUTTON | ui::EF_MIDDLE_MOUSE_BUTTON);
+  int mask = flags & click_flags;
   mate::Dictionary obj = mate::Dictionary::CreateEmpty(isolate);
   obj.Set("shiftKey", static_cast<bool>(flags & ui::EF_SHIFT_DOWN));
   obj.Set("ctrlKey", static_cast<bool>(flags & ui::EF_CONTROL_DOWN));
   obj.Set("altKey", static_cast<bool>(flags & ui::EF_ALT_DOWN));
   obj.Set("metaKey", static_cast<bool>(flags & ui::EF_COMMAND_DOWN));
-  obj.Set("triggeredByAccelerator", static_cast<bool>(flags));
+  obj.Set("triggeredByAccelerator", !static_cast<bool>(mask));
   return obj.GetHandle();
 }
 
