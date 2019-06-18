@@ -288,6 +288,10 @@ AtomMainDelegate::CreateContentRendererClient() {
           service_manager::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
 #if defined(OS_LINUX)
+    // We want to throw an error non-silently even when logging is disabled,
+    // so replicate the business logic from Chromium but use LOG(FATAL) to
+    // throw at the Electron level
+    // https://cs.chromium.org/chromium/src/services/service_manager/zygote/host/zygote_host_impl_linux.cc?l=86
     uid_t uid = 0;
     gid_t gid = 0;
     if (!sandbox::Credentials::GetRESIds(&uid, &gid) || uid == 0) {
