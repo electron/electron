@@ -854,7 +854,6 @@ describe('Menu module', () => {
     }
 
     testFn('menu accelerators perform the specified action', async () => {
-      let event
       const menu = Menu.buildFromTemplate([
         {
           label: 'Test',
@@ -862,8 +861,14 @@ describe('Menu module', () => {
             {
               label: 'Test Item',
               accelerator: 'T',
-              click: (a, b, e) => {
-                event = e
+              click: (a, b, event) => {
+                expect(event).to.deep.equal({
+                  shiftKey: false,
+                  ctrlKey: false,
+                  altKey: false,
+                  metaKey: false,
+                  triggeredByAccelerator: true
+                })
               },
               id: 'test'
             }
@@ -874,13 +879,6 @@ describe('Menu module', () => {
       expect(Menu.getApplicationMenu()).to.not.be.null()
 
       await sendRobotjsKey('t')
-      expect(event).to.deep.equal({
-        shiftKey: false,
-        ctrlKey: false,
-        altKey: false,
-        metaKey: false,
-        triggeredByAccelerator: true
-      })
     })
   })
 })
