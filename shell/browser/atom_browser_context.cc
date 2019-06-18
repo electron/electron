@@ -329,9 +329,6 @@ ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
   }
   return resolve_proxy_helper_.get();
 }
-void AtomBrowserContext::SetCertVerifyProc(CertVerifyProc proc) {
-  cert_verify_proc_ = std::move(proc);
-}
 
 // static
 scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(

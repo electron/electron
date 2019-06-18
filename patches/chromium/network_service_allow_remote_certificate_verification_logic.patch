@@ -5,19 +5,22 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ba7bc6c7f8cd80a1f07e134a485d9516151f737f..f9f2560cc7cfd21508bd99464665a754639a13f5 100644
+index 5d871fc08218b71c93141963db66465f775b1bc2..9e04684bede95aaa3a32c4b3aa280ff99d914a4c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -201,6 +201,71 @@ class WrappedTestingCertVerifier : public net::CertVerifier {
-   }
- };
+@@ -310,6 +310,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
+ 
+ }  // namespace
  
 +class RemoteCertVerifier : public net::CertVerifier {
 + public:
-+  RemoteCertVerifier(std::unique_ptr<net::CertVerifier> upstream, mojom::CertVerifierClientPtrInfo client_info): upstream_(std::move(upstream)) {
-+    client_.Bind(std::move(client_info));
++  RemoteCertVerifier(std::unique_ptr<net::CertVerifier> upstream): upstream_(std::move(upstream)) {
 +  }
 +  ~RemoteCertVerifier() override = default;
++
++  void Bind(mojom::CertVerifierClientPtr client_info) {
++    client_ = std::move(client_info);
++  }
 +
 +  // CertVerifier implementation
 +  int Verify(const RequestParams& params,
@@ -45,11 +48,15 @@ index ba7bc6c7f8cd80a1f07e134a485d9516151f737f..f9f2560cc7cfd21508bd99464665a754
 +  }
 +
 +  void OnRequestFinished(const RequestParams& params, net::CompletionOnceCallback callback, net::CertVerifyResult* verify_result, int error) {
-+    client_->Verify(error, *verify_result, params.certificate(),
-+        params.hostname(), params.flags(), params.ocsp_response(),
-+        base::BindOnce(&RemoteCertVerifier::OnRemoteResponse,
-+          base::Unretained(this), params, verify_result, error,
-+          std::move(callback)));
++    if (client_) {
++      client_->Verify(error, *verify_result, params.certificate(),
++          params.hostname(), params.flags(), params.ocsp_response(),
++          base::BindOnce(&RemoteCertVerifier::OnRemoteResponse,
++            base::Unretained(this), params, verify_result, error,
++            std::move(callback)));
++    } else {
++      std::move(callback).Run(error);
++    }
 +  }
 +
 +  void OnRemoteResponse(
@@ -60,13 +67,10 @@ index ba7bc6c7f8cd80a1f07e134a485d9516151f737f..f9f2560cc7cfd21508bd99464665a754
 +      int error2,
 +      const net::CertVerifyResult& verify_result2) {
 +    if (error2 == net::ERR_ABORTED) {
-+      LOG(INFO) << "a";
 +      // use the default
 +      std::move(callback).Run(error);
 +    } else {
-+      LOG(INFO) << "b";
 +      // use the override
-+      //*verify_result = verify_result2;
 +      verify_result->Reset();
 +      verify_result->verified_cert = verify_result2.verified_cert;
 +      std::move(callback).Run(error2);
@@ -77,10 +81,23 @@ index ba7bc6c7f8cd80a1f07e134a485d9516151f737f..f9f2560cc7cfd21508bd99464665a754
 +  mojom::CertVerifierClientPtr client_;
 +};
 +
- // Predicate function to determine if the given |domain| matches the
- // |filter_type| and |filter_domains| from a |mojom::ClearDataFilter|.
- bool MatchesDomainFilter(mojom::ClearDataFilter_Type filter_type,
-@@ -2130,8 +2195,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+ constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
+ constexpr bool NetworkContext::enable_resource_scheduler_;
+ 
+@@ -668,6 +737,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
+   client_ = std::move(client);
+ }
+ 
++void NetworkContext::SetCertVerifierClient(mojom::CertVerifierClientPtr client) {
++  if (remote_cert_verifier_) {
++    remote_cert_verifier_->Bind(std::move(client));
++  }
++}
++
+ void NetworkContext::CreateURLLoaderFactory(
+     mojom::URLLoaderFactoryRequest request,
+     mojom::URLLoaderFactoryParamsPtr params) {
+@@ -2134,8 +2209,13 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
        cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
    }
  
@@ -89,19 +106,47 @@ index ba7bc6c7f8cd80a1f07e134a485d9516151f737f..f9f2560cc7cfd21508bd99464665a754
 +  cert_verifier = IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 +      *command_line, nullptr, std::move(cert_verifier));
 +
-+  if (params_->cert_verifier_client) {
-+    cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier), std::move(params_->cert_verifier_client));
-+  }
++  cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier));
++  remote_cert_verifier_ = static_cast<RemoteCertVerifier*>(cert_verifier.get());
 +
 +  builder.SetCertVerifier(std::move(cert_verifier));
  
    std::unique_ptr<net::NetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(this);
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index 0f9e0fe5922c228d96ba7d8668a88d5d31c516e9..9552cfa88d2a45aa6bff24c3e89d080c8aad98a0 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -74,6 +74,7 @@ class DomainReliabilityMonitor;
+ 
+ namespace network {
+ class CertVerifierWithTrustAnchors;
++class RemoteCertVerifier;
+ class CookieManager;
+ class ExpectCTReporter;
+ class HostResolver;
+@@ -176,6 +177,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+ 
+   // mojom::NetworkContext implementation:
+   void SetClient(mojom::NetworkContextClientPtr client) override;
++  void SetCertVerifierClient(mojom::CertVerifierClientPtr client) override;
+   void CreateURLLoaderFactory(mojom::URLLoaderFactoryRequest request,
+                               mojom::URLLoaderFactoryParamsPtr params) override;
+   void ResetURLLoaderFactories() override;
+@@ -561,6 +563,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
+ #endif
+ 
++  RemoteCertVerifier* remote_cert_verifier_ = nullptr;
++
+   // CertNetFetcher used by the context's CertVerifier. May be nullptr if
+   // CertNetFetcher is not used by the current platform.
+   scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b7eefc6346e766c34fe039f2e026aca9d42f60ee..bf782a7cb14ed91b677d259e9024171f47c1f604 100644
+index 69885a8bc0e2219ed6c10e684db0ad7d5cd6b87e..bf0750e75e357275f5a569cc8e0680b606b544f6 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -158,6 +158,17 @@ interface TrustedURLLoaderHeaderClient {
+@@ -160,6 +160,17 @@ interface TrustedURLLoaderHeaderClient {
    OnLoaderCreated(int32 request_id, TrustedHeaderClient& header_client);
  };
  
@@ -119,12 +164,13 @@ index b7eefc6346e766c34fe039f2e026aca9d42f60ee..bf782a7cb14ed91b677d259e9024171f
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -287,6 +298,8 @@ struct NetworkContextParams {
-   // settings.
-   ProxyErrorClient? proxy_error_client;
+@@ -541,6 +552,9 @@ interface NetworkContext {
+   // Sets a client for this network context.
+   SetClient(NetworkContextClient client);
  
-+  CertVerifierClient? cert_verifier_client;
++  // Sets a certificate verifier client for this network context.
++  SetCertVerifierClient(CertVerifierClient? client);
 +
-   // When PAC quick checking is enabled, DNS lookups for PAC script's host are
-   // timed out aggressively. This prevents hanging all network request on DNS
-   // lookups that are slow or are blockholed, at the cost of making it more
+   // Creates a new URLLoaderFactory with the given |params|.
+   CreateURLLoaderFactory(URLLoaderFactory& url_loader_factory,
+                          URLLoaderFactoryParams params);
