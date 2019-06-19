@@ -40,7 +40,7 @@ void BeforeStartInUI(base::WeakPtr<URLRequestAsyncAsarJob> job,
 
   // sanitize custom headers
   if (request_options && request_options->is_dict()) {
-    base::Value* headersDict = request_options->FindDictKey("headers");
+    const base::Value* headersDict = request_options->FindDictKey("headers");
     if (headersDict) {
       for (const auto& iter : headersDict->DictItems()) {
         if (!iter.second.is_string()) {
