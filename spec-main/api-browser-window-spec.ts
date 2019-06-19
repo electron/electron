@@ -722,13 +722,16 @@ describe('BrowserWindow module', () => {
 
     describe('BrowserWindow.setContentSize(width, height)', () => {
       it('sets the content size', (done) => {
-        const size = [456, 789]
+        // NB. The CI server has a very small screen. Attempting to size the window
+        // larger than the screen will limit the window's size to the screen and
+        // cause the test to fail.
+        const size = [456, 567]
         w.setContentSize(size[0], size[1])
-        setTimeout(() => {
+        setImmediate(() => {
           const after = w.getContentSize()
           expect(after).to.deep.equal(size)
           done()
-        }, 1000)
+        })
       })
       it('works for a frameless window', (done) => {
         w.destroy()
@@ -738,13 +741,13 @@ describe('BrowserWindow module', () => {
           width: 400,
           height: 400
         })
-        const size = [456, 789]
+        const size = [456, 567]
         w.setContentSize(size[0], size[1])
-        setTimeout(() => {
+        setImmediate(() => {
           const after = w.getContentSize()
           expect(after).to.deep.equal(size)
           done()
-        }, 1000)
+        })
       })
     })
 
