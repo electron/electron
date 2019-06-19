@@ -5,10 +5,18 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 5d871fc08218b71c93141963db66465f775b1bc2..9e04684bede95aaa3a32c4b3aa280ff99d914a4c 100644
+index 5d871fc08218b71c93141963db66465f775b1bc2..0784ff23c10563f25af1a520705f3264b8cfe9dd 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -310,6 +310,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
+@@ -43,6 +43,7 @@
+ #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
+ #include "net/cert/cert_verifier.h"
+ #include "net/cert/ct_verify_result.h"
++#include "net/cert/multi_threaded_cert_verifier.h"
+ #include "net/cert_net/cert_net_fetcher_impl.h"
+ #include "net/cookies/cookie_monster.h"
+ #include "net/dns/host_cache.h"
+@@ -310,6 +311,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
  
  }  // namespace
  
@@ -84,7 +92,7 @@ index 5d871fc08218b71c93141963db66465f775b1bc2..9e04684bede95aaa3a32c4b3aa280ff9
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  constexpr bool NetworkContext::enable_resource_scheduler_;
  
-@@ -668,6 +737,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
+@@ -668,6 +738,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
    client_ = std::move(client);
  }
  
@@ -97,17 +105,25 @@ index 5d871fc08218b71c93141963db66465f775b1bc2..9e04684bede95aaa3a32c4b3aa280ff9
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2134,8 +2209,13 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
-       cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
+@@ -2130,12 +2206,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+               net::CreateCertVerifyProcBuiltin(cert_net_fetcher_)));
+     }
+ #endif
+-    if (!cert_verifier)
+-      cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
++    if (!cert_verifier) {
++      auto mt_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
++              net::CertVerifyProc::CreateDefault(std::move(cert_net_fetcher_)));
++      auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(mt_verifier));
++      remote_cert_verifier_ = remote_cert_verifier.get();
++      cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
++    }
    }
  
 -  builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 -      *command_line, nullptr, std::move(cert_verifier)));
 +  cert_verifier = IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 +      *command_line, nullptr, std::move(cert_verifier));
-+
-+  cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier));
-+  remote_cert_verifier_ = static_cast<RemoteCertVerifier*>(cert_verifier.get());
 +
 +  builder.SetCertVerifier(std::move(cert_verifier));
  
