@@ -2080,7 +2080,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   const content::CursorInfo& info = cursor.info();
 
-  if (info.type == blink::WebCursorInfo::kTypeCustom) {
+  if (info.type == ui::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(info),
          gfx::Image::CreateFrom1xBitmap(info.custom_image),
          info.image_scale_factor,
@@ -2157,7 +2157,7 @@ void WebContents::Invalidate() {
   }
 }
 
-gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) const {
+gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
   if (IsOffScreen() && wc == web_contents()) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents());
     if (relay) {

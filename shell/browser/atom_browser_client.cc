@@ -907,11 +907,11 @@ bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
   return it != process_preferences_.end() && !it->second.web_security;
 }
 
-std::string AtomBrowserClient::GetProduct() const {
+std::string AtomBrowserClient::GetProduct() {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
-std::string AtomBrowserClient::GetUserAgent() const {
+std::string AtomBrowserClient::GetUserAgent() {
   if (user_agent_override_.empty())
     return GetApplicationUserAgent();
   return user_agent_override_;

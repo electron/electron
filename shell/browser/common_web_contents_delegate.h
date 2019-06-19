@@ -81,7 +81,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  bool CanOverscrollContent() const override;
+  bool CanOverscrollContent() override;
   content::ColorChooser* OpenColorChooser(
       content::WebContents* web_contents,
       SkColor color,
@@ -98,8 +98,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       const GURL& origin,
       const blink::WebFullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
-  bool IsFullscreenForTabOrPending(
-      const content::WebContents* source) const override;
+  bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
   blink::WebSecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
