@@ -69,15 +69,6 @@ steps:
 
 - bash: |
    cd src
-   ./out/Default/electron electron/spec --ci --enable-logging -g "inspector does does"
-  displayName: 'Just run inspector tests'
-  timeoutInMinutes: 10
-  env:
-    ELECTRON_DISABLE_SANDBOX: 1
-    ELECTRON_DISABLE_SECURITY_WARNINGS: 1    
-
-- bash: |
-   cd src
    ./out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
