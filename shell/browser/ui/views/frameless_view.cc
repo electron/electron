@@ -10,7 +10,7 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -111,4 +111,4 @@ const char* FramelessView::GetClassName() const {
   return kViewClassName;
 }
 
-}  // namespace atom
+}  // namespace electron

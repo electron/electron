@@ -12,7 +12,7 @@
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
 
-namespace atom {
+namespace electron {
 
 GPUInfoManager* GPUInfoManager::GetInstance() {
   return base::Singleton<GPUInfoManager>::get();
@@ -92,4 +92,4 @@ std::unique_ptr<base::DictionaryValue> GPUInfoManager::EnumerateGPUInfo(
   return enumerator.GetDictionary();
 }
 
-}  // namespace atom
+}  // namespace electron

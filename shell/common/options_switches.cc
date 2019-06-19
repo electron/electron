@@ -4,7 +4,7 @@
 
 #include "shell/common/options_switches.h"
 
-namespace atom {
+namespace electron {
 
 namespace options {
 
@@ -270,4 +270,4 @@ const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
 
 }  // namespace switches
 
-}  // namespace atom
+}  // namespace electron

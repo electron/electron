@@ -42,7 +42,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 
 @implementation AtomApplicationDelegate
 
-- (void)setApplicationDockMenu:(atom::AtomMenuModel*)model {
+- (void)setApplicationDockMenu:(electron::AtomMenuModel*)model {
   menu_controller_.reset([[AtomMenuController alloc] initWithModel:model
                                              useDefaultAccelerator:NO]);
 }
@@ -53,7 +53,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
       setBool:NO
        forKey:@"NSFullScreenMenuItemEverywhere"];
 
-  atom::Browser::Get()->WillFinishLaunching();
+  electron::Browser::Get()->WillFinishLaunching();
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
@@ -62,10 +62,10 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 
   if (user_notification.userInfo != nil) {
     std::unique_ptr<base::DictionaryValue> launch_info =
-        atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
-    atom::Browser::Get()->DidFinishLaunching(*launch_info);
+        electron::NSDictionaryToDictionaryValue(user_notification.userInfo);
+    electron::Browser::Get()->DidFinishLaunching(*launch_info);
   } else {
-    atom::Browser::Get()->DidFinishLaunching(base::DictionaryValue());
+    electron::Browser::Get()->DidFinishLaunching(base::DictionaryValue());
   }
 
 #if BUILDFLAG(USE_ALLOCATOR_SHIM)
@@ -88,12 +88,12 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename {
   std::string filename_str(base::SysNSStringToUTF8(filename));
-  return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
+  return electron::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
                     hasVisibleWindows:(BOOL)flag {
-  atom::Browser* browser = atom::Browser::Get();
+  electron::Browser* browser = electron::Browser::Get();
   browser->Activate(static_cast<bool>(flag));
   return flag;
 }
@@ -109,11 +109,11 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
               restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
   std::unique_ptr<base::DictionaryValue> user_info =
-      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+      electron::NSDictionaryToDictionaryValue(userActivity.userInfo);
   if (!user_info)
     return NO;
 
-  atom::Browser* browser = atom::Browser::Get();
+  electron::Browser* browser = electron::Browser::Get();
   return browser->ContinueUserActivity(activity_type, *user_info) ? YES : NO;
 }
 
@@ -121,7 +121,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
     willContinueUserActivityWithType:(NSString*)userActivityType {
   std::string activity_type(base::SysNSStringToUTF8(userActivityType));
 
-  atom::Browser* browser = atom::Browser::Get();
+  electron::Browser* browser = electron::Browser::Get();
   return browser->WillContinueUserActivity(activity_type) ? YES : NO;
 }
 
@@ -132,12 +132,12 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   std::string error_message(
       base::SysNSStringToUTF8([error localizedDescription]));
 
-  atom::Browser* browser = atom::Browser::Get();
+  electron::Browser* browser = electron::Browser::Get();
   browser->DidFailToContinueUserActivity(activity_type, error_message);
 }
 
 - (IBAction)newWindowForTab:(id)sender {
-  atom::Browser::Get()->NewWindowForTab();
+  electron::Browser::Get()->NewWindowForTab();
 }
 
 @end

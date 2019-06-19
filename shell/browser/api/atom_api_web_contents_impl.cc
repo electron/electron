@@ -18,7 +18,7 @@
 // have to isolate the usage of WebContentsImpl into a clean file to fix it:
 // error C2371: 'ssize_t': redefinition; different basic types
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -59,4 +59,4 @@ OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

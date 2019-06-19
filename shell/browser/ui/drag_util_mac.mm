@@ -10,7 +10,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/ui/drag_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -58,4 +58,4 @@ void DragFileItems(const std::vector<base::FilePath>& files,
           slideBack:YES];
 }
 
-}  // namespace atom
+}  // namespace electron

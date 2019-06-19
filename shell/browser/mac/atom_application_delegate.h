@@ -12,6 +12,6 @@
 }
 
 // Sets the menu that will be returned in "applicationDockMenu:".
-- (void)setApplicationDockMenu:(atom::AtomMenuModel*)model;
+- (void)setApplicationDockMenu:(electron::AtomMenuModel*)model;
 
 @end

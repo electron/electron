@@ -11,7 +11,7 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
-namespace atom {
+namespace electron {
 
 NetworkContextService::NetworkContextService(content::BrowserContext* context)
     : browser_context_(static_cast<AtomBrowserContext*>(context)),
@@ -88,4 +88,4 @@ NetworkContextService::CreateNetworkContextParams(bool in_memory,
   return network_context_params;
 }
 
-}  // namespace atom
+}  // namespace electron

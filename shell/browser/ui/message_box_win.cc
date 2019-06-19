@@ -24,7 +24,7 @@
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
 
-namespace atom {
+namespace electron {
 
 MessageBoxSettings::MessageBoxSettings() = default;
 MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
@@ -100,8 +100,8 @@ int ShowTaskDialogUTF16(NativeWindow* parent,
   config.dwFlags = flags;
 
   if (parent) {
-    config.hwndParent =
-        static_cast<atom::NativeWindowViews*>(parent)->GetAcceleratedWidget();
+    config.hwndParent = static_cast<electron::NativeWindowViews*>(parent)
+                            ->GetAcceleratedWidget();
   }
 
   if (default_id > 0)
@@ -219,7 +219,7 @@ void RunMessageBoxInNewThread(base::Thread* thread,
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
-  atom::UnresponsiveSuppressor suppressor;
+  electron::UnresponsiveSuppressor suppressor;
   return ShowTaskDialogUTF8(settings);
 }
 
@@ -241,9 +241,9 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  atom::UnresponsiveSuppressor suppressor;
+  electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogUTF16(nullptr, MessageBoxType::kError, {}, -1, 0, 0, L"Error",
                       title, content, L"", nullptr, gfx::ImageSkia());
 }
 
-}  // namespace atom
+}  // namespace electron

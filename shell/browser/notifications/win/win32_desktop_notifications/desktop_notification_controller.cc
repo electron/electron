@@ -23,7 +23,7 @@
 using std::make_shared;
 using std::shared_ptr;
 
-namespace atom {
+namespace electron {
 
 HBITMAP CopyBitmap(HBITMAP bitmap) {
   HBITMAP ret = NULL;
@@ -436,4 +436,4 @@ DesktopNotificationController::NotificationLink::~NotificationLink() {
     p->controller = nullptr;
 }
 
-}  // namespace atom
+}  // namespace electron

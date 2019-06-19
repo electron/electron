@@ -11,7 +11,7 @@
 
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 NodeStreamLoader::NodeStreamLoader(network::ResourceResponseHead head,
                                    network::mojom::URLLoaderRequest loader,
@@ -139,4 +139,4 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
   // No more code bellow, as this class may destruct when subscribing.
 }
 
-}  // namespace atom
+}  // namespace electron

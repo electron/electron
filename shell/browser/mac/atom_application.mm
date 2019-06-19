@@ -48,7 +48,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   // We simply try to close the browser, which in turn will try to close the
   // windows. Termination can proceed if all windows are closed or window close
   // can be cancelled which will abort termination.
-  atom::Browser::Get()->Quit();
+  electron::Browser::Get()->Quit();
 }
 
 - (void)setShutdownHandler:(base::Callback<bool()>)handler {
@@ -118,9 +118,9 @@ inline void dispatch_sync_main(dispatch_block_t block) {
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
-        atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+        electron::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
-    atom::Browser* browser = atom::Browser::Get();
+    electron::Browser* browser = electron::Browser::Get();
     shouldWait =
         browser->UpdateUserActivityState(activity_type, *user_info) ? YES : NO;
   });
@@ -145,9 +145,9 @@ inline void dispatch_sync_main(dispatch_block_t block) {
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
-        atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+        electron::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
-    atom::Browser* browser = atom::Browser::Get();
+    electron::Browser* browser = electron::Browser::Get();
     browser->UserActivityWasContinued(activity_type, *user_info);
   });
   [userActivity setNeedsSave:YES];
@@ -167,7 +167,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
         withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
   NSString* url =
       [[event paramDescriptorForKeyword:keyDirectObject] stringValue];
-  atom::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
+  electron::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
 - (bool)voiceOverEnabled {
@@ -199,11 +199,11 @@ inline void dispatch_sync_main(dispatch_block_t block) {
     ax_state->DisableAccessibility();
   }
 
-  atom::Browser::Get()->OnAccessibilitySupportChanged();
+  electron::Browser::Get()->OnAccessibilitySupportChanged();
 }
 
 - (void)orderFrontStandardAboutPanel:(id)sender {
-  atom::Browser::Get()->ShowAboutPanel();
+  electron::Browser::Get()->ShowAboutPanel();
 }
 
 - (void)addNativeEventProcessorObserver:

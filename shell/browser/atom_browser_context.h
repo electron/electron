@@ -26,7 +26,7 @@ namespace storage {
 class SpecialStoragePolicy;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBlobReader;
 class AtomBrowserContext;
@@ -175,6 +175,6 @@ class AtomBrowserContext
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_BROWSER_CONTEXT_H_

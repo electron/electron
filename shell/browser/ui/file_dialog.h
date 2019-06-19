@@ -14,7 +14,7 @@
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 class NativeWindow;
 }
 
@@ -36,7 +36,7 @@ enum FileDialogProperty {
 };
 
 struct DialogSettings {
-  atom::NativeWindow* parent_window = nullptr;
+  electron::NativeWindow* parent_window = nullptr;
   std::string title;
   std::string message;
   std::string button_label;
@@ -57,12 +57,12 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths);
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    atom::util::Promise promise);
+                    electron::util::Promise promise);
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    atom::util::Promise promise);
+                    electron::util::Promise promise);
 
 }  // namespace file_dialog
 

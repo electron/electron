@@ -17,7 +17,7 @@
 #include "third_party/blink/public/web/web_form_control_element.h"
 #include "third_party/blink/public/web/web_input_element.h"
 
-namespace atom {
+namespace electron {
 
 class AutofillAgent : public content::RenderFrameObserver,
                       public blink::WebAutofillClient,
@@ -85,6 +85,6 @@ class AutofillAgent : public content::RenderFrameObserver,
   DISALLOW_COPY_AND_ASSIGN(AutofillAgent);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_ATOM_AUTOFILL_AGENT_H_

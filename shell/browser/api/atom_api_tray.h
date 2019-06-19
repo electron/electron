@@ -23,7 +23,7 @@ class Arguments;
 class Dictionary;
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 class TrayIcon;
 
@@ -87,6 +87,6 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_TRAY_H_

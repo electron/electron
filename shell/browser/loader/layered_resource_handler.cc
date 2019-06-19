@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-namespace atom {
+namespace electron {
 
 LayeredResourceHandler::LayeredResourceHandler(
     net::URLRequest* request,
@@ -26,4 +26,4 @@ void LayeredResourceHandler::OnResponseStarted(
   next_handler_->OnResponseStarted(response, std::move(controller));
 }
 
-}  // namespace atom
+}  // namespace electron

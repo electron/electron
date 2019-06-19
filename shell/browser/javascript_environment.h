@@ -16,7 +16,7 @@ class Environment;
 class MultiIsolatePlatform;
 }  // namespace node
 
-namespace atom {
+namespace electron {
 
 class MicrotasksRunner;
 // Manage the V8 isolate and context automatically.
@@ -64,6 +64,6 @@ class NodeEnvironment {
   DISALLOW_COPY_AND_ASSIGN(NodeEnvironment);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_JAVASCRIPT_ENVIRONMENT_H_

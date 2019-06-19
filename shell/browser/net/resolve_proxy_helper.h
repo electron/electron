@@ -14,7 +14,7 @@
 #include "services/network/public/mojom/proxy_lookup_client.mojom.h"
 #include "url/gurl.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -70,6 +70,6 @@ class ResolveProxyHelper
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_RESOLVE_PROXY_HELPER_H_

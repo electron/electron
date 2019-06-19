@@ -15,7 +15,7 @@
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 // Read data from node Stream and feed it to NetworkService.
 //
@@ -82,6 +82,6 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   DISALLOW_COPY_AND_ASSIGN(NodeStreamLoader);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_

@@ -19,7 +19,7 @@
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/widget/widget.h"
 
-namespace atom {
+namespace electron {
 
 void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
   node_data->role = ax::mojom::Role::kMenuItem;
@@ -489,4 +489,4 @@ void AutofillPopupView::RemoveObserver() {
   views::WidgetFocusManager::GetInstance()->RemoveFocusChangeListener(this);
 }
 
-}  // namespace atom
+}  // namespace electron

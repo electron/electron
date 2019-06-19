@@ -31,7 +31,7 @@
 #include "shell/common/promise_util.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -358,7 +358,7 @@ bool ElectronBindings::TakeHeapSnapshot(v8::Isolate* isolate,
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
 
-  return atom::TakeHeapSnapshot(isolate, &file);
+  return electron::TakeHeapSnapshot(isolate, &file);
 }
 
-}  // namespace atom
+}  // namespace electron

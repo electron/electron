@@ -4,7 +4,7 @@
 
 #include "shell/browser/atom_quota_permission_context.h"
 
-namespace atom {
+namespace electron {
 
 AtomQuotaPermissionContext::AtomQuotaPermissionContext() {}
 
@@ -17,4 +17,4 @@ void AtomQuotaPermissionContext::RequestQuotaPermission(
   callback.Run(response::QUOTA_PERMISSION_RESPONSE_ALLOW);
 }
 
-}  // namespace atom
+}  // namespace electron

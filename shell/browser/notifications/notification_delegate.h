@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace atom {
+namespace electron {
 
 class NotificationDelegate {
  public:
@@ -30,6 +30,6 @@ class NotificationDelegate {
   ~NotificationDelegate() = default;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_DELEGATE_H_

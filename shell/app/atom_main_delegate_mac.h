@@ -5,11 +5,11 @@
 #ifndef SHELL_APP_ATOM_MAIN_DELEGATE_MAC_H_
 #define SHELL_APP_ATOM_MAIN_DELEGATE_MAC_H_
 
-namespace atom {
+namespace electron {
 
 // Initializes NSApplication.
 void RegisterAtomCrApp();
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_APP_ATOM_MAIN_DELEGATE_MAC_H_

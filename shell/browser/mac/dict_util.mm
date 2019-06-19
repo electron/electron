@@ -12,7 +12,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 
-namespace atom {
+namespace electron {
 
 NSArray* ListValueToNSArray(const base::ListValue& value) {
   std::string json;
@@ -127,4 +127,4 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
   return result;
 }
 
-}  // namespace atom
+}  // namespace electron

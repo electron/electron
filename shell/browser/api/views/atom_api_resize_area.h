@@ -10,7 +10,7 @@
 #include "ui/views/controls/resize_area.h"
 #include "ui/views/controls/resize_area_delegate.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -38,6 +38,6 @@ class ResizeArea : public View, protected views::ResizeAreaDelegate {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_RESIZE_AREA_H_

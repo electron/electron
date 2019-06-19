@@ -117,13 +117,15 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-  dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
-  dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
-  dict.SetMethod("addRemoteObjectRef", &atom::RemoteObjectFreer::AddRef);
-  dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
+  dict.SetMethod("setRemoteCallbackFreer",
+                 &electron::RemoteCallbackFreer::BindTo);
+  dict.SetMethod("setRemoteObjectFreer", &electron::RemoteObjectFreer::BindTo);
+  dict.SetMethod("addRemoteObjectRef", &electron::RemoteObjectFreer::AddRef);
+  dict.SetMethod("createIDWeakMap",
+                 &electron::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod(
       "createDoubleIDWeakMap",
-      &atom::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
+      &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);

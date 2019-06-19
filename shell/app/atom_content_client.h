@@ -11,7 +11,7 @@
 
 #include "content/public/common/content_client.h"
 
-namespace atom {
+namespace electron {
 
 class AtomContentClient : public content::ContentClient {
  public:
@@ -37,6 +37,6 @@ class AtomContentClient : public content::ContentClient {
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_APP_ATOM_CONTENT_CLIENT_H_

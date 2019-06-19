@@ -5,10 +5,10 @@
 
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
-namespace atom {
+namespace electron {
 
 gfx::ImageSkia InspectableWebContentsViewDelegate::GetDevToolsWindowIcon() {
   return gfx::ImageSkia();
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -4,7 +4,7 @@
 
 #include "shell/browser/unresponsive_suppressor.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -24,4 +24,4 @@ UnresponsiveSuppressor::~UnresponsiveSuppressor() {
   g_suppress_level--;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -13,7 +13,7 @@
 #include "gin/wrappable.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -56,6 +56,6 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_

@@ -12,7 +12,7 @@
 #include "base/macros.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 template <typename K>
@@ -82,6 +82,6 @@ class KeyWeakMap {
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_KEY_WEAK_MAP_H_

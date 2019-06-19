@@ -44,24 +44,24 @@ network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
       network::mojom::HttpAuthDynamicParams::New();
 
-  auth_dynamic_params->server_whitelist =
-      command_line->GetSwitchValueASCII(atom::switches::kAuthServerWhitelist);
+  auth_dynamic_params->server_whitelist = command_line->GetSwitchValueASCII(
+      electron::switches::kAuthServerWhitelist);
   auth_dynamic_params->delegate_whitelist = command_line->GetSwitchValueASCII(
-      atom::switches::kAuthNegotiateDelegateWhitelist);
+      electron::switches::kAuthNegotiateDelegateWhitelist);
   auth_dynamic_params->enable_negotiate_port =
-      command_line->HasSwitch(atom::switches::kEnableAuthNegotiatePort);
+      command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
 
   return auth_dynamic_params;
 }
 
-}  // namespace atom
+}  // namespace electron
 
 // SharedURLLoaderFactory backed by a SystemNetworkContextManager and its
 // network context. Transparently handles crashes.
@@ -195,7 +195,7 @@ void SystemNetworkContextManager::SetUp(
     *network_context_params = CreateDefaultNetworkContextParams();
   }
   *http_auth_static_params = CreateHttpAuthStaticParams();
-  *http_auth_dynamic_params = atom::CreateHttpAuthDynamicParams();
+  *http_auth_dynamic_params = electron::CreateHttpAuthDynamicParams();
 }
 
 // static
@@ -234,7 +234,8 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     return;
 
   network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-  network_service->ConfigureHttpAuthPrefs(atom::CreateHttpAuthDynamicParams());
+  network_service->ConfigureHttpAuthPrefs(
+      electron::CreateHttpAuthDynamicParams());
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.
@@ -252,7 +253,7 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
   network_context_params->context_name = std::string("system");
 
   network_context_params->user_agent =
-      atom::AtomBrowserClient::Get()->GetUserAgent();
+      electron::AtomBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
 

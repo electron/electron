@@ -181,10 +181,10 @@ struct Converter<content::SavePageType> {
 };
 
 template <>
-struct Converter<atom::api::WebContents::Type> {
+struct Converter<electron::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::api::WebContents::Type val) {
-    using Type = atom::api::WebContents::Type;
+                                   electron::api::WebContents::Type val) {
+    using Type = electron::api::WebContents::Type;
     std::string type = "";
     switch (val) {
       case Type::BACKGROUND_PAGE:
@@ -213,8 +213,8 @@ struct Converter<atom::api::WebContents::Type> {
 
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::api::WebContents::Type* out) {
-    using Type = atom::api::WebContents::Type;
+                     electron::api::WebContents::Type* out) {
+    using Type = electron::api::WebContents::Type;
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
@@ -237,7 +237,7 @@ struct Converter<atom::api::WebContents::Type> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -812,7 +812,7 @@ void WebContents::MediaStoppedPlaying(
 
 void WebContents::DidChangeThemeColor(base::Optional<SkColor> theme_color) {
   if (theme_color) {
-    Emit("did-change-theme-color", atom::ToRGBHex(theme_color.value()));
+    Emit("did-change-theme-color", electron::ToRGBHex(theme_color.value()));
   } else {
     Emit("did-change-theme-color", nullptr);
   }
@@ -1318,17 +1318,17 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
 }
 
@@ -2131,7 +2131,7 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
   if (debugger_.IsEmpty()) {
-    auto handle = atom::api::Debugger::Create(isolate, web_contents());
+    auto handle = electron::api::Debugger::Create(isolate, web_contents());
     debugger_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, debugger_);
@@ -2337,11 +2337,11 @@ mate::Handle<WebContents> WebContents::FromOrCreate(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::WebContents;
+using electron::api::WebContents;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

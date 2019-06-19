@@ -14,7 +14,7 @@
 #include "shell/browser/notifications/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
 
-namespace atom {
+namespace electron {
 
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
@@ -170,4 +170,4 @@ void CocoaNotification::LogAction(const char* action) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

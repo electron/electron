@@ -11,7 +11,7 @@ namespace views {
 class Widget;
 }
 
-namespace atom {
+namespace electron {
 
 class NativeWindowViews;
 
@@ -52,6 +52,6 @@ class FramelessView : public views::NonClientFrameView {
   DISALLOW_COPY_AND_ASSIGN(FramelessView);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_

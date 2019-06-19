@@ -9,19 +9,19 @@
 
 #include "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
 
-namespace atom {
+namespace electron {
 class NativeWindowMac;
 }
 
 @interface AtomNSWindowDelegate
     : ViewsNSWindowDelegate <NSTouchBarDelegate, QLPreviewPanelDataSource> {
  @private
-  atom::NativeWindowMac* shell_;
+  electron::NativeWindowMac* shell_;
   bool is_zooming_;
   int level_;
   bool is_resizable_;
 }
-- (id)initWithShell:(atom::NativeWindowMac*)shell;
+- (id)initWithShell:(electron::NativeWindowMac*)shell;
 @end
 
 #endif  // SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_

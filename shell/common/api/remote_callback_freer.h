@@ -10,7 +10,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/common/api/object_life_monitor.h"
 
-namespace atom {
+namespace electron {
 
 class RemoteCallbackFreer : public ObjectLifeMonitor,
                             public content::WebContentsObserver {
@@ -41,6 +41,6 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
   DISALLOW_COPY_AND_ASSIGN(RemoteCallbackFreer);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_API_REMOTE_CALLBACK_FREER_H_

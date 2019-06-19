@@ -4,7 +4,7 @@
 
 #include "shell/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
-namespace atom {
+namespace electron {
 
 AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
     NativeWindowViews* native_window_view,
@@ -29,4 +29,4 @@ bool AtomDesktopWindowTreeHostWin::HasNativeFrame() const {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -20,7 +20,7 @@ class Button;
 class MenuButton;
 }  // namespace views
 
-namespace atom {
+namespace electron {
 
 class MenuBarColorUpdater : public views::FocusChangeListener {
  public:
@@ -38,7 +38,7 @@ class MenuBarColorUpdater : public views::FocusChangeListener {
 
 class MenuBar : public views::AccessiblePaneView,
                 public views::MenuButtonListener,
-                public atom::MenuDelegate::Observer {
+                public electron::MenuDelegate::Observer {
  public:
   static const char kViewClassName[];
 
@@ -65,7 +65,7 @@ class MenuBar : public views::AccessiblePaneView,
                                     AtomMenuModel** menu_model,
                                     views::MenuButton** button);
 
-  // atom::MenuDelegate::Observer:
+  // electron::MenuDelegate::Observer:
   void OnBeforeExecuteCommand() override;
   void OnMenuClosed() override;
 
@@ -109,6 +109,6 @@ class MenuBar : public views::AccessiblePaneView,
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_

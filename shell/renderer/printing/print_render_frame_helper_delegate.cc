@@ -8,7 +8,7 @@
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace atom {
+namespace electron {
 
 PrintRenderFrameHelperDelegate::PrintRenderFrameHelperDelegate() = default;
 
@@ -34,4 +34,4 @@ bool PrintRenderFrameHelperDelegate::OverridePrint(
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

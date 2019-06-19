@@ -4,7 +4,7 @@
 
 #include "shell/common/atom_constants.h"
 
-namespace atom {
+namespace electron {
 
 const char kBrowserForward[] = "browser-forward";
 const char kBrowserBackward[] = "browser-backward";
@@ -44,4 +44,4 @@ const char kPdfViewerUIOrigin[] = "chrome://pdf-viewer/";
 const char kPdfViewerUIHost[] = "pdf-viewer";
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-}  // namespace atom
+}  // namespace electron

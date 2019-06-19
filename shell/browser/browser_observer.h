@@ -16,7 +16,7 @@ namespace base {
 class DictionaryValue;
 }
 
-namespace atom {
+namespace electron {
 
 class BrowserObserver : public base::CheckedObserver {
  public:
@@ -87,6 +87,6 @@ class BrowserObserver : public base::CheckedObserver {
   ~BrowserObserver() override {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_BROWSER_OBSERVER_H_

@@ -19,7 +19,7 @@ namespace network {
 class SharedURLLoaderFactory;
 }
 
-namespace atom {
+namespace electron {
 
 // Read data from URL and pipe it to NetworkService.
 //
@@ -77,6 +77,6 @@ class URLPipeLoader : public network::mojom::URLLoader,
   DISALLOW_COPY_AND_ASSIGN(URLPipeLoader);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_URL_PIPE_LOADER_H_

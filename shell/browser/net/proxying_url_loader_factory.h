@@ -7,7 +7,7 @@
 
 #include "shell/browser/net/atom_url_loader_factory.h"
 
-namespace atom {
+namespace electron {
 
 class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
  public:
@@ -47,6 +47,6 @@ class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_

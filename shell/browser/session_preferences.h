@@ -15,7 +15,7 @@ namespace base {
 class CommandLine;
 }
 
-namespace atom {
+namespace electron {
 
 class SessionPreferences : public base::SupportsUserData::Data {
  public:
@@ -41,6 +41,6 @@ class SessionPreferences : public base::SupportsUserData::Data {
   std::vector<base::FilePath::StringType> preloads_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_SESSION_PREFERENCES_H_

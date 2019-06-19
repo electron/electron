@@ -15,7 +15,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_operations.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -73,4 +73,4 @@ bool NativeImage::IsTemplateImage() {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

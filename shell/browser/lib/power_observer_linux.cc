@@ -29,7 +29,7 @@ std::string get_executable_basename() {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 PowerObserverLinux::PowerObserverLinux()
     : lock_owner_name_(get_executable_basename()), weak_ptr_factory_(this) {
@@ -163,4 +163,4 @@ void PowerObserverLinux::OnSignalConnected(const std::string& /*interface*/,
   LOG_IF(WARNING, !success) << "Failed to connect to " << signal;
 }
 
-}  // namespace atom
+}  // namespace electron

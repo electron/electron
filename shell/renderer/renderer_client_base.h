@@ -18,7 +18,7 @@
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
-namespace atom {
+namespace electron {
 
 class RendererClientBase : public content::ContentRendererClient {
  public:
@@ -73,6 +73,6 @@ class RendererClientBase : public content::ContentRendererClient {
   int64_t next_context_id_ = 0;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_RENDERER_CLIENT_BASE_H_

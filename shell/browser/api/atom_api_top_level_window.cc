@@ -38,10 +38,10 @@
 namespace mate {
 
 template <>
-struct Converter<atom::TaskbarHost::ThumbarButton> {
+struct Converter<electron::TaskbarHost::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     atom::TaskbarHost::ThumbarButton* out) {
+                     electron::TaskbarHost::ThumbarButton* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -55,7 +55,7 @@ struct Converter<atom::TaskbarHost::ThumbarButton> {
 }  // namespace mate
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -1192,11 +1192,11 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::TopLevelWindow;
+using electron::api::TopLevelWindow;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

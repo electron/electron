@@ -10,7 +10,7 @@
 #include "base/compiler_specific.h"
 #include "ui/views/views_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class ViewsDelegate : public views::ViewsDelegate {
  public:
@@ -53,6 +53,6 @@ class ViewsDelegate : public views::ViewsDelegate {
   DISALLOW_COPY_AND_ASSIGN(ViewsDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_

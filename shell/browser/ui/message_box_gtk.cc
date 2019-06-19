@@ -25,7 +25,7 @@
 #define ANSI_BACKGROUND_GRAY "\x1b[47m"
 #define ANSI_RESET "\x1b[0m"
 
-namespace atom {
+namespace electron {
 
 MessageBoxSettings::MessageBoxSettings() = default;
 MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
@@ -166,7 +166,7 @@ class GtkMessageBox : public NativeWindowObserver {
   CHROMEG_CALLBACK_0(GtkMessageBox, void, OnCheckboxToggled, GtkWidget*);
 
  private:
-  atom::UnresponsiveSuppressor unresponsive_suppressor_;
+  electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_ = 0;
@@ -207,8 +207,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    atom::MessageBoxSettings settings;
-    settings.type = atom::MessageBoxType::kError;
+    electron::MessageBoxSettings settings;
+    settings.type = electron::MessageBoxType::kError;
     settings.buttons = {"OK"};
     settings.title = "Error";
     settings.message = base::UTF16ToUTF8(title);
@@ -224,4 +224,4 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

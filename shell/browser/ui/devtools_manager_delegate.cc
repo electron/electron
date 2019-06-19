@@ -30,7 +30,7 @@
 #include "shell/browser/atom_paths.h"
 #include "ui/base/resource/resource_bundle.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -122,4 +122,4 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

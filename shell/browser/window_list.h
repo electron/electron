@@ -11,7 +11,7 @@
 #include "base/macros.h"
 #include "base/observer_list.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 class WindowListObserver;
@@ -59,6 +59,6 @@ class WindowList {
   DISALLOW_COPY_AND_ASSIGN(WindowList);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WINDOW_LIST_H_

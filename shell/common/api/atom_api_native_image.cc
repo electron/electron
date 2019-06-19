@@ -39,7 +39,7 @@
 #include "ui/gfx/icon_util.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -650,24 +650,24 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
-v8::Local<v8::Value> Converter<mate::Handle<atom::api::NativeImage>>::ToV8(
+v8::Local<v8::Value> Converter<mate::Handle<electron::api::NativeImage>>::ToV8(
     v8::Isolate* isolate,
-    const mate::Handle<atom::api::NativeImage>& val) {
+    const mate::Handle<electron::api::NativeImage>& val) {
   return val.ToV8();
 }
 
-bool Converter<mate::Handle<atom::api::NativeImage>>::FromV8(
+bool Converter<mate::Handle<electron::api::NativeImage>>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    mate::Handle<atom::api::NativeImage>* out) {
+    mate::Handle<electron::api::NativeImage>* out) {
   // Try converting from file path.
   base::FilePath path;
   if (ConvertFromV8(isolate, val, &path)) {
-    *out = atom::api::NativeImage::CreateFromPath(isolate, path);
+    *out = electron::api::NativeImage::CreateFromPath(isolate, path);
     // Should throw when failed to initialize from path.
     return !(*out)->image().IsEmpty();
   }
@@ -677,7 +677,8 @@ bool Converter<mate::Handle<atom::api::NativeImage>>::FromV8(
   if (!wrapper)
     return false;
 
-  *out = CreateHandle(isolate, static_cast<atom::api::NativeImage*>(wrapper));
+  *out =
+      CreateHandle(isolate, static_cast<electron::api::NativeImage*>(wrapper));
   return true;
 }
 
@@ -685,7 +686,7 @@ bool Converter<mate::Handle<atom::api::NativeImage>>::FromV8(
 
 namespace {
 
-using atom::api::NativeImage;
+using electron::api::NativeImage;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

@@ -16,7 +16,7 @@
 #include "native_mate/dictionary.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {}
 
@@ -64,4 +64,4 @@ void NodeDebugger::Stop() {
     inspector->Stop();
 }
 
-}  // namespace atom
+}  // namespace electron

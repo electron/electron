@@ -7,10 +7,10 @@
 
 #include "base/command_line.h"
 
-namespace atom {
+namespace electron {
 
 bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_APP_COMMAND_LINE_ARGS_H_

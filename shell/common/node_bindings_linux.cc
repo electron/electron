@@ -6,7 +6,7 @@
 
 #include <sys/epoll.h>
 
-namespace atom {
+namespace electron {
 
 NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env)
     : NodeBindings(browser_env), epoll_(epoll_create(1)) {
@@ -52,4 +52,4 @@ NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
   return new NodeBindingsLinux(browser_env);
 }
 
-}  // namespace atom
+}  // namespace electron

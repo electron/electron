@@ -23,7 +23,7 @@ namespace net {
 class URLRequestContextGetter;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -60,6 +60,6 @@ class Cookies : public mate::TrackableObject<Cookies> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_COOKIES_H_

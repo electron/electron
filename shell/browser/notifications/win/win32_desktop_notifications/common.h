@@ -7,7 +7,7 @@
 
 #include <Windows.h>
 
-namespace atom {
+namespace electron {
 
 struct NotificationData {
   DesktopNotificationController* controller = nullptr;
@@ -63,6 +63,6 @@ struct ScreenMetrics {
   }
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_COMMON_H_

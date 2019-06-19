@@ -17,7 +17,7 @@ class View;
 }
 #endif
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsViewDelegate;
 
@@ -57,6 +57,6 @@ class InspectableWebContentsView {
   InspectableWebContentsViewDelegate* delegate_;  // weak references.
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_

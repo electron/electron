@@ -11,7 +11,7 @@
 
 #include "base/macros.h"
 
-namespace atom {
+namespace electron {
 
 class NotifyIcon;
 
@@ -61,6 +61,6 @@ class NotifyIconHost {
   DISALLOW_COPY_AND_ASSIGN(NotifyIconHost);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_

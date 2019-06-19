@@ -7,7 +7,7 @@
 #include "base/command_line.h"
 #include "uv.h"  // NOLINT(build/include)
 
-namespace atom {
+namespace electron {
 
 // static
 base::CommandLine::StringVector AtomCommandLine::argv_;
@@ -33,4 +33,4 @@ void AtomCommandLine::InitializeFromCommandLine() {
 }
 #endif
 
-}  // namespace atom
+}  // namespace electron

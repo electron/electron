@@ -9,7 +9,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/web_ui_controller.h"
 
-namespace atom {
+namespace electron {
 
 class BrowserContext;
 
@@ -22,6 +22,6 @@ class DevToolsUI : public content::WebUIController {
   DISALLOW_COPY_AND_ASSIGN(DevToolsUI);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_DEVTOOLS_UI_H_

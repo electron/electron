@@ -8,7 +8,7 @@
 #include "ui/gfx/x/x11.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 
-namespace atom {
+namespace electron {
 
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
     : window_(window), widget_(window->GetAcceleratedWidget()) {
@@ -61,4 +61,4 @@ bool WindowStateWatcher::IsWindowStateEvent(const ui::PlatformEvent& event) {
           event->type == PropertyNotify && event->xproperty.window == widget_);
 }
 
-}  // namespace atom
+}  // namespace electron

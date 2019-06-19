@@ -14,7 +14,7 @@
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -194,7 +194,7 @@ void Clipboard::Clear(mate::Arguments* args) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -203,25 +203,26 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("availableFormats", &atom::api::Clipboard::AvailableFormats);
-  dict.SetMethod("has", &atom::api::Clipboard::Has);
-  dict.SetMethod("read", &atom::api::Clipboard::Read);
-  dict.SetMethod("write", &atom::api::Clipboard::Write);
-  dict.SetMethod("readText", &atom::api::Clipboard::ReadText);
-  dict.SetMethod("writeText", &atom::api::Clipboard::WriteText);
-  dict.SetMethod("readRTF", &atom::api::Clipboard::ReadRTF);
-  dict.SetMethod("writeRTF", &atom::api::Clipboard::WriteRTF);
-  dict.SetMethod("readHTML", &atom::api::Clipboard::ReadHTML);
-  dict.SetMethod("writeHTML", &atom::api::Clipboard::WriteHTML);
-  dict.SetMethod("readBookmark", &atom::api::Clipboard::ReadBookmark);
-  dict.SetMethod("writeBookmark", &atom::api::Clipboard::WriteBookmark);
-  dict.SetMethod("readImage", &atom::api::Clipboard::ReadImage);
-  dict.SetMethod("writeImage", &atom::api::Clipboard::WriteImage);
-  dict.SetMethod("readFindText", &atom::api::Clipboard::ReadFindText);
-  dict.SetMethod("writeFindText", &atom::api::Clipboard::WriteFindText);
-  dict.SetMethod("readBuffer", &atom::api::Clipboard::ReadBuffer);
-  dict.SetMethod("writeBuffer", &atom::api::Clipboard::WriteBuffer);
-  dict.SetMethod("clear", &atom::api::Clipboard::Clear);
+  dict.SetMethod("availableFormats",
+                 &electron::api::Clipboard::AvailableFormats);
+  dict.SetMethod("has", &electron::api::Clipboard::Has);
+  dict.SetMethod("read", &electron::api::Clipboard::Read);
+  dict.SetMethod("write", &electron::api::Clipboard::Write);
+  dict.SetMethod("readText", &electron::api::Clipboard::ReadText);
+  dict.SetMethod("writeText", &electron::api::Clipboard::WriteText);
+  dict.SetMethod("readRTF", &electron::api::Clipboard::ReadRTF);
+  dict.SetMethod("writeRTF", &electron::api::Clipboard::WriteRTF);
+  dict.SetMethod("readHTML", &electron::api::Clipboard::ReadHTML);
+  dict.SetMethod("writeHTML", &electron::api::Clipboard::WriteHTML);
+  dict.SetMethod("readBookmark", &electron::api::Clipboard::ReadBookmark);
+  dict.SetMethod("writeBookmark", &electron::api::Clipboard::WriteBookmark);
+  dict.SetMethod("readImage", &electron::api::Clipboard::ReadImage);
+  dict.SetMethod("writeImage", &electron::api::Clipboard::WriteImage);
+  dict.SetMethod("readFindText", &electron::api::Clipboard::ReadFindText);
+  dict.SetMethod("writeFindText", &electron::api::Clipboard::WriteFindText);
+  dict.SetMethod("readBuffer", &electron::api::Clipboard::ReadBuffer);
+  dict.SetMethod("writeBuffer", &electron::api::Clipboard::WriteBuffer);
+  dict.SetMethod("clear", &electron::api::Clipboard::Clear);
 }
 
 }  // namespace

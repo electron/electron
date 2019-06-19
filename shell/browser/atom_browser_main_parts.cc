@@ -92,7 +92,7 @@
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -510,4 +510,4 @@ IconManager* AtomBrowserMainParts::GetIconManager() {
   return icon_manager_.get();
 }
 
-}  // namespace atom
+}  // namespace electron

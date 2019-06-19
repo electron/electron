@@ -11,7 +11,7 @@
 #include "electron/electron_version.h"
 #include "shell/browser/browser.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -53,4 +53,4 @@ std::string GetApplicationUserAgent() {
   return content::BuildUserAgentFromProduct(user_agent);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -29,7 +29,7 @@
 
 @end
 
-namespace atom {
+namespace electron {
 
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   return offScreenView_;
@@ -51,4 +51,4 @@ void OffScreenWebContentsView::PlatformDestroy() {
   [offScreenView_ release];
 }
 
-}  // namespace atom
+}  // namespace electron

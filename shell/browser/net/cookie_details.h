@@ -12,7 +12,7 @@ namespace net {
 class CanonicalCookie;
 }
 
-namespace atom {
+namespace electron {
 
 struct CookieDetails {
  public:
@@ -26,6 +26,6 @@ struct CookieDetails {
   network::mojom::CookieChangeCause cause;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_COOKIE_DETAILS_H_

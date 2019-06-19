@@ -6,7 +6,7 @@
 #include "shell/common/api/atom_api_clipboard.h"
 #include "ui/base/cocoa/find_pasteboard.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -21,4 +21,4 @@ base::string16 Clipboard::ReadFindText() {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

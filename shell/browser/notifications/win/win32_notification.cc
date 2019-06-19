@@ -15,7 +15,7 @@
 
 #include "third_party/skia/include/core/SkBitmap.h"
 
-namespace atom {
+namespace electron {
 
 void Win32Notification::Show(const NotificationOptions& options) {
   auto* presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
@@ -68,4 +68,4 @@ void Win32Notification::Dismiss() {
   notification_ref_.Close();
 }
 
-}  // namespace atom
+}  // namespace electron

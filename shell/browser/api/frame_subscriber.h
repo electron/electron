@@ -18,7 +18,7 @@ namespace gfx {
 class Image;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -70,6 +70,6 @@ class FrameSubscriber : public content::WebContentsObserver,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_

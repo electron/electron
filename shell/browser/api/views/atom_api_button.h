@@ -9,7 +9,7 @@
 #include "shell/browser/api/atom_api_view.h"
 #include "ui/views/controls/button/button.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -35,6 +35,6 @@ class Button : public View, public views::ButtonListener {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_BUTTON_H_

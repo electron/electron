@@ -31,7 +31,7 @@ class IDUserData : public base::SupportsUserData::Data {
 }  // namespace
 
 TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
       GetDestroyClosure());
 }
 

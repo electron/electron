@@ -11,7 +11,8 @@
 
 @implementation NotificationCenterDelegate
 
-- (instancetype)initWithPresenter:(atom::NotificationPresenterMac*)presenter {
+- (instancetype)initWithPresenter:
+    (electron::NotificationPresenterMac*)presenter {
   self = [super init];
   if (!self)
     return nil;

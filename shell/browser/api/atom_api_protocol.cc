@@ -74,7 +74,7 @@ struct Converter<CustomScheme> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -129,14 +129,15 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
         switch_name, base::JoinString(schemes, ","));
   };
 
-  AppendSchemesToCmdLine(atom::switches::kSecureSchemes, secure_schemes);
-  AppendSchemesToCmdLine(atom::switches::kBypassCSPSchemes,
+  AppendSchemesToCmdLine(electron::switches::kSecureSchemes, secure_schemes);
+  AppendSchemesToCmdLine(electron::switches::kBypassCSPSchemes,
                          cspbypassing_schemes);
-  AppendSchemesToCmdLine(atom::switches::kCORSSchemes, cors_schemes);
-  AppendSchemesToCmdLine(atom::switches::kFetchSchemes, fetch_schemes);
-  AppendSchemesToCmdLine(atom::switches::kServiceWorkerSchemes,
+  AppendSchemesToCmdLine(electron::switches::kCORSSchemes, cors_schemes);
+  AppendSchemesToCmdLine(electron::switches::kFetchSchemes, fetch_schemes);
+  AppendSchemesToCmdLine(electron::switches::kServiceWorkerSchemes,
                          service_worker_schemes);
-  AppendSchemesToCmdLine(atom::switches::kStandardSchemes, g_standard_schemes);
+  AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
+                         g_standard_schemes);
 }
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -285,20 +286,20 @@ void Protocol::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
 void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
                                  mate::Arguments* args) {
-  if (atom::Browser::Get()->is_ready()) {
+  if (electron::Browser::Get()->is_ready()) {
     args->ThrowError(
         "protocol.registerSchemesAsPrivileged should be called before "
         "app is ready");
     return;
   }
 
-  atom::api::RegisterSchemesAsPrivileged(val, args);
+  electron::api::RegisterSchemesAsPrivileged(val, args);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -308,7 +309,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
-  dict.SetMethod("getStandardSchemes", &atom::api::GetStandardSchemes);
+  dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }
 
 }  // namespace

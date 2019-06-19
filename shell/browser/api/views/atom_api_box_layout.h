@@ -9,7 +9,7 @@
 #include "shell/browser/api/views/atom_api_layout_manager.h"
 #include "ui/views/layout/box_layout.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -35,6 +35,6 @@ class BoxLayout : public LayoutManager {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_

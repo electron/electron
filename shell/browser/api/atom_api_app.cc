@@ -64,23 +64,23 @@
 #include "shell/browser/ui/cocoa/atom_bundle_mover.h"
 #endif
 
-using atom::Browser;
+using electron::Browser;
 
 namespace mate {
 
 #if defined(OS_WIN)
 template <>
-struct Converter<atom::ProcessIntegrityLevel> {
+struct Converter<electron::ProcessIntegrityLevel> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::ProcessIntegrityLevel value) {
+                                   electron::ProcessIntegrityLevel value) {
     switch (value) {
-      case atom::ProcessIntegrityLevel::Untrusted:
+      case electron::ProcessIntegrityLevel::Untrusted:
         return mate::StringToV8(isolate, "untrusted");
-      case atom::ProcessIntegrityLevel::Low:
+      case electron::ProcessIntegrityLevel::Low:
         return mate::StringToV8(isolate, "low");
-      case atom::ProcessIntegrityLevel::Medium:
+      case electron::ProcessIntegrityLevel::Medium:
         return mate::StringToV8(isolate, "medium");
-      case atom::ProcessIntegrityLevel::High:
+      case electron::ProcessIntegrityLevel::High:
         return mate::StringToV8(isolate, "high");
       default:
         return mate::StringToV8(isolate, "unknown");
@@ -109,9 +109,9 @@ struct Converter<Browser::UserTask> {
   }
 };
 
-using atom::JumpListCategory;
-using atom::JumpListItem;
-using atom::JumpListResult;
+using electron::JumpListCategory;
+using electron::JumpListItem;
+using electron::JumpListResult;
 
 template <>
 struct Converter<JumpListItem::Type> {
@@ -374,7 +374,7 @@ struct Converter<content::CertificateRequestResultType> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -547,7 +547,7 @@ App::App(v8::Isolate* isolate) {
   content::GpuDataManager::GetInstance()->AddObserver(this);
 
   base::ProcessId pid = base::GetCurrentProcId();
-  auto process_metric = std::make_unique<atom::ProcessMetric>(
+  auto process_metric = std::make_unique<electron::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
   app_metrics_[pid] = std::move(process_metric);
@@ -828,7 +828,7 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
 #else
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(handle);
 #endif
-  app_metrics_[pid] = std::make_unique<atom::ProcessMetric>(
+  app_metrics_[pid] = std::make_unique<electron::ProcessMetric>(
       process_type, handle, std::move(metrics));
 }
 
@@ -998,7 +998,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
   }
 
   if (!override_argv) {
-    const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
+    const relauncher::StringVector& argv = electron::AtomCommandLine::argv();
     return relauncher::RelaunchApp(argv);
   }
 
@@ -1327,7 +1327,7 @@ int DockBounce(const std::string& type) {
   return request_id;
 }
 
-void DockSetMenu(atom::api::Menu* menu) {
+void DockSetMenu(electron::api::Menu* menu) {
   Browser::Get()->DockSetMenu(menu->model());
 }
 
@@ -1500,7 +1500,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -1510,10 +1510,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("App", atom::api::App::GetConstructor(isolate)
+  dict.Set("App", electron::api::App::GetConstructor(isolate)
                       ->GetFunction(context)
                       .ToLocalChecked());
-  dict.Set("app", atom::api::App::Create(isolate));
+  dict.Set("app", electron::api::App::Create(isolate));
 }
 
 }  // namespace

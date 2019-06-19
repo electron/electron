@@ -27,7 +27,7 @@
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -121,7 +121,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
-  atom::SetAppUserModelID(name);
+  electron::SetAppUserModelID(name);
 }
 
 bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
@@ -369,4 +369,4 @@ void Browser::ShowEmojiPanel() {
   ::SendInput(4, input, sizeof(INPUT));
 }
 
-}  // namespace atom
+}  // namespace electron

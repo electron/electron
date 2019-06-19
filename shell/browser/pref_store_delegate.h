@@ -12,7 +12,7 @@
 #include "components/prefs/persistent_pref_store.h"
 #include "components/prefs/pref_value_store.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -47,6 +47,6 @@ class PrefStoreDelegate : public PrefValueStore::Delegate {
   DISALLOW_COPY_AND_ASSIGN(PrefStoreDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_PREF_STORE_DELEGATE_H_

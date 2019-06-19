@@ -18,7 +18,7 @@ class BrowserContext;
 struct StreamInfo;
 }  // namespace content
 
-namespace atom {
+namespace electron {
 
 class PdfViewerHandler;
 
@@ -56,6 +56,6 @@ class PdfViewerUI : public content::WebUIController,
   DISALLOW_COPY_AND_ASSIGN(PdfViewerUI);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_

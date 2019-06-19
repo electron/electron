@@ -22,7 +22,7 @@
 #include "shell/browser/api/atom_api_url_request.h"
 #include "shell/browser/atom_browser_context.h"
 
-namespace atom {
+namespace electron {
 
 class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                        public net::URLRequest::Delegate,
@@ -117,6 +117,6 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_ATOM_URL_REQUEST_H_

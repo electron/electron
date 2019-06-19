@@ -11,7 +11,7 @@
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "ui/gfx/skbitmap_operations.h"
 
-namespace atom {
+namespace electron {
 
 OffScreenVideoConsumer::OffScreenVideoConsumer(
     OffScreenRenderWidgetHostView* view,
@@ -134,4 +134,4 @@ bool OffScreenVideoConsumer::CheckContentRect(const gfx::Rect& content_rect) {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

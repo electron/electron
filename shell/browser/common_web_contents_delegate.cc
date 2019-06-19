@@ -57,7 +57,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -144,7 +144,7 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
   auto* context = web_contents->GetBrowserContext();
-  return static_cast<atom::AtomBrowserContext*>(context)->prefs();
+  return static_cast<electron::AtomBrowserContext*>(context)->prefs();
 }
 
 std::map<std::string, std::string> GetAddedFileSystemPaths(
@@ -657,4 +657,4 @@ void CommonWebContentsDelegate::HideAutofillPopup() {
     autofill_popup_->Hide();
 }
 
-}  // namespace atom
+}  // namespace electron

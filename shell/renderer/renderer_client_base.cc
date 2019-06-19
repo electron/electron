@@ -62,7 +62,7 @@
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -209,7 +209,8 @@ void RendererClientBase::RenderFrameCreated(
   new ContentSettingsObserver(render_frame);
 #if BUILDFLAG(ENABLE_PRINTING)
   new printing::PrintRenderFrameHelper(
-      render_frame, std::make_unique<atom::PrintRenderFrameHelperDelegate>());
+      render_frame,
+      std::make_unique<electron::PrintRenderFrameHelperDelegate>());
 #endif
 
   // TODO(nornagon): it might be possible for an IPC message sent to this
@@ -319,4 +320,4 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
   return script->Run(context).ToLocalChecked();
 }
 
-}  // namespace atom
+}  // namespace electron

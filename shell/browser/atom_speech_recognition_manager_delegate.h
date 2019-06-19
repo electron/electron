@@ -12,7 +12,7 @@
 #include "content/public/browser/speech_recognition_event_listener.h"
 #include "content/public/browser/speech_recognition_manager_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class AtomSpeechRecognitionManagerDelegate
     : public content::SpeechRecognitionManagerDelegate,
@@ -51,6 +51,6 @@ class AtomSpeechRecognitionManagerDelegate
   DISALLOW_COPY_AND_ASSIGN(AtomSpeechRecognitionManagerDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_

@@ -6,7 +6,7 @@
 
 #include "shell/browser/native_window_views.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -20,4 +20,4 @@ void BrowserWindow::UpdateDraggableRegions(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

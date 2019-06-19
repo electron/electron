@@ -7,7 +7,7 @@
 
 #include "ui/views/view.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -28,6 +28,6 @@ class RootViewMac : public views::View {
   DISALLOW_COPY_AND_ASSIGN(RootViewMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_COCOA_ROOT_VIEW_MAC_H_

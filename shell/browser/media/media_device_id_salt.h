@@ -13,7 +13,7 @@
 class PrefRegistrySimple;
 class PrefService;
 
-namespace atom {
+namespace electron {
 
 // MediaDeviceIDSalt is responsible for creating and retrieving a salt string
 // that is used for creating MediaSource IDs that can be cached by a web
@@ -34,6 +34,6 @@ class MediaDeviceIDSalt {
   DISALLOW_COPY_AND_ASSIGN(MediaDeviceIDSalt);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_

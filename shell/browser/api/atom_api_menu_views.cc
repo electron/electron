@@ -12,7 +12,7 @@
 
 using views::MenuRunner;
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -42,7 +42,7 @@ void MenuViews::PopupAt(TopLevelWindow* window,
   int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
 
   // Don't emit unresponsive event when showing menu.
-  atom::UnresponsiveSuppressor suppressor;
+  electron::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
   int32_t window_id = window->weak_map_id();
@@ -81,4 +81,4 @@ mate::WrappableBase* Menu::New(mate::Arguments* args) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

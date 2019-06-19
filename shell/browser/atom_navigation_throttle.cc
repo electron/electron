@@ -7,7 +7,7 @@
 #include "content/public/browser/navigation_handle.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 
-namespace atom {
+namespace electron {
 
 AtomNavigationThrottle::AtomNavigationThrottle(
     content::NavigationHandle* navigation_handle)
@@ -29,7 +29,7 @@ AtomNavigationThrottle::WillRedirectRequest() {
   }
 
   auto api_contents =
-      atom::api::WebContents::From(v8::Isolate::GetCurrent(), contents);
+      electron::api::WebContents::From(v8::Isolate::GetCurrent(), contents);
   if (api_contents.IsEmpty()) {
     // No need to emit any event if the WebContents is not available in JS.
     return PROCEED;
@@ -41,4 +41,4 @@ AtomNavigationThrottle::WillRedirectRequest() {
   return PROCEED;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -13,7 +13,7 @@
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "ui/gfx/geometry/rect.h"
 
-namespace atom {
+namespace electron {
 
 class TrayIcon {
  public:
@@ -107,6 +107,6 @@ class TrayIcon {
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_TRAY_ICON_H_

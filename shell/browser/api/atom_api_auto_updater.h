@@ -13,7 +13,7 @@
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/window_list_observer.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -56,6 +56,6 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_AUTO_UPDATER_H_

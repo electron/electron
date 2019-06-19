@@ -16,7 +16,7 @@
 #include "shell/browser/api/stream_subscriber.h"
 #include "shell/browser/net/js_asker.h"
 
-namespace atom {
+namespace electron {
 
 class URLRequestStreamJob : public JsAsker, public net::URLRequestJob {
  public:
@@ -68,6 +68,6 @@ class URLRequestStreamJob : public JsAsker, public net::URLRequestJob {
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestStreamJob);
 };
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_URL_REQUEST_STREAM_JOB_H_

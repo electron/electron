@@ -22,7 +22,7 @@
 
 class URLPattern;
 
-namespace atom {
+namespace electron {
 
 using URLPatterns = std::set<URLPattern>;
 
@@ -178,6 +178,6 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_

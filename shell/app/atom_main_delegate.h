@@ -11,7 +11,7 @@
 #include "content/public/app/content_main_delegate.h"
 #include "content/public/common/content_client.h"
 
-namespace atom {
+namespace electron {
 
 void LoadResourceBundle(const std::string& locale);
 
@@ -56,6 +56,6 @@ class AtomMainDelegate : public content::ContentMainDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomMainDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_APP_ATOM_MAIN_DELEGATE_H_

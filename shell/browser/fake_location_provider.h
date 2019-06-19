@@ -9,7 +9,7 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/device/public/mojom/geoposition.mojom.h"
 
-namespace atom {
+namespace electron {
 
 class FakeLocationProvider : public device::LocationProvider {
  public:
@@ -31,6 +31,6 @@ class FakeLocationProvider : public device::LocationProvider {
   DISALLOW_COPY_AND_ASSIGN(FakeLocationProvider);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_FAKE_LOCATION_PROVIDER_H_

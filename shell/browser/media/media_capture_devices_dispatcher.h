@@ -12,7 +12,7 @@
 #include "content/public/browser/media_stream_request.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
 
-namespace atom {
+namespace electron {
 
 // This singleton is used to receive updates about media events from the content
 // layer.
@@ -85,6 +85,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_

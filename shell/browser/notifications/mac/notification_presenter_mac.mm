@@ -7,7 +7,7 @@
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 
-namespace atom {
+namespace electron {
 
 // static
 NotificationPresenter* NotificationPresenter::Create() {
@@ -47,4 +47,4 @@ Notification* NotificationPresenterMac::CreateNotificationObject(
   return new CocoaNotification(delegate, this);
 }
 
-}  // namespace atom
+}  // namespace electron

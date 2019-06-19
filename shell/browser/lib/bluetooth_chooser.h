@@ -12,7 +12,7 @@
 #include "content/public/browser/bluetooth_chooser.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 
-namespace atom {
+namespace electron {
 
 class BluetoothChooser : public content::BluetoothChooser {
  public:
@@ -45,6 +45,6 @@ class BluetoothChooser : public content::BluetoothChooser {
   DISALLOW_COPY_AND_ASSIGN(BluetoothChooser);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_

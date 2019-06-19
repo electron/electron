@@ -17,7 +17,7 @@
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/widget.h"
 
-namespace atom {
+namespace electron {
 
 NotifyIcon::NotifyIcon(NotifyIconHost* host, UINT id, HWND window, UINT message)
     : host_(host),
@@ -201,4 +201,4 @@ void NotifyIcon::OnContextMenuClosed() {
   widget_->Close();
 }
 
-}  // namespace atom
+}  // namespace electron

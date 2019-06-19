@@ -19,7 +19,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/page_zoom.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -165,4 +165,4 @@ void ZoomLevelDelegate::InitHostZoomMap(content::HostZoomMap* host_zoom_map) {
           &ZoomLevelDelegate::OnZoomLevelChanged, base::Unretained(this)));
 }
 
-}  // namespace atom
+}  // namespace electron

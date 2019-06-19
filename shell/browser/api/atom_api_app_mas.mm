@@ -10,7 +10,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -63,4 +63,4 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

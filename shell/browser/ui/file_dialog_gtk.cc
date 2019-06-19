@@ -44,7 +44,8 @@ void OnFileFilterDataDestroyed(std::string* file_extension) {
 class FileChooserDialog {
  public:
   FileChooserDialog(GtkFileChooserAction action, const DialogSettings& settings)
-      : parent_(static_cast<atom::NativeWindowViews*>(settings.parent_window)),
+      : parent_(
+            static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
     const char* confirm_text = _("_OK");
 
@@ -126,13 +127,13 @@ class FileChooserDialog {
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 
-  void RunSaveAsynchronous(atom::util::Promise promise) {
-    save_promise_.reset(new atom::util::Promise(std::move(promise)));
+  void RunSaveAsynchronous(electron::util::Promise promise) {
+    save_promise_.reset(new electron::util::Promise(std::move(promise)));
     RunAsynchronous();
   }
 
-  void RunOpenAsynchronous(atom::util::Promise promise) {
-    open_promise_.reset(new atom::util::Promise(std::move(promise)));
+  void RunOpenAsynchronous(electron::util::Promise promise) {
+    open_promise_.reset(new electron::util::Promise(std::move(promise)));
     RunAsynchronous();
   }
 
@@ -166,15 +167,15 @@ class FileChooserDialog {
  private:
   void AddFilters(const Filters& filters);
 
-  atom::NativeWindowViews* parent_;
-  atom::UnresponsiveSuppressor unresponsive_suppressor_;
+  electron::NativeWindowViews* parent_;
+  electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkWidget* dialog_;
   GtkWidget* preview_;
 
   Filters filters_;
-  std::unique_ptr<atom::util::Promise> save_promise_;
-  std::unique_ptr<atom::util::Promise> open_promise_;
+  std::unique_ptr<electron::util::Promise> save_promise_;
+  std::unique_ptr<electron::util::Promise> open_promise_;
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkWidget*);
@@ -281,7 +282,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    atom::util::Promise promise) {
+                    electron::util::Promise promise) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (settings.properties & FILE_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
@@ -302,7 +303,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    atom::util::Promise promise) {
+                    electron::util::Promise promise) {
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));

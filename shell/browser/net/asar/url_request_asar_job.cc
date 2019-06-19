@@ -215,7 +215,7 @@ void URLRequestAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
   std::string status("HTTP/1.1 200 OK");
   auto* headers = new net::HttpResponseHeaders(status);
 
-  headers->AddHeader(atom::kCORSHeader);
+  headers->AddHeader(electron::kCORSHeader);
   info->headers = headers;
 }
 

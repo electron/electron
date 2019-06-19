@@ -30,7 +30,7 @@ GDesktopAppInfo* get_desktop_app_info() {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 std::string GetApplicationName() {
   // attempt #1: the string set in app.setName()
@@ -76,4 +76,4 @@ std::string GetApplicationVersion() {
   return ret;
 }
 
-}  // namespace atom
+}  // namespace electron

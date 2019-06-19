@@ -17,7 +17,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -514,4 +514,4 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Object(
   return std::move(result);
 }
 
-}  // namespace atom
+}  // namespace electron

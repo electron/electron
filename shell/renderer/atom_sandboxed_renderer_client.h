@@ -12,7 +12,7 @@
 #include "base/process/process_metrics.h"
 #include "shell/renderer/renderer_client_base.h"
 
-namespace atom {
+namespace electron {
 
 class AtomSandboxedRendererClient : public RendererClientBase {
  public:
@@ -22,7 +22,7 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   void InitializeBindings(v8::Local<v8::Object> binding,
                           v8::Local<v8::Context> context,
                           bool is_main_frame);
-  // atom::RendererClientBase:
+  // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               content::RenderFrame* render_frame) override;
   void WillReleaseScriptContext(v8::Handle<v8::Context> context,
@@ -49,6 +49,6 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRendererClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_ATOM_SANDBOXED_RENDERER_CLIENT_H_

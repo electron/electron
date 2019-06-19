@@ -20,7 +20,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 VerifyRequestParams::VerifyRequestParams() = default;
 VerifyRequestParams::~VerifyRequestParams() = default;
@@ -206,4 +206,4 @@ CertVerifierRequest* AtomCertVerifier::FindRequest(
   return nullptr;
 }
 
-}  // namespace atom
+}  // namespace electron

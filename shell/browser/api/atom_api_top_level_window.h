@@ -19,7 +19,7 @@
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/atom_api_native_image.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -258,23 +258,24 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
 template <>
-struct Converter<atom::NativeWindow*> {
+struct Converter<electron::NativeWindow*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::NativeWindow** out) {
+                     electron::NativeWindow** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {
       *out = NULL;
       return true;
     }
 
-    atom::api::TopLevelWindow* window;
-    if (!Converter<atom::api::TopLevelWindow*>::FromV8(isolate, val, &window))
+    electron::api::TopLevelWindow* window;
+    if (!Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
+                                                           &window))
       return false;
     *out = window->window();
     return true;

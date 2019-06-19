@@ -19,7 +19,7 @@
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/web_contents_preferences.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -265,4 +265,4 @@ AtomPermissionManager::GetPermissionStatusForFrame(
   return blink::mojom::PermissionStatus::GRANTED;
 }
 
-}  // namespace atom
+}  // namespace electron

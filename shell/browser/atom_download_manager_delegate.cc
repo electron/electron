@@ -26,7 +26,7 @@
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/options_switches.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -122,7 +122,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    atom::util::Promise dialog_promise(isolate);
+    electron::util::Promise dialog_promise(isolate);
     auto dialog_callback =
         base::BindOnce(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
                        base::Unretained(this), download_id, callback);
@@ -241,4 +241,4 @@ void AtomDownloadManagerDelegate::GetNextId(
   callback.Run(next_id++);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -15,7 +15,7 @@
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
-namespace atom {
+namespace electron {
 
 void DragFileItems(const std::vector<base::FilePath>& files,
                    const gfx::Image& icon,
@@ -46,4 +46,4 @@ void DragFileItems(const std::vector<base::FilePath>& files,
           ui::DragDropTypes::DRAG_EVENT_SOURCE_MOUSE);
 }
 
-}  // namespace atom
+}  // namespace electron

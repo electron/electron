@@ -13,7 +13,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/ui/atom_menu_model.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -117,23 +117,23 @@ class Menu : public mate::TrackableObject<Menu>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
 template <>
-struct Converter<atom::AtomMenuModel*> {
+struct Converter<electron::AtomMenuModel*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::AtomMenuModel** out) {
+                     electron::AtomMenuModel** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {
       *out = nullptr;
       return true;
     }
 
-    atom::api::Menu* menu;
-    if (!Converter<atom::api::Menu*>::FromV8(isolate, val, &menu))
+    electron::api::Menu* menu;
+    if (!Converter<electron::api::Menu*>::FromV8(isolate, val, &menu))
       return false;
     *out = menu->model();
     return true;

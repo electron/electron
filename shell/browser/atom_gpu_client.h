@@ -7,7 +7,7 @@
 
 #include "content/public/gpu/content_gpu_client.h"
 
-namespace atom {
+namespace electron {
 
 class AtomGpuClient : public content::ContentGpuClient {
  public:
@@ -20,6 +20,6 @@ class AtomGpuClient : public content::ContentGpuClient {
   DISALLOW_COPY_AND_ASSIGN(AtomGpuClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_GPU_CLIENT_H_

@@ -33,7 +33,7 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
   const base::CommandLine::StringType dashdash(2, '-');
@@ -50,4 +50,4 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -79,7 +79,7 @@ struct Converter<NSAppearance*> {
 };
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -668,4 +668,4 @@ void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

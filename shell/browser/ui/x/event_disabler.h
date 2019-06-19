@@ -10,7 +10,7 @@
 #include "base/macros.h"
 #include "ui/events/event_rewriter.h"
 
-namespace atom {
+namespace electron {
 
 class EventDisabler : public ui::EventRewriter {
  public:
@@ -29,6 +29,6 @@ class EventDisabler : public ui::EventRewriter {
   DISALLOW_COPY_AND_ASSIGN(EventDisabler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_X_EVENT_DISABLER_H_

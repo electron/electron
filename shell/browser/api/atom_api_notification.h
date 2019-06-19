@@ -17,7 +17,7 @@
 #include "shell/browser/notifications/notification_presenter.h"
 #include "ui/gfx/image/image.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -55,7 +55,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool GetHasReply() const;
   base::string16 GetReplyPlaceholder() const;
   base::string16 GetSound() const;
-  std::vector<atom::NotificationAction> GetActions() const;
+  std::vector<electron::NotificationAction> GetActions() const;
   base::string16 GetCloseButtonText() const;
 
   // Prop Setters
@@ -66,7 +66,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetHasReply(bool new_has_reply);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetSound(const base::string16& sound);
-  void SetActions(const std::vector<atom::NotificationAction>& actions);
+  void SetActions(const std::vector<electron::NotificationAction>& actions);
   void SetCloseButtonText(const base::string16& text);
 
  private:
@@ -80,18 +80,18 @@ class Notification : public mate::TrackableObject<Notification>,
   bool has_reply_ = false;
   base::string16 reply_placeholder_;
   base::string16 sound_;
-  std::vector<atom::NotificationAction> actions_;
+  std::vector<electron::NotificationAction> actions_;
   base::string16 close_button_text_;
 
-  atom::NotificationPresenter* presenter_;
+  electron::NotificationPresenter* presenter_;
 
-  base::WeakPtr<atom::Notification> notification_;
+  base::WeakPtr<electron::Notification> notification_;
 
   DISALLOW_COPY_AND_ASSIGN(Notification);
 };
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_NOTIFICATION_H_

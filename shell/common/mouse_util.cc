@@ -7,7 +7,7 @@
 
 using Cursor = blink::WebCursorInfo::Type;
 
-namespace atom {
+namespace electron {
 
 std::string CursorTypeToString(const content::CursorInfo& info) {
   switch (info.type) {
@@ -104,4 +104,4 @@ std::string CursorTypeToString(const content::CursorInfo& info) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

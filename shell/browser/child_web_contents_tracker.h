@@ -9,7 +9,7 @@
 
 #include "content/public/browser/web_contents_user_data.h"
 
-namespace atom {
+namespace electron {
 
 // ChildWebContentsTracker tracks child WebContents
 // created by native `window.open()`
@@ -27,6 +27,6 @@ struct ChildWebContentsTracker
   DISALLOW_COPY_AND_ASSIGN(ChildWebContentsTracker);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_

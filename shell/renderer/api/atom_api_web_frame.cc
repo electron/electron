@@ -63,7 +63,7 @@ struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -94,7 +94,7 @@ class RenderFrameStatus : public content::RenderFrameObserver {
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
-  explicit ScriptExecutionCallback(atom::util::Promise promise)
+  explicit ScriptExecutionCallback(electron::util::Promise promise)
       : promise_(std::move(promise)) {}
   ~ScriptExecutionCallback() override {}
 
@@ -118,7 +118,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   }
 
  private:
-  atom::util::Promise promise_;
+  electron::util::Promise promise_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
@@ -532,7 +532,7 @@ int GetRoutingId(v8::Local<v8::Value> window) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -540,7 +540,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  using namespace atom::api;  // NOLINT(build/namespaces)
+  using namespace electron::api;  // NOLINT(build/namespaces)
 
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);

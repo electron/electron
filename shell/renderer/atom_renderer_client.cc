@@ -22,7 +22,7 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/electron_node/src/node_native_module.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -245,4 +245,4 @@ node::Environment* AtomRendererClient::GetEnvironment(
   return env;
 }
 
-}  // namespace atom
+}  // namespace electron

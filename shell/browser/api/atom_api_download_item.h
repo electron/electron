@@ -15,7 +15,7 @@
 #include "shell/browser/ui/file_dialog.h"
 #include "url/gurl.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -69,6 +69,6 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_DOWNLOAD_ITEM_H_

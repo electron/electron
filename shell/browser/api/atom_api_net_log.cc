@@ -20,7 +20,7 @@
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -187,4 +187,4 @@ void NetLog::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

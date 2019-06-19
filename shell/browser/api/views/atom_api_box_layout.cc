@@ -33,7 +33,7 @@ struct Converter<views::BoxLayout::Orientation> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -65,11 +65,11 @@ void BoxLayout::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::BoxLayout;
+using electron::api::BoxLayout;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

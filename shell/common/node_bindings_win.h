@@ -8,7 +8,7 @@
 #include "base/compiler_specific.h"
 #include "shell/common/node_bindings.h"
 
-namespace atom {
+namespace electron {
 
 class NodeBindingsWin : public NodeBindings {
  public:
@@ -21,6 +21,6 @@ class NodeBindingsWin : public NodeBindings {
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsWin);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_NODE_BINDINGS_WIN_H_

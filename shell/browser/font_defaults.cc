@@ -160,7 +160,7 @@ void FillFontFamilyMap(const char* map_name,
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 void SetFontDefaults(content::WebPreferences* prefs) {
   FillFontFamilyMap(prefs::kWebKitStandardFontFamilyMap,
@@ -179,4 +179,4 @@ void SetFontDefaults(content::WebPreferences* prefs) {
                     &prefs->pictograph_font_family_map);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -9,12 +9,12 @@
 
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 void EmitDeprecationWarning(node::Environment* env,
                             const std::string& warning_msg,
                             const std::string& warning_type);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_DEPRECATE_UTIL_H_

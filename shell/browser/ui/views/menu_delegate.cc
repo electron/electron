@@ -14,7 +14,7 @@
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/widget.h"
 
-namespace atom {
+namespace electron {
 
 MenuDelegate::MenuDelegate(MenuBar* menu_bar)
     : menu_bar_(menu_bar), id_(-1), hold_first_switch_(false) {}
@@ -140,4 +140,4 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   return nullptr;
 }
 
-}  // namespace atom
+}  // namespace electron

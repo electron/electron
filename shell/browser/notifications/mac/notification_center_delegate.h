@@ -7,16 +7,17 @@
 
 #import <Foundation/Foundation.h>
 
-namespace atom {
+namespace electron {
 class NotificationPresenterMac;
 }
 
 @interface NotificationCenterDelegate
     : NSObject <NSUserNotificationCenterDelegate> {
  @private
-  atom::NotificationPresenterMac* presenter_;
+  electron::NotificationPresenterMac* presenter_;
 }
-- (instancetype)initWithPresenter:(atom::NotificationPresenterMac*)presenter;
+- (instancetype)initWithPresenter:
+    (electron::NotificationPresenterMac*)presenter;
 @end
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_CENTER_DELEGATE_H_

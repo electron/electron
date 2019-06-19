@@ -13,7 +13,7 @@
 #include "shell/browser/api/views/atom_api_layout_manager.h"
 #include "ui/views/view.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -52,7 +52,7 @@ class View : public mate::TrackableObject<View> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
@@ -61,8 +61,8 @@ struct Converter<views::View*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      views::View** out) {
-    atom::api::View* view;
-    if (!Converter<atom::api::View*>::FromV8(isolate, val, &view))
+    electron::api::View* view;
+    if (!Converter<electron::api::View*>::FromV8(isolate, val, &view))
       return false;
     *out = view->view();
     return true;

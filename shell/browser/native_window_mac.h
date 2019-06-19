@@ -23,7 +23,7 @@
 @class CustomWindowButtonView;
 @class FullSizeContentView;
 
-namespace atom {
+namespace electron {
 
 class RootViewMac;
 
@@ -224,6 +224,6 @@ class NativeWindowMac : public NativeWindow {
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_WINDOW_MAC_H_

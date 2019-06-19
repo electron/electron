@@ -10,7 +10,7 @@
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 
-namespace atom {
+namespace electron {
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     const HandlersMap& handlers,
@@ -74,4 +74,4 @@ void ProxyingURLLoaderFactory::OnProxyBindingError() {
     delete this;
 }
 
-}  // namespace atom
+}  // namespace electron

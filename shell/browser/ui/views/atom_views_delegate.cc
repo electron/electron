@@ -28,7 +28,7 @@ bool IsDesktopEnvironmentUnity() {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 ViewsDelegate::ViewsDelegate() {}
 
@@ -112,4 +112,4 @@ bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #endif
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -270,7 +270,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 void FillRequestDetails(base::DictionaryValue* details,
                         const net::URLRequest* request) {
@@ -321,4 +321,4 @@ void GetUploadData(base::ListValue* upload_data_list,
   }
 }
 
-}  // namespace atom
+}  // namespace electron

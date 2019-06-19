@@ -21,11 +21,11 @@
 namespace mate {
 
 template <>
-struct Converter<atom::TrayIcon::HighlightMode> {
+struct Converter<electron::TrayIcon::HighlightMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::TrayIcon::HighlightMode* out) {
-    using HighlightMode = atom::TrayIcon::HighlightMode;
+                     electron::TrayIcon::HighlightMode* out) {
+    using HighlightMode = electron::TrayIcon::HighlightMode;
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "always") {
@@ -46,7 +46,7 @@ struct Converter<atom::TrayIcon::HighlightMode> {
 };
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -248,11 +248,11 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Tray;
+using electron::api::Tray;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

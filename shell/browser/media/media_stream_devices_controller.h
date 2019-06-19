@@ -8,7 +8,7 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
 
-namespace atom {
+namespace electron {
 
 class MediaStreamDevicesController {
  public:
@@ -41,6 +41,6 @@ class MediaStreamDevicesController {
   DISALLOW_COPY_AND_ASSIGN(MediaStreamDevicesController);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_

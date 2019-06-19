@@ -26,7 +26,7 @@ static scoped_nsobject<NSMenu> applicationMenu_;
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -112,7 +112,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   base::mac::ScopedSendingEvent sendingEventScoper;
 
   // Don't emit unresponsive event when showing menu.
-  atom::UnresponsiveSuppressor suppressor;
+  electron::UnresponsiveSuppressor suppressor;
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
 
@@ -172,4 +172,4 @@ mate::WrappableBase* Menu::New(mate::Arguments* args) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

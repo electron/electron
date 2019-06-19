@@ -7,7 +7,7 @@
 
 #include "ui/views/views_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class ViewsDelegateMac : public views::ViewsDelegate {
  public:
@@ -25,6 +25,6 @@ class ViewsDelegateMac : public views::ViewsDelegate {
   DISALLOW_COPY_AND_ASSIGN(ViewsDelegateMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_COCOA_VIEWS_DELEGATE_MAC_H_

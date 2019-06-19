@@ -6,7 +6,7 @@
 
 #include "base/threading/thread_task_runner_handle.h"
 
-namespace atom {
+namespace electron {
 
 URLRequestAboutJob::URLRequestAboutJob(net::URLRequest* request,
                                        net::NetworkDelegate* network_delegate)
@@ -34,4 +34,4 @@ void URLRequestAboutJob::StartAsync() {
   NotifyHeadersComplete();
 }
 
-}  // namespace atom
+}  // namespace electron

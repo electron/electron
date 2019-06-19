@@ -12,7 +12,7 @@
 #include "base/macros.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
@@ -37,6 +37,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_

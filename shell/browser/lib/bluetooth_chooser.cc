@@ -10,10 +10,10 @@
 namespace mate {
 
 template <>
-struct Converter<atom::BluetoothChooser::DeviceInfo> {
+struct Converter<electron::BluetoothChooser::DeviceInfo> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const atom::BluetoothChooser::DeviceInfo& val) {
+      const electron::BluetoothChooser::DeviceInfo& val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("deviceName", val.device_name);
     dict.Set("deviceId", val.device_id);
@@ -23,7 +23,7 @@ struct Converter<atom::BluetoothChooser::DeviceInfo> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -114,9 +114,9 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
   }
 }
 
-std::vector<atom::BluetoothChooser::DeviceInfo>
+std::vector<electron::BluetoothChooser::DeviceInfo>
 BluetoothChooser::GetDeviceList() {
-  std::vector<atom::BluetoothChooser::DeviceInfo> vec;
+  std::vector<electron::BluetoothChooser::DeviceInfo> vec;
   for (const auto& it : device_map_) {
     DeviceInfo info = {it.first, it.second};
     vec.push_back(info);
@@ -125,4 +125,4 @@ BluetoothChooser::GetDeviceList() {
   return vec;
 }
 
-}  // namespace atom
+}  // namespace electron

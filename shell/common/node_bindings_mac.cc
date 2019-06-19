@@ -12,7 +12,7 @@
 
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
     : NodeBindings(browser_env) {}
@@ -62,4 +62,4 @@ NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
   return new NodeBindingsMac(browser_env);
 }
 
-}  // namespace atom
+}  // namespace electron

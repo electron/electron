@@ -4,7 +4,7 @@
 
 #include "shell/browser/ui/views/menu_model_adapter.h"
 
-namespace atom {
+namespace electron {
 
 MenuModelAdapter::MenuModelAdapter(AtomMenuModel* menu_model)
     : views::MenuModelAdapter(menu_model), menu_model_(menu_model) {}
@@ -22,4 +22,4 @@ bool MenuModelAdapter::GetAccelerator(int id,
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

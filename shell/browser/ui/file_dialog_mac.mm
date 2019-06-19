@@ -291,7 +291,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void OpenDialogCompletion(int chosen,
                           NSOpenPanel* dialog,
                           bool security_scoped_bookmarks,
-                          atom::util::Promise promise) {
+                          electron::util::Promise promise) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
@@ -320,7 +320,7 @@ void OpenDialogCompletion(int chosen,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    atom::util::Promise promise) {
+                    electron::util::Promise promise) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
@@ -330,7 +330,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
 
-  __block atom::util::Promise p = std::move(promise);
+  __block electron::util::Promise p = std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
@@ -367,7 +367,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 void SaveDialogCompletion(int chosen,
                           NSSavePanel* dialog,
                           bool security_scoped_bookmarks,
-                          atom::util::Promise promise) {
+                          electron::util::Promise promise) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   if (chosen == NSFileHandlingPanelCancelButton) {
     dict.Set("canceled", true);
@@ -391,7 +391,7 @@ void SaveDialogCompletion(int chosen,
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    atom::util::Promise promise) {
+                    electron::util::Promise promise) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
@@ -401,7 +401,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   // and pass it to the completion handler.
   bool security_scoped_bookmarks = settings.security_scoped_bookmarks;
 
-  __block atom::util::Promise p = std::move(promise);
+  __block electron::util::Promise p = std::move(promise);
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {

@@ -10,7 +10,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/atom_network_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -44,6 +44,6 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_H_

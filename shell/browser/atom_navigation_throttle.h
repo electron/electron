@@ -7,7 +7,7 @@
 
 #include "content/public/browser/navigation_throttle.h"
 
-namespace atom {
+namespace electron {
 
 class AtomNavigationThrottle : public content::NavigationThrottle {
  public:
@@ -22,6 +22,6 @@ class AtomNavigationThrottle : public content::NavigationThrottle {
   DISALLOW_COPY_AND_ASSIGN(AtomNavigationThrottle);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_NAVIGATION_THROTTLE_H_

@@ -18,7 +18,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/mac/main_application_bundle.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -68,4 +68,4 @@ void RegisterAtomCrApp() {
   [AtomApplication sharedApplication];
 }
 
-}  // namespace atom
+}  // namespace electron

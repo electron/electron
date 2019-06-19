@@ -7,7 +7,7 @@
 
 #include "shell/browser/api/event_emitter.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -30,6 +30,6 @@ class Net : public mate::EventEmitter<Net> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_NET_H_

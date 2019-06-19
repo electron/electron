@@ -11,7 +11,7 @@
 
 #include "base/logging.h"
 
-namespace atom {
+namespace electron {
 
 class DesktopNotificationController::Toast {
  public:
@@ -102,6 +102,6 @@ class DesktopNotificationController::Toast {
   float ease_in_pos_ = 0, ease_out_pos_ = 0, stack_collapse_pos_ = 0;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_H_

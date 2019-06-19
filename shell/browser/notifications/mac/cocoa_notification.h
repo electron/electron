@@ -14,7 +14,7 @@
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/notifications/notification.h"
 
-namespace atom {
+namespace electron {
 
 class CocoaNotification : public Notification {
  public:
@@ -44,6 +44,6 @@ class CocoaNotification : public Notification {
   DISALLOW_COPY_AND_ASSIGN(CocoaNotification);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_

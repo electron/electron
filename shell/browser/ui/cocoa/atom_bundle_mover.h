@@ -9,7 +9,7 @@
 
 #include "native_mate/persistent_dictionary.h"
 
-namespace atom {
+namespace electron {
 
 namespace ui {
 
@@ -38,6 +38,6 @@ class AtomBundleMover {
 
 }  // namespace ui
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_COCOA_ATOM_BUNDLE_MOVER_H_

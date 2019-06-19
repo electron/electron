@@ -27,7 +27,7 @@
 class PrefService;
 class PrefRegistrySimple;
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
@@ -245,6 +245,6 @@ class InspectableWebContentsImpl
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_IMPL_H_

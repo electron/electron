@@ -10,7 +10,7 @@
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
-namespace atom {
+namespace electron {
 
 class Win32Notification;
 
@@ -25,7 +25,7 @@ class NotificationPresenterWin7 : public NotificationPresenter,
   Win32Notification* GetNotificationObjectByTag(const std::string& tag);
 
  private:
-  atom::Notification* CreateNotificationObject(
+  electron::Notification* CreateNotificationObject(
       NotificationDelegate* delegate) override;
 
   void OnNotificationClicked(const Notification& notification) override;
@@ -34,6 +34,6 @@ class NotificationPresenterWin7 : public NotificationPresenter,
   DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin7);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN7_H_

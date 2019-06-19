@@ -11,7 +11,7 @@ namespace node {
 class Environment;
 }  // namespace node
 
-namespace atom {
+namespace electron {
 
 // Add support for node's "--inspect" switch.
 class NodeDebugger {
@@ -28,6 +28,6 @@ class NodeDebugger {
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NODE_DEBUGGER_H_

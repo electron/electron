@@ -8,7 +8,7 @@
 #include "shell/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/menu/menu_model_adapter.h"
 
-namespace atom {
+namespace electron {
 
 class MenuModelAdapter : public views::MenuModelAdapter {
  public:
@@ -24,6 +24,6 @@ class MenuModelAdapter : public views::MenuModelAdapter {
   DISALLOW_COPY_AND_ASSIGN(MenuModelAdapter);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_MENU_MODEL_ADAPTER_H_

@@ -13,7 +13,7 @@
 #include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -125,6 +125,6 @@ class BrowserWindow : public TopLevelWindow,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_BROWSER_WINDOW_H_

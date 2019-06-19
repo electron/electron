@@ -11,7 +11,7 @@
 #include "content/public/browser/media_stream_request.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -196,4 +196,4 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
       std::unique_ptr<content::MediaStreamUI>());
 }
 
-}  // namespace atom
+}  // namespace electron

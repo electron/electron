@@ -67,7 +67,7 @@ struct Converter<network::ResourceRequest> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 void FillRequestDetails(base::DictionaryValue* details,
                         const net::URLRequest* request);
@@ -75,6 +75,6 @@ void FillRequestDetails(base::DictionaryValue* details,
 void GetUploadData(base::ListValue* upload_data_list,
                    const net::URLRequest* request);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_

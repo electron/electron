@@ -11,7 +11,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -51,4 +51,4 @@ void MediaDeviceIDSalt::Reset(PrefService* pref_service) {
       content::BrowserContext::CreateRandomMediaDeviceIDSalt());
 }
 
-}  // namespace atom
+}  // namespace electron

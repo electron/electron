@@ -8,7 +8,7 @@
 #include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
 
-namespace atom {
+namespace electron {
 
 // The app-command in NativeWindow.
 extern const char kBrowserForward[];
@@ -47,6 +47,6 @@ extern const char kPdfViewerUIOrigin[];
 extern const char kPdfViewerUIHost[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_ATOM_CONSTANTS_H_

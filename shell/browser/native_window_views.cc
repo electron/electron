@@ -64,7 +64,7 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -653,7 +653,7 @@ void NativeWindowViews::MoveTop() {
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #elif defined(USE_X11)
-  atom::MoveWindowToForeground(GetAcceleratedWidget());
+  electron::MoveWindowToForeground(GetAcceleratedWidget());
 #endif
 }
 
@@ -1352,4 +1352,4 @@ NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
   return new NativeWindowViews(options, parent);
 }
 
-}  // namespace atom
+}  // namespace electron

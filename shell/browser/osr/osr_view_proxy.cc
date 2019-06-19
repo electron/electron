@@ -4,7 +4,7 @@
 
 #include "shell/browser/osr/osr_view_proxy.h"
 
-namespace atom {
+namespace electron {
 
 OffscreenViewProxy::OffscreenViewProxy(views::View* view) : view_(view) {
   view_bitmap_.reset(new SkBitmap);
@@ -53,4 +53,4 @@ void OffscreenViewProxy::OnEvent(ui::Event* event) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

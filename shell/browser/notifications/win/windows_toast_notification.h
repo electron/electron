@@ -23,7 +23,7 @@ using Microsoft::WRL::Make;
 using Microsoft::WRL::RuntimeClass;
 using Microsoft::WRL::RuntimeClassFlags;
 
-namespace atom {
+namespace electron {
 
 class ScopedHString;
 
@@ -126,6 +126,6 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
   DISALLOW_COPY_AND_ASSIGN(ToastEventHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_

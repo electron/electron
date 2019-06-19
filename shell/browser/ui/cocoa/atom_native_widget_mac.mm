@@ -6,7 +6,7 @@
 
 #include "shell/browser/ui/cocoa/atom_ns_window.h"
 
-namespace atom {
+namespace electron {
 
 AtomNativeWidgetMac::AtomNativeWidgetMac(
     NativeWindowMac* shell,
@@ -24,4 +24,4 @@ NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
                                     styleMask:style_mask_] autorelease];
 }
 
-}  // namespace atom
+}  // namespace electron

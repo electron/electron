@@ -28,7 +28,7 @@ class WebContentsViewRelay
   explicit WebContentsViewRelay(content::WebContents* contents) {}
   friend class content::WebContentsUserData<WebContentsViewRelay>;
 
-  atom::api::WebContentsView* view_ = nullptr;
+  electron::api::WebContentsView* view_ = nullptr;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 
@@ -39,7 +39,7 @@ WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsViewRelay)
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -112,11 +112,11 @@ void WebContentsView::BuildPrototype(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::WebContentsView;
+using electron::api::WebContentsView;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

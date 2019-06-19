@@ -29,7 +29,7 @@ std::string MediaStreamTypeToString(blink::MediaStreamType type) {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -157,4 +157,4 @@ bool WebContentsPermissionHelper::CheckMediaAccessPermission(
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)
 
-}  // namespace atom
+}  // namespace electron

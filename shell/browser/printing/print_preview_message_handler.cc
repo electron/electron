@@ -27,7 +27,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -142,7 +142,7 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
 
 void PrintPreviewMessageHandler::PrintToPDF(
     const base::DictionaryValue& options,
-    atom::util::Promise promise) {
+    electron::util::Promise promise) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
   promise_map_.emplace(request_id, std::move(promise));
@@ -195,4 +195,4 @@ void PrintPreviewMessageHandler::RejectPromise(int request_id) {
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintPreviewMessageHandler)
 
-}  // namespace atom
+}  // namespace electron

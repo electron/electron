@@ -26,7 +26,7 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 class PopupViewCommon : public autofill::PopupViewCommon {
  public:
@@ -216,4 +216,4 @@ int AutofillPopup::LineFromY(int y) const {
   return values_.size() - 1;
 }
 
-}  // namespace atom
+}  // namespace electron

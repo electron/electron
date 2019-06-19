@@ -19,7 +19,7 @@
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/geometry/rect_f.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 const size_t kMaxDataLength = 1024;
@@ -227,4 +227,4 @@ const mojom::ElectronBrowserPtr& AutofillAgent::GetElectronBrowser() {
   return browser_ptr_;
 }
 
-}  // namespace atom
+}  // namespace electron

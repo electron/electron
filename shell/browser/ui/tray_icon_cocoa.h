@@ -15,7 +15,7 @@
 @class AtomMenuController;
 @class StatusItemView;
 
-namespace atom {
+namespace electron {
 
 class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
  public:
@@ -52,6 +52,6 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_

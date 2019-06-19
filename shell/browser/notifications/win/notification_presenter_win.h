@@ -30,7 +30,7 @@
 class GURL;
 class SkBitmap;
 
-namespace atom {
+namespace electron {
 
 class NotificationPresenterWin : public NotificationPresenter {
  public:
@@ -50,6 +50,6 @@ class NotificationPresenterWin : public NotificationPresenter {
   DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_

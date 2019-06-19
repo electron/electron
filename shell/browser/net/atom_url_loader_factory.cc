@@ -34,23 +34,23 @@ using content::BrowserThread;
 namespace mate {
 
 template <>
-struct Converter<atom::ProtocolType> {
+struct Converter<electron::ProtocolType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::ProtocolType* out) {
+                     electron::ProtocolType* out) {
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
     if (type == "buffer")
-      *out = atom::ProtocolType::kBuffer;
+      *out = electron::ProtocolType::kBuffer;
     else if (type == "string")
-      *out = atom::ProtocolType::kString;
+      *out = electron::ProtocolType::kString;
     else if (type == "file")
-      *out = atom::ProtocolType::kFile;
+      *out = electron::ProtocolType::kFile;
     else if (type == "http")
-      *out = atom::ProtocolType::kHttp;
+      *out = electron::ProtocolType::kHttp;
     else if (type == "stream")
-      *out = atom::ProtocolType::kStream;
+      *out = electron::ProtocolType::kStream;
     else  // note "free" is internal type, not allowed to be passed from user
       return false;
     return true;
@@ -59,7 +59,7 @@ struct Converter<atom::ProtocolType> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -478,4 +478,4 @@ void AtomURLLoaderFactory::SendContents(
                               base::BindOnce(OnWrite, std::move(write_data)));
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -11,10 +11,10 @@
 namespace mate {
 
 template <>
-struct Converter<atom::MessageBoxSettings> {
+struct Converter<electron::MessageBoxSettings> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::MessageBoxSettings* out);
+                     electron::MessageBoxSettings* out);
 };
 
 }  // namespace mate

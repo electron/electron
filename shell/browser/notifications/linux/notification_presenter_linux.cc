@@ -7,7 +7,7 @@
 
 #include "shell/browser/notifications/linux/libnotify_notification.h"
 
-namespace atom {
+namespace electron {
 
 // static
 NotificationPresenter* NotificationPresenter::Create() {
@@ -25,4 +25,4 @@ Notification* NotificationPresenterLinux::CreateNotificationObject(
   return new LibnotifyNotification(delegate, this);
 }
 
-}  // namespace atom
+}  // namespace electron

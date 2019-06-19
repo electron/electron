@@ -17,7 +17,7 @@
 #include "base/base_paths_posix.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 enum {
   PATH_START = 11000,
@@ -45,6 +45,6 @@ enum {
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_PATHS_H_

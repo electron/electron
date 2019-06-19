@@ -15,7 +15,7 @@
 #include "content/public/common/page_zoom.h"
 #include "net/base/url_util.h"
 
-namespace atom {
+namespace electron {
 
 WebContentsZoomController::WebContentsZoomController(
     content::WebContents* web_contents)
@@ -280,4 +280,4 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsZoomController)
 
-}  // namespace atom
+}  // namespace electron

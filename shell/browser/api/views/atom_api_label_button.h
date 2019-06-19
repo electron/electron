@@ -10,7 +10,7 @@
 #include "shell/browser/api/views/atom_api_button.h"
 #include "ui/views/controls/button/label_button.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -42,6 +42,6 @@ class LabelButton : public Button {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_LABEL_BUTTON_H_

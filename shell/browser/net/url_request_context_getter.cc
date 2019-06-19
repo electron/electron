@@ -63,7 +63,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -317,7 +317,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         static_cast<net::CookieMonster*>(url_request_context_->cookie_store());
     std::vector<std::string> cookie_schemes(
         {url::kHttpScheme, url::kHttpsScheme, url::kWsScheme, url::kWssScheme});
-    const auto& custom_standard_schemes = atom::api::GetStandardSchemes();
+    const auto& custom_standard_schemes = electron::api::GetStandardSchemes();
     cookie_schemes.insert(cookie_schemes.end(), custom_standard_schemes.begin(),
                           custom_standard_schemes.end());
     cookie_monster->SetCookieableSchemes(cookie_schemes, base::NullCallback());
@@ -349,4 +349,4 @@ URLRequestContextGetter::GetNetworkTaskRunner() const {
   return base::CreateSingleThreadTaskRunnerWithTraits({BrowserThread::IO});
 }
 
-}  // namespace atom
+}  // namespace electron

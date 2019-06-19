@@ -9,7 +9,7 @@
 
 #include "ui/gfx/x/x11.h"
 
-namespace atom {
+namespace electron {
 
 ::Atom GetAtom(const char* name);
 
@@ -26,6 +26,6 @@ bool ShouldUseGlobalMenuBar();
 // Bring the given window to the front and give it the focus.
 void MoveWindowToForeground(::Window xwindow);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_X_X_WINDOW_UTILS_H_

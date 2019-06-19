@@ -20,7 +20,7 @@ class DevToolsAgentHost;
 
 class PrefService;
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
@@ -61,6 +61,6 @@ class InspectableWebContents {
   virtual void InspectElement(int x, int y) = 0;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_

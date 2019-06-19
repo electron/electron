@@ -20,7 +20,7 @@
 #include "skia/ext/skia_utils_win.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 LayeredWindowUpdater::LayeredWindowUpdater(
     viz::mojom::LayeredWindowUpdaterRequest request,
@@ -119,4 +119,4 @@ void OffScreenHostDisplayClient::CreateLayeredWindowUpdater(
   layered_window_updater_->SetActive(active_);
 }
 
-}  // namespace atom
+}  // namespace electron

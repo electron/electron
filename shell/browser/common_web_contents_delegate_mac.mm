@@ -15,7 +15,7 @@
 - (void)redispatchKeyEvent:(NSEvent*)event;
 @end
 
-namespace atom {
+namespace electron {
 
 bool CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
@@ -53,4 +53,4 @@ bool CommonWebContentsDelegate::HandleKeyboardEvent(
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

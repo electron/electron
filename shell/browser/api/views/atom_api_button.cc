@@ -8,7 +8,7 @@
 #include "shell/common/api/constructor.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -38,11 +38,11 @@ void Button::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Button;
+using electron::api::Button;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

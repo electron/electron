@@ -5,10 +5,10 @@
 #ifndef SHELL_APP_NODE_MAIN_H_
 #define SHELL_APP_NODE_MAIN_H_
 
-namespace atom {
+namespace electron {
 
 int NodeMain(int argc, char* argv[]);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_APP_NODE_MAIN_H_

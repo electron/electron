@@ -10,7 +10,7 @@
 
 #include "shell/common/api/object_life_monitor.h"
 
-namespace atom {
+namespace electron {
 
 class RemoteObjectFreer : public ObjectLifeMonitor {
  public:
@@ -40,6 +40,6 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
   DISALLOW_COPY_AND_ASSIGN(RemoteObjectFreer);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_API_REMOTE_OBJECT_FREER_H_

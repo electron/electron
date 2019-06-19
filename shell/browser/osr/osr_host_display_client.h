@@ -15,7 +15,7 @@
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/gfx/native_widget_types.h"
 
-namespace atom {
+namespace electron {
 
 typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 
@@ -72,6 +72,6 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
   DISALLOW_COPY_AND_ASSIGN(OffScreenHostDisplayClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_

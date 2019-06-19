@@ -11,7 +11,7 @@
 
 #include <UIAutomationCore.h>
 
-namespace atom {
+namespace electron {
 
 class DesktopNotificationController::Toast::UIAutomationInterface
     : public IRawElementProviderSimple,
@@ -79,6 +79,6 @@ class DesktopNotificationController::Toast::UIAutomationInterface
   std::wstring text_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_

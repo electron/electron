@@ -31,7 +31,7 @@ namespace net {
 class ProxyConfig;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -111,6 +111,6 @@ class Session : public mate::TrackableObject<Session>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_SESSION_H_

@@ -7,7 +7,7 @@
 #include "shell/common/api/locker.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace util {
 
@@ -60,13 +60,13 @@ Promise CopyablePromise::GetPromise() const {
 
 }  // namespace util
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
-v8::Local<v8::Value> mate::Converter<atom::util::Promise>::ToV8(
+v8::Local<v8::Value> mate::Converter<electron::util::Promise>::ToV8(
     v8::Isolate*,
-    const atom::util::Promise& val) {
+    const electron::util::Promise& val) {
   return val.GetHandle();
 }
 

@@ -74,7 +74,7 @@ struct Converter<network::mojom::CookieChangeCause> {
 
 }  // namespace gin
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -343,4 +343,4 @@ void Cookies::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

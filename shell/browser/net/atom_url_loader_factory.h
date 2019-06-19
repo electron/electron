@@ -14,7 +14,7 @@
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 
-namespace atom {
+namespace electron {
 
 // Old Protocol API can only serve one type of response for one scheme.
 enum class ProtocolType {
@@ -106,6 +106,6 @@ class AtomURLLoaderFactory : public network::mojom::URLLoaderFactory {
   DISALLOW_COPY_AND_ASSIGN(AtomURLLoaderFactory);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_ATOM_URL_LOADER_FACTORY_H_

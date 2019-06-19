@@ -16,7 +16,7 @@ namespace content {
 struct NativeWebKeyboardEvent;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomMenuModel;
 class MenuBar;
@@ -69,6 +69,6 @@ class RootView : public views::View {
   DISALLOW_COPY_AND_ASSIGN(RootView);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_

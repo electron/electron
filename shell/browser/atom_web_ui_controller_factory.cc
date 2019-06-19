@@ -19,7 +19,7 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/ui/devtools_ui.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -96,4 +96,4 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
   return std::unique_ptr<content::WebUIController>();
 }
 
-}  // namespace atom
+}  // namespace electron

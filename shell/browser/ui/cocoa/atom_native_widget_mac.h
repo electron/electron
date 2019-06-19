@@ -7,7 +7,7 @@
 
 #include "ui/views/widget/native_widget_mac.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindowMac;
 
@@ -30,6 +30,6 @@ class AtomNativeWidgetMac : public views::NativeWidgetMac {
   DISALLOW_COPY_AND_ASSIGN(AtomNativeWidgetMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_COCOA_ATOM_NATIVE_WIDGET_MAC_H_

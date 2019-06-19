@@ -23,7 +23,7 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 const int kPopupBorderThickness = 1;
 const int kSmallerFontSizeDelta = -1;
@@ -150,6 +150,6 @@ class AutofillPopupView : public views::WidgetDelegateView,
   base::WeakPtrFactory<AutofillPopupView> weak_ptr_factory_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_

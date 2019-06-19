@@ -17,7 +17,7 @@
 #include "ui/views/animation/ink_drop_impl.h"
 #include "ui/views/controls/button/label_button_border.h"
 
-namespace atom {
+namespace electron {
 
 SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
@@ -113,4 +113,4 @@ void SubmenuButton::GetCharacterPosition(const base::string16& text,
                              &height, 0, 0);
 }
 
-}  // namespace atom
+}  // namespace electron

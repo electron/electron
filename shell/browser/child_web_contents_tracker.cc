@@ -4,11 +4,11 @@
 
 #include "shell/browser/child_web_contents_tracker.h"
 
-namespace atom {
+namespace electron {
 
 ChildWebContentsTracker::ChildWebContentsTracker(
     content::WebContents* web_contents) {}
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(ChildWebContentsTracker)
 
-}  // namespace atom
+}  // namespace electron

@@ -10,7 +10,7 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
 
-namespace atom {
+namespace electron {
 
 // Applies the permission requested for WebContents.
 class WebContentsPermissionHelper
@@ -58,6 +58,6 @@ class WebContentsPermissionHelper
   DISALLOW_COPY_AND_ASSIGN(WebContentsPermissionHelper);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_

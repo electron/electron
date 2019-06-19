@@ -10,7 +10,7 @@
 #include "base/strings/string16.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
-namespace atom {
+namespace electron {
 
 // Return key code of the char, and also determine whether the SHIFT key is
 // pressed.
@@ -23,6 +23,6 @@ ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
 // Ported from ui/events/blink/blink_event_util.h
 int WebEventModifiersToEventFlags(int modifiers);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_KEYBOARD_UTIL_H_

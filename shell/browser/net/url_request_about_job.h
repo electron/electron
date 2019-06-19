@@ -10,7 +10,7 @@
 #include "base/memory/weak_ptr.h"
 #include "net/url_request/url_request_job.h"
 
-namespace atom {
+namespace electron {
 
 class URLRequestAboutJob : public net::URLRequestJob {
  public:
@@ -30,6 +30,6 @@ class URLRequestAboutJob : public net::URLRequestJob {
   DISALLOW_COPY_AND_ASSIGN(URLRequestAboutJob);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_URL_REQUEST_ABOUT_JOB_H_

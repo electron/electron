@@ -7,7 +7,7 @@
 
 #include "ui/views/controls/native/native_view_host.h"
 
-namespace atom {
+namespace electron {
 
 // Automatically attach the native view after the NativeViewHost is attached to
 // a widget. (Attaching it directly would cause crash.)
@@ -26,6 +26,6 @@ class DelayedNativeViewHost : public views::NativeViewHost {
   DISALLOW_COPY_AND_ASSIGN(DelayedNativeViewHost);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_

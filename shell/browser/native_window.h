@@ -39,7 +39,7 @@ class Dictionary;
 class PersistentDictionary;
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 class AtomMenuModel;
 class NativeBrowserView;
@@ -376,6 +376,6 @@ class NativeWindowRelay
   base::WeakPtr<NativeWindow> native_window_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_WINDOW_H_

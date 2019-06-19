@@ -10,7 +10,7 @@
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/events/event_constants.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -355,4 +355,4 @@ int WebEventModifiersToEventFlags(int modifiers) {
   return flags;
 }
 
-}  // namespace atom
+}  // namespace electron

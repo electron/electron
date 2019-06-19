@@ -33,7 +33,7 @@
 
 @end
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -137,4 +137,4 @@ void BrowserWindow::UpdateDraggableRegions(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

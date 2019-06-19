@@ -21,7 +21,7 @@ namespace gfx {
 class Rect;
 }
 
-namespace atom {
+namespace electron {
 
 class NativeWindowObserver : public base::CheckedObserver {
  public:
@@ -99,6 +99,6 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnExecuteAppCommand(const std::string& command_name) {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_

@@ -20,7 +20,7 @@ class DictionaryValue;
 
 class PrefRegistrySimple;
 
-namespace atom {
+namespace electron {
 
 // A class to manage per-partition default and per-host zoom levels.
 // It implements an interface between the content/ zoom
@@ -59,6 +59,6 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   DISALLOW_COPY_AND_ASSIGN(ZoomLevelDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_

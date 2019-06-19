@@ -12,7 +12,7 @@
 #include "mojo/public/cpp/bindings/binding.h"
 #include "services/network/public/mojom/cookie_manager.mojom.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 struct CookieDetails;
@@ -43,6 +43,6 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   DISALLOW_COPY_AND_ASSIGN(CookieChangeNotifier);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_

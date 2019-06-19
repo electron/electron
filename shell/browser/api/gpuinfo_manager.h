@@ -15,7 +15,7 @@
 #include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 
 // GPUInfoManager is a singleton used to manage and fetch GPUInfo
 class GPUInfoManager : public content::GpuDataManagerObserver {
@@ -45,5 +45,5 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   DISALLOW_COPY_AND_ASSIGN(GPUInfoManager);
 };
 
-}  // namespace atom
+}  // namespace electron
 #endif  // SHELL_BROWSER_API_GPUINFO_MANAGER_H_

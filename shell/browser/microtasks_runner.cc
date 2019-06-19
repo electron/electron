@@ -6,7 +6,7 @@
 #include "shell/browser/microtasks_runner.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 MicrotasksRunner::MicrotasksRunner(v8::Isolate* isolate) : isolate_(isolate) {}
 
@@ -17,4 +17,4 @@ void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   v8::MicrotasksScope::PerformCheckpoint(isolate_);
 }
 
-}  // namespace atom
+}  // namespace electron

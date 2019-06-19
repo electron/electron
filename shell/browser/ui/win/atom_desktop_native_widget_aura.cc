@@ -8,7 +8,7 @@
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/wm/public/tooltip_client.h"
 
-namespace atom {
+namespace electron {
 
 AtomDesktopNativeWidgetAura::AtomDesktopNativeWidgetAura(
     NativeWindowViews* native_window_view)
@@ -56,4 +56,4 @@ void AtomDesktopNativeWidgetAura::OnWindowActivated(
   }
 }
 
-}  // namespace atom
+}  // namespace electron

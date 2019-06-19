@@ -5,7 +5,7 @@
 #include "shell/app/manifests.h"
 
 #include "base/no_destructor.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/proxy_resolver/public/cpp/manifest.h"
 #include "services/service_manager/public/cpp/manifest_builder.h"
@@ -45,7 +45,7 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
           .ExposeInterfaceFilterCapability_Deprecated(
               "navigation:frame", "renderer",
               service_manager::Manifest::InterfaceList<
-                  atom::mojom::ElectronBrowser>())
+                  electron::mojom::ElectronBrowser>())
           .Build()};
   return *manifest;
 }

@@ -30,22 +30,22 @@
 namespace mate {
 
 template <>
-struct Converter<atom::api::DesktopCapturer::Source> {
+struct Converter<electron::api::DesktopCapturer::Source> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const atom::api::DesktopCapturer::Source& source) {
+      const electron::api::DesktopCapturer::Source& source) {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     content::DesktopMediaID id = source.media_list_source.id;
     dict.Set("name", base::UTF16ToUTF8(source.media_list_source.name));
     dict.Set("id", id.ToString());
     dict.Set("thumbnail",
-             atom::api::NativeImage::Create(
+             electron::api::NativeImage::Create(
                  isolate, gfx::Image(source.media_list_source.thumbnail)));
     dict.Set("display_id", source.display_id);
     if (source.fetch_icon) {
       dict.Set(
           "appIcon",
-          atom::api::NativeImage::Create(
+          electron::api::NativeImage::Create(
               isolate, gfx::Image(GetWindowIcon(source.media_list_source.id))));
     }
     return ConvertToV8(isolate, dict);
@@ -54,7 +54,7 @@ struct Converter<atom::api::DesktopCapturer::Source> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -216,7 +216,7 @@ void DesktopCapturer::BuildPrototype(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -226,7 +226,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("createDesktopCapturer", &atom::api::DesktopCapturer::Create);
+  dict.SetMethod("createDesktopCapturer",
+                 &electron::api::DesktopCapturer::Create);
 }
 
 }  // namespace

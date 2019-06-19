@@ -11,7 +11,7 @@
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -69,4 +69,4 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

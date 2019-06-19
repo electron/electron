@@ -56,7 +56,7 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 namespace api {
 
 template <typename Flags>
@@ -493,4 +493,4 @@ void URLRequest::EmitResponseEvent(Args... args) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

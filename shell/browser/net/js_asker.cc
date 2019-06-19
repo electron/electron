@@ -9,7 +9,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/native_mate_converters/once_callback.h"
 
-namespace atom {
+namespace electron {
 
 JsAsker::JsAsker() = default;
 
@@ -52,4 +52,4 @@ bool JsAsker::IsErrorOptions(base::Value* value, int* error) {
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

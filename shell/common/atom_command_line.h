@@ -12,7 +12,7 @@
 #include "base/macros.h"
 #include "build/build_config.h"
 
-namespace atom {
+namespace electron {
 
 // Singleton to remember the original "argc" and "argv".
 class AtomCommandLine {
@@ -33,6 +33,6 @@ class AtomCommandLine {
   DISALLOW_IMPLICIT_CONSTRUCTORS(AtomCommandLine);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_ATOM_COMMAND_LINE_H_

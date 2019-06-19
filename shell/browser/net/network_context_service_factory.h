@@ -14,7 +14,7 @@ namespace contenet {
 class BrowserContext;
 }
 
-namespace atom {
+namespace electron {
 
 class NetworkContextService;
 
@@ -45,6 +45,6 @@ class NetworkContextServiceFactory : public BrowserContextKeyedServiceFactory {
       content::BrowserContext* context) const override;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_

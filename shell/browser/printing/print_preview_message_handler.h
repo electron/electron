@@ -22,7 +22,7 @@ namespace content {
 class RenderFrameHost;
 }
 
-namespace atom {
+namespace electron {
 
 // Manages the print preview handling for a WebContents.
 class PrintPreviewMessageHandler
@@ -61,7 +61,7 @@ class PrintPreviewMessageHandler
                       scoped_refptr<base::RefCountedMemory> data_bytes);
   void RejectPromise(int request_id);
 
-  using PromiseMap = std::map<int, atom::util::Promise>;
+  using PromiseMap = std::map<int, electron::util::Promise>;
   PromiseMap promise_map_;
 
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
@@ -71,6 +71,6 @@ class PrintPreviewMessageHandler
   DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_

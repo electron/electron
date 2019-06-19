@@ -29,7 +29,7 @@
 #include "shell/common/crash_reporter/crash_reporter_win.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
@@ -130,4 +130,4 @@ int NodeMain(int argc, char* argv[]) {
   return exit_code;
 }
 
-}  // namespace atom
+}  // namespace electron

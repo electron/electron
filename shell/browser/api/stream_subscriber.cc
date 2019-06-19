@@ -18,7 +18,7 @@ namespace mate {
 StreamSubscriber::StreamSubscriber(
     v8::Isolate* isolate,
     v8::Local<v8::Object> emitter,
-    base::WeakPtr<atom::URLRequestStreamJob> url_job,
+    base::WeakPtr<electron::URLRequestStreamJob> url_job,
     scoped_refptr<base::SequencedTaskRunner> ui_task_runner)
     : base::RefCountedDeleteOnSequence<StreamSubscriber>(ui_task_runner),
       isolate_(isolate),
@@ -79,21 +79,23 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
 
   // Pass the data to the URLJob in IO thread.
   std::vector<char> buffer(data, data + length);
-  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
-                           base::BindOnce(&atom::URLRequestStreamJob::OnData,
-                                          url_job_, base::Passed(&buffer)));
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::IO},
+      base::BindOnce(&electron::URLRequestStreamJob::OnData, url_job_,
+                     base::Passed(&buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::IO},
-      base::BindOnce(&atom::URLRequestStreamJob::OnEnd, url_job_));
+      base::BindOnce(&electron::URLRequestStreamJob::OnEnd, url_job_));
 }
 
 void StreamSubscriber::OnError(mate::Arguments* args) {
-  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
-                           base::BindOnce(&atom::URLRequestStreamJob::OnError,
-                                          url_job_, net::ERR_FAILED));
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::IO},
+      base::BindOnce(&electron::URLRequestStreamJob::OnError, url_job_,
+                     net::ERR_FAILED));
 }
 
 void StreamSubscriber::RemoveAllListeners() {

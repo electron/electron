@@ -8,7 +8,7 @@
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 class WebContents;
@@ -55,6 +55,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   DISALLOW_COPY_AND_ASSIGN(WebViewGuestDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_

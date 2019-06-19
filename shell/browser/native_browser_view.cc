@@ -9,7 +9,7 @@
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 
-namespace atom {
+namespace electron {
 
 NativeBrowserView::NativeBrowserView(
     InspectableWebContents* inspectable_web_contents)
@@ -25,4 +25,4 @@ content::WebContents* NativeBrowserView::GetWebContents() {
   return inspectable_web_contents_->GetWebContents();
 }
 
-}  // namespace atom
+}  // namespace electron

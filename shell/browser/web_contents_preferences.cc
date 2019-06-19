@@ -95,7 +95,7 @@ bool GetAsAutoplayPolicy(const base::Value* val,
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 // static
 std::vector<WebContentsPreferences*> WebContentsPreferences::instances_;
@@ -476,4 +476,4 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)
 
-}  // namespace atom
+}  // namespace electron

@@ -9,7 +9,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -35,4 +35,4 @@ void App::SetAppLogsPath(mate::Arguments* args) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

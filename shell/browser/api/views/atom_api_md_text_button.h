@@ -10,7 +10,7 @@
 #include "shell/browser/api/views/atom_api_label_button.h"
 #include "ui/views/controls/button/md_text_button.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -36,6 +36,6 @@ class MdTextButton : public LabelButton {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_MD_TEXT_BUTTON_H_

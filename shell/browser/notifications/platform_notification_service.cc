@@ -15,7 +15,7 @@
 #include "third_party/blink/public/common/notifications/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -27,7 +27,7 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
   if (!notification)
     return;
   if (allowed) {
-    atom::NotificationOptions options;
+    electron::NotificationOptions options;
     options.title = data.title;
     options.msg = data.body;
     options.tag = data.tag;
@@ -41,7 +41,7 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
   }
 }
 
-class NotificationDelegateImpl final : public atom::NotificationDelegate {
+class NotificationDelegateImpl final : public electron::NotificationDelegate {
  public:
   explicit NotificationDelegateImpl(const std::string& notification_id)
       : notification_id_(notification_id) {}
@@ -133,4 +133,4 @@ base::Time PlatformNotificationService::ReadNextTriggerTimestamp() {
   return base::Time::Max();
 }
 
-}  // namespace atom
+}  // namespace electron
