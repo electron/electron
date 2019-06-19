@@ -176,7 +176,8 @@ def execute_stdout(argv, env=None, cwd=None):
 
 def get_electron_branding():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  branding_file_path = os.path.join(SOURCE_ROOT, 'atom', 'app', 'BRANDING.json')
+  branding_file_path = os.path.join(
+    SOURCE_ROOT, 'shell', 'app', 'BRANDING.json')
   with open(branding_file_path) as f:
     return json.load(f)
 

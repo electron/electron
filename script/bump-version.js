@@ -126,7 +126,7 @@ async function commitVersionBump (version) {
 
 // updates atom.rc file with new semver values
 async function updateWinRC (components) {
-  const filePath = path.resolve(__dirname, '..', 'atom', 'browser', 'resources', 'win', 'atom.rc')
+  const filePath = path.resolve(__dirname, '..', 'shell', 'browser', 'resources', 'win', 'atom.rc')
   const data = await readFile(filePath, 'utf8')
   const arr = data.split('\n')
   arr.forEach((line, idx) => {
