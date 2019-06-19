@@ -11,6 +11,7 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
 import("build/npm.gni")
+import("build/templated_file.gni")
 import("build/tsc.gni")
 import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
@@ -307,6 +308,32 @@ source_set("manifests") {
   }
 }
 
+npm_action("electron_version_args") {
+  script = "generate-version-json"
+
+  outputs = [
+    "$target_gen_dir/electron_version.args",
+  ]
+
+  args = rebase_path(outputs)
+
+  inputs = [
+    "ELECTRON_VERSION",
+    "script/generate-version-json.js",
+  ]
+}
+
+templated_file("electron_version_header") {
+  deps = [
+    ":electron_version_args",
+  ]
+
+  template = "build/templates/electron_version.tmpl"
+  output = "$target_gen_dir/electron_version.h"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -315,6 +342,7 @@ static_library("electron_lib") {
 
   deps = [
     ":atom_js2c",
+    ":electron_version_header",
     ":manifests",
     ":resources",
     "atom/common/api:mojo",

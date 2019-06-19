@@ -57,7 +57,6 @@ async function main () {
   await Promise.all([
     updateVersion(version),
     updatePackageJSON(version),
-    updateVersionH(components),
     updateWinRC(components)
   ])
 
@@ -123,25 +122,6 @@ async function commitVersionBump (version) {
   const gitDir = path.resolve(__dirname, '..')
   const gitArgs = ['commit', '-a', '-m', `Bump v${version}`, '-n']
   await GitProcess.exec(gitArgs, gitDir)
-}
-
-// updates electron_version.h file with new semver values
-// TODO(codebytere): auto-generate this
-async function updateVersionH (components) {
-  const filePath = path.resolve(__dirname, '..', 'atom', 'common', 'electron_version.h')
-  const data = await readFile(filePath, 'utf8')
-  const arr = data.split('\n')
-  const pre = components.pre && components.pre.length >= 2 ? `-${components.pre[0]}.${components.pre[1]}` : null
-
-  arr.forEach((item, idx) => {
-    if (item.includes('#define ELECTRON_MAJOR_VERSION')) {
-      arr[idx] = `#define ELECTRON_MAJOR_VERSION ${components.major}`
-      arr[idx + 1] = `#define ELECTRON_MINOR_VERSION ${components.minor}`
-      arr[idx + 2] = `#define ELECTRON_PATCH_VERSION ${components.patch}`
-      arr[idx + 4] = pre ? `#define ELECTRON_PRE_RELEASE_VERSION ${pre}` : '// #define ELECTRON_PRE_RELEASE_VERSION'
-    }
-  })
-  await writeFile(filePath, arr.join('\n'))
 }
 
 // updates atom.rc file with new semver values

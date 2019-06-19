@@ -8,7 +8,6 @@
 
 #include "atom/browser/browser.h"
 #include "atom/common/atom_constants.h"
-#include "atom/common/electron_version.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/map_converter.h"
 #include "base/command_line.h"
@@ -18,6 +17,7 @@
 #include "base/strings/string_split.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/common/content_switches.h"
+#include "electron/electron_version.h"
 
 namespace crash_reporter {
 
