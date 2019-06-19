@@ -88,6 +88,13 @@ Other means for installing Electron exist. Please consult the
 [installation guide](installation.md) to learn about use with proxies, mirrors,
 and custom caches.
 
+For the next section, you will **also** need to install `electron` globally. To do so,
+run the following command:
+
+```sh
+npm install -g electron
+```
+
 ## Electron Development in a Nutshell
 
 Electron apps are developed in JavaScript using the same principles and methods
