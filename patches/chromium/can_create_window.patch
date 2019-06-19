@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 40ea97c8e03b94f457b5ae64c50cf4904b3e1eab..188c190f3230e7fcde6b6e92518a1ae282f7df76 100644
+index cc766f9086e3f140ac9fea6f68d125f519eaa9b6..d92b25037c295158662ce37002ec072acc684e72 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3727,6 +3727,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3726,6 +3726,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,7 +32,7 @@ index 3f78b3f387509d57295f8fde1588c4d2d3574b94..a8c5b4373eb0e01f901e2a2a9cd1091f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 04faf0107f342b76d9d4e624a3355291351dedce..a1849f651c3bdbf8e9ab2f59f6a7532c4a8fc3f1 100644
+index 514fddcac694c991371c7c9b1cf4484c7161645b..f99d2ea10e9f43374bc6a618a834f36769e66658 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -519,6 +519,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,7 +45,7 @@ index 04faf0107f342b76d9d4e624a3355291351dedce..a1849f651c3bdbf8e9ab2f59f6a7532c
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 34b4fd350acee079f91590ab3321d28591c4e1a1..22067af7d6c44c521a7218221b95a97896c89134 100644
+index b4fa038bf23fc509722eef4b1fe5cf3c94efa2f9..1245470cc2323def4154a5bd7e7c23669a575f25 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -178,6 +178,7 @@ class RenderFrameHost;
@@ -66,7 +66,7 @@ index 34b4fd350acee079f91590ab3321d28591c4e1a1..22067af7d6c44c521a7218221b95a978
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 2c5b3cc6c51fd9fd563a0ff636aac5b316abbf85..92025e1f87a39c2c889b5033614133ee24e4d3e8 100644
+index dae2f5a0dfedc5f7cd81c479cfab383730e61d9c..960fe49cab461b2f34793959bde0bbd829fe56bd 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -76,6 +76,7 @@
@@ -77,7 +77,7 @@ index 2c5b3cc6c51fd9fd563a0ff636aac5b316abbf85..92025e1f87a39c2c889b5033614133ee
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/stream/media_stream_device_observer.h"
  #include "content/renderer/media/video_capture/video_capture_impl_manager.h"
-@@ -1357,6 +1358,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1359,6 +1360,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

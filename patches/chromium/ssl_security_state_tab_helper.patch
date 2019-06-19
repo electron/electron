@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 83bfd2744e5ce935a3ee9133a05ae572e50acf6a..d9d6e54fc8e21b1304436b55ae52ce33c7a2dd0d 100644
+index 703c2e67de6505d8294ddece4bbb69eea531f136..81cb0c618fd85c15565045450f3dd938e82b5843 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,13 +13,17 @@
@@ -56,7 +56,7 @@ index 83bfd2744e5ce935a3ee9133a05ae572e50acf6a..d9d6e54fc8e21b1304436b55ae52ce33
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -218,6 +227,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -220,6 +229,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }

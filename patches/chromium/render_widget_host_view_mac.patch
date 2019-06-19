@@ -5,10 +5,10 @@ Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index f70ed3db9249dca6f92e10d839fc0624ce60bf50..d174d117bc7459eaaeebf7f09783be15abeee02c 100644
+index cf9ef066f236987411df4ad81c3d7d86a9ec7010..1859018cb2ee34e329b2c641415dc48f44093cbb 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -142,6 +142,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -143,6 +143,11 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -20,7 +20,7 @@ index f70ed3db9249dca6f92e10d839fc0624ce60bf50..d174d117bc7459eaaeebf7f09783be15
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -403,6 +408,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -560,6 +565,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -30,7 +30,7 @@ index f70ed3db9249dca6f92e10d839fc0624ce60bf50..d174d117bc7459eaaeebf7f09783be15
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -792,6 +800,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -949,6 +957,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -41,7 +41,7 @@ index f70ed3db9249dca6f92e10d839fc0624ce60bf50..d174d117bc7459eaaeebf7f09783be15
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
      hostHelper_->ForwardKeyboardEvent(event, latency_info);
-@@ -1505,9 +1517,11 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -1704,9 +1716,11 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -53,7 +53,7 @@ index f70ed3db9249dca6f92e10d839fc0624ce60bf50..d174d117bc7459eaaeebf7f09783be15
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1516,7 +1530,10 @@ - (NSArray*)validAttributesForMarkedText {
+@@ -1715,7 +1729,10 @@ - (NSArray*)validAttributesForMarkedText {
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,
@@ -66,7 +66,7 @@ index f70ed3db9249dca6f92e10d839fc0624ce60bf50..d174d117bc7459eaaeebf7f09783be15
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 2edb742c203d8243a4c36fa505e8da3a6b765609..9e73d327bdf258bb544f0ad39eea520c3c92f8d7 100644
+index 684570762b9574f5f1601dbd0f312c263810df2b..cfe12fd79f6ac347b647303ccae871ade0c0bad2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -63,6 +63,7 @@
