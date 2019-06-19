@@ -28,6 +28,18 @@ the issue will be closed.
   * If an issue has been closed and you still feel it's relevant, feel free to
   ping a maintainer or add a comment!
 
+### Languages
+
+We accept issues in *any* language.
+When an issue is posted in a language besides english, it is acceptable and encouraged to post an english-translated copy as a reply. 
+Anyone may post the translated reply.
+In most cases, a quick pass through translation software is sufficient.
+Having the original text _as well as_ the translation can help mitigate translation errors.
+
+Responses to posted issues may or may not be in the original language.
+
+**Please note** that using non-english as an attempt to circumvent our [Code of Conduct](https://github.com/electron/electron/blob/master/CODE_OF_CONDUCT.md) will be an immediate, and possibly indefinite, ban from the project.
+
 ## [Pull Requests](https://electronjs.org/docs/development/pull-requests)
 
 Pull Requests are the way concrete changes are made to the code, documentation,
