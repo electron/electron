@@ -617,6 +617,28 @@ describe('app module', () => {
     })
   })
 
+  describe('getAppPath', () => {
+    it('works for directories with package.json', async () => {
+      const { appPath } = await runTestApp('app-path')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path'))
+    })
+
+    it('works for directories with index.js', async () => {
+      const { appPath } = await runTestApp('app-path/lib')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path/lib'))
+    })
+
+    it('works for files without extension', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path/lib'))
+    })
+
+    it('works for files', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index.js')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path/lib'))
+    })
+  })
+
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
       const paths = [
