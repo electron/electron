@@ -30,7 +30,7 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
   void SetHighlightMode(TrayIcon::HighlightMode mode) override;
   void SetIgnoreDoubleClickEvents(bool ignore) override;
   bool GetIgnoreDoubleClickEvents() override;
-  void PopUpOnUI(AtomMenuModel* menu_model);
+  void PopUpOnUI(scoped_refptr<AtomMenuModel> menu_model);
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
