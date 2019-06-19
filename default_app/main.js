@@ -253,6 +253,7 @@ function loadApplicationPackage (packagePath) {
     // Override app name and version.
     packagePath = path.resolve(packagePath)
     const packageJsonPath = path.join(packagePath, 'package.json')
+    let appPath
     if (fs.existsSync(packageJsonPath)) {
       let packageJson
       try {
@@ -272,11 +273,12 @@ function loadApplicationPackage (packagePath) {
       }
       app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
-      app.setAppPath(packagePath)
+      appPath = packagePath
     }
 
     try {
-      Module._resolveFilename(packagePath, module, true)
+      const filePath = Module._resolveFilename(packagePath, module, true)
+      app.setAppPath(appPath || path.dirname(filePath))
     } catch (e) {
       showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${e.message}`)
       return

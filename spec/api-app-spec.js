@@ -6,7 +6,9 @@ const https = require('https')
 const net = require('net')
 const fs = require('fs')
 const path = require('path')
+const cp = require('child_process')
 const {ipcRenderer, remote} = require('electron')
+const {emittedOnce} = require('./events-helpers')
 const {closeWindow} = require('./window-helpers')
 
 const {expect} = chai
@@ -532,6 +534,28 @@ describe('app module', () => {
     })
   })
 
+  describe('getAppPath', () => {
+    it('works for directories with package.json', async () => {
+      const { appPath } = await runTestApp('app-path')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path'))
+    })
+
+    it('works for directories with index.js', async () => {
+      const { appPath } = await runTestApp('app-path/lib')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path/lib'))
+    })
+
+    it('works for files without extension', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path/lib'))
+    })
+
+    it('works for files', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index.js')
+      expect(appPath).to.equal(path.resolve(__dirname, 'fixtures/api/app-path/lib'))
+    })
+  })
+
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
       const paths = [
@@ -968,3 +992,16 @@ describe('app module', () => {
     })
   })
 })
+
+async function runTestApp (name, ...args) {
+  const appPath = path.join(__dirname, 'fixtures', 'api', name)
+  const electronPath = remote.getGlobal('process').execPath
+  const appProcess = cp.spawn(electronPath, [appPath, ...args])
+
+  let output = ''
+  appProcess.stdout.on('data', (data) => { output += data })
+
+  await emittedOnce(appProcess.stdout, 'end')
+
+  return JSON.parse(output)
+}
