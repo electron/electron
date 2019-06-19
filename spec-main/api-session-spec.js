@@ -265,7 +265,7 @@ describe('session module', () => {
     let customSession = null
     const protocol = session.defaultSession.protocol
     const handler = (ignoredError, callback) => {
-      callback({ data: 'test', mimeType: 'text/html' })
+      callback({ data: `<script>require('electron').ipcRenderer.send('hello')</script>`, mimeType: 'text/html' })
     }
 
     beforeEach(async () => {
@@ -273,7 +273,8 @@ describe('session module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: partitionName
+          partition: partitionName,
+          nodeIntegration: true,
         }
       })
       customSession = session.fromPartition(partitionName)
@@ -294,8 +295,8 @@ describe('session module', () => {
     })
 
     it('handles requests from partition', async () => {
-      await w.loadURL(`${protocolName}://fake-host`)
-      expect(await w.webContents.executeJavaScript('document.body.textContent')).to.equal('test')
+      w.loadURL(`${protocolName}://fake-host`)
+      await emittedOnce(ipcMain, 'hello')
     })
   })
 
