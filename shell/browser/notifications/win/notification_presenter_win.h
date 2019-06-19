@@ -20,8 +20,8 @@
 //   console.log("Notification dismissed")
 // };
 
-#ifndef ATOM_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
-#define ATOM_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#define SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
 #include "base/files/scoped_temp_dir.h"
 #include "base/strings/string16.h"
@@ -52,4 +52,4 @@ class NotificationPresenterWin : public NotificationPresenter {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_

@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef ATOM_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
-#define ATOM_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
+#ifndef SHELL_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
+#define SHELL_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
 
 @class NSBundle;
 
@@ -23,4 +23,4 @@ base::FilePath MainApplicationBundlePath();
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_
+#endif  // SHELL_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_

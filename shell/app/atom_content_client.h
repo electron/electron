@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_APP_ATOM_CONTENT_CLIENT_H_
-#define ATOM_APP_ATOM_CONTENT_CLIENT_H_
+#ifndef SHELL_APP_ATOM_CONTENT_CLIENT_H_
+#define SHELL_APP_ATOM_CONTENT_CLIENT_H_
 
 #include <set>
 #include <string>
@@ -39,4 +39,4 @@ class AtomContentClient : public content::ContentClient {
 
 }  // namespace atom
 
-#endif  // ATOM_APP_ATOM_CONTENT_CLIENT_H_
+#endif  // SHELL_APP_ATOM_CONTENT_CLIENT_H_

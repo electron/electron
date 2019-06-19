@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NODE_BINDINGS_LINUX_H_
-#define ATOM_COMMON_NODE_BINDINGS_LINUX_H_
+#ifndef SHELL_COMMON_NODE_BINDINGS_LINUX_H_
+#define SHELL_COMMON_NODE_BINDINGS_LINUX_H_
 
 #include "base/compiler_specific.h"
 #include "shell/common/node_bindings.h"
@@ -31,4 +31,4 @@ class NodeBindingsLinux : public NodeBindings {
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_NODE_BINDINGS_LINUX_H_
+#endif  // SHELL_COMMON_NODE_BINDINGS_LINUX_H_

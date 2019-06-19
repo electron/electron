@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_RENDERER_CLIENT_BASE_H_
-#define ATOM_RENDERER_RENDERER_CLIENT_BASE_H_
+#ifndef SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
+#define SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
 
 #include <memory>
 #include <string>
@@ -75,4 +75,4 @@ class RendererClientBase : public content::ContentRendererClient {
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_RENDERER_CLIENT_BASE_H_
+#endif  // SHELL_RENDERER_RENDERER_CLIENT_BASE_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_ATOM_AUTOFILL_AGENT_H_
-#define ATOM_RENDERER_ATOM_AUTOFILL_AGENT_H_
+#ifndef SHELL_RENDERER_ATOM_AUTOFILL_AGENT_H_
+#define SHELL_RENDERER_ATOM_AUTOFILL_AGENT_H_
 
 #include <vector>
 
@@ -87,4 +87,4 @@ class AutofillAgent : public content::RenderFrameObserver,
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_ATOM_AUTOFILL_AGENT_H_
+#endif  // SHELL_RENDERER_ATOM_AUTOFILL_AGENT_H_

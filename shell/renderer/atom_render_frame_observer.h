@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
-#define ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
+#ifndef SHELL_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
+#define SHELL_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 
 #include <string>
 
@@ -68,4 +68,4 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
+#endif  // SHELL_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_

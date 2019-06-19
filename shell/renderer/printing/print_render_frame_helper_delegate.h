@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
-#define ATOM_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
+#ifndef SHELL_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
+#define SHELL_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
 
 #include "base/macros.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
@@ -28,4 +28,4 @@ class PrintRenderFrameHelperDelegate
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
+#endif  // SHELL_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_

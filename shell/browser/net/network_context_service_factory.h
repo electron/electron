@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
-#define ATOM_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
+#ifndef SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
+#define SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
 
 #include "base/memory/singleton.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
@@ -47,4 +47,4 @@ class NetworkContextServiceFactory : public BrowserContextKeyedServiceFactory {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
+#endif  // SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_

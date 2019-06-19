@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_COLOR_UTIL_H_
-#define ATOM_COMMON_COLOR_UTIL_H_
+#ifndef SHELL_COMMON_COLOR_UTIL_H_
+#define SHELL_COMMON_COLOR_UTIL_H_
 
 #include <string>
 
@@ -19,4 +19,4 @@ std::string ToRGBHex(SkColor color);
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_COLOR_UTIL_H_
+#endif  // SHELL_COMMON_COLOR_UTIL_H_

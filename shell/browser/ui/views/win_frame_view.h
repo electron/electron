@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
-#define ATOM_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
+#ifndef SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
+#define SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 
 #include "shell/browser/ui/views/frameless_view.h"
 
@@ -29,4 +29,4 @@ class WinFrameView : public FramelessView {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
+#endif  // SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_

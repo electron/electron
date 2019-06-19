@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
-#define ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
+#ifndef SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
+#define SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
 
 #include <Quartz/Quartz.h>
 
@@ -24,4 +24,4 @@ class NativeWindowMac;
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 @end
 
-#endif  // ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
+#endif  // SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_

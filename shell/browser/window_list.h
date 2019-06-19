@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_WINDOW_LIST_H_
-#define ATOM_BROWSER_WINDOW_LIST_H_
+#ifndef SHELL_BROWSER_WINDOW_LIST_H_
+#define SHELL_BROWSER_WINDOW_LIST_H_
 
 #include <vector>
 
@@ -61,4 +61,4 @@ class WindowList {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_WINDOW_LIST_H_
+#endif  // SHELL_BROWSER_WINDOW_LIST_H_

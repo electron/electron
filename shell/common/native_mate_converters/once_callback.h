@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_ONCE_CALLBACK_H_
-#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_ONCE_CALLBACK_H_
+#ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_ONCE_CALLBACK_H_
+#define SHELL_COMMON_NATIVE_MATE_CONVERTERS_ONCE_CALLBACK_H_
 
 #include <utility>
 
@@ -84,4 +84,4 @@ struct Converter<base::OnceCallback<Sig>> {
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_ONCE_CALLBACK_H_
+#endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_ONCE_CALLBACK_H_

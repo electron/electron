@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef ATOM_BROWSER_WIN_SCOPED_HSTRING_H_
-#define ATOM_BROWSER_WIN_SCOPED_HSTRING_H_
+#ifndef SHELL_BROWSER_WIN_SCOPED_HSTRING_H_
+#define SHELL_BROWSER_WIN_SCOPED_HSTRING_H_
 
 #include <hstring.h>
 #include <windows.h>
@@ -42,4 +42,4 @@ class ScopedHString {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_WIN_SCOPED_HSTRING_H_
+#endif  // SHELL_BROWSER_WIN_SCOPED_HSTRING_H_

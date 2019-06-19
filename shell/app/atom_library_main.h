@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_APP_ATOM_LIBRARY_MAIN_H_
-#define ATOM_APP_ATOM_LIBRARY_MAIN_H_
+#ifndef SHELL_APP_ATOM_LIBRARY_MAIN_H_
+#define SHELL_APP_ATOM_LIBRARY_MAIN_H_
 
 #include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
@@ -20,4 +20,4 @@ __attribute__((visibility("default"))) int AtomInitializeICUandStartNode(
 }
 #endif  // OS_MACOSX
 
-#endif  // ATOM_APP_ATOM_LIBRARY_MAIN_H_
+#endif  // SHELL_APP_ATOM_LIBRARY_MAIN_H_

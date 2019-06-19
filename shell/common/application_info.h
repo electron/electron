@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_APPLICATION_INFO_H_
-#define ATOM_COMMON_APPLICATION_INFO_H_
+#ifndef SHELL_COMMON_APPLICATION_INFO_H_
+#define SHELL_COMMON_APPLICATION_INFO_H_
 
 #if defined(OS_WIN)
 #include "base/strings/string16.h"
@@ -34,4 +34,4 @@ bool IsRunningInDesktopBridge();
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_APPLICATION_INFO_H_
+#endif  // SHELL_COMMON_APPLICATION_INFO_H_

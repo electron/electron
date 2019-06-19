@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
-#define ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#ifndef SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#define SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
@@ -109,4 +109,4 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#endif  // SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_

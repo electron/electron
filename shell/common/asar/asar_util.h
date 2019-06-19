@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_ASAR_ASAR_UTIL_H_
-#define ATOM_COMMON_ASAR_ASAR_UTIL_H_
+#ifndef SHELL_COMMON_ASAR_ASAR_UTIL_H_
+#define SHELL_COMMON_ASAR_ASAR_UTIL_H_
 
 #include <memory>
 #include <string>
@@ -32,4 +32,4 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents);
 
 }  // namespace asar
 
-#endif  // ATOM_COMMON_ASAR_ASAR_UTIL_H_
+#endif  // SHELL_COMMON_ASAR_ASAR_UTIL_H_

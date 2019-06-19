@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
-#define ATOM_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
+#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
+#define SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
 
 #include "shell/browser/notifications/win/win32_desktop_notifications/toast.h"
 
@@ -81,4 +81,4 @@ class DesktopNotificationController::Toast::UIAutomationInterface
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
+#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_

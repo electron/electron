@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_
-#define ATOM_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_
+#ifndef SHELL_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_
+#define SHELL_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_
 
 #include <memory>
 #include <string>
@@ -58,4 +58,4 @@ class PdfViewerUI : public content::WebUIController,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_
+#endif  // SHELL_BROWSER_UI_WEBUI_PDF_VIEWER_UI_H_

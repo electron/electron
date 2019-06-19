@@ -11,21 +11,21 @@ const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools')
 
 const BLACKLIST = new Set([
-  ['atom', 'browser', 'mac', 'atom_application.h'],
-  ['atom', 'browser', 'mac', 'atom_application_delegate.h'],
-  ['atom', 'browser', 'resources', 'win', 'resource.h'],
-  ['atom', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
-  ['atom', 'common', 'node_includes.h'],
+  ['shell', 'browser', 'mac', 'atom_application.h'],
+  ['shell', 'browser', 'mac', 'atom_application_delegate.h'],
+  ['shell', 'browser', 'resources', 'win', 'resource.h'],
+  ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
+  ['shell', 'common', 'node_includes.h'],
   ['spec', 'static', 'jquery-2.0.3.min.js'],
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
   ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
@@ -55,7 +55,7 @@ function cpplint (args) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['atom', 'native_mate'],
+  roots: ['shell', 'native_mate'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {
@@ -67,7 +67,7 @@ const LINTERS = [ {
   }
 }, {
   key: 'objc',
-  roots: ['atom'],
+  roots: ['shell'],
   test: filename => filename.endsWith('.mm'),
   run: (opts, filenames) => {
     if (opts.fix) {

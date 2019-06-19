@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_FILE_DIALOG_H_
-#define ATOM_BROWSER_UI_FILE_DIALOG_H_
+#ifndef SHELL_BROWSER_UI_FILE_DIALOG_H_
+#define SHELL_BROWSER_UI_FILE_DIALOG_H_
 
 #include <string>
 #include <utility>
@@ -66,4 +66,4 @@ void ShowSaveDialog(const DialogSettings& settings,
 
 }  // namespace file_dialog
 
-#endif  // ATOM_BROWSER_UI_FILE_DIALOG_H_
+#endif  // SHELL_BROWSER_UI_FILE_DIALOG_H_

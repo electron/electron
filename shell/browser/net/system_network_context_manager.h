@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
-#define ATOM_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
+#ifndef SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
+#define SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
 #include <memory>
 #include <string>
@@ -125,4 +125,4 @@ class SystemNetworkContextManager {
   DISALLOW_COPY_AND_ASSIGN(SystemNetworkContextManager);
 };
 
-#endif  // ATOM_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
+#endif  // SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_

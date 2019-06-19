@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
-#define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+#ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+#define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
 
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 
@@ -47,4 +47,4 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+#endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
