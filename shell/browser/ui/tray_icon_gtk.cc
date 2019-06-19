@@ -47,7 +47,7 @@ const base::string16& TrayIconGtk::GetToolTip() const {
   return dummy_string_;
 }
 
-const ui::MenuModel* TrayIconGtk::GetMenuModel() const {
+ui::MenuModel* TrayIconGtk::GetMenuModel() const {
   NOTREACHED();
   return nullptr;
 }

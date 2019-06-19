@@ -34,7 +34,7 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   // aren't yet using, so they are given stub implementations.
   const gfx::ImageSkia& GetImage() const override;
   const base::string16& GetToolTip() const override;
-  const ui::MenuModel* GetMenuModel() const override;
+  ui::MenuModel* GetMenuModel() const override;
   void OnImplInitialized(bool success) override;
 
  private:
