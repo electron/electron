@@ -533,6 +533,11 @@ steps-lint: &steps-lint
 
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
     - run:
+        name: clang-format info
+        command: |
+          which clang-format
+          clang-format --version
+    - run:
         name: Run Lint
         command: |
           # gn.py tries to find a gclient root folder starting from the current dir.

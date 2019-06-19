@@ -104,7 +104,7 @@ def run_clang_format_diff(args, file_name):
             original = f.readlines()
     except IOError as exc:
         raise DiffError(str(exc))
-    invocation = [args.clang_format_executable, file_name]
+    invocation = [args.clang_format_executable, '--version']
     if args.fix:
         invocation.append('-i')
     try:
