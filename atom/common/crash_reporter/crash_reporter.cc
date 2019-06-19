@@ -25,8 +25,13 @@ const char kCrashpadProcess[] = "crash-handler";
 const char kCrashesDirectoryKey[] = "crashes-directory";
 
 CrashReporter::CrashReporter() {
-  std::unique_ptr<base::Environment> env = base::Environment::Create();
-  if (env->HasVar(atom::kRunAsNode)) {
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
+  bool run_as_node = base::Environment::Create()->HasVar(atom::kRunAsNode);
+#else
+  bool run_as_node = false;
+#endif
+
+  if (run_as_node) {
     process_type_ = "node";
   } else {
     auto* cmd = base::CommandLine::ForCurrentProcess();
