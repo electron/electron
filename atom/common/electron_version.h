@@ -9,7 +9,7 @@
 #define ELECTRON_MINOR_VERSION 0
 #define ELECTRON_PATCH_VERSION 0
 // clang-format off
-#define ELECTRON_PRE_RELEASE_VERSION -nightly.20190618
+#define ELECTRON_PRE_RELEASE_VERSION -nightly.20190619
 // clang-format on
 
 #ifndef ELECTRON_STRINGIFY
