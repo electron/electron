@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
-#define ATOM_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
+#ifndef SHELL_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
+#define SHELL_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
 
 #include "base/files/file_path.h"
 
@@ -41,4 +41,4 @@ class ScopedTemporaryFile {
 
 }  // namespace asar
 
-#endif  // ATOM_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
+#endif  // SHELL_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_FAKE_LOCATION_PROVIDER_H_
-#define ATOM_BROWSER_FAKE_LOCATION_PROVIDER_H_
+#ifndef SHELL_BROWSER_FAKE_LOCATION_PROVIDER_H_
+#define SHELL_BROWSER_FAKE_LOCATION_PROVIDER_H_
 
 #include "base/macros.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -33,4 +33,4 @@ class FakeLocationProvider : public device::LocationProvider {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_FAKE_LOCATION_PROVIDER_H_
+#endif  // SHELL_BROWSER_FAKE_LOCATION_PROVIDER_H_

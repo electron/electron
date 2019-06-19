@@ -3,8 +3,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_ATOM_URL_REQUEST_H_
-#define ATOM_BROWSER_NET_ATOM_URL_REQUEST_H_
+#ifndef SHELL_BROWSER_NET_ATOM_URL_REQUEST_H_
+#define SHELL_BROWSER_NET_ATOM_URL_REQUEST_H_
 
 #include <memory>
 #include <string>
@@ -119,4 +119,4 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NET_ATOM_URL_REQUEST_H_
+#endif  // SHELL_BROWSER_NET_ATOM_URL_REQUEST_H_

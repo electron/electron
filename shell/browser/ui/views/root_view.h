@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_ROOT_VIEW_H_
-#define ATOM_BROWSER_UI_VIEWS_ROOT_VIEW_H_
+#ifndef SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
+#define SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
 
 #include <memory>
 
@@ -71,4 +71,4 @@ class RootView : public views::View {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_VIEWS_ROOT_VIEW_H_
+#endif  // SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_

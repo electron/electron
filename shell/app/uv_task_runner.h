@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_APP_UV_TASK_RUNNER_H_
-#define ATOM_APP_UV_TASK_RUNNER_H_
+#ifndef SHELL_APP_UV_TASK_RUNNER_H_
+#define SHELL_APP_UV_TASK_RUNNER_H_
 
 #include <map>
 
@@ -42,4 +42,4 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
 
 }  // namespace atom
 
-#endif  // ATOM_APP_UV_TASK_RUNNER_H_
+#endif  // SHELL_APP_UV_TASK_RUNNER_H_

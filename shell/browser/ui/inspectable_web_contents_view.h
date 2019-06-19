@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
-#define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
 #include "base/strings/string16.h"
 #include "ui/gfx/native_widget_types.h"
@@ -59,4 +59,4 @@ class InspectableWebContentsView {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_

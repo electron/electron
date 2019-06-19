@@ -6,8 +6,8 @@
 // this code
 // and released it as MIT to the world.
 
-#ifndef ATOM_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
-#define ATOM_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#define SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
 
 #include <windows.h>
 #include <windows.ui.notifications.h>
@@ -128,4 +128,4 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_

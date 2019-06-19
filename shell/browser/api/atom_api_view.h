@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_VIEW_H_
-#define ATOM_BROWSER_API_ATOM_API_VIEW_H_
+#ifndef SHELL_BROWSER_API_ATOM_API_VIEW_H_
+#define SHELL_BROWSER_API_ATOM_API_VIEW_H_
 
 #include <memory>
 #include <vector>
@@ -71,4 +71,4 @@ struct Converter<views::View*> {
 
 }  // namespace mate
 
-#endif  // ATOM_BROWSER_API_ATOM_API_VIEW_H_
+#endif  // SHELL_BROWSER_API_ATOM_API_VIEW_H_

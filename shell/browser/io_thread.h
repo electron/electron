@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_IO_THREAD_H_
-#define ATOM_BROWSER_IO_THREAD_H_
+#ifndef SHELL_BROWSER_IO_THREAD_H_
+#define SHELL_BROWSER_IO_THREAD_H_
 
 #include <memory>
 #include <set>
@@ -72,4 +72,4 @@ class IOThread : public content::BrowserThreadDelegate {
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };
 
-#endif  // ATOM_BROWSER_IO_THREAD_H_
+#endif  // SHELL_BROWSER_IO_THREAD_H_

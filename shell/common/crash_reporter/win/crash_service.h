@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
-#define ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
+#ifndef SHELL_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
+#define SHELL_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
 
 #include <string>
 
@@ -127,4 +127,4 @@ class CrashService {
 
 }  // namespace breakpad
 
-#endif  // ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
+#endif  // SHELL_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_

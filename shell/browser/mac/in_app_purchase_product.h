@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
-#define ATOM_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
+#ifndef SHELL_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
+#define SHELL_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
 
 #include <string>
 #include <vector>
@@ -48,4 +48,4 @@ void GetProducts(const std::vector<std::string>& productIDs,
 
 }  // namespace in_app_purchase
 
-#endif  // ATOM_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_
+#endif  // SHELL_BROWSER_MAC_IN_APP_PURCHASE_PRODUCT_H_

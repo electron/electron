@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
-#define ATOM_BROWSER_NODE_DEBUGGER_H_
+#ifndef SHELL_BROWSER_NODE_DEBUGGER_H_
+#define SHELL_BROWSER_NODE_DEBUGGER_H_
 
 #include "base/macros.h"
 
@@ -30,4 +30,4 @@ class NodeDebugger {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NODE_DEBUGGER_H_
+#endif  // SHELL_BROWSER_NODE_DEBUGGER_H_

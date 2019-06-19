@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_ELECTRON_BINDINGS_H_
-#define ATOM_COMMON_API_ELECTRON_BINDINGS_H_
+#ifndef SHELL_COMMON_API_ELECTRON_BINDINGS_H_
+#define SHELL_COMMON_API_ELECTRON_BINDINGS_H_
 
 #include <list>
 #include <memory>
@@ -84,4 +84,4 @@ class ElectronBindings {
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_API_ELECTRON_BINDINGS_H_
+#endif  // SHELL_COMMON_API_ELECTRON_BINDINGS_H_

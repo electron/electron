@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_EVENT_H_
-#define ATOM_BROWSER_API_EVENT_H_
+#ifndef SHELL_BROWSER_API_EVENT_H_
+#define SHELL_BROWSER_API_EVENT_H_
 
 #include "base/optional.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -56,4 +56,4 @@ class Event : public Wrappable<Event>, public content::WebContentsObserver {
 
 }  // namespace mate
 
-#endif  // ATOM_BROWSER_API_EVENT_H_
+#endif  // SHELL_BROWSER_API_EVENT_H_

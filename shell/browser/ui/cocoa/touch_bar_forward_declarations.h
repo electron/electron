@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_COCOA_TOUCH_BAR_FORWARD_DECLARATIONS_H_
-#define ATOM_BROWSER_UI_COCOA_TOUCH_BAR_FORWARD_DECLARATIONS_H_
+#ifndef SHELL_BROWSER_UI_COCOA_TOUCH_BAR_FORWARD_DECLARATIONS_H_
+#define SHELL_BROWSER_UI_COCOA_TOUCH_BAR_FORWARD_DECLARATIONS_H_
 
 // Once Chrome no longer supports OSX 10.12.0, this file can be deleted.
 
@@ -264,4 +264,4 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 #endif  // MAC_OS_X_VERSION_10_12_1
 
-#endif  // ATOM_BROWSER_UI_COCOA_TOUCH_BAR_FORWARD_DECLARATIONS_H_
+#endif  // SHELL_BROWSER_UI_COCOA_TOUCH_BAR_FORWARD_DECLARATIONS_H_

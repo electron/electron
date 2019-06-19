@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
-#define ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
+#ifndef SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
+#define SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
 
 #include "components/remote_cocoa/app_shim/native_widget_mac_nswindow.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
@@ -44,4 +44,4 @@ class ScopedDisableResize {
 - (void)toggleFullScreenMode:(id)sender;
 @end
 
-#endif  // ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
+#endif  // SHELL_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_

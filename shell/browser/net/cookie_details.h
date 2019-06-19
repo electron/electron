@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_COOKIE_DETAILS_H_
-#define ATOM_BROWSER_NET_COOKIE_DETAILS_H_
+#ifndef SHELL_BROWSER_NET_COOKIE_DETAILS_H_
+#define SHELL_BROWSER_NET_COOKIE_DETAILS_H_
 
 #include "base/macros.h"
 #include "services/network/public/mojom/cookie_manager.mojom.h"
@@ -28,4 +28,4 @@ struct CookieDetails {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NET_COOKIE_DETAILS_H_
+#endif  // SHELL_BROWSER_NET_COOKIE_DETAILS_H_

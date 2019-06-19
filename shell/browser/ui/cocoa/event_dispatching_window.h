@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
-#define ATOM_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
+#ifndef SHELL_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
+#define SHELL_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
 
 #import "ui/base/cocoa/underlay_opengl_hosting_window.h"
 
@@ -16,4 +16,4 @@
 
 @end
 
-#endif  // ATOM_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
+#endif  // SHELL_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_

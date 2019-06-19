@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
-#define ATOM_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
+#ifndef SHELL_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
+#define SHELL_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
 
 #include "base/compiler_specific.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -31,4 +31,4 @@ class ContentSettingsObserver : public content::RenderFrameObserver,
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
+#endif  // SHELL_RENDERER_CONTENT_SETTINGS_OBSERVER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
-#define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
+#ifndef SHELL_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
+#define SHELL_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
 
 #include <memory>
 #include <string>
@@ -62,4 +62,4 @@ class CrashReporterLinux : public CrashReporter {
 };
 }  // namespace crash_reporter
 
-#endif  // ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
+#endif  // SHELL_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_

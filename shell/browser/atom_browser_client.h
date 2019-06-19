@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
-#define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
+#ifndef SHELL_BROWSER_ATOM_BROWSER_CLIENT_H_
+#define SHELL_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include <map>
 #include <memory>
@@ -260,4 +260,4 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
+#endif  // SHELL_BROWSER_ATOM_BROWSER_CLIENT_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_SPECIAL_STORAGE_POLICY_H_
-#define ATOM_BROWSER_SPECIAL_STORAGE_POLICY_H_
+#ifndef SHELL_BROWSER_SPECIAL_STORAGE_POLICY_H_
+#define SHELL_BROWSER_SPECIAL_STORAGE_POLICY_H_
 
 #include "storage/browser/quota/special_storage_policy.h"
 
@@ -29,4 +29,4 @@ class SpecialStoragePolicy : public storage::SpecialStoragePolicy {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_SPECIAL_STORAGE_POLICY_H_
+#endif  // SHELL_BROWSER_SPECIAL_STORAGE_POLICY_H_

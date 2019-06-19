@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
-#define ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
+#ifndef SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_
+#define SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_
 
 #include <map>
 #include <memory>
@@ -195,4 +195,4 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
+#endif  // SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_

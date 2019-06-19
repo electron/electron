@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_MENU_MAC_H_
-#define ATOM_BROWSER_API_ATOM_API_MENU_MAC_H_
+#ifndef SHELL_BROWSER_API_ATOM_API_MENU_MAC_H_
+#define SHELL_BROWSER_API_ATOM_API_MENU_MAC_H_
 
 #include "shell/browser/api/atom_api_menu.h"
 
@@ -55,4 +55,4 @@ class MenuMac : public Menu {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_MENU_MAC_H_
+#endif  // SHELL_BROWSER_API_ATOM_API_MENU_MAC_H_

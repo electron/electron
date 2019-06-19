@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
-#define ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
+#ifndef SHELL_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
+#define SHELL_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
 
 #include <map>
 #include <memory>
@@ -180,4 +180,4 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
+#endif  // SHELL_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_

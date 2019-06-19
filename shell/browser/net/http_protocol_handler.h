@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_
-#define ATOM_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_
+#ifndef SHELL_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_
+#define SHELL_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_
 
 #include <string>
 
@@ -27,4 +27,4 @@ class HttpProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_
+#endif  // SHELL_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_

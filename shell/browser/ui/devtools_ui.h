@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef ATOM_BROWSER_UI_DEVTOOLS_UI_H_
-#define ATOM_BROWSER_UI_DEVTOOLS_UI_H_
+#ifndef SHELL_BROWSER_UI_DEVTOOLS_UI_H_
+#define SHELL_BROWSER_UI_DEVTOOLS_UI_H_
 
 #include "base/compiler_specific.h"
 #include "content/public/browser/browser_context.h"
@@ -24,4 +24,4 @@ class DevToolsUI : public content::WebUIController {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_DEVTOOLS_UI_H_
+#endif  // SHELL_BROWSER_UI_DEVTOOLS_UI_H_

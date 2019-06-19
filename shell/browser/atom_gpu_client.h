@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_GPU_CLIENT_H_
-#define ATOM_BROWSER_ATOM_GPU_CLIENT_H_
+#ifndef SHELL_BROWSER_ATOM_GPU_CLIENT_H_
+#define SHELL_BROWSER_ATOM_GPU_CLIENT_H_
 
 #include "content/public/gpu/content_gpu_client.h"
 
@@ -22,4 +22,4 @@ class AtomGpuClient : public content::ContentGpuClient {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_GPU_CLIENT_H_
+#endif  // SHELL_BROWSER_ATOM_GPU_CLIENT_H_

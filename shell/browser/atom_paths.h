@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_PATHS_H_
-#define ATOM_BROWSER_ATOM_PATHS_H_
+#ifndef SHELL_BROWSER_ATOM_PATHS_H_
+#define SHELL_BROWSER_ATOM_PATHS_H_
 
 #include "base/base_paths.h"
 
@@ -47,4 +47,4 @@ static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_PATHS_H_
+#endif  // SHELL_BROWSER_ATOM_PATHS_H_
