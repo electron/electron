@@ -108,13 +108,7 @@ ipcRendererUtils.handle('CHROME_TABS_EXECUTE_SCRIPT', function (
   return runContentScript.call(window, extensionId, url, code)
 })
 
-type ContentScriptEntry = {
-  extensionId: string;
-  contentScripts: Electron.ContentScript[];
-}
-
-module.exports = () => {
-  const entries = ipcRendererUtils.invokeSync<ContentScriptEntry[]>('CHROME_GET_CONTENT_SCRIPTS')
+module.exports = (entries: Electron.ContentScriptEntry[]) => {
   for (const entry of entries) {
     if (entry.contentScripts) {
       for (const script of entry.contentScripts) {

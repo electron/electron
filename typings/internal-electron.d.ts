@@ -47,6 +47,11 @@ declare namespace Electron {
     allFrames: boolean
   }
 
+  type ContentScriptEntry = {
+    extensionId: string;
+    contentScripts: ContentScript[];
+  }
+
   interface IpcRendererInternal extends Electron.IpcRenderer {
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
