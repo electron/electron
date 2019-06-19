@@ -86,6 +86,11 @@ run the following command from your app's directory:
 npm install --save-dev electron
 ```
 
+To install `electron` globally, run the following command:
+```sh
+npm install -g electron
+```
+
 Other means for installing Electron exist. Please consult the
 [installation guide](installation.md) to learn about use with proxies, mirrors,
 and custom caches.
