@@ -883,7 +883,7 @@ describe('Menu module', () => {
       expect(hasBeenClicked).to.equal(true)
     })
 
-    testFn.only('should not activate upon clicking another key combination', async () => {
+    testFn('should not activate upon clicking another key combination', async () => {
       let hasBeenClicked = false
       const menu = Menu.buildFromTemplate([
         {
