@@ -31,7 +31,7 @@ the issue will be closed.
 ### Languages
 
 We accept issues in *any* language.
-When an issue is posted in a language besides english, it is acceptable and encouraged to post an english-translated copy as a reply. 
+When an issue is posted in a language besides English, it is acceptable and encouraged to post an English-translated copy as a reply. 
 Anyone may post the translated reply.
 In most cases, a quick pass through translation software is sufficient.
 Having the original text _as well as_ the translation can help mitigate translation errors.
