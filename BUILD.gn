@@ -315,7 +315,7 @@ npm_action("electron_version_args") {
     "$target_gen_dir/electron_version.args",
   ]
 
-  args = [ rebase_path(outputs[0]) ]
+  args = rebase_path(outputs)
 
   inputs = [
     "ELECTRON_VERSION",
