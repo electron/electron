@@ -114,6 +114,11 @@
 #include "chrome/browser/printing/printing_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
+#if defined(OS_MACOSX)
+#include "content/common/mac_helpers.h"
+#include "content/public/common/child_process_host.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -480,7 +485,17 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Make sure we're about to launch a known executable
   {
     base::FilePath child_path;
+#if defined(OS_MACOSX)
+    int flags = content::ChildProcessHost::CHILD_NORMAL;
+    if (base::EndsWith(command_line->GetProgram().value(),
+                       content::kMacHelperSuffix_renderer,
+                       base::CompareCase::SENSITIVE)) {
+      flags = content::ChildProcessHost::CHILD_RENDERER;
+    }
+    child_path = content::ChildProcessHost::GetChildPath(flags);
+#else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+#endif
 
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);

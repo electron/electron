@@ -13,6 +13,7 @@
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
+#include "content/common/mac_helpers.h"
 #include "content/public/common/content_paths.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/common/application_info.h"
@@ -28,10 +29,20 @@ base::FilePath GetFrameworksPath() {
 
 base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
                                 const std::string& name) {
-  return frameworks_path.Append(name + " Helper.app")
+  // Figure out what helper we are running
+  base::FilePath path;
+  base::PathService::Get(base::FILE_EXE, &path);
+
+  std::string helper_name = "Helper";
+  if (base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
+                     base::CompareCase::SENSITIVE)) {
+    helper_name += content::kMacHelperSuffix_renderer;
+  }
+
+  return frameworks_path.Append(name + " " + helper_name + ".app")
       .Append("Contents")
       .Append("MacOS")
-      .Append(name + " Helper");
+      .Append(name + " " + helper_name);
 }
 
 }  // namespace
