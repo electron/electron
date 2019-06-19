@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/asar/asar_util.h"
+#include "shell/common/asar/asar_util.h"
 
 #include <map>
 #include <string>
 
-#include "atom/common/asar/archive.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
 #include "base/stl_util.h"
 #include "base/threading/thread_local.h"
+#include "shell/common/asar/archive.h"
 
 namespace asar {
 

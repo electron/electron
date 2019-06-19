@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/deprecate_util.h"
+#include "shell/common/deprecate_util.h"
 
-#include "atom/common/native_mate_converters/callback.h"
 #include "base/callback.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/callback.h"
 
 namespace atom {
 

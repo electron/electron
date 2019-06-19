@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/ui/cocoa/atom_touch_bar.h"
+#import "shell/browser/ui/cocoa/atom_touch_bar.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/image_converter.h"
 #include "base/strings/sys_string_conversions.h"
+#include "shell/common/color_util.h"
+#include "shell/common/native_mate_converters/image_converter.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image.h"
 

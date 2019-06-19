@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 
 #include "content/browser/frame_host/frame_tree.h"           // nogncheck
 #include "content/browser/frame_host/frame_tree_node.h"      // nogncheck
@@ -10,8 +10,8 @@
 #include "content/public/browser/guest_mode.h"
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_render_widget_host_view.h"
-#include "atom/browser/osr/osr_web_contents_view.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
+#include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
 // Including both web_contents_impl.h and node.h would introduce a error, we

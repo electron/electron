@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/drag_util.h"
+#include "shell/browser/ui/drag_util.h"
 
 #include "ui/aura/client/drag_drop_client.h"
 #include "ui/aura/window.h"

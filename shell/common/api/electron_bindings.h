@@ -8,13 +8,13 @@
 #include <list>
 #include <memory>
 
-#include "atom/common/promise_util.h"
 #include "base/files/file_path.h"
 #include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
+#include "shell/common/promise_util.h"
 #include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
 

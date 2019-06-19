@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/lib/bluetooth_chooser.h"
-#include "atom/common/native_mate_converters/once_callback.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
+#include "shell/browser/lib/bluetooth_chooser.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
 
 namespace mate {
 

@@ -4,14 +4,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/notifications/win/notification_presenter_win.h"
+#include "shell/browser/notifications/win/notification_presenter_win.h"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "atom/browser/notifications/win/notification_presenter_win7.h"
-#include "atom/browser/notifications/win/windows_toast_notification.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
@@ -19,6 +17,8 @@
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
 #include "base/win/windows_version.h"
+#include "shell/browser/notifications/win/notification_presenter_win7.h"
+#include "shell/browser/notifications/win/windows_toast_notification.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/codec/png_codec.h"
 

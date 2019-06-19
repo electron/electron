@@ -2,19 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "shell/browser/browser.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_paths.h"
-#include "atom/browser/browser_observer.h"
-#include "atom/browser/login_handler.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/application_info.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
@@ -22,6 +15,13 @@
 #include "base/run_loop.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_paths.h"
+#include "shell/browser/browser_observer.h"
+#include "shell/browser/login_handler.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/application_info.h"
 
 namespace atom {
 

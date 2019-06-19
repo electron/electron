@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/auto_updater.h"
+#include "shell/browser/auto_updater.h"
 
 #include <string>
 
@@ -11,13 +11,13 @@
 #import <ReactiveCocoa/RACSignal.h>
 #import <Squirrel/Squirrel.h>
 
-#include "atom/browser/browser.h"
-#include "atom/common/native_mate_converters/map_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/time/time.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/browser.h"
+#include "shell/common/native_mate_converters/map_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 namespace auto_updater {
 

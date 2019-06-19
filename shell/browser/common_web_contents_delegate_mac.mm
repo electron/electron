@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/common_web_contents_delegate.h"
+#include "shell/browser/common_web_contents_delegate.h"
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/ui/cocoa/event_dispatching_window.h"
-#include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "shell/browser/ui/cocoa/event_dispatching_window.h"
+#include "shell/browser/web_contents_preferences.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 @interface NSWindow (EventDispatchingWindow)

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/node_bindings.h"
+#include "shell/common/node_bindings.h"
 
 #include <algorithm>
 #include <memory>
@@ -10,11 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/api/locker.h"
-#include "atom/common/atom_command_line.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -28,6 +23,11 @@
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/api/locker.h"
+#include "shell/common/atom_command_line.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/node_includes.h"
 
 #define ELECTRON_BUILTIN_MODULES(V)  \
   V(atom_browser_app)                \

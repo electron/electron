@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
 
 #include <utility>
 
-#include "atom/browser/net/asar/asar_url_loader.h"
 #include "mojo/public/cpp/bindings/binding.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "shell/browser/net/asar/asar_url_loader.h"
 
 namespace atom {
 

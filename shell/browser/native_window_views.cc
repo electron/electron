@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window_views.h"
+#include "shell/browser/native_window_views.h"
 
 #if defined(OS_WIN)
 #include <wrl/client.h>
@@ -13,20 +13,20 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/native_browser_view_views.h"
-#include "atom/browser/ui/inspectable_web_contents.h"
-#include "atom/browser/ui/inspectable_web_contents_view.h"
-#include "atom/browser/ui/views/root_view.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/web_view_manager.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/atom_constants.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/native_browser_view_views.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/views/root_view.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/web_view_manager.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
@@ -41,22 +41,22 @@
 #include "ui/wm/core/window_util.h"
 
 #if defined(USE_X11)
-#include "atom/browser/browser.h"
-#include "atom/browser/ui/views/frameless_view.h"
-#include "atom/browser/ui/views/global_menu_bar_x11.h"
-#include "atom/browser/ui/views/native_frame_view.h"
-#include "atom/browser/ui/x/event_disabler.h"
-#include "atom/browser/ui/x/window_state_watcher.h"
-#include "atom/browser/ui/x/x_window_utils.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtkui/unity_service.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/ui/views/frameless_view.h"
+#include "shell/browser/ui/views/global_menu_bar_x11.h"
+#include "shell/browser/ui/views/native_frame_view.h"
+#include "shell/browser/ui/x/event_disabler.h"
+#include "shell/browser/ui/x/window_state_watcher.h"
+#include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
-#include "atom/browser/ui/views/win_frame_view.h"
-#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
+#include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/screen.h"

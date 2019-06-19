@@ -2,27 +2,27 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/atom_render_frame_observer.h"
+#include "shell/renderer/atom_render_frame_observer.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"

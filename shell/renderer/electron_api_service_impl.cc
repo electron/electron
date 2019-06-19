@@ -2,25 +2,25 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/atom/renderer/electron_api_service_impl.h"
+#include "electron/shell/renderer/electron_api_service_impl.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "atom/common/atom_constants.h"
-#include "atom/common/heap_snapshot.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/environment.h"
 #include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
-#include "electron/atom/common/api/event_emitter_caller.h"
-#include "electron/atom/common/node_includes.h"
-#include "electron/atom/common/options_switches.h"
-#include "electron/atom/renderer/atom_render_frame_observer.h"
-#include "electron/atom/renderer/renderer_client_base.h"
+#include "electron/shell/common/api/event_emitter_caller.h"
+#include "electron/shell/common/node_includes.h"
+#include "electron/shell/common/options_switches.h"
+#include "electron/shell/renderer/atom_render_frame_observer.h"
+#include "electron/shell/renderer/renderer_client_base.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/heap_snapshot.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 

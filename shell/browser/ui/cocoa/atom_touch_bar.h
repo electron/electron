@@ -11,11 +11,11 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/cocoa/touch_bar_forward_declarations.h"
 #include "base/mac/scoped_nsobject.h"
 #include "native_mate/constructor.h"
 #include "native_mate/persistent_dictionary.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/cocoa/touch_bar_forward_declarations.h"
 
 @interface AtomTouchBar : NSObject <NSScrubberDelegate,
                                     NSScrubberDataSource,

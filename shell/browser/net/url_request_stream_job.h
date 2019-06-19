@@ -9,12 +9,12 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/stream_subscriber.h"
-#include "atom/browser/net/js_asker.h"
 #include "base/memory/scoped_refptr.h"
 #include "net/base/io_buffer.h"
 #include "net/http/http_status_code.h"
 #include "net/url_request/url_request_job.h"
+#include "shell/browser/api/stream_subscriber.h"
+#include "shell/browser/net/js_asker.h"
 
 namespace atom {
 

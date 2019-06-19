@@ -7,9 +7,9 @@
 
 #include <memory>
 
-#include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "base/compiler_specific.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "ui/views/view.h"
 
 namespace views {

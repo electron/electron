@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "atom/browser/api/trackable_object.h"
+#include "shell/browser/api/trackable_object.h"
 #include "ui/views/layout/layout_manager.h"
 
 namespace atom {

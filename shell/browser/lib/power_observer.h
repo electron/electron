@@ -8,7 +8,7 @@
 #include "base/macros.h"
 
 #if defined(OS_LINUX)
-#include "atom/browser/lib/power_observer_linux.h"
+#include "shell/browser/lib/power_observer_linux.h"
 #else
 #include "base/power_monitor/power_observer.h"
 #endif  // defined(OS_LINUX)

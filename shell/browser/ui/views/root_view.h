@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "atom/browser/ui/accelerator_util.h"
+#include "shell/browser/ui/accelerator_util.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/view.h"
 #include "ui/views/view_tracker.h"

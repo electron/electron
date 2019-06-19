@@ -2,16 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_dialog_helper.h"
+#include "shell/browser/web_dialog_helper.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/common/native_mate_converters/once_callback.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
@@ -26,6 +22,10 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/dictionary.h"
 #include "net/base/mime_util.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
 using blink::mojom::FileChooserFileInfo;

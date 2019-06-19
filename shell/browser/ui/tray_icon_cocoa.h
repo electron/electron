@@ -9,8 +9,8 @@
 
 #include <string>
 
-#include "atom/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/ui/tray_icon.h"
 
 @class AtomMenuController;
 @class StatusItemView;

@@ -2,21 +2,21 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/mac/atom_application.h"
+#import "shell/browser/mac/atom_application.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/browser/browser.h"
-#import "atom/browser/mac/atom_application_delegate.h"
-#include "atom/browser/mac/dict_util.h"
 #include "base/auto_reset.h"
 #include "base/observer_list.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/native_event_processor_mac.h"
 #include "content/public/browser/native_event_processor_observer_mac.h"
+#include "shell/browser/browser.h"
+#import "shell/browser/mac/atom_application_delegate.h"
+#include "shell/browser/mac/dict_util.h"
 
 namespace {
 

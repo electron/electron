@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/about_protocol_handler.h"
+#include "shell/browser/net/about_protocol_handler.h"
 
-#include "atom/browser/net/url_request_about_job.h"
+#include "shell/browser/net/url_request_about_job.h"
 
 namespace atom {
 

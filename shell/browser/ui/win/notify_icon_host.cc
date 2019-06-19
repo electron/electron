@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/notify_icon_host.h"
+#include "shell/browser/ui/win/notify_icon_host.h"
 
 #include <commctrl.h>
 #include <winuser.h>
 
-#include "atom/browser/ui/win/notify_icon.h"
 #include "base/bind.h"
 #include "base/stl_util.h"
 #include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
+#include "shell/browser/ui/win/notify_icon.h"
 #include "ui/events/event_constants.h"
 #include "ui/events/win/system_event_state_lookup.h"
 #include "ui/gfx/win/hwnd_util.h"

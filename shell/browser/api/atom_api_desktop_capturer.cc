@@ -2,15 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_desktop_capturer.h"
+#include "shell/browser/api/atom_api_desktop_capturer.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "atom/common/api/atom_api_native_image.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
@@ -18,6 +15,9 @@
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/api/atom_api_native_image.h"
+#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 

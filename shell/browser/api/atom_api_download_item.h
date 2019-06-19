@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/ui/file_dialog.h"
 #include "base/files/file_path.h"
 #include "components/download/public/common/download_item.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/ui/file_dialog.h"
 #include "url/gurl.h"
 
 namespace atom {

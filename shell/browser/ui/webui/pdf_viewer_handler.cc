@@ -2,12 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/webui/pdf_viewer_handler.h"
+#include "shell/browser/ui/webui/pdf_viewer_handler.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/common/atom_constants.h"
 #include "base/bind.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
@@ -18,6 +17,7 @@
 #include "content/public/common/page_zoom.h"
 #include "content/public/common/url_constants.h"
 #include "net/http/http_response_headers.h"
+#include "shell/common/atom_constants.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/webui/web_ui_util.h"
 

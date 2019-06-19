@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/cookie_change_notifier.h"
+#include "shell/browser/cookie_change_notifier.h"
 
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/cookie_details.h"
 #include "base/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "net/cookies/canonical_cookie.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/net/cookie_details.h"
 
 using content::BrowserThread;
 

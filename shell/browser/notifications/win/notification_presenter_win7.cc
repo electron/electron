@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/notifications/win/notification_presenter_win7.h"
+#include "shell/browser/notifications/win/notification_presenter_win7.h"
 
 #include <string>
 
-#include "atom/browser/notifications/win/win32_notification.h"
+#include "shell/browser/notifications/win/win32_notification.h"
 
 namespace atom {
 

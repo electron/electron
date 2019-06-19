@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_power_monitor.h"
+#include "shell/browser/api/atom_api_power_monitor.h"
 
-#include "atom/browser/browser.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/node_includes.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/browser.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/node_includes.h"
 
 namespace mate {
 template <>

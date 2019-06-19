@@ -2,22 +2,22 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/content_converter.h"
+#include "shell/common/native_mate_converters/content_converter.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/web_contents_permission_helper.h"
-#include "atom/common/native_mate_converters/blink_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/ui_base_types_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/web_contents_permission_helper.h"
+#include "shell/common/native_mate_converters/blink_converter.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/native_mate_converters/ui_base_types_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 namespace {
 

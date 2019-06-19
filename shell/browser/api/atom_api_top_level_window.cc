@@ -2,35 +2,35 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_top_level_window.h"
+#include "shell/browser/api/atom_api_top_level_window.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_browser_view.h"
-#include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/api/atom_api_view.h"
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/converter.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
+#include "shell/browser/api/atom_api_browser_view.h"
+#include "shell/browser/api/atom_api_menu.h"
+#include "shell/browser/api/atom_api_view.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/common/color_util.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 
 #if defined(TOOLKIT_VIEWS)
-#include "atom/browser/native_window_views.h"
+#include "shell/browser/native_window_views.h"
 #endif
 
 #if defined(OS_WIN)
-#include "atom/browser/ui/win/taskbar_host.h"
+#include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #endif
 

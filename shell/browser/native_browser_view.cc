@@ -4,10 +4,10 @@
 
 #include <vector>
 
-#include "atom/browser/native_browser_view.h"
+#include "shell/browser/native_browser_view.h"
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 
 namespace atom {
 

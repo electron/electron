@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/notifications/platform_notification_service.h"
+#include "shell/browser/notifications/platform_notification_service.h"
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/notifications/notification.h"
-#include "atom/browser/notifications/notification_delegate.h"
-#include "atom/browser/notifications/notification_presenter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/browser/render_process_host.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/notifications/notification.h"
+#include "shell/browser/notifications/notification_delegate.h"
+#include "shell/browser/notifications/notification_presenter.h"
 #include "third_party/blink/public/common/notifications/notification_resources.h"
 #include "third_party/blink/public/common/notifications/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"

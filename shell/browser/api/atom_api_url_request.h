@@ -8,8 +8,6 @@
 #include <array>
 #include <string>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/browser/api/trackable_object.h"
 #include "base/memory/weak_ptr.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
@@ -18,6 +16,8 @@
 #include "net/base/io_buffer.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request_context.h"
+#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/trackable_object.h"
 
 namespace atom {
 

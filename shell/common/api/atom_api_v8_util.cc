@@ -5,14 +5,14 @@
 #include <string>
 #include <utility>
 
-#include "atom/common/api/atom_api_key_weak_map.h"
-#include "atom/common/api/remote_callback_freer.h"
-#include "atom/common/api/remote_object_freer.h"
-#include "atom/common/native_mate_converters/content_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/hash/hash.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/api/atom_api_key_weak_map.h"
+#include "shell/common/api/remote_callback_freer.h"
+#include "shell/common/api/remote_object_freer.h"
+#include "shell/common/native_mate_converters/content_converter.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/node_includes.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
 

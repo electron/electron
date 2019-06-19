@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/menu_bar.h"
+#include "shell/browser/ui/views/menu_bar.h"
 
 #include <memory>
 #include <set>
 #include <sstream>
 
-#include "atom/browser/ui/views/submenu_button.h"
-#include "atom/common/keyboard_util.h"
+#include "shell/browser/ui/views/submenu_button.h"
+#include "shell/common/keyboard_util.h"
 #include "ui/aura/window.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/heap_snapshot.h"
+#include "shell/common/heap_snapshot.h"
 
 #include "v8/include/v8-profiler.h"
 

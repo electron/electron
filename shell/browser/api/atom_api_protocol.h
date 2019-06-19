@@ -11,10 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/atom_url_request_job_factory.h"
-#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/post_task.h"
@@ -24,6 +20,10 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/net/atom_url_request_job_factory.h"
+#include "shell/common/promise_util.h"
 
 namespace base {
 class DictionaryValue;

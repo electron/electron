@@ -4,8 +4,8 @@
 
 #include <string>
 
-#include "atom/common/api/locker.h"
-#include "atom/common/promise_util.h"
+#include "shell/common/api/locker.h"
+#include "shell/common/promise_util.h"
 
 namespace atom {
 

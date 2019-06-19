@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/stream_subscriber.h"
+#include "shell/browser/api/stream_subscriber.h"
 
 #include <string>
 
-#include "atom/browser/net/url_request_stream_job.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/node_includes.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "shell/browser/net/url_request_stream_job.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/node_includes.h"
 
 namespace mate {
 

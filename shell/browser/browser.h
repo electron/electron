@@ -9,15 +9,15 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/browser_observer.h"
-#include "atom/browser/window_list_observer.h"
-#include "atom/common/promise_util.h"
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
 #include "base/values.h"
 #include "native_mate/arguments.h"
+#include "shell/browser/browser_observer.h"
+#include "shell/browser/window_list_observer.h"
+#include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
 #include <windows.h>

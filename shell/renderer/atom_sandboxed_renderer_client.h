@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/renderer/renderer_client_base.h"
 #include "base/process/process_metrics.h"
+#include "shell/renderer/renderer_client_base.h"
 
 namespace atom {
 

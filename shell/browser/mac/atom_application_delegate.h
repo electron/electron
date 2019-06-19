@@ -4,7 +4,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-#import "atom/browser/ui/cocoa/atom_menu_controller.h"
+#import "shell/browser/ui/cocoa/atom_menu_controller.h"
 
 @interface AtomApplicationDelegate : NSObject <NSApplicationDelegate> {
  @private

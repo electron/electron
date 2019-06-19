@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_view.h"
+#include "shell/browser/api/atom_api_view.h"
 
-#include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

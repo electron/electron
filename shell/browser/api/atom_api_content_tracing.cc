@@ -6,17 +6,17 @@
 #include <string>
 #include <utility>
 
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/promise_util.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/optional.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/tracing_controller.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/promise_util.h"
 
 using content::TracingController;
 

@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/crash_reporter/crash_reporter_win.h"
+#include "shell/common/crash_reporter/crash_reporter_win.h"
 
 #include <memory>
 #include <vector>
 
-#include "atom/browser/ui/inspectable_web_contents_impl.h"
-#include "atom/common/atom_constants.h"
 #include "base/environment.h"
 #include "base/memory/singleton.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
+#include "shell/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/common/atom_constants.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/crashpad/crashpad/client/crashpad_client.h"
 #include "third_party/crashpad/crashpad/client/crashpad_info.h"

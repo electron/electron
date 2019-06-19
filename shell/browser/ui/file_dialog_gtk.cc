@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/file_dialog.h"
+#include "shell/browser/ui/file_dialog.h"
 
 #include <glib/gi18n.h>  // _() macro
 
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 

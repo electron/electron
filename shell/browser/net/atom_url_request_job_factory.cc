@@ -3,7 +3,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_url_request_job_factory.h"
+#include "shell/browser/net/atom_url_request_job_factory.h"
 
 #include <utility>
 

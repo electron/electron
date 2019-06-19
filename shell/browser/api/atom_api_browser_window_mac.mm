@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_browser_window.h"
+#include "shell/browser/api/atom_api_browser_window.h"
 
 #include <memory>
 #include <vector>
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/native_browser_view.h"
-#include "atom/browser/native_window_mac.h"
-#include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/native_browser_view.h"
+#include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 
 @interface NSView (WebContentsView)
 - (void)setMouseDownCanMoveWindow:(BOOL)can_move;

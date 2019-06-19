@@ -4,20 +4,20 @@
 
 #include <string>
 
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/promise_util.h"
 #include "base/task/post_task.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_bindings.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/promise_util.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;

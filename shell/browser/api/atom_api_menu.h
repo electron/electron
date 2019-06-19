@@ -8,10 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/api/atom_api_top_level_window.h"
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
+#include "shell/browser/api/atom_api_top_level_window.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/ui/atom_menu_model.h"
 
 namespace atom {
 

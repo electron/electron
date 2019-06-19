@@ -2,15 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/url_request_buffer_job.h"
+#include "shell/browser/net/url_request_buffer_job.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/common/atom_constants.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
@@ -18,6 +15,9 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/base/mime_util.h"
 #include "net/base/net_errors.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/v8_value_converter.h"
 
 namespace atom {
 

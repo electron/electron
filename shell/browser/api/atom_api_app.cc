@@ -2,32 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_app.h"
+#include "shell/browser/api/atom_api_app.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/api/gpuinfo_manager.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_paths.h"
-#include "atom/browser/login_handler.h"
-#include "atom/browser/relauncher.h"
-#include "atom/common/application_info.h"
-#include "atom/common/atom_command_line.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/network_converter.h"
-#include "atom/common/native_mate_converters/once_callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -51,17 +30,38 @@
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "shell/browser/api/atom_api_menu.h"
+#include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/gpuinfo_manager.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_paths.h"
+#include "shell/browser/login_handler.h"
+#include "shell/browser/relauncher.h"
+#include "shell/common/application_info.h"
+#include "shell/common/atom_command_line.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/network_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
-#include "atom/browser/ui/win/jump_list.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/ui/win/jump_list.h"
 #endif
 
 #if defined(OS_MACOSX)
 #include <CoreFoundation/CoreFoundation.h>
-#include "atom/browser/ui/cocoa/atom_bundle_mover.h"
+#include "shell/browser/ui/cocoa/atom_bundle_mover.h"
 #endif
 
 using atom::Browser;

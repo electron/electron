@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "atom/browser/api/views/atom_api_label_button.h"
+#include "shell/browser/api/views/atom_api_label_button.h"
 #include "ui/views/controls/button/md_text_button.h"
 
 namespace atom {

@@ -23,9 +23,9 @@
 #ifndef ATOM_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
 #define ATOM_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
-#include "atom/browser/notifications/notification_presenter.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/strings/string16.h"
+#include "shell/browser/notifications/notification_presenter.h"
 
 class GURL;
 class SkBitmap;

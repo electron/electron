@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_javascript_dialog_manager.h"
+#include "shell/browser/atom_javascript_dialog_manager.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/message_box.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/common/options_switches.h"
 #include "base/bind.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/message_box.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/common/options_switches.h"
 #include "ui/gfx/image/image_skia.h"
 
 using content::JavaScriptDialogType;

@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/notifications/win/win32_desktop_notifications/toast_uia.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/toast_uia.h"
 #include <UIAutomation.h>
-#include "atom/browser/notifications/win/win32_desktop_notifications/common.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/common.h"
 
 #pragma comment(lib, "uiautomationcore.lib")
 

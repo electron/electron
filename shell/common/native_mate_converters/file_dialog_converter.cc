@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/file_dialog_converter.h"
+#include "shell/common/native_mate_converters/file_dialog_converter.h"
 
-#include "atom/browser/api/atom_api_browser_window.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_browser_window.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
 
 namespace mate {
 

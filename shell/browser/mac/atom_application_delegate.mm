@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/mac/atom_application_delegate.h"
+#import "shell/browser/mac/atom_application_delegate.h"
 
 #include <memory>
 #include <string>
 
-#include "atom/browser/browser.h"
-#import "atom/browser/mac/atom_application.h"
-#include "atom/browser/mac/dict_util.h"
 #include "base/allocator/allocator_shim.h"
 #include "base/allocator/buildflags.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
+#include "shell/browser/browser.h"
+#import "shell/browser/mac/atom_application.h"
+#include "shell/browser/mac/dict_util.h"
 
 #if BUILDFLAG(USE_ALLOCATOR_SHIM)
 // On macOS 10.12, the IME system attempts to allocate a 2^64 size buffer,

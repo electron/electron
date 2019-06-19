@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/files/file_path.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
 
 namespace gin {
 

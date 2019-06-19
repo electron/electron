@@ -6,14 +6,14 @@
 
 #include <vector>
 
-#include "atom/common/asar/archive.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
+#include "shell/common/asar/archive.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/node_includes.h"
 #include "third_party/electron_node/src/node_native_module.h"
 
 namespace {

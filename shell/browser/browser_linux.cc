@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "shell/browser/browser.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/application_info.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
 #include "electron/electron_version.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/application_info.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"

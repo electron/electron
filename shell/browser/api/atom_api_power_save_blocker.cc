@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_power_save_blocker.h"
+#include "shell/browser/api/atom_api_power_save_blocker.h"
 
 #include <string>
 
-#include "atom/common/node_includes.h"
 #include "base/bind_helpers.h"
 #include "base/task/post_task.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -16,6 +15,7 @@
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "shell/common/node_includes.h"
 
 namespace gin {
 

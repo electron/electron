@@ -8,11 +8,11 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/net/js_asker.h"
 #include "base/memory/weak_ptr.h"
 #include "net/url_request/url_fetcher_delegate.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_job.h"
+#include "shell/browser/net/js_asker.h"
 
 namespace atom {
 

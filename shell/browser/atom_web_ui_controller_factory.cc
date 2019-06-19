@@ -2,22 +2,22 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_web_ui_controller_factory.h"
+#include "shell/browser/atom_web_ui_controller_factory.h"
 
 #include <string>
 
 #include "electron/buildflags/buildflags.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "atom/browser/ui/webui/pdf_viewer_ui.h"
-#include "atom/common/atom_constants.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "net/base/escape.h"
+#include "shell/browser/ui/webui/pdf_viewer_ui.h"
+#include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-#include "atom/browser/ui/devtools_ui.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/browser/ui/devtools_ui.h"
 
 namespace atom {
 

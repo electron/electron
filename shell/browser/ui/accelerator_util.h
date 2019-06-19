@@ -8,7 +8,7 @@
 #include <map>
 #include <string>
 
-#include "atom/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/atom_menu_model.h"
 #include "ui/base/accelerators/accelerator.h"
 
 namespace accelerator_util {

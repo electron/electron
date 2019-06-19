@@ -8,11 +8,11 @@
 #include <memory>
 #include <set>
 
-#include "atom/browser/net/system_network_context_manager.h"
 #include "base/macros.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/browser_thread_delegate.h"
 #include "services/network/public/mojom/network_service.mojom.h"
+#include "shell/browser/net/system_network_context_manager.h"
 
 namespace atom {
 class URLRequestContextGetter;

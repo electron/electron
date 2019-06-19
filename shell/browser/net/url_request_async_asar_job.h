@@ -7,8 +7,8 @@
 
 #include <memory>
 
-#include "atom/browser/net/asar/url_request_asar_job.h"
-#include "atom/browser/net/js_asker.h"
+#include "shell/browser/net/asar/url_request_asar_job.h"
+#include "shell/browser/net/js_asker.h"
 
 namespace atom {
 

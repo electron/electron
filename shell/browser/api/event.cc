@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/event.h"
+#include "shell/browser/api/event.h"
 
 #include <utility>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/object_template_builder.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 namespace mate {
 

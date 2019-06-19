@@ -8,13 +8,13 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_blob_reader.h"
-#include "atom/browser/net/resolve_proxy_helper.h"
-#include "atom/common/promise_util.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/atom_blob_reader.h"
+#include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/promise_util.h"
 
 class GURL;
 

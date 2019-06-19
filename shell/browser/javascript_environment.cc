@@ -2,12 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/javascript_environment.h"
+#include "shell/browser/javascript_environment.h"
 
 #include <string>
 
-#include "atom/browser/microtasks_runner.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task/thread_pool/initialization_util.h"
@@ -15,6 +13,8 @@
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
+#include "shell/browser/microtasks_runner.h"
+#include "shell/common/node_includes.h"
 #include "tracing/trace_event.h"
 
 namespace atom {

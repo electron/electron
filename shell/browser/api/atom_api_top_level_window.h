@@ -10,14 +10,14 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/native_window_observer.h"
-#include "atom/common/api/atom_api_native_image.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/native_window_observer.h"
+#include "shell/common/api/atom_api_native_image.h"
 
 namespace atom {
 

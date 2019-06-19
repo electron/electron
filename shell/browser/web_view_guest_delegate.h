@@ -5,8 +5,8 @@
 #ifndef ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 #define ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
-#include "atom/browser/web_contents_zoom_controller.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
+#include "shell/browser/web_contents_zoom_controller.h"
 
 namespace atom {
 

@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/network_converter.h"
+#include "shell/common/native_mate_converters/network_converter.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/numerics/safe_conversions.h"
 #include "native_mate/dictionary.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 namespace mate {
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/child_web_contents_tracker.h"
+#include "shell/browser/child_web_contents_tracker.h"
 
 namespace atom {
 

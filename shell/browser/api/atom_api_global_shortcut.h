@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
 #include "base/callback.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
 #include "ui/base/accelerators/accelerator.h"
 
 namespace atom {

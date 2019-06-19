@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/message_box.h"
+#include "shell/browser/ui/message_box.h"
 
 #include <windows.h>  // windows.h must be included first
 
@@ -11,9 +11,6 @@
 #include <map>
 #include <vector>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/unresponsive_suppressor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
@@ -21,6 +18,9 @@
 #include "base/win/scoped_gdi_object.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
 

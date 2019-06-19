@@ -10,8 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_url_request.h"
-#include "atom/browser/atom_browser_context.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "net/base/auth.h"
@@ -21,6 +19,8 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 #include "net/url_request/url_request_context_getter_observer.h"
+#include "shell/browser/api/atom_api_url_request.h"
+#include "shell/browser/atom_browser_context.h"
 
 namespace atom {
 

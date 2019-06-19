@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/tray_icon_gtk.h"
+#include "shell/browser/ui/tray_icon_gtk.h"
 
-#include "atom/browser/browser.h"
-#include "atom/common/application_info.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/browser.h"
+#include "shell/common/application_info.h"
 #include "ui/gfx/image/image.h"
 #include "ui/views/linux_ui/linux_ui.h"
 

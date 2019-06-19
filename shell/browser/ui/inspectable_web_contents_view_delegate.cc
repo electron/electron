@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
 namespace atom {
 

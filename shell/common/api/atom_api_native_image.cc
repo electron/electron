@@ -2,25 +2,25 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_native_image.h"
+#include "shell/common/api/atom_api_native_image.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/asar/asar_util.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
+#include "shell/common/asar/asar_util.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
@@ -34,8 +34,8 @@
 #include "ui/gfx/image/image_util.h"
 
 #if defined(OS_WIN)
-#include "atom/common/asar/archive.h"
 #include "base/win/scoped_gdi_object.h"
+#include "shell/common/asar/archive.h"
 #include "ui/gfx/icon_util.h"
 #endif
 

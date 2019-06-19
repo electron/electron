@@ -6,9 +6,9 @@
 #ifndef ATOM_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_
 #define ATOM_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_
 
-#include "atom/browser/notifications/mac/notification_center_delegate.h"
-#include "atom/browser/notifications/notification_presenter.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/notifications/mac/notification_center_delegate.h"
+#include "shell/browser/notifications/notification_presenter.h"
 
 namespace atom {
 

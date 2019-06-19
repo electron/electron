@@ -7,9 +7,9 @@
 
 #include <string>
 
-#include "atom/browser/ui/file_dialog.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
+#include "shell/browser/ui/file_dialog.h"
 
 namespace content {
 class DownloadManager;

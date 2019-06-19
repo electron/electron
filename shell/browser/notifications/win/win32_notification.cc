@@ -6,7 +6,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "atom/browser/notifications/win/win32_notification.h"
+#include "shell/browser/notifications/win/win32_notification.h"
 
 #include <windows.h>
 #include <string>

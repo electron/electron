@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/taskbar_host.h"
+#include "shell/browser/ui/win/taskbar_host.h"
 
 #include <objbase.h>
 #include <string>
 
-#include "atom/browser/native_window.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_gdi_object.h"
+#include "shell/browser/native_window.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"

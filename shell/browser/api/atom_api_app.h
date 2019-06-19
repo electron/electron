@@ -11,13 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/browser/api/process_metric.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/browser_observer.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/promise_util.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
@@ -29,6 +22,13 @@
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"
+#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/api/process_metric.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/browser_observer.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/promise_util.h"
 
 #if defined(USE_NSS_CERTS)
 #include "chrome/browser/certificate_manager_model.h"

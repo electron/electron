@@ -2,19 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "shell/browser/browser.h"
 
 #include <string>
 #include <utility>
 
-#include "atom/browser/mac/atom_application.h"
-#include "atom/browser/mac/atom_application_delegate.h"
-#include "atom/browser/mac/dict_util.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/application_info.h"
-#include "atom/common/platform_util.h"
-#include "atom/common/promise_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
@@ -22,6 +14,14 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
+#include "shell/browser/mac/atom_application.h"
+#include "shell/browser/mac/atom_application_delegate.h"
+#include "shell/browser/mac/dict_util.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/application_info.h"
+#include "shell/common/platform_util.h"
+#include "shell/common/promise_util.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 

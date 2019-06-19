@@ -7,7 +7,7 @@
 
 #include "ui/events/platform/platform_event_observer.h"
 
-#include "atom/browser/native_window_views.h"
+#include "shell/browser/native_window_views.h"
 
 namespace atom {
 

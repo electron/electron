@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_session.h"
+#include "shell/browser/api/atom_api_session.h"
 
 #include <map>
 #include <memory>
@@ -10,28 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_cookies.h"
-#include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/api/atom_api_net_log.h"
-#include "atom/browser/api/atom_api_protocol.h"
-#include "atom/browser/api/atom_api_protocol_ns.h"
-#include "atom/browser/api/atom_api_web_request.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_permission_manager.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/media/media_device_id_salt.h"
-#include "atom/browser/net/atom_cert_verifier.h"
-#include "atom/browser/net/system_network_context_manager.h"
-#include "atom/browser/session_preferences.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/content_converter.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
@@ -62,6 +40,28 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "services/network/public/cpp/features.h"
+#include "shell/browser/api/atom_api_cookies.h"
+#include "shell/browser/api/atom_api_download_item.h"
+#include "shell/browser/api/atom_api_net_log.h"
+#include "shell/browser/api/atom_api_protocol.h"
+#include "shell/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_web_request.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_permission_manager.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/media/media_device_id_salt.h"
+#include "shell/browser/net/atom_cert_verifier.h"
+#include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/session_preferences.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/content_converter.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 
 using content::BrowserThread;

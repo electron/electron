@@ -3,9 +3,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/notifications/linux/notification_presenter_linux.h"
+#include "shell/browser/notifications/linux/notification_presenter_linux.h"
 
-#include "atom/browser/notifications/linux/libnotify_notification.h"
+#include "shell/browser/notifications/linux/libnotify_notification.h"
 
 namespace atom {
 

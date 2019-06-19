@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_menu_views.h"
+#include "shell/browser/api/atom_api_menu_views.h"
 
 #include <memory>
 
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/unresponsive_suppressor.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;

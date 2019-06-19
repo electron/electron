@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/atom_menu_model.h"
 
 #include "base/stl_util.h"
 

@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/notifications/mac/notification_presenter_mac.h"
+#include "shell/browser/notifications/mac/notification_presenter_mac.h"
 
-#include "atom/browser/notifications/mac/cocoa_notification.h"
-#include "atom/browser/notifications/mac/notification_center_delegate.h"
+#include "shell/browser/notifications/mac/cocoa_notification.h"
+#include "shell/browser/notifications/mac/notification_center_delegate.h"
 
 namespace atom {
 

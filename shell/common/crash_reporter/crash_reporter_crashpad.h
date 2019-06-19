@@ -10,9 +10,9 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
 #include "base/strings/string_piece.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
 #include "third_party/crashpad/crashpad/client/crash_report_database.h"
 #include "third_party/crashpad/crashpad/client/simple_string_dictionary.h"
 

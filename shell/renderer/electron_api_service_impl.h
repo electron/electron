@@ -9,7 +9,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_binding.h"
 
 namespace atom {

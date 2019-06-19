@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/message_box.h"
+#include "shell/browser/ui/message_box.h"
 
 #include <string>
 #include <utility>
@@ -10,10 +10,10 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
 

@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "atom/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
 #include "base/logging.h"
 

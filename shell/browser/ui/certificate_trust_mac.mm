@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/certificate_trust.h"
+#include "shell/browser/ui/certificate_trust.h"
 
 #include <memory>
 #include <string>
@@ -11,11 +11,11 @@
 #import <Cocoa/Cocoa.h>
 #import <SecurityInterface/SFCertificateTrustPanel.h>
 
-#include "atom/browser/native_window.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/cert/cert_database.h"
 #include "net/cert/x509_util_ios_and_mac.h"
 #include "net/cert/x509_util_mac.h"
+#include "shell/browser/native_window.h"
 
 @interface TrustDelegate : NSObject {
  @private

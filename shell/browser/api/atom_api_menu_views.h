@@ -8,8 +8,8 @@
 #include <map>
 #include <memory>
 
-#include "atom/browser/api/atom_api_menu.h"
 #include "base/memory/weak_ptr.h"
+#include "shell/browser/api/atom_api_menu.h"
 #include "ui/display/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 

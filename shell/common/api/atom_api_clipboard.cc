@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_clipboard.h"
+#include "shell/common/api/atom_api_clipboard.h"
 
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/node_includes.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixmap.h"

@@ -2,15 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/system_network_context_manager.h"
+#include "shell/browser/net/system_network_context_manager.h"
 
 #include <string>
 #include <utility>
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/io_thread.h"
-#include "atom/common/application_info.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
@@ -25,6 +21,10 @@
 #include "services/network/public/cpp/cross_thread_shared_url_loader_factory_info.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/io_thread.h"
+#include "shell/common/application_info.h"
+#include "shell/common/options_switches.h"
 #include "url/gurl.h"
 
 namespace {

@@ -8,13 +8,13 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/api/locker.h"
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/message_loop/message_loop.h"
 #include "native_mate/function_template.h"
 #include "native_mate/scoped_persistent.h"
+#include "shell/common/api/locker.h"
 
 namespace mate {
 

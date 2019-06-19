@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/root_view.h"
+#include "shell/browser/ui/views/root_view.h"
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/views/menu_bar.h"
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/views/menu_bar.h"
 
 namespace atom {
 

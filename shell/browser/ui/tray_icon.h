@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/atom_menu_model.h"
-#include "atom/browser/ui/tray_icon_observer.h"
 #include "base/observer_list.h"
+#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/tray_icon_observer.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace atom {

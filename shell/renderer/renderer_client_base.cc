@@ -2,19 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/renderer_client_base.h"
+#include "shell/renderer/renderer_client_base.h"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/options_switches.h"
-#include "atom/renderer/atom_autofill_agent.h"
-#include "atom/renderer/atom_render_frame_observer.h"
-#include "atom/renderer/content_settings_observer.h"
-#include "atom/renderer/electron_api_service_impl.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
@@ -26,6 +19,13 @@
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/common/color_util.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/options_switches.h"
+#include "shell/renderer/atom_autofill_agent.h"
+#include "shell/renderer/atom_render_frame_observer.h"
+#include "shell/renderer/content_settings_observer.h"
+#include "shell/renderer/electron_api_service_impl.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
@@ -45,7 +45,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "atom/common/atom_constants.h"
+#include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
@@ -57,9 +57,9 @@
 #endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "atom/renderer/printing/print_render_frame_helper_delegate.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
 #include "printing/print_settings.h"
+#include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {

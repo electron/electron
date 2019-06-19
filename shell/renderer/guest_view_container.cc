@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/guest_view_container.h"
+#include "shell/renderer/guest_view_container.h"
 
 #include <map>
 #include <utility>

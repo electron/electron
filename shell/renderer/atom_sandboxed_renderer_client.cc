@@ -2,16 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/atom_sandboxed_renderer_client.h"
+#include "shell/renderer/atom_sandboxed_renderer_client.h"
 
-#include "atom/common/api/electron_bindings.h"
-#include "atom/common/application_info.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
-#include "atom/renderer/atom_render_frame_observer.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
@@ -20,6 +12,14 @@
 #include "content/public/renderer/render_frame.h"
 #include "gin/converter.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/api/electron_bindings.h"
+#include "shell/common/application_info.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_bindings.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
+#include "shell/renderer/atom_render_frame_observer.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"

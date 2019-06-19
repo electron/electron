@@ -2,15 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/asar/asar_url_loader.h"
+#include "shell/browser/net/asar/asar_url_loader.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/asar/archive.h"
-#include "atom/common/asar/asar_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/file_url_loader.h"
@@ -20,6 +18,8 @@
 #include "net/base/mime_util.h"
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
+#include "shell/common/asar/archive.h"
+#include "shell/common/asar/asar_util.h"
 
 namespace asar {
 

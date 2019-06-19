@@ -4,9 +4,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/cocoa/NSColor+Hex.h"
-#include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/ui/cocoa/NSColor+Hex.h"
+#include "shell/browser/ui/cocoa/NSString+ANSI.h"
 
 @implementation NSMutableDictionary (ANSI)
 

@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_NATIVE_BROWSER_VIEW_VIEWS_H_
 #define ATOM_BROWSER_NATIVE_BROWSER_VIEW_VIEWS_H_
 
-#include "atom/browser/native_browser_view.h"
+#include "shell/browser/native_browser_view.h"
 
 namespace atom {
 

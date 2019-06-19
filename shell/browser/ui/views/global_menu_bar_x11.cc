@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/global_menu_bar_x11.h"
+#include "shell/browser/ui/views/global_menu_bar_x11.h"
 
 #include <dlfcn.h>
 #include <glib-object.h>
 
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/atom_menu_model.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"

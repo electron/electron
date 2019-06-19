@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/v8_value_converter.h"
+#include "shell/common/native_mate_converters/v8_value_converter.h"
 
 #include <map>
 #include <memory>
@@ -14,8 +14,8 @@
 #include "base/values.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
+#include "shell/common/node_bindings.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

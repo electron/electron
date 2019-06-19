@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "atom/common/crash_reporter/crash_reporter_crashpad.h"
+#include "shell/common/crash_reporter/crash_reporter_crashpad.h"
 #include "third_party/crashpad/crashpad/client/crashpad_client.h"
 
 namespace base {

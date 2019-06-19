@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/x/window_state_watcher.h"
+#include "shell/browser/ui/x/window_state_watcher.h"
 
 #include "ui/events/platform/platform_event_source.h"
 #include "ui/gfx/x/x11.h"

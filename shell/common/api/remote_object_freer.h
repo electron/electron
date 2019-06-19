@@ -8,7 +8,7 @@
 #include <map>
 #include <string>
 
-#include "atom/common/api/object_life_monitor.h"
+#include "shell/common/api/object_life_monitor.h"
 
 namespace atom {
 

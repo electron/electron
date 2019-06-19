@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/auto_updater.h"
+#include "shell/browser/auto_updater.h"
 
 namespace auto_updater {
 

@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/osr/osr_video_consumer.h"
+#include "shell/browser/osr/osr_video_consumer.h"
 
 #include <utility>
 
-#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "media/base/video_frame_metadata.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 namespace atom {

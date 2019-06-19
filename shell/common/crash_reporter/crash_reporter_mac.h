@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "atom/common/crash_reporter/crash_reporter_crashpad.h"
+#include "shell/common/crash_reporter/crash_reporter_crashpad.h"
 
 namespace base {
 template <typename T>

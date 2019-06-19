@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/x/x_window_utils.h"
+#include "shell/browser/ui/x/x_window_utils.h"
 
 #include <X11/Xatom.h>
 #include <memory>

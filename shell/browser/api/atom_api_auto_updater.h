@@ -7,11 +7,11 @@
 
 #include <string>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/browser/auto_updater.h"
-#include "atom/browser/window_list_observer.h"
 #include "native_mate/arguments.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/auto_updater.h"
+#include "shell/browser/window_list_observer.h"
 
 namespace atom {
 

@@ -2,13 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/devtools_manager_delegate.h"
+#include "shell/browser/ui/devtools_manager_delegate.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_paths.h"
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
@@ -28,6 +27,7 @@
 #include "net/base/net_errors.h"
 #include "net/socket/stream_socket.h"
 #include "net/socket/tcp_server_socket.h"
+#include "shell/browser/atom_paths.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace atom {

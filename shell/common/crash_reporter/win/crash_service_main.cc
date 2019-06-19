@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/crash_reporter/win/crash_service_main.h"
+#include "shell/common/crash_reporter/win/crash_service_main.h"
 
 #include <string>
 
-#include "atom/common/crash_reporter/crash_reporter.h"
-#include "atom/common/crash_reporter/win/crash_service.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
+#include "shell/common/crash_reporter/win/crash_service.h"
 #include "third_party/crashpad/crashpad/handler/handler_main.h"
 
 namespace crash_service {

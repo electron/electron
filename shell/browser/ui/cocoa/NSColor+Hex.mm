@@ -4,7 +4,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/cocoa/NSColor+Hex.h"
+#include "shell/browser/ui/cocoa/NSColor+Hex.h"
 
 @implementation NSColor (Hex)
 

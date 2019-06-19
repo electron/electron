@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/network_context_service.h"
+#include "shell/browser/net/network_context_service.h"
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/browser_process_impl.h"
-#include "atom/browser/net/system_network_context_manager.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
 #include "services/network/network_service.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/browser_process_impl.h"
+#include "shell/browser/net/system_network_context_manager.h"
 
 namespace atom {
 

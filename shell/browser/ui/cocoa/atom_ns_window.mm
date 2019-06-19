@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/cocoa/atom_ns_window.h"
+#include "shell/browser/ui/cocoa/atom_ns_window.h"
 
-#include "atom/browser/native_window_mac.h"
-#include "atom/browser/ui/cocoa/atom_preview_item.h"
-#include "atom/browser/ui/cocoa/atom_touch_bar.h"
-#include "atom/browser/ui/cocoa/root_view_mac.h"
 #include "base/strings/sys_string_conversions.h"
+#include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/cocoa/atom_preview_item.h"
+#include "shell/browser/ui/cocoa/atom_touch_bar.h"
+#include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
 
 namespace atom {

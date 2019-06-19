@@ -12,12 +12,12 @@
 #include <tuple>
 #include <vector>
 
-#include "atom/browser/native_window_observer.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "shell/browser/native_window_observer.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;

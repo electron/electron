@@ -8,8 +8,8 @@
 #import <Cocoa/Cocoa.h>
 #include <vector>
 
-#include "atom/browser/native_browser_view.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/native_browser_view.h"
 
 namespace atom {
 

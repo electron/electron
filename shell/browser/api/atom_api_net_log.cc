@@ -2,15 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_net_log.h"
+#include "shell/browser/api/atom_api_net_log.h"
 
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/system_network_context_manager.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
@@ -19,6 +14,11 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/net/system_network_context_manager.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 
