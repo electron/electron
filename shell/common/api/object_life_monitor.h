@@ -9,7 +9,7 @@
 #include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 class ObjectLifeMonitor {
  protected:
@@ -29,6 +29,6 @@ class ObjectLifeMonitor {
   DISALLOW_COPY_AND_ASSIGN(ObjectLifeMonitor);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_

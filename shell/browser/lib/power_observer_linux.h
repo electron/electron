@@ -14,7 +14,7 @@
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
 
-namespace atom {
+namespace electron {
 
 class PowerObserverLinux : public base::PowerObserver {
  public:
@@ -49,6 +49,6 @@ class PowerObserverLinux : public base::PowerObserver {
   DISALLOW_COPY_AND_ASSIGN(PowerObserverLinux);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_

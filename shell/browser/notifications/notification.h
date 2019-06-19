@@ -13,7 +13,7 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "url/gurl.h"
 
-namespace atom {
+namespace electron {
 
 class NotificationDelegate;
 class NotificationPresenter;
@@ -84,6 +84,6 @@ class Notification {
   DISALLOW_COPY_AND_ASSIGN(Notification);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_

@@ -15,7 +15,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 CookieChangeNotifier::CookieChangeNotifier(AtomBrowserContext* browser_context)
     : browser_context_(browser_context), binding_(this) {
@@ -69,4 +69,4 @@ void CookieChangeNotifier::OnCookieChange(
   cookie_change_sub_list_.Notify(&cookie_details);
 }
 
-}  // namespace atom
+}  // namespace electron

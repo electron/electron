@@ -125,7 +125,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #endif
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  bool run_as_node = IsEnvSet(atom::kRunAsNode);
+  bool run_as_node = IsEnvSet(electron::kRunAsNode);
 #else
   bool run_as_node = false;
 #endif
@@ -158,7 +158,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (run_as_node) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
-    auto ret = atom::NodeMain(argv.size(), argv.data());
+    auto ret = electron::NodeMain(argv.size(), argv.data());
     std::for_each(argv.begin(), argv.end(), free);
     return ret;
   }
@@ -171,17 +171,17 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return crash_service::Main(&argv);
   }
 
-  if (!atom::CheckCommandLineArguments(arguments.argc, arguments.argv))
+  if (!electron::CheckCommandLineArguments(arguments.argc, arguments.argv))
     return -1;
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
-  atom::AtomMainDelegate delegate;
+  electron::AtomMainDelegate delegate;
 
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  atom::AtomCommandLine::Init(arguments.argc, arguments.argv);
+  electron::AtomCommandLine::Init(arguments.argc, arguments.argv);
   return content::ContentMain(params);
 }
 
@@ -191,18 +191,18 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (IsEnvSet(atom::kRunAsNode)) {
+  if (IsEnvSet(electron::kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
-    return atom::NodeMain(argc, argv);
+    return electron::NodeMain(argc, argv);
   }
 #endif
 
-  atom::AtomMainDelegate delegate;
+  electron::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
-  atom::AtomCommandLine::Init(argc, argv);
+  electron::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (IsEnvSet(atom::kRunAsNode)) {
+  if (IsEnvSet(electron::kRunAsNode)) {
     return AtomInitializeICUandStartNode(argc, argv);
   }
 #endif

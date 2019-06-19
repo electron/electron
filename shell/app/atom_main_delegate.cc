@@ -48,7 +48,7 @@
 #endif
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -326,4 +326,4 @@ bool AtomMainDelegate::ShouldCreateFeatureList() {
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

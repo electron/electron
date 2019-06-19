@@ -12,7 +12,7 @@
 #include "base/single_thread_task_runner.h"
 #include "uv.h"  // NOLINT(build/include)
 
-namespace atom {
+namespace electron {
 
 // TaskRunner implementation that posts tasks into libuv's default loop.
 class UvTaskRunner : public base::SingleThreadTaskRunner {
@@ -40,6 +40,6 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
   DISALLOW_COPY_AND_ASSIGN(UvTaskRunner);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_APP_UV_TASK_RUNNER_H_

@@ -11,7 +11,7 @@
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -129,11 +129,11 @@ void SystemPreferences::BuildPrototype(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::SystemPreferences;
+using electron::api::SystemPreferences;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

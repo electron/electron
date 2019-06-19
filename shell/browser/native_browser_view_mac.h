@@ -11,7 +11,7 @@
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_browser_view.h"
 
-namespace atom {
+namespace electron {
 
 class NativeBrowserViewMac : public NativeBrowserView {
  public:
@@ -30,6 +30,6 @@ class NativeBrowserViewMac : public NativeBrowserView {
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserViewMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_BROWSER_VIEW_MAC_H_

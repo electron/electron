@@ -10,7 +10,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 
-namespace atom {
+namespace electron {
 
 SkColor ParseHexColor(const std::string& color_string) {
   // Check the string for incorrect formatting.
@@ -51,4 +51,4 @@ std::string ToRGBHex(SkColor color) {
                             SkColorGetG(color), SkColorGetB(color));
 }
 
-}  // namespace atom
+}  // namespace electron

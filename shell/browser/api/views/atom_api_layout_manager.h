@@ -10,7 +10,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "ui/views/layout/layout_manager.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -39,6 +39,6 @@ class LayoutManager : public mate::TrackableObject<LayoutManager> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_LAYOUT_MANAGER_H_

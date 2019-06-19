@@ -18,7 +18,7 @@ namespace base {
 class ListValue;
 }
 
-namespace atom {
+namespace electron {
 
 enum World {
   MAIN_WORLD = 0,
@@ -66,6 +66,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_

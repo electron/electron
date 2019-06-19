@@ -11,14 +11,14 @@
 #include "net/cert/x509_certificate.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 class NativeWindow;
-}  // namespace atom
+}  // namespace electron
 
 namespace certificate_trust {
 
 v8::Local<v8::Promise> ShowCertificateTrust(
-    atom::NativeWindow* parent_window,
+    electron::NativeWindow* parent_window,
     const scoped_refptr<net::X509Certificate>& cert,
     const std::string& message);
 

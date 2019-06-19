@@ -15,7 +15,7 @@
 #include "shell/browser/browser.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 bool CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
@@ -58,4 +58,4 @@ void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
 }
 #endif
 
-}  // namespace atom
+}  // namespace electron

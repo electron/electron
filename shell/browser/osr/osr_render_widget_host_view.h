@@ -49,7 +49,7 @@ namespace content {
 class CursorManager;
 }  // namespace content
 
-namespace atom {
+namespace electron {
 
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
@@ -318,6 +318,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_

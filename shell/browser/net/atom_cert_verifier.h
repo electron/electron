@@ -11,7 +11,7 @@
 
 #include "net/cert/cert_verifier.h"
 
-namespace atom {
+namespace electron {
 
 class CertVerifierRequest;
 class RequireCTDelegate;
@@ -66,6 +66,6 @@ class AtomCertVerifier : public net::CertVerifier {
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_ATOM_CERT_VERIFIER_H_

@@ -8,7 +8,7 @@
 #include "base/bind.h"
 #include "base/message_loop/message_loop.h"
 
-namespace atom {
+namespace electron {
 
 ObjectLifeMonitor::ObjectLifeMonitor(v8::Isolate* isolate,
                                      v8::Local<v8::Object> target)
@@ -38,4 +38,4 @@ void ObjectLifeMonitor::Free(
   delete data.GetParameter();
 }
 
-}  // namespace atom
+}  // namespace electron

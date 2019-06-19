@@ -9,7 +9,7 @@
 
 #include "net/url_request/url_request_job_factory.h"
 
-namespace atom {
+namespace electron {
 
 class HttpProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
  public:
@@ -25,6 +25,6 @@ class HttpProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
   std::string scheme_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_HTTP_PROTOCOL_HANDLER_H_

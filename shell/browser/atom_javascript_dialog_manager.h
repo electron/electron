@@ -10,7 +10,7 @@
 
 #include "content/public/browser/javascript_dialog_manager.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 class WebContents;
@@ -46,6 +46,6 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
   std::map<std::string, int> origin_counts_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_JAVASCRIPT_DIALOG_MANAGER_H_

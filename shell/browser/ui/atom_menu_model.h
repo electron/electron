@@ -11,7 +11,7 @@
 #include "base/observer_list_types.h"
 #include "ui/base/models/simple_menu_model.h"
 
-namespace atom {
+namespace electron {
 
 class AtomMenuModel : public ui::SimpleMenuModel {
  public:
@@ -77,6 +77,6 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   DISALLOW_COPY_AND_ASSIGN(AtomMenuModel);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_ATOM_MENU_MODEL_H_

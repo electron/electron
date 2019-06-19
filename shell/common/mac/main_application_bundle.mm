@@ -11,7 +11,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -53,4 +53,4 @@ NSBundle* MainApplicationBundle() {
                                       MainApplicationBundlePath())];
 }
 
-}  // namespace atom
+}  // namespace electron

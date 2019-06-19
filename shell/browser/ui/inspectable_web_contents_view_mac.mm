@@ -12,7 +12,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
-namespace atom {
+namespace electron {
 
 InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents) {
@@ -63,4 +63,4 @@ void InspectableWebContentsViewMac::SetTitle(const base::string16& title) {
   [view_ setTitle:base::SysUTF16ToNSString(title)];
 }
 
-}  // namespace atom
+}  // namespace electron

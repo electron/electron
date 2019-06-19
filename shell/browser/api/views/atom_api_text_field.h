@@ -9,7 +9,7 @@
 #include "shell/browser/api/atom_api_view.h"
 #include "ui/views/controls/textfield/textfield.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -37,6 +37,6 @@ class TextField : public View {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_VIEWS_ATOM_API_TEXT_FIELD_H_

@@ -10,7 +10,7 @@
 
 #include "base/files/file_path.h"
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsDelegate {
  public:
@@ -37,6 +37,6 @@ class InspectableWebContentsDelegate {
                                     const std::string& query) {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_DELEGATE_H_

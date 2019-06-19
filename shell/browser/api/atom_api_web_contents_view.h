@@ -9,7 +9,7 @@
 #include "native_mate/handle.h"
 #include "shell/browser/api/atom_api_view.h"
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContents;
 
@@ -44,6 +44,6 @@ class WebContentsView : public View, public content::WebContentsObserver {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_VIEW_H_

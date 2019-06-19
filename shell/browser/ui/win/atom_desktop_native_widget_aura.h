@@ -12,7 +12,7 @@ namespace views {
 class DesktopWindowTreeHost;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:
@@ -37,6 +37,6 @@ class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
   DISALLOW_COPY_AND_ASSIGN(AtomDesktopNativeWidgetAura);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_WIN_ATOM_DESKTOP_NATIVE_WIDGET_AURA_H_

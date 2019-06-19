@@ -21,7 +21,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/webui/web_ui_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -228,4 +228,4 @@ void PdfViewerHandler::RemoveObserver() {
   zoom_controller->RemoveObserver(this);
 }
 
-}  // namespace atom
+}  // namespace electron

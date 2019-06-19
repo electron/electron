@@ -24,7 +24,7 @@
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -255,4 +255,4 @@ int URLRequestStreamJob::BufferCopy(std::vector<char>* source,
   return bytes_written;
 }
 
-}  // namespace atom
+}  // namespace electron

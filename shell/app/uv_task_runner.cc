@@ -8,7 +8,7 @@
 
 #include "base/stl_util.h"
 
-namespace atom {
+namespace electron {
 
 UvTaskRunner::UvTaskRunner(uv_loop_t* loop) : loop_(loop) {}
 
@@ -57,4 +57,4 @@ void UvTaskRunner::OnClose(uv_handle_t* handle) {
   delete reinterpret_cast<uv_timer_t*>(handle);
 }
 
-}  // namespace atom
+}  // namespace electron

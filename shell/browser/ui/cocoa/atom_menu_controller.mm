@@ -62,7 +62,7 @@ Role kRolesMap[] = {
 
 // Called when adding a submenu to the menu and checks if the submenu, via its
 // |model|, has visible child items.
-bool MenuHasVisibleItems(const atom::AtomMenuModel* model) {
+bool MenuHasVisibleItems(const electron::AtomMenuModel* model) {
   int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
     if (model->IsVisibleAt(index))
@@ -95,7 +95,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 @synthesize model = model_;
 
-- (id)initWithModel:(atom::AtomMenuModel*)model
+- (id)initWithModel:(electron::AtomMenuModel*)model
     useDefaultAccelerator:(BOOL)use {
   if ((self = [super init])) {
     model_ = model;
@@ -122,7 +122,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   closeCallback = callback;
 }
 
-- (void)populateWithModel:(atom::AtomMenuModel*)model {
+- (void)populateWithModel:(electron::AtomMenuModel*)model {
   if (!menu_)
     return;
 
@@ -138,7 +138,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
-    if (model->GetTypeAt(index) == atom::AtomMenuModel::TYPE_SEPARATOR)
+    if (model->GetTypeAt(index) == electron::AtomMenuModel::TYPE_SEPARATOR)
       [self addSeparatorToMenu:menu_ atIndex:index];
     else
       [self addItemToMenu:menu_ atIndex:index fromModel:model];
@@ -158,12 +158,12 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 // Creates a NSMenu from the given model. If the model has submenus, this can
 // be invoked recursively.
-- (NSMenu*)menuFromModel:(atom::AtomMenuModel*)model {
+- (NSMenu*)menuFromModel:(electron::AtomMenuModel*)model {
   NSMenu* menu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
-    if (model->GetTypeAt(index) == atom::AtomMenuModel::TYPE_SEPARATOR)
+    if (model->GetTypeAt(index) == electron::AtomMenuModel::TYPE_SEPARATOR)
       [self addSeparatorToMenu:menu atIndex:index];
     else
       [self addItemToMenu:menu atIndex:index fromModel:model];
@@ -219,7 +219,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
-            fromModel:(atom::AtomMenuModel*)model {
+            fromModel:(electron::AtomMenuModel*)model {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
@@ -234,7 +234,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [item setImage:icon.ToNSImage()];
 
   base::string16 role = model->GetRoleAt(index);
-  atom::AtomMenuModel::ItemType type = model->GetTypeAt(index);
+  electron::AtomMenuModel::ItemType type = model->GetTypeAt(index);
 
   if (role == base::ASCIIToUTF16("services")) {
     base::string16 title = base::ASCIIToUTF16("Services");
@@ -245,7 +245,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[NSMenu alloc] initWithTitle:label];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
-  } else if (type == atom::AtomMenuModel::TYPE_SUBMENU &&
+  } else if (type == electron::AtomMenuModel::TYPE_SUBMENU &&
              model->IsVisibleAt(index)) {
     // We need to specifically check that the submenu top-level item has been
     // enabled as it's not validated by validateUserInterfaceItem
@@ -255,8 +255,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
-    atom::AtomMenuModel* submenuModel =
-        static_cast<atom::AtomMenuModel*>(model->GetSubmenuModelAt(index));
+    electron::AtomMenuModel* submenuModel =
+        static_cast<electron::AtomMenuModel*>(model->GetSubmenuModelAt(index));
     NSMenu* submenu = MenuHasVisibleItems(submenuModel)
                           ? [self menuFromModel:submenuModel]
                           : MakeEmptySubmenu();
@@ -320,7 +320,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     return NO;
 
   NSInteger modelIndex = [item tag];
-  atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(
+  electron::AtomMenuModel* model = static_cast<electron::AtomMenuModel*>(
       [[(id)item representedObject] pointerValue]);
   DCHECK(model);
   if (model) {
@@ -339,7 +339,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // item chosen.
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
-  atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(
+  electron::AtomMenuModel* model = static_cast<electron::AtomMenuModel*>(
       [[sender representedObject] pointerValue]);
   DCHECK(model);
   if (model) {

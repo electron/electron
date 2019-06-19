@@ -12,9 +12,9 @@
 
 namespace {
 
-using atom::JumpListCategory;
-using atom::JumpListItem;
-using atom::JumpListResult;
+using electron::JumpListCategory;
+using electron::JumpListItem;
+using electron::JumpListResult;
 
 bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
   DCHECK(collection);
@@ -148,7 +148,7 @@ void ConvertRemovedJumpListItems(IObjectArray* in,
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 JumpListItem::JumpListItem() = default;
 JumpListItem::JumpListItem(const JumpListItem&) = default;
@@ -347,4 +347,4 @@ JumpListResult JumpList::AppendCategories(
   return result;
 }
 
-}  // namespace atom
+}  // namespace electron

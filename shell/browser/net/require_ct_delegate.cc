@@ -6,7 +6,7 @@
 
 #include "content/public/browser/browser_thread.h"
 
-namespace atom {
+namespace electron {
 
 RequireCTDelegate::RequireCTDelegate() {}
 
@@ -33,4 +33,4 @@ RequireCTDelegate::CTRequirementLevel RequireCTDelegate::IsCTRequiredForHost(
   return CTRequirementLevel::DEFAULT;
 }
 
-}  // namespace atom
+}  // namespace electron

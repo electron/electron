@@ -27,7 +27,7 @@ class WMState;
 }
 #endif
 
-namespace atom {
+namespace electron {
 
 class ElectronBindings;
 class Browser;
@@ -141,6 +141,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_

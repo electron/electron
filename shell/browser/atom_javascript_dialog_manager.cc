@@ -19,7 +19,7 @@
 
 using content::JavaScriptDialogType;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -91,14 +91,14 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
       window = relay->GetNativeWindow();
   }
 
-  atom::MessageBoxSettings settings;
+  electron::MessageBoxSettings settings;
   settings.parent_window = window;
   settings.buttons = buttons;
   settings.default_id = default_id;
   settings.cancel_id = cancel_id;
   settings.message = base::UTF16ToUTF8(message_text);
 
-  atom::ShowMessageBox(
+  electron::ShowMessageBox(
       settings,
       base::BindOnce(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
                      base::Unretained(this), base::Passed(std::move(callback)),
@@ -129,4 +129,4 @@ void AtomJavaScriptDialogManager::OnMessageBoxCallback(
   std::move(callback).Run(code == 0, base::string16());
 }
 
-}  // namespace atom
+}  // namespace electron

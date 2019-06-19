@@ -26,7 +26,7 @@
 using std::min;
 using std::shared_ptr;
 
-namespace atom {
+namespace electron {
 
 static COLORREF GetAccentColor() {
   bool success = false;
@@ -862,4 +862,4 @@ float DesktopNotificationController::Toast::AnimateStackCollapse() {
   return pos;
 }
 
-}  // namespace atom
+}  // namespace electron

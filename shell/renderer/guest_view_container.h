@@ -13,7 +13,7 @@ namespace gfx {
 class Size;
 }
 
-namespace atom {
+namespace electron {
 
 class GuestViewContainer : public content::BrowserPluginDelegate {
  public:
@@ -41,6 +41,6 @@ class GuestViewContainer : public content::BrowserPluginDelegate {
   DISALLOW_COPY_AND_ASSIGN(GuestViewContainer);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_

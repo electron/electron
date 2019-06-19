@@ -19,7 +19,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -121,4 +121,4 @@ void AtomBlobReader::BlobReadHelper::DidReadBlobData(
   delete this;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -11,15 +11,15 @@
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/base/cocoa/base_view.h"
 
-namespace atom {
+namespace electron {
 class InspectableWebContentsViewMac;
 }
 
-using atom::InspectableWebContentsViewMac;
+using electron::InspectableWebContentsViewMac;
 
 @interface AtomInspectableWebContentsView : BaseView <NSWindowDelegate> {
  @private
-  atom::InspectableWebContentsViewMac* inspectableWebContentsView_;
+  electron::InspectableWebContentsViewMac* inspectableWebContentsView_;
 
   base::scoped_nsobject<NSView> fake_view_;
   base::scoped_nsobject<NSWindow> devtools_window_;

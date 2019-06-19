@@ -8,7 +8,7 @@
 
 #include "shell/browser/notifications/notification_presenter.h"
 
-namespace atom {
+namespace electron {
 
 class NotificationPresenterLinux : public NotificationPresenter {
  public:
@@ -22,6 +22,6 @@ class NotificationPresenterLinux : public NotificationPresenter {
   DISALLOW_COPY_AND_ASSIGN(NotificationPresenterLinux);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_

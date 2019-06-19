@@ -16,7 +16,7 @@
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/v8_value_converter.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -121,4 +121,4 @@ void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
   info->headers = response_headers_;
 }
 
-}  // namespace atom
+}  // namespace electron

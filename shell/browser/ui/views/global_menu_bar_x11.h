@@ -20,7 +20,7 @@ namespace ui {
 class Accelerator;
 }
 
-namespace atom {
+namespace electron {
 
 class NativeWindowViews;
 
@@ -76,6 +76,6 @@ class GlobalMenuBarX11 {
   DISALLOW_COPY_AND_ASSIGN(GlobalMenuBarX11);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_

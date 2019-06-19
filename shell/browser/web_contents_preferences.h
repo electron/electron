@@ -23,7 +23,7 @@ namespace mate {
 class Dictionary;
 }
 
-namespace atom {
+namespace electron {
 
 // Stores and applies the preferences of WebContents.
 class WebContentsPreferences
@@ -93,6 +93,6 @@ class WebContentsPreferences
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_

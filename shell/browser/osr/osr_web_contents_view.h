@@ -21,7 +21,7 @@ class OffScreenView;
 #endif
 #endif
 
-namespace atom {
+namespace electron {
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView,
@@ -107,6 +107,6 @@ class OffScreenWebContentsView : public content::WebContentsView,
 #endif
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_

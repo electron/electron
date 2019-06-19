@@ -19,7 +19,7 @@
 
 using content::DevToolsAgentHost;
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -65,7 +65,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     if (it == pending_requests_.end())
       return;
 
-    atom::util::Promise promise = std::move(it->second);
+    electron::util::Promise promise = std::move(it->second);
     pending_requests_.erase(it);
 
     base::DictionaryValue* error = nullptr;
@@ -129,7 +129,7 @@ void Debugger::Detach() {
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(mate::Arguments* args) {
-  atom::util::Promise promise(isolate());
+  electron::util::Promise promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {
@@ -186,11 +186,11 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Debugger;
+using electron::api::Debugger;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

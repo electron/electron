@@ -20,10 +20,10 @@
 
 namespace mate {
 template <>
-struct Converter<atom::NotificationAction> {
+struct Converter<electron::NotificationAction> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::NotificationAction* out) {
+                     electron::NotificationAction* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -36,7 +36,7 @@ struct Converter<atom::NotificationAction> {
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::NotificationAction val) {
+                                   electron::NotificationAction val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
@@ -45,7 +45,7 @@ struct Converter<atom::NotificationAction> {
 };
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -118,7 +118,7 @@ base::string16 Notification::GetSound() const {
   return sound_;
 }
 
-std::vector<atom::NotificationAction> Notification::GetActions() const {
+std::vector<electron::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
 
@@ -156,7 +156,7 @@ void Notification::SetSound(const base::string16& new_sound) {
 }
 
 void Notification::SetActions(
-    const std::vector<atom::NotificationAction>& actions) {
+    const std::vector<electron::NotificationAction>& actions) {
   actions_ = actions;
 }
 
@@ -199,7 +199,7 @@ void Notification::Show() {
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this, base::GenerateGUID());
     if (notification_) {
-      atom::NotificationOptions options;
+      electron::NotificationOptions options;
       options.title = title_;
       options.subtitle = subtitle_;
       options.msg = body_;
@@ -247,11 +247,11 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Notification;
+using electron::api::Notification;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

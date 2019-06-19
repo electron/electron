@@ -12,7 +12,7 @@
 #include "base/strings/string16.h"
 #include "ui/gfx/image/image_skia.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -30,12 +30,12 @@ enum MessageBoxOptions {
 };
 
 struct MessageBoxSettings {
-  atom::NativeWindow* parent_window = nullptr;
-  MessageBoxType type = atom::MessageBoxType::kNone;
+  electron::NativeWindow* parent_window = nullptr;
+  MessageBoxType type = electron::MessageBoxType::kNone;
   std::vector<std::string> buttons;
   int default_id;
   int cancel_id;
-  int options = atom::MessageBoxOptions::MESSAGE_BOX_NONE;
+  int options = electron::MessageBoxOptions::MESSAGE_BOX_NONE;
   std::string title;
   std::string message;
   std::string detail;
@@ -60,6 +60,6 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 // stage of application.
 void ShowErrorBox(const base::string16& title, const base::string16& content);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_MESSAGE_BOX_H_

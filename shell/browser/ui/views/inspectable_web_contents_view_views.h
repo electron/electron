@@ -18,7 +18,7 @@ class Widget;
 class WidgetDelegate;
 }  // namespace views
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsImpl;
 
@@ -67,6 +67,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_

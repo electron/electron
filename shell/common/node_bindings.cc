@@ -120,7 +120,7 @@ bool g_is_initialized = false;
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -446,4 +446,4 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

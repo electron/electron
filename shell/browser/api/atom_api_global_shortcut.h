@@ -15,7 +15,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "ui/base/accelerators/accelerator.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -53,6 +53,6 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_GLOBAL_SHORTCUT_H_

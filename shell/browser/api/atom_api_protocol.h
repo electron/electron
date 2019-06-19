@@ -29,7 +29,7 @@ namespace base {
 class DictionaryValue;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -193,6 +193,6 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_PROTOCOL_H_

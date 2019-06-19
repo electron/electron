@@ -11,7 +11,7 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
-namespace atom {
+namespace electron {
 
 // static
 void RemoteCallbackFreer::BindTo(v8::Isolate* isolate,
@@ -56,4 +56,4 @@ void RemoteCallbackFreer::RenderViewDeleted(content::RenderViewHost*) {
   delete this;
 }
 
-}  // namespace atom
+}  // namespace electron

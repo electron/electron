@@ -19,7 +19,7 @@
 #include "shell/browser/api/event_emitter.h"
 #include "shell/browser/api/trackable_object.h"
 
-namespace atom {
+namespace electron {
 
 class AtomURLRequest;
 
@@ -209,6 +209,6 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_URL_REQUEST_H_

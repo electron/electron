@@ -10,7 +10,7 @@
 
 #include "net/http/transport_security_state.h"
 
-namespace atom {
+namespace electron {
 
 class RequireCTDelegate
     : public net::TransportSecurityState::RequireCTDelegate {
@@ -32,6 +32,6 @@ class RequireCTDelegate
   DISALLOW_COPY_AND_ASSIGN(RequireCTDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_REQUIRE_CT_DELEGATE_H_

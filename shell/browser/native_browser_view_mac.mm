@@ -157,7 +157,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 @end
 
-namespace atom {
+namespace electron {
 
 NativeBrowserViewMac::NativeBrowserViewMac(
     InspectableWebContents* inspectable_web_contents)
@@ -252,4 +252,4 @@ NativeBrowserView* NativeBrowserView::Create(
   return new NativeBrowserViewMac(inspectable_web_contents);
 }
 
-}  // namespace atom
+}  // namespace electron

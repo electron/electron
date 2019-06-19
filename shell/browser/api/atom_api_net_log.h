@@ -17,7 +17,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -63,6 +63,6 @@ class NetLog : public mate::TrackableObject<NetLog> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_NET_LOG_H_

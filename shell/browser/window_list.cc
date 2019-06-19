@@ -10,7 +10,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list_observer.h"
 
-namespace atom {
+namespace electron {
 
 // static
 base::LazyInstance<base::ObserverList<WindowListObserver>>::Leaky
@@ -100,4 +100,4 @@ WindowList::WindowList() {}
 
 WindowList::~WindowList() {}
 
-}  // namespace atom
+}  // namespace electron

@@ -6,7 +6,7 @@
 
 #include "base/stl_util.h"
 
-namespace atom {
+namespace electron {
 
 bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
     int command_id,
@@ -77,4 +77,4 @@ AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {
       ui::SimpleMenuModel::GetSubmenuModelAt(index));
 }
 
-}  // namespace atom
+}  // namespace electron

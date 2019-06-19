@@ -15,7 +15,7 @@
 extern "C" int sandbox_check(pid_t pid, const char* operation, int type, ...);
 #endif
 
-namespace atom {
+namespace electron {
 
 ProcessMetric::ProcessMetric(int type,
                              base::ProcessHandle handle,
@@ -106,4 +106,4 @@ bool ProcessMetric::IsSandboxed() const {
 
 #endif  // defined(OS_MACOSX)
 
-}  // namespace atom
+}  // namespace electron

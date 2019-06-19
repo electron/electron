@@ -6,7 +6,7 @@
 
 #include "shell/browser/native_window.h"
 
-namespace atom {
+namespace electron {
 
 RootViewMac::RootViewMac(NativeWindow* window) : window_(window) {
   set_owned_by_client();
@@ -29,4 +29,4 @@ gfx::Size RootViewMac::GetMaximumSize() const {
   return window_->GetMaximumSize();
 }
 
-}  // namespace atom
+}  // namespace electron

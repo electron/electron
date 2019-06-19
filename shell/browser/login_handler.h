@@ -19,7 +19,7 @@ namespace content {
 class WebContents;
 }
 
-namespace atom {
+namespace electron {
 
 // Handles the HTTP basic auth, must be created on IO thread.
 class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
@@ -72,6 +72,6 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_LOGIN_HANDLER_H_

@@ -9,7 +9,7 @@
 #include "third_party/blink/public/platform/web_security_origin.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace atom {
+namespace electron {
 
 ContentSettingsObserver::ContentSettingsObserver(
     content::RenderFrame* render_frame)
@@ -57,4 +57,4 @@ void ContentSettingsObserver::OnDestruct() {
   delete this;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -6,7 +6,7 @@
 
 #include "shell/browser/net/url_request_about_job.h"
 
-namespace atom {
+namespace electron {
 
 AboutProtocolHandler::AboutProtocolHandler() {}
 
@@ -22,4 +22,4 @@ bool AboutProtocolHandler::IsSafeRedirectTarget(const GURL& location) const {
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

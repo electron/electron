@@ -149,7 +149,7 @@ bool Converter<blink::mojom::PermissionStatus>::FromV8(
 v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     v8::Isolate* isolate,
     const content::PermissionType& val) {
-  using PermissionType = atom::WebContentsPermissionHelper::PermissionType;
+  using PermissionType = electron::WebContentsPermissionHelper::PermissionType;
   switch (val) {
     case content::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
@@ -206,14 +206,14 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
     content::WebContents* val) {
   if (!val)
     return v8::Null(isolate);
-  return atom::api::WebContents::FromOrCreate(isolate, val).ToV8();
+  return electron::api::WebContents::FromOrCreate(isolate, val).ToV8();
 }
 
 // static
 bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
                                               content::WebContents** out) {
-  atom::api::WebContents* web_contents = nullptr;
+  electron::api::WebContents* web_contents = nullptr;
   if (!ConvertFromV8(isolate, val, &web_contents) || !web_contents)
     return false;
 

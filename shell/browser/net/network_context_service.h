@@ -11,7 +11,7 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/atom_browser_context.h"
 
-namespace atom {
+namespace electron {
 
 // KeyedService that initializes and provides access to the NetworkContexts for
 // a BrowserContext.
@@ -36,6 +36,6 @@ class NetworkContextService : public KeyedService {
   ProxyConfigMonitor proxy_config_monitor_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_H_

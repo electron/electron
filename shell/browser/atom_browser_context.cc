@@ -45,7 +45,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -345,4 +345,4 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
   return scoped_refptr<AtomBrowserContext>(new_context);
 }
 
-}  // namespace atom
+}  // namespace electron

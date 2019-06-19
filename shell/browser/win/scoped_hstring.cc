@@ -6,7 +6,7 @@
 
 #include <winstring.h>
 
-namespace atom {
+namespace electron {
 
 ScopedHString::ScopedHString(const wchar_t* source) : str_(nullptr) {
   Reset(source);
@@ -39,4 +39,4 @@ void ScopedHString::Reset(const std::wstring& source) {
   WindowsCreateString(source.c_str(), source.length(), &str_);
 }
 
-}  // namespace atom
+}  // namespace electron

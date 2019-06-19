@@ -76,7 +76,7 @@ void CrashReporterWin::Init(const std::string& product_name,
   } else {
     std::unique_ptr<base::Environment> env(base::Environment::Create());
     std::string pipe_name_utf8;
-    if (env->GetVar(atom::kCrashpadPipeName, &pipe_name_utf8)) {
+    if (env->GetVar(electron::kCrashpadPipeName, &pipe_name_utf8)) {
       base::string16 pipe_name = base::UTF8ToUTF16(pipe_name_utf8);
       if (!crashpad_client_.SetHandlerIPCPipe(pipe_name))
         LOG(ERROR) << "Failed to set handler IPC pipe name: " << pipe_name;
@@ -112,16 +112,16 @@ void CrashReporterWin::UpdatePipeName() {
   std::string pipe_name =
       base::UTF16ToUTF8(crashpad_client_.GetHandlerIPCPipe());
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  env->SetVar(atom::kCrashpadPipeName, pipe_name);
+  env->SetVar(electron::kCrashpadPipeName, pipe_name);
 
   // Notify all WebContents of the pipe name.
-  const auto& pages = atom::InspectableWebContentsImpl::GetAll();
+  const auto& pages = electron::InspectableWebContentsImpl::GetAll();
   for (auto* page : pages) {
     auto* frame_host = page->GetWebContents()->GetMainFrame();
     if (!frame_host)
       continue;
 
-    atom::mojom::ElectronRendererAssociatedPtr electron_ptr;
+    electron::mojom::ElectronRendererAssociatedPtr electron_ptr;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         mojo::MakeRequest(&electron_ptr));
     electron_ptr->UpdateCrashpadPipeName(pipe_name);

@@ -13,7 +13,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 
-namespace atom {
+namespace electron {
 
 // Manages the zoom changes of WebContents.
 class WebContentsZoomController
@@ -117,6 +117,6 @@ class WebContentsZoomController
   DISALLOW_COPY_AND_ASSIGN(WebContentsZoomController);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_

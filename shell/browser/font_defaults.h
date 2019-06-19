@@ -9,10 +9,10 @@ namespace content {
 struct WebPreferences;
 }  // namespace content
 
-namespace atom {
+namespace electron {
 
 void SetFontDefaults(content::WebPreferences* prefs);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_FONT_DEFAULTS_H_

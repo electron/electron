@@ -7,7 +7,7 @@
 #include "base/bind.h"
 #include "base/callback.h"
 
-namespace atom {
+namespace electron {
 
 SpecialStoragePolicy::SpecialStoragePolicy() {}
 
@@ -42,4 +42,4 @@ SpecialStoragePolicy::CreateDeleteCookieOnExitPredicate() {
   return network::SessionCleanupCookieStore::DeleteCookiePredicate();
 }
 
-}  // namespace atom
+}  // namespace electron

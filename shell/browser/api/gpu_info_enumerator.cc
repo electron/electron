@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace atom {
+namespace electron {
 
 GPUInfoEnumerator::GPUInfoEnumerator()
     : value_stack(), current(std::make_unique<base::DictionaryValue>()) {}
@@ -124,4 +124,4 @@ std::unique_ptr<base::DictionaryValue> GPUInfoEnumerator::GetDictionary() {
   return std::move(current);
 }
 
-}  // namespace atom
+}  // namespace electron

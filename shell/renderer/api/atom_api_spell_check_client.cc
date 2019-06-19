@@ -22,7 +22,7 @@
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -272,4 +272,4 @@ SpellCheckClient::SpellCheckScope::~SpellCheckScope() = default;
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

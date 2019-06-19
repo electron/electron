@@ -11,7 +11,7 @@ namespace v8 {
 class Isolate;
 }
 
-namespace atom {
+namespace electron {
 
 // Microtasks like promise resolution, are run at the end of the current
 // task. This class implements a task observer that runs tells v8 to run them.
@@ -31,6 +31,6 @@ class MicrotasksRunner : public base::MessageLoop::TaskObserver {
   v8::Isolate* isolate_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_MICROTASKS_RUNNER_H_

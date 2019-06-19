@@ -13,7 +13,7 @@
 #include "base/power_monitor/power_observer.h"
 #endif  // defined(OS_LINUX)
 
-namespace atom {
+namespace electron {
 
 #if defined(OS_LINUX)
 typedef PowerObserverLinux PowerObserver;
@@ -21,6 +21,6 @@ typedef PowerObserverLinux PowerObserver;
 typedef base::PowerObserver PowerObserver;
 #endif  // defined(OS_LINUX)
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_LIB_POWER_OBSERVER_H_

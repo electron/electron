@@ -17,7 +17,7 @@
 #include "shell/common/node_includes.h"
 #include "tracing/trace_event.h"
 
-namespace atom {
+namespace electron {
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
     : isolate_(Initialize(event_loop)),
@@ -83,4 +83,4 @@ NodeEnvironment::~NodeEnvironment() {
   node::FreeEnvironment(env_);
 }
 
-}  // namespace atom
+}  // namespace electron

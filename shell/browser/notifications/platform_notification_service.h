@@ -10,7 +10,7 @@
 
 #include "content/public/browser/platform_notification_service.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserClient;
 
@@ -50,6 +50,6 @@ class PlatformNotificationService
   DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_H_

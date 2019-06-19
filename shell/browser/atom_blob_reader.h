@@ -30,7 +30,7 @@ class Local;
 class Value;
 }  // namespace v8
 
-namespace atom {
+namespace electron {
 
 // A class to keep track of the blob context. All methods,
 // except Ctor are expected to be called on IO thread.
@@ -39,7 +39,7 @@ class AtomBlobReader {
   explicit AtomBlobReader(content::ChromeBlobStorageContext* blob_context);
   ~AtomBlobReader();
 
-  void StartReading(const std::string& uuid, atom::util::Promise promise);
+  void StartReading(const std::string& uuid, electron::util::Promise promise);
 
  private:
   // A self-destroyed helper class to read the blob data.
@@ -70,6 +70,6 @@ class AtomBlobReader {
   DISALLOW_COPY_AND_ASSIGN(AtomBlobReader);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_BLOB_READER_H_

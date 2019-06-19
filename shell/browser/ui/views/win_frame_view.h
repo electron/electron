@@ -7,7 +7,7 @@
 
 #include "shell/browser/ui/views/frameless_view.h"
 
-namespace atom {
+namespace electron {
 
 class WinFrameView : public FramelessView {
  public:
@@ -27,6 +27,6 @@ class WinFrameView : public FramelessView {
   DISALLOW_COPY_AND_ASSIGN(WinFrameView);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_

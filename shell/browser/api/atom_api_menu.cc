@@ -14,7 +14,7 @@
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -230,11 +230,11 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Menu;
+using electron::api::Menu;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

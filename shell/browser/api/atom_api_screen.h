@@ -18,7 +18,7 @@ class Rect;
 class Screen;
 }  // namespace gfx
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -54,6 +54,6 @@ class Screen : public mate::EventEmitter<Screen>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_SCREEN_H_

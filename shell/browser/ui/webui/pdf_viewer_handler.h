@@ -21,7 +21,7 @@ namespace content {
 struct StreamInfo;
 }
 
-namespace atom {
+namespace electron {
 
 class PdfViewerHandler : public content::WebUIMessageHandler,
                          public WebContentsZoomController::Observer {
@@ -56,6 +56,6 @@ class PdfViewerHandler : public content::WebUIMessageHandler,
   DISALLOW_COPY_AND_ASSIGN(PdfViewerHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_WEBUI_PDF_VIEWER_HANDLER_H_

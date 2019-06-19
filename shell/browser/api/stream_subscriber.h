@@ -17,7 +17,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 class URLRequestStreamJob;
 }
 
@@ -32,7 +32,7 @@ class StreamSubscriber
 
   StreamSubscriber(v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter,
-                   base::WeakPtr<atom::URLRequestStreamJob> url_job,
+                   base::WeakPtr<electron::URLRequestStreamJob> url_job,
                    scoped_refptr<base::SequencedTaskRunner> ui_task_runner);
 
  private:
@@ -56,7 +56,7 @@ class StreamSubscriber
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;
-  base::WeakPtr<atom::URLRequestStreamJob> url_job_;
+  base::WeakPtr<electron::URLRequestStreamJob> url_job_;
 
   JSHandlersMap js_handlers_;
 

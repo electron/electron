@@ -13,7 +13,7 @@
 #include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 namespace api {
 
 namespace {
@@ -178,4 +178,4 @@ void ProtocolNS::BuildPrototype(v8::Isolate* isolate,
 }
 
 }  // namespace api
-}  // namespace atom
+}  // namespace electron

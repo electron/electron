@@ -12,7 +12,7 @@
 
 #include "base/macros.h"
 
-namespace atom {
+namespace electron {
 
 class ScopedHString {
  public:
@@ -40,6 +40,6 @@ class ScopedHString {
   DISALLOW_COPY_AND_ASSIGN(ScopedHString);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WIN_SCOPED_HSTRING_H_

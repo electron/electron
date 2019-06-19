@@ -12,7 +12,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 
-using atom::WebContentsPreferences;
+using electron::WebContentsPreferences;
 
 namespace {
 
@@ -21,14 +21,14 @@ void AddGuest(int guest_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
               const base::DictionaryValue& options) {
-  auto* manager = atom::WebViewManager::GetWebViewManager(embedder);
+  auto* manager = electron::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
                       guest_web_contents);
 
   double zoom_factor;
-  if (options.GetDouble(atom::options::kZoomFactor, &zoom_factor)) {
-    atom::WebContentsZoomController::FromWebContents(guest_web_contents)
+  if (options.GetDouble(electron::options::kZoomFactor, &zoom_factor)) {
+    electron::WebContentsZoomController::FromWebContents(guest_web_contents)
         ->SetDefaultZoomFactor(zoom_factor);
   }
 
@@ -36,7 +36,7 @@ void AddGuest(int guest_instance_id,
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {
-  auto* manager = atom::WebViewManager::GetWebViewManager(embedder);
+  auto* manager = electron::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->RemoveGuest(guest_instance_id);
 }

@@ -8,9 +8,9 @@
 
 #include "shell/browser/notifications/win/win32_notification.h"
 
-namespace atom {
+namespace electron {
 
-atom::Notification* NotificationPresenterWin7::CreateNotificationObject(
+electron::Notification* NotificationPresenterWin7::CreateNotificationObject(
     NotificationDelegate* delegate) {
   return new Win32Notification(delegate, this);
 }
@@ -51,4 +51,4 @@ void NotificationPresenterWin7::OnNotificationDismissed(
     n->NotificationDismissed();
 }
 
-}  // namespace atom
+}  // namespace electron

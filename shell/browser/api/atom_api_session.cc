@@ -147,9 +147,9 @@ struct Converter<ClearStorageDataOptions> {
 };
 
 template <>
-struct Converter<atom::VerifyRequestParams> {
+struct Converter<electron::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::VerifyRequestParams val) {
+                                   electron::VerifyRequestParams val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("hostname", val.hostname);
     dict.Set("certificate", val.certificate);
@@ -161,7 +161,7 @@ struct Converter<atom::VerifyRequestParams> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -610,7 +610,7 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    auto handle = atom::api::WebRequest::Create(isolate, browser_context());
+    auto handle = electron::api::WebRequest::Create(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
@@ -618,7 +618,7 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   if (net_log_.IsEmpty()) {
-    auto handle = atom::api::NetLog::Create(isolate, browser_context());
+    auto handle = electron::api::NetLog::Create(isolate, browser_context());
     net_log_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, net_log_);
@@ -699,18 +699,18 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Cookies;
-using atom::api::NetLog;
-using atom::api::Protocol;
-using atom::api::Session;
+using electron::api::Cookies;
+using electron::api::NetLog;
+using electron::api::Protocol;
+using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,
                                    mate::Arguments* args) {
-  if (!atom::Browser::Get()->is_ready()) {
+  if (!electron::Browser::Get()->is_ready()) {
     args->ThrowError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
   }

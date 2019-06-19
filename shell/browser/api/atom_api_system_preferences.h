@@ -24,7 +24,7 @@ namespace base {
 class DictionaryValue;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -166,6 +166,6 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_SYSTEM_PREFERENCES_H_

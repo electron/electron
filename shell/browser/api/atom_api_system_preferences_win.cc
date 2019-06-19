@@ -13,7 +13,7 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -218,4 +218,4 @@ void SystemPreferences::OnFinishLaunching(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

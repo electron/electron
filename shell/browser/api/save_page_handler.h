@@ -21,7 +21,7 @@ namespace content {
 class WebContents;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -30,7 +30,7 @@ class SavePageHandler : public content::DownloadManager::Observer,
                         public download::DownloadItem::Observer {
  public:
   SavePageHandler(content::WebContents* web_contents,
-                  atom::util::Promise promise);
+                  electron::util::Promise promise);
   ~SavePageHandler() override;
 
   bool Handle(const base::FilePath& full_path,
@@ -47,11 +47,11 @@ class SavePageHandler : public content::DownloadManager::Observer,
   void OnDownloadUpdated(download::DownloadItem* item) override;
 
   content::WebContents* web_contents_;  // weak
-  atom::util::Promise promise_;
+  electron::util::Promise promise_;
 };
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_

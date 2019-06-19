@@ -14,7 +14,7 @@ class ListValue;
 class DictionaryValue;
 }  // namespace base
 
-namespace atom {
+namespace electron {
 
 NSArray* ListValueToNSArray(const base::ListValue& value);
 
@@ -25,6 +25,6 @@ NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
 std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
     NSDictionary* dict);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_MAC_DICT_UTIL_H_

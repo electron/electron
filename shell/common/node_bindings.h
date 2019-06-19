@@ -21,7 +21,7 @@ class Environment;
 class MultiIsolatePlatform;
 }  // namespace node
 
-namespace atom {
+namespace electron {
 
 class NodeBindings {
  public:
@@ -112,6 +112,6 @@ class NodeBindings {
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_NODE_BINDINGS_H_

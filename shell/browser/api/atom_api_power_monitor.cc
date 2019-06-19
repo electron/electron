@@ -31,7 +31,7 @@ struct Converter<ui::IdleState> {
 };
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -128,11 +128,11 @@ void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::PowerMonitor;
+using electron::api::PowerMonitor;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

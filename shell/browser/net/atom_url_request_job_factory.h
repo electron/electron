@@ -14,7 +14,7 @@
 
 #include "net/url_request/url_request_job_factory.h"
 
-namespace atom {
+namespace electron {
 
 const void* DisableProtocolInterceptFlagKey();
 
@@ -74,6 +74,6 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_

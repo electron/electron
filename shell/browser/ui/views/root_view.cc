@@ -8,7 +8,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -230,4 +230,4 @@ void RootView::SetInsets(const gfx::Insets& insets) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -16,7 +16,7 @@
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 
-namespace atom {
+namespace electron {
 
 WebViewGuestDelegate::WebViewGuestDelegate(content::WebContents* embedder,
                                            api::WebContents* api_web_contents)
@@ -120,4 +120,4 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   return guest_contents_impl;
 }
 
-}  // namespace atom
+}  // namespace electron

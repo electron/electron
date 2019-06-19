@@ -9,7 +9,7 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "shell/browser/atom_browser_context.h"
 
-namespace atom {
+namespace electron {
 
 PrefStoreDelegate::PrefStoreDelegate(
     base::WeakPtr<AtomBrowserContext> browser_context)
@@ -27,4 +27,4 @@ void PrefStoreDelegate::UpdateCommandLinePrefStore(
         static_cast<ValueMapPrefStore*>(command_line_prefs));
 }
 
-}  // namespace atom
+}  // namespace electron

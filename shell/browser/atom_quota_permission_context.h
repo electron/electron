@@ -8,7 +8,7 @@
 #include "content/public/browser/quota_permission_context.h"
 #include "content/public/common/storage_quota_params.h"
 
-namespace atom {
+namespace electron {
 
 class AtomQuotaPermissionContext : public content::QuotaPermissionContext {
  public:
@@ -27,6 +27,6 @@ class AtomQuotaPermissionContext : public content::QuotaPermissionContext {
   DISALLOW_COPY_AND_ASSIGN(AtomQuotaPermissionContext);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_QUOTA_PERMISSION_CONTEXT_H_

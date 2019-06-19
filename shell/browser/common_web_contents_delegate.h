@@ -26,7 +26,7 @@ namespace base {
 class SequencedTaskRunner;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 class NativeWindow;
@@ -213,6 +213,6 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_COMMON_WEB_CONTENTS_DELEGATE_H_

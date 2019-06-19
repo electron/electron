@@ -22,7 +22,7 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -85,13 +85,13 @@ display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
 
 #if defined(OS_WIN)
 
-static gfx::Rect ScreenToDIPRect(atom::NativeWindow* window,
+static gfx::Rect ScreenToDIPRect(electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
   return display::win::ScreenWin::ScreenToDIPRect(hwnd, rect);
 }
 
-static gfx::Rect DIPToScreenRect(atom::NativeWindow* window,
+static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
   return display::win::ScreenWin::DIPToScreenRect(hwnd, rect);
@@ -151,11 +151,11 @@ void Screen::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Screen;
+using electron::api::Screen;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

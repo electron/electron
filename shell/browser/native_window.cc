@@ -21,7 +21,7 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -595,4 +595,4 @@ NativeWindowRelay::~NativeWindowRelay() = default;
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(NativeWindowRelay)
 
-}  // namespace atom
+}  // namespace electron

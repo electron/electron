@@ -15,7 +15,7 @@
 #include "dbus/object_proxy.h"
 #include "ui/base/x/x11_util.h"
 
-namespace atom {
+namespace electron {
 
 ::Atom GetAtom(const char* name) {
   return XInternAtom(gfx::GetXDisplay(), name, false);
@@ -109,4 +109,4 @@ void MoveWindowToForeground(::Window xwindow) {
   XFlush(xdisplay);
 }
 
-}  // namespace atom
+}  // namespace electron

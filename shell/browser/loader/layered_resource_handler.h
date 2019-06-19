@@ -10,7 +10,7 @@
 #include "content/browser/loader/layered_resource_handler.h"  // nogncheck
 #include "services/network/public/cpp/resource_response.h"
 
-namespace atom {
+namespace electron {
 
 // Resource handler that notifies on various stages of a resource request.
 class LayeredResourceHandler : public content::LayeredResourceHandler {
@@ -39,6 +39,6 @@ class LayeredResourceHandler : public content::LayeredResourceHandler {
   DISALLOW_COPY_AND_ASSIGN(LayeredResourceHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_LOADER_LAYERED_RESOURCE_HANDLER_H_

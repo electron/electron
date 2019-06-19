@@ -5,7 +5,7 @@
 #ifndef SHELL_COMMON_OPTIONS_SWITCHES_H_
 #define SHELL_COMMON_OPTIONS_SWITCHES_H_
 
-namespace atom {
+namespace electron {
 
 namespace options {
 
@@ -131,6 +131,6 @@ extern const char kEnableAuthNegotiatePort[];
 
 }  // namespace switches
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_OPTIONS_SWITCHES_H_

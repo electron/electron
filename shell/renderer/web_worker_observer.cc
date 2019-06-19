@@ -12,7 +12,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -71,4 +71,4 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   delete this;
 }
 
-}  // namespace atom
+}  // namespace electron

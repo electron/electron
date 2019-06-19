@@ -12,7 +12,7 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/atom_browser_context.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -68,4 +68,4 @@ void SavePageHandler::Destroy(download::DownloadItem* item) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

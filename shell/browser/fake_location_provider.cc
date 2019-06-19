@@ -7,7 +7,7 @@
 #include "base/callback.h"
 #include "base/time/time.h"
 
-namespace atom {
+namespace electron {
 
 FakeLocationProvider::FakeLocationProvider() {
   position_.latitude = 10;
@@ -41,4 +41,4 @@ void FakeLocationProvider::OnPermissionGranted() {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

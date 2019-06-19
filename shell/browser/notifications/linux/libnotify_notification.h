@@ -12,7 +12,7 @@
 #include "shell/browser/notifications/notification.h"
 #include "ui/base/glib/glib_signal.h"
 
-namespace atom {
+namespace electron {
 
 class LibnotifyNotification : public Notification {
  public:
@@ -42,6 +42,6 @@ class LibnotifyNotification : public Notification {
   DISALLOW_COPY_AND_ASSIGN(LibnotifyNotification);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_

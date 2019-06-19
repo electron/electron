@@ -45,7 +45,7 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -914,4 +914,4 @@ void InspectableWebContentsImpl::SendMessageAck(int request_id,
   CallClientFunction("DevToolsAPI.embedderMessageAck", &id_value, arg, nullptr);
 }
 
-}  // namespace atom
+}  // namespace electron

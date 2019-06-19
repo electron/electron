@@ -39,7 +39,7 @@ struct Converter<device::mojom::WakeLockType> {
 
 }  // namespace gin
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -134,7 +134,7 @@ gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -144,7 +144,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin::Dictionary dict(isolate, exports);
-  dict.Set("powerSaveBlocker", atom::api::PowerSaveBlocker::Create(isolate));
+  dict.Set("powerSaveBlocker",
+           electron::api::PowerSaveBlocker::Create(isolate));
 }
 
 }  // namespace

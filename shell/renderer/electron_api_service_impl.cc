@@ -24,7 +24,7 @@
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -171,9 +171,10 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
   }
   base::File base_file(platform_file);
 
-  bool success = atom::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);
+  bool success =
+      electron::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);
 
   std::move(callback).Run(success);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -19,7 +19,7 @@
 // Must be included after other Windows headers.
 #include <UIAutomationCoreApi.h>
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -610,4 +610,4 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   return CallNextHookEx(NULL, n_code, w_param, l_param);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -11,7 +11,7 @@
 #include "base/memory/weak_ptr.h"
 #include "components/viz/host/client_frame_sink_video_capturer.h"
 
-namespace atom {
+namespace electron {
 
 class OffScreenRenderWidgetHostView;
 
@@ -49,6 +49,6 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
   DISALLOW_COPY_AND_ASSIGN(OffScreenVideoConsumer);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_OSR_OSR_VIDEO_CONSUMER_H_

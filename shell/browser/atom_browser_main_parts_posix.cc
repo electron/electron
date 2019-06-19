@@ -21,7 +21,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -221,4 +221,4 @@ void AtomBrowserMainParts::HandleShutdownSignals() {
   CHECK_EQ(sigaction(SIGHUP, &action, nullptr), 0);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -4,7 +4,7 @@
 
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 
-namespace atom {
+namespace electron {
 
 DelayedNativeViewHost::DelayedNativeViewHost(gfx::NativeView native_view)
     : native_view_(native_view) {}
@@ -18,4 +18,4 @@ void DelayedNativeViewHost::ViewHierarchyChanged(
     Attach(native_view_);
 }
 
-}  // namespace atom
+}  // namespace electron

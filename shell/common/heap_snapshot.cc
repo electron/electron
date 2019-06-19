@@ -32,7 +32,7 @@ class HeapSnapshotOutputStream : public v8::OutputStream {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 bool TakeHeapSnapshot(v8::Isolate* isolate, base::File* file) {
   DCHECK(isolate);
@@ -53,4 +53,4 @@ bool TakeHeapSnapshot(v8::Isolate* isolate, base::File* file) {
   return stream.IsComplete();
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -16,7 +16,7 @@
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/once_callback.h"
 
-namespace atom {
+namespace electron {
 
 namespace util {
 
@@ -246,14 +246,14 @@ class CopyablePromise {
 
 }  // namespace util
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
 template <>
-struct Converter<atom::util::Promise> {
+struct Converter<electron::util::Promise> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const atom::util::Promise& val);
+                                   const electron::util::Promise& val);
   // TODO(MarshallOfSound): Implement FromV8 to allow promise chaining
   //                        in native land
   // static bool FromV8(v8::Isolate* isolate,

@@ -47,7 +47,7 @@ struct Converter<download::DownloadItem::DownloadState> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -233,7 +233,7 @@ mate::Handle<DownloadItem> DownloadItem::Create(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -243,7 +243,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary(isolate, exports)
-      .Set("DownloadItem", atom::api::DownloadItem::GetConstructor(isolate)
+      .Set("DownloadItem", electron::api::DownloadItem::GetConstructor(isolate)
                                ->GetFunction(context)
                                .ToLocalChecked());
 }

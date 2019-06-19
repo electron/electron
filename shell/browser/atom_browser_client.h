@@ -25,7 +25,7 @@ namespace net {
 class SSLCertRequestInfo;
 }
 
-namespace atom {
+namespace electron {
 
 class NotificationPresenter;
 class PlatformNotificationService;
@@ -258,6 +258,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_BROWSER_CLIENT_H_

@@ -8,7 +8,7 @@
 #include "base/memory/ptr_util.h"
 #include "shell/common/options_switches.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -58,4 +58,4 @@ void SessionPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchNative(switches::kPreloadScripts, preloads);
 }
 
-}  // namespace atom
+}  // namespace electron

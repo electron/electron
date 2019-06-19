@@ -7,7 +7,7 @@
 
 #include "base/macros.h"
 
-namespace atom {
+namespace electron {
 
 bool IsUnresponsiveEventSuppressed();
 
@@ -20,6 +20,6 @@ class UnresponsiveSuppressor {
   DISALLOW_COPY_AND_ASSIGN(UnresponsiveSuppressor);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_

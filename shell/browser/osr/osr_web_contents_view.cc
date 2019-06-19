@@ -9,7 +9,7 @@
 #include "third_party/blink/public/platform/web_screen_info.h"
 #include "ui/display/screen.h"
 
-namespace atom {
+namespace electron {
 
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
@@ -222,4 +222,4 @@ OffScreenRenderWidgetHostView* OffScreenWebContentsView::GetView() const {
   return nullptr;
 }
 
-}  // namespace atom
+}  // namespace electron

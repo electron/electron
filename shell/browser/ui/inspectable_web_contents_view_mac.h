@@ -12,7 +12,7 @@
 
 @class AtomInspectableWebContentsView;
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsImpl;
 
@@ -45,6 +45,6 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_

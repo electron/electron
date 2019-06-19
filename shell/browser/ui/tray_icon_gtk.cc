@@ -11,7 +11,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/views/linux_ui/linux_ui.h"
 
-namespace atom {
+namespace electron {
 
 TrayIconGtk::TrayIconGtk() {}
 
@@ -50,4 +50,4 @@ TrayIcon* TrayIcon::Create() {
   return new TrayIconGtk;
 }
 
-}  // namespace atom
+}  // namespace electron

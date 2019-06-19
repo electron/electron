@@ -12,7 +12,7 @@
 #include "content/public/browser/web_ui_controller.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
-namespace atom {
+namespace electron {
 
 class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
  public:
@@ -38,6 +38,6 @@ class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
   DISALLOW_COPY_AND_ASSIGN(AtomWebUIControllerFactory);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_ATOM_WEB_UI_CONTROLLER_FACTORY_H_

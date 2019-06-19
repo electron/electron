@@ -14,7 +14,7 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/window/client_view.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -232,4 +232,4 @@ void InspectableWebContentsViewViews::Layout() {
   contents_web_view_->SetBoundsRect(new_contents_bounds);
 }
 
-}  // namespace atom
+}  // namespace electron

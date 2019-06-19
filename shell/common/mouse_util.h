@@ -24,11 +24,11 @@
     code;                                                           \
   } break;
 
-namespace atom {
+namespace electron {
 
 // Returns the cursor's type as a string.
 std::string CursorTypeToString(const content::CursorInfo& info);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_MOUSE_UTIL_H_

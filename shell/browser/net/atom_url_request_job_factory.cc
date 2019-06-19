@@ -15,7 +15,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -144,4 +144,4 @@ bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
   return IsHandledProtocol(location.scheme());
 }
 
-}  // namespace atom
+}  // namespace electron

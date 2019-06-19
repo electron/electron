@@ -18,7 +18,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/win/scoped_hstring.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -110,4 +110,4 @@ bool IsRunningInDesktopBridge() {
   return result;
 }
 
-}  // namespace atom
+}  // namespace electron

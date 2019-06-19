@@ -9,7 +9,7 @@
 
 #include "shell/browser/native_window_views.h"
 
-namespace atom {
+namespace electron {
 
 class WindowStateWatcher : public ui::PlatformEventObserver {
  public:
@@ -33,6 +33,6 @@ class WindowStateWatcher : public ui::PlatformEventObserver {
   DISALLOW_COPY_AND_ASSIGN(WindowStateWatcher);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_

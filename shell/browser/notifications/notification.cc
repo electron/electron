@@ -7,7 +7,7 @@
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 
-namespace atom {
+namespace electron {
 
 NotificationOptions::NotificationOptions() = default;
 NotificationOptions::~NotificationOptions() = default;
@@ -43,4 +43,4 @@ void Notification::Destroy() {
   presenter()->RemoveNotification(this);
 }
 
-}  // namespace atom
+}  // namespace electron

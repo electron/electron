@@ -87,7 +87,7 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
   @try {
     if (serverType == "json") {
       NSString* nsAppVersion =
-          base::SysUTF8ToNSString(atom::Browser::Get()->GetVersion());
+          base::SysUTF8ToNSString(electron::Browser::Get()->GetVersion());
       g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest
                                                   forVersion:nsAppVersion];
     } else {

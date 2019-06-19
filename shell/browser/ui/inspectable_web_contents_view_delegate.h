@@ -10,7 +10,7 @@
 
 #include "ui/gfx/image/image_skia.h"
 
-namespace atom {
+namespace electron {
 
 class InspectableWebContentsViewDelegate {
  public:
@@ -30,6 +30,6 @@ class InspectableWebContentsViewDelegate {
 #endif
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_

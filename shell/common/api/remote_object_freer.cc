@@ -13,7 +13,7 @@
 
 using blink::WebLocalFrame;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -82,4 +82,4 @@ void RemoteObjectFreer::RunDestructor() {
   electron_ptr->Message(true, channel, args.Clone());
 }
 
-}  // namespace atom
+}  // namespace electron

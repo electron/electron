@@ -48,7 +48,7 @@ namespace network {
 class ResourceRequestBody;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
@@ -573,6 +573,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_WEB_CONTENTS_H_

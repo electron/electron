@@ -116,7 +116,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -988,4 +988,4 @@ bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

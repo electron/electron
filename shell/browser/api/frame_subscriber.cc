@@ -15,7 +15,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -174,4 +174,4 @@ gfx::Size FrameSubscriber::GetRenderViewSize() const {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

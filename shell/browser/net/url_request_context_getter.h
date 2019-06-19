@@ -20,7 +20,7 @@
 #include "base/debug/leak_tracker.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 class AtomNetworkDelegate;
@@ -109,6 +109,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_URL_REQUEST_CONTEXT_GETTER_H_

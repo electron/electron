@@ -36,7 +36,7 @@ static NSString* const TextScrubberItemIdentifier = @"scrubber.text.item";
 static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
-                window:(atom::NativeWindow*)window
+                window:(electron::NativeWindow*)window
               settings:
                   (const std::vector<mate::PersistentDictionary>&)settings {
   if ((self = [super init])) {
@@ -244,7 +244,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSString* item_id = [self idFromIdentifier:identifier
                                   withPrefix:ColorPickerIdentifier];
   NSColor* color = ((NSColorPickerTouchBarItem*)sender).color;
-  std::string hex_color = atom::ToRGBHex(skia::NSDeviceColorToSkColor(color));
+  std::string hex_color =
+      electron::ToRGBHex(skia::NSDeviceColorToSkColor(color));
   base::DictionaryValue details;
   details.SetString("color", hex_color);
   window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
@@ -329,7 +330,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString {
-  SkColor color = atom::ParseHexColor(colorString);
+  SkColor color = electron::ParseHexColor(colorString);
   return skia::SkColorToDeviceNSColor(color);
 }
 

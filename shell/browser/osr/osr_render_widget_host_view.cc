@@ -47,7 +47,7 @@
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/latency/latency_info.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -1175,4 +1175,4 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
   GetRootLayer()->SetColor(color);
 }
 
-}  // namespace atom
+}  // namespace electron

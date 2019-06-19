@@ -19,7 +19,7 @@
 
 @interface TrustDelegate : NSObject {
  @private
-  std::unique_ptr<atom::util::Promise> promise_;
+  std::unique_ptr<electron::util::Promise> promise_;
   SFCertificateTrustPanel* panel_;
   scoped_refptr<net::X509Certificate> cert_;
   SecTrustRef trust_;
@@ -27,7 +27,7 @@
   SecPolicyRef sec_policy_;
 }
 
-- (id)initWithPromise:(atom::util::Promise)promise
+- (id)initWithPromise:(electron::util::Promise)promise
                 panel:(SFCertificateTrustPanel*)panel
                  cert:(const scoped_refptr<net::X509Certificate>&)cert
                 trust:(SecTrustRef)trust
@@ -51,14 +51,14 @@
   [super dealloc];
 }
 
-- (id)initWithPromise:(atom::util::Promise)promise
+- (id)initWithPromise:(electron::util::Promise)promise
                 panel:(SFCertificateTrustPanel*)panel
                  cert:(const scoped_refptr<net::X509Certificate>&)cert
                 trust:(SecTrustRef)trust
             certChain:(CFArrayRef)certChain
             secPolicy:(SecPolicyRef)secPolicy {
   if ((self = [super init])) {
-    promise_.reset(new atom::util::Promise(std::move(promise)));
+    promise_.reset(new electron::util::Promise(std::move(promise)));
     panel_ = panel;
     cert_ = cert;
     trust_ = trust;
@@ -86,11 +86,11 @@
 namespace certificate_trust {
 
 v8::Local<v8::Promise> ShowCertificateTrust(
-    atom::NativeWindow* parent_window,
+    electron::NativeWindow* parent_window,
     const scoped_refptr<net::X509Certificate>& cert,
     const std::string& message) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* sec_policy = SecPolicyCreateBasicX509();

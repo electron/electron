@@ -60,7 +60,8 @@ v8::Local<v8::Value> Converter<file_dialog::DialogSettings>::ToV8(
     const file_dialog::DialogSettings& in) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
 
-  dict.Set("window", atom::api::BrowserWindow::From(isolate, in.parent_window));
+  dict.Set("window",
+           electron::api::BrowserWindow::From(isolate, in.parent_window));
   dict.Set("title", in.title);
   dict.Set("message", in.message);
   dict.Set("buttonLabel", in.button_label);

@@ -12,7 +12,7 @@
 #include "base/files/file_path.h"
 #include "base/macros.h"
 
-namespace atom {
+namespace electron {
 
 enum class JumpListResult : int {
   SUCCESS = 0,
@@ -117,6 +117,6 @@ class JumpList {
   DISALLOW_COPY_AND_ASSIGN(JumpList);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_WIN_JUMP_LIST_H_

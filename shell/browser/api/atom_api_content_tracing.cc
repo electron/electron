@@ -64,13 +64,14 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
   return base::make_optional(std::move(temp_file_path));
 }
 
-void StopTracing(atom::util::Promise promise,
+void StopTracing(electron::util::Promise promise,
                  base::Optional<base::FilePath> file_path) {
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::AdaptCallbackForRepeating(base::BindOnce(
-                        &atom::util::Promise::ResolvePromise<base::FilePath>,
-                        std::move(promise), *file_path)));
+        *file_path,
+        base::AdaptCallbackForRepeating(base::BindOnce(
+            &electron::util::Promise::ResolvePromise<base::FilePath>,
+            std::move(promise), *file_path)));
     TracingController::GetInstance()->StopTracing(endpoint);
   } else {
     promise.RejectWithErrorMessage(
@@ -79,7 +80,7 @@ void StopTracing(atom::util::Promise promise,
 }
 
 v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
-  atom::util::Promise promise(args->isolate());
+  electron::util::Promise promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;
@@ -97,12 +98,12 @@ v8::Local<v8::Promise> StopRecording(mate::Arguments* args) {
 }
 
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
-      atom::util::Promise::ResolvePromise<const std::set<std::string>&>,
+      electron::util::Promise::ResolvePromise<const std::set<std::string>&>,
       std::move(promise)));
 
   return handle;
@@ -111,22 +112,23 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!TracingController::GetInstance()->StartTracing(
-          trace_config, base::BindOnce(atom::util::Promise::ResolveEmptyPromise,
-                                       std::move(promise)))) {
+          trace_config,
+          base::BindOnce(electron::util::Promise::ResolveEmptyPromise,
+                         std::move(promise)))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
     // this point).
-    return atom::util::Promise::ResolvedPromise(isolate);
+    return electron::util::Promise::ResolvedPromise(isolate);
   }
   return handle;
 }
 
-void OnTraceBufferUsageAvailable(atom::util::Promise promise,
+void OnTraceBufferUsageAvailable(electron::util::Promise promise,
                                  float percent_full,
                                  size_t approximate_count) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
@@ -137,7 +139,7 @@ void OnTraceBufferUsageAvailable(atom::util::Promise promise,
 }
 
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Note: This method always succeeds.

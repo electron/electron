@@ -32,7 +32,7 @@ namespace gfx {
 class Image;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomMenuModel;
 
@@ -312,6 +312,6 @@ class Browser : public WindowListObserver {
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_BROWSER_H_

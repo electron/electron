@@ -36,7 +36,7 @@ namespace {
 
 class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                          public content::WebContentsObserver,
-                         public atom::DirectoryListerHelperDelegate {
+                         public electron::DirectoryListerHelperDelegate {
  public:
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    std::unique_ptr<content::FileSelectListener> listener,
@@ -51,7 +51,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    atom::util::Promise promise(isolate);
+    electron::util::Promise promise(isolate);
 
     auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
     ignore_result(promise.Then(std::move(callback)));
@@ -62,7 +62,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
-    atom::util::Promise promise(isolate);
+    electron::util::Promise promise(isolate);
     v8::Local<v8::Promise> handle = promise.GetHandle();
 
     file_dialog::ShowSaveDialog(settings, std::move(promise));
@@ -87,7 +87,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   void EnumerateDirectory(base::FilePath base_dir) {
     auto* lister = new net::DirectoryLister(
         base_dir, net::DirectoryLister::NO_SORT_RECURSIVE,
-        new atom::DirectoryListerHelper(base_dir, this));
+        new electron::DirectoryListerHelper(base_dir, this));
     lister->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we
@@ -131,7 +131,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
         }
 
         if (render_frame_host_ && !paths.empty()) {
-          auto* browser_context = static_cast<atom::AtomBrowserContext*>(
+          auto* browser_context = static_cast<electron::AtomBrowserContext*>(
               render_frame_host_->GetProcess()->GetBrowserContext());
           browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
                                                 paths[0].DirName());
@@ -257,7 +257,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 DirectoryListerHelper::DirectoryListerHelper(
     base::FilePath base,
@@ -320,7 +320,7 @@ void WebDialogHelper::RunFileChooser(
         NOTREACHED();
     }
 
-    auto* browser_context = static_cast<atom::AtomBrowserContext*>(
+    auto* browser_context = static_cast<electron::AtomBrowserContext*>(
         render_frame_host->GetProcess()->GetBrowserContext());
     settings.default_path = browser_context->prefs()
                                 ->GetFilePath(prefs::kSelectFileLastDirectory)
@@ -349,4 +349,4 @@ void WebDialogHelper::EnumerateDirectory(
                          FileChooserParams::Mode::kUploadFolder);
 }
 
-}  // namespace atom
+}  // namespace electron

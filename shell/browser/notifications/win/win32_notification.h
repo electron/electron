@@ -10,9 +10,9 @@
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/win/notification_presenter_win7.h"
 
-namespace atom {
+namespace electron {
 
-class Win32Notification : public atom::Notification {
+class Win32Notification : public electron::Notification {
  public:
   Win32Notification(NotificationDelegate* delegate,
                     NotificationPresenterWin7* presenter)
@@ -33,6 +33,6 @@ class Win32Notification : public atom::Notification {
   DISALLOW_COPY_AND_ASSIGN(Win32Notification);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_

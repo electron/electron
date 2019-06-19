@@ -23,11 +23,11 @@
 
 namespace {
 
-int ShowMessageBoxSync(const atom::MessageBoxSettings& settings) {
-  return atom::ShowMessageBoxSync(settings);
+int ShowMessageBoxSync(const electron::MessageBoxSettings& settings) {
+  return electron::ShowMessageBoxSync(settings);
 }
 
-void ResolvePromiseObject(atom::util::Promise promise,
+void ResolvePromiseObject(electron::util::Promise promise,
                           int result,
                           bool checkbox_checked) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
@@ -38,13 +38,14 @@ void ResolvePromiseObject(atom::util::Promise promise,
   promise.Resolve(dict.GetHandle());
 }
 
-v8::Local<v8::Promise> ShowMessageBox(const atom::MessageBoxSettings& settings,
-                                      mate::Arguments* args) {
+v8::Local<v8::Promise> ShowMessageBox(
+    const electron::MessageBoxSettings& settings,
+    mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  atom::ShowMessageBox(
+  electron::ShowMessageBox(
       settings, base::BindOnce(&ResolvePromiseObject, std::move(promise)));
 
   return handle;
@@ -60,7 +61,7 @@ void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowOpenDialog(
     const file_dialog::DialogSettings& settings,
     mate::Arguments* args) {
-  atom::util::Promise promise(args->isolate());
+  electron::util::Promise promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   file_dialog::ShowOpenDialog(settings, std::move(promise));
   return handle;
@@ -76,7 +77,7 @@ void ShowSaveDialogSync(const file_dialog::DialogSettings& settings,
 v8::Local<v8::Promise> ShowSaveDialog(
     const file_dialog::DialogSettings& settings,
     mate::Arguments* args) {
-  atom::util::Promise promise(args->isolate());
+  electron::util::Promise promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));
@@ -90,7 +91,7 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
-  dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
+  dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
   dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialogSync", &ShowSaveDialogSync);

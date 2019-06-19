@@ -11,7 +11,7 @@
 #include "shell/browser/lib/power_observer.h"
 #include "ui/base/idle/idle.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -76,6 +76,6 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_POWER_MONITOR_H_

@@ -180,7 +180,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
     return false;
 
   bool shifted = false;
-  ui::KeyboardCode keyCode = atom::KeyboardCodeFromStr(str, &shifted);
+  ui::KeyboardCode keyCode = electron::KeyboardCodeFromStr(str, &shifted);
   out->windows_key_code = keyCode;
   if (shifted)
     out->SetModifiers(out->GetModifiers() | blink::WebInputEvent::kShiftKey);
@@ -190,7 +190,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
   ui::DomKey domKey;
   ui::KeyboardCode dummy_code;
-  int flags = atom::WebEventModifiersToEventFlags(out->GetModifiers());
+  int flags = electron::WebEventModifiersToEventFlags(out->GetModifiers());
   if (ui::DomCodeToUsLayoutDomKey(domCode, flags, &domKey, &dummy_code))
     out->dom_key = static_cast<int>(domKey);
 

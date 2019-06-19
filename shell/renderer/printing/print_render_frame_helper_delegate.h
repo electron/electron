@@ -8,7 +8,7 @@
 #include "base/macros.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
 
-namespace atom {
+namespace electron {
 
 class PrintRenderFrameHelperDelegate
     : public printing::PrintRenderFrameHelper::Delegate {
@@ -26,6 +26,6 @@ class PrintRenderFrameHelperDelegate
   DISALLOW_COPY_AND_ASSIGN(PrintRenderFrameHelperDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_

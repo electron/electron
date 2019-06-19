@@ -15,11 +15,11 @@
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
-using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
+using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
 @implementation AtomNSWindowDelegate
 
-- (id)initWithShell:(atom::NativeWindowMac*)shell {
+- (id)initWithShell:(electron::NativeWindowMac*)shell {
   // The views library assumes the window delegate must be an instance of
   // ViewsNSWindowDelegate, since we don't have a way to override the creation
   // of NSWindowDelegate, we have to dynamically replace the window delegate
@@ -278,7 +278,7 @@ using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
 
 - (IBAction)newWindowForTab:(id)sender {
   shell_->NotifyNewWindowForTab();
-  atom::Browser::Get()->NewWindowForTab();
+  electron::Browser::Get()->NewWindowForTab();
 }
 
 #pragma mark - NSTouchBarDelegate

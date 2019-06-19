@@ -17,7 +17,7 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
 
-namespace atom {
+namespace electron {
 
 MessageBoxSettings::MessageBoxSettings() = default;
 MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
@@ -149,4 +149,4 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   [alert release];
 }
 
-}  // namespace atom
+}  // namespace electron

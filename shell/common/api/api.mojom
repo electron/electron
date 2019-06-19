@@ -1,4 +1,4 @@
-module atom.mojom;
+module electron.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
 import "mojo/public/mojom/base/string16.mojom";

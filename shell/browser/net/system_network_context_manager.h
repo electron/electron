@@ -27,7 +27,7 @@ namespace net_log {
 class NetExportFileWriter;
 }
 
-namespace atom {
+namespace electron {
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams();
 }
 

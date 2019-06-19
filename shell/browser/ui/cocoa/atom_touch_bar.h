@@ -24,11 +24,11 @@
   std::vector<mate::PersistentDictionary> ordered_settings_;
   std::map<std::string, mate::PersistentDictionary> settings_;
   id<NSTouchBarDelegate> delegate_;
-  atom::NativeWindow* window_;
+  electron::NativeWindow* window_;
 }
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
-                window:(atom::NativeWindow*)window
+                window:(electron::NativeWindow*)window
               settings:(const std::vector<mate::PersistentDictionary>&)settings;
 
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2));

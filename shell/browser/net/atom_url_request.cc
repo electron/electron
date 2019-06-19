@@ -26,7 +26,7 @@ namespace {
 const int kBufferSize = 4096;
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 namespace internal {
 
@@ -518,4 +518,4 @@ void AtomURLRequest::GetUploadProgress(mate::Dictionary* progress) const {
   progress->Set("total", upload_progress.size());
 }
 
-}  // namespace atom
+}  // namespace electron

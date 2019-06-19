@@ -15,7 +15,7 @@
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -223,4 +223,4 @@ bool TaskbarHost::InitializeTaskbar() {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

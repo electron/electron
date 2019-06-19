@@ -19,10 +19,10 @@
 namespace mate {
 
 template <>
-struct Converter<atom::AutoResizeFlags> {
+struct Converter<electron::AutoResizeFlags> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::AutoResizeFlags* auto_resize_flags) {
+                     electron::AutoResizeFlags* auto_resize_flags) {
     mate::Dictionary params;
     if (!ConvertFromV8(isolate, val, &params)) {
       return false;
@@ -31,29 +31,29 @@ struct Converter<atom::AutoResizeFlags> {
     uint8_t flags = 0;
     bool width = false;
     if (params.Get("width", &width) && width) {
-      flags |= atom::kAutoResizeWidth;
+      flags |= electron::kAutoResizeWidth;
     }
     bool height = false;
     if (params.Get("height", &height) && height) {
-      flags |= atom::kAutoResizeHeight;
+      flags |= electron::kAutoResizeHeight;
     }
     bool horizontal = false;
     if (params.Get("horizontal", &horizontal) && horizontal) {
-      flags |= atom::kAutoResizeHorizontal;
+      flags |= electron::kAutoResizeHorizontal;
     }
     bool vertical = false;
     if (params.Get("vertical", &vertical) && vertical) {
-      flags |= atom::kAutoResizeVertical;
+      flags |= electron::kAutoResizeVertical;
     }
 
-    *auto_resize_flags = static_cast<atom::AutoResizeFlags>(flags);
+    *auto_resize_flags = static_cast<electron::AutoResizeFlags>(flags);
     return true;
   }
 };
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -154,11 +154,11 @@ void BrowserView::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::BrowserView;
+using electron::api::BrowserView;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

@@ -23,7 +23,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 
-namespace atom {
+namespace electron {
 
 Browser::LoginItemSettings::LoginItemSettings() = default;
 Browser::LoginItemSettings::~LoginItemSettings() = default;
@@ -51,10 +51,10 @@ void Browser::Quit() {
   if (!is_quiting_)
     return;
 
-  if (atom::WindowList::IsEmpty())
+  if (electron::WindowList::IsEmpty())
     NotifyAndShutdown();
   else
-    atom::WindowList::CloseAllWindows();
+    electron::WindowList::CloseAllWindows();
 }
 
 void Browser::Exit(mate::Arguments* args) {
@@ -72,12 +72,12 @@ void Browser::Exit(mate::Arguments* args) {
     is_exiting_ = true;
 
     // Must destroy windows before quitting, otherwise bad things can happen.
-    if (atom::WindowList::IsEmpty()) {
+    if (electron::WindowList::IsEmpty()) {
       Shutdown();
     } else {
       // Unlike Quit(), we do not ask to close window, but destroy the window
       // without asking.
-      atom::WindowList::DestroyAllWindows();
+      electron::WindowList::DestroyAllWindows();
     }
   }
 }
@@ -249,4 +249,4 @@ void Browser::NewWindowForTab() {
 }
 #endif
 
-}  // namespace atom
+}  // namespace electron

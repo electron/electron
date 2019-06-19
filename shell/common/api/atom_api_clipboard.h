@@ -13,7 +13,7 @@
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/gfx/image/image.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -59,6 +59,6 @@ class Clipboard {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_API_ATOM_API_CLIPBOARD_H_

@@ -8,7 +8,7 @@
 
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-namespace atom {
+namespace electron {
 
 URLPipeLoader::URLPipeLoader(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
@@ -99,4 +99,4 @@ void URLPipeLoader::OnComplete(bool success) {
   NotifyComplete(loader_->NetError());
 }
 
-}  // namespace atom
+}  // namespace electron

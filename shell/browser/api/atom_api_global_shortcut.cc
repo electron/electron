@@ -33,7 +33,7 @@ bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
     if (std::find(std::begin(mediaKeys), std::end(mediaKeys),
                   accelerator.key_code()) != std::end(mediaKeys)) {
       bool trusted =
-          atom::api::SystemPreferences::IsTrustedAccessibilityClient(false);
+          electron::api::SystemPreferences::IsTrustedAccessibilityClient(false);
       if (!trusted)
         return true;
     }
@@ -44,7 +44,7 @@ bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -150,7 +150,7 @@ void GlobalShortcut::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -160,7 +160,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("globalShortcut", atom::api::GlobalShortcut::Create(isolate));
+  dict.Set("globalShortcut", electron::api::GlobalShortcut::Create(isolate));
 }
 
 }  // namespace

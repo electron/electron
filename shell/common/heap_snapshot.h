@@ -8,10 +8,10 @@
 #include "base/files/file.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 bool TakeHeapSnapshot(v8::Isolate* isolate, base::File* file);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_HEAP_SNAPSHOT_H_

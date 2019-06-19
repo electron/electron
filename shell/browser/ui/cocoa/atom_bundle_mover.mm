@@ -15,7 +15,7 @@
 
 #import "shell/browser/browser.h"
 
-namespace atom {
+namespace electron {
 
 namespace ui {
 
@@ -80,7 +80,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
                              arguments:[NSArray
                                            arrayWithObject:destinationPath]]
             waitUntilExit];
-        atom::Browser::Get()->Quit();
+        electron::Browser::Get()->Quit();
         return true;
       } else {
         if (!Trash([applicationsDirectory
@@ -121,7 +121,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
                                                                  nil]];
   }
 
-  atom::Browser::Get()->Quit();
+  electron::Browser::Get()->Quit();
 
   return true;
 }
@@ -422,4 +422,4 @@ bool AtomBundleMover::DeleteOrTrash(NSString* path) {
 
 }  // namespace ui
 
-}  // namespace atom
+}  // namespace electron

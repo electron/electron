@@ -9,7 +9,7 @@
 #include "ui/views/background.h"
 #include "ui/views/view.h"
 
-namespace atom {
+namespace electron {
 
 NativeBrowserViewViews::NativeBrowserViewViews(
     InspectableWebContents* inspectable_web_contents)
@@ -109,4 +109,4 @@ NativeBrowserView* NativeBrowserView::Create(
   return new NativeBrowserViewViews(inspectable_web_contents);
 }
 
-}  // namespace atom
+}  // namespace electron

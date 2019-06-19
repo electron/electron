@@ -7,7 +7,7 @@
 
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
 
-namespace atom {
+namespace electron {
 
 InspectableWebContents* InspectableWebContents::Create(
     content::WebContents* web_contents,
@@ -16,4 +16,4 @@ InspectableWebContents* InspectableWebContents::Create(
   return new InspectableWebContentsImpl(web_contents, pref_service, is_guest);
 }
 
-}  // namespace atom
+}  // namespace electron

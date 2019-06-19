@@ -13,7 +13,7 @@
 #include "net/url_request/url_request_context_getter.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 using JavaScriptHandler =
     base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
@@ -53,6 +53,6 @@ class JsAsker {
   DISALLOW_COPY_AND_ASSIGN(JsAsker);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_JS_ASKER_H_

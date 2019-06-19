@@ -34,7 +34,7 @@
 #include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -272,4 +272,4 @@ bool AtomContentClient::IsDataResourceGzipped(int resource_id) const {
   return ui::ResourceBundle::GetSharedInstance().IsGzipped(resource_id);
 }
 
-}  // namespace atom
+}  // namespace electron

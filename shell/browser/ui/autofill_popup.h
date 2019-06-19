@@ -14,7 +14,7 @@
 #include "ui/views/view.h"
 #include "ui/views/widget/widget.h"
 
-namespace atom {
+namespace electron {
 
 class AutofillPopupView;
 
@@ -86,6 +86,6 @@ class AutofillPopup : public views::ViewObserver {
   DISALLOW_COPY_AND_ASSIGN(AutofillPopup);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_AUTOFILL_POPUP_H_

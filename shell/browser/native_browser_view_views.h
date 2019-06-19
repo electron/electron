@@ -7,7 +7,7 @@
 
 #include "shell/browser/native_browser_view.h"
 
-namespace atom {
+namespace electron {
 
 class NativeBrowserViewViews : public NativeBrowserView {
  public:
@@ -42,6 +42,6 @@ class NativeBrowserViewViews : public NativeBrowserView {
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserViewViews);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_BROWSER_VIEW_VIEWS_H_

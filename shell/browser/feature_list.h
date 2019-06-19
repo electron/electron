@@ -5,7 +5,7 @@
 #ifndef SHELL_BROWSER_FEATURE_LIST_H_
 #define SHELL_BROWSER_FEATURE_LIST_H_
 
-namespace atom {
+namespace electron {
 void InitializeFeatureList();
 }
 

@@ -9,7 +9,7 @@
 #include "base/logging.h"
 #include "base/system/sys_info.h"
 
-namespace atom {
+namespace electron {
 
 NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
     : NodeBindings(browser_env) {
@@ -50,4 +50,4 @@ NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
   return new NodeBindingsWin(browser_env);
 }
 
-}  // namespace atom
+}  // namespace electron

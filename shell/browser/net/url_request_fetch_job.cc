@@ -28,7 +28,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -340,4 +340,4 @@ void URLRequestFetchJob::ClearWriteBuffer() {
   write_num_bytes_ = 0;
 }
 
-}  // namespace atom
+}  // namespace electron

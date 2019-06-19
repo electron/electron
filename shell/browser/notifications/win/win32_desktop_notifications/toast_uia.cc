@@ -8,7 +8,7 @@
 
 #pragma comment(lib, "uiautomationcore.lib")
 
-namespace atom {
+namespace electron {
 
 DesktopNotificationController::Toast::UIAutomationInterface::
     UIAutomationInterface(Toast* toast)
@@ -251,4 +251,4 @@ HRESULT DesktopNotificationController::Toast::UIAutomationInterface::
   return S_OK;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -24,7 +24,7 @@
 #include "ui/gfx/color_utils.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -161,7 +161,7 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
         auto* button = static_cast<SubmenuButton*>(children[i]);
         bool shifted = false;
         auto keycode =
-            atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+            electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
         if (keycode == accelerator.key_code()) {
           const gfx::Point p(0, 0);
@@ -191,7 +191,7 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
   //   views::View::Focus
   //   views::FocusManager::SetFocusedViewWithReason
   //   views::AccessiblePaneView::SetPaneFocus
-  //   atom::MenuBar::SetPaneFocus
+  //   electron::MenuBar::SetPaneFocus
   if (initial_focus && initial_focus->GetWidget()) {
     aura::Window* window = initial_focus->GetWidget()->GetNativeWindow();
     if (!window || !window->GetRootWindow())
@@ -207,7 +207,7 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
       auto* button = static_cast<SubmenuButton*>(children[i]);
       bool shifted = false;
       auto keycode =
-          atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+          electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
       // We want the menu items to activate if the user presses the accelerator
       // key, even without alt, since we are now focused on the menu bar
@@ -238,7 +238,7 @@ void MenuBar::RemovePaneFocus() {
     auto* button = static_cast<SubmenuButton*>(children[i]);
     bool shifted = false;
     auto keycode =
-        atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+        electron::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
     if (keycode != ui::VKEY_UNKNOWN && unreg.find(keycode) != unreg.end()) {
       unreg.insert(keycode);
@@ -346,4 +346,4 @@ void MenuBar::UpdateViewColors() {
 #endif
 }
 
-}  // namespace atom
+}  // namespace electron

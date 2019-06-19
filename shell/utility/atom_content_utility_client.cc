@@ -30,7 +30,7 @@
 
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -156,4 +156,4 @@ AtomContentUtilityClient::MaybeCreateMainThreadService(
   return nullptr;
 }
 
-}  // namespace atom
+}  // namespace electron

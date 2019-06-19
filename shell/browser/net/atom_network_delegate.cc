@@ -25,7 +25,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 const char* ResourceTypeToString(content::ResourceType type) {
   switch (type) {
@@ -51,7 +51,7 @@ const char* ResourceTypeToString(content::ResourceType type) {
 int32_t GetWebContentsID(int process_id, int frame_id) {
   auto* webContents = content::WebContents::FromRenderFrameHost(
       content::RenderFrameHost::FromID(process_id, frame_id));
-  return atom::api::WebContents::GetIDFromWrappedClass(webContents);
+  return electron::api::WebContents::GetIDFromWrappedClass(webContents);
 }
 
 namespace {
@@ -542,4 +542,4 @@ void AtomNetworkDelegate::OnListenerResultInUI(
                      base::Unretained(this), id, out, std::move(copy)));
 }
 
-}  // namespace atom
+}  // namespace electron

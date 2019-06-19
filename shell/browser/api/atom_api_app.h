@@ -42,7 +42,7 @@ namespace mate {
 class Arguments;
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 #if defined(OS_WIN)
 enum class JumpListResult : int;
@@ -236,7 +236,8 @@ class App : public AtomBrowserClient::Delegate,
   base::FilePath app_path_;
 
   using ProcessMetricMap =
-      std::unordered_map<base::ProcessId, std::unique_ptr<atom::ProcessMetric>>;
+      std::unordered_map<base::ProcessId,
+                         std::unique_ptr<electron::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
@@ -244,6 +245,6 @@ class App : public AtomBrowserClient::Delegate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_APP_H_

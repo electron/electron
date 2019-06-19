@@ -14,7 +14,7 @@
 #include "services/network/public/mojom/network_service.mojom.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
-namespace atom {
+namespace electron {
 class URLRequestContextGetter;
 }
 
@@ -33,8 +33,10 @@ class IOThread : public content::BrowserThreadDelegate {
       SystemNetworkContextManager* system_network_context_manager);
   ~IOThread() override;
 
-  void RegisterURLRequestContextGetter(atom::URLRequestContextGetter* getter);
-  void DeregisterURLRequestContextGetter(atom::URLRequestContextGetter* getter);
+  void RegisterURLRequestContextGetter(
+      electron::URLRequestContextGetter* getter);
+  void DeregisterURLRequestContextGetter(
+      electron::URLRequestContextGetter* getter);
 
  protected:
   // BrowserThreadDelegate Implementation, runs on the IO thread.
@@ -67,7 +69,7 @@ class IOThread : public content::BrowserThreadDelegate {
 
   // List of all request contexts that needs to be notified when
   // IO thread is shutting down.
-  std::set<atom::URLRequestContextGetter*> request_context_getters_;
+  std::set<electron::URLRequestContextGetter*> request_context_getters_;
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };

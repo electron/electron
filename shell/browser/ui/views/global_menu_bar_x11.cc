@@ -51,7 +51,7 @@ typedef DbusmenuServer* (*dbusmenu_server_new_func)(const char* object);
 typedef void (*dbusmenu_server_set_root_func)(DbusmenuServer* self,
                                               DbusmenuMenuitem* root);
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -333,4 +333,4 @@ void GlobalMenuBarX11::OnSubMenuShow(DbusmenuMenuitem* item) {
   BuildMenuFromModel(model->GetSubmenuModelAt(id), item);
 }
 
-}  // namespace atom
+}  // namespace electron

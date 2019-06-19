@@ -7,7 +7,7 @@
 #include "shell/browser/api/atom_api_url_request.h"
 #include "shell/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -38,12 +38,12 @@ v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::Net;
-using atom::api::URLRequest;
+using electron::api::Net;
+using electron::api::URLRequest;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

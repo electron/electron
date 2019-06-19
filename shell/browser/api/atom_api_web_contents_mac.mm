@@ -7,7 +7,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -29,4 +29,4 @@ bool WebContents::IsFocused() const {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

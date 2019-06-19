@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace atom {
+namespace electron {
 
 struct NotificationData;
 
@@ -109,6 +109,6 @@ class DesktopNotificationController::Notification {
   friend class DesktopNotificationController;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_

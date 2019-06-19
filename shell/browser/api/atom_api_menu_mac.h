@@ -14,7 +14,7 @@
 
 using base::scoped_nsobject;
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -53,6 +53,6 @@ class MenuMac : public Menu {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_MENU_MAC_H_

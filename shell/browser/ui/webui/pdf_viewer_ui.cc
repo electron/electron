@@ -40,7 +40,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -118,7 +118,7 @@ void CallMigrationCallback(T callback,
 class PdfViewerUI::ResourceRequester
     : public base::RefCountedThreadSafe<ResourceRequester,
                                         BrowserThread::DeleteOnIOThread>,
-      public atom::LayeredResourceHandler::Delegate {
+      public electron::LayeredResourceHandler::Delegate {
  public:
   explicit ResourceRequester(StreamResponseCallback cb)
       : stream_response_cb_(std::move(cb)) {}
@@ -160,8 +160,8 @@ class PdfViewerUI::ResourceRequester
     stream_info_->original_url = request->url();
 
     // Helper to fill stream response details.
-    handler.reset(new atom::LayeredResourceHandler(request.get(),
-                                                   std::move(handler), this));
+    handler.reset(new electron::LayeredResourceHandler(
+        request.get(), std::move(handler), this));
 
     content::ResourceDispatcherHostImpl::Get()->BeginURLRequest(
         std::move(request), std::move(handler),
@@ -172,7 +172,7 @@ class PdfViewerUI::ResourceRequester
   }
 
  protected:
-  // atom::LayeredResourceHandler::Delegate:
+  // electron::LayeredResourceHandler::Delegate:
   void OnResponseStarted(network::ResourceResponse* response) override {
     DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
@@ -255,4 +255,4 @@ void PdfViewerUI::OnSaveURLAs(const GURL& url,
   web_contents()->SaveFrame(url, referrer);
 }
 
-}  // namespace atom
+}  // namespace electron

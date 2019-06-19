@@ -26,7 +26,8 @@ v8::Local<v8::Object> CreateJSEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> object,
     content::RenderFrameHost* sender,
-    base::Optional<atom::mojom::ElectronBrowser::MessageSyncCallback> callback);
+    base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
+        callback);
 v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
                                         v8::Local<v8::Object> object,
                                         v8::Local<v8::Object> event);
@@ -80,7 +81,7 @@ class EventEmitter : public Wrappable<T> {
   bool EmitWithSender(
       const base::StringPiece& name,
       content::RenderFrameHost* sender,
-      base::Optional<atom::mojom::ElectronBrowser::MessageSyncCallback>
+      base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
           callback,
       Args&&... args) {
     v8::Locker locker(isolate());

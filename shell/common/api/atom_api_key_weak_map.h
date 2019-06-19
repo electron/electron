@@ -10,7 +10,7 @@
 #include "native_mate/wrappable.h"
 #include "shell/common/key_weak_map.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -51,13 +51,13 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
 
   void Remove(const K& key) { key_weak_map_.Remove(key); }
 
-  atom::KeyWeakMap<K> key_weak_map_;
+  electron::KeyWeakMap<K> key_weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_

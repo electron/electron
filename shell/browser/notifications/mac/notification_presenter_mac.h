@@ -10,7 +10,7 @@
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 
-namespace atom {
+namespace electron {
 
 class CocoaNotification;
 
@@ -31,6 +31,6 @@ class NotificationPresenterMac : public NotificationPresenter {
   DISALLOW_COPY_AND_ASSIGN(NotificationPresenterMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_

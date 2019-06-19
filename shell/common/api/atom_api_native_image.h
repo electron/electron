@@ -34,7 +34,7 @@ namespace mate {
 class Arguments;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -113,19 +113,19 @@ class NativeImage : public mate::Wrappable<NativeImage> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace mate {
 
 // A custom converter that allows converting path to NativeImage.
 template <>
-struct Converter<mate::Handle<atom::api::NativeImage>> {
+struct Converter<mate::Handle<electron::api::NativeImage>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const mate::Handle<atom::api::NativeImage>& val);
+      const mate::Handle<electron::api::NativeImage>& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     mate::Handle<atom::api::NativeImage>* out);
+                     mate::Handle<electron::api::NativeImage>* out);
 };
 
 }  // namespace mate

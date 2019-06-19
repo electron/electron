@@ -10,7 +10,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -142,4 +142,4 @@ void MediaCaptureDevicesDispatcher::OnSetCapturingLinkSecured(
     blink::MediaStreamType stream_type,
     bool is_secure) {}
 
-}  // namespace atom
+}  // namespace electron

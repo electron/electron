@@ -25,7 +25,7 @@
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
-namespace atom {
+namespace electron {
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
@@ -426,4 +426,4 @@ bool Browser::IsEmojiPanelSupported() {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

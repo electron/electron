@@ -25,7 +25,7 @@ namespace mate {
 class Arguments;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -54,7 +54,7 @@ class Debugger : public mate::TrackableObject<Debugger>,
                               content::RenderFrameHost* new_rfh) override;
 
  private:
-  using PendingRequestMap = std::map<int, atom::util::Promise>;
+  using PendingRequestMap = std::map<int, electron::util::Promise>;
 
   void Attach(mate::Arguments* args);
   bool IsAttached();
@@ -73,6 +73,6 @@ class Debugger : public mate::TrackableObject<Debugger>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_DEBUGGER_H_

@@ -209,11 +209,11 @@ enum { NSWindowTabbingModeDisallowed = 2 };
 namespace mate {
 
 template <>
-struct Converter<atom::NativeWindowMac::TitleBarStyle> {
+struct Converter<electron::NativeWindowMac::TitleBarStyle> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     atom::NativeWindowMac::TitleBarStyle* out) {
-    using TitleBarStyle = atom::NativeWindowMac::TitleBarStyle;
+                     electron::NativeWindowMac::TitleBarStyle* out) {
+    using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     std::string title_bar_style;
     if (!ConvertFromV8(isolate, val, &title_bar_style))
       return false;
@@ -232,7 +232,7 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -1523,4 +1523,4 @@ NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
   return new NativeWindowMac(options, parent);
 }
 
-}  // namespace atom
+}  // namespace electron

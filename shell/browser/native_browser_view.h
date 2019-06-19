@@ -15,7 +15,7 @@ namespace gfx {
 class Rect;
 }
 
-namespace atom {
+namespace electron {
 
 enum AutoResizeFlags {
   kAutoResizeWidth = 0x1,
@@ -58,6 +58,6 @@ class NativeBrowserView {
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserView);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_

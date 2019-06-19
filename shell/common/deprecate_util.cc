@@ -9,7 +9,7 @@
 #include "native_mate/dictionary.h"
 #include "shell/common/native_mate_converters/callback.h"
 
-namespace atom {
+namespace electron {
 
 void EmitDeprecationWarning(node::Environment* env,
                             const std::string& warning_msg,
@@ -24,4 +24,4 @@ void EmitDeprecationWarning(node::Environment* env,
   emit_warning.Run(warning_msg, warning_type, "");
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -7,7 +7,7 @@
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "shell/browser/net/network_context_service.h"
 
-namespace atom {
+namespace electron {
 
 NetworkContextService* NetworkContextServiceFactory::GetForContext(
     content::BrowserContext* browser_context) {
@@ -37,4 +37,4 @@ content::BrowserContext* NetworkContextServiceFactory::GetBrowserContextToUse(
   return context;
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -11,7 +11,7 @@
 #include "base/process/process_handle.h"
 #include "base/process/process_metrics.h"
 
-namespace atom {
+namespace electron {
 
 #if defined(OS_WIN)
 enum class ProcessIntegrityLevel {
@@ -41,6 +41,6 @@ struct ProcessMetric {
 #endif
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_PROCESS_METRIC_H_

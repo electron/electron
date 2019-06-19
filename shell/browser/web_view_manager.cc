@@ -9,7 +9,7 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/atom_browser_context.h"
 
-namespace atom {
+namespace electron {
 
 WebViewManager::WebViewManager() {}
 
@@ -83,4 +83,4 @@ WebViewManager* WebViewManager::GetWebViewManager(
   }
 }
 
-}  // namespace atom
+}  // namespace electron

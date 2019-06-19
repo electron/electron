@@ -69,7 +69,7 @@ struct Converter<in_app_purchase::Product> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -104,7 +104,7 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
     const std::string& product_id,
     mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   int quantity = 1;
@@ -112,7 +112,7 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 
   in_app_purchase::PurchaseProduct(
       product_id, quantity,
-      base::BindOnce(atom::util::Promise::ResolvePromise<bool>,
+      base::BindOnce(electron::util::Promise::ResolvePromise<bool>,
                      std::move(promise)));
 
   return handle;
@@ -122,11 +122,11 @@ v8::Local<v8::Promise> InAppPurchase::GetProducts(
     const std::vector<std::string>& productIDs,
     mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   in_app_purchase::GetProducts(
-      productIDs, base::BindOnce(atom::util::Promise::ResolvePromise<
+      productIDs, base::BindOnce(electron::util::Promise::ResolvePromise<
                                      std::vector<in_app_purchase::Product>>,
                                  std::move(promise)));
 
@@ -141,11 +141,11 @@ void InAppPurchase::OnTransactionsUpdated(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::InAppPurchase;
+using electron::api::InAppPurchase;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

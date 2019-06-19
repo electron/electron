@@ -32,7 +32,7 @@
 #include "third_party/blink/public/web/web_script_source.h"
 #include "ui/base/resource/resource_bundle.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -156,4 +156,4 @@ bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
     return IsMainWorld(world_id);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -37,7 +37,7 @@ IOThread::~IOThread() {
 }
 
 void IOThread::RegisterURLRequestContextGetter(
-    atom::URLRequestContextGetter* getter) {
+    electron::URLRequestContextGetter* getter) {
   base::AutoLock lock(lock_);
 
   DCHECK(!base::FeatureList::IsEnabled(network::features::kNetworkService));
@@ -46,7 +46,7 @@ void IOThread::RegisterURLRequestContextGetter(
 }
 
 void IOThread::DeregisterURLRequestContextGetter(
-    atom::URLRequestContextGetter* getter) {
+    electron::URLRequestContextGetter* getter) {
   base::AutoLock lock(lock_);
 
   DCHECK(!base::FeatureList::IsEnabled(network::features::kNetworkService));

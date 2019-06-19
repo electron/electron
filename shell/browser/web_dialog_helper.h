@@ -22,7 +22,7 @@ class RenderFrameHost;
 class WebContents;
 }  // namespace content
 
-namespace atom {
+namespace electron {
 
 class DirectoryListerHelperDelegate {
  public:
@@ -73,6 +73,6 @@ class WebDialogHelper {
   DISALLOW_COPY_AND_ASSIGN(WebDialogHelper);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WEB_DIALOG_HELPER_H_

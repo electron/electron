@@ -26,7 +26,7 @@ const char kCrashesDirectoryKey[] = "crashes-directory";
 
 CrashReporter::CrashReporter() {
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  bool run_as_node = base::Environment::Create()->HasVar(atom::kRunAsNode);
+  bool run_as_node = base::Environment::Create()->HasVar(electron::kRunAsNode);
 #else
   bool run_as_node = false;
 #endif

@@ -27,9 +27,9 @@ const CGFloat kVerticalTitleMargin = 2;
 }  //  namespace
 
 @interface StatusItemView : NSView {
-  atom::TrayIconCocoa* trayIcon_;       // weak
+  electron::TrayIconCocoa* trayIcon_;   // weak
   AtomMenuController* menuController_;  // weak
-  atom::TrayIcon::HighlightMode highlight_mode_;
+  electron::TrayIcon::HighlightMode highlight_mode_;
   BOOL ignoreDoubleClickEvents_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
@@ -52,10 +52,10 @@ const CGFloat kVerticalTitleMargin = 2;
   [super dealloc];
 }
 
-- (id)initWithIcon:(atom::TrayIconCocoa*)icon {
+- (id)initWithIcon:(electron::TrayIconCocoa*)icon {
   trayIcon_ = icon;
   menuController_ = nil;
-  highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
+  highlight_mode_ = electron::TrayIcon::HighlightMode::SELECTION;
   ignoreDoubleClickEvents_ = NO;
   forceHighlight_ = NO;
   inMouseEventSequence_ = NO;
@@ -219,7 +219,7 @@ const CGFloat kVerticalTitleMargin = 2;
   alternateImage_.reset([image copy]);
 }
 
-- (void)setHighlight:(atom::TrayIcon::HighlightMode)mode {
+- (void)setHighlight:(electron::TrayIcon::HighlightMode)mode {
   highlight_mode_ = mode;
   [self setNeedsDisplay:YES];
 }
@@ -332,7 +332,7 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void)popUpContextMenu:(atom::AtomMenuModel*)menu_model {
+- (void)popUpContextMenu:(electron::AtomMenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
@@ -431,7 +431,7 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)shouldHighlight {
-  using HighlightMode = atom::TrayIcon::HighlightMode;
+  using HighlightMode = electron::TrayIcon::HighlightMode;
   switch (highlight_mode_) {
     case HighlightMode::ALWAYS:
       return true;
@@ -445,7 +445,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 @end
 
-namespace atom {
+namespace electron {
 
 TrayIconCocoa::TrayIconCocoa() {
   status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
@@ -527,4 +527,4 @@ TrayIcon* TrayIcon::Create() {
   return new TrayIconCocoa;
 }
 
-}  // namespace atom
+}  // namespace electron

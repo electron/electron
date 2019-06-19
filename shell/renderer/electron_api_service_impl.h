@@ -12,7 +12,7 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_binding.h"
 
-namespace atom {
+namespace electron {
 
 class RendererClientBase;
 
@@ -50,6 +50,6 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_

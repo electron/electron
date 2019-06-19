@@ -11,10 +11,10 @@
 
 @interface MacLockMonitor : NSObject {
  @private
-  std::vector<atom::api::PowerMonitor*> emitters;
+  std::vector<electron::api::PowerMonitor*> emitters;
 }
 
-- (void)addEmitter:(atom::api::PowerMonitor*)monitor_;
+- (void)addEmitter:(electron::api::PowerMonitor*)monitor_;
 
 @end
 
@@ -41,7 +41,7 @@
   [super dealloc];
 }
 
-- (void)addEmitter:(atom::api::PowerMonitor*)monitor_ {
+- (void)addEmitter:(electron::api::PowerMonitor*)monitor_ {
   self->emitters.push_back(monitor_);
 }
 
@@ -59,7 +59,7 @@
 
 @end
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -73,4 +73,4 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

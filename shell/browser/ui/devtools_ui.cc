@@ -15,7 +15,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -117,4 +117,4 @@ DevToolsUI::DevToolsUI(content::BrowserContext* browser_context,
                               std::make_unique<BundledDataSource>());
 }
 
-}  // namespace atom
+}  // namespace electron

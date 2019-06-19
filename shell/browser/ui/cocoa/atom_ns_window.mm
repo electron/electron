@@ -11,11 +11,11 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
 
-namespace atom {
+namespace electron {
 
 bool ScopedDisableResize::disable_resize_ = false;
 
-}  // namespace atom
+}  // namespace electron
 
 @implementation AtomNSWindow
 
@@ -25,7 +25,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
 
-- (id)initWithShell:(atom::NativeWindowMac*)shell
+- (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
   if ((self = [super initWithContentRect:ui::kWindowSizeDeterminedLater
                                styleMask:styleMask
@@ -36,7 +36,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   return self;
 }
 
-- (atom::NativeWindowMac*)shell {
+- (electron::NativeWindowMac*)shell {
   return shell_;
 }
 
@@ -81,7 +81,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
   // Resizing is disabled.
-  if (atom::ScopedDisableResize::IsResizeDisabled())
+  if (electron::ScopedDisableResize::IsResizeDisabled())
     return [self frame];
 
   // Enable the window to be larger than screen.
@@ -94,7 +94,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setFrame:(NSRect)windowFrame display:(BOOL)displayViews {
   // constrainFrameRect is not called on hidden windows so disable adjusting
   // the frame directly when resize is disabled
-  if (!atom::ScopedDisableResize::IsResizeDisabled())
+  if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
 }
 
@@ -157,7 +157,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)performClose:(id)sender {
   if (shell_->title_bar_style() ==
-      atom::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER) {
+      electron::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER) {
     [[self delegate] windowShouldClose:self];
   } else if (shell_->IsSimpleFullScreen()) {
     if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
@@ -182,7 +182,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)performMiniaturize:(id)sender {
   if (shell_->title_bar_style() ==
-      atom::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER)
+      electron::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER)
     [self miniaturize:self];
   else
     [super performMiniaturize:sender];

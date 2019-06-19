@@ -57,11 +57,11 @@ CERT_CHAIN_PARA GetCertificateChainParameters() {
 }
 
 v8::Local<v8::Promise> ShowCertificateTrust(
-    atom::NativeWindow* parent_window,
+    electron::NativeWindow* parent_window,
     const scoped_refptr<net::X509Certificate>& cert,
     const std::string& message) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  atom::util::Promise promise(isolate);
+  electron::util::Promise promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   PCCERT_CHAIN_CONTEXT chain_context;

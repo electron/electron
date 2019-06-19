@@ -10,7 +10,7 @@
 
 #include "base/memory/weak_ptr.h"
 
-namespace atom {
+namespace electron {
 
 class Notification;
 class NotificationDelegate;
@@ -43,6 +43,6 @@ class NotificationPresenter {
   DISALLOW_COPY_AND_ASSIGN(NotificationPresenter);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_

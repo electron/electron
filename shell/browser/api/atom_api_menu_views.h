@@ -13,7 +13,7 @@
 #include "ui/display/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -43,6 +43,6 @@ class MenuViews : public Menu {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_MENU_VIEWS_H_

@@ -15,11 +15,11 @@
 #include "shell/common/mac/main_application_bundle.h"
 
 int AtomMain(int argc, char* argv[]) {
-  atom::AtomMainDelegate delegate;
+  electron::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
-  atom::AtomCommandLine::Init(argc, argv);
+  electron::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -28,11 +28,11 @@ int AtomInitializeICUandStartNode(int argc, char* argv[]) {
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
   base::mac::SetOverrideFrameworkBundlePath(
-      atom::MainApplicationBundlePath()
+      electron::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
           .Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
-  return atom::NodeMain(argc, argv);
+  return electron::NodeMain(argc, argv);
 }
 #endif

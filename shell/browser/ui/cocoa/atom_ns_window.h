@@ -9,7 +9,7 @@
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
 #include "ui/views/widget/native_widget_mac.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindowMac;
 
@@ -25,20 +25,20 @@ class ScopedDisableResize {
   static bool disable_resize_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 @interface AtomNSWindow : NativeWidgetMacNSWindow {
  @private
-  atom::NativeWindowMac* shell_;
+  electron::NativeWindowMac* shell_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL enableLargerThanScreen;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
 @property(nonatomic, retain) NSView* vibrantView;
-- (id)initWithShell:(atom::NativeWindowMac*)shell
+- (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
-- (atom::NativeWindowMac*)shell;
+- (electron::NativeWindowMac*)shell;
 - (id)accessibilityFocusedUIElement;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (void)toggleFullScreenMode:(id)sender;

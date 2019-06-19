@@ -30,7 +30,7 @@ namespace node {
 class Environment;
 }
 
-namespace atom {
+namespace electron {
 
 class ElectronBindings {
  public:
@@ -82,6 +82,6 @@ class ElectronBindings {
   DISALLOW_COPY_AND_ASSIGN(ElectronBindings);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_API_ELECTRON_BINDINGS_H_

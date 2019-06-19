@@ -11,7 +11,7 @@
 #include "ui/views/animation/ink_drop_highlight.h"
 #include "ui/views/controls/button/menu_button.h"
 
-namespace atom {
+namespace electron {
 
 // Special button that used by menu bar to show submenus.
 class SubmenuButton : public views::MenuButton {
@@ -58,6 +58,6 @@ class SubmenuButton : public views::MenuButton {
   DISALLOW_COPY_AND_ASSIGN(SubmenuButton);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_

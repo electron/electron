@@ -16,7 +16,7 @@
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/v8_value_converter.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -114,4 +114,4 @@ int URLRequestStringJob::GetData(std::string* mime_type,
   return net::OK;
 }
 
-}  // namespace atom
+}  // namespace electron

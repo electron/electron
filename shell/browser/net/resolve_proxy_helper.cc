@@ -16,7 +16,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 ResolveProxyHelper::ResolveProxyHelper(AtomBrowserContext* browser_context)
     : binding_(this), browser_context_(browser_context) {}
@@ -97,4 +97,4 @@ ResolveProxyHelper::PendingRequest& ResolveProxyHelper::PendingRequest::
 operator=(ResolveProxyHelper::PendingRequest&& pending_request) noexcept =
     default;
 
-}  // namespace atom
+}  // namespace electron

@@ -9,7 +9,7 @@
 #include "content/public/renderer/render_frame_observer.h"
 #include "third_party/blink/public/platform/web_content_settings_client.h"
 
-namespace atom {
+namespace electron {
 
 class ContentSettingsObserver : public content::RenderFrameObserver,
                                 public blink::WebContentSettingsClient {
@@ -29,6 +29,6 @@ class ContentSettingsObserver : public content::RenderFrameObserver,
   DISALLOW_COPY_AND_ASSIGN(ContentSettingsObserver);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_CONTENT_SETTINGS_OBSERVER_H_

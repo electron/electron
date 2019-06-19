@@ -20,7 +20,7 @@
 #include "chrome/browser/ui/libgtkui/unity_service.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 const char kXdgSettings[] = "xdg-settings";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
@@ -186,4 +186,4 @@ void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

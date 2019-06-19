@@ -29,7 +29,7 @@ using ABI::Windows::Data::Xml::Dom::IXmlNode;
 using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
 using ABI::Windows::Data::Xml::Dom::IXmlText;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -446,4 +446,4 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   return S_OK;
 }
 
-}  // namespace atom
+}  // namespace electron

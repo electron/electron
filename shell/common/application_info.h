@@ -12,7 +12,7 @@
 
 #include <string>
 
-namespace atom {
+namespace electron {
 
 void OverrideApplicationName(const std::string& name);
 std::string GetOverriddenApplicationName();
@@ -32,6 +32,6 @@ void SetAppUserModelID(const base::string16& name);
 bool IsRunningInDesktopBridge();
 #endif
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_APPLICATION_INFO_H_

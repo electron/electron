@@ -13,7 +13,7 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/view.h"
 
-namespace atom {
+namespace electron {
 
 class OffscreenViewProxy;
 
@@ -50,6 +50,6 @@ class OffscreenViewProxy {
   OffscreenViewProxyObserver* observer_ = nullptr;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_OSR_OSR_VIEW_PROXY_H_

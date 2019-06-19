@@ -25,7 +25,7 @@
 #include "shell/common/options_switches.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -456,12 +456,12 @@ v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::BrowserWindow;
-using atom::api::TopLevelWindow;
+using electron::api::BrowserWindow;
+using electron::api::TopLevelWindow;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

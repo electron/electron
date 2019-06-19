@@ -11,7 +11,7 @@
 #include "base/feature_list.h"
 #include "content/public/common/content_features.h"
 
-namespace atom {
+namespace electron {
 
 void InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
@@ -28,4 +28,4 @@ void InitializeFeatureList() {
   base::FeatureList::InitializeInstance(enable_features, disable_features);
 }
 
-}  // namespace atom
+}  // namespace electron

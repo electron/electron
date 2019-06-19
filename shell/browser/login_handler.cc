@@ -18,7 +18,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 LoginHandler::LoginHandler(net::URLRequest* request,
                            const net::AuthChallengeInfo& auth_info,
@@ -92,4 +92,4 @@ void LoginHandler::DoLogin(const base::string16& username,
   }
 }
 
-}  // namespace atom
+}  // namespace electron

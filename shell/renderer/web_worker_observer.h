@@ -10,7 +10,7 @@
 #include "base/macros.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 class ElectronBindings;
 class NodeBindings;
@@ -34,6 +34,6 @@ class WebWorkerObserver {
   DISALLOW_COPY_AND_ASSIGN(WebWorkerObserver);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_WEB_WORKER_OBSERVER_H_

@@ -7,7 +7,7 @@
 
 #include "base/observer_list_types.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -29,6 +29,6 @@ class WindowListObserver : public base::CheckedObserver {
   ~WindowListObserver() override {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_WINDOW_LIST_OBSERVER_H_

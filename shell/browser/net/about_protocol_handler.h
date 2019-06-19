@@ -7,7 +7,7 @@
 
 #include "net/url_request/url_request_job_factory.h"
 
-namespace atom {
+namespace electron {
 
 class AboutProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
  public:
@@ -24,6 +24,6 @@ class AboutProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
   DISALLOW_COPY_AND_ASSIGN(AboutProtocolHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_NET_ABOUT_PROTOCOL_HANDLER_H_

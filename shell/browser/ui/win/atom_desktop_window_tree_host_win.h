@@ -10,7 +10,7 @@
 #include "shell/browser/native_window_views.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
-namespace atom {
+namespace electron {
 
 class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  public:
@@ -32,6 +32,6 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
   DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_UI_WIN_ATOM_DESKTOP_WINDOW_TREE_HOST_WIN_H_

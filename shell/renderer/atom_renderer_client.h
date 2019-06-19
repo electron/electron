@@ -16,7 +16,7 @@ namespace node {
 class Environment;
 }  // namespace node
 
-namespace atom {
+namespace electron {
 
 class ElectronBindings;
 class NodeBindings;
@@ -26,7 +26,7 @@ class AtomRendererClient : public RendererClientBase {
   AtomRendererClient();
   ~AtomRendererClient() override;
 
-  // atom::RendererClientBase:
+  // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               content::RenderFrame* render_frame) override;
   void WillReleaseScriptContext(v8::Handle<v8::Context> context,
@@ -73,6 +73,6 @@ class AtomRendererClient : public RendererClientBase {
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_RENDERER_ATOM_RENDERER_CLIENT_H_

@@ -25,7 +25,7 @@
 #include "third_party/electron_node/src/node_binding.h"
 #include "third_party/electron_node/src/node_native_module.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -296,4 +296,4 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");
 }
 
-}  // namespace atom
+}  // namespace electron

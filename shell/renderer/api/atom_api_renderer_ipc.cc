@@ -44,10 +44,11 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
     // Bind the interface on the background runner. All accesses will be via
     // the thread-safe pointer. This is to support our "fake-sync"
     // MessageSync() hack; see the comment in IPCRenderer::SendSync.
-    atom::mojom::ElectronBrowserPtrInfo info;
+    electron::mojom::ElectronBrowserPtrInfo info;
     render_frame->GetRemoteInterfaces()->GetInterface(mojo::MakeRequest(&info));
-    electron_browser_ptr_ = atom::mojom::ThreadSafeElectronBrowserPtr::Create(
-        std::move(info), task_runner_);
+    electron_browser_ptr_ =
+        electron::mojom::ThreadSafeElectronBrowserPtr::Create(std::move(info),
+                                                              task_runner_);
   }
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -74,12 +75,12 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
                                 const std::string& channel,
                                 const base::Value& arguments) {
-    atom::util::Promise p(args->isolate());
+    electron::util::Promise p(args->isolate());
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->get()->Invoke(
         channel, arguments.Clone(),
-        base::BindOnce([](atom::util::Promise p,
+        base::BindOnce([](electron::util::Promise p,
                           base::Value result) { p.Resolve(result); },
                        std::move(p)));
 
@@ -186,7 +187,7 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   }
 
   scoped_refptr<base::SequencedTaskRunner> task_runner_;
-  scoped_refptr<atom::mojom::ThreadSafeElectronBrowserPtr>
+  scoped_refptr<electron::mojom::ThreadSafeElectronBrowserPtr>
       electron_browser_ptr_;
 };
 

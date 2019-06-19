@@ -13,7 +13,7 @@
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/net/atom_url_loader_factory.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -90,6 +90,6 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_PROTOCOL_NS_H_

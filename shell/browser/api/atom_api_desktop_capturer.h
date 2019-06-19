@@ -14,7 +14,7 @@
 #include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -73,6 +73,6 @@ class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_

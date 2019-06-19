@@ -24,7 +24,7 @@
 
 #pragma comment(lib, "runtimeobject.lib")
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -97,4 +97,4 @@ Notification* NotificationPresenterWin::CreateNotificationObject(
   return new WindowsToastNotification(delegate, this);
 }
 
-}  // namespace atom
+}  // namespace electron

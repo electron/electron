@@ -10,7 +10,7 @@
 #include <windows.h>
 #endif
 
-namespace atom {
+namespace electron {
 
 AtomGpuClient::AtomGpuClient() = default;
 
@@ -22,4 +22,4 @@ void AtomGpuClient::PreCreateMessageLoop() {
 #endif
 }
 
-}  // namespace atom
+}  // namespace electron

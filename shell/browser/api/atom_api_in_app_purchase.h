@@ -15,7 +15,7 @@
 #include "shell/browser/mac/in_app_purchase_product.h"
 #include "shell/common/promise_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -47,6 +47,6 @@ class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_API_ATOM_API_IN_APP_PURCHASE_H_

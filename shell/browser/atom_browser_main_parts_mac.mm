@@ -7,7 +7,7 @@
 #include "shell/browser/atom_paths.h"
 #include "shell/browser/mac/atom_application_delegate.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -77,4 +77,4 @@ void AtomBrowserMainParts::InitializeEmptyApplicationMenu() {
   [[NSApplication sharedApplication] setMainMenu:main_menu];
 }
 
-}  // namespace atom
+}  // namespace electron

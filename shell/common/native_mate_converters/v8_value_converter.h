@@ -17,7 +17,7 @@ class ListValue;
 class Value;
 }  // namespace base
 
-namespace atom {
+namespace electron {
 
 class V8ValueConverter {
  public:
@@ -72,6 +72,6 @@ class V8ValueConverter {
   DISALLOW_COPY_AND_ASSIGN(V8ValueConverter);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // SHELL_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
