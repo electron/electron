@@ -9,7 +9,11 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libEGL.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libGLESv2.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/
