@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/native_mate_converters/gfx_converter.h"
 
 #include "native_mate/dictionary.h"
 #include "ui/display/display.h"

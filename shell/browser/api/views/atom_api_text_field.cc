@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/views/atom_api_text_field.h"
+#include "shell/browser/api/views/atom_api_text_field.h"
 
-#include "atom/common/api/constructor.h"
-#include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/api/constructor.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

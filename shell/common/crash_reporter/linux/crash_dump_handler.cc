@@ -6,7 +6,7 @@
 // For linux_syscall_support.h. This makes it safe to call embedded system
 // calls when in seccomp mode.
 
-#include "atom/common/crash_reporter/linux/crash_dump_handler.h"
+#include "shell/common/crash_reporter/linux/crash_dump_handler.h"
 
 #include <poll.h>
 

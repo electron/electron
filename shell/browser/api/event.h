@@ -7,7 +7,7 @@
 
 #include "base/optional.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 

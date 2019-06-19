@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 #define ATOM_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 
-#include "atom/browser/ui/views/frameless_view.h"
+#include "shell/browser/ui/views/frameless_view.h"
 
 namespace atom {
 

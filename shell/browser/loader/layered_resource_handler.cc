@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/loader/layered_resource_handler.h"
+#include "shell/browser/loader/layered_resource_handler.h"
 
 #include <memory>
 #include <utility>

@@ -5,11 +5,11 @@
 #ifndef ATOM_BROWSER_NET_NETWORK_CONTEXT_SERVICE_H_
 #define ATOM_BROWSER_NET_NETWORK_CONTEXT_SERVICE_H_
 
-#include "atom/browser/atom_browser_context.h"
 #include "base/files/file_path.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/atom_browser_context.h"
 
 namespace atom {
 

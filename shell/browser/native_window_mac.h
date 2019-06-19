@@ -12,8 +12,8 @@
 #include <tuple>
 #include <vector>
 
-#include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/native_window.h"
 #include "ui/views/controls/native/native_view_host.h"
 
 @class AtomNSWindow;

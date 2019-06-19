@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_global_shortcut.h"
+#include "shell/browser/api/atom_api_global_shortcut.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_system_preferences.h"
-#include "atom/common/native_mate_converters/accelerator_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/node_includes.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_system_preferences.h"
+#include "shell/common/native_mate_converters/accelerator_converter.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/node_includes.h"
 
 #if defined(OS_MACOSX)
 #include "base/mac/mac_util.h"

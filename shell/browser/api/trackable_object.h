@@ -7,11 +7,11 @@
 
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/common/key_weak_map.h"
 #include "base/bind.h"
 #include "base/memory/weak_ptr.h"
 #include "native_mate/object_template_builder.h"
+#include "shell/browser/api/event_emitter.h"
+#include "shell/common/key_weak_map.h"
 
 namespace base {
 class SupportsUserData;

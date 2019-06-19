@@ -5,8 +5,8 @@
 #ifndef ATOM_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
 #define ATOM_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
 
-#include "atom/browser/api/views/atom_api_layout_manager.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/views/atom_api_layout_manager.h"
 #include "ui/views/layout/box_layout.h"
 
 namespace atom {

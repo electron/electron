@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_power_monitor.h"
+#include "shell/browser/api/atom_api_power_monitor.h"
 
 #include <vector>
 

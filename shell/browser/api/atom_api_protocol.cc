@@ -2,24 +2,24 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_protocol.h"
+#include "shell/browser/api/atom_api_protocol.h"
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/net/url_request_async_asar_job.h"
-#include "atom/browser/net/url_request_buffer_job.h"
-#include "atom/browser/net/url_request_fetch_job.h"
-#include "atom/browser/net/url_request_stream_job.h"
-#include "atom/browser/net/url_request_string_job.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/net/url_request_async_asar_job.h"
+#include "shell/browser/net/url_request_buffer_job.h"
+#include "shell/browser/net/url_request_fetch_job.h"
+#include "shell/browser/net/url_request_stream_job.h"
+#include "shell/browser/net/url_request_string_job.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "url/url_util.h"
 
 using content::BrowserThread;

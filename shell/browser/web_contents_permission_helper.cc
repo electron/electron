@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_contents_permission_helper.h"
+#include "shell/browser/web_contents_permission_helper.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/browser/atom_permission_manager.h"
-#include "atom/browser/media/media_stream_devices_controller.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
+#include "shell/browser/atom_permission_manager.h"
+#include "shell/browser/media/media_stream_devices_controller.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
 
 namespace {
 

@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/ui/tray_icon.h"
-#include "atom/browser/ui/tray_icon_observer.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/ui/tray_icon.h"
+#include "shell/browser/ui/tray_icon_observer.h"
 
 namespace gfx {
 class Image;

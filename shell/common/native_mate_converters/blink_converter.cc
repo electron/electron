@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/blink_converter.h"
+#include "shell/common/native_mate_converters/blink_converter.h"
 
 #include <algorithm>
 #include <string>
 #include <vector>
 
-#include "atom/common/keyboard_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "gin/converter.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/keyboard_util.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/platform/web_mouse_event.h"
 #include "third_party/blink/public/platform/web_mouse_wheel_event.h"

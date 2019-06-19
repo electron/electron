@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/fake_location_provider.h"
+#include "shell/browser/fake_location_provider.h"
 
 #include "base/callback.h"
 #include "base/time/time.h"

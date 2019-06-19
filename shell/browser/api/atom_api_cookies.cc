@@ -2,16 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_cookies.h"
+#include "shell/browser/api/atom_api_cookies.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/cookie_change_notifier.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/time/time.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"
@@ -25,6 +20,11 @@
 #include "net/cookies/cookie_util.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/cookie_change_notifier.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 using content::BrowserThread;
 

@@ -9,13 +9,13 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/optional.h"
 #include "base/values.h"
 #include "native_mate/handle.h"
 #include "services/network/public/mojom/net_log.mojom.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/common/promise_util.h"
 
 namespace atom {
 

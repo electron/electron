@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_native_image.h"
+#include "shell/common/api/atom_api_native_image.h"
 
 #include <string>
 #include <vector>

@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/relauncher.h"
+#include "shell/browser/relauncher.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
@@ -16,6 +15,7 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
+#include "shell/common/atom_command_line.h"
 
 #if defined(OS_POSIX)
 #include "base/posix/eintr_wrapper.h"

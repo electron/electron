@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/menu_model_adapter.h"
+#include "shell/browser/ui/views/menu_model_adapter.h"
 
 namespace atom {
 

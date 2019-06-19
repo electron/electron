@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/login_handler.h"
+#include "shell/browser/login_handler.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/browser/browser.h"
-#include "atom/common/native_mate_converters/net_converter.h"
 #include "base/task/post_task.h"
 #include "base/values.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
 #include "net/base/auth.h"
+#include "shell/browser/browser.h"
+#include "shell/common/native_mate_converters/net_converter.h"
 
 using content::BrowserThread;
 

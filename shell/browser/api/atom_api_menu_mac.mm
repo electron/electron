@@ -2,14 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/api/atom_api_menu_mac.h"
+#import "shell/browser/api/atom_api_menu_mac.h"
 
 #include <string>
 #include <utility>
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/unresponsive_suppressor.h"
-#include "atom/common/node_includes.h"
 #include "base/mac/scoped_sending_event.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
@@ -17,6 +14,9 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/unresponsive_suppressor.h"
+#include "shell/common/node_includes.h"
 
 using content::BrowserThread;
 

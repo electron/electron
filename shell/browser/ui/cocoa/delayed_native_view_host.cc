@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/cocoa/delayed_native_view_host.h"
+#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 
 namespace atom {
 

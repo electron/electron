@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/io_thread.h"
+#include "shell/browser/io_thread.h"
 
 #include <utility>
 
-#include "atom/browser/net/url_request_context_getter.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
@@ -19,6 +18,7 @@
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/url_request_context_builder_mojo.h"
+#include "shell/browser/net/url_request_context_getter.h"
 
 using content::BrowserThread;
 

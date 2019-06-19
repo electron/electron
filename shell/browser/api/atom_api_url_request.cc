@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_url_request.h"
+#include "shell/browser/api/atom_api_url_request.h"
 
 #include <string>
 
-#include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/net/atom_url_request.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/once_callback.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/net/atom_url_request.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/node_includes.h"
 
 namespace mate {
 

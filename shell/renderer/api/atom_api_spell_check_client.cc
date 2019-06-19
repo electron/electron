@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/api/atom_api_spell_check_client.h"
+#include "shell/renderer/api/atom_api_spell_check_client.h"
 
 #include <map>
 #include <set>
@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -18,6 +17,7 @@
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/function_template.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"

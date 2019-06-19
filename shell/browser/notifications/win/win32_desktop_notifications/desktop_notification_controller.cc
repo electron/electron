@@ -10,15 +10,15 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "atom/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
 #include <windowsx.h>
 #include <algorithm>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/notifications/win/win32_desktop_notifications/common.h"
-#include "atom/browser/notifications/win/win32_desktop_notifications/toast.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/common.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/toast.h"
 
 using std::make_shared;
 using std::shared_ptr;

@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 #define ATOM_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
-#include "atom/browser/net/atom_url_loader_factory.h"
+#include "shell/browser/net/atom_url_loader_factory.h"
 
 namespace atom {
 

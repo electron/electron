@@ -9,10 +9,10 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/promise_util.h"
 #include "base/files/file_path.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/promise_util.h"
 
 namespace atom {
 class NativeWindow;

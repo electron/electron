@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_host_display_client.h"
 
 #include <IOSurface/IOSurface.h>
 

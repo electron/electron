@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/message_box.h"
+#include "shell/browser/ui/message_box.h"
 
 #include <glib/gi18n.h>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window_observer.h"
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_window_observer.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"

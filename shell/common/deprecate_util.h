@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "atom/common/node_includes.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

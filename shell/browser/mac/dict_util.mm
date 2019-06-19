@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/mac/dict_util.h"
+#include "shell/browser/mac/dict_util.h"
 
 #include <memory>
 #include <string>

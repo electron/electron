@@ -8,13 +8,13 @@
 #include <string>
 #include <utility>
 
-#include "atom/common/api/locker.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/once_callback.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
+#include "shell/common/api/locker.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 
 namespace atom {
 

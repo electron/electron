@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/node_bindings_mac.h"
+#include "shell/common/node_bindings_mac.h"
 
 #include <errno.h>
 #include <sys/select.h>
@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include "atom/common/node_includes.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

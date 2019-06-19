@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_protocol_ns.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/once_callback.h"
-#include "atom/common/promise_util.h"
 #include "base/stl_util.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/promise_util.h"
 
 namespace atom {
 namespace api {

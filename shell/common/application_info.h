@@ -6,8 +6,8 @@
 #define ATOM_COMMON_APPLICATION_INFO_H_
 
 #if defined(OS_WIN)
-#include "atom/browser/win/scoped_hstring.h"
 #include "base/strings/string16.h"
+#include "shell/browser/win/scoped_hstring.h"
 #endif
 
 #include <string>

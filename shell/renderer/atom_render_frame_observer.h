@@ -7,10 +7,10 @@
 
 #include <string>
 
-#include "atom/renderer/renderer_client_base.h"
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
+#include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/platform/web_isolated_world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 

@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_auto_updater.h"
+#include "shell/browser/api/atom_api_auto_updater.h"
 
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/node_includes.h"
 #include "base/time/time.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/node_includes.h"
 
 namespace mate {
 

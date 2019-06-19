@@ -6,7 +6,7 @@
 #ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
 #define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
 
-#include "atom/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 
 #include "base/mac/scoped_nsobject.h"
 

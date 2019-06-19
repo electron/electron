@@ -8,12 +8,12 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/net/cookie_details.h"
-#include "atom/common/promise_util.h"
 #include "base/callback_list.h"
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/net/cookie_details.h"
+#include "shell/common/promise_util.h"
 
 namespace base {
 class DictionaryValue;

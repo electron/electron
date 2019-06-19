@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/renderer/renderer_client_base.h"
+#include "shell/renderer/renderer_client_base.h"
 
 namespace node {
 class Environment;

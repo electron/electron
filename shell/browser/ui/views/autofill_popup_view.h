@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "atom/browser/ui/autofill_popup.h"
+#include "shell/browser/ui/autofill_popup.h"
 
 #include "base/optional.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -20,7 +20,7 @@
 #include "ui/views/widget/widget_observer.h"
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_view_proxy.h"
+#include "shell/browser/osr/osr_view_proxy.h"
 #endif
 
 namespace atom {

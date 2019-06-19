@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/inspectable_web_contents.h"
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
@@ -22,6 +21,7 @@
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "ui/gfx/geometry/rect.h"
 
 class PrefService;

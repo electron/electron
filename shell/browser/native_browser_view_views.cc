@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_browser_view_views.h"
+#include "shell/browser/native_browser_view_views.h"
 
-#include "atom/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/background.h"
 #include "ui/views/view.h"

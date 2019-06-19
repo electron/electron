@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_main.h"
+#include "shell/app/atom_main.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -17,33 +17,33 @@
 #include <shellscalingapi.h>
 #include <tchar.h>
 
-#include "atom/app/atom_main_delegate.h"
-#include "atom/app/command_line_args.h"
-#include "atom/common/crash_reporter/win/crash_service_main.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
+#include "shell/app/atom_main_delegate.h"
+#include "shell/app/command_line_args.h"
+#include "shell/common/crash_reporter/win/crash_service_main.h"
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 #include <unistd.h>
 #include <cstdio>
-#include "atom/app/atom_main_delegate.h"  // NOLINT
 #include "content/public/app/content_main.h"
-#else  // defined(OS_LINUX)
+#include "shell/app/atom_main_delegate.h"  // NOLINT
+#else                                      // defined(OS_LINUX)
 #include <mach-o/dyld.h>
 #include <unistd.h>
 #include <cstdio>
-#include "atom/app/atom_library_main.h"
+#include "shell/app/atom_library_main.h"
 #endif  // defined(OS_MACOSX)
 
-#include "atom/app/node_main.h"
-#include "atom/common/atom_command_line.h"
-#include "atom/common/atom_constants.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/app/node_main.h"
+#include "shell/common/atom_command_line.h"
+#include "shell/common/atom_constants.h"
 
 #if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 #include "sandbox/mac/seatbelt_exec.h"  // nogncheck

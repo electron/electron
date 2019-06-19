@@ -3,15 +3,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_url_request.h"
+#include "shell/browser/net/atom_url_request.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/browser/api/atom_api_url_request.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -21,6 +18,9 @@
 #include "net/base/load_flags.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/url_request/redirect_info.h"
+#include "shell/browser/api/atom_api_url_request.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/net/atom_url_request_job_factory.h"
 
 namespace {
 const int kBufferSize = 4096;

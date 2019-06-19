@@ -8,10 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/net/js_asker.h"
 #include "base/memory/ref_counted_memory.h"
 #include "net/http/http_status_code.h"
 #include "net/url_request/url_request_simple_job.h"
+#include "shell/browser/net/js_asker.h"
 
 namespace atom {
 

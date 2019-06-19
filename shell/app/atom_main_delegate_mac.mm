@@ -2,13 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_main_delegate.h"
+#include "shell/app/atom_main_delegate.h"
 
 #include <string>
 
-#include "atom/browser/mac/atom_application.h"
-#include "atom/common/application_info.h"
-#include "atom/common/mac/main_application_bundle.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/mac/bundle_locations.h"
@@ -17,6 +14,9 @@
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/common/content_paths.h"
+#include "shell/browser/mac/atom_application.h"
+#include "shell/common/application_info.h"
+#include "shell/common/mac/main_application_bundle.h"
 
 namespace atom {
 

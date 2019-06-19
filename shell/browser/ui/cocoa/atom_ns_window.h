@@ -5,8 +5,8 @@
 #ifndef ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
 #define ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
 
-#include "atom/browser/ui/cocoa/event_dispatching_window.h"
 #include "components/remote_cocoa/app_shim/native_widget_mac_nswindow.h"
+#include "shell/browser/ui/cocoa/event_dispatching_window.h"
 #include "ui/views/widget/native_widget_mac.h"
 
 namespace atom {

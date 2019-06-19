@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "atom/browser/notifications/notification.h"
-#include "atom/browser/notifications/win/notification_presenter_win7.h"
+#include "shell/browser/notifications/notification.h"
+#include "shell/browser/notifications/win/notification_presenter_win7.h"
 
 namespace atom {
 

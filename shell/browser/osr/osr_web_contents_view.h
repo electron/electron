@@ -5,13 +5,13 @@
 #ifndef ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 #define ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/native_window_observer.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/native_window_observer.h"
 
-#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "content/public/browser/web_contents.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
 
 #if defined(OS_MACOSX)
 #ifdef __OBJC__

@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window.h"
+#include "shell/browser/native_window.h"
 
 #include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/color_util.h"
-#include "atom/common/options_switches.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/color_util.h"
+#include "shell/common/options_switches.h"
 #include "ui/views/widget/widget.h"
 
 #if defined(OS_WIN)

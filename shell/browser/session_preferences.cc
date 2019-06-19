@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/session_preferences.h"
+#include "shell/browser/session_preferences.h"
 
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/memory/ptr_util.h"
+#include "shell/common/options_switches.h"
 
 namespace atom {
 

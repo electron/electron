@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_browser_main_parts.h"
 
 #include <utility>
 
@@ -10,25 +10,6 @@
 #include <glib.h>  // for g_setenv()
 #endif
 
-#include "atom/app/atom_main_delegate.h"
-#include "atom/browser/api/atom_api_app.h"
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_paths.h"
-#include "atom/browser/atom_web_ui_controller_factory.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/browser_process_impl.h"
-#include "atom/browser/feature_list.h"
-#include "atom/browser/javascript_environment.h"
-#include "atom/browser/media/media_capture_devices_dispatcher.h"
-#include "atom/browser/node_debugger.h"
-#include "atom/browser/ui/devtools_manager_delegate.h"
-#include "atom/common/api/electron_bindings.h"
-#include "atom/common/application_info.h"
-#include "atom/common/asar/asar_util.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -49,6 +30,25 @@
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "shell/app/atom_main_delegate.h"
+#include "shell/browser/api/atom_api_app.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/atom_paths.h"
+#include "shell/browser/atom_web_ui_controller_factory.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/browser_process_impl.h"
+#include "shell/browser/feature_list.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/browser/media/media_capture_devices_dispatcher.h"
+#include "shell/browser/node_debugger.h"
+#include "shell/browser/ui/devtools_manager_delegate.h"
+#include "shell/common/api/electron_bindings.h"
+#include "shell/common/application_info.h"
+#include "shell/common/asar/asar_util.h"
+#include "shell/common/node_bindings.h"
+#include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/material_design/material_design_controller.h"
 #include "ui/base/ui_base_switches.h"
@@ -82,9 +82,9 @@
 #endif
 
 #if defined(OS_MACOSX)
-#include "atom/browser/ui/cocoa/views_delegate_mac.h"
+#include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
-#include "atom/browser/ui/views/atom_views_delegate.h"
+#include "shell/browser/ui/views/atom_views_delegate.h"
 #endif
 
 #if defined(OS_LINUX)

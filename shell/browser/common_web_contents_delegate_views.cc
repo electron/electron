@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/common_web_contents_delegate.h"
+#include "shell/browser/common_web_contents_delegate.h"
 
-#include "atom/browser/api/atom_api_web_contents_view.h"
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/web_contents_preferences.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "shell/browser/api/atom_api_web_contents_view.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/web_contents_preferences.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 #if defined(USE_X11)
-#include "atom/browser/browser.h"
+#include "shell/browser/browser.h"
 #endif
 
 namespace atom {

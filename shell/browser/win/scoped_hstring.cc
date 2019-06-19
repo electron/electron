@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/win/scoped_hstring.h"
+#include "shell/browser/win/scoped_hstring.h"
 
 #include <winstring.h>
 

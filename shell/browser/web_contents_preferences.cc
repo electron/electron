@@ -2,17 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_contents_preferences.h"
+#include "shell/browser/web_contents_preferences.h"
 
 #include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/web_view_manager.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
@@ -25,6 +21,10 @@
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/web_view_manager.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/options_switches.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"

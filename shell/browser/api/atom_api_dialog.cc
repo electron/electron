@@ -6,20 +6,20 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_browser_window.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/certificate_trust.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/browser/ui/message_box.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_dialog_converter.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/message_box_converter.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/promise_util.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_browser_window.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/certificate_trust.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/browser/ui/message_box.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_dialog_converter.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/message_box_converter.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/promise_util.h"
 
 namespace {
 

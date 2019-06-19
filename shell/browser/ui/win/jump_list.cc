@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/jump_list.h"
+#include "shell/browser/ui/win/jump_list.h"
 
 #include <propkey.h>  // for PKEY_* constants
 

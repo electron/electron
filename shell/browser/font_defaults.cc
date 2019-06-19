@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/font_defaults.h"
+#include "shell/browser/font_defaults.h"
 
 #include <string>
 #include <unordered_map>

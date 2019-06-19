@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/application_info.h"
+#include "shell/common/application_info.h"
 
 #include <gio/gdesktopappinfo.h>
 #include <gio/gio.h>
@@ -10,11 +10,11 @@
 #include <memory>
 #include <string>
 
-#include "atom/common/platform_util.h"
 #include "base/environment.h"
 #include "base/logging.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "electron/electron_version.h"
+#include "shell/common/platform_util.h"
 
 namespace {
 

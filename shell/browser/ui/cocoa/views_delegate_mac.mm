@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/cocoa/views_delegate_mac.h"
+#include "shell/browser/ui/cocoa/views_delegate_mac.h"
 
 #include "content/public/browser/context_factory.h"
 #include "ui/views/widget/native_widget_mac.h"

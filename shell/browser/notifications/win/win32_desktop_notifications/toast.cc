@@ -5,7 +5,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include "atom/browser/notifications/win/win32_desktop_notifications/toast.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/toast.h"
 
 #include <combaseapi.h>
 
@@ -16,9 +16,9 @@
 #include <cmath>
 #include <memory>
 
-#include "atom/browser/notifications/win/win32_desktop_notifications/common.h"
-#include "atom/browser/notifications/win/win32_desktop_notifications/toast_uia.h"
 #include "base/logging.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/common.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/toast_uia.h"
 
 #pragma comment(lib, "msimg32.lib")
 #pragma comment(lib, "uxtheme.lib")

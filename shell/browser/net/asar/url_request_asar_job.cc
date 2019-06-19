@@ -2,15 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/asar/url_request_asar_job.h"
+#include "shell/browser/net/asar/url_request_asar_job.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/asar/archive.h"
-#include "atom/common/asar/asar_util.h"
-#include "atom/common/atom_constants.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -26,6 +23,9 @@
 #include "net/filter/gzip_source_stream.h"
 #include "net/http/http_util.h"
 #include "net/url_request/url_request_status.h"
+#include "shell/common/asar/archive.h"
+#include "shell/common/asar/asar_util.h"
+#include "shell/common/atom_constants.h"
 
 #if defined(OS_WIN)
 #include "base/win/shortcut.h"

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/common_web_contents_delegate.h"
+#include "shell/browser/common_web_contents_delegate.h"
 
 #include <memory>
 #include <set>
@@ -10,14 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/web_dialog_helper.h"
-#include "atom/common/atom_constants.h"
-#include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/task/post_task.h"
@@ -39,6 +31,14 @@
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/web_dialog_helper.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/options_switches.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_COLOR_CHOOSER)
@@ -46,13 +46,13 @@
 #endif
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_web_contents_view.h"
+#include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "atom/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/browser/print_manager_utils.h"
+#include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
 using content::BrowserThread;

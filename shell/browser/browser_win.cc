@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "shell/browser/browser.h"
 
 #include <windows.h>  // windows.h must be included first
 
@@ -10,9 +10,6 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
-#include "atom/browser/ui/win/jump_list.h"
-#include "atom/common/application_info.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
@@ -25,6 +22,9 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "electron/electron_version.h"
+#include "shell/browser/ui/win/jump_list.h"
+#include "shell/common/application_info.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
 namespace atom {

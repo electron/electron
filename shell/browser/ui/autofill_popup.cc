@@ -6,12 +6,12 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/ui/autofill_popup.h"
-#include "atom/common/api/api.mojom.h"
 #include "base/i18n/rtl.h"
 #include "chrome/browser/ui/autofill/popup_view_common.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/autofill_popup.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -22,8 +22,8 @@
 #include "ui/gfx/text_utils.h"
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_render_widget_host_view.h"
-#include "atom/browser/osr/osr_view_proxy.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
+#include "shell/browser/osr/osr_view_proxy.h"
 #endif
 
 namespace atom {

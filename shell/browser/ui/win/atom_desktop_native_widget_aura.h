@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_UI_WIN_ATOM_DESKTOP_NATIVE_WIDGET_AURA_H_
 #define ATOM_BROWSER_UI_WIN_ATOM_DESKTOP_NATIVE_WIDGET_AURA_H_
 
-#include "atom/browser/native_window_views.h"
+#include "shell/browser/native_window_views.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 
 namespace views {

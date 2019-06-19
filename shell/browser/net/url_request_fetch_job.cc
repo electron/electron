@@ -2,17 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/url_request_fetch_job.h"
+#include "shell/browser/net/url_request_fetch_job.h"
 
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/guid.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
@@ -25,6 +21,10 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
+#include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/v8_value_converter.h"
 
 using content::BrowserThread;
 

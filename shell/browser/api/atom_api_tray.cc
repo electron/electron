@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_tray.h"
+#include "shell/browser/api/atom_api_tray.h"
 
 #include <string>
 
-#include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/browser.h"
-#include "atom/common/api/atom_api_native_image.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_menu.h"
+#include "shell/browser/browser.h"
+#include "shell/common/api/atom_api_native_image.h"
+#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/native_mate_converters/image_converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/node_includes.h"
 #include "ui/gfx/image/image.h"
 
 namespace mate {

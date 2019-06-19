@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/node_stream_loader.h"
+#include "shell/browser/net/node_stream_loader.h"
 
 #include <utility>
 
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/callback.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/native_mate_converters/callback.h"
 
-#include "atom/common/node_includes.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/web_contents_zoom_controller.h"
-#include "atom/browser/web_view_manager.h"
-#include "atom/common/native_mate_converters/content_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/web_contents_zoom_controller.h"
+#include "shell/browser/web_view_manager.h"
+#include "shell/common/native_mate_converters/content_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 
 using atom::WebContentsPreferences;
 

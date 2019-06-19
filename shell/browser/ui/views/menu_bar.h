@@ -7,9 +7,9 @@
 
 #include <memory>
 
-#include "atom/browser/ui/atom_menu_model.h"
-#include "atom/browser/ui/views/menu_delegate.h"
-#include "atom/browser/ui/views/root_view.h"
+#include "shell/browser/ui/atom_menu_model.h"
+#include "shell/browser/ui/views/menu_delegate.h"
+#include "shell/browser/ui/views/root_view.h"
 #include "ui/views/accessible_pane_view.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/focus/focus_manager.h"

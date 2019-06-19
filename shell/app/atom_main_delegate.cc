@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_main_delegate.h"
+#include "shell/app/atom_main_delegate.h"
 
 #include <iostream>
 #include <memory>
@@ -12,15 +12,6 @@
 #include <glib.h>  // for g_setenv()
 #endif
 
-#include "atom/app/atom_content_client.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_gpu_client.h"
-#include "atom/browser/feature_list.h"
-#include "atom/browser/relauncher.h"
-#include "atom/common/options_switches.h"
-#include "atom/renderer/atom_renderer_client.h"
-#include "atom/renderer/atom_sandboxed_renderer_client.h"
-#include "atom/utility/atom_content_utility_client.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
@@ -33,18 +24,27 @@
 #include "ipc/ipc_buildflags.h"
 #include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "shell/app/atom_content_client.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/atom_gpu_client.h"
+#include "shell/browser/feature_list.h"
+#include "shell/browser/relauncher.h"
+#include "shell/common/options_switches.h"
+#include "shell/renderer/atom_renderer_client.h"
+#include "shell/renderer/atom_sandboxed_renderer_client.h"
+#include "shell/utility/atom_content_utility_client.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
 #if defined(OS_MACOSX)
-#include "atom/app/atom_main_delegate_mac.h"
+#include "shell/app/atom_main_delegate_mac.h"
 #endif
 
 #if defined(OS_WIN)
 #include "base/win/win_util.h"
 #if defined(_WIN64)
-#include "atom/common/crash_reporter/crash_reporter_win.h"
+#include "shell/common/crash_reporter/crash_reporter_win.h"
 #endif
 #endif
 

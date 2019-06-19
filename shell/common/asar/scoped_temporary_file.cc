@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/asar/scoped_temporary_file.h"
+#include "shell/common/asar/scoped_temporary_file.h"
 
 #include <vector>
 

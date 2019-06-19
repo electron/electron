@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/electron_bindings.h"
+#include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
 #include <iostream>
@@ -10,14 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/browser.h"
-#include "atom/common/api/locker.h"
-#include "atom/common/application_info.h"
-#include "atom/common/heap_snapshot.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/promise_util.h"
 #include "base/logging.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
@@ -29,6 +21,14 @@
 #include "native_mate/dictionary.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
+#include "shell/browser/browser.h"
+#include "shell/common/api/locker.h"
+#include "shell/common/application_info.h"
+#include "shell/common/heap_snapshot.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/promise_util.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 namespace atom {

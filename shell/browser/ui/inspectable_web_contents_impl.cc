@@ -3,15 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/ui/inspectable_web_contents_impl.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/browser/ui/inspectable_web_contents_delegate.h"
-#include "atom/browser/ui/inspectable_web_contents_view.h"
-#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
-#include "atom/common/platform_util.h"
 #include "base/base64.h"
 #include "base/guid.h"
 #include "base/json/json_reader.h"
@@ -41,6 +37,10 @@
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "shell/browser/ui/inspectable_web_contents_delegate.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"

@@ -5,10 +5,10 @@
 #include <dwmapi.h>
 #include <iomanip>
 
-#include "atom/browser/api/atom_api_system_preferences.h"
+#include "shell/browser/api/atom_api_system_preferences.h"
 
-#include "atom/common/color_util.h"
 #include "base/win/wrapped_window_proc.h"
+#include "shell/common/color_util.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"

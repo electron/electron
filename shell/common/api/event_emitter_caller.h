@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
 
 namespace mate {
 

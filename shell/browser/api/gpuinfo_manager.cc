@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/gpuinfo_manager.h"
+#include "shell/browser/api/gpuinfo_manager.h"
 
 #include <utility>
 
-#include "atom/browser/api/gpu_info_enumerator.h"
 #include "base/memory/singleton.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/browser/browser_thread.h"
 #include "gpu/config/gpu_info_collector.h"
+#include "shell/browser/api/gpu_info_enumerator.h"
 
 namespace atom {
 

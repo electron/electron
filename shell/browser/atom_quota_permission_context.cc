@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_quota_permission_context.h"
+#include "shell/browser/atom_quota_permission_context.h"
 
 namespace atom {
 

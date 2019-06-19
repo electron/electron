@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/application_info.h"
+#include "shell/common/application_info.h"
 
-#include "atom/browser/browser.h"
 #include "base/no_destructor.h"
 #include "base/strings/stringprintf.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/common/user_agent.h"
 #include "electron/electron_version.h"
+#include "shell/browser/browser.h"
 
 namespace atom {
 

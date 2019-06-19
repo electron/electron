@@ -2,19 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/node_main.h"
+#include "shell/app/node_main.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/app/uv_task_runner.h"
-#include "atom/browser/javascript_environment.h"
-#include "atom/browser/node_debugger.h"
-#include "atom/common/api/electron_bindings.h"
-#include "atom/common/crash_reporter/crash_reporter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/task/thread_pool/thread_pool.h"
@@ -24,9 +16,17 @@
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "native_mate/dictionary.h"
+#include "shell/app/uv_task_runner.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/browser/node_debugger.h"
+#include "shell/common/api/electron_bindings.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/node_bindings.h"
+#include "shell/common/node_includes.h"
 
 #if defined(_WIN64)
-#include "atom/common/crash_reporter/crash_reporter_win.h"
+#include "shell/common/crash_reporter/crash_reporter_win.h"
 #endif
 
 namespace atom {

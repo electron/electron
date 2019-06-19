@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
+#include "shell/browser/ui/win/atom_desktop_native_widget_aura.h"
 
-#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "shell/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/wm/public/tooltip_client.h"
 

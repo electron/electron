@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_NET_H_
 #define ATOM_BROWSER_API_ATOM_API_NET_H_
 
-#include "atom/browser/api/event_emitter.h"
+#include "shell/browser/api/event_emitter.h"
 
 namespace atom {
 

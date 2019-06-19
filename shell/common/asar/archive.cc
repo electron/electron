@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/asar/archive.h"
+#include "shell/common/asar/archive.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/common/asar/scoped_temporary_file.h"
 #include "base/files/file.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -18,6 +17,7 @@
 #include "base/task/post_task.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/values.h"
+#include "shell/common/asar/scoped_temporary_file.h"
 
 #if defined(OS_WIN)
 #include <io.h>

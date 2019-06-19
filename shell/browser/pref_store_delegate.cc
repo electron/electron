@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/pref_store_delegate.h"
+#include "shell/browser/pref_store_delegate.h"
 
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
 #include "components/prefs/value_map_pref_store.h"
+#include "shell/browser/atom_browser_context.h"
 
 namespace atom {
 

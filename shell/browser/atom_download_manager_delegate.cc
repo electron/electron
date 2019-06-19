@@ -2,18 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_download_manager_delegate.h"
+#include "shell/browser/atom_download_manager_delegate.h"
 
 #include <string>
 #include <utility>
 
-#include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/options_switches.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/task/post_task.h"
@@ -25,6 +18,13 @@
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager.h"
 #include "net/base/filename_util.h"
+#include "shell/browser/api/atom_api_download_item.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/options_switches.h"
 
 namespace atom {
 

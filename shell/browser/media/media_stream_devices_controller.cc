@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/media/media_stream_devices_controller.h"
+#include "shell/browser/media/media_stream_devices_controller.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/media_stream_request.h"
+#include "shell/browser/media/media_capture_devices_dispatcher.h"
 
 namespace atom {
 

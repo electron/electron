@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/media/media_capture_devices_dispatcher.h"
+#include "shell/browser/media/media_capture_devices_dispatcher.h"
 
 #include "base/logging.h"
 #include "content/public/browser/browser_thread.h"

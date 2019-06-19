@@ -2,21 +2,21 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_web_request.h"
+#include "shell/browser/api/atom_api_web_request.h"
 
 #include <string>
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/atom_network_delegate.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/once_callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/net/atom_network_delegate.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 using content::BrowserThread;
 

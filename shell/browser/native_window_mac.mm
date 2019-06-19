@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window_mac.h"
+#include "shell/browser/native_window_mac.h"
 
 #include <AvailabilityMacros.h>
 #include <objc/objc-runtime.h>
@@ -10,23 +10,23 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/native_browser_view_mac.h"
-#include "atom/browser/ui/cocoa/atom_native_widget_mac.h"
-#include "atom/browser/ui/cocoa/atom_ns_window.h"
-#include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
-#include "atom/browser/ui/cocoa/atom_preview_item.h"
-#include "atom/browser/ui/cocoa/atom_touch_bar.h"
-#include "atom/browser/ui/cocoa/root_view_mac.h"
-#include "atom/browser/ui/inspectable_web_contents.h"
-#include "atom/browser/ui/inspectable_web_contents_view.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/native_browser_view_mac.h"
+#include "shell/browser/ui/cocoa/atom_native_widget_mac.h"
+#include "shell/browser/ui/cocoa/atom_ns_window.h"
+#include "shell/browser/ui/cocoa/atom_ns_window_delegate.h"
+#include "shell/browser/ui/cocoa/atom_preview_item.h"
+#include "shell/browser/ui/cocoa/atom_touch_bar.h"
+#include "shell/browser/ui/cocoa/root_view_mac.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"

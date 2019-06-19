@@ -3,9 +3,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 
-#include "atom/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/ui/inspectable_web_contents_impl.h"
 
 namespace atom {
 

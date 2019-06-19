@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/web_worker_observer.h"
+#include "shell/renderer/web_worker_observer.h"
 
-#include "atom/common/api/electron_bindings.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/asar/asar_util.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
 #include "base/lazy_instance.h"
 #include "base/threading/thread_local.h"
+#include "shell/common/api/electron_bindings.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/asar/asar_util.h"
+#include "shell/common/node_bindings.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

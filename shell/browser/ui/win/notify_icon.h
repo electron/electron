@@ -12,11 +12,11 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/ui/tray_icon.h"
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/win/scoped_gdi_object.h"
+#include "shell/browser/ui/tray_icon.h"
 
 namespace gfx {
 class Point;

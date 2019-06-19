@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/ui/cocoa/atom_bundle_mover.h"
+#import "shell/browser/ui/cocoa/atom_bundle_mover.h"
 
 #include <string>
 
@@ -13,7 +13,7 @@
 #import <sys/mount.h>
 #import <sys/param.h>
 
-#import "atom/browser/browser.h"
+#import "shell/browser/browser.h"
 
 namespace atom {
 

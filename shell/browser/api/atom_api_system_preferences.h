@@ -8,15 +8,15 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/values.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/event_emitter.h"
+#include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
-#include "atom/browser/browser.h"
-#include "atom/browser/browser_observer.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/browser_observer.h"
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 

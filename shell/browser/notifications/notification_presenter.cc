@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/notifications/notification_presenter.h"
+#include "shell/browser/notifications/notification_presenter.h"
 
 #include <algorithm>
 
-#include "atom/browser/notifications/notification.h"
+#include "shell/browser/notifications/notification.h"
 
 namespace atom {
 

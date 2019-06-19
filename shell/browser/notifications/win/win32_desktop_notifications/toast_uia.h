@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
 #define ATOM_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_TOAST_UIA_H_
 
-#include "atom/browser/notifications/win/win32_desktop_notifications/toast.h"
+#include "shell/browser/notifications/win/win32_desktop_notifications/toast.h"
 
 #include <combaseapi.h>
 

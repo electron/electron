@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_browser_client.h"
+#include "shell/browser/atom_browser_client.h"
 
 #if defined(OS_WIN)
 #include <shlobj.h>
@@ -11,35 +11,6 @@
 #include <memory>
 #include <utility>
 
-#include "atom/app/manifests.h"
-#include "atom/browser/api/atom_api_app.h"
-#include "atom/browser/api/atom_api_protocol.h"
-#include "atom/browser/api/atom_api_protocol_ns.h"
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_navigation_throttle.h"
-#include "atom/browser/atom_paths.h"
-#include "atom/browser/atom_quota_permission_context.h"
-#include "atom/browser/atom_speech_recognition_manager_delegate.h"
-#include "atom/browser/child_web_contents_tracker.h"
-#include "atom/browser/font_defaults.h"
-#include "atom/browser/io_thread.h"
-#include "atom/browser/media/media_capture_devices_dispatcher.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/net/network_context_service.h"
-#include "atom/browser/net/network_context_service_factory.h"
-#include "atom/browser/net/proxying_url_loader_factory.h"
-#include "atom/browser/notifications/notification_presenter.h"
-#include "atom/browser/notifications/platform_notification_service.h"
-#include "atom/browser/session_preferences.h"
-#include "atom/browser/ui/devtools_manager_delegate.h"
-#include "atom/browser/web_contents_permission_helper.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/application_info.h"
-#include "atom/common/options_switches.h"
-#include "atom/common/platform_util.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
@@ -77,6 +48,35 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "shell/app/manifests.h"
+#include "shell/browser/api/atom_api_app.h"
+#include "shell/browser/api/atom_api_protocol.h"
+#include "shell/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_navigation_throttle.h"
+#include "shell/browser/atom_paths.h"
+#include "shell/browser/atom_quota_permission_context.h"
+#include "shell/browser/atom_speech_recognition_manager_delegate.h"
+#include "shell/browser/child_web_contents_tracker.h"
+#include "shell/browser/font_defaults.h"
+#include "shell/browser/io_thread.h"
+#include "shell/browser/media/media_capture_devices_dispatcher.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/net/network_context_service.h"
+#include "shell/browser/net/network_context_service_factory.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/notifications/notification_presenter.h"
+#include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/session_preferences.h"
+#include "shell/browser/ui/devtools_manager_delegate.h"
+#include "shell/browser/web_contents_permission_helper.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/application_info.h"
+#include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "v8/include/v8.h"
@@ -102,7 +102,7 @@
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
-#include "atom/browser/fake_location_provider.h"
+#include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
 #if BUILDFLAG(ENABLE_TTS)

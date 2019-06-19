@@ -2,15 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_permission_manager.h"
+#include "shell/browser/atom_permission_manager.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
@@ -18,6 +15,9 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/web_contents_preferences.h"
 
 namespace atom {
 

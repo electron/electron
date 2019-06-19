@@ -8,11 +8,11 @@
 #include <utility>
 #include <vector>
 
-#include "atom/common/api/event_emitter_caller.h"
 #include "base/optional.h"
 #include "content/public/browser/browser_thread.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "native_mate/wrappable.h"
+#include "shell/common/api/event_emitter_caller.h"
 
 namespace content {
 class RenderFrameHost;

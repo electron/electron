@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/window_list.h"
+#include "shell/browser/window_list.h"
 
 #include <algorithm>
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list_observer.h"
 #include "base/logging.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list_observer.h"
 
 namespace atom {
 

@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_web_contents_view.h"
+#include "shell/browser/api/atom_api_web_contents_view.h"
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/ui/inspectable_web_contents_view.h"
-#include "atom/common/api/constructor.h"
-#include "atom/common/node_includes.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/common/api/constructor.h"
+#include "shell/common/node_includes.h"
 
 #if defined(OS_MACOSX)
-#include "atom/browser/ui/cocoa/delayed_native_view_host.h"
+#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 #endif
 
 namespace {

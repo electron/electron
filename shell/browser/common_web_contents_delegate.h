@@ -10,16 +10,16 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/inspectable_web_contents_delegate.h"
-#include "atom/browser/ui/inspectable_web_contents_impl.h"
-#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/ui/inspectable_web_contents_delegate.h"
+#include "shell/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
 #if defined(TOOLKIT_VIEWS)
-#include "atom/browser/ui/autofill_popup.h"
+#include "shell/browser/ui/autofill_popup.h"
 #endif
 
 namespace base {

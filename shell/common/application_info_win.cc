@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/application_info.h"
+#include "shell/common/application_info.h"
 
 #include <windows.h>  // windows.h must be included first
 
@@ -12,11 +12,11 @@
 
 #include <memory>
 
-#include "atom/browser/win/scoped_hstring.h"
 #include "base/file_version_info.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/win/scoped_hstring.h"
 
 namespace atom {
 

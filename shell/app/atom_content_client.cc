@@ -2,12 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_content_client.h"
+#include "shell/app/atom_content_client.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"
@@ -17,6 +16,7 @@
 #include "content/public/common/pepper_plugin_info.h"
 #include "electron/buildflags/buildflags.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
+#include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
@@ -30,8 +30,8 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "atom/common/atom_constants.h"
 #include "pdf/pdf.h"
+#include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 namespace atom {

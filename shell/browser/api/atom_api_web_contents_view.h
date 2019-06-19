@@ -5,9 +5,9 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_VIEW_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_VIEW_H_
 
-#include "atom/browser/api/atom_api_view.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/atom_api_view.h"
 
 namespace atom {
 

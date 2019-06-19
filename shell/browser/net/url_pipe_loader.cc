@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/url_pipe_loader.h"
+#include "shell/browser/net/url_pipe_loader.h"
 
 #include <utility>
 

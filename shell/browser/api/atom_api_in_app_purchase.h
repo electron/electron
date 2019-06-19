@@ -8,12 +8,12 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/browser/mac/in_app_purchase.h"
-#include "atom/browser/mac/in_app_purchase_observer.h"
-#include "atom/browser/mac/in_app_purchase_product.h"
-#include "atom/common/promise_util.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/event_emitter.h"
+#include "shell/browser/mac/in_app_purchase.h"
+#include "shell/browser/mac/in_app_purchase_observer.h"
+#include "shell/browser/mac/in_app_purchase_product.h"
+#include "shell/common/promise_util.h"
 
 namespace atom {
 

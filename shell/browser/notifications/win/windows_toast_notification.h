@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/notifications/notification.h"
+#include "shell/browser/notifications/notification.h"
 
 using Microsoft::WRL::ClassicCom;
 using Microsoft::WRL::ComPtr;

@@ -8,10 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/native_browser_view.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/native_browser_view.h"
 
 namespace gfx {
 class Rect;

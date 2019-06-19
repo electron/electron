@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/node_debugger.h"
+#include "shell/browser/node_debugger.h"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

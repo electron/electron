@@ -4,14 +4,14 @@
 
 #include <string>
 
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/platform_util.h"
-#include "atom/common/promise_util.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/platform_util.h"
+#include "shell/common/promise_util.h"
 
 #if defined(OS_WIN)
 #include "base/win/scoped_com_initializer.h"

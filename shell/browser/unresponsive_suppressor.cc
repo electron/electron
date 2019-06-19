@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/unresponsive_suppressor.h"
+#include "shell/browser/unresponsive_suppressor.h"
 
 namespace atom {
 

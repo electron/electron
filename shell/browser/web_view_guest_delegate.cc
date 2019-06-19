@@ -2,12 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_view_guest_delegate.h"
+#include "shell/browser/web_view_guest_delegate.h"
 
 #include <memory>
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
@@ -15,6 +13,8 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
 
 namespace atom {
 

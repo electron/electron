@@ -7,8 +7,8 @@
 
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/event_emitter.h"
 #include "ui/display/display_observer.h"
 #include "ui/display/screen.h"
 

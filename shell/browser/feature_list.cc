@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/atom/browser/feature_list.h"
+#include "electron/shell/browser/feature_list.h"
 
 #include <string>
 

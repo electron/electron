@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/notifications/mac/cocoa_notification.h"
+#include "shell/browser/notifications/mac/cocoa_notification.h"
 
 #include <string>
 #include <utility>
 
-#include "atom/browser/notifications/notification_delegate.h"
-#include "atom/browser/notifications/notification_presenter.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/notifications/notification_delegate.h"
+#include "shell/browser/notifications/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
 
 namespace atom {

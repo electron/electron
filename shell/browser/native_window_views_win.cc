@@ -5,11 +5,11 @@
 #include <dwmapi.h>
 #include <shellapi.h>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/ui/views/root_view.h"
-#include "atom/common/atom_constants.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/views/root_view.h"
+#include "shell/common/atom_constants.h"
 #include "ui/base/win/accessibility_misc_utils.h"
 #include "ui/display/display.h"
 #include "ui/display/win/screen_win.h"

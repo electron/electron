@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_system_preferences.h"
+#include "shell/browser/api/atom_api_system_preferences.h"
 
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
 

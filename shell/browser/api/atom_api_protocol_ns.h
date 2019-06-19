@@ -7,11 +7,11 @@
 
 #include <string>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/net/atom_url_loader_factory.h"
 #include "content/public/browser/content_browser_client.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/net/atom_url_loader_factory.h"
 
 namespace atom {
 

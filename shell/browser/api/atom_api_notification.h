@@ -9,12 +9,12 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/notifications/notification.h"
-#include "atom/browser/notifications/notification_delegate.h"
-#include "atom/browser/notifications/notification_presenter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/notifications/notification.h"
+#include "shell/browser/notifications/notification_delegate.h"
+#include "shell/browser/notifications/notification_presenter.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {

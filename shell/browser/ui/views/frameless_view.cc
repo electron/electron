@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/frameless_view.h"
+#include "shell/browser/ui/views/frameless_view.h"
 
-#include "atom/browser/native_window_views.h"
+#include "shell/browser/native_window_views.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"

@@ -2,25 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_browser_context.h"
+#include "shell/browser/atom_browser_context.h"
 
 #include <utility>
 
-#include "atom/browser/atom_blob_reader.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_download_manager_delegate.h"
-#include "atom/browser/atom_paths.h"
-#include "atom/browser/atom_permission_manager.h"
-#include "atom/browser/cookie_change_notifier.h"
-#include "atom/browser/net/resolve_proxy_helper.h"
-#include "atom/browser/pref_store_delegate.h"
-#include "atom/browser/special_storage_policy.h"
-#include "atom/browser/ui/inspectable_web_contents_impl.h"
-#include "atom/browser/web_view_manager.h"
-#include "atom/browser/zoom_level_delegate.h"
-#include "atom/common/application_info.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
@@ -42,6 +27,21 @@
 #include "content/public/browser/storage_partition.h"
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
+#include "shell/browser/atom_blob_reader.h"
+#include "shell/browser/atom_browser_client.h"
+#include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_download_manager_delegate.h"
+#include "shell/browser/atom_paths.h"
+#include "shell/browser/atom_permission_manager.h"
+#include "shell/browser/cookie_change_notifier.h"
+#include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/pref_store_delegate.h"
+#include "shell/browser/special_storage_policy.h"
+#include "shell/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/web_view_manager.h"
+#include "shell/browser/zoom_level_delegate.h"
+#include "shell/common/application_info.h"
+#include "shell/common/options_switches.h"
 
 using content::BrowserThread;
 

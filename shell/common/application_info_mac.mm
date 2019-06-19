@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/common/application_info.h"
+#import "shell/common/application_info.h"
 
 #include <string>
 
-#import "atom/common/mac/main_application_bundle.h"
 #import "base/mac/foundation_util.h"
 #import "base/strings/sys_string_conversions.h"
+#import "shell/common/mac/main_application_bundle.h"
 
 namespace atom {
 

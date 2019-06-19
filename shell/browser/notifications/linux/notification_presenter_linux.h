@@ -6,7 +6,7 @@
 #ifndef ATOM_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
 #define ATOM_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
 
-#include "atom/browser/notifications/notification_presenter.h"
+#include "shell/browser/notifications/notification_presenter.h"
 
 namespace atom {
 

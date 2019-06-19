@@ -5,10 +5,10 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/net/atom_network_delegate.h"
 #include "native_mate/arguments.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/net/atom_network_delegate.h"
 
 namespace atom {
 

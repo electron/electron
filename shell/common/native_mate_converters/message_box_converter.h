@@ -5,8 +5,8 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_MESSAGE_BOX_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_MESSAGE_BOX_CONVERTER_H_
 
-#include "atom/browser/ui/message_box.h"
 #include "native_mate/converter.h"
+#include "shell/browser/ui/message_box.h"
 
 namespace mate {
 

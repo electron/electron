@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/notifications/notification.h"
 #include "base/mac/scoped_nsobject.h"
+#include "shell/browser/notifications/notification.h"
 
 namespace atom {
 

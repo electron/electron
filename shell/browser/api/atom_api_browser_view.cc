@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_browser_view.h"
+#include "shell/browser/api/atom_api_browser_view.h"
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/native_browser_view.h"
-#include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_browser_view.h"
+#include "shell/common/color_util.h"
+#include "shell/common/native_mate_converters/gfx_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace mate {

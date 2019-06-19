@@ -3,14 +3,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/inspectable_web_contents_view_mac.h"
+#include "shell/browser/ui/inspectable_web_contents_view_mac.h"
 
 #import <AppKit/AppKit.h>
 
-#import "atom/browser/ui/cocoa/atom_inspectable_web_contents_view.h"
-#include "atom/browser/ui/inspectable_web_contents.h"
-#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "base/strings/sys_string_conversions.h"
+#import "shell/browser/ui/cocoa/atom_inspectable_web_contents_view.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
 namespace atom {
 

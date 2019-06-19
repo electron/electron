@@ -14,9 +14,6 @@
 #include <windows.h>
 #endif
 
-#include "atom/browser/osr/osr_host_display_client.h"
-#include "atom/browser/osr/osr_video_consumer.h"
-#include "atom/browser/osr/osr_view_proxy.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
@@ -30,6 +27,9 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
+#include "shell/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_video_consumer.h"
+#include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"

@@ -13,8 +13,6 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/io_thread.h"
-#include "atom/browser/net/system_network_context_manager.h"
 #include "base/command_line.h"
 #include "base/macros.h"
 #include "chrome/browser/browser_process.h"
@@ -22,6 +20,8 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "shell/browser/io_thread.h"
+#include "shell/browser/net/system_network_context_manager.h"
 
 namespace net_log {
 class ChromeNetLog;

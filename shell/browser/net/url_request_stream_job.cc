@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/url_request_stream_job.h"
+#include "shell/browser/net/url_request_stream_job.h"
 
 #include <algorithm>
 #include <memory>
@@ -10,10 +10,6 @@
 #include <string>
 #include <utility>
 
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/atom_constants.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -23,6 +19,10 @@
 #include "native_mate/dictionary.h"
 #include "net/base/net_errors.h"
 #include "net/filter/gzip_source_stream.h"
+#include "shell/common/api/event_emitter_caller.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/node_includes.h"
 
 namespace atom {
 

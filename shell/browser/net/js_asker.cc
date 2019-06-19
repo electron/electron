@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/js_asker.h"
+#include "shell/browser/net/js_asker.h"
 
 #include <utility>
 
-#include "atom/common/native_mate_converters/once_callback.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/common/native_mate_converters/once_callback.h"
 
 namespace atom {
 

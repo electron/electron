@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_system_preferences.h"
+#include "shell/browser/api/atom_api_system_preferences.h"
 
 #include <map>
 #include <memory>
@@ -14,11 +14,6 @@
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <Security/Security.h>
 
-#include "atom/browser/mac/atom_application.h"
-#include "atom/browser/mac/dict_util.h"
-#include "atom/browser/ui/cocoa/NSColor+Hex.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/mac/sdk_forward_declarations.h"
 #include "base/sequenced_task_runner.h"
@@ -28,6 +23,11 @@
 #include "base/values.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/mac/url_conversions.h"
+#include "shell/browser/mac/atom_application.h"
+#include "shell/browser/mac/dict_util.h"
+#include "shell/browser/ui/cocoa/NSColor+Hex.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
 namespace mate {
 template <>

@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/message_box_converter.h"
+#include "shell/common/native_mate_converters/message_box_converter.h"
 
-#include "atom/browser/api/atom_api_browser_window.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/api/atom_api_browser_window.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/image_converter.h"
 
 namespace mate {
 

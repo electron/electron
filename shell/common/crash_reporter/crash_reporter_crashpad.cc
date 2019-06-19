@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/crash_reporter/crash_reporter_crashpad.h"
+#include "shell/common/crash_reporter/crash_reporter_crashpad.h"
 
 #include <algorithm>
 #include <memory>

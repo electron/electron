@@ -7,8 +7,8 @@
 
 #include <memory>
 
-#include "atom/browser/ui/atom_menu_model.h"
 #include "base/observer_list.h"
+#include "shell/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {

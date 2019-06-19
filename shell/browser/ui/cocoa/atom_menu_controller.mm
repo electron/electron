@@ -3,16 +3,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/ui/cocoa/atom_menu_controller.h"
+#import "shell/browser/ui/cocoa/atom_menu_controller.h"
 
-#include "atom/browser/mac/atom_application.h"
-#include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/mac/atom_application.h"
+#include "shell/browser/ui/atom_menu_model.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"

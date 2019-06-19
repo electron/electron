@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/network_context_service_factory.h"
+#include "shell/browser/net/network_context_service_factory.h"
 
-#include "atom/browser/net/network_context_service.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "shell/browser/net/network_context_service.h"
 
 namespace atom {
 

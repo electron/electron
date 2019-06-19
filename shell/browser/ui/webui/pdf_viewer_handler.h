@@ -8,10 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/web_contents_zoom_controller.h"
 #include "base/macros.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_ui_message_handler.h"
+#include "shell/browser/web_contents_zoom_controller.h"
 
 namespace base {
 class ListValue;

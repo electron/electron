@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/file_dialog.h"
+#include "shell/browser/ui/file_dialog.h"
 
 #include <windows.h>  // windows.h must be included first
 
@@ -11,8 +11,6 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/unresponsive_suppressor.h"
 #include "base/files/file_util.h"
 #include "base/i18n/case_conversion.h"
 #include "base/strings/string_split.h"
@@ -21,6 +19,8 @@
 #include "base/threading/thread.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry.h"
+#include "shell/browser/native_window_views.h"
+#include "shell/browser/unresponsive_suppressor.h"
 
 namespace file_dialog {
 

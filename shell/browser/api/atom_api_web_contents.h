@@ -10,11 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/frame_subscriber.h"
-#include "atom/browser/api/save_page_handler.h"
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/common_web_contents_delegate.h"
-#include "atom/browser/ui/autofill_popup.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
@@ -23,16 +18,21 @@
 #include "content/public/browser/web_contents_binding_set.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
-#include "electron/atom/common/api/api.mojom.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "native_mate/handle.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
+#include "shell/browser/api/frame_subscriber.h"
+#include "shell/browser/api/save_page_handler.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/common_web_contents_delegate.h"
+#include "shell/browser/ui/autofill_popup.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "atom/browser/printing/print_preview_message_handler.h"
 #include "printing/backend/print_backend.h"
+#include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
 namespace blink {

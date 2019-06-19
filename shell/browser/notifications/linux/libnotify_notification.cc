@@ -2,21 +2,21 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/notifications/linux/libnotify_notification.h"
+#include "shell/browser/notifications/linux/libnotify_notification.h"
 
 #include <set>
 #include <string>
 #include <vector>
 
-#include "atom/browser/notifications/notification_delegate.h"
-#include "atom/common/application_info.h"
-#include "atom/common/platform_util.h"
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
+#include "shell/browser/notifications/notification_delegate.h"
+#include "shell/common/application_info.h"
+#include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
 namespace atom {

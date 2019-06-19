@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/views/atom_views_delegate.h"
+#include "shell/browser/ui/views/atom_views_delegate.h"
 
 #include <memory>
 

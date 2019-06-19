@@ -2,15 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_network_delegate.h"
+#include "shell/browser/net/atom_network_delegate.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/login_handler.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
@@ -22,6 +18,10 @@
 #include "net/base/load_flags.h"
 #include "net/base/net_errors.h"
 #include "net/url_request/url_request.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/login_handler.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/options_switches.h"
 
 using content::BrowserThread;
 

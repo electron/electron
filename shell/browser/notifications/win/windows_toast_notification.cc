@@ -6,20 +6,20 @@
 // this code
 // and released it as MIT to the world.
 
-#include "atom/browser/notifications/win/windows_toast_notification.h"
+#include "shell/browser/notifications/win/windows_toast_notification.h"
 
 #include <shlobj.h>
 #include <vector>
 
-#include "atom/browser/notifications/notification_delegate.h"
-#include "atom/browser/notifications/win/notification_presenter_win.h"
-#include "atom/browser/win/scoped_hstring.h"
-#include "atom/common/application_info.h"
 #include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/notifications/notification_delegate.h"
+#include "shell/browser/notifications/win/notification_presenter_win.h"
+#include "shell/browser/win/scoped_hstring.h"
+#include "shell/common/application_info.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;

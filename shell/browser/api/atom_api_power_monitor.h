@@ -5,10 +5,10 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 #define ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/lib/power_observer.h"
 #include "base/compiler_specific.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/trackable_object.h"
+#include "shell/browser/lib/power_observer.h"
 #include "ui/base/idle/idle.h"
 
 namespace atom {

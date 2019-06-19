@@ -2,16 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/webui/pdf_viewer_ui.h"
+#include "shell/browser/ui/webui/pdf_viewer_ui.h"
 
 #include <map>
 #include <memory>
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/loader/layered_resource_handler.h"
-#include "atom/browser/ui/webui/pdf_viewer_handler.h"
-#include "atom/common/atom_constants.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/task/post_task.h"
 #include "content/browser/loader/resource_dispatcher_host_impl.h"
@@ -36,6 +32,10 @@
 #include "net/url_request/url_request.h"
 #include "net/url_request/url_request_context.h"
 #include "services/network/public/cpp/resource_response.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/loader/layered_resource_handler.h"
+#include "shell/browser/ui/webui/pdf_viewer_handler.h"
+#include "shell/common/atom_constants.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::BrowserThread;

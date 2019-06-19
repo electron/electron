@@ -2,12 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_preview_message_handler.h"
 
 #include <memory>
 #include <utility>
 
-#include "atom/common/node_includes.h"
 #include "base/bind.h"
 #include "base/memory/read_only_shared_memory_region.h"
 #include "base/memory/ref_counted.h"
@@ -24,6 +23,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/common/node_includes.h"
 
 using content::BrowserThread;
 

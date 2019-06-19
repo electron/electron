@@ -8,13 +8,13 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/net/js_asker.h"
-#include "atom/common/asar/archive.h"
 #include "base/files/file_path.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "net/http/http_byte_range.h"
 #include "net/url_request/url_request_job.h"
+#include "shell/browser/net/js_asker.h"
+#include "shell/common/asar/archive.h"
 
 namespace base {
 class TaskRunner;

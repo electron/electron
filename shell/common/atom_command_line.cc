@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/atom_command_line.h"
+#include "shell/common/atom_command_line.h"
 
 #include "base/command_line.h"
 #include "uv.h"  // NOLINT(build/include)

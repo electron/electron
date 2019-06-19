@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/node_bindings_linux.h"
+#include "shell/common/node_bindings_linux.h"
 
 #include <sys/epoll.h>
 

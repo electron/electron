@@ -5,8 +5,8 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_FILE_DIALOG_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_FILE_DIALOG_CONVERTER_H_
 
-#include "atom/browser/ui/file_dialog.h"
 #include "native_mate/converter.h"
+#include "shell/browser/ui/file_dialog.h"
 
 namespace mate {
 

@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/net/resolve_proxy_helper.h"
 
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
 #include "base/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/bindings/interface_request.h"
 #include "net/proxy_resolution/proxy_info.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/atom_browser_context.h"
 
 using content::BrowserThread;
 

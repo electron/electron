@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_browser_main_parts.h"
 
-#include "atom/browser/atom_paths.h"
-#include "atom/browser/mac/atom_application_delegate.h"
+#include "shell/browser/atom_paths.h"
+#include "shell/browser/mac/atom_application_delegate.h"
 
 namespace atom {
 

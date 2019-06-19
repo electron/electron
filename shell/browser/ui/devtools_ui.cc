@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "atom/browser/ui/devtools_ui.h"
+#include "shell/browser/ui/devtools_ui.h"
 
 #include <memory>
 #include <string>

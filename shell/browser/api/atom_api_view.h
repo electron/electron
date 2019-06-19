@@ -8,9 +8,9 @@
 #include <memory>
 #include <vector>
 
-#include "atom/browser/api/views/atom_api_layout_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
+#include "shell/browser/api/views/atom_api_layout_manager.h"
 #include "ui/views/view.h"
 
 namespace atom {

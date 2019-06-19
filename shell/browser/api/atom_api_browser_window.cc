@@ -2,20 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_browser_window.h"
+#include "shell/browser/api/atom_api_browser_window.h"
 
 #include <memory>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/unresponsive_suppressor.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/api/constructor.h"
-#include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
@@ -23,6 +13,16 @@
 #include "content/public/browser/render_view_host.h"
 #include "gin/converter.h"
 #include "native_mate/dictionary.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/unresponsive_suppressor.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/window_list.h"
+#include "shell/common/api/constructor.h"
+#include "shell/common/color_util.h"
+#include "shell/common/native_mate_converters/callback.h"
+#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "ui/gl/gpu_switching_manager.h"
 
 namespace atom {

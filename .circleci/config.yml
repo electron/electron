@@ -261,7 +261,7 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron:electron_lib
       gn check out/Default //electron:electron_app
       gn check out/Default //electron:manifests
-      gn check out/Default //electron/atom/common/api:mojo
+      gn check out/Default //electron/shell/common/api:mojo
 
 step-electron-build: &step-electron-build
   run:

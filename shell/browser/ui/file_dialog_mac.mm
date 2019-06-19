@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/file_dialog.h"
+#include "shell/browser/ui/file_dialog.h"
 
 #include <string>
 #include <utility>
@@ -11,12 +11,12 @@
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
 
-#include "atom/browser/native_window.h"
 #include "base/files/file_util.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
+#include "shell/browser/native_window.h"
 
 @interface PopUpButtonHandler : NSObject
 

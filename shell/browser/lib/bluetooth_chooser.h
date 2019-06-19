@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "content/public/browser/bluetooth_chooser.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 
 namespace atom {
 

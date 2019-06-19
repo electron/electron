@@ -2,13 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_cert_verifier.h"
+#include "shell/browser/net/atom_cert_verifier.h"
 
 #include <utility>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/net/require_ct_delegate.h"
-#include "atom/common/native_mate_converters/net_converter.h"
 #include "base/containers/linked_list.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/post_task.h"
@@ -17,6 +14,9 @@
 #include "net/base/net_errors.h"
 #include "net/cert/cert_verify_result.h"
 #include "net/cert/x509_certificate.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/net/require_ct_delegate.h"
+#include "shell/common/native_mate_converters/net_converter.h"
 
 using content::BrowserThread;
 

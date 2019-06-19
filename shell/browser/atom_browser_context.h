@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/media/media_device_id_salt.h"
-#include "atom/browser/net/url_request_context_getter.h"
 #include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
+#include "shell/browser/media/media_device_id_salt.h"
+#include "shell/browser/net/url_request_context_getter.h"
 
 class PrefRegistrySimple;
 class PrefService;

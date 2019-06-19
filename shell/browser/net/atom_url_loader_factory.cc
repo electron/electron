@@ -2,22 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_url_loader_factory.h"
+#include "shell/browser/net/atom_url_loader_factory.h"
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/asar/asar_url_loader.h"
-#include "atom/browser/net/node_stream_loader.h"
-#include "atom/browser/net/url_pipe_loader.h"
-#include "atom/common/atom_constants.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -26,8 +16,18 @@
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/atom_browser_context.h"
+#include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/browser/net/node_stream_loader.h"
+#include "shell/browser/net/url_pipe_loader.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/native_mate_converters/value_converter.h"
 
-#include "atom/common/node_includes.h"
+#include "shell/common/node_includes.h"
 
 using content::BrowserThread;
 

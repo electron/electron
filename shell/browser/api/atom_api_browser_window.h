@@ -9,9 +9,9 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_top_level_window.h"
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "base/cancelable_callback.h"
+#include "shell/browser/api/atom_api_top_level_window.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 
 namespace atom {
 

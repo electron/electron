@@ -2,14 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/crash_reporter/crash_reporter.h"
+#include "shell/common/crash_reporter/crash_reporter.h"
 
 #include <memory>
 
-#include "atom/browser/browser.h"
-#include "atom/common/atom_constants.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/map_converter.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
@@ -18,6 +14,10 @@
 #include "base/threading/thread_restrictions.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
+#include "shell/browser/browser.h"
+#include "shell/common/atom_constants.h"
+#include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/map_converter.h"
 
 namespace crash_reporter {
 

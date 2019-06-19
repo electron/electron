@@ -55,8 +55,8 @@
 
 #include <stddef.h>
 
-#include "atom/browser/browser.h"
-#include "atom/common/atom_command_line.h"
+#include "shell/browser/browser.h"
+#include "shell/common/atom_command_line.h"
 
 #include "base/base_paths.h"
 #include "base/bind.h"

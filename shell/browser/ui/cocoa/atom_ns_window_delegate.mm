@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
+#include "shell/browser/ui/cocoa/atom_ns_window_delegate.h"
 
 #include <algorithm>
 
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window_mac.h"
-#include "atom/browser/ui/cocoa/atom_preview_item.h"
-#include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/cocoa/atom_preview_item.h"
+#include "shell/browser/ui/cocoa/atom_touch_bar.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 

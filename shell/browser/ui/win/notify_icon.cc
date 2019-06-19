@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/notify_icon.h"
+#include "shell/browser/ui/win/notify_icon.h"
 
-#include "atom/browser/ui/win/notify_icon_host.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
+#include "shell/browser/ui/win/notify_icon_host.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
