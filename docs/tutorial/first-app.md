@@ -73,6 +73,8 @@ merely replace the `node` runtime with the `electron` runtime.
 }
 ```
 
+__Note__: The above change assumes that Electron is installed globally.
+
 ## Installing Electron
 
 At this point, you'll need to install `electron` itself. The recommended way
