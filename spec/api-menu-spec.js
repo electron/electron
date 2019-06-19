@@ -853,7 +853,8 @@ describe('Menu module', () => {
       })
     }
 
-    testFn('menu accelerators perform the specified action', async () => {
+    testFn('should perform the specified action', async () => {
+      let hasBeenClicked = false
       const menu = Menu.buildFromTemplate([
         {
           label: 'Test',
@@ -862,6 +863,7 @@ describe('Menu module', () => {
               label: 'Test Item',
               accelerator: 'T',
               click: (a, b, event) => {
+                hasBeenClicked = true
                 expect(event).to.deep.equal({
                   shiftKey: false,
                   ctrlKey: false,
@@ -877,8 +879,31 @@ describe('Menu module', () => {
       ])
       Menu.setApplicationMenu(menu)
       expect(Menu.getApplicationMenu()).to.not.be.null()
-
       await sendRobotjsKey('t')
+      expect(hasBeenClicked).to.equal(true)
+    })
+
+    testFn.only('should not activate upon clicking another key combination', async () => {
+      let hasBeenClicked = false
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Test',
+          submenu: [
+            {
+              label: 'Test Item',
+              accelerator: 'T',
+              click: (a, b, event) => {
+                hasBeenClicked = true
+              },
+              id: 'test'
+            }
+          ]
+        }
+      ])
+      Menu.setApplicationMenu(menu)
+      expect(Menu.getApplicationMenu()).to.not.be.null()
+      await sendRobotjsKey('t', 'shift')
+      expect(hasBeenClicked).to.equal(false)
     })
   })
 })
