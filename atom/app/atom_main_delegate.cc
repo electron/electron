@@ -10,6 +10,8 @@
 
 #if defined(OS_LINUX)
 #include <glib.h>  // for g_setenv()
+#include <unistd.h>
+#include <sys/types.h>
 #endif
 
 #include "atom/app/atom_content_client.h"
@@ -85,47 +87,6 @@ void InvalidParameterHandler(const wchar_t*,
                              unsigned int,
                              uintptr_t) {
   // noop.
-}
-#endif
-
-#if defined(OS_LINUX)
-
-int sys_getresuid(uid_t* ruid, uid_t* euid, uid_t* suid) {
-  int res;
-#if defined(ARCH_CPU_X86) || defined(ARCH_CPU_ARMEL)
-  // On 32-bit x86 or 32-bit arm, getresuid supports 16bit values only.
-  // Use getresuid32 instead.
-  res = syscall(__NR_getresuid32, ruid, euid, suid);
-#else
-  res = syscall(__NR_getresuid, ruid, euid, suid);
-#endif
-  if (res == 0) {
-    if (ruid)
-      MSAN_UNPOISON(ruid, sizeof(*ruid));
-    if (euid)
-      MSAN_UNPOISON(euid, sizeof(*euid));
-    if (suid)
-      MSAN_UNPOISON(suid, sizeof(*suid));
-  }
-  return res;
-}
-
-// static
-// https://cs.chromium.org/chromium/src/sandbox/linux/services/credentials.cc?l=140
-bool GetRESIds(uid_t* resuid, gid_t* resgid) {
-  uid_t ruid, euid, suid;
-  gid_t rgid, egid, sgid;
-  PCHECK(sys_getresuid(&ruid, &euid, &suid) == 0);
-  PCHECK(sys_getresgid(&rgid, &egid, &sgid) == 0);
-  const bool uids_are_equal = (ruid == euid) && (ruid == suid);
-  const bool gids_are_equal = (rgid == egid) && (rgid == sgid);
-  if (!uids_are_equal || !gids_are_equal)
-    return false;
-  if (resuid)
-    *resuid = euid;
-  if (resgid)
-    *resgid = egid;
-  return true;
 }
 #endif
 
@@ -328,18 +289,12 @@ AtomMainDelegate::CreateContentRendererClient() {
           service_manager::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
 #if defined(OS_LINUX)
-    // We want to throw an error non-silently even when logging is disabled,
-    // so replicate the business logic from Chromium but use LOG(FATAL) to
-    // throw at the Electron level
-    // https://cs.chromium.org/chromium/src/services/service_manager/zygote/host/zygote_host_impl_linux.cc?l=86
-    uid_t uid = 0;
-    gid_t gid = 0;
-    if (!GetRESIds(&uid, &gid) || uid == 0) {
-      LOG(FATAL) << "Running as root without --"
-                 << service_manager::switches::kNoSandbox
-                 << " is not supported. See https://crbug.com/638180.";
-      exit(EXIT_FAILURE);
-    }
+  if (getuid() == 0) {
+    LOG(FATAL) << "Running as root without --"
+                << service_manager::switches::kNoSandbox
+                << " is not supported. See https://crbug.com/638180.";
+    exit(EXIT_FAILURE);
+  }
 #endif
   } else {
     renderer_client_.reset(new AtomRendererClient);
