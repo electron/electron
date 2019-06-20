@@ -20,9 +20,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `visibleOnAllWorkspaces`
 * `crashReporter` module
   * `uploadToServer`
-* `DownloadItem` class
-  * `savePath`
-  * `paused`
 * `Session` module
   * `preloads`
 * `webContents` module
@@ -47,6 +44,8 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `applicationMenu`
   * `badgeCount`
   * `name`
+* `DownloadItem` class
+  * `savePath`
 * `BrowserWindow` module
   * `autohideMenuBar`
   * `resizable`
