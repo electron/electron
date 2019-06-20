@@ -105,6 +105,9 @@ env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
 
+env-disable-run-as-node: &env-disable-run-as-node
+  GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -251,7 +254,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
 
 step-gn-check: &step-gn-check
   run:
@@ -988,6 +991,16 @@ jobs:
       <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
+  linux-x64-testing-no-run-as-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+      <<: *env-disable-run-as-node
+    <<: *steps-electron-build-for-tests
+
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
     environment:
@@ -1544,6 +1557,9 @@ workflows:
           requires:
             - linux-checkout
       - linux-x64-testing:
+          requires:
+            - linux-checkout
+      - linux-x64-testing-no-run-as-node:
           requires:
             - linux-checkout
       - linux-x64-testing-gn-check:
