@@ -40,7 +40,7 @@ index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/input_event_ack_state.h"
  #include "content/public/common/screen_info.h"
-@@ -75,10 +77,12 @@ class CursorManager;
+@@ -75,9 +77,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -48,7 +48,6 @@ index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0
  class SyntheticGestureTarget;
  class TextInputManager;
  class TouchSelectionControllerClientManager;
- class WebContentsAccessibility;
 +class WebContentsView;
  class WebCursor;
  class DelegatedFrameHost;
