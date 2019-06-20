@@ -1,0 +1,61 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef SHELL_BROWSER_ATOM_DOWNLOAD_MANAGER_DELEGATE_H_
+#define SHELL_BROWSER_ATOM_DOWNLOAD_MANAGER_DELEGATE_H_
+
+#include <string>
+
+#include "base/memory/weak_ptr.h"
+#include "content/public/browser/download_manager_delegate.h"
+#include "shell/browser/ui/file_dialog.h"
+
+namespace content {
+class DownloadManager;
+}
+
+namespace electron {
+
+class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
+ public:
+  using CreateDownloadPathCallback =
+      base::Callback<void(const base::FilePath&)>;
+
+  explicit AtomDownloadManagerDelegate(content::DownloadManager* manager);
+  ~AtomDownloadManagerDelegate() override;
+
+  // content::DownloadManagerDelegate:
+  void Shutdown() override;
+  bool DetermineDownloadTarget(
+      download::DownloadItem* download,
+      const content::DownloadTargetCallback& callback) override;
+  bool ShouldOpenDownload(
+      download::DownloadItem* download,
+      const content::DownloadOpenDelayedCallback& callback) override;
+  void GetNextId(const content::DownloadIdCallback& callback) override;
+
+ private:
+  // Get the save path set on the associated api::DownloadItem object
+  void GetItemSavePath(download::DownloadItem* item, base::FilePath* path);
+  void GetItemSaveDialogOptions(download::DownloadItem* item,
+                                file_dialog::DialogSettings* settings);
+
+  void OnDownloadPathGenerated(uint32_t download_id,
+                               const content::DownloadTargetCallback& callback,
+                               const base::FilePath& default_path);
+
+  void OnDownloadSaveDialogDone(
+      uint32_t download_id,
+      const content::DownloadTargetCallback& download_callback,
+      mate::Dictionary result);
+
+  content::DownloadManager* download_manager_;
+  base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomDownloadManagerDelegate);
+};
+
+}  // namespace electron
+
+#endif  // SHELL_BROWSER_ATOM_DOWNLOAD_MANAGER_DELEGATE_H_

@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import * as fs from 'fs'
 import * as path from 'path'
 
 const Module = require('module')
@@ -15,7 +14,7 @@ const Module = require('module')
 // "Module.wrapper" we can force Node to use the old code path to wrap module
 // code with JavaScript.
 //
-// Note 3: We provide the equivilant extra variables internally through the
+// Note 3: We provide the equivalent extra variables internally through the
 // webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
 // variables to this wrapper please ensure to update that plugin as well.
 Module.wrapper = [
@@ -54,6 +53,7 @@ v8Util.setHiddenValue(global, 'ipcNative', {
 
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal')
+const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils')
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init')
 webFrameInit()
 
@@ -111,7 +111,8 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    require('@electron/internal/renderer/content-scripts-injector')()
+    const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
+    require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
   }
 }
 
@@ -189,22 +190,10 @@ if (nodeIntegration) {
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
-const { isParentDir } = require('@electron/internal/common/path-utils')
-
-let absoluteAppPath: string
-const getAppPath = function () {
-  if (absoluteAppPath === undefined) {
-    absoluteAppPath = fs.realpathSync(appPath!)
-  }
-  return absoluteAppPath
-}
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
-    if (!isParentDir(getAppPath(), fs.realpathSync(preloadScript))) {
-      throw new Error('Preload scripts outside of app path are not allowed')
-    }
     Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)

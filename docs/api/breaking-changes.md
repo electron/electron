@@ -148,10 +148,6 @@ app.enableMixedSandbox()
 
 Mixed-sandbox mode is now enabled by default.
 
-### Preload scripts outside of app path are not allowed
-
-For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
-
 ## Planned Breaking API Changes (5.0)
 
 ### `new BrowserWindow({ webPreferences })`

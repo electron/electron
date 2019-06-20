@@ -2,7 +2,6 @@
 
 const { GitProcess } = require('dugite')
 const utils = require('./lib/version-utils')
-const plist = require('plist')
 const fs = require('fs')
 const semver = require('semver')
 const path = require('path')
@@ -56,9 +55,7 @@ async function main () {
   // update all version-related files
   await Promise.all([
     updateVersion(version),
-    updateInfoPlist(version),
     updatePackageJSON(version),
-    updateVersionH(components),
     updateWinRC(components)
   ])
 
@@ -119,18 +116,6 @@ async function updatePackageJSON (version) {
   })
 }
 
-// update CFBundle version information and overwrite pre-existing file
-// TODO(codebytere): provide these version fields at GN build time
-async function updateInfoPlist (version) {
-  const filePath = path.resolve(__dirname, '..', 'atom', 'browser', 'resources', 'mac', 'Info.plist')
-  const file = plist.parse(await readFile(filePath, { encoding: 'utf8' }))
-
-  file.CFBundleVersion = version
-  file.CFBundleShortVersionString = version
-
-  await writeFile(filePath, plist.build(file))
-}
-
 // push bump commit to release branch
 async function commitVersionBump (version) {
   const gitDir = path.resolve(__dirname, '..')
@@ -138,28 +123,9 @@ async function commitVersionBump (version) {
   await GitProcess.exec(gitArgs, gitDir)
 }
 
-// updates atom_version.h file with new semver values
-// TODO(codebytere): auto-generate this
-async function updateVersionH (components) {
-  const filePath = path.resolve(__dirname, '..', 'atom', 'common', 'atom_version.h')
-  const data = await readFile(filePath, 'utf8')
-  const arr = data.split('\n')
-  const pre = components.pre && components.pre.length >= 2 ? `-${components.pre[0]}.${components.pre[1]}` : null
-
-  arr.forEach((item, idx) => {
-    if (item.includes('#define ATOM_MAJOR_VERSION')) {
-      arr[idx] = `#define ATOM_MAJOR_VERSION ${components.major}`
-      arr[idx + 1] = `#define ATOM_MINOR_VERSION ${components.minor}`
-      arr[idx + 2] = `#define ATOM_PATCH_VERSION ${components.patch}`
-      arr[idx + 4] = pre ? `#define ATOM_PRE_RELEASE_VERSION ${pre}` : '// #define ATOM_PRE_RELEASE_VERSION'
-    }
-  })
-  await writeFile(filePath, arr.join('\n'))
-}
-
 // updates atom.rc file with new semver values
 async function updateWinRC (components) {
-  const filePath = path.resolve(__dirname, '..', 'atom', 'browser', 'resources', 'win', 'atom.rc')
+  const filePath = path.resolve(__dirname, '..', 'shell', 'browser', 'resources', 'win', 'atom.rc')
   const data = await readFile(filePath, 'utf8')
   const arr = data.split('\n')
   arr.forEach((line, idx) => {
