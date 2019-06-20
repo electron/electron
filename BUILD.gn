@@ -21,6 +21,7 @@ import("filenames.gni")
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
+  import("//ui/gl/features.gni")
   import("//v8/gni/v8.gni")
 }
 
@@ -758,6 +759,50 @@ if (is_mac) {
     group("electron_framework_libraries") {
     }
   }
+  if (use_egl) {
+    # Add the ANGLE .dylibs in the Libraries directory of the Framework.
+    bundle_data("electron_angle_binaries") {
+      sources = [
+        "$root_out_dir/egl_intermediates/libEGL.dylib",
+        "$root_out_dir/egl_intermediates/libGLESv2.dylib",
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
+      ]
+      public_deps = [
+        "//ui/gl:angle_library_copy",
+      ]
+    }
+
+    # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
+    bundle_data("electron_swiftshader_binaries") {
+      sources = [
+        "$root_out_dir/egl_intermediates/libswiftshader_libEGL.dylib",
+        "$root_out_dir/egl_intermediates/libswiftshader_libGLESv2.dylib",
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
+      ]
+      public_deps = [
+        "//ui/gl:swiftshader_library_copy",
+      ]
+    }
+  }
+  group("electron_angle_library") {
+    if (use_egl) {
+      deps = [
+        ":electron_angle_binaries",
+      ]
+    }
+  }
+
+  group("electron_swiftshader_library") {
+    if (use_egl) {
+      deps = [
+        ":electron_swiftshader_binaries",
+      ]
+    }
+  }
 
   bundle_data("electron_crashpad_helper") {
     sources = [
@@ -784,8 +829,10 @@ if (is_mac) {
       ":electron_lib",
     ]
     deps = [
+      ":electron_angle_library",
       ":electron_framework_libraries",
       ":electron_framework_resources",
+      ":electron_swiftshader_library",
       ":electron_xibs",
     ]
     if (!is_mas_build) {
