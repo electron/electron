@@ -89,6 +89,24 @@ void InvalidParameterHandler(const wchar_t*,
 #endif
 
 #if defined(OS_LINUX)
+
+int sys_getresuid(uid_t* ruid, uid_t* euid, uid_t* suid) {
+  int res;
+#if defined(ARCH_CPU_X86) || defined(ARCH_CPU_ARMEL)
+  // On 32-bit x86 or 32-bit arm, getresuid supports 16bit values only.
+  // Use getresuid32 instead.
+  res = syscall(__NR_getresuid32, ruid, euid, suid);
+#else
+  res = syscall(__NR_getresuid, ruid, euid, suid);
+#endif
+  if (res == 0) {
+    if (ruid) MSAN_UNPOISON(ruid, sizeof(*ruid));
+    if (euid) MSAN_UNPOISON(euid, sizeof(*euid));
+    if (suid) MSAN_UNPOISON(suid, sizeof(*suid));
+  }
+  return res;
+}
+
 // static
 // https://cs.chromium.org/chromium/src/sandbox/linux/services/credentials.cc?l=140
 bool GetRESIds(uid_t* resuid, gid_t* resgid) {
@@ -313,7 +331,7 @@ AtomMainDelegate::CreateContentRendererClient() {
     // https://cs.chromium.org/chromium/src/services/service_manager/zygote/host/zygote_host_impl_linux.cc?l=86
     uid_t uid = 0;
     gid_t gid = 0;
-    if (!sandbox::Credentials::GetRESIds(&uid, &gid) || uid == 0) {
+    if (!GetRESIds(&uid, &gid) || uid == 0) {
       LOG(FATAL) << "Running as root without --"
                  << service_manager::switches::kNoSandbox
                  << " is not supported. See https://crbug.com/638180.";
