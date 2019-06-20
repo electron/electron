@@ -10,8 +10,8 @@
 
 #if defined(OS_LINUX)
 #include <glib.h>  // for g_setenv()
-#include <unistd.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #include "atom/app/atom_content_client.h"
