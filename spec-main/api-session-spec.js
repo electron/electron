@@ -481,7 +481,12 @@ describe('session module', () => {
       await emittedOnce(w.webContents, 'did-stop-loading')
       await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/)
       expect(w.webContents.getTitle()).to.equal(url + '/test')
-      expect(numVerificationRequests).to.equal(1)
+
+      // TODO(nornagon): there's no way to check if the network service is
+      // enabled from JS, so once we switch it on by default just change this
+      // test :)
+      const networkServiceEnabled = false
+      expect(numVerificationRequests).to.equal(networkServiceEnabled ? 1 : 2)
     })
   })
 
