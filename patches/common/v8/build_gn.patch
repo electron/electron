@@ -5,7 +5,7 @@ Subject: build_gn.patch
 
 
 diff --git a/BUILD.gn b/BUILD.gn
-index cd77a334e7dd92676ff28b5bb57137aee51d8950..de1b2590efdfbe0dfd9c3af93d778b7faaf7ed50 100644
+index 87cad0479dc00fb53e192e46f5d99cd8788c8119..45e91038e271c557474bb52493076e04542d0dd8 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -269,7 +269,7 @@ config("internal_config") {
