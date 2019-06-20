@@ -475,6 +475,7 @@ static_library("electron_lib") {
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
+      "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
     sources += [
@@ -818,7 +819,8 @@ if (is_mac) {
       sources += [ "shell/common/atom_constants.cc" ]
       include_dirs = [ "." ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
-      extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
+      extra_substitutions =
+          [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
       ldflags = [
         "-rpath",
         "@executable_path/../../..",
