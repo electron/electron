@@ -291,7 +291,6 @@ AtomMainDelegate::CreateContentRendererClient() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (IsSandboxEnabled(command_line)) {
-    renderer_client_.reset(new AtomSandboxedRendererClient);
 #if defined(OS_LINUX)
     if (getuid() == 0) {
       LOG(FATAL) << "Running as root without --"
@@ -300,6 +299,7 @@ AtomMainDelegate::CreateContentRendererClient() {
       exit(EXIT_FAILURE);
     }
 #endif
+    renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);
   }
