@@ -31,7 +31,6 @@
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "ipc/ipc_buildflags.h"
-#include "sandbox/linux/services/credentials.h"
 #include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -86,6 +85,23 @@ void InvalidParameterHandler(const wchar_t*,
                              unsigned int,
                              uintptr_t) {
   // noop.
+}
+#endif
+
+#if defined(OS_LINUX)
+// static
+// https://cs.chromium.org/chromium/src/sandbox/linux/services/credentials.cc?l=140
+bool GetRESIds(uid_t* resuid, gid_t* resgid) {
+  uid_t ruid, euid, suid;
+  gid_t rgid, egid, sgid;
+  PCHECK(sys_getresuid(&ruid, &euid, &suid) == 0);
+  PCHECK(sys_getresgid(&rgid, &egid, &sgid) == 0);
+  const bool uids_are_equal = (ruid == euid) && (ruid == suid);
+  const bool gids_are_equal = (rgid == egid) && (rgid == sgid);
+  if (!uids_are_equal || !gids_are_equal) return false;
+  if (resuid) *resuid = euid;
+  if (resgid) *resgid = egid;
+  return true;
 }
 #endif
 
