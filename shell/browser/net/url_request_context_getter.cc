@@ -8,19 +8,6 @@
 #include <memory>
 #include <utility>
 
-#include "atom/browser/api/atom_api_protocol.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser_process_impl.h"
-#include "atom/browser/net/about_protocol_handler.h"
-#include "atom/browser/net/asar/asar_protocol_handler.h"
-#include "atom/browser/net/atom_cert_verifier.h"
-#include "atom/browser/net/atom_network_delegate.h"
-#include "atom/browser/net/atom_url_request_job_factory.h"
-#include "atom/browser/net/http_protocol_handler.h"
-#include "atom/browser/net/require_ct_delegate.h"
-#include "atom/browser/net/system_network_context_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -54,6 +41,7 @@
 #include "shell/browser/api/atom_api_protocol.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/net/about_protocol_handler.h"
 #include "shell/browser/net/asar/asar_protocol_handler.h"

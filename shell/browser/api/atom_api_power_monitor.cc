@@ -43,7 +43,7 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
   Browser::Get()->SetShutdownHandler(base::BindRepeating(
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
-  base::PowerMonitor::Get()->AddObserver(this);
+  base::PowerMonitor::AddObserver(this);
   Init(isolate);
 #if defined(OS_MACOSX) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
@@ -51,7 +51,7 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
-  base::PowerMonitor::Get()->RemoveObserver(this);
+  base::PowerMonitor::RemoveObserver(this);
 }
 
 bool PowerMonitor::ShouldShutdown() {

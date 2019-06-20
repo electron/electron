@@ -333,7 +333,7 @@ void AtomBrowserClient::ConsiderSiteInstanceForAffinity(
 }
 
 bool AtomBrowserClient::IsRendererSubFrame(int process_id) const {
-  return base::ContainsKey(renderer_is_subframe_, process_id);
+  return base::Contains(renderer_is_subframe_, process_id);
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
