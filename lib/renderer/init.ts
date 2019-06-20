@@ -14,7 +14,7 @@ const Module = require('module')
 // "Module.wrapper" we can force Node to use the old code path to wrap module
 // code with JavaScript.
 //
-// Note 3: We provide the equivilant extra variables internally through the
+// Note 3: We provide the equivalent extra variables internally through the
 // webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
 // variables to this wrapper please ensure to update that plugin as well.
 Module.wrapper = [
