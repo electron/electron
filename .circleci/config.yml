@@ -893,8 +893,9 @@ steps-tests: &steps-tests
           MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
+          cd src
           export ELECTRON_OUT_DIR=Default
-          export ASAN_SYMBOLIZE=$PWD/src/tools/valgrind/asan/asan_symbolize.py
+          export ASAN_SYMBOLIZE=$PWD/tools/valgrind/asan/asan_symbolize.py
           export ASAN_OPTIONS="symbolize=0"
           export G_SLICE=always-malloc
           export NSS_DISABLE_ARENA_FREE_LIST=1
