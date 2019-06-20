@@ -1,0 +1,23 @@
+// Copyright (c) 2019 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ELECTRON_ELECTRON_VERSION_H
+#define ELECTRON_ELECTRON_VERSION_H
+
+#define ELECTRON_MAJOR_VERSION $major
+#define ELECTRON_MINOR_VERSION $minor
+#define ELECTRON_PATCH_VERSION $patch
+#if $has_prerelease
+#define ELECTRON_PRE_RELEASE_VERSION -$prerelease
+#endif
+
+#ifndef ELECTRON_PRE_RELEASE_VERSION
+#define ELECTRON_VERSION_STRING "$major.$minor.$patch"
+#else
+#define ELECTRON_VERSION_STRING "$major.$minor.$patch-$prerelease"
+#endif
+
+#define ELECTRON_VERSION "v" ELECTRON_VERSION_STRING
+
+#endif  // ELECTRON_ELECTRON_VERSION_H

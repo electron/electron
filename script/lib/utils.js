@@ -28,8 +28,7 @@ function getAbsoluteElectronExec () {
 async function handleGitCall (args, gitDir) {
   const details = await GitProcess.exec(args, gitDir)
   if (details.exitCode === 0) {
-    const output = details.stdout.replace(/^\*|\s+|\s+$/, '')
-    return output.trim()
+    return details.stdout.replace(/^\*|\s+|\s+$/, '')
   } else {
     const error = GitProcess.parseError(details.stderr)
     console.log(`${fail} couldn't parse git process call: `, error)
@@ -48,7 +47,7 @@ async function getCurrentBranch (gitDir) {
       process.exit(1)
     }
   }
-  return branch
+  return branch.trim()
 }
 
 module.exports = {

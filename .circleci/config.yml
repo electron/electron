@@ -103,7 +103,10 @@ env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
 
 env-ninja-status: &env-ninja-status
-  NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es]"
+  NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
+
+env-disable-run-as-node: &env-disable-run-as-node
+  GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
@@ -251,7 +254,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
 
 step-gn-check: &step-gn-check
   run:
@@ -261,7 +264,7 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron:electron_lib
       gn check out/Default //electron:electron_app
       gn check out/Default //electron:manifests
-      gn check out/Default //electron/atom/common/api:mojo
+      gn check out/Default //electron/shell/common/api:mojo
 
 step-electron-build: &step-electron-build
   run:
@@ -577,7 +580,7 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          node script/yarn install
+          node script/yarn install --frozen-lockfile
           node script/yarn lint
 
 steps-checkout: &steps-checkout
@@ -986,6 +989,16 @@ jobs:
       <<: *env-testing-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests
+
+  linux-x64-testing-no-run-as-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+      <<: *env-disable-run-as-node
     <<: *steps-electron-build-for-tests
 
   linux-x64-testing-gn-check:
@@ -1544,6 +1557,9 @@ workflows:
           requires:
             - linux-checkout
       - linux-x64-testing:
+          requires:
+            - linux-checkout
+      - linux-x64-testing-no-run-as-node:
           requires:
             - linux-checkout
       - linux-x64-testing-gn-check:

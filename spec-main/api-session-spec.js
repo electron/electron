@@ -265,7 +265,7 @@ describe('session module', () => {
     let customSession = null
     const protocol = session.defaultSession.protocol
     const handler = (ignoredError, callback) => {
-      callback({ data: 'test', mimeType: 'text/html' })
+      callback({ data: `<script>require('electron').ipcRenderer.send('hello')</script>`, mimeType: 'text/html' })
     }
 
     beforeEach(async () => {
@@ -273,7 +273,8 @@ describe('session module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: partitionName
+          partition: partitionName,
+          nodeIntegration: true,
         }
       })
       customSession = session.fromPartition(partitionName)
@@ -294,8 +295,8 @@ describe('session module', () => {
     })
 
     it('handles requests from partition', async () => {
-      await w.loadURL(`${protocolName}://fake-host`)
-      expect(await w.webContents.executeJavaScript('document.body.textContent')).to.equal('test')
+      w.loadURL(`${protocolName}://fake-host`)
+      await emittedOnce(ipcMain, 'hello')
     })
   })
 
@@ -552,8 +553,8 @@ describe('session module', () => {
     const assertDownload = (state, item, isCustom = false) => {
       expect(state).to.equal('completed')
       expect(item.getFilename()).to.equal('mock.pdf')
-      expect(path.isAbsolute(item.getSavePath())).to.equal(true)
-      expect(isPathEqual(item.getSavePath(), downloadFilePath)).to.equal(true)
+      expect(path.isAbsolute(item.savePath)).to.equal(true)
+      expect(isPathEqual(item.savePath, downloadFilePath)).to.equal(true)
       if (isCustom) {
         expect(item.getURL()).to.equal(`${protocolName}://item`)
       } else {
@@ -570,7 +571,7 @@ describe('session module', () => {
     it('can download using WebContents.downloadURL', (done) => {
       const port = downloadServer.address().port
       w.webContents.session.once('will-download', function (e, item) {
-        item.setSavePath(downloadFilePath)
+        item.savePath = downloadFilePath
         item.on('done', function (e, state) {
           assertDownload(state, item)
           done()
@@ -588,7 +589,7 @@ describe('session module', () => {
       protocol.registerHttpProtocol(protocolName, handler, (error) => {
         if (error) return done(error)
         w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(downloadFilePath)
+          item.savePath = downloadFilePath
           item.on('done', function (e, state) {
             assertDownload(state, item, true)
             done()
@@ -611,7 +612,7 @@ describe('session module', () => {
       }
       const done = new Promise(resolve => {
         w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(downloadFilePath)
+          item.savePath = downloadFilePath
           item.on('done', function (e, state) {
             resolve([state, item])
           })
@@ -625,7 +626,7 @@ describe('session module', () => {
     it('can cancel download', (done) => {
       const port = downloadServer.address().port
       w.webContents.session.once('will-download', function (e, item) {
-        item.setSavePath(downloadFilePath)
+        item.savePath = downloadFilePath
         item.on('done', function (e, state) {
           expect(state).to.equal('cancelled')
           expect(item.getFilename()).to.equal('mock.pdf')
@@ -649,7 +650,7 @@ describe('session module', () => {
 
       const port = downloadServer.address().port
       w.webContents.session.once('will-download', function (e, item) {
-        item.setSavePath(downloadFilePath)
+        item.savePath = downloadFilePath
         item.on('done', function (e, state) {
           expect(item.getFilename()).to.equal('download.pdf')
           done()
@@ -693,7 +694,7 @@ describe('session module', () => {
     describe('when a save path is specified and the URL is unavailable', () => {
       it('does not display a save dialog and reports the done state as interrupted', (done) => {
         w.webContents.session.once('will-download', function (e, item) {
-          item.setSavePath(downloadFilePath)
+          item.savePath = downloadFilePath
           if (item.getState() === 'interrupted') {
             item.resume()
           }
@@ -724,7 +725,7 @@ describe('session module', () => {
         expect(item.getMimeType()).to.equal(options.mimeType)
         expect(item.getReceivedBytes()).to.equal(options.offset)
         expect(item.getTotalBytes()).to.equal(options.length)
-        expect(item.getSavePath()).to.equal(downloadFilePath)
+        expect(item.savePath).to.equal(downloadFilePath)
         done()
       })
       w.webContents.session.createInterruptedDownload(options)
@@ -755,7 +756,7 @@ describe('session module', () => {
         expect(item.getState()).to.equal('cancelled')
 
         const options = {
-          path: item.getSavePath(),
+          path: item.savePath,
           urlChain: item.getURLChain(),
           mimeType: item.getMimeType(),
           offset: item.getReceivedBytes(),
@@ -777,7 +778,7 @@ describe('session module', () => {
         const completedItem = await downloadResumed
         expect(completedItem.getState()).to.equal('completed')
         expect(completedItem.getFilename()).to.equal('logo.png')
-        expect(completedItem.getSavePath()).to.equal(downloadFilePath)
+        expect(completedItem.savePath).to.equal(downloadFilePath)
         expect(completedItem.getURL()).to.equal(downloadUrl)
         expect(completedItem.getMimeType()).to.equal('image/png')
         expect(completedItem.getReceivedBytes()).to.equal(14022)
