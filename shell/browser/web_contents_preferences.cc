@@ -271,7 +271,8 @@ WebContentsPreferences* WebContentsPreferences::From(
 }
 
 void WebContentsPreferences::AppendCommandLineSwitches(
-    base::CommandLine* command_line) {
+    base::CommandLine* command_line,
+    bool is_subframe) {
   // Check if plugins are enabled.
   if (IsEnabled(options::kPlugins))
     command_line->AppendSwitch(switches::kEnablePlugins);
@@ -293,10 +294,16 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kWebviewTag))
     command_line->AppendSwitch(switches::kWebviewTag);
 
+  // Sandbox can be enabled for renderer processes hosting cross-origin frames
+  // unless nodeIntegrationInSubFrames is enabled
+  bool can_sandbox_frame =
+      is_subframe && !IsEnabled(options::kNodeIntegrationInSubFrames);
+
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
-  // integration.
-  if (IsEnabled(options::kSandbox)) {
+  // integration. Otherwise disable Chromium sandbox, unless app.enableSandbox()
+  // was called.
+  if (IsEnabled(options::kSandbox) || can_sandbox_frame) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(service_manager::switches::kNoSandbox);

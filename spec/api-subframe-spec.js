@@ -1,11 +1,12 @@
 const { expect } = require('chai')
 const { remote } = require('electron')
 const path = require('path')
+const http = require('http')
 
 const { emittedNTimes, emittedOnce } = require('./events-helpers')
 const { closeWindow } = require('./window-helpers')
 
-const { BrowserWindow } = remote
+const { app, BrowserWindow, ipcMain } = remote
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description, webPreferences) => {
@@ -147,5 +148,90 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     }
   ).forEach(config => {
     generateTests(config.title, config.webPreferences)
+  })
+})
+
+describe('cross-site frame sandboxing', () => {
+  let server = null
+
+  beforeEach(function () {
+    if (process.platform === 'linux') {
+      this.skip()
+    }
+  })
+
+  before(function (done) {
+    server = http.createServer((req, res) => {
+      res.end(`<iframe name="frame" src="${server.cross_site_url}" />`)
+    })
+    server.listen(0, '127.0.0.1', () => {
+      server.url = `http://127.0.0.1:${server.address().port}/`
+      server.cross_site_url = `http://localhost:${server.address().port}/`
+      done()
+    })
+  })
+
+  after(() => {
+    server.close()
+    server = null
+  })
+
+  const fixtures = path.resolve(__dirname, 'fixtures')
+  const preload = path.join(fixtures, 'module', 'preload-pid.js')
+
+  let w
+
+  afterEach(() => {
+    return closeWindow(w).then(() => {
+      w = null
+    })
+  })
+
+  const generateSpecs = (description, webPreferences) => {
+    describe(description, () => {
+      it('iframe process is sandboxed if possible', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+
+        await w.loadURL(server.url)
+
+        const pidMain = w.webContents.getOSProcessId()
+        const pidFrame = w.webContents._getOSProcessIdForFrame('frame', server.cross_site_url)
+
+        const metrics = app.getAppMetrics()
+        const isProcessSandboxed = function (pid) {
+          const entry = metrics.filter(metric => metric.pid === pid)[0]
+          return entry && entry.sandboxed
+        }
+
+        const sandboxMain = !!(webPreferences.sandbox || process.mas)
+        const sandboxFrame = sandboxMain || !webPreferences.nodeIntegrationInSubFrames
+
+        expect(isProcessSandboxed(pidMain)).to.equal(sandboxMain)
+        expect(isProcessSandboxed(pidFrame)).to.equal(sandboxFrame)
+      })
+    })
+  }
+
+  generateSpecs('nodeIntegrationInSubFrames = false, sandbox = false', {
+    nodeIntegrationInSubFrames: false,
+    sandbox: false
+  })
+
+  generateSpecs('nodeIntegrationInSubFrames = false, sandbox = true', {
+    nodeIntegrationInSubFrames: false,
+    sandbox: true
+  })
+
+  generateSpecs('nodeIntegrationInSubFrames = true, sandbox = false', {
+    nodeIntegrationInSubFrames: true,
+    sandbox: false
+  })
+
+  generateSpecs('nodeIntegrationInSubFrames = true, sandbox = true', {
+    nodeIntegrationInSubFrames: true,
+    sandbox: true
   })
 })
