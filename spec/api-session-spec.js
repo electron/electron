@@ -91,9 +91,28 @@ describe('session module', () => {
       })
     })
 
+    it('sets cookies', (done) => {
+      const { cookies } = session.defaultSession
+      const name = '1'
+      const value = '1'
+      cookies.set({ url, name, value }, (error, list) => done(error))
+    })
+
     it('calls back with an error when setting a cookie with missing required fields', (done) => {
       session.defaultSession.cookies.set({
         url: '',
+        name: '1',
+        value: '1'
+      }, (error) => {
+        assert(error, 'Should have an error')
+        assert.strictEqual(error.message, 'Setting cookie failed')
+        done()
+      })
+    })
+
+    it('yields an error when setting a cookie with an invalid URL', (done) => {
+      session.defaultSession.cookies.set({
+        url: 'asdf',
         name: '1',
         value: '1'
       }, (error) => {
