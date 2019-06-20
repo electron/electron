@@ -136,6 +136,18 @@ Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/MacOS/Electron Helper (Plugin)
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/PkgInfo
 Electron.app/Contents/Frameworks/Mantle.framework/
 Electron.app/Contents/Frameworks/Mantle.framework/Headers
 Electron.app/Contents/Frameworks/Mantle.framework/Mantle
