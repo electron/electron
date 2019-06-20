@@ -98,9 +98,12 @@ bool GetRESIds(uid_t* resuid, gid_t* resgid) {
   PCHECK(sys_getresgid(&rgid, &egid, &sgid) == 0);
   const bool uids_are_equal = (ruid == euid) && (ruid == suid);
   const bool gids_are_equal = (rgid == egid) && (rgid == sgid);
-  if (!uids_are_equal || !gids_are_equal) return false;
-  if (resuid) *resuid = euid;
-  if (resgid) *resgid = egid;
+  if (!uids_are_equal || !gids_are_equal)
+    return false;
+  if (resuid)
+    *resuid = euid;
+  if (resgid)
+    *resgid = egid;
   return true;
 }
 #endif
