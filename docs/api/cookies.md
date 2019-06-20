@@ -68,7 +68,7 @@ The following methods are available on instances of `Cookies`:
 
 * `filter` Object
   * `url` String (optional) - Retrieves cookies which are associated with
-    `url`. Empty implies retrieving cookies of all urls.
+    `url`. Empty implies retrieving cookies of all URLs.
   * `name` String (optional) - Filters cookies by name.
   * `domain` String (optional) - Retrieves cookies whose domains match or are
     subdomains of `domains`.
@@ -84,7 +84,7 @@ the response.
 #### `cookies.set(details)`
 
 * `details` Object
-  * `url` String - The url to associate the cookie with. The promise will be rejected if the url is invalid.
+  * `url` String - The URL to associate the cookie with. The promise will be rejected if the URL is invalid.
   * `name` String (optional) - The name of the cookie. Empty by default if omitted.
   * `value` String (optional) - The value of the cookie. Empty by default if omitted.
   * `domain` String (optional) - The domain of the cookie; this will be normalized with a preceding dot so that it's also valid for subdomains. Empty by default if omitted.

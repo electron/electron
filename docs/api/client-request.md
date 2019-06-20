@@ -160,7 +160,7 @@ internally buffered inside Electron process memory.
 * `name` String - An extra HTTP header name.
 * `value` Object - An extra HTTP header value.
 
-Adds an extra HTTP header. The header name will issued as it is without
+Adds an extra HTTP header. The header name will be issued as-is without
 lowercasing. It can be called only before first write. Calling this method after
 the first write will throw an error. If the passed value is not a `String`, its
 `toString()` method will be called to obtain the final value.
