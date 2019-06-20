@@ -91,13 +91,6 @@ describe('session module', () => {
       })
     })
 
-    it('sets cookies', (done) => {
-      const { cookies } = session.defaultSession
-      const name = '1'
-      const value = '1'
-      cookies.set({ url, name, value }, (error, list) => done(error))
-    })
-
     it('calls back with an error when setting a cookie with missing required fields', (done) => {
       session.defaultSession.cookies.set({
         url: '',
