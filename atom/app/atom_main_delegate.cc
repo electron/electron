@@ -289,12 +289,12 @@ AtomMainDelegate::CreateContentRendererClient() {
           service_manager::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
 #if defined(OS_LINUX)
-  if (getuid() == 0) {
-    LOG(FATAL) << "Running as root without --"
-                << service_manager::switches::kNoSandbox
-                << " is not supported. See https://crbug.com/638180.";
-    exit(EXIT_FAILURE);
-  }
+    if (getuid() == 0) {
+      LOG(FATAL) << "Running as root without --"
+                 << service_manager::switches::kNoSandbox
+                 << " is not supported. See https://crbug.com/638180.";
+      exit(EXIT_FAILURE);
+    }
 #endif
   } else {
     renderer_client_.reset(new AtomRendererClient);
