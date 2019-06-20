@@ -100,9 +100,12 @@ int sys_getresuid(uid_t* ruid, uid_t* euid, uid_t* suid) {
   res = syscall(__NR_getresuid, ruid, euid, suid);
 #endif
   if (res == 0) {
-    if (ruid) MSAN_UNPOISON(ruid, sizeof(*ruid));
-    if (euid) MSAN_UNPOISON(euid, sizeof(*euid));
-    if (suid) MSAN_UNPOISON(suid, sizeof(*suid));
+    if (ruid)
+      MSAN_UNPOISON(ruid, sizeof(*ruid));
+    if (euid)
+      MSAN_UNPOISON(euid, sizeof(*euid));
+    if (suid)
+      MSAN_UNPOISON(suid, sizeof(*suid));
   }
   return res;
 }
