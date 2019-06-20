@@ -50,8 +50,6 @@
 #include "native_mate/object_template_builder.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
-#include "net/disk_cache/disk_cache.h"
-#include "net/dns/host_cache.h"  // nogncheck
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
@@ -209,73 +207,6 @@ const char kPersistPrefix[] = "persist:";
 
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
-
-void ResolveOrRejectPromiseInUI(util::Promise promise, int net_error) {
-  if (net_error != net::OK) {
-    std::string err_msg = net::ErrorToString(net_error);
-    util::Promise::RejectPromise(std::move(promise), std::move(err_msg));
-  } else {
-    util::Promise::ResolveEmptyPromise(std::move(promise));
-  }
-}
-
-// Callback of HttpCache::GetBackend.
-void OnGetBackend(disk_cache::Backend** backend_ptr,
-                  Session::CacheAction action,
-                  const util::CopyablePromise& promise,
-                  int result) {
-  if (result != net::OK) {
-    std::string err_msg =
-        "Failed to retrieve cache backend: " + net::ErrorToString(result);
-    util::Promise::RejectPromise(promise.GetPromise(), std::move(err_msg));
-  } else if (backend_ptr && *backend_ptr) {
-    if (action == Session::CacheAction::CLEAR) {
-      auto success =
-          (*backend_ptr)
-              ->DoomAllEntries(base::BindOnce(&ResolveOrRejectPromiseInUI,
-                                              promise.GetPromise()));
-      if (success != net::ERR_IO_PENDING)
-        ResolveOrRejectPromiseInUI(promise.GetPromise(), success);
-    } else if (action == Session::CacheAction::STATS) {
-      base::StringPairs stats;
-      (*backend_ptr)->GetStats(&stats);
-      for (const auto& stat : stats) {
-        if (stat.first == "Current size") {
-          int current_size;
-          base::StringToInt(stat.second, &current_size);
-          util::Promise::ResolvePromise<int>(promise.GetPromise(),
-                                             current_size);
-          break;
-        }
-      }
-    }
-  }
-}
-
-void DoCacheActionInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    Session::CacheAction action,
-    util::Promise promise) {
-  auto* request_context = context_getter->GetURLRequestContext();
-
-  auto* http_cache = request_context->http_transaction_factory()->GetCache();
-  if (!http_cache) {
-    std::string err_msg =
-        "Failed to retrieve cache: " + net::ErrorToString(net::ERR_FAILED);
-    util::Promise::RejectPromise(std::move(promise), std::move(err_msg));
-    return;
-  }
-
-  // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
-  using BackendPtr = disk_cache::Backend*;
-  auto** backend_ptr = new BackendPtr(nullptr);
-  net::CompletionRepeatingCallback on_get_backend =
-      base::Bind(&OnGetBackend, base::Owned(backend_ptr), action,
-                 util::CopyablePromise(promise));
-  int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
-  if (rv != net::ERR_IO_PENDING)
-    on_get_backend.Run(net::OK);
-}
 
 void SetCertVerifyProcInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
@@ -438,17 +369,39 @@ v8::Local<v8::Promise> Session::ResolveProxy(mate::Arguments* args) {
   return handle;
 }
 
-template <Session::CacheAction action>
-v8::Local<v8::Promise> Session::DoCacheAction() {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  util::Promise promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+v8::Local<v8::Promise> Session::GetCacheSize() {
+  auto* isolate = v8::Isolate::GetCurrent();
+  auto promise = util::Promise(isolate);
+  auto handle = promise.GetHandle();
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&DoCacheActionInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     action, std::move(promise)));
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ComputeHttpCacheSize(base::Time(), base::Time::Max(),
+                             base::BindOnce(
+                                 [](util::Promise promise, bool is_upper_bound,
+                                    int64_t size_or_error) {
+                                   if (size_or_error < 0) {
+                                     promise.RejectWithErrorMessage(
+                                         net::ErrorToString(size_or_error));
+                                   } else {
+                                     promise.Resolve(size_or_error);
+                                   }
+                                 },
+                                 std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Session::ClearCache() {
+  auto* isolate = v8::Isolate::GetCurrent();
+  auto promise = util::Promise(isolate);
+  auto handle = promise.GetHandle();
+
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
+                       base::BindOnce(util::Promise::ResolveEmptyPromise,
+                                      std::move(promise)));
 
   return handle;
 }
@@ -812,8 +765,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
-      .SetMethod("getCacheSize", &Session::DoCacheAction<CacheAction::STATS>)
-      .SetMethod("clearCache", &Session::DoCacheAction<CacheAction::CLEAR>)
+      .SetMethod("getCacheSize", &Session::GetCacheSize)
+      .SetMethod("clearCache", &Session::ClearCache)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("flushStorageData", &Session::FlushStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
