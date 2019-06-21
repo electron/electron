@@ -131,11 +131,12 @@ protocol.registerSchemesAsPrivileged([
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
-    * `filePath` String (optional)
+    * `filePath` String | [FilePathWithHeaders](structures/file-path-with-headers.md) (optional)
 * `completion` Function (optional)
   * `error` Error
 
@@ -165,6 +166,7 @@ than protocols that follow the "generic URI syntax" like `file:`.
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
@@ -197,11 +199,12 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
-    * `data` String (optional)
+    * `data` (String | [MimeTypedString](structures/mime-typed-string.md)) (optional)
 * `completion` Function (optional)
   * `error` Error
 
@@ -224,7 +227,7 @@ should be called with either a `String` or an object that has the `data`,
   * `callback` Function
     * `redirectRequest` Object
       * `url` String
-      * `method` String
+      * `method` String (optional)
       * `session` Object (optional)
       * `uploadData` Object (optional)
         * `contentType` String - MIME type of the content.
@@ -325,6 +328,7 @@ already a handler for `scheme`.
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
@@ -342,11 +346,12 @@ which sends a file as a response.
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
-    * `data` String (optional)
+    * `data` (String | Object) (optional)
 * `completion` Function (optional)
   * `error` Error
 
@@ -359,6 +364,7 @@ which sends a `String` as a response.
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
@@ -383,8 +389,8 @@ which sends a `Buffer` as a response.
   * `callback` Function
     * `redirectRequest` Object
       * `url` String
-      * `method` String
-      * `session` Object (optional)
+      * `method` String (optional)
+      * `session` Object | null (optional)
       * `uploadData` Object (optional)
         * `contentType` String - MIME type of the content.
         * `data` String - Content to be sent.
