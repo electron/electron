@@ -38,6 +38,20 @@ void BeforeStartInUI(base::WeakPtr<URLRequestAsyncAsarJob> job,
     error = net::ERR_NOT_IMPLEMENTED;
   }
 
+  // sanitize custom headers
+  if (request_options && request_options->is_dict()) {
+    const base::Value* headersDict = request_options->FindDictKey("headers");
+    if (headersDict) {
+      for (const auto& iter : headersDict->DictItems()) {
+        if (!iter.second.is_string()) {
+          args->ThrowError("Value of '" + iter.first +
+                           "' header has to be a string");
+          return;
+        }
+      }
+    }
+  }
+
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&URLRequestAsyncAsarJob::StartAsync, job,
