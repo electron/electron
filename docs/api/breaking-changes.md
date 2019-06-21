@@ -68,6 +68,10 @@ webFrame.setIsolatedWorldInfo(
 
 This property was removed in Chromium 77, and as such is no longer available.
 
+### Preload scripts outside of app path are not allowed
+
+For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
+
 ## Planned Breaking API Changes (6.0)
 
 ### `win.setMenu(null)`

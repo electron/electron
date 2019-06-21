@@ -193,10 +193,14 @@ if (nodeIntegration) {
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
+const { isPreloadAllowed } = require('@electron/internal/common/preload-utils')
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
+    if (!isPreloadAllowed(appPath, Module._resolveFilename(preloadScript, null, true))) {
+      throw new Error('Preload scripts outside of app path are not allowed')
+    }
     Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)

@@ -418,6 +418,8 @@ Returns `Promise<void>` - resolves when the session’s HTTP authentication cach
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
+**Note:** For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
+
 #### `ses.getPreloads()`
 
 Returns `String[]` an array of paths to preload scripts that have been
