@@ -836,7 +836,10 @@ describe('Menu module', () => {
   })
 
   describe('menu accelerators', () => {
-    let testFn = it
+    // robotjs seems to be having issues on linux-x64
+    const skip = process.platform === 'linux' && process.arch === 'x64'
+    let testFn = skip ? it : it.skip
+
     try {
       // We have other tests that check if native modules work, if we fail to require
       // robotjs let's skip this test to avoid false negatives
@@ -844,6 +847,7 @@ describe('Menu module', () => {
     } catch (err) {
       testFn = it.skip
     }
+
     const sendRobotjsKey = (key, modifiers = [], delay = 500) => {
       return new Promise((resolve, reject) => {
         require('robotjs').keyTap(key, modifiers)
