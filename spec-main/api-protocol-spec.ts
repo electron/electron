@@ -694,21 +694,18 @@ describe('protocol module', () => {
     })
 
     it('allows CORS requests by default', async () => {
-      await allowsCORSRequests('cors', 200, new RegExp(''), `<html>
-        <script>
+      await allowsCORSRequests('cors', 200, new RegExp(''), () => {
         const {ipcRenderer} = require('electron')
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status)
         }).catch(function (response) {
           ipcRenderer.send('response', 'failed')
         })
-        </script>
-        </html>`)
+      })
     })
 
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
-      await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, `<html>
-        <script>
+      await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
         const {ipcRenderer} = require('electron')
         Promise.all([
           new Promise(resolve => {
@@ -724,13 +721,11 @@ describe('protocol module', () => {
         ]).then(([xhr, fetch]) => {
           ipcRenderer.send('response', [xhr, fetch])
         })
-        </script>
-        </html>`)
+      })
     })
 
     it('allows CORS, but disallows fetch requests, when specified', async () => {
-      await allowsCORSRequests('no-fetch', ['loaded xhr', 'failed fetch'], /Fetch API cannot load/, `<html>
-        <script>
+      await allowsCORSRequests('no-fetch', ['loaded xhr', 'failed fetch'], /Fetch API cannot load/, () => {
         const {ipcRenderer} = require('electron')
         Promise.all([
           new Promise(resolve => {
@@ -746,13 +741,12 @@ describe('protocol module', () => {
         ]).then(([xhr, fetch]) => {
           ipcRenderer.send('response', [xhr, fetch])
         })
-        </script>
-        </html>`)
+      })
     })
 
-    async function allowsCORSRequests (corsScheme: string, expected: any, expectedConsole: RegExp, content: string) {
+    async function allowsCORSRequests (corsScheme: string, expected: any, expectedConsole: RegExp, content: Function) {
       await registerStringProtocol(standardScheme, (request, callback) => {
-        callback({ data: content, mimeType: 'text/html' })
+        callback({ data: `<script>(${content})()</script>`, mimeType: 'text/html' })
       })
       await registerStringProtocol(corsScheme, (request, callback) => {
         callback('')
