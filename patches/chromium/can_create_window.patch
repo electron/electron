@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index cc766f9086e3f140ac9fea6f68d125f519eaa9b6..d92b25037c295158662ce37002ec072acc684e72 100644
+index c2058950c8814bbb31141bd78c5bb008042ba9d6..95f2b97de5b1c0288ac4d4eee66d081baa5b564d 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3726,6 +3726,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3762,6 +3762,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -87,7 +87,7 @@ index dae2f5a0dfedc5f7cd81c479cfab383730e61d9c..960fe49cab461b2f34793959bde0bbd8
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
-index b84c8f588bf7f0d51d7bdaaf6e73b38c8350d8f3..baf2853ad6003fac5fd4c160e128172860b8ac41 100644
+index c8aa2f99f40d038b73d0c9dbec2d941b1c652a6f..b8c17c44f3884e1f60ffd42dbae433392dde6307 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
 @@ -308,6 +308,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(

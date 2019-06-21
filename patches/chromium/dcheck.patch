@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index abbe6a24c15504150727f2a74e1ca73aabf1fca1..641002132cacb81ea5a9f0c14015ffd7856f7267 100644
+index c29790a3387583dd4750d590ef3aa37503dd7270..f6cc5b31eec23c8526e7f1739e3f2c2547959efa 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1242,8 +1242,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1241,8 +1241,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index abbe6a24c15504150727f2a74e1ca73aabf1fca1..641002132cacb81ea5a9f0c14015ffd7
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1488,7 +1490,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1487,7 +1489,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -46,7 +46,7 @@ index abbe6a24c15504150727f2a74e1ca73aabf1fca1..641002132cacb81ea5a9f0c14015ffd7
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 17dee835d3d473a37e18c5a111426a3899a6ced2..ae01e88dbfbbfe34bb76e4234c17e95d06737663 100644
+index 7ed451db1a95409492f231d6cdde0da4fe2d6123..51dd41bd85bdbbf125747d514ff52ca5debe3638 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
 @@ -729,9 +729,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,

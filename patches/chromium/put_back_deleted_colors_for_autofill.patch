@@ -40,10 +40,25 @@ index c72e78bdc7c1535d48bc13e18c1cc784051eaea8..fe07c0ac7d94cdbb7bef56f651266e63
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index e7f06ef913e75be31a644cc8c08b27325f23d036..89f324a59998368d61f556549e5796cd02bfa0e3 100644
+index 489369300d48dbfacb8c5489e06b77218f526bf4..139579c6bc96c74ba9771514b28fcbd5ddde6ab9 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -305,6 +305,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -51,6 +51,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+       case NativeTheme::kColorId_BubbleFooterBackground:
+         return SkColorSetRGB(0x32, 0x36, 0x39);
+ 
++      // Results Tables
++      case kColorId_ResultsTableNormalBackground:
++        return SkColorSetRGB(0x28, 0x28, 0x28);
++      case kColorId_ResultsTableNormalText:
++        return SK_ColorWHITE;
++      case kColorId_ResultsTableDimmedText:
++        return SkColorSetA(GetSystemColor(kColorId_ResultsTableNormalText), 0x80);
++
+       // FocusableBorder
+       case NativeTheme::kColorId_FocusedBorderColor:
+         return SkColorSetA(gfx::kGoogleBlue300, 0x66);
+@@ -351,6 +359,18 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return SkColorSetA(SK_ColorBLACK, 0x66);
  
@@ -78,33 +93,6 @@ index 68d9f2a26a8616d5f4d18c89fa0f8ec7650b8c10..b624f3df1162e0f6ad4ee72bf2bb8bd0
      // Colors for the material spinner (aka throbber).
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
-diff --git a/ui/native_theme/native_theme_dark_aura.cc b/ui/native_theme/native_theme_dark_aura.cc
-index bccba2f2196d8fb0bfd88702f1170188bc3cb68c..e97ba31ff158337a1e1516f4f3a307841cb246db 100644
---- a/ui/native_theme/native_theme_dark_aura.cc
-+++ b/ui/native_theme/native_theme_dark_aura.cc
-@@ -54,6 +54,14 @@ SkColor NativeThemeDarkAura::GetSystemColor(ColorId color_id) const {
-     case kColorId_TextfieldSelectionBackgroundFocused:
-       return kTextSelectionBackgroundFocused;
- 
-+    // Results Tables
-+    case kColorId_ResultsTableNormalBackground:
-+      return SkColorSetRGB(0x28, 0x28, 0x28);
-+    case kColorId_ResultsTableNormalText:
-+      return SK_ColorWHITE;
-+    case kColorId_ResultsTableDimmedText:
-+      return SkColorSetA(GetSystemColor(kColorId_ResultsTableNormalText), 0x80);
-+
-     // FocusableBorder
-     case kColorId_FocusedBorderColor:
-       return SkColorSetA(gfx::kGoogleBlue300, 0x66);
-@@ -70,6 +78,7 @@ SkColor NativeThemeDarkAura::GetSystemColor(ColorId color_id) const {
-     case kColorId_LabelDisabledColor:
-     case kColorId_TextOnProminentButtonColor:
-     case kColorId_ButtonPressedShade:
-+    case kColorId_ResultsTableHoveredBackground:
-     case kColorId_ProminentButtonDisabledColor:
-     case kColorId_ButtonBorderColor:
-     case kColorId_DefaultIconColor:
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
 index 0e1002339bc48c89132a118f8a95727f6981a918..ed5b1ef0ceb35809f5ade0a1791c30ed84066ab6 100644
 --- a/ui/native_theme/native_theme_win.cc
