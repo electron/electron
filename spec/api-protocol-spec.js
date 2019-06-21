@@ -347,7 +347,7 @@ describe('protocol module', () => {
         assert.throws(() => callback({
           path: filePath,
           headers: { 'X-Great-Header': 42 }
-        }), /Value of \'X-Great-Header\' header has to be a string/)
+        }), /Value of 'X-Great-Header' header has to be a string/)
         done()
       }
       protocol.registerFileProtocol(protocolName, handler, (error) => {
