@@ -59,6 +59,18 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
   return body
 }
 
+// A promise that can be resolved externally.
+function defer(): Promise<any> & {resolve: Function, reject: Function} {
+  let promiseResolve: Function = null as unknown as Function
+  let promiseReject: Function = null as unknown as Function
+  const promise: any = new Promise((resolve, reject) => {
+    promiseResolve = resolve
+    promiseReject = reject
+  })
+  promise.resolve = promiseResolve
+  promise.reject = promiseReject
+  return promise
+}
 
 describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents
@@ -643,9 +655,18 @@ describe('protocol module', () => {
     })
 
     it('can have fetch working in it', async () => {
-      const content = '<html><script>fetch("http://github.com")</script></html>'
+      const requestReceived = defer()
+      const server = http.createServer((req, res) => {
+        res.end()
+        server.close()
+        requestReceived.resolve()
+      })
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+      const port = (server.address() as AddressInfo).port
+      const content = `<script>fetch("http://127.0.0.1:${port}")</script>`
       await registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }))
       await w.loadURL(origin)
+      await requestReceived
     })
 
     it('can access files through the FileSystem API', (done) => {
