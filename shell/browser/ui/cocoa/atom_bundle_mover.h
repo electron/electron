@@ -11,6 +11,9 @@
 
 namespace electron {
 
+// Possible bundle movement conflicts
+enum class ConflictType { EXISTS, EXISTS_AND_RUNNING };
+
 namespace ui {
 
 namespace cocoa {

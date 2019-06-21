@@ -1429,7 +1429,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::ResignCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
                  base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
-      // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
 #endif

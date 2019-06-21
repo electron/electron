@@ -14,6 +14,26 @@
 #import <sys/param.h>
 
 #import "shell/browser/browser.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+
+namespace mate {
+
+template <>
+struct Converter<electron::ConflictType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::ConflictType value) {
+    switch (value) {
+      case electron::ConflictType::EXISTS:
+        return mate::StringToV8(isolate, "exists");
+      case electron::ConflictType::EXISTS_AND_RUNNING:
+        return mate::StringToV8(isolate, "existsAndRunning");
+      default:
+        return mate::StringToV8(isolate, "");
+    }
+  }
+};
+
+}  // namespace mate
 
 namespace electron {
 
@@ -70,11 +90,22 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       }
     }
   } else {
+    base::OnceCallback<bool(ConflictType)> conflict_cb;
+
     // If a copy already exists in the Applications folder, put it in the Trash
     if ([fileManager fileExistsAtPath:destinationPath]) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
-        // Give the running app focus and terminate myself
+        // Check for callback handler and get user choice for open/quit
+        if (args->GetNext(&conflict_cb)) {
+          return false;
+          bool maybeQuit =
+              std::move(conflict_cb).Run(ConflictType::EXISTS_AND_RUNNING);
+          if (!maybeQuit)
+            return false;
+        }
+
+        // Unless explicitly denied, give running app focus and terminate self
         [[NSTask
             launchedTaskWithLaunchPath:@"/usr/bin/open"
                              arguments:[NSArray
@@ -83,6 +114,14 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         electron::Browser::Get()->Quit();
         return true;
       } else {
+        // Check callback handler and get user choice for app trashing
+        if (args->GetNext(&conflict_cb)) {
+          bool maybeTrash = std::move(conflict_cb).Run(ConflictType::EXISTS);
+          if (!maybeTrash)
+            return false;
+        }
+
+        // Unless explicitly denied, attempt to trash old app
         if (!Trash([applicationsDirectory
                 stringByAppendingPathComponent:bundleName])) {
           args->ThrowError("Failed to delete existing application");
