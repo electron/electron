@@ -32,7 +32,7 @@ def main():
   subprocess.check_call(
     [sys.executable, js2c, natives] +
     js_source_files +
-    ['-t', TEMPLATE])
+    ['--target', TEMPLATE])
 
 
 if __name__ == '__main__':
