@@ -251,7 +251,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled.
-      Default is `false`.
+      Default is `true`.
     * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
