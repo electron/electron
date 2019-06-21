@@ -48,12 +48,12 @@ index 489369300d48dbfacb8c5489e06b77218f526bf4..139579c6bc96c74ba9771514b28fcbd5
          return SkColorSetRGB(0x32, 0x36, 0x39);
  
 +      // Results Tables
-+      case kColorId_ResultsTableNormalBackground:
++      case NativeTheme::kColorId_ResultsTableNormalBackground:
 +        return SkColorSetRGB(0x28, 0x28, 0x28);
-+      case kColorId_ResultsTableNormalText:
++      case NativeTheme::kColorId_ResultsTableNormalText:
 +        return SK_ColorWHITE;
-+      case kColorId_ResultsTableDimmedText:
-+        return SkColorSetA(GetSystemColor(kColorId_ResultsTableNormalText), 0x80);
++      case NativeTheme::kColorId_ResultsTableDimmedText:
++        return SkColorSetA(base_theme->GetSystemColor(kColorId_ResultsTableNormalText), 0x80);
 +
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
