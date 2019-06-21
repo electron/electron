@@ -24,6 +24,7 @@ class AtomBundleMover {
   static bool IsCurrentAppInApplicationsFolder();
 
  private:
+  static bool ShouldContinueMove(ConflictType type, mate::Arguments* args);
   static bool IsInApplicationsFolder(NSString* bundlePath);
   static NSString* ContainingDiskImageDevice(NSString* bundlePath);
   static void Relaunch(NSString* destinationPath);

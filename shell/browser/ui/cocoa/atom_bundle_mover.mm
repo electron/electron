@@ -41,6 +41,25 @@ namespace ui {
 
 namespace cocoa {
 
+bool AtomBundleMover::ShouldContinueMove(ConflictType type,
+                                         mate::Arguments* args) {
+  mate::Dictionary options;
+  bool hasOptions = args->GetNext(&options);
+  base::OnceCallback<v8::MaybeLocal<v8::Value>(ConflictType)> conflict_cb;
+
+  if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
+    v8::MaybeLocal<v8::Value> maybe = std::move(conflict_cb).Run(type);
+    v8::Local<v8::Value> value;
+    if (maybe.ToLocal(&value) && value->IsBoolean()) {
+      if (!value.As<v8::Boolean>()->Value())
+        return false;
+    } else {
+      args->ThrowError("Invalid conflict handler return type.");
+    }
+  }
+  return true;
+}
+
 bool AtomBundleMover::Move(mate::Arguments* args) {
   // Path of the current bundle
   NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
@@ -90,21 +109,13 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       }
     }
   } else {
-    mate::Dictionary options;
-    bool hasOptions = args->GetNext(&options);
-    base::OnceCallback<bool(ConflictType)> conflict_cb;
-
     // If a copy already exists in the Applications folder, put it in the Trash
     if ([fileManager fileExistsAtPath:destinationPath]) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
-        if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
-          bool maybeQuit =
-              std::move(conflict_cb).Run(ConflictType::EXISTS_AND_RUNNING);
-          if (!maybeQuit)
-            return false;
-        }
+        if (!ShouldContinueMove(ConflictType::EXISTS_AND_RUNNING, args))
+          return false;
 
         // Unless explicitly denied, give running app focus and terminate self
         [[NSTask
@@ -116,11 +127,8 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         return true;
       } else {
         // Check callback handler and get user choice for app trashing
-        if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
-          bool maybeTrash = std::move(conflict_cb).Run(ConflictType::EXISTS);
-          if (!maybeTrash)
-            return false;
-        }
+        if (!ShouldContinueMove(ConflictType::EXISTS, args))
+          return false;
 
         // Unless explicitly denied, attempt to trash old app
         if (!Trash([applicationsDirectory
