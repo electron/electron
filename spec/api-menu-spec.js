@@ -838,7 +838,7 @@ describe('Menu module', () => {
   describe('menu accelerators', () => {
     // robotjs seems to be having issues on linux-x64
     const skip = process.platform === 'linux' && process.arch === 'x64'
-    let testFn = skip ? it : it.skip
+    let testFn = skip ? it.skip : it
 
     try {
       // We have other tests that check if native modules work, if we fail to require
@@ -856,6 +856,8 @@ describe('Menu module', () => {
         }, delay)
       })
     }
+    // check if robotJS actually works...
+    sendRobotjsKey()
 
     testFn('should perform the specified action', async () => {
       let hasBeenClicked = false
