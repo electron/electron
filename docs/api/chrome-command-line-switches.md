@@ -46,14 +46,14 @@ Forces the maximum disk space to be used by the disk cache, in bytes.
 
 ## --js-flags=`flags`
 
-Specifies the flags passed to the Node JS engine. It has to be passed when starting
+Specifies the flags passed to the Node.js engine. It has to be passed when starting
 Electron if you want to enable the `flags` in the main process.
 
 ```sh
 $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 ```
 
-See the [Node documentation][node-cli] or run `node --help` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node's V8 JavaScript engine.
+See the [Node.js documentation][node-cli] or run `node --help` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node.js's V8 JavaScript engine.
 
 ## --proxy-server=`address:port`
 
@@ -122,12 +122,12 @@ For example:
 ```
 
 then any `url` ending with `example.com`, `foobar.com`, `baz` will be considered
-for integrated authentication. Without `*` prefix the url has to match exactly.
+for integrated authentication. Without `*` prefix the URL has to match exactly.
 
 ## --auth-negotiate-delegate-whitelist=`url`
 
 A comma-separated list of servers for which delegation of user credentials is required.
-Without `*` prefix the url has to match exactly.
+Without `*` prefix the URL has to match exactly.
 
 ## --ignore-certificate-errors
 

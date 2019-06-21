@@ -51,7 +51,7 @@ The `crashReporter` module has the following methods:
   * `extra` Object (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
     supported. When using Windows, the property names and values must be fewer than 64 characters.
-  * `crashesDirectory` String (optional) - Directory to store the crashreports temporarily (only used when the crash reporter is started via `process.crashReporter.start`).
+  * `crashesDirectory` String (optional) - Directory to store the crash reports temporarily (only used when the crash reporter is started via `process.crashReporter.start`).
 
 You are required to call this method before using any other `crashReporter` APIs
 and in each process (main/renderer) from which you want to collect crash reports.

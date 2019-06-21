@@ -129,7 +129,7 @@ Cancels the download operation.
 
 #### `downloadItem.getURL()`
 
-Returns `String` - The origin url where the item is downloaded from.
+Returns `String` - The origin URL where the item is downloaded from.
 
 #### `downloadItem.getMimeType()`
 
@@ -171,7 +171,7 @@ Returns `String` - The current state. Can be `progressing`, `completed`, `cancel
 
 #### `downloadItem.getURLChain()`
 
-Returns `String[]` - The complete url chain of the item including any redirects.
+Returns `String[]` - The complete URL chain of the item including any redirects.
 
 #### `downloadItem.getLastModifiedTime()`
 
