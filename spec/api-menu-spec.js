@@ -2,7 +2,7 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
 const { ipcRenderer, remote } = require('electron')
-const { BrowserWindow, Menu, MenuItem } = remote
+const { BrowserWindow, globalShortcut, Menu, MenuItem } = remote
 const { sortMenuItems } = require('../lib/browser/api/menu-utils')
 const { closeWindow } = require('./window-helpers')
 
@@ -835,31 +835,41 @@ describe('Menu module', () => {
     })
   })
 
-  describe('menu accelerators', () => {
-    // robotjs seems to be having issues on linux-x64
-    const skip = process.platform === 'linux' && process.arch === 'x64'
-    let testFn = skip ? it.skip : it
-
-    try {
-      // We have other tests that check if native modules work, if we fail to require
-      // robotjs let's skip this test to avoid false negatives
-      require('robotjs')
-    } catch (err) {
-      testFn = it.skip
-    }
-
+  describe('menu accelerators', async () => {
     const sendRobotjsKey = (key, modifiers = [], delay = 500) => {
       return new Promise((resolve, reject) => {
-        require('robotjs').keyTap(key, modifiers)
-        setTimeout(() => {
-          resolve()
-        }, delay)
+        try {
+          require('robotjs').keyTap(key, modifiers)
+          setTimeout(() => {
+            resolve()
+          }, delay)
+        } catch (e) {
+          reject(e)
+        }
       })
     }
-    // check if robotJS actually works...
-    sendRobotjsKey()
 
-    testFn('should perform the specified action', async () => {
+    // before accelerator tests, use globalShortcut to test if
+    // RobotJS is working at all
+    before(async function () {
+      let isKeyPressed = false
+      globalShortcut.register('q', () => {
+        isKeyPressed = true
+      })
+      try {
+        await sendRobotjsKey('q')
+      } catch (e) {
+        this.skip()
+      }
+
+      if (!isKeyPressed) {
+        this.skip()
+      }
+
+      globalShortcut.unregister('q')
+    })
+
+    it('should perform the specified action', async () => {
       let hasBeenClicked = false
       const menu = Menu.buildFromTemplate([
         {
@@ -889,7 +899,7 @@ describe('Menu module', () => {
       expect(hasBeenClicked).to.equal(true)
     })
 
-    testFn('should not activate upon clicking another key combination', async () => {
+    it('should not activate upon clicking another key combination', async () => {
       let hasBeenClicked = false
       const menu = Menu.buildFromTemplate([
         {
