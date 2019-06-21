@@ -361,11 +361,7 @@ bool AtomBundleMover::CopyBundle(NSString* srcPath, NSString* dstPath) {
   NSFileManager* fileManager = [NSFileManager defaultManager];
   NSError* error = nil;
 
-  if ([fileManager copyItemAtPath:srcPath toPath:dstPath error:&error]) {
-    return true;
-  } else {
-    return false;
-  }
+  return [fileManager copyItemAtPath:srcPath toPath:dstPath error:&error];
 }
 
 NSString* AtomBundleMover::ShellQuotedString(NSString* string) {
