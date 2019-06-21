@@ -1248,11 +1248,11 @@ For example:
 ```js
 app.moveToApplicationsFolder(conflictType => {
   if (conflictType === 'exists') {
-    dialog.showMessageBox({
-    type: 'question',
-    buttons: ['Halt Move', 'Continue Move'],
-    defaultId: 0,
-    message: 'An app of this name already exists',
+    dialog.showMessageBoxSync({
+      type: 'question',
+      buttons: ['Halt Move', 'Continue Move'],
+      defaultId: 0,
+      message: 'An app of this name already exists'
     }, response => response)
   }
 })

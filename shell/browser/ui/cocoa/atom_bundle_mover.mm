@@ -98,7 +98,6 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
         if (args->GetNext(&conflict_cb)) {
-          return false;
           bool maybeQuit =
               std::move(conflict_cb).Run(ConflictType::EXISTS_AND_RUNNING);
           if (!maybeQuit)
