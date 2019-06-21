@@ -66,6 +66,7 @@ class Session : public mate::TrackableObject<Session>,
                     const ResolveProxyHelper::ResolveProxyCallback& callback);
   template <CacheAction action>
   void DoCacheAction(const net::CompletionCallback& callback);
+  void GetCacheSize(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
   void SetProxy(const mate::Dictionary& options, const base::Closure& callback);

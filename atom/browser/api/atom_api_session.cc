@@ -420,6 +420,17 @@ void Session::ResolveProxy(
   browser_context_->GetResolveProxyHelper()->ResolveProxy(url, callback);
 }
 
+void Session::GetCacheSize(const net::CompletionCallback& callback) {
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->ComputeHttpCacheSize(
+          base::Time(), base::Time::Max(),
+          base::BindOnce(
+              [](const net::CompletionCallback& cb, bool is_upper_bound,
+                 int64_t size_or_error) { cb.Run(size_or_error); },
+              callback));
+}
+
 template <Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
   base::PostTaskWithTraits(
@@ -748,7 +759,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
-      .SetMethod("getCacheSize", &Session::DoCacheAction<CacheAction::STATS>)
+      .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::DoCacheAction<CacheAction::CLEAR>)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("flushStorageData", &Session::FlushStorageData)
