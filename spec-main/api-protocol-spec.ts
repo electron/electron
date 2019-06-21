@@ -62,7 +62,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
 
 describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents
-  before(() => contents = (webContents as any).create({}))
+  before(() => contents = (webContents as any).create({sandbox: true}))
   after(() => (contents as any).destroy())
 
   async function ajax (url: string, options = {}) {
