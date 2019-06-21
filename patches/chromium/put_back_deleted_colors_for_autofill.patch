@@ -53,7 +53,7 @@ index 489369300d48dbfacb8c5489e06b77218f526bf4..139579c6bc96c74ba9771514b28fcbd5
 +      case NativeTheme::kColorId_ResultsTableNormalText:
 +        return SK_ColorWHITE;
 +      case NativeTheme::kColorId_ResultsTableDimmedText:
-+        return SkColorSetA(base_theme->GetSystemColor(kColorId_ResultsTableNormalText), 0x80);
++        return SkColorSetA(base_theme->GetSystemColor(NativeTheme::kColorId_ResultsTableNormalText), 0x80);
 +
        // FocusableBorder
        case NativeTheme::kColorId_FocusedBorderColor:
