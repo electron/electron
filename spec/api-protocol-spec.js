@@ -342,6 +342,25 @@ describe('protocol module', () => {
       })
     })
 
+    it('throws an error when custom headers are invalid', (done) => {
+      const handler = (request, callback) => {
+        assert.throws(() => callback({
+          path: filePath,
+          headers: { 'X-Great-Header': 42 }
+        }), /Value of 'X-Great-Header' header has to be a string/)
+        done()
+      }
+      protocol.registerFileProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: () => done('request succeeded but it should not'),
+          error: (xhr, errorType, error) => done(error)
+        })
+      })
+    })
+
     it('sends object as response', (done) => {
       const handler = (request, callback) => callback({ path: filePath })
       protocol.registerFileProtocol(protocolName, handler, (error) => {
