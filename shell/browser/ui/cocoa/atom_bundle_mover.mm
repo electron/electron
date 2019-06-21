@@ -90,6 +90,8 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       }
     }
   } else {
+    mate::Dictionary options;
+    bool hasOptions = args->GetNext(&options);
     base::OnceCallback<bool(ConflictType)> conflict_cb;
 
     // If a copy already exists in the Applications folder, put it in the Trash
@@ -97,7 +99,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
-        if (args->GetNext(&conflict_cb)) {
+        if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
           bool maybeQuit =
               std::move(conflict_cb).Run(ConflictType::EXISTS_AND_RUNNING);
           if (!maybeQuit)
@@ -114,7 +116,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         return true;
       } else {
         // Check callback handler and get user choice for app trashing
-        if (args->GetNext(&conflict_cb)) {
+        if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
           bool maybeTrash = std::move(conflict_cb).Run(ConflictType::EXISTS);
           if (!maybeTrash)
             return false;

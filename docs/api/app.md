@@ -1223,10 +1223,11 @@ This method can only be called before app is ready.
 Returns `Boolean` - Whether the application is currently running from the
 systems Application folder. Use in combination with `app.moveToApplicationsFolder()`
 
-### `app.moveToApplicationsFolder([handler])` _macOS_
+### `app.moveToApplicationsFolder([options])` _macOS_
 
-* `handler` Function (optional) - A handler for potential conflict in move failure.
-  * `conflictType` String - the type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
+* `options` Object (optional)
+  * `conflictHandler` Function (optional) - A handler for potential conflict in move failure.
+    * `conflictType` String - the type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
 Returns `Boolean` - Whether the move was successful. Please note that if
 the move is successful, your application will quit and relaunch.
@@ -1246,15 +1247,17 @@ By default, if an app of the same name as the one being moved exists in the Appl
 For example:
 
 ```js
-app.moveToApplicationsFolder(conflictType => {
-  if (conflictType === 'exists') {
-    dialog.showMessageBoxSync({
-      type: 'question',
-      buttons: ['Halt Move', 'Continue Move'],
-      defaultId: 0,
-      message: 'An app of this name already exists'
-    }, response => response)
-  }
+app.moveToApplicationsFolder({
+  conflictHandler: (conflictType) => {
+    if (conflictType === 'exists') {
+      dialog.showMessageBoxSync({
+        type: 'question',
+        buttons: ['Halt Move', 'Continue Move'],
+        defaultId: 0,
+        message: 'An app of this name already exists'
+      }, response => response)
+    }
+  })
 })
 ```
 
