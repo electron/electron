@@ -1,4 +1,4 @@
-{
+{^2.0.0
   "extends": "standard",
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
