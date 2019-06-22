@@ -36,6 +36,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
@@ -1009,6 +1010,17 @@ bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
   return true;
 }
 #endif  // defined(OS_WIN)
+
+bool AtomBrowserClient::IsPluginSandboxDisabled(
+    const content::PepperPluginInfo& info) {
+  const auto& unsandboxed_plugins = Browser::Get()->unsandboxed_plugins();
+  for (const auto& item : info.mime_types) {
+    if (base::Contains(unsandboxed_plugins, item.mime_type)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))

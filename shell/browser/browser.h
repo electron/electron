@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "base/compiler_specific.h"
@@ -266,6 +267,12 @@ class Browser : public WindowListObserver {
   bool is_ready() const { return is_ready_; }
   const util::Promise& WhenReady(v8::Isolate* isolate);
 
+  const std::unordered_set<std::string>& unsandboxed_plugins() const {
+    return unsandboxed_plugins_;
+  }
+
+  void DisablePluginSandbox(const std::string& mime_type);
+
  protected:
   // Returns the version of application bundle or executable file.
   std::string GetExecutableFileVersion() const;
@@ -310,6 +317,9 @@ class Browser : public WindowListObserver {
 #elif defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;
 #endif
+
+  // Disable sandbox for these plugins by MIME type.
+  std::unordered_set<std::string> unsandboxed_plugins_;
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };

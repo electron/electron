@@ -175,6 +175,10 @@ const util::Promise& Browser::WhenReady(v8::Isolate* isolate) {
   return *ready_promise_;
 }
 
+void Browser::DisablePluginSandbox(const std::string& mime_type) {
+  unsandboxed_plugins_.insert(mime_type);
+}
+
 void Browser::OnAccessibilitySupportChanged() {
   for (BrowserObserver& observer : observers_)
     observer.OnAccessibilitySupportChanged();

@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Sat, 22 Jun 2019 12:23:04 +0200
+Subject: Add ContentBrowserClient::IsPluginSandboxDisabled() callback
+
+Allows the embedder to decide whether the plugin should be sandboxed.
+
+diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppapi_plugin_process_host.cc
+index 2afb96a4c46d654630c5519b7654b42654a88b5f..a56e3419b0ac2dc5b76b982ba494b7cd12ec026f 100644
+--- a/content/browser/ppapi_plugin_process_host.cc
++++ b/content/browser/ppapi_plugin_process_host.cc
+@@ -59,10 +59,12 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+     : public content::SandboxedProcessLauncherDelegate {
+  public:
+   PpapiPluginSandboxedProcessLauncherDelegate(
++      bool no_sandbox,
+       bool is_broker,
+       const ppapi::PpapiPermissions& permissions)
++      : no_sandbox_(no_sandbox)
+ #if BUILDFLAG(USE_ZYGOTE_HANDLE) || defined(OS_WIN)
+-      : is_broker_(is_broker)
++      , is_broker_(is_broker)
+ #endif
+ #if defined(OS_WIN)
+         ,
+@@ -75,7 +77,7 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+ 
+ #if defined(OS_WIN)
+   bool PreSpawnTarget(sandbox::TargetPolicy* policy) override {
+-    if (is_broker_)
++    if (no_sandbox_ || is_broker_)
+       return true;
+ 
+     // The Pepper process is as locked-down as a renderer except that it can
+@@ -126,13 +128,15 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+     }
+     base::CommandLine::StringType plugin_launcher = browser_command_line
+         .GetSwitchValueNative(switches::kPpapiPluginLauncher);
+-    if (is_broker_ || !plugin_launcher.empty())
++    if (no_sandbox_ || is_broker_ || !plugin_launcher.empty())
+       return nullptr;
+     return service_manager::GetGenericZygote();
+   }
+ #endif  // BUILDFLAG(USE_ZYGOTE_HANDLE)
+ 
+   service_manager::SandboxType GetSandboxType() override {
++    if (no_sandbox_)
++      return service_manager::SANDBOX_TYPE_NO_SANDBOX;
+ #if defined(OS_WIN)
+     if (is_broker_)
+       return service_manager::SANDBOX_TYPE_NO_SANDBOX;
+@@ -141,6 +145,7 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+   }
+ 
+  private:
++  const bool no_sandbox_;
+ #if BUILDFLAG(USE_ZYGOTE_HANDLE) || defined(OS_WIN)
+   const bool is_broker_;
+ #endif
+@@ -438,12 +443,18 @@ bool PpapiPluginProcessHost::Init(const PepperPluginInfo& info) {
+   if (!plugin_launcher.empty())
+     cmd_line->PrependWrapper(plugin_launcher);
+ 
++  bool no_sandbox =
++      GetContentClient()->browser()->IsPluginSandboxDisabled(info);
++  if (no_sandbox) {
++    cmd_line->AppendSwitch(service_manager::switches::kNoSandbox);
++  }
++
+   // On posix, never use the zygote for the broker. Also, only use the zygote if
+   // we are not using a plugin launcher - having a plugin launcher means we need
+   // to use another process instead of just forking the zygote.
+   process_->Launch(
+       std::make_unique<PpapiPluginSandboxedProcessLauncherDelegate>(
+-          is_broker_, permissions_),
++          no_sandbox, is_broker_, permissions_),
+       std::move(cmd_line), true);
+   return true;
+ }
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index 2a9661d877fbc09904eb469191523b5cd59eaeda..34ef39acabb1b7211f69b597f4675da25a661ada 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -650,6 +650,11 @@ bool ContentBrowserClient::IsPluginAllowedToUseDevChannelAPIs(
+   return false;
+ }
+ 
++bool ContentBrowserClient::IsPluginSandboxDisabled(
++    const PepperPluginInfo& info) {
++  return false;
++}
++
+ bool ContentBrowserClient::BindAssociatedInterfaceRequestFromFrame(
+     RenderFrameHost* render_frame_host,
+     const std::string& interface_name,
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index ba27455e1c0934f77ed2871ee585361807ab701a..684b54a555d3bb3eff36cef60fe202bc3f2c11a0 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -988,6 +988,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+       BrowserContext* browser_context,
+       const GURL& url);
+ 
++  // Allows the embedder to decide whether the plugin should be sandboxed.
++  virtual bool IsPluginSandboxDisabled(const PepperPluginInfo& info);
++
+   // Allows to register browser interfaces exposed through the
+   // RenderProcessHost. Note that interface factory callbacks added to
+   // |registry| will by default be run immediately on the IO thread, unless a

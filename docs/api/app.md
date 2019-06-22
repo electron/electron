@@ -1218,6 +1218,12 @@ Enables full sandbox mode on the app.
 
 This method can only be called before app is ready.
 
+### `app.disablePluginSandbox(mimeType)`
+
+* `mimeType` String
+
+Disables sandboxing of the ppapi plugin process hosting the plugin identified by mimeType.
+
 ### `app.isInApplicationsFolder()` _macOS_
 
 Returns `Boolean` - Whether the application is currently running from the

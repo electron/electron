@@ -180,6 +180,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
 #endif
+  bool IsPluginSandboxDisabled(const content::PepperPluginInfo& info) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
