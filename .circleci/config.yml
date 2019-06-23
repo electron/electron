@@ -309,7 +309,7 @@ step-electron-dist-build: &step-electron-dist-build
           echo "Unknown system: `uname`"
           exit 1
         fi
-        electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/dist_zip.$target_os.$target_cpu.manifest
+        electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
       fi
 
 step-electron-dist-store: &step-electron-dist-store
