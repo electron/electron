@@ -521,7 +521,7 @@ step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
       if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         #Trigger VSTS job, passing along CircleCI job number and branch to build
         echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"
-        node electron/script/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
       fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
