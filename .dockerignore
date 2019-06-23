@@ -1,4 +1,3 @@
 *
 !tools/xvfb-init.sh
-!tools/run-electron.sh
 !build/install-build-deps.sh
