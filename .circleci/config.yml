@@ -350,10 +350,10 @@ step-electron-publish: &step-electron-publish
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
-        script/upload.py --upload_to_s3
+        script/release/uploaders/upload.py --upload_to_s3
       else
         echo 'Uploading Electron release distribution to Github releases'
-        script/upload.py
+        script/release/uploaders/upload.py
       fi
 
 step-persist-data-for-tests: &step-persist-data-for-tests

@@ -6,10 +6,11 @@ import os
 import sys
 import urllib2
 
-from lib.config import s3_config
-from lib.util import s3put, scoped_cwd, safe_mkdir, get_out_dir
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
 
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+from lib.config import s3_config
+from lib.util import s3put, scoped_cwd, safe_mkdir, get_out_dir, ELECTRON_DIR
+
 OUT_DIR     = get_out_dir()
 
 BASE_URL = 'https://electron-metadumper.herokuapp.com/?version='
@@ -48,7 +49,7 @@ def main():
   if not authToken or authToken == "":
     raise Exception("Please set META_DUMPER_AUTH_HEADER")
   # Upload the index.json.
-  with scoped_cwd(SOURCE_ROOT):
+  with scoped_cwd(ELECTRON_DIR):
     safe_mkdir(OUT_DIR)
     index_json = os.path.relpath(os.path.join(OUT_DIR, 'index.json'))
 

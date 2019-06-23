@@ -10,14 +10,13 @@ const args = require('minimist')(process.argv.slice(2), {
 })
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
-const { getCurrentBranch } = require('./lib/utils.js')
+const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js')
 
 const octokit = require('@octokit/rest')({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 })
 
 const path = require('path')
-const gitDir = path.resolve(__dirname, '..')
 
 function getLastBumpCommit (tag) {
   const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
@@ -27,8 +26,8 @@ function getLastBumpCommit (tag) {
 async function revertBumpCommit (tag) {
   const branch = await getCurrentBranch()
   const commitToRevert = getLastBumpCommit(tag).hash
-  await GitProcess.exec(['revert', commitToRevert], gitDir)
-  const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
+  await GitProcess.exec(['revert', commitToRevert], ELECTRON_DIR)
+  const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], ELECTRON_DIR)
   if (pushDetails.exitCode === 0) {
     console.log(`${pass} successfully reverted release commit.`)
   } else {

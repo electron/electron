@@ -60,7 +60,6 @@
   "private": true,
   "scripts": {
     "asar": "asar",
-    "bump-version": "./script/bump-version.js",
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
     "generate-version-json": "node script/generate-version-json.js",

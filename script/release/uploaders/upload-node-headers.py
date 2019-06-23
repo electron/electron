@@ -6,10 +6,11 @@ import os
 import shutil
 import sys
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+
 from lib.config import PLATFORM, get_target_arch, s3_config
 from lib.util import safe_mkdir, scoped_cwd, s3put, get_out_dir, get_dist_dir
 
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR    = get_dist_dir()
 OUT_DIR     = get_out_dir()
 GEN_DIR     = os.path.join(OUT_DIR, 'gen')

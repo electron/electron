@@ -22,6 +22,9 @@ import zipfile
 from lib.config import is_verbose_mode, PLATFORM
 from lib.env_util import get_vs_env
 
+ELECTRON_DIR = os.path.abspath(
+  os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+)
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))

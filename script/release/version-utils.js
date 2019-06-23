@@ -1,12 +1,12 @@
 const path = require('path')
 const fs = require('fs')
 const semver = require('semver')
-const { getLastMajorForMaster } = require('../get-last-major-for-master')
 const { GitProcess } = require('dugite')
 const { promisify } = require('util')
 
+const { ELECTRON_DIR } = require('../lib/utils')
+
 const readFile = promisify(fs.readFile)
-const gitDir = path.resolve(__dirname, '..', '..')
 
 const preType = {
   NONE: 'none',
@@ -42,7 +42,7 @@ const makeVersion = (components, delim, pre = preType.NONE) => {
 async function nextBeta (v) {
   const next = semver.coerce(semver.clean(v))
 
-  const tagBlob = await GitProcess.exec(['tag', '--list', '-l', `v${next}-beta.*`], gitDir)
+  const tagBlob = await GitProcess.exec(['tag', '--list', '-l', `v${next}-beta.*`], ELECTRON_DIR)
   const tags = tagBlob.stdout.split('\n').filter(e => e !== '')
   tags.sort((t1, t2) => semver.gt(t1, t2))
 
@@ -51,7 +51,7 @@ async function nextBeta (v) {
 }
 
 async function getElectronVersion () {
-  const versionPath = path.join(__dirname, '..', '..', 'ELECTRON_VERSION')
+  const versionPath = path.resolve(ELECTRON_DIR, 'ELECTRON_VERSION')
   const version = await readFile(versionPath, 'utf8')
   return version.trim()
 }
@@ -60,7 +60,7 @@ async function nextNightly (v) {
   let next = semver.valid(semver.coerce(v))
   const pre = `nightly.${getCurrentDate()}`
 
-  const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir)).stdout.trim()
+  const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR)).stdout.trim()
   if (branch === 'master') {
     next = semver.inc(await getLastMajorForMaster(), 'major')
   } else if (isStable(v)) {
@@ -68,6 +68,23 @@ async function nextNightly (v) {
   }
 
   return `${next}-${pre}`
+}
+
+async function getLastMajorForMaster () {
+  let branchNames
+  const result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]-[0-9]-x'], ELECTRON_DIR)
+  if (result.exitCode === 0) {
+    branchNames = result.stdout.trim().split('\n')
+    const filtered = branchNames.map(b => b.replace('origin/', ''))
+    return getNextReleaseBranch(filtered)
+  } else {
+    throw new Error('Release branches could not be fetched.')
+  }
+}
+
+function getNextReleaseBranch (branches) {
+  const converted = branches.map(b => b.replace(/-/g, '.').replace('x', '0'))
+  return converted.reduce((v1, v2) => semver.gt(v1, v2) ? v1 : v2)
 }
 
 module.exports = {

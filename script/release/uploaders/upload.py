@@ -12,12 +12,14 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+
 from io import StringIO
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      scoped_cwd, s3put, get_electron_exec, \
-                     get_out_dir, SRC_DIR
+                     get_out_dir, SRC_DIR, ELECTRON_DIR
 
 
 ELECTRON_REPO = 'electron/electron'
@@ -26,7 +28,6 @@ ELECTRON_VERSION = get_electron_version()
 PROJECT_NAME = get_electron_branding()['project_name']
 PRODUCT_NAME = get_electron_branding()['product_name']
 
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = get_out_dir()
 
 DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
@@ -69,10 +70,10 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
     upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
-    api_path = os.path.join(SOURCE_ROOT, 'electron-api.json')
+    api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
     upload_electron(release, api_path, args)
 
-    ts_defs_path = os.path.join(SOURCE_ROOT, 'electron.d.ts')
+    ts_defs_path = os.path.join(ELECTRON_DIR, 'electron.d.ts')
     upload_electron(release, ts_defs_path, args)
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
@@ -106,9 +107,9 @@ def main():
 
   if not tag_exists and not args.upload_to_s3:
     # Upload symbols to symbol server.
-    run_python_script('upload-symbols.py')
+    run_python_upload_script('upload-symbols.py')
     if PLATFORM == 'win32':
-      run_python_script('upload-node-headers.py', '-v', args.version)
+      run_python_upload_script('upload-node-headers.py', '-v', args.version)
 
 
 def parse_args():
@@ -130,8 +131,9 @@ def parse_args():
   return parser.parse_args()
 
 
-def run_python_script(script, *args):
-  script_path = os.path.join(SOURCE_ROOT, 'script', script)
+def run_python_upload_script(script, *args):
+  script_path = os.path.join(
+    ELECTRON_DIR, 'script', 'release', 'uploaders', script)
   return execute([sys.executable, script_path] + list(args))
 
 
@@ -168,7 +170,8 @@ def upload_electron(release, file_path, args):
 def upload_io_to_github(release, filename, filepath, version):
   print('Uploading %s to Github' % \
       (filename))
-  script_path = os.path.join(SOURCE_ROOT, 'script', 'upload-to-github.js')
+  script_path = os.path.join(
+    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.js')
   execute(['node', script_path, filepath, filename, str(release['id']),
           version])
 
@@ -198,7 +201,8 @@ def auth_token():
 
 
 def get_release(version):
-  script_path = os.path.join(SOURCE_ROOT, 'script', 'find-release.js')
+  script_path = os.path.join(
+    ELECTRON_DIR, 'script', 'release', 'find-github-release.js')
   release_info = execute(['node', script_path, version])
   release = json.loads(release_info)
   return release

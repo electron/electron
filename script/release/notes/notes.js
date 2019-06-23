@@ -11,13 +11,14 @@ const octokit = require('@octokit/rest')({
 })
 const semver = require('semver')
 
+const { ELECTRON_VERSION, SRC_DIR } = require('../../lib/utils')
+
 const MAX_FAIL_COUNT = 3
 const CHECK_INTERVAL = 5000
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
 const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
-const gitDir = path.resolve(__dirname, '..', '..')
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
@@ -373,11 +374,11 @@ const getDependencyCommitsGyp = async (pool, fromRef, toRef) => {
   const repos = [{
     owner: 'electron',
     repo: 'libchromiumcontent',
-    dir: path.resolve(gitDir, 'vendor', 'libchromiumcontent')
+    dir: path.resolve(ELECTRON_VERSION, 'vendor', 'libchromiumcontent')
   }, {
     owner: 'electron',
     repo: 'node',
-    dir: path.resolve(gitDir, 'vendor', 'node')
+    dir: path.resolve(ELECTRON_VERSION, 'vendor', 'node')
   }]
 
   for (const repo of repos) {
@@ -393,7 +394,7 @@ const getDependencyCommitsGyp = async (pool, fromRef, toRef) => {
 
 const getDepsVariable = async (ref, key) => {
   // get a copy of that reference point's DEPS file
-  const deps = await runGit(gitDir, ['show', `${ref}:DEPS`])
+  const deps = await runGit(ELECTRON_VERSION, ['show', `${ref}:DEPS`])
   const filename = path.resolve(os.tmpdir(), 'DEPS')
   fs.writeFileSync(filename, deps)
 
@@ -413,7 +414,7 @@ const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
   const repos = [{ // just node
     owner: 'electron',
     repo: 'node',
-    dir: path.resolve(gitDir, '..', 'third_party', 'electron_node'),
+    dir: path.resolve(SRC_DIR, 'third_party', 'electron_node'),
     deps_variable_name: 'node_version'
   }]
 
@@ -429,7 +430,7 @@ const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
 // other repos - controller
 
 const getDependencyCommits = async (pool, from, to) => {
-  const filename = path.resolve(gitDir, 'vendor', 'libchromiumcontent')
+  const filename = path.resolve(ELECTRON_VERSION, 'vendor', 'libchromiumcontent')
   const useGyp = fs.existsSync(filename)
 
   return useGyp
@@ -474,7 +475,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   }
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: gitDir }
+  const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_VERSION }
   await addRepoToPool(pool, electron, fromRef, toRef)
 
   // Don't include submodules if comparing across major versions;

@@ -125,9 +125,9 @@ deploy_script:
       if (Test-Path Env:\ELECTRON_RELEASE) {
         if (Test-Path Env:\UPLOAD_TO_S3) {
           Write-Output "Uploading Electron release distribution to s3"
-          & python script\upload.py --upload_to_s3
+          & python script\release\uploaders\upload.py --upload_to_s3
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
-          & python script\upload.py
+          & python script\release\uploaders\upload.py
         }
       }

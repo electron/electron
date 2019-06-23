@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 const { GitProcess } = require('dugite')
-const utils = require('./lib/version-utils')
 const fs = require('fs')
 const semver = require('semver')
 const path = require('path')
 const { promisify } = require('util')
 const minimist = require('minimist')
+
+const { ELECTRON_DIR } = require('../lib/utils')
+const versionUtils = require('./version-utils')
 
 const writeFile = promisify(fs.writeFile)
 const readFile = promisify(fs.readFile)
@@ -35,7 +37,7 @@ function parseCommandLine () {
 // run the script
 async function main () {
   const opts = parseCommandLine()
-  const currentVersion = await utils.getElectronVersion()
+  const currentVersion = await versionUtils.getElectronVersion()
   const version = await nextVersion(opts.bump, currentVersion)
 
   const parsed = semver.parse(version)
@@ -67,13 +69,13 @@ async function main () {
 
 // get next version for release based on [nightly, beta, stable]
 async function nextVersion (bumpType, version) {
-  if (utils.isNightly(version) || utils.isBeta(version)) {
+  if (versionUtils.isNightly(version) || versionUtils.isBeta(version)) {
     switch (bumpType) {
       case 'nightly':
-        version = await utils.nextNightly(version)
+        version = await versionUtils.nextNightly(version)
         break
       case 'beta':
-        version = await utils.nextBeta(version)
+        version = await versionUtils.nextBeta(version)
         break
       case 'stable':
         version = semver.valid(semver.coerce(version))
@@ -81,10 +83,10 @@ async function nextVersion (bumpType, version) {
       default:
         throw new Error('Invalid bump type.')
     }
-  } else if (utils.isStable(version)) {
+  } else if (versionUtils.isStable(version)) {
     switch (bumpType) {
       case 'nightly':
-        version = utils.nextNightly(version)
+        version = versionUtils.nextNightly(version)
         break
       case 'beta':
         throw new Error('Cannot bump to beta from stable.')
@@ -102,39 +104,36 @@ async function nextVersion (bumpType, version) {
 
 // update VERSION file with latest release info
 async function updateVersion (version) {
-  const versionPath = path.resolve(__dirname, '..', 'ELECTRON_VERSION')
+  const versionPath = path.resolve(ELECTRON_DIR, 'ELECTRON_VERSION')
   await writeFile(versionPath, version, 'utf8')
 }
 
 // update package metadata files with new version
 async function updatePackageJSON (version) {
-  ['package.json'].forEach(async fileName => {
-    const filePath = path.resolve(__dirname, '..', fileName)
-    const file = require(filePath)
-    file.version = version
-    await writeFile(filePath, JSON.stringify(file, null, 2))
-  })
+  const filePath = path.resolve(ELECTRON_DIR, 'package.json')
+  const file = require(filePath)
+  file.version = version
+  await writeFile(filePath, JSON.stringify(file, null, 2))
 }
 
 // push bump commit to release branch
 async function commitVersionBump (version) {
-  const gitDir = path.resolve(__dirname, '..')
   const gitArgs = ['commit', '-a', '-m', `Bump v${version}`, '-n']
-  await GitProcess.exec(gitArgs, gitDir)
+  await GitProcess.exec(gitArgs, ELECTRON_DIR)
 }
 
 // updates atom.rc file with new semver values
 async function updateWinRC (components) {
-  const filePath = path.resolve(__dirname, '..', 'shell', 'browser', 'resources', 'win', 'atom.rc')
+  const filePath = path.resolve(ELECTRON_DIR, 'shell', 'browser', 'resources', 'win', 'atom.rc')
   const data = await readFile(filePath, 'utf8')
   const arr = data.split('\n')
   arr.forEach((line, idx) => {
     if (line.includes('FILEVERSION')) {
-      arr[idx] = ` FILEVERSION ${utils.makeVersion(components, ',', utils.preType.PARTIAL)}`
-      arr[idx + 1] = ` PRODUCTVERSION ${utils.makeVersion(components, ',', utils.preType.PARTIAL)}`
+      arr[idx] = ` FILEVERSION ${versionUtils.makeVersion(components, ',', versionUtils.preType.PARTIAL)}`
+      arr[idx + 1] = ` PRODUCTVERSION ${versionUtils.makeVersion(components, ',', versionUtils.preType.PARTIAL)}`
     } else if (line.includes('FileVersion')) {
-      arr[idx] = `            VALUE "FileVersion", "${utils.makeVersion(components, '.')}"`
-      arr[idx + 5] = `            VALUE "ProductVersion", "${utils.makeVersion(components, '.')}"`
+      arr[idx] = `            VALUE "FileVersion", "${versionUtils.makeVersion(components, '.')}"`
+      arr[idx + 5] = `            VALUE "ProductVersion", "${versionUtils.makeVersion(components, '.')}"`
     }
   })
   await writeFile(filePath, arr.join('\n'))

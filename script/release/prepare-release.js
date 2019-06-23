@@ -13,8 +13,8 @@ const { GitProcess } = require('dugite')
 
 const path = require('path')
 const readline = require('readline')
-const releaseNotesGenerator = require('./release-notes/index.js')
-const { getCurrentBranch } = require('./lib/utils.js')
+const releaseNotesGenerator = require('./notes/index.js')
+const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js')
 const bumpType = args._[0]
 const targetRepo = bumpType === 'nightly' ? 'nightlies' : 'electron'
 
@@ -28,12 +28,11 @@ if (!bumpType && !args.notesOnly) {
   process.exit(1)
 }
 
-const gitDir = path.resolve(__dirname, '..')
 async function getNewVersion (dryRun) {
   if (!dryRun) {
     console.log(`Bumping for new "${bumpType}" version.`)
   }
-  const bumpScript = path.join(__dirname, 'bump-version.js')
+  const bumpScript = path.join(__dirname, 'version-bumper.js')
   const scriptArgs = ['node', bumpScript, `--bump=${bumpType}`]
   if (dryRun) scriptArgs.push('--dryRun')
   try {
@@ -122,7 +121,7 @@ async function createRelease (branchToTarget, isBeta) {
 }
 
 async function pushRelease (branch) {
-  const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
+  const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], ELECTRON_DIR)
   if (pushDetails.exitCode === 0) {
     console.log(`${pass} Successfully pushed the release.  Wait for ` +
       `release builds to finish before running "npm run release".`)
@@ -141,7 +140,7 @@ async function runReleaseBuilds (branch) {
 
 async function tagRelease (version) {
   console.log(`Tagging release ${version}.`)
-  const checkoutDetails = await GitProcess.exec([ 'tag', '-a', '-m', version, version ], gitDir)
+  const checkoutDetails = await GitProcess.exec([ 'tag', '-a', '-m', version, version ], ELECTRON_DIR)
   if (checkoutDetails.exitCode === 0) {
     console.log(`${pass} Successfully tagged ${version}.`)
   } else {
@@ -183,7 +182,7 @@ async function promptForVersion (version) {
 // function to determine if there have been commits to master since the last release
 async function changesToRelease () {
   const lastCommitWasRelease = new RegExp(`^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$`, 'g')
-  const lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], gitDir)
+  const lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], ELECTRON_DIR)
   return !lastCommitWasRelease.test(lastCommit.stdout)
 }
 
@@ -192,7 +191,7 @@ async function prepareRelease (isBeta, notesOnly) {
     const newVersion = await getNewVersion(true)
     console.log(newVersion)
   } else {
-    const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(gitDir)
+    const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(ELECTRON_DIR)
     if (notesOnly) {
       const newVersion = await getNewVersion(true)
       const releaseNotes = await getReleaseNotes(currentBranch, newVersion)
