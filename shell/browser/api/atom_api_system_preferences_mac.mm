@@ -628,6 +628,10 @@ void SystemPreferences::RemoveUserDefault(const std::string& name) {
 }
 
 bool SystemPreferences::IsDarkMode() {
+  if (@available(macOS 10.14, *)) {
+    return [[NSApplication sharedApplication].effectiveAppearance.name
+        isEqualToString:NSAppearanceNameDarkAqua];
+  }
   NSString* mode = [[NSUserDefaults standardUserDefaults]
       stringForKey:@"AppleInterfaceStyle"];
   return [mode isEqualToString:@"Dark"];
