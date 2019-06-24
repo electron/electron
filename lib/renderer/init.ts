@@ -179,14 +179,17 @@ if (nodeIntegration) {
     }
   }
 } else {
-  // Delete Node's symbols after the Environment has been loaded.
-  process.once('loaded', function () {
-    delete global.process
-    delete global.Buffer
-    delete global.setImmediate
-    delete global.clearImmediate
-    delete global.global
-  })
+  // Delete Node's symbols after the Environment has been loaded in a
+  // non context-isolated environment
+  if (!contextIsolation) {
+    process.once('loaded', function () {
+      delete global.process
+      delete global.Buffer
+      delete global.setImmediate
+      delete global.clearImmediate
+      delete global.global
+    })
+  }
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
