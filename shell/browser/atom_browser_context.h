@@ -60,8 +60,8 @@ class AtomBrowserContext
   ResolveProxyHelper* GetResolveProxyHelper();
 
   // content::BrowserContext:
-  base::FilePath GetPath() const override;
-  bool IsOffTheRecord() const override;
+  base::FilePath GetPath() override;
+  bool IsOffTheRecord() override;
   content::ResourceContext* GetResourceContext() override;
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;

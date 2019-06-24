@@ -744,10 +744,6 @@ AtomBrowserClient::GetExtraServiceManifests() {
   return GetElectronBuiltinServiceManifests();
 }
 
-net::NetLog* AtomBrowserClient::GetNetLog() {
-  return g_browser_process->net_log();
-}
-
 std::unique_ptr<content::BrowserMainParts>
 AtomBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {

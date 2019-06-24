@@ -196,11 +196,11 @@ network::mojom::NetworkContextPtr AtomBrowserContext::GetNetworkContext() {
   }
 }
 
-base::FilePath AtomBrowserContext::GetPath() const {
+base::FilePath AtomBrowserContext::GetPath() {
   return path_;
 }
 
-bool AtomBrowserContext::IsOffTheRecord() const {
+bool AtomBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
