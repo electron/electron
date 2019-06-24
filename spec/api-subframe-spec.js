@@ -31,7 +31,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should load preload scripts in top level iframes', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [event1, event2] = await detailsPromise
         expect(event1[0].frameId).to.not.equal(event2[0].frameId)
@@ -40,7 +40,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should load preload scripts in nested iframes', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`))
         const [event1, event2, event3] = await detailsPromise
         expect(event1[0].frameId).to.not.equal(event2[0].frameId)
@@ -52,37 +52,37 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should correctly reply to the main frame with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [event1] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event1[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event1[0].frameId)
       })
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [, event2] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event2[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event2[0].frameId)
       })
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`))
         const [, , event3] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event3[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event3[0].frameId)
       })
 
       it('should not expose globals in main world', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const details = await detailsPromise
         const senders = details.map(event => event[0].sender)
@@ -175,9 +175,6 @@ describe('cross-site frame sandboxing', () => {
     server.close()
     server = null
   })
-
-  const fixtures = path.resolve(__dirname, 'fixtures')
-  const preload = path.join(fixtures, 'module', 'preload-pid.js')
 
   let w
 
