@@ -3357,6 +3357,20 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('window.getMediaSourceId()', () => {
+    afterEach(closeAllWindows)
+    it('returns valid source id', async () => {
+      const w = new BrowserWindow({show: false})
+      const shown = emittedOnce(w, 'show')
+      w.show()
+      await shown
+
+      // Check format 'window:1234:0'.
+      const sourceId = w.getMediaSourceId()
+      expect(sourceId).to.match(/^window:\d+:\d+$/)
+    })
+  })
+
   ifdescribe(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('window.getNativeWindowHandle()', () => {
     afterEach(closeAllWindows)
     it('returns valid handle', () => {

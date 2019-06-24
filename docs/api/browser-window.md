@@ -1266,6 +1266,15 @@ Enters or leaves the kiosk mode.
 
 Returns `Boolean` - Whether the window is in kiosk mode.
 
+#### `win.getMediaSourceId()`
+
+Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1234:0".
+
+More precisely the format is `window:id:other_id` where `id` is `HWND` on
+Windows, `CGWindowID` (`uint64_t`) on macOS and `Window` (`unsigned long`) on
+Linux. `other_id` is used to identify web contents (tabs) so within the same
+top level window.
+
 #### `win.getNativeWindowHandle()`
 
 Returns `Buffer` - The platform-specific handle of the window.

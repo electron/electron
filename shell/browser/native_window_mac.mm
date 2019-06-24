@@ -1128,7 +1128,12 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
 }
 
 gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
-  return gfx::kNullAcceleratedWidget;
+  return [window_ windowNumber];
+}
+
+content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
+  return content::DesktopMediaID(content::DesktopMediaID::TYPE_WINDOW,
+                                 GetAcceleratedWidget());
 }
 
 NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {

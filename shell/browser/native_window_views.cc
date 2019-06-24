@@ -1117,6 +1117,37 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   return false;
 }
 
+content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {
+  const gfx::AcceleratedWidget accelerated_widget = GetAcceleratedWidget();
+  content::DesktopMediaID::Id window_handle = content::DesktopMediaID::kNullId;
+  content::DesktopMediaID::Id aura_id = content::DesktopMediaID::kNullId;
+#if defined(OS_WIN)
+  window_handle =
+      reinterpret_cast<content::DesktopMediaID::Id>(accelerated_widget);
+#elif defined(USE_X11)
+  window_handle = accelerated_widget;
+#endif
+  aura::WindowTreeHost* const host =
+      aura::WindowTreeHost::GetForAcceleratedWidget(accelerated_widget);
+  aura::Window* const aura_window = host ? host->window() : nullptr;
+  if (aura_window) {
+    aura_id = content::DesktopMediaID::RegisterNativeWindow(
+                  content::DesktopMediaID::TYPE_WINDOW, aura_window)
+                  .window_id;
+  }
+
+  // No constructor to pass the aura_id. Make sure to not use the other
+  // constructor that has a third parameter, it is for yet another purpose.
+  content::DesktopMediaID result = content::DesktopMediaID(
+      content::DesktopMediaID::TYPE_WINDOW, window_handle);
+
+  // Confusing but this is how content::DesktopMediaID is designed. The id
+  // property is the window handle whereas the window_id property is an id
+  // given by a map containing all aura instances.
+  result.window_id = aura_id;
+  return result;
+}
+
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   if (GetNativeWindow() && GetNativeWindow()->GetHost())
     return GetNativeWindow()->GetHost()->GetAcceleratedWidget();

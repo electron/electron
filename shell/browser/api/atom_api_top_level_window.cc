@@ -730,6 +730,11 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
     }
   }
 }
+
+std::string TopLevelWindow::GetMediaSourceId() const {
+  return window_->GetDesktopMediaID().ToString();
+}
+
 v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
@@ -1135,6 +1140,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
+      .SetMethod("getMediaSourceId", &TopLevelWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle",
                  &TopLevelWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &TopLevelWindow::SetProgressBar)
