@@ -54,7 +54,7 @@ and `protocol.isProtocolIntercepted` instead.
 
 ```javascript
 // Deprecated
-const isHandled = await protocol.isProtocolHandled(scheme)
+protocol.isProtocolHandled(scheme).then(() => { /* ... */ })
 // Replace with
 const isRegistered = protocol.isProtocolRegistered(scheme)
 const isIntercepted = protocol.isProtocolIntercepted(scheme)

@@ -1,7 +1,6 @@
 # THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
-    "docs/api/.DS_Store",
     "docs/api/accelerator.md",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
