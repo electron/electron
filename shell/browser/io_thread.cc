@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "net/cert/caching_cert_verifier.h"
@@ -18,11 +17,12 @@
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/url_request_context_builder_mojo.h"
+#include "shell/browser/electron_net_log.h"
 #include "shell/browser/net/url_request_context_getter.h"
 
 using content::BrowserThread;
 
-IOThread::IOThread(net_log::ChromeNetLog* net_log,
+IOThread::IOThread(net_log::ElectronNetLog* net_log,
                    SystemNetworkContextManager* system_network_context_manager)
     : net_log_(net_log) {
   BrowserThread::SetIOThreadDelegate(this);

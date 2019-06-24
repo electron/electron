@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "chrome/common/chrome_switches.h"
-#include "components/net_log/chrome_net_log.h"
 #include "components/net_log/net_export_file_writer.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
@@ -24,6 +23,7 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "shell/browser/electron_net_log.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -98,7 +98,7 @@ void BrowserProcessImpl::PreCreateThreads(
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
 
-  net_log_ = std::make_unique<net_log::ChromeNetLog>();
+  net_log_ = std::make_unique<net_log::ElectronNetLog>();
   // start net log trace if --log-net-log is passed in the command line.
   if (command_line.HasSwitch(network::switches::kLogNetLog)) {
     base::FilePath log_file =
@@ -264,7 +264,7 @@ BrowserProcessImpl::optimization_guide_service() {
   return nullptr;
 }
 
-net_log::ChromeNetLog* BrowserProcessImpl::net_log() {
+net_log::ElectronNetLog* BrowserProcessImpl::net_log() {
   DCHECK(net_log_.get());
   return net_log_.get();
 }

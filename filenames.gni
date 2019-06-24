@@ -172,6 +172,8 @@ filenames = {
     "shell/browser/common_web_contents_delegate.h",
     "shell/browser/cookie_change_notifier.cc",
     "shell/browser/cookie_change_notifier.h",
+    "shell/browser/electron_net_log.cc",
+    "shell/browser/electron_net_log.h",
     "shell/browser/io_thread.cc",
     "shell/browser/io_thread.h",
     "shell/browser/javascript_environment.cc",
