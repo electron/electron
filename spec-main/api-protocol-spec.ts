@@ -710,7 +710,7 @@ describe('protocol module', () => {
     it('supports fetch api by default', async () => {
       const url = `file://${fixturesPath}/assets/logo.png`
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`)
-      const ok = await w.webContents.executeJavaScript(`fetch("${url}").then(r => r.ok)`)
+      const ok = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.ok)`)
       expect(ok).to.be.true('response ok')
     })
 
