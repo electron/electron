@@ -110,6 +110,7 @@ env-disable-run-as-node: &env-disable-run-as-node
 
 env-asan: &env-asan
   GN_SANITIZERS: 'is_asan = true'
+  CHECK_DIST_MANIFEST: '0'
 
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
