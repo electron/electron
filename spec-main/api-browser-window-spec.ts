@@ -606,8 +606,10 @@ describe('BrowserWindow module', () => {
 
         const otherWindow = new BrowserWindow({ show: false, title: 'otherWindow' })
         const otherWindowShown = emittedOnce(otherWindow, 'show')
+        const otherWindowFocused = emittedOnce(otherWindow, 'focus')
         otherWindow.show()
         await otherWindowShown
+        await otherWindowFocused
         expect(otherWindow.isFocused()).to.equal(true)
 
         w.moveTop()
