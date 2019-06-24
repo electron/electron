@@ -148,6 +148,7 @@ bool Browser::IsEmojiPanelSupported() {
 
 void Browser::ShowAboutPanel() {
   std::string app_name, version, copyright, icon_path, website;
+  base::ListValue* args;
 
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
 
@@ -159,6 +160,14 @@ void Browser::ShowAboutPanel() {
     gtk_about_dialog_set_copyright(dialog, copyright.c_str());
   if (about_panel_options_.GetString("website", &website))
     gtk_about_dialog_set_website(dialog, website.c_str());
+  if (about_panel_options_.GetList("args", &args)) {
+    std::vector<const char*> cstrs;
+    for (const auto& str : args->GetList()) {
+      cstrs.push_back(str.c_str());
+    }
+    cstrs.push_back(nullptr);
+    gtk_about_dialog_set_authors(dialog, cstrs.data());
+  }
   if (about_panel_options_.GetString("iconPath", &icon_path)) {
     GError* error = nullptr;
     GdkPixbuf* icon = gdk_pixbuf_new_from_file(icon_path.c_str(), &error);
