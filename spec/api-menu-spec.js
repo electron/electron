@@ -9,6 +9,8 @@ const { closeWindow } = require('./window-helpers')
 const { expect } = chai
 chai.use(dirtyChai)
 
+const isCi = remote.getGlobal('isCi')
+
 describe('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
@@ -849,9 +851,14 @@ describe('Menu module', () => {
       })
     }
 
-    // before accelerator tests, use globalShortcut to test if
-    // RobotJS is working at all
     before(async function () {
+      // --ci flag breaks accelerator and robotjs interaction
+      if (isCi) {
+        this.skip()
+      }
+
+      // before accelerator tests, use globalShortcut to test if
+      // RobotJS is working at all
       let isKeyPressed = false
       globalShortcut.register('q', () => {
         isKeyPressed = true
