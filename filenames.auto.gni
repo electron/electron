@@ -94,6 +94,7 @@ auto_filenames = {
     "docs/api/structures/process-memory-info.md",
     "docs/api/structures/process-metric.md",
     "docs/api/structures/product.md",
+    "docs/api/structures/protocol-request.md",
     "docs/api/structures/rectangle.md",
     "docs/api/structures/referrer.md",
     "docs/api/structures/remove-client-certificate.md",

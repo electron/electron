@@ -116,11 +116,7 @@ it as a standard scheme.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `filePath` String (optional)
 
@@ -147,11 +143,7 @@ than protocols that follow the "generic URI syntax" like `file:`.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `buffer` (Buffer | [MimeTypedBuffer](structures/mime-typed-buffer.md)) (optional)
 
@@ -173,11 +165,7 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `data` String (optional)
 
@@ -191,12 +179,7 @@ should be called with either a `String` or an object that has the `data`,
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Object
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `redirectRequest` Object
       * `url` String
@@ -221,12 +204,7 @@ For POST requests the `uploadData` object must be provided.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Object
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `stream` (ReadableStream | [StreamProtocolResponse](structures/stream-protocol-response.md)) (optional)
 
@@ -285,11 +263,7 @@ Returns `Boolean` - Whether `scheme` is already registered.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `filePath` String
 
@@ -300,11 +274,7 @@ which sends a file as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `data` String (optional)
 
@@ -315,11 +285,7 @@ which sends a `String` as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `buffer` Buffer (optional)
 
@@ -330,12 +296,7 @@ which sends a `Buffer` as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Object
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `redirectRequest` Object
       * `url` String
@@ -352,12 +313,7 @@ which sends a new HTTP request as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Object
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` ProtocolRequest
   * `callback` Function
     * `stream` (ReadableStream | [StreamProtocolResponse](structures/stream-protocol-response.md)) (optional)
 
