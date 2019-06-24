@@ -1,9 +1,11 @@
 # THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
+    "docs/api/.DS_Store",
     "docs/api/accelerator.md",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
+    "docs/api/breaking-changes-ns.md",
     "docs/api/breaking-changes.md",
     "docs/api/browser-view.md",
     "docs/api/browser-window-proxy.md",
@@ -39,6 +41,7 @@ auto_filenames = {
     "docs/api/power-monitor.md",
     "docs/api/power-save-blocker.md",
     "docs/api/process.md",
+    "docs/api/protocol-ns.md",
     "docs/api/protocol.md",
     "docs/api/remote.md",
     "docs/api/sandbox-option.md",
