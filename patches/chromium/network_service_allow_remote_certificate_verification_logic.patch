@@ -5,20 +5,22 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 5d871fc08218b71c93141963db66465f775b1bc2..76f7050bc0be92d510cb69cb4789c11d8bf2f973 100644
+index 5d871fc08218b71c93141963db66465f775b1bc2..97128a6b6223e7fb977b5c9f20bf18da26c8348d 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -42,7 +42,9 @@
- #include "net/base/network_delegate.h"
- #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
- #include "net/cert/cert_verifier.h"
+@@ -89,6 +89,11 @@
+ #include "services/network/url_loader.h"
+ #include "services/network/url_request_context_builder_mojo.h"
+ 
++// Electron
++#include "net/cert/caching_cert_verifier.h"
 +#include "net/cert/cert_verify_proc.h"
- #include "net/cert/ct_verify_result.h"
 +#include "net/cert/multi_threaded_cert_verifier.h"
- #include "net/cert_net/cert_net_fetcher_impl.h"
- #include "net/cookies/cookie_monster.h"
- #include "net/dns/host_cache.h"
-@@ -310,6 +312,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
++
+ #if BUILDFLAG(IS_CT_SUPPORTED)
+ #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
+ #include "components/certificate_transparency/chrome_require_ct_delegate.h"
+@@ -310,6 +315,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
  
  }  // namespace
  
@@ -94,7 +96,7 @@ index 5d871fc08218b71c93141963db66465f775b1bc2..76f7050bc0be92d510cb69cb4789c11d
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  constexpr bool NetworkContext::enable_resource_scheduler_;
  
-@@ -668,6 +739,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
+@@ -668,6 +742,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
    client_ = std::move(client);
  }
  
@@ -107,7 +109,7 @@ index 5d871fc08218b71c93141963db66465f775b1bc2..76f7050bc0be92d510cb69cb4789c11d
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2130,12 +2207,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -2130,12 +2210,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                net::CreateCertVerifyProcBuiltin(cert_net_fetcher_)));
      }
  #endif
