@@ -21,9 +21,9 @@ const { app, protocol } = require('electron')
 const path = require('path')
 
 app.on('ready', () => {
-  protocol.registerProtocol('atom', (request, callback) => {
+  protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback('file', { path: path.normalize(`${__dirname}/${url}`) })
+    callback({ path: path.normalize(`${__dirname}/${url}`) })
   })
 })
 ```
@@ -51,9 +51,9 @@ app.on('ready', () => {
   const partition = 'persist:example'
   const ses = session.fromPartition(partition)
 
-  ses.protocol.registerProtocol('atom', (request, callback) => {
+  ses.protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback('file', { path: path.normalize(`${__dirname}/${url}`) })
+    callback({ path: path.normalize(`${__dirname}/${url}`) })
   })
 
   mainWindow = new BrowserWindow({ webPreferences: { partition } })
@@ -118,7 +118,7 @@ it as a standard scheme.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `filePath` String (optional)
+    * `response` (String | [ProtocolResponse](protocol-response.md))
 
 Registers a protocol of `scheme` that will send the file as a response. The
 `handler` will be called with `handler(request, callback)` when a `request` is
@@ -126,18 +126,10 @@ going to be created with `scheme`.
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
-`callback({ path: filePath })`. The object may also have a `headers` property
-which gives a map of headers to values for the response headers, e.g.
-`callback({ path: filePath, headers: {"Content-Security-Policy": "default-src
-'none'"]})`.
-
-When `callback` is called with nothing, a number, or an object that has an
-`error` property, the `request` will fail with the `error` number you
-specified. For the available error numbers you can use, please see the
-[net error list][net-error].
+`callback({ path: filePath })`.
 
 By default the `scheme` is treated like `http:`, which is parsed differently
-than protocols that follow the "generic URI syntax" like `file:`.
+from protocols that follow the "generic URI syntax" like `file:`.
 
 ### `protocol.registerBufferProtocol(scheme, handler)`
 
@@ -145,13 +137,13 @@ than protocols that follow the "generic URI syntax" like `file:`.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `buffer` (Buffer | [MimeTypedBuffer](structures/mime-typed-buffer.md)) (optional)
+    * `response` (Buffer | [ProtocolResponse](protocol-response.md))
 
 Registers a protocol of `scheme` that will send a `Buffer` as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
-should be called with either a `Buffer` object or an object that has the `data`,
-`mimeType`, and `charset` properties.
+should be called with either a `Buffer` object or an object that has the `data`
+property.
 
 Example:
 
@@ -167,13 +159,13 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `data` String (optional)
+    * `response` (String | [ProtocolResponse](protocol-response.md))
 
 Registers a protocol of `scheme` that will send a `String` as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
-should be called with either a `String` or an object that has the `data`,
-`mimeType`, and `charset` properties.
+should be called with either a `String` or an object that has the `data`
+property.
 
 ### `protocol.registerHttpProtocol(scheme, handler)`
 
@@ -181,24 +173,12 @@ should be called with either a `String` or an object that has the `data`,
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `redirectRequest` Object
-      * `url` String
-      * `method` String
-      * `session` Object (optional)
-      * `uploadData` Object (optional)
-        * `contentType` String - MIME type of the content.
-        * `data` String - Content to be sent.
+    * `response` ProtocolResponse
 
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
-should be called with a `redirectRequest` object that has the `url`, `method`,
-`referrer`, `uploadData` and `session` properties.
-
-By default the HTTP request will reuse the current session. If you want the
-request to have a different session you should set `session` to `null`.
-
-For POST requests the `uploadData` object must be provided.
+should be called with an object that has the `url` property.
 
 ### `protocol.registerStreamProtocol(scheme, handler)`
 
@@ -206,13 +186,13 @@ For POST requests the `uploadData` object must be provided.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `stream` (ReadableStream | [StreamProtocolResponse](structures/stream-protocol-response.md)) (optional)
+    * `response` (ReadableStream | [ProtocolResponse](protocol-response.md))
 
-Registers a protocol of `scheme` that will send a `Readable` as a response.
+Registers a protocol of `scheme` that will send a stream as a response.
 
-The usage is similar to the other `register{Any}Protocol`, except that the
+The usage is the same with `registerFileProtocol`, except that the
 `callback` should be called with either a `Readable` object or an object that
-has the `data`, `statusCode`, and `headers` properties.
+has the `data` property.
 
 Example:
 
@@ -265,7 +245,7 @@ Returns `Boolean` - Whether `scheme` is already registered.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `filePath` String
+    * `response` (String | [ProtocolResponse](protocol-response.md))
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
@@ -276,7 +256,7 @@ which sends a file as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `data` String (optional)
+    * `response` (String | [ProtocolResponse](protocol-response.md))
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
@@ -287,7 +267,7 @@ which sends a `String` as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `buffer` Buffer (optional)
+    * `response` (Buffer | [ProtocolResponse](protocol-response.md))
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
@@ -298,13 +278,7 @@ which sends a `Buffer` as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `redirectRequest` Object
-      * `url` String
-      * `method` String
-      * `session` Object (optional)
-      * `uploadData` Object (optional)
-        * `contentType` String - MIME type of the content.
-        * `data` String - Content to be sent.
+    * `response` ProtocolResponse
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
@@ -315,7 +289,7 @@ which sends a new HTTP request as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `stream` (ReadableStream | [StreamProtocolResponse](structures/stream-protocol-response.md)) (optional)
+    * `response` (ReadableStream | [ProtocolResponse](protocol-response.md))
 
 Same as `protocol.registerStreamProtocol`, except that it replaces an existing
 protocol handler.
@@ -332,5 +306,4 @@ Remove the interceptor installed for `scheme` and restore its original handler.
 
 Returns `Boolean` - Whether `scheme` is already intercepted.
 
-[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
 [file-system-api]: https://developer.mozilla.org/en-US/docs/Web/API/LocalFileSystem
