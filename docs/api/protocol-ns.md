@@ -1,4 +1,4 @@
-# protocol (NetworkService)
+# protocolNS
 
 This document describes the new protocol APIs based on NetworkService.
 
