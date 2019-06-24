@@ -17,7 +17,7 @@
 
 namespace electron {
 
-class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
+class TrayIconCocoa : public TrayIcon {
  public:
   TrayIconCocoa();
   ~TrayIconCocoa() override;
@@ -36,21 +36,12 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
   void SetContextMenu(AtomMenuModel* menu_model) override;
   gfx::Rect GetBounds() override;
 
- protected:
-  // AtomMenuModel::Observer:
-  void OnMenuWillClose() override;
-
  private:
-  // Atom custom view for NSStatusItem.
+  // Electron custom view for NSStatusItem.
   base::scoped_nsobject<StatusItemView> status_item_view_;
 
   // Status menu shown when right-clicking the system icon.
   base::scoped_nsobject<AtomMenuController> menu_;
-
-  // Used for unregistering observer.
-  AtomMenuModel* menu_model_ = nullptr;  // weak ref.
-
-  base::WeakPtrFactory<TrayIconCocoa> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };
