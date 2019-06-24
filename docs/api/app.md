@@ -1182,7 +1182,7 @@ Show the app's about panel options. These options can be overridden with `app.se
   * `credits` String (optional) - Credit information. _macOS_
   * `authors` String[] (optional) - List of app authors. _Linux_
   * `website` String (optional) - The app's website. _Linux_
-  * `iconPath` String (optional) - Path to the app's icon. _Linux_
+  * `iconPath` String (optional) - Path to the app's icon. Will be shown as 64x64 pixels while retaining aspect ratio. _Linux_
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file on MacOS. See the [Apple docs][about-panel-options] for more details. On Linux, values must be set in order to be shown; there are no defaults.

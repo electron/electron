@@ -167,7 +167,12 @@ void Browser::ShowAboutPanel() {
   }
   if ((str = opts.FindStringKey("iconPath"))) {
     GError* error = nullptr;
-    GdkPixbuf* icon = gdk_pixbuf_new_from_file(str->c_str(), &error);
+    constexpr int width = 64;   // width of about panel icon in pixels
+    constexpr int height = 64;  // height of about panel icon in pixels
+
+    // set preserve_aspect_ratio to true
+    GdkPixbuf* icon =
+        gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
     if (error != nullptr) {
       g_warning("%s", error->message);
       g_clear_error(&error);
