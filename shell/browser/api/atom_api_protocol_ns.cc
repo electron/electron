@@ -107,8 +107,8 @@ bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
   return base::ContainsKey(intercept_handlers_, scheme);
 }
 
-v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
-    const std::string& scheme) {
+v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
+                                                     mate::Arguments* args) {
   node::Environment* env = node::Environment::GetCurrent(args->isolate());
   EmitDeprecationWarning(
       env,

@@ -118,7 +118,7 @@ it as a standard scheme.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (String | [ProtocolResponse](protocol-response.md))
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
 Registers a protocol of `scheme` that will send the file as a response. The
 `handler` will be called with `handler(request, callback)` when a `request` is
@@ -137,7 +137,7 @@ from protocols that follow the "generic URI syntax" like `file:`.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (Buffer | [ProtocolResponse](protocol-response.md))
+    * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
 
 Registers a protocol of `scheme` that will send a `Buffer` as a response.
 
@@ -159,7 +159,7 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (String | [ProtocolResponse](protocol-response.md))
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
 Registers a protocol of `scheme` that will send a `String` as a response.
 
@@ -186,7 +186,7 @@ should be called with an object that has the `url` property.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (ReadableStream | [ProtocolResponse](protocol-response.md))
+    * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
 
 Registers a protocol of `scheme` that will send a stream as a response.
 
@@ -245,7 +245,7 @@ Returns `Boolean` - Whether `scheme` is already registered.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (String | [ProtocolResponse](protocol-response.md))
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
@@ -256,7 +256,7 @@ which sends a file as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (String | [ProtocolResponse](protocol-response.md))
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
@@ -267,7 +267,7 @@ which sends a `String` as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (Buffer | [ProtocolResponse](protocol-response.md))
+    * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
@@ -289,7 +289,7 @@ which sends a new HTTP request as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` (ReadableStream | [ProtocolResponse](protocol-response.md))
+    * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
 
 Same as `protocol.registerStreamProtocol`, except that it replaces an existing
 protocol handler.
