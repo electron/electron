@@ -97,7 +97,7 @@ build_script:
         python electron\script\zip-symbols.py
         appveyor PushArtifact out/Default/symbols.zip
       }
-  - python electron/script/check-zip-manifest.py out/Default/dist.zip electron/script/dist_zip.win.%TARGET_ARCH%.manifest
+  - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
 test_script:
   # Workaround for https://github.com/appveyor/ci/issues/2420
   - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
@@ -125,9 +125,9 @@ deploy_script:
       if (Test-Path Env:\ELECTRON_RELEASE) {
         if (Test-Path Env:\UPLOAD_TO_S3) {
           Write-Output "Uploading Electron release distribution to s3"
-          & python script\upload.py --upload_to_s3
+          & python script\release\uploaders\upload.py --upload_to_s3
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
-          & python script\upload.py
+          & python script\release\uploaders\upload.py
         }
       }

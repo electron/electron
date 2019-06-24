@@ -5,14 +5,13 @@ const minimist = require('minimist')
 const path = require('path')
 const semver = require('semver')
 
+const { ELECTRON_DIR } = require('../../lib/utils')
 const notesGenerator = require('./notes.js')
-
-const gitDir = path.resolve(__dirname, '..', '..')
 
 const semverify = version => version.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.')
 
 const runGit = async (args) => {
-  const response = await GitProcess.exec(args, gitDir)
+  const response = await GitProcess.exec(args, ELECTRON_DIR)
   if (response.exitCode !== 0) {
     throw new Error(response.stderr.trim())
   }

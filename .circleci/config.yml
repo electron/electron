@@ -309,7 +309,7 @@ step-electron-dist-build: &step-electron-dist-build
           echo "Unknown system: `uname`"
           exit 1
         fi
-        electron/script/check-zip-manifest.py out/Default/dist.zip electron/script/dist_zip.$target_os.$target_cpu.manifest
+        electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
       fi
 
 step-electron-dist-store: &step-electron-dist-store
@@ -350,10 +350,10 @@ step-electron-publish: &step-electron-publish
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
-        script/upload.py --upload_to_s3
+        script/release/uploaders/upload.py --upload_to_s3
       else
         echo 'Uploading Electron release distribution to Github releases'
-        script/upload.py
+        script/release/uploaders/upload.py
       fi
 
 step-persist-data-for-tests: &step-persist-data-for-tests
@@ -521,7 +521,7 @@ step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
       if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         #Trigger VSTS job, passing along CircleCI job number and branch to build
         echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"
-        node electron/script/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
       fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs

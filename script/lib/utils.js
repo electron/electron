@@ -2,6 +2,8 @@ const { GitProcess } = require('dugite')
 const fs = require('fs')
 const path = require('path')
 
+const ELECTRON_DIR = path.resolve(__dirname, '..', '..')
+const SRC_DIR = path.resolve(ELECTRON_DIR, '..')
 const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 require('colors')
@@ -22,7 +24,7 @@ function getElectronExec () {
 }
 
 function getAbsoluteElectronExec () {
-  return path.resolve(__dirname, '../../..', getElectronExec())
+  return path.resolve(SRC_DIR, getElectronExec())
 }
 
 async function handleGitCall (args, gitDir) {
@@ -61,5 +63,7 @@ module.exports = {
   getCurrentBranch,
   getElectronExec,
   getAbsoluteElectronExec,
-  OUT_DIR
+  ELECTRON_DIR,
+  OUT_DIR,
+  SRC_DIR
 }

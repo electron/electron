@@ -15,7 +15,7 @@ const fs = require('fs')
 const { execSync } = require('child_process')
 const nugget = require('nugget')
 const got = require('got')
-const pkg = require('../package.json')
+const pkg = require('../../package.json')
 const pkgVersion = `v${pkg.version}`
 const pass = '\u2713'.green
 const path = require('path')
@@ -23,6 +23,8 @@ const fail = '\u2717'.red
 const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
+
+const { ELECTRON_DIR } = require('../lib/utils')
 
 const octokit = require('@octokit/rest')({
   auth: process.env.ELECTRON_GITHUB_TOKEN
@@ -146,20 +148,6 @@ function s3UrlsForVersion (version) {
   return patterns
 }
 
-function checkVersion () {
-  if (args.skipVersionCheck) return
-
-  console.log(`Verifying that app version matches package version ${pkgVersion}.`)
-  const startScript = path.join(__dirname, 'start.py')
-  const scriptArgs = ['--version']
-  if (args.automaticRelease) {
-    scriptArgs.unshift('-R')
-  }
-  const appVersion = runScript(startScript, scriptArgs).trim()
-  check((pkgVersion.indexOf(appVersion) === 0), `App version ${appVersion} matches ` +
-    `package version ${pkgVersion}.`, true)
-}
-
 function runScript (scriptName, scriptArgs, cwd) {
   const scriptCommand = `${scriptName} ${scriptArgs.join(' ')}`
   const scriptOptions = {
@@ -176,14 +164,14 @@ function runScript (scriptName, scriptArgs, cwd) {
 
 function uploadNodeShasums () {
   console.log('Uploading Node SHASUMS file to S3.')
-  const scriptPath = path.join(__dirname, 'upload-node-checksums.py')
+  const scriptPath = path.join(ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-node-checksums.py')
   runScript(scriptPath, ['-v', pkgVersion])
   console.log(`${pass} Done uploading Node SHASUMS file to S3.`)
 }
 
 function uploadIndexJson () {
   console.log('Uploading index.json to S3.')
-  const scriptPath = path.join(__dirname, 'upload-index-json.py')
+  const scriptPath = path.join(ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-index-json.py')
   runScript(scriptPath, [pkgVersion])
   console.log(`${pass} Done uploading index.json to S3.`)
 }
@@ -202,7 +190,7 @@ async function createReleaseShasums (release) {
     })
   }
   console.log(`Creating and uploading the release ${fileName}.`)
-  const scriptPath = path.join(__dirname, 'merge-electron-checksums.py')
+  const scriptPath = path.join(ELECTRON_DIR, 'script', 'release', 'merge-electron-checksums.py')
   const checksums = runScript(scriptPath, ['-v', pkgVersion])
 
   console.log(`${pass} Generated release SHASUMS.`)
@@ -274,7 +262,6 @@ async function makeRelease (releaseToValidate) {
     const release = await getDraftRelease(releaseToValidate)
     await validateReleaseAssets(release, true)
   } else {
-    checkVersion()
     let draftRelease = await getDraftRelease()
     uploadNodeShasums()
     uploadIndexJson()

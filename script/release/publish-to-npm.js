@@ -2,10 +2,10 @@ const temp = require('temp')
 const fs = require('fs')
 const path = require('path')
 const childProcess = require('child_process')
-const { getCurrentBranch } = require('./lib/utils.js')
+const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils')
 const request = require('request')
 const semver = require('semver')
-const rootPackageJson = require('../package.json')
+const rootPackageJson = require('../../package.json')
 const octokit = require('@octokit/rest')({
   headers: { 'User-Agent': 'electron-npm-publisher' }
 })
@@ -55,7 +55,7 @@ new Promise((resolve, reject) => {
       const noThirdSegment = name === 'README.md' || name === 'LICENSE'
       fs.writeFileSync(
         path.join(tempDir, name),
-        fs.readFileSync(path.join(__dirname, '..', noThirdSegment ? '' : 'npm', name))
+        fs.readFileSync(path.join(ELECTRON_DIR, noThirdSegment ? '' : 'npm', name))
       )
     })
     // copy from root package.json to temp/package.json

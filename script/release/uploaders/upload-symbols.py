@@ -4,11 +4,12 @@ import os
 import glob
 import sys
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+
 from lib.config import PLATFORM, s3_config, enable_verbose_mode
 from lib.util import get_electron_branding, execute, rm_rf, safe_mkdir, s3put, \
-                     get_out_dir
+                     get_out_dir, ELECTRON_DIR
 
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 RELEASE_DIR = get_out_dir()
 
 
@@ -22,7 +23,7 @@ PDB_LIST = [
 
 
 def main():
-  os.chdir(SOURCE_ROOT)
+  os.chdir(ELECTRON_DIR)
   if PLATFORM == 'win32':
     for pdb in PDB_LIST:
       run_symstore(pdb, SYMBOLS_DIR, PRODUCT_NAME)
