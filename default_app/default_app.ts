@@ -49,6 +49,7 @@ async function createWindow () {
     height: 600,
     autoHideMenuBar: true,
     backgroundColor: '#FFFFFF',
+    customFrame: true,
     webPreferences: {
       preload: path.resolve(__dirname, 'preload.js'),
       contextIsolation: true,

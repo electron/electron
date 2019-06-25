@@ -12,6 +12,7 @@ namespace options {
 extern const char kTitle[];
 extern const char kIcon[];
 extern const char kFrame[];
+extern const char kCustomFrame[];
 extern const char kShow[];
 extern const char kCenter[];
 extern const char kX[];

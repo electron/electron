@@ -11,6 +11,7 @@ namespace options {
 const char kTitle[] = "title";
 const char kIcon[] = "icon";
 const char kFrame[] = "frame";
+const char kCustomFrame[] = "customFrame";
 const char kShow[] = "show";
 const char kCenter[] = "center";
 const char kX[] = "x";

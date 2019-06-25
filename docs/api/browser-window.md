@@ -187,6 +187,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `true`.
   * `frame` Boolean (optional) - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
+    window.md). Default is `true`.
+  * `customFrame` Boolean (optional) - Specify `true` to create a window with a
+    custom titlebar. Default is `false`.
   * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
   * `modal` Boolean (optional) - Whether this is a modal window. This only works when the
     window is a child window. Default is `false`.
