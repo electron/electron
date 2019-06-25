@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
-#define ATOM_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
 
-#include "atom/browser/ui/views/title_bar.h"
-#include "atom/browser/ui/views/view_ids.h"
+#include "shell/browser/ui/views/title_bar.h"
+#include "shell/browser/ui/views/view_ids.h"
 #include "ui/gfx/canvas.h"
 #include "ui/views/controls/button/button.h"
 
-namespace atom {
+namespace electron {
 
 class WindowsCaptionButton : public views::Button {
  public:
@@ -49,6 +49,6 @@ class WindowsCaptionButton : public views::Button {
   DISALLOW_COPY_AND_ASSIGN(WindowsCaptionButton);
 };
 
-}  // namespace atom
+}  // namespace electron
 
-#endif  // ATOM_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#endif  // SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_

@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_TITLE_BAR_H_
-#define ATOM_BROWSER_UI_VIEWS_TITLE_BAR_H_
+#ifndef SHELL_BROWSER_UI_VIEWS_TITLE_BAR_H_
+#define SHELL_BROWSER_UI_VIEWS_TITLE_BAR_H_
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/views/root_view.h"
-#include "atom/browser/ui/views/view_ids.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/ui/views/root_view.h"
+#include "shell/browser/ui/views/view_ids.h"
 #include "ui/views/accessible_pane_view.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/controls/label.h"
@@ -19,7 +19,7 @@ class Button;
 class MenuButton;
 }  // namespace views
 
-namespace atom {
+namespace electron {
 
 class WindowsCaptionButton;
 
@@ -104,6 +104,6 @@ class TitleBar : public views::View,
   DISALLOW_COPY_AND_ASSIGN(TitleBar);
 };
 
-}  // namespace atom
+}  // namespace electron
 
-#endif  // ATOM_BROWSER_UI_VIEWS_TITLE_BAR_H_
+#endif  // SHELL_BROWSER_UI_VIEWS_TITLE_BAR_H_

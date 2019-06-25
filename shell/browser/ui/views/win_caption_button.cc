@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/win_caption_button.h"
+#include "shell/browser/ui/views/win_caption_button.h"
 
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/frame/window_frame_util.h"
@@ -12,7 +12,7 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/scoped_canvas.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -258,4 +258,4 @@ void WindowsCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

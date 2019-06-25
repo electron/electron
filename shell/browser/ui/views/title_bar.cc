@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/title_bar.h"
+#include "shell/browser/ui/views/title_bar.h"
 
-#include "atom/browser/ui/views/win_caption_button.h"
-#include "atom/common/keyboard_util.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "electron/grit/electron_resources.h"
+#include "shell/browser/ui/views/win_caption_button.h"
+#include "shell/common/keyboard_util.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -21,7 +21,7 @@
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/widget/widget.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -299,4 +299,4 @@ void TitleBar::RequestSystemMenu() {
   LOG(INFO) << "RequestSystemMenu" << '\n';
 }
 
-}  // namespace atom
+}  // namespace electron
