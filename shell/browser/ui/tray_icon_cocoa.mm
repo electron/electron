@@ -163,20 +163,31 @@
 }
 
 - (void)popUpContextMenu:(electron::AtomMenuModel*)menu_model {
+  base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
         [[AtomMenuController alloc] initWithModel:menu_model
                             useDefaultAccelerator:NO]);
-    // Hacky way to mimic design of ordinary tray menu.
-    [statusItem_ setMenu:[menuController menu]];
-    [[statusItem_ button] performClick:self];  // TODO: blocks thread
-    [statusItem_ setMenu:[menuController_ menu]];
+    forceHighlight_ = YES;  // Should highlight when showing menu.
+    [self setNeedsDisplay:YES];
+
+    base::mac::ScopedSendingEvent sendingEventScoper;
+    [statusItem_ popUpStatusItemMenu:[menuController menu]];
+    forceHighlight_ = NO;
+    [self setNeedsDisplay:YES];
     return;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    [[statusItem_ button] performClick:self];  // TODO: blocks thread
+    // Redraw the tray icon to show highlight if it is enabled.
+    [self setNeedsDisplay:YES];
+
+    base::mac::ScopedSendingEvent sendingEventScoper;
+    [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
+    // The popUpStatusItemMenu returns only after the showing menu is closed.
+    // When it returns, we need to redraw the tray icon to not show highlight.
+    [self setNeedsDisplay:YES];
   }
 }
 
@@ -295,13 +306,17 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {
-  [status_item_view_ popUpContextMenu:menu_model];
+void TrayIconCocoa::PopUpOnUI(scoped_refptr<AtomMenuModel> menu_model) {
+  if (auto* model = menu_model.get())
+    [status_item_view_ popUpContextMenu:model];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      AtomMenuModel* menu_model) {
-  [status_item_view_ popUpContextMenu:menu_model];
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&TrayIconCocoa::PopUpOnUI, base::Unretained(this),
+                     base::WrapRefCounted(menu_model)));
 }
 
 void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
