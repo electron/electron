@@ -459,7 +459,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 namespace electron {
 
-TrayIconCocoa::TrayIconCocoa() {
+TrayIconCocoa::TrayIconCocoa() : weak_factory_(this) {
   status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
 }
 
@@ -501,17 +501,16 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(base::WeakPtr<AtomMenuModel> menu_model) {
-  if (auto* model = menu_model.get())
-    [status_item_view_ popUpContextMenu:model];
+void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {
+  [status_item_view_ popUpContextMenu:menu_model];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      AtomMenuModel* menu_model) {
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&TrayIconCocoa::PopUpOnUI, base::Unretained(this),
-                     menu_model->GetWeakPtr()));
+      base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
+                     base::Unretained(menu_model)));
 }
 
 void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {

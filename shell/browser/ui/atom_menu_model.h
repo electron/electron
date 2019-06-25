@@ -68,17 +68,11 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   using SimpleMenuModel::GetSubmenuModelAt;
   AtomMenuModel* GetSubmenuModelAt(int index);
 
-  base::WeakPtr<AtomMenuModel> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
-
  private:
   Delegate* delegate_;  // weak ref.
 
   std::map<int, base::string16> roles_;  // command id -> role
   base::ObserverList<Observer> observers_;
-
-  base::WeakPtrFactory<AtomMenuModel> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomMenuModel);
 };

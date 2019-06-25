@@ -15,7 +15,7 @@ bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
 }
 
 AtomMenuModel::AtomMenuModel(Delegate* delegate)
-    : ui::SimpleMenuModel(delegate), delegate_(delegate), weak_factory_(this) {}
+    : ui::SimpleMenuModel(delegate), delegate_(delegate) {}
 
 AtomMenuModel::~AtomMenuModel() {}
 
