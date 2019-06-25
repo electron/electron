@@ -4,6 +4,7 @@
 
 #include "shell/browser/io_thread.h"
 
+#include <string>
 #include <utility>
 
 #include "components/net_log/chrome_net_log.h"
