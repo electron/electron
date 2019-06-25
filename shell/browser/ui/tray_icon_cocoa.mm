@@ -337,7 +337,12 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)popUpContextMenu:(electron::AtomMenuModel*)menu_model {
+  // Make sure events can be pumped while the menu is up.
   base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+
+  // Ensure the UI can update while the menu is fading out.
+  base::ScopedPumpMessagesInPrivateModes pump_private;
+
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
@@ -346,7 +351,6 @@ const CGFloat kVerticalTitleMargin = 2;
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
 
-    base::mac::ScopedSendingEvent sendingEventScoper;
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
     forceHighlight_ = NO;
     [self setNeedsDisplay:YES];
@@ -357,7 +361,6 @@ const CGFloat kVerticalTitleMargin = 2;
     // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
 
-    base::mac::ScopedSendingEvent sendingEventScoper;
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
     // When it returns, we need to redraw the tray icon to not show highlight.
