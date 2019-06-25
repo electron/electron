@@ -183,7 +183,9 @@ void TitleBar::Layout() {
 }
 
 void TitleBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
-  if (sender == minimize_button_) {
+  if (sender == hamburger_button_) {
+    RequestSystemMenu();
+  } else if (sender == minimize_button_) {
     GetWidget()->Minimize();
   } else if (sender == maximize_button_) {
     GetWidget()->Maximize();
