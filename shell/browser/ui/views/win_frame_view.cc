@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/views/root_view.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"
 
@@ -24,10 +25,23 @@ gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
-  if (window_->has_frame())
-    return frame_->client_view()->NonClientHitTest(point);
-  else
+  if (window_->has_frame()) {
+    if (window_->has_custom_frame()) {
+      int frame_hittest_result = FramelessView::NonClientHitTest(point);
+      if (frame_hittest_result == HTCLIENT) {
+        int window_hittest_result = window_->NonClientHitTest(point);
+        if (window_hittest_result != HTNOWHERE) {
+          return window_hittest_result;
+        }
+      }
+
+      return frame_hittest_result;
+    } else {
+      return frame_->client_view()->NonClientHitTest(point);
+    }
+  } else {
     return FramelessView::NonClientHitTest(point);
+  }
 }
 
 const char* WinFrameView::GetClassName() const {

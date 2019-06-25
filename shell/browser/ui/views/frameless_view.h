@@ -37,6 +37,8 @@ class FramelessView : public views::NonClientFrameView {
   void UpdateWindowIcon() override;
   void UpdateWindowTitle() override;
   void SizeConstraintsChanged() override;
+  bool DoesIntersectRect(const View* target,
+                         const gfx::Rect& rect) const override;
 
   // Overridden from View:
   gfx::Size CalculatePreferredSize() const override;

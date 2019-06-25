@@ -45,8 +45,14 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const mate::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
+    : NativeWindow(options, parent, new views::Widget) {}
+
+NativeWindow::NativeWindow(const mate::Dictionary& options,
+                           NativeWindow* parent,
+                           views::Widget* widget)
+    : widget_(widget), parent_(parent), weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
+  options.Get(options::kCustomFrame, &has_custom_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
 

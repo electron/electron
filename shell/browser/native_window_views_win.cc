@@ -5,15 +5,22 @@
 #include <dwmapi.h>
 #include <shellapi.h>
 
+#include "chrome/browser/themes/theme_properties.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
+#include "shell/browser/ui/views/title_bar.h"
 #include "shell/common/atom_constants.h"
+#include "ui/base/default_theme_provider.h"
+#include "ui/base/hit_test.h"
 #include "ui/base/win/accessibility_misc_utils.h"
 #include "ui/display/display.h"
 #include "ui/display/win/screen_win.h"
+#include "ui/gfx/color_palette.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/gfx/geometry/insets.h"
+#include "ui/views/view.h"
 #include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
@@ -22,6 +29,42 @@
 namespace electron {
 
 namespace {
+
+class ThemeProvider : public ui::DefaultThemeProvider {
+ public:
+  ThemeProvider() = default;
+
+  SkColor GetColor(int id) const override {
+    return ThemeProperties::GetDefaultColor(id, false);
+  }
+
+  color_utils::HSL GetTint(int id) const override {
+    return ThemeProperties::GetDefaultTint(id, false);
+  }
+
+  bool HasCustomColor(int id) const override {
+    return ThemeProperties::GetDefaultColor(id, false) !=
+           gfx::kPlaceholderColor;
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ThemeProvider);
+};
+
+class ThemedWidget : public views::Widget {
+ public:
+  ThemedWidget() { theme_provider_.reset(new ThemeProvider()); }
+
+  // Widget:
+  const ui::ThemeProvider* GetThemeProvider() const override {
+    return theme_provider_.get();
+  }
+
+ private:
+  std::unique_ptr<ThemeProvider> theme_provider_;
+
+  DISALLOW_COPY_AND_ASSIGN(ThemedWidget);
+};
 
 // Convert Win32 WM_APPCOMMANDS to strings.
 const char* AppCommandToString(int command_id) {
@@ -263,7 +306,7 @@ void NativeWindowViews::Maximize() {
   }
 
   gfx::Insets insets;
-  if (!has_frame()) {
+  if (!has_frame() || has_custom_frame()) {
     // When taskbar is autohide, we need to leave some space so the window
     // isn't treated as a "fullscreen app", which would cause the taskbars
     // to disappear.
@@ -356,7 +399,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_NCCALCSIZE: {
-      if (!has_frame() && w_param == TRUE) {
+      if ((!has_frame() || has_custom_frame()) && w_param == TRUE) {
         NCCALCSIZE_PARAMS* params =
             reinterpret_cast<NCCALCSIZE_PARAMS*>(l_param);
         RECT PROPOSED = params->rgrc[0];
@@ -376,6 +419,41 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       } else {
         return false;
       }
+    }
+    case WM_NCRBUTTONDOWN: {
+      if (has_custom_frame()) {
+        if (root_view_ && root_view_->custom_title_bar()) {
+          gfx::Point lParamPoint(GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param));
+          float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(
+              GetAcceleratedWidget());
+          gfx::Point location =
+              ScaleToRoundedPoint(lParamPoint, 1.0 / scale_factor);
+          views::View::ConvertPointFromScreen(root_view_.get(), &location);
+
+          root_view_->custom_title_bar()->RequestSystemMenuAt(location);
+        }
+
+        // Don't show sysmenu when right clicking the custom titlebar
+        result = 0;
+        return true;
+      }
+
+      return false;
+    }
+    case WM_INITMENUPOPUP: {
+      if (has_custom_frame() && HIWORD(w_param)) {
+        if (root_view_ && root_view_->custom_title_bar()) {
+          root_view_->custom_title_bar()->RequestSystemMenu();
+        }
+
+        // Close the sysmenu instantly to allow us to create a custom, Chromium
+        // rendered one
+        SendMessage(GetAcceleratedWidget(), WM_CANCELMODE, NULL, NULL);
+        result = 0;
+        return true;
+      }
+
+      return false;
     }
     case WM_COMMAND:
       // Handle thumbar button click message.
@@ -456,7 +534,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // Frameless maximized windows are size compensated by Windows for a
       // border that's not actually there, so we must conter-compensate.
       // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
-      if (!has_frame()) {
+      if (!has_frame() || has_custom_frame()) {
         float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(
             GetAcceleratedWidget());
 
@@ -509,7 +587,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
               // When the window is restored we resize it to the previous known
               // normal size.
-              if (has_frame()) {
+              if (has_frame() && !has_custom_frame()) {
                 SetBounds(last_normal_bounds_, false);
               }
 
@@ -608,6 +686,18 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   }
 
   return CallNextHookEx(NULL, n_code, w_param, l_param);
+}
+
+int NativeWindowViews::NonClientHitTest(const gfx::Point& point) {
+  if (root_view_) {
+    return root_view_->NonClientHitTest(point);
+  }
+
+  return HTNOWHERE;
+}
+
+views::Widget* NativeWindowViews::create_widget() {
+  return new ThemedWidget();
 }
 
 }  // namespace electron

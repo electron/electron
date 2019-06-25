@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/accelerator_util.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/view.h"
@@ -20,9 +21,10 @@ namespace electron {
 
 class AtomMenuModel;
 class MenuBar;
+class TitleBar;
 class NativeWindow;
 
-class RootView : public views::View {
+class RootView : public views::View, public NativeWindowObserver {
  public:
   explicit RootView(NativeWindow* window);
   ~RootView() override;
@@ -34,6 +36,8 @@ class RootView : public views::View {
   bool IsMenuBarAutoHide() const;
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible() const;
+  void SetTitleBarVisibility(bool visible);
+  bool IsTitleBarVisible() const;
   void HandleKeyEvent(const content::NativeWebKeyboardEvent& event);
   void ResetAltState();
   void RestoreFocus();
@@ -42,6 +46,9 @@ class RootView : public views::View {
   void UnregisterAcceleratorsWithFocusManager();
   void SetInsets(const gfx::Insets& insets);
   gfx::Insets insets() const { return insets_; }
+  int NonClientHitTest(const gfx::Point& point);
+  void UpdateWindowIcon();
+  void UpdateWindowTitle();
 
   // views::View:
   void Layout() override;
@@ -49,9 +56,19 @@ class RootView : public views::View {
   gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
+  // NativeWindowObserver:
+  void OnWindowEnterFullScreen() override;
+  void OnWindowLeaveFullScreen() override;
+
+  TitleBar* custom_title_bar() { return title_bar_.get(); }
+
  private:
   // Parent window, weak ref.
   NativeWindow* window_;
+
+  // Title bar.
+  std::unique_ptr<TitleBar> title_bar_;
+  bool title_bar_visible_ = true;
 
   // Menu bar.
   std::unique_ptr<MenuBar> menu_bar_;

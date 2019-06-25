@@ -7,6 +7,8 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
+#include "shell/browser/ui/views/title_bar.h"
+#include "ui/base/hit_test.h"
 
 namespace electron {
 
@@ -39,6 +41,12 @@ RootView::RootView(NativeWindow* window)
     : window_(window),
       last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
   set_owned_by_client();
+  window_->AddObserver(this);
+  if (window_->has_custom_frame()) {
+    title_bar_.reset(new TitleBar());
+    title_bar_->set_owned_by_client();
+    AddChildView(title_bar_.get());
+  }
 }
 
 RootView::~RootView() {}
@@ -92,10 +100,8 @@ void RootView::SetMenuBarVisibility(bool visible) {
 
   menu_bar_visible_ = visible;
   if (visible) {
-    DCHECK_EQ(children().size(), 1ul);
     AddChildView(menu_bar_.get());
   } else {
-    DCHECK_EQ(children().size(), 2ul);
     RemoveChildView(menu_bar_.get());
   }
 
@@ -103,7 +109,25 @@ void RootView::SetMenuBarVisibility(bool visible) {
 }
 
 bool RootView::IsMenuBarVisible() const {
-  return menu_bar_visible_;
+  return menu_bar_ && menu_bar_visible_;
+}
+
+void RootView::SetTitleBarVisibility(bool visible) {
+  if (!window_->content_view() || !title_bar_ || title_bar_visible_ == visible)
+    return;
+
+  title_bar_visible_ = visible;
+  if (visible) {
+    AddChildView(title_bar_.get());
+  } else {
+    RemoveChildView(title_bar_.get());
+  }
+
+  Layout();
+}
+
+bool RootView::IsTitleBarVisible() const {
+  return title_bar_ && title_bar_visible_;
 }
 
 void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
@@ -174,19 +198,27 @@ void RootView::Layout() {
   if (!window_->content_view())  // Not ready yet.
     return;
 
-  const auto menu_bar_bounds =
-      menu_bar_visible_
-          ? gfx::Rect(insets_.left(), insets_.top(),
-                      size().width() - insets_.width(), kMenuBarHeight)
+  gfx::Point top_left(insets_.left(), insets_.top());
+  int width = size().width() - insets_.width();
+
+  const auto title_bar_bounds =
+      IsTitleBarVisible()
+          ? gfx::Rect(top_left.x(), top_left.y(), width, title_bar_->Height())
           : gfx::Rect();
+  top_left.Offset(0, title_bar_bounds.height());
+  if (title_bar_)
+    title_bar_->SetBoundsRect(title_bar_bounds);
+
+  const auto menu_bar_bounds =
+      IsMenuBarVisible()
+          ? gfx::Rect(top_left.x(), top_left.y(), width, kMenuBarHeight)
+          : gfx::Rect();
+  top_left.Offset(0, menu_bar_bounds.height());
   if (menu_bar_)
     menu_bar_->SetBoundsRect(menu_bar_bounds);
 
-  window_->content_view()->SetBoundsRect(
-      gfx::Rect(insets_.left(),
-                menu_bar_visible_ ? menu_bar_bounds.bottom() : insets_.top(),
-                size().width() - insets_.width(),
-                size().height() - menu_bar_bounds.height() - insets_.height()));
+  window_->content_view()->SetBoundsRect(gfx::Rect(
+      top_left.x(), top_left.y(), width, size().height() - top_left.y()));
 }
 
 gfx::Size RootView::GetMinimumSize() const {
@@ -200,6 +232,16 @@ gfx::Size RootView::GetMaximumSize() const {
 bool RootView::AcceleratorPressed(const ui::Accelerator& accelerator) {
   return accelerator_util::TriggerAcceleratorTableCommand(&accelerator_table_,
                                                           accelerator);
+}
+
+void RootView::OnWindowEnterFullScreen() {
+  if (title_bar_)
+    SetTitleBarVisibility(false);
+}
+
+void RootView::OnWindowLeaveFullScreen() {
+  if (title_bar_)
+    SetTitleBarVisibility(true);
 }
 
 void RootView::RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model) {
@@ -228,6 +270,24 @@ void RootView::SetInsets(const gfx::Insets& insets) {
     insets_ = insets;
     Layout();
   }
+}
+
+int RootView::NonClientHitTest(const gfx::Point& point) {
+  if (title_bar_) {
+    return title_bar_->NonClientHitTest(point);
+  }
+
+  return HTNOWHERE;
+}
+
+void RootView::UpdateWindowIcon() {
+  if (title_bar_)
+    title_bar_->UpdateWindowIcon();
+}
+
+void RootView::UpdateWindowTitle() {
+  if (title_bar_)
+    title_bar_->UpdateWindowTitle();
 }
 
 }  // namespace electron

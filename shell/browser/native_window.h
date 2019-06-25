@@ -283,6 +283,11 @@ class NativeWindow : public base::SupportsUserData,
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
+  bool has_custom_frame() const { return has_custom_frame_; }
+  void set_has_custom_frame(bool has_custom_frame) {
+    has_custom_frame_ = has_custom_frame;
+  }
+
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
@@ -293,6 +298,9 @@ class NativeWindow : public base::SupportsUserData,
 
  protected:
   NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
+  NativeWindow(const mate::Dictionary& options,
+               NativeWindow* parent,
+               views::Widget* widget);
 
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
@@ -314,7 +322,10 @@ class NativeWindow : public base::SupportsUserData,
   // The content view, weak ref.
   views::View* content_view_ = nullptr;
 
-  // Whether window has standard frame.
+  // Whether the window has a custom frame.
+  bool has_custom_frame_ = false;
+
+  // Whether window has a frame.
   bool has_frame_ = true;
 
   // Whether window is transparent.

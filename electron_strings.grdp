@@ -18,4 +18,21 @@
   <message name="IDS_DESKTOP_MEDIA_PICKER_MULTIPLE_SCREEN_NAME" desc="Name for screens in the desktop media picker UI when there are multiple monitors.">
     {SCREEN_INDEX, plural, =1{Screen #} other{Screen #}}
   </message>
+
+  <!-- Custom Windows Title Bar API -->
+  <message name="IDS_APP_ACCNAME_CLOSE" desc="The accessible name for the Close button.">
+    Close
+  </message>
+  <message name="IDS_APP_ACCNAME_MINIMIZE" desc="The accessible name for the Minimize button.">
+    Minimize
+  </message>
+  <message name="IDS_APP_ACCNAME_MAXIMIZE" desc="The accessible name for the Maximize button.">
+    Maximize
+  </message>
+  <message name="IDS_APP_ACCNAME_RESTORE" desc="The accessible name for the Restore button.">
+    Restore
+  </message>
+  <message name="IDS_APP_ACCNAME_HAMBURGER" desc="The accessible name for the Hamburger Menu button.">
+    Application menu
+  </message>
 </grit-part>

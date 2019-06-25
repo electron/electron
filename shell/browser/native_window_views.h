@@ -147,6 +147,7 @@ class NativeWindowViews : public NativeWindow,
                     LPARAM l_param,
                     LRESULT* result);
   void SetIcon(HICON small_icon, HICON app_icon);
+  int NonClientHitTest(const gfx::Point& point);
 #elif defined(USE_X11)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
@@ -196,6 +197,8 @@ class NativeWindowViews : public NativeWindow,
                                         WPARAM w_param,
                                         LPARAM l_param);
 #endif
+
+  views::Widget* create_widget();
 
   // Enable/disable:
   bool ShouldBeEnabled();

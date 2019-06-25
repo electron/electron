@@ -14,7 +14,8 @@ namespace electron {
 
 namespace {
 
-const int kResizeInsideBoundsSize = 5;
+const int kResizeInsideDeadZoneSize = 3;
+const int kResizeInsideBoundsSize = 3;
 const int kResizeAreaCornerSize = 16;
 
 }  // namespace
@@ -91,6 +92,15 @@ void FramelessView::UpdateWindowIcon() {}
 void FramelessView::UpdateWindowTitle() {}
 
 void FramelessView::SizeConstraintsChanged() {}
+
+bool FramelessView::DoesIntersectRect(const View* target,
+                                      const gfx::Rect& rect) const {
+  CHECK_EQ(target, this);
+  gfx::Rect bounds = GetWidget()->client_view()->bounds();
+  bounds.Inset(kResizeInsideDeadZoneSize, kResizeInsideDeadZoneSize);
+
+  return !bounds.Intersects(rect);
+}
 
 gfx::Size FramelessView::CalculatePreferredSize() const {
   return frame_->non_client_view()

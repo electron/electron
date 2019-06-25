@@ -123,7 +123,7 @@ class NativeWindowClientView : public views::ClientView {
 
 NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
                                      NativeWindow* parent)
-    : NativeWindow(options, parent),
+    : NativeWindow(options, parent, create_widget()),
       root_view_(new RootView(this)),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler) {
   options.Get(options::kTitle, &title_);
@@ -166,7 +166,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.remove_standard_frame = !has_frame();
+  params.remove_standard_frame = !has_frame() || has_custom_frame();
 
   if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
@@ -249,7 +249,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 #endif
 
 #if defined(OS_WIN)
-  if (!has_frame()) {
+  if (!has_frame() || has_custom_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
@@ -260,7 +260,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
     if (maximizable_)
       frame_style |= WS_MAXIMIZEBOX;
     // We should not show a frame for transparent window.
-    if (!thick_frame_)
+    if (!has_frame() && !thick_frame_)
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
@@ -271,7 +271,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
 #endif
 
-  if (has_frame()) {
+  if (has_frame() && !has_custom_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
     widget()->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
@@ -464,6 +464,12 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
   }
 #endif
 }
+
+#if !defined(OS_WIN)
+views::Widget* NativeWindowViews::create_widget() {
+  return views::Widget;
+}
+#endif
 
 #if defined(USE_X11)
 void NativeWindowViews::Maximize() {
@@ -774,6 +780,8 @@ void NativeWindowViews::Invalidate() {
 void NativeWindowViews::SetTitle(const std::string& title) {
   title_ = title;
   widget()->UpdateWindowTitle();
+  if (root_view_)
+    root_view_->UpdateWindowTitle();
 }
 
 std::string NativeWindowViews::GetTitle() {
@@ -1276,7 +1284,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame() && CanResize()) {
+  if ((!has_frame() || has_custom_frame()) && CanResize()) {
     FramelessView* frame =
         static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
