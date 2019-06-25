@@ -35,7 +35,7 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   const gfx::ImageSkia& GetImage() const override;
   const base::string16& GetToolTip() const override;
   ui::MenuModel* GetMenuModel() const override;
-  void OnImplInitialized(bool success) override;
+  void OnImplInitializationFailed() override;
 
  private:
   std::unique_ptr<views::StatusIconLinux> icon_;

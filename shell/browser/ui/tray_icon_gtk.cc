@@ -19,14 +19,14 @@ TrayIconGtk::~TrayIconGtk() {}
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
   if (icon_) {
-    icon_->SetImage(image.AsImageSkia());
+    icon_->SetIcon(image.AsImageSkia());
     return;
   }
 
   const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
   icon_ = views::LinuxUI::instance()->CreateLinuxStatusIcon(
       image.AsImageSkia(), toolTip, Browser::Get()->GetName().c_str());
-  icon_->set_delegate(this);
+  icon_->SetDelegate(this);
 }
 
 void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
@@ -52,7 +52,7 @@ ui::MenuModel* TrayIconGtk::GetMenuModel() const {
   return nullptr;
 }
 
-void TrayIconGtk::OnImplInitialized(bool success) {}
+void TrayIconGtk::OnImplInitializationFailed() {}
 
 void TrayIconGtk::OnClick() {
   NotifyClicked();

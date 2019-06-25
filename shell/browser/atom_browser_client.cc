@@ -606,7 +606,7 @@ void AtomBrowserClient::AllowCertificateError(
   }
 }
 
-void AtomBrowserClient::SelectClientCertificate(
+base::OnceClosure AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
@@ -616,6 +616,7 @@ void AtomBrowserClient::SelectClientCertificate(
                                        std::move(client_certs),
                                        std::move(delegate));
   }
+  return base::OnceClosure();
 }
 
 bool AtomBrowserClient::CanCreateWindow(
