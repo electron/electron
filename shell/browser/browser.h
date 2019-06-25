@@ -159,9 +159,9 @@ class Browser : public WindowListObserver {
                                const base::DictionaryValue& user_info);
 
   // Bounce the dock icon.
-  enum class BounceType {
-    CRITICAL = 0,        // NSCriticalRequest
-    INFORMATIONAL = 10,  // NSInformationalRequest
+  enum class BounceType{
+      CRITICAL = 0,        // NSCriticalRequest
+      INFORMATIONAL = 10,  // NSInformationalRequest
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
@@ -305,7 +305,9 @@ class Browser : public WindowListObserver {
 
   std::unique_ptr<util::Promise> ready_promise_;
 
-#if defined(OS_LINUX) || defined(OS_MACOSX)
+#if defined(OS_LINUX)
+  base::Value about_panel_options_;
+#elif defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;
 #endif
 
