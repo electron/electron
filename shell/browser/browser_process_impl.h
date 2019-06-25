@@ -24,7 +24,7 @@
 #include "shell/browser/net/system_network_context_manager.h"
 
 namespace net_log {
-class ElectronNetLog;
+class ChromeNetLog;
 }
 
 namespace printing {
@@ -87,7 +87,7 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
-  net_log::ElectronNetLog* net_log();
+  net_log::ChromeNetLog* net_log() override;
   component_updater::ComponentUpdateService* component_updater() override;
   component_updater::SupervisedUserWhitelistInstaller*
   supervised_user_whitelist_installer() override;
@@ -121,7 +121,7 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::unique_ptr<IOThread> io_thread_;
-  std::unique_ptr<net_log::ElectronNetLog> net_log_;
+  std::unique_ptr<net_log::ChromeNetLog> net_log_;
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);

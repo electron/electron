@@ -78,9 +78,9 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
   auto channel_string = std::string("Electron " ELECTRON_VERSION);
-  base::Value custom_constants =
-      base::Value::FromUniquePtrValue(net_log::GetPlatformConstantsForNetLog(
-          command_line_string, channel_string));
+  base::Value custom_constants = base::Value::FromUniquePtrValue(
+      net_log::ChromeNetLog::GetPlatformConstants(command_line_string,
+                                                  channel_string));
 
   auto* network_context =
       content::BrowserContext::GetDefaultStoragePartition(browser_context_)
