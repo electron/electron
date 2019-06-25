@@ -2,12 +2,12 @@
 
 This document describes the new protocol APIs based on NetworkService.
 
-Currently we don't have an estimate of when will we enable NetworkService by
-default in Electron, but as Chromium is already removing non-NetworkService
-code, the switch may come after a few major version releases.
+We don't currently have an estimate of when we will enable `NetworkService` by
+default in Electron, but as Chromium is already removing non-`NetworkService`
+code, we might switch before Electron 10.
 
 The content of this document should be moved to `protocol.md` after it is
-determined when to enable NetworkService in Electron.
+determined when to enable `NetworkService` in Electron.
 
 > Register a custom protocol and intercept existing protocol requests.
 
@@ -89,7 +89,7 @@ A standard scheme adheres to what RFC 3986 calls [generic URI
 syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
 `https` are standard schemes, while `file` is not.
 
-Registering a scheme as standard, will allow relative and absolute resources to
+Registering a scheme as standard allows relative and absolute resources to
 be resolved correctly when served. Otherwise the scheme will behave like the
 `file` protocol, but without the ability to resolve relative URLs.
 

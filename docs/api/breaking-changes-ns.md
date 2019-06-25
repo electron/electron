@@ -3,12 +3,12 @@
 This document describes changes to Electron APIs after migrating network code
 to NetworkService API.
 
-Currently we don't have an estimate of when will we enable NetworkService by
-default in Electron, but as Chromium is already removing non-NetworkService
-code, the switch may come after a few major version releases.
+We don't currently have an estimate of when we will enable `NetworkService` by
+default in Electron, but as Chromium is already removing non-`NetworkService`
+code, we might switch before Electron 10.
 
-The content of this document should be moved to `breaking-changes.md` after it
-is determined when to enable NetworkService in Electron.
+The content of this document should be moved to `breaking-changes.md` once we have
+determined when to enable `NetworkService` in Electron.
 
 ## Planned Breaking API Changes
 
