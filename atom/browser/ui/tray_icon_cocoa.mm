@@ -8,7 +8,11 @@
 #include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
 #include "base/mac/sdk_forward_declarations.h"
+#include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "ui/display/screen.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
@@ -326,6 +330,9 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)popUpContextMenu:(atom::AtomMenuModel*)menu_model {
+  // Make sure events can be pumped while the menu is up.
+  base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
@@ -333,6 +340,7 @@ const CGFloat kVerticalTitleMargin = 2;
                             useDefaultAccelerator:NO]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
+
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
     forceHighlight_ = NO;
     [self setNeedsDisplay:YES];
@@ -340,8 +348,12 @@ const CGFloat kVerticalTitleMargin = 2;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
+    // Ensure the UI can update while the menu is fading out.
+    base::ScopedPumpMessagesInPrivateModes pump_private;
+
     // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
+
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
     // When it returns, we need to redraw the tray icon to not show highlight.
@@ -439,7 +451,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 namespace atom {
 
-TrayIconCocoa::TrayIconCocoa() {
+TrayIconCocoa::TrayIconCocoa() : weak_factory_(this) {
   status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
 }
 
@@ -477,9 +489,16 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
+void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {
+  [status_item_view_ popUpContextMenu:menu_model];
+}
+
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      AtomMenuModel* menu_model) {
-  [status_item_view_ popUpContextMenu:menu_model];
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
+                     base::Unretained(menu_model)));
 }
 
 void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
