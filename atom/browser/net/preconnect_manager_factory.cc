@@ -1,12 +1,12 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Copyright (c) 2019 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
-//
-#include <memory>
 
 #include "atom/browser/net/preconnect_manager_factory.h"
+
+#include <memory>
+
 #include "chrome/browser/predictors/preconnect_manager.h"
-#include "chrome/browser/profiles/profile.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "content/public/browser/browser_context.h"
@@ -23,11 +23,11 @@ class PreconnectManagerWrapper : public KeyedService {
  public:
   PreconnectManagerWrapper(
       base::WeakPtr<predictors::PreconnectManager::Delegate> delegate,
-      Profile* profile)
-      : ptr_(new predictors::PreconnectManager(delegate, profile)) {
-    if (profile) {
+      content::BrowserContext* context)
+      : ptr_(new predictors::PreconnectManager(delegate, context)) {
+    if (context) {
       ptr_->SetNetworkContextForTesting(
-          content::BrowserContext::GetDefaultStoragePartition(profile)
+          content::BrowserContext::GetDefaultStoragePartition(context)
               ->GetNetworkContext());
     }
   }
@@ -45,10 +45,10 @@ class PreconnectManagerWrapper : public KeyedService {
 namespace atom {
 
 // static
-predictors::PreconnectManager* PreconnectManagerFactory::GetForProfile(
-    Profile* profile) {
+predictors::PreconnectManager* PreconnectManagerFactory::GetForContext(
+    content::BrowserContext* context) {
   PreconnectManagerWrapper* ret = static_cast<PreconnectManagerWrapper*>(
-      GetInstance()->GetServiceForBrowserContext(profile, true));
+      GetInstance()->GetServiceForBrowserContext(context, true));
   return ret ? ret->GetPtr() : nullptr;
 }
 
@@ -67,8 +67,7 @@ PreconnectManagerFactory::~PreconnectManagerFactory() {}
 
 KeyedService* PreconnectManagerFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
-  Profile* profile = static_cast<Profile*>(context);
-  return new PreconnectManagerWrapper(weak_factory_.GetWeakPtr(), profile);
+  return new PreconnectManagerWrapper(weak_factory_.GetWeakPtr(), context);
 }
 
 }  // namespace atom

@@ -11,13 +11,12 @@
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 
-class Profile;
-
 namespace atom {
 
 class PreconnectManagerFactory : public BrowserContextKeyedServiceFactory {
  public:
-  static predictors::PreconnectManager* GetForProfile(Profile* profile);
+  static predictors::PreconnectManager* GetForContext(
+      content::BrowserContext* context);
   static PreconnectManagerFactory* GetInstance();
 
  private:

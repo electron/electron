@@ -17,11 +17,11 @@ namespace atom {
 
 class WebContentsPreferences;
 
-class PreconnectManagerTabHelper
+class PreconnectManagerHelper
     : public content::WebContentsObserver,
-      public content::WebContentsUserData<PreconnectManagerTabHelper> {
+      public content::WebContentsUserData<PreconnectManagerHelper> {
  public:
-  ~PreconnectManagerTabHelper() override;
+  ~PreconnectManagerHelper() override;
 
   // content::WebContentsObserver implementation
   void DidStartNavigation(
@@ -33,8 +33,8 @@ class PreconnectManagerTabHelper
   void SetNumberOfSocketsToPreconnect(int numSockets);
 
  private:
-  explicit PreconnectManagerTabHelper(content::WebContents* web_contents);
-  friend class content::WebContentsUserData<PreconnectManagerTabHelper>;
+  explicit PreconnectManagerHelper(content::WebContents* web_contents);
+  friend class content::WebContentsUserData<PreconnectManagerHelper>;
 
   predictors::PreconnectManager* preconnect_manager_;
 
@@ -42,7 +42,7 @@ class PreconnectManagerTabHelper
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 
-  DISALLOW_COPY_AND_ASSIGN(PreconnectManagerTabHelper);
+  DISALLOW_COPY_AND_ASSIGN(PreconnectManagerHelper);
 };
 
 }  // namespace atom

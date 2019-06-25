@@ -38,7 +38,7 @@ class AtomPreconnectDelegate;
 class AtomRenderMessageFilter : public content::BrowserMessageFilter {
  public:
   AtomRenderMessageFilter(int render_process_id,
-                          Profile* profile,
+                          content::BrowserContext* context,
                           int number_of_sockets_to_preconnect);
 
   // content::BrowserMessageFilter methods:
@@ -52,9 +52,7 @@ class AtomRenderMessageFilter : public content::BrowserMessageFilter {
 
   void OnPreconnect(const GURL& url, bool allow_credentials, int count);
 
-  const int render_process_id_;
-
-  // The PreconnectManager for the associated Profile. This must only be
+  // The PreconnectManager for the associated context. This must only be
   // accessed on the UI thread.
   predictors::PreconnectManager* preconnect_manager_;
 

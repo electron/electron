@@ -55,7 +55,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/profiles/profile.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
@@ -359,9 +358,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
             web_preferences);
   }
 
-  Profile* profile = static_cast<Profile*>(host->GetBrowserContext());
-  host->AddFilter(new AtomRenderMessageFilter(process_id, profile,
-                                              number_of_sockets_to_preconnect));
+  host->AddFilter(new AtomRenderMessageFilter(
+      process_id, host->GetBrowserContext(), number_of_sockets_to_preconnect));
 
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later

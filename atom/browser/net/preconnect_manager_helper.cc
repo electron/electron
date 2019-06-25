@@ -8,14 +8,11 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/net/preconnect_manager_tab_helper.h"
-
 #include "atom/browser/net/preconnect_manager_factory.h"
+#include "atom/browser/net/preconnect_manager_tab_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/common/options_switches.h"
-
 #include "base/task/post_task.h"
-#include "chrome/browser/profiles/profile.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -23,18 +20,18 @@
 
 namespace atom {
 
-PreconnectManagerTabHelper::PreconnectManagerTabHelper(
+PreconnectManagerHelper::PreconnectManagerHelper(
     content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       preconnect_manager_(nullptr),
       number_of_sockets_to_preconnect_(-1) {
-  preconnect_manager_ = atom::PreconnectManagerFactory::GetForProfile(
-      static_cast<Profile*>(web_contents->GetBrowserContext()));
+  preconnect_manager_ = atom::PreconnectManagerFactory::GetForContext(
+      web_contents->GetBrowserContext());
 }
 
-PreconnectManagerTabHelper::~PreconnectManagerTabHelper() = default;
+PreconnectManagerHelper::~PreconnectManagerHelper() = default;
 
-void PreconnectManagerTabHelper::DidStartNavigation(
+void PreconnectManagerHelper::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!preconnect_manager_)
@@ -72,7 +69,7 @@ static bool GetAsInteger(const base::Value* val,
   return false;
 }
 
-int PreconnectManagerTabHelper::GetNumberOfSocketsToPreconnect(
+int PreconnectManagerHelper::GetNumberOfSocketsToPreconnect(
     WebContentsPreferences* prefs) {
   int num_sockets_to_preconnect = -1;
   if (GetAsInteger(prefs->preference(), options::kNumSocketsToPreconnect,
@@ -87,11 +84,10 @@ int PreconnectManagerTabHelper::GetNumberOfSocketsToPreconnect(
   return num_sockets_to_preconnect;
 }
 
-void PreconnectManagerTabHelper::SetNumberOfSocketsToPreconnect(
-    int numSockets) {
+void PreconnectManagerHelper::SetNumberOfSocketsToPreconnect(int numSockets) {
   number_of_sockets_to_preconnect_ = numSockets;
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(PreconnectManagerTabHelper)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(PreconnectManagerHelper)
 
 }  // namespace atom

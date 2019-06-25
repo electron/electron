@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/renderer_host/atom_render_message_filter.h"
+
 #include <stdint.h>
+
 #include <memory>
 #include <string>
 
 #include "atom/browser/net/preconnect_manager_factory.h"
-#include "atom/browser/renderer_host/atom_render_message_filter.h"
-
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/logging.h"
@@ -17,7 +18,6 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
-#include "chrome/browser/profiles/profile.h"
 #include "components/network_hints/common/network_hints_common.h"
 #include "components/network_hints/common/network_hints_messages.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -37,14 +37,13 @@ const uint32_t kRenderFilteredMessageClasses[] = {
 
 AtomRenderMessageFilter::AtomRenderMessageFilter(
     int render_process_id,
-    Profile* profile,
+    content::BrowserContext* context,
     int number_of_sockets_to_preconnect)
     : BrowserMessageFilter(kRenderFilteredMessageClasses,
                            base::size(kRenderFilteredMessageClasses)),
-      render_process_id_(render_process_id),
       preconnect_manager_(nullptr),
       number_of_sockets_to_preconnect_(number_of_sockets_to_preconnect) {
-  preconnect_manager_ = atom::PreconnectManagerFactory::GetForProfile(profile);
+  preconnect_manager_ = atom::PreconnectManagerFactory::GetForContext(context);
 }
 
 AtomRenderMessageFilter::~AtomRenderMessageFilter() {}
