@@ -10,7 +10,7 @@
   `"text/html"`. Setting `mimeType` would implicitly set the `content-type`
   header in response, but if `content-type` is already set in `headers`, the
   `mimeType` would be ignored.
-* `headers` Object (optional) - An object containing the response headers. The
+* `headers` Record<string, string | string[]> (optional) - An object containing the response headers. The
   keys must be String, and values must be either String or Array of String.
 * `data` (Buffer | String | ReadableStream) (optional) - The response body. When
   returning stream as response, this is a Node.js readable stream representing
@@ -25,7 +25,7 @@
   and URL responses.
 * `method` String (optional) - The HTTP `method`. This is only used for file
   and URL responses.
-* `session` Object (optional) - The session used for requesting URL, by default
+* `session` Session (optional) - The session used for requesting URL, by default
   the HTTP request will reuse the current session. Setting `session` to `null`
   would use a random independent session. This is only used for URL responses.
 * `uploadData` Object (optional) - The data used as upload data. This is only
