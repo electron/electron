@@ -8,14 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
-#include "base/macros.h"
-#include "base/sequenced_task_runner_helpers.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_message_filter.h"
-#include "content/public/browser/browser_thread.h"
-#include "extensions/buildflags/buildflags.h"
-#include "ppapi/buildflags/buildflags.h"
 
 class GURL;
 class Profile;
@@ -46,9 +40,6 @@ class AtomRenderMessageFilter : public content::BrowserMessageFilter {
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
-  friend class content::BrowserThread;
-  friend class base::DeleteHelper<AtomRenderMessageFilter>;
-
   ~AtomRenderMessageFilter() override;
 
   void OnPreconnect(const GURL& url, bool allow_credentials, int count);
