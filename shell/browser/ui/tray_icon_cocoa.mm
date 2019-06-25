@@ -8,7 +8,11 @@
 #include <vector>
 
 #include "base/mac/sdk_forward_declarations.h"
+#include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "shell/browser/mac/atom_application.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "shell/browser/ui/cocoa/atom_menu_controller.h"
@@ -333,6 +337,7 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)popUpContextMenu:(electron::AtomMenuModel*)menu_model {
+  base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
@@ -340,6 +345,8 @@ const CGFloat kVerticalTitleMargin = 2;
                             useDefaultAccelerator:NO]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
+
+    base::mac::ScopedSendingEvent sendingEventScoper;
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
     forceHighlight_ = NO;
     [self setNeedsDisplay:YES];
@@ -349,6 +356,8 @@ const CGFloat kVerticalTitleMargin = 2;
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
+
+    base::mac::ScopedSendingEvent sendingEventScoper;
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
     // When it returns, we need to redraw the tray icon to not show highlight.
@@ -489,9 +498,17 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
+void TrayIconCocoa::PopUpOnUI(scoped_refptr<AtomMenuModel> menu_model) {
+  if (auto* model = menu_model.get())
+    [status_item_view_ popUpContextMenu:model];
+}
+
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      AtomMenuModel* menu_model) {
-  [status_item_view_ popUpContextMenu:menu_model];
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&TrayIconCocoa::PopUpOnUI, base::Unretained(this),
+                     base::WrapRefCounted(menu_model)));
 }
 
 void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
