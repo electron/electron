@@ -55,8 +55,8 @@
 
 #include <stddef.h>
 
-#include "atom/browser/browser.h"
-#include "atom/common/atom_command_line.h"
+#include "shell/browser/browser.h"
+#include "shell/common/atom_command_line.h"
 
 #include "base/base_paths.h"
 #include "base/bind.h"
@@ -827,7 +827,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
     return PROCESS_NONE;
   to_send.append(current_dir.value());
 
-  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
+  const std::vector<std::string>& argv = electron::AtomCommandLine::argv();
   for (std::vector<std::string>::const_iterator it = argv.begin();
        it != argv.end(); ++it) {
     to_send.push_back(kTokenDelimiter);

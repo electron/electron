@@ -2,7 +2,6 @@
 
 const ChildProcess = require('child_process')
 const fs = require('fs')
-const os = require('os')
 const http = require('http')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
@@ -515,9 +514,17 @@ describe('webContents module', () => {
 
   it('supports inserting CSS', async () => {
     w.loadURL('about:blank')
-    w.webContents.insertCSS('body { background-repeat: round; }')
+    await w.webContents.insertCSS('body { background-repeat: round; }')
     const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
     expect(result).to.equal('round')
+  })
+
+  it('supports removing inserted CSS', async () => {
+    w.loadURL('about:blank')
+    const key = await w.webContents.insertCSS('body { background-repeat: round; }')
+    await w.webContents.removeInsertedCSS(key)
+    const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+    expect(result).to.equal('repeat')
   })
 
   it('supports inspecting an element in the devtools', (done) => {
@@ -1064,16 +1071,6 @@ describe('webContents module', () => {
   describe('preload-error event', () => {
     const generateSpecs = (description, sandbox) => {
       describe(description, () => {
-        const tmpPreload = path.join(os.tmpdir(), 'preload.js')
-
-        before((done) => {
-          fs.writeFile(tmpPreload, '', done)
-        })
-
-        after((done) => {
-          fs.unlink(tmpPreload, () => done())
-        })
-
         it('is triggered when unhandled exception is thrown', async () => {
           const preload = path.join(fixtures, 'module', 'preload-error-exception.js')
 
@@ -1132,26 +1129,6 @@ describe('webContents module', () => {
           const [, preloadPath, error] = await promise
           expect(preloadPath).to.equal(preload)
           expect(error.message).to.contain('preload-invalid.js')
-        })
-
-        it('is triggered when preload script is outside of app path', async () => {
-          const preload = tmpPreload
-
-          w.destroy()
-          w = new BrowserWindow({
-            show: false,
-            webPreferences: {
-              sandbox,
-              preload
-            }
-          })
-
-          const promise = emittedOnce(w.webContents, 'preload-error')
-          w.loadURL('about:blank')
-
-          const [, preloadPath, error] = await promise
-          expect(preloadPath).to.equal(preload)
-          expect(error.message).to.contain('Preload scripts outside of app path are not allowed')
         })
       })
     }

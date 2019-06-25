@@ -47,10 +47,6 @@ describe('crashReporter module', () => {
 
       afterEach(() => closeWindow(w).then(() => { w = null }))
 
-      afterEach(() => {
-        stopCrashService()
-      })
-
       afterEach((done) => {
         if (stopServer != null) {
           stopServer(done)
@@ -60,9 +56,6 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump when renderer crashes', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-
         this.timeout(180000)
 
         stopServer = startServer({
@@ -75,34 +68,17 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump when node processes crash', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-
         this.timeout(180000)
 
         stopServer = startServer({
           callback (port) {
-            const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.name} Crashes`)
+            const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
 
-            if (process.platform === 'win32') {
-              const crashServiceProcess = childProcess.spawn(process.execPath, [
-                `--reporter-url=http://127.0.0.1:${port}`,
-                '--application-name=Zombies',
-                `--crashes-directory=${crashesDir}`
-              ], {
-                env: {
-                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
-                },
-                detached: true
-              })
-              remote.process.crashServicePid = crashServiceProcess.pid
-            }
-
             childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
           },
-          processType: 'browser',
+          processType: 'node',
           done: done
         })
       })
@@ -113,14 +89,18 @@ describe('crashReporter module', () => {
         let dumpFile
         let crashesDir = crashReporter.getCrashesDirectory()
         const existingDumpFiles = new Set()
-        if (process.platform === 'darwin') {
+        if (process.platform !== 'linux') {
           // crashpad puts the dump files in the "completed" subdirectory
-          crashesDir = path.join(crashesDir, 'completed')
+          if (process.platform === 'darwin') {
+            crashesDir = path.join(crashesDir, 'completed')
+          } else {
+            crashesDir = path.join(crashesDir, 'reports')
+          }
           crashReporter.setUploadToServer(false)
         }
         const testDone = (uploaded) => {
           if (uploaded) return done(new Error('Uploaded crash report'))
-          if (process.platform === 'darwin') crashReporter.setUploadToServer(true)
+          if (process.platform !== 'linux') crashReporter.setUploadToServer(true)
           expect(fs.existsSync(dumpFile)).to.be.true()
           done()
         }
@@ -170,9 +150,6 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump with updated extra parameters', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-
         this.timeout(180000)
 
         stopServer = startServer({
@@ -212,7 +189,7 @@ describe('crashReporter module', () => {
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
       const name = crashReporter.getProductName()
-      const expectedName = (process.platform === 'darwin') ? 'Electron Test' : 'Zombies'
+      const expectedName = 'Electron Test'
       expect(name).to.equal(expectedName)
     })
   })
@@ -244,12 +221,7 @@ describe('crashReporter module', () => {
   describe('getCrashesDirectory', () => {
     it('correctly returns the directory', () => {
       const crashesDir = crashReporter.getCrashesDirectory()
-      let dir
-      if (process.platform === 'win32') {
-        dir = `${app.getPath('temp')}/Zombies Crashes`
-      } else {
-        dir = `${app.getPath('temp')}/Electron Test Crashes`
-      }
+      const dir = path.join(app.getPath('temp'), 'Electron Test Crashes')
       expect(crashesDir).to.equal(dir)
     })
   })
@@ -294,7 +266,7 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.getUploadToServer()).to.throw()
     })
     it('returns true when uploadToServer is set to true', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -308,7 +280,7 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.true()
     })
     it('returns false when uploadToServer is set to false', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -329,7 +301,7 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.setUploadToServer('arg')).to.throw()
     })
     it('sets uploadToServer false when called with false', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -344,7 +316,7 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.false()
     })
     it('sets uploadToServer true when called with true', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -371,7 +343,7 @@ describe('crashReporter module', () => {
       expect(parameters).to.be.an('object')
     })
     it('adds a parameter to current parameters', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -386,7 +358,7 @@ describe('crashReporter module', () => {
       expect(crashReporter.getParameters()).to.have.a.property('hello')
     })
     it('removes a parameter from current parameters', function () {
-      if (process.platform !== 'darwin') {
+      if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
         return
@@ -467,7 +439,7 @@ const startServer = ({ callback, processType, done }) => {
   server.listen(port, '127.0.0.1', () => {
     port = server.address().port
     remote.process.port = port
-    if (process.platform === 'darwin') {
+    if (process.platform !== 'linux') {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1:' + port
@@ -483,19 +455,5 @@ const startServer = ({ callback, processType, done }) => {
     server.close(() => {
       done()
     })
-  }
-}
-
-const stopCrashService = () => {
-  const { crashServicePid } = remote.process
-  if (crashServicePid) {
-    remote.process.crashServicePid = 0
-    try {
-      process.kill(crashServicePid)
-    } catch (error) {
-      if (error.code !== 'ESRCH') {
-        throw error
-      }
-    }
   }
 }

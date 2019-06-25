@@ -256,7 +256,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
     * `nodeIntegrationInSubFrames` Boolean (optional) - Experimental option for
-      enabling NodeJS support in sub-frames such as iframes. All your preloads will load for
+      enabling Node.js support in sub-frames such as iframes. All your preloads will load for
       every iframe, you can use `process.isMainFrame` to determine if you are
       in the main frame or not.
     * `preload` String (optional) - Specifies a script that will be loaded before other
@@ -266,8 +266,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
-      **Note:** For security reasons, preload scripts can only be loaded from
-      a subpath of the [app path](app.md#appgetapppath).
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
@@ -420,7 +418,7 @@ Returns:
 
 Emitted when the document changed its title, calling `event.preventDefault()`
 will prevent the native window's title from changing.
-`explicitSet` is false when title is synthesized from file url.
+`explicitSet` is false when title is synthesized from file URL.
 
 #### Event: 'close'
 
@@ -1259,11 +1257,11 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 * `url` String
 * `options` Object (optional)
-  * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
+  * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer URL.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
-  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
+  * `baseURLForDataURL` String (optional) - Base URL (with trailing path separator) for files to be loaded by the data URL. This is needed only if the specified `url` is a data URL and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
 (see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects

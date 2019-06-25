@@ -99,7 +99,18 @@ webFrame.setSpellCheckProvider('en-US', {
 
 * `css` String - CSS source code.
 
-Inserts `css` as a style sheet in the document.
+Returns `String` - A key for the inserted CSS that can later be used to remove
+the CSS via `webFrame.removeInsertedCSS(key)`.
+
+Injects CSS into the current web page and returns a unique key for the inserted
+stylesheet.
+
+### `webFrame.removeInsertedCSS(key)`
+
+* `key` String
+
+Removes the inserted CSS from the current web page. The stylesheet is identified
+by its key, which is returned from `webFrame.insertCSS(css)`.
 
 ### `webFrame.insertText(text)`
 

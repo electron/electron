@@ -12,7 +12,7 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
 command line flag when building native Node modules.  Both will be supported for
-the forseeable future but it is reccomened that you switch.
+the foreseeable future but it is recommended that you switch.
 
 Deprecated: https://atom.io/download/electron
 
@@ -147,10 +147,6 @@ app.enableMixedSandbox()
 ```
 
 Mixed-sandbox mode is now enabled by default.
-
-### Preload scripts outside of app path are not allowed
-
-For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
 
 ## Planned Breaking API Changes (5.0)
 
@@ -528,7 +524,7 @@ to clarify to users which ARM version it supports, and to disambiguate it from
 future armv6l and arm64 assets that may be produced.
 
 The file _without the prefix_ is still being published to avoid breaking any
-setups that may be consuming it. Starting at 2.0, the un-prefixed file will
+setups that may be consuming it. Starting at 2.0, the unprefixed file will
 no longer be published.
 
 For details, see

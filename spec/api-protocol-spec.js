@@ -112,7 +112,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       await registerBufferProtocol(protocolName, emptyHandler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('does not crash when callback is called in next tick', async () => {
@@ -160,9 +160,10 @@ describe('protocol module', () => {
     })
 
     it('fails when sending object other than string', async () => {
-      const handler = (request, callback) => callback(new Date())
+      const notAString = () => {}
+      const handler = (request, callback) => callback(notAString)
       await registerStringProtocol(protocolName, handler)
-      expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
   })
 
@@ -198,7 +199,7 @@ describe('protocol module', () => {
     it('fails when sending string', async () => {
       const handler = (request, callback) => callback(text)
       await registerBufferProtocol(protocolName, handler)
-      expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
   })
 
@@ -234,6 +235,19 @@ describe('protocol module', () => {
       expect(r.headers).to.include('x-great-header: sogreat')
     })
 
+    it('throws an error when custom headers are invalid', (done) => {
+      const handler = (request, callback) => {
+        expect(() => callback({
+          path: filePath,
+          headers: { 'X-Great-Header': 42 }
+        })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string')
+        done()
+      }
+      registerFileProtocol(protocolName, handler).then(() => {
+        ajax(protocolName + '://fake-host')
+      })
+    })
+
     it('sends object as response', async () => {
       const handler = (request, callback) => callback({ path: filePath })
       await registerFileProtocol(protocolName, handler)
@@ -252,13 +266,13 @@ describe('protocol module', () => {
       const fakeFilePath = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
       const handler = (request, callback) => callback(fakeFilePath)
       await registerFileProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('fails when sending unsupported content', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerFileProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
   })
 
@@ -282,13 +296,13 @@ describe('protocol module', () => {
     it('fails when sending invalid url', async () => {
       const handler = (request, callback) => callback({ url: 'url' })
       await registerHttpProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('fails when sending unsupported content', async () => {
       const handler = (request, callback) => callback(new Date())
       await registerHttpProtocol(protocolName, handler)
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
 
     it('works when target URL redirects', async () => {
@@ -478,7 +492,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       await interceptStringProtocol('http', emptyHandler)
-      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(404)
+      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
   })
 

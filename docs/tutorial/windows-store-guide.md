@@ -83,7 +83,6 @@ and output directories, the app's name and version, and confirmation that
 electron-windows-store `
     --input-directory C:\myelectronapp `
     --output-directory C:\output\myelectronapp `
-    --flatten true `
     --package-version 1.0.0.0 `
     --package-name myelectronapp
 ```

@@ -19,10 +19,6 @@
       }
     })
 
-    if (process.platform === 'win32') {
-      ipcRenderer.sendSync('crash-service-pid', crashReporter.crashServicePid)
-    }
-
     if (!uploadToServer) {
       ipcRenderer.sendSync('list-existing-dumps')
     }

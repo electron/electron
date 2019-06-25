@@ -6,7 +6,7 @@ Subject: disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 See https://github.com/electron/electron/issues/10754
 
 diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
-index 7be135720a40d819bf19afddce77670d721cfe59..1ceaf378636e16d5e93f5acc6ff42019fc87f680 100644
+index b29cd849621a012e06955fdef4970f8d85976002..39ab0f7988c3b8aa16fbc747f0a5b3200fcbb227 100644
 --- a/third_party/blink/renderer/core/dom/document.cc
 +++ b/third_party/blink/renderer/core/dom/document.cc
 @@ -3653,7 +3653,9 @@ bool Document::DispatchBeforeUnloadEvent(ChromeClient* chrome_client,

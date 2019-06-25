@@ -12,7 +12,7 @@
         resolve({data, status: request.status, headers: request.getAllResponseHeaders()})
       }
       options.error = (xhr, errorType, error) => {
-        reject(error ? error : xhr.status)
+        reject(error ? error : new Error(`${xhr.status}`))
       }
       $.ajax(options)
     })

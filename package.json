@@ -1,10 +1,10 @@
 {
   "name": "electron",
-  "version": "7.0.0-nightly.20190605",
+  "version": "7.0.0-nightly.20190625",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
-    "@electron/docs-parser": "^0.1.1",
+    "@electron/docs-parser": "^0.2.2",
     "@electron/typescript-definitions": "^8.3.1",
     "@octokit/rest": "^16.3.2",
     "@types/chai": "^4.1.7",
@@ -41,7 +41,6 @@
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
     "octicons": "^7.3.0",
-    "plist": "^3.0.1",
     "pre-flight": "^1.1.0",
     "remark-cli": "^4.0.0",
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
@@ -61,9 +60,9 @@
   "private": true,
   "scripts": {
     "asar": "asar",
-    "bump-version": "./script/bump-version.js",
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
+    "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",
     "lint:clang-format": "python script/run-clang-format.py -r -c atom/ chromium_src/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",

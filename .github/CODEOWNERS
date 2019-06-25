@@ -18,13 +18,4 @@
 
 # Releases WG
 /npm/                                   @electron/wg-releases
-/script/release-notes                   @electron/wg-releases
-/script/prepare-release.js              @electron/wg-releases
-/script/bump-version.js                 @electron/wg-releases
-/script/ci-release-build.js             @electron/wg-releases
-/script/release.js                      @electron/wg-releases
-/script/upload-to-github.js             @electron/wg-releases
-/script/release-artifact-cleanup.js     @electron/wg-releases
-/script/get-last-major-for-master.js    @electron/wg-releases
-/script/find-release.js                 @electron/wg-releases
-/script/download-circleci-artifacts.js  @electron/wg-releases
+/script/release                         @electron/wg-releases

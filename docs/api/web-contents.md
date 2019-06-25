@@ -752,7 +752,7 @@ Calling `event.preventDefault()` will make it return empty sources.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.require()` is called in the renderer process.
@@ -763,7 +763,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `globalName` String
 
 Emitted when `remote.getGlobal()` is called in the renderer process.
@@ -774,7 +774,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.getBuiltin()` is called in the renderer process.
@@ -785,7 +785,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWindow()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -795,7 +795,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -805,7 +805,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `guestWebContents` [WebContents](web-contents.md)
 
 Emitted when `<webview>.getWebContents()` is called in the renderer process.
@@ -987,11 +987,32 @@ Returns `String` - The user agent for this web page.
 
 * `css` String
 
-Injects CSS into the current web page.
+Returns `Promise<String>` - A promise that resolves with a key for the inserted
+CSS that can later be used to remove the CSS via
+`contents.removeInsertedCSS(key)`.
+
+Injects CSS into the current web page and returns a unique key for the inserted
+stylesheet.
 
 ```js
 contents.on('did-finish-load', function () {
   contents.insertCSS('html, body { background-color: #f00; }')
+})
+```
+
+#### `contents.removeInsertedCSS(key)`
+
+* `key` String
+
+Returns `Promise<void>` - Resolves if the removal was successful.
+
+Removes the inserted CSS from the current web page. The stylesheet is identified
+by its key, which is returned from `contents.insertCSS(css)`.
+
+```js
+contents.on('did-finish-load', async function () {
+  const key = await contents.insertCSS('html, body { background-color: #f00; }')
+  contents.removeInsertedCSS(key)
 })
 ```
 
@@ -1065,6 +1086,8 @@ Returns `Number` - the current zoom level.
 * `minimumLevel` Number
 * `maximumLevel` Number
 
+Returns `Promise<void>`
+
 Sets the maximum and minimum pinch-to-zoom level.
 
 > **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
@@ -1077,6 +1100,8 @@ Sets the maximum and minimum pinch-to-zoom level.
 
 * `minimumLevel` Number
 * `maximumLevel` Number
+
+Returns `Promise<void>`
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
@@ -1138,6 +1163,8 @@ Executes the editing command `replaceMisspelling` in web page.
 #### `contents.insertText(text)`
 
 * `text` String
+
+Returns `Promise<void>`
 
 Inserts `text` to the focused element.
 

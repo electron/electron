@@ -19,7 +19,6 @@ let window = null
 
 // will be used by crash-reporter spec.
 process.port = 0
-process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -53,16 +52,15 @@ if (process.platform !== 'darwin') {
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
-const print = function (_, args) {
+const print = function (_, method, args) {
   const output = util.format.apply(null, args)
   if (outputToFile) {
     fs.appendFileSync(outputToFile, output + '\n')
   } else {
-    console.error(output)
+    console[method](output)
   }
 }
-ipcMain.on('console.log', print)
-ipcMain.on('console.error', print)
+ipcMain.on('console-call', print)
 
 ipcMain.on('process.exit', function (event, code) {
   process.exit(code)
@@ -185,25 +183,7 @@ ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
 })
 
 for (const eventName of [
-  'remote-require',
-  'remote-get-global',
-  'remote-get-builtin'
-]) {
-  ipcMain.on(`handle-next-${eventName}`, function (event, valuesMap = {}) {
-    event.sender.once(eventName, (event, name) => {
-      if (valuesMap.hasOwnProperty(name)) {
-        event.returnValue = valuesMap[name]
-      } else {
-        event.preventDefault()
-      }
-    })
-  })
-}
-
-for (const eventName of [
   'desktop-capturer-get-sources',
-  'remote-get-current-window',
-  'remote-get-current-web-contents',
   'remote-get-guest-web-contents'
 ]) {
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {
@@ -315,11 +295,6 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   fs.readFile(__filename, () => {
     Promise.reject(new Error(message))
   })
-})
-
-ipcMain.on('crash-service-pid', (event, pid) => {
-  process.crashServicePid = pid
-  event.returnValue = null
 })
 
 // Suspend listeners until the next event and then restore them

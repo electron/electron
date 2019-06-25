@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import argparse
 import os
 import sys
@@ -48,7 +49,7 @@ def hasTrailingWhiteSpace(filepath, fix):
   for line in lines:
     fixed_lines.append(line.rstrip() + '\n')
     if not fix and line != line.rstrip():
-      print "Trailing whitespace in: " + filepath
+      print("Trailing whitespace in: " + filepath)
       return True
   if fix:
     with open(filepath, 'w') as f:

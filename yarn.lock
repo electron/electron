@@ -22,25 +22,10 @@
   dependencies:
     regenerator-runtime "^0.12.0"
 
-"@electron/docs-parser@^0.1.1":
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.1.7.tgz#1df6f6bf492ccc73ede3599dbc811c60e18c69a0"
-  integrity sha512-O/pipWAJxW+70sbmFq2PNwtzyjE6piXu3WG20ObyTAVoRvI51hUbRoQ6idcnYO7r3JKACueb2liQOKkV6AlUmQ==
-  dependencies:
-    "@types/markdown-it" "^0.0.7"
-    chai "^4.2.0"
-    chalk "^2.4.2"
-    fs-extra "^7.0.1"
-    lodash.camelcase "^4.3.0"
-    markdown-it "^8.4.2"
-    minimist "^1.2.0"
-    ora "^3.4.0"
-    pretty-ms "^5.0.0"
-
-"@electron/docs-parser@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.2.1.tgz#14bcc7ec5afa1b2e89dc6dbdb7152dc74c2b5c46"
-  integrity sha512-vQNxIQzIudFp3TECH9TEkPZUvLrDzZO5wZPmgN5e3c69yqmMj779I86Ny8giQfY93jFpRZ/+gRqIwVfD6gFEWA==
+"@electron/docs-parser@^0.2.1", "@electron/docs-parser@^0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.2.2.tgz#7c9acd6cc10559c86a27bb0653ec13df10955f02"
+  integrity sha512-FKXktu5i6cHL+AkvWv34j2lpBXNpqfHN7YwhswcBqRFXsj24phpih/sY2NKx6OrFP9R3ReJeg681/luAf/3k8Q==
   dependencies:
     "@types/markdown-it" "^0.0.7"
     chai "^4.2.0"
@@ -204,9 +189,9 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.14.6.tgz#9cbfcb62c50947217f4d88d4d274cc40c22625a9"
 
 "@types/node@^11.13.7":
-  version "11.13.13"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.13.tgz#a3d2a8a908ce322f24f0f8c88160b44c7dd5c452"
-  integrity sha512-GFWH7e4Q/OGLAO545bupVju+nE1YtLSwYAdLfSzAXnTPqoqKoXCOEtB7Cluvg9B/h2nGLhyzCDyCInYvrOE2nw==
+  version "11.13.14"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.14.tgz#03e9416f7d699d71742e5a1e455def7bd55f8fb9"
+  integrity sha512-9NjFOB6UUGjJLNANmyIouuaN8YPsPgC4DCOd5lU+DL7HSX/RCfzz0JOtHlspEJq1Ll/JUu/8Cm4wzxpZ8w5sjQ==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.0"
@@ -707,7 +692,7 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
   integrity sha1-ibTRmasr7kneFk6gK4nORi1xt2c=
 
-base64-js@^1.0.2, base64-js@^1.2.3:
+base64-js@^1.0.2:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.3.0.tgz#cab1e6118f051095e58b5281aea8c1cd22bfc0e3"
 
@@ -3973,9 +3958,9 @@ ms@2.0.0:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
 
 ms@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.1.tgz#30a5864eb3ebb0a66f2ebe6d727af06a09d86e0a"
-  integrity sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
+  integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
 mute-stream@0.0.7:
   version "0.0.7"
@@ -4630,14 +4615,6 @@ please-upgrade-node@^3.0.2, please-upgrade-node@^3.1.1:
   resolved "https://registry.yarnpkg.com/please-upgrade-node/-/please-upgrade-node-3.1.1.tgz#ed320051dfcc5024fae696712c8288993595e8ac"
   dependencies:
     semver-compare "^1.0.0"
-
-plist@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/plist/-/plist-3.0.1.tgz#a9b931d17c304e8912ef0ba3bdd6182baf2e1f8c"
-  dependencies:
-    base64-js "^1.2.3"
-    xmlbuilder "^9.0.7"
-    xmldom "0.1.x"
 
 plur@^3.0.0:
   version "3.1.1"
@@ -6948,14 +6925,6 @@ x-is-function@^1.0.4:
 x-is-string@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/x-is-string/-/x-is-string-0.1.0.tgz#474b50865af3a49a9c4657f05acd145458f77d82"
-
-xmlbuilder@^9.0.7:
-  version "9.0.7"
-  resolved "https://registry.yarnpkg.com/xmlbuilder/-/xmlbuilder-9.0.7.tgz#132ee63d2ec5565c557e20f4c22df9aca686b10d"
-
-xmldom@0.1.x:
-  version "0.1.27"
-  resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.27.tgz#d501f97b3bdb403af8ef9ecc20573187aadac0e9"
 
 xtend@^4.0.0, xtend@^4.0.1, xtend@~4.0.1:
   version "4.0.1"
