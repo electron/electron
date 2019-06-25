@@ -8,24 +8,24 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/net/preconnect_manager_factory.h"
-#include "atom/browser/net/preconnect_manager_tab_helper.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/common/options_switches.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
+#include "shell/browser/net/preconnect_manager_factory.h"
+#include "shell/browser/net/preconnect_manager_helper.h"
+#include "shell/browser/web_contents_preferences.h"
+#include "shell/common/options_switches.h"
 
-namespace atom {
+namespace electron {
 
 PreconnectManagerHelper::PreconnectManagerHelper(
     content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       preconnect_manager_(nullptr),
       number_of_sockets_to_preconnect_(-1) {
-  preconnect_manager_ = atom::PreconnectManagerFactory::GetForContext(
+  preconnect_manager_ = electron::PreconnectManagerFactory::GetForContext(
       web_contents->GetBrowserContext());
 }
 
@@ -90,4 +90,4 @@ void PreconnectManagerHelper::SetNumberOfSocketsToPreconnect(int numSockets) {
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PreconnectManagerHelper)
 
-}  // namespace atom
+}  // namespace electron

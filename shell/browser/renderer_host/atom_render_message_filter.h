@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_RENDERER_HOST_ATOM_RENDER_MESSAGE_FILTER_H_
-#define ATOM_BROWSER_RENDERER_HOST_ATOM_RENDER_MESSAGE_FILTER_H_
+#ifndef SHELL_BROWSER_RENDERER_HOST_ATOM_RENDER_MESSAGE_FILTER_H_
+#define SHELL_BROWSER_RENDERER_HOST_ATOM_RENDER_MESSAGE_FILTER_H_
 
 #include <string>
 #include <vector>
@@ -11,6 +11,7 @@
 #include "base/callback.h"
 #include "base/macros.h"
 #include "base/sequenced_task_runner_helpers.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_message_filter.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/buildflags/buildflags.h"
@@ -61,4 +62,4 @@ class AtomRenderMessageFilter : public content::BrowserMessageFilter {
   DISALLOW_COPY_AND_ASSIGN(AtomRenderMessageFilter);
 };
 
-#endif  // ATOM_BROWSER_RENDERER_HOST_ATOM_RENDER_MESSAGE_FILTER_H_
+#endif  // SHELL_BROWSER_RENDERER_HOST_ATOM_RENDER_MESSAGE_FILTER_H_

@@ -66,9 +66,11 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/network_context_service.h"
 #include "shell/browser/net/network_context_service_factory.h"
+#include "shell/browser/net/preconnect_manager_helper.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/renderer_host/atom_render_message_filter.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -360,7 +362,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
     number_of_sockets_to_preconnect =
-        PreconnectManagerTabHelper::GetNumberOfSocketsToPreconnect(
+        PreconnectManagerHelper::GetNumberOfSocketsToPreconnect(
             web_preferences);
   }
 

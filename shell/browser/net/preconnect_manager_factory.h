@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_PRECONNECT_MANAGER_FACTORY_H_
-#define ATOM_BROWSER_NET_PRECONNECT_MANAGER_FACTORY_H_
+#ifndef SHELL_BROWSER_NET_PRECONNECT_MANAGER_FACTORY_H_
+#define SHELL_BROWSER_NET_PRECONNECT_MANAGER_FACTORY_H_
 
 #include "base/macros.h"
 #include "base/memory/singleton.h"
@@ -11,7 +11,7 @@
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 
-namespace atom {
+namespace electron {
 
 class PreconnectManagerFactory : public BrowserContextKeyedServiceFactory {
  public:
@@ -35,6 +35,6 @@ class PreconnectManagerFactory : public BrowserContextKeyedServiceFactory {
   DISALLOW_COPY_AND_ASSIGN(PreconnectManagerFactory);
 };
 
-}  // namespace atom
+}  // namespace electron
 
-#endif  // ATOM_BROWSER_NET_PRECONNECT_MANAGER_FACTORY_H_
+#endif  // SHELL_BROWSER_NET_PRECONNECT_MANAGER_FACTORY_H_

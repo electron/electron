@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/preconnect_manager_factory.h"
+#include "shell/browser/net/preconnect_manager_factory.h"
 
 #include <memory>
 
@@ -24,7 +24,9 @@ class PreconnectManagerWrapper : public KeyedService {
   PreconnectManagerWrapper(
       base::WeakPtr<predictors::PreconnectManager::Delegate> delegate,
       content::BrowserContext* context)
-      : ptr_(new predictors::PreconnectManager(delegate, context)) {
+      : ptr_(new predictors::PreconnectManager(
+            delegate,
+            reinterpret_cast<Profile*>(context))) {
     if (context) {
       ptr_->SetNetworkContextForTesting(
           content::BrowserContext::GetDefaultStoragePartition(context)
@@ -42,7 +44,7 @@ class PreconnectManagerWrapper : public KeyedService {
 };
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 // static
 predictors::PreconnectManager* PreconnectManagerFactory::GetForContext(
@@ -70,4 +72,4 @@ KeyedService* PreconnectManagerFactory::BuildServiceInstanceFor(
   return new PreconnectManagerWrapper(weak_factory_.GetWeakPtr(), context);
 }
 
-}  // namespace atom
+}  // namespace electron

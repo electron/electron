@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/renderer_host/atom_render_message_filter.h"
+#include "shell/browser/renderer_host/atom_render_message_filter.h"
 
 #include <stdint.h>
 
 #include <memory>
 #include <string>
 
-#include "atom/browser/net/preconnect_manager_factory.h"
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/logging.h"
@@ -24,6 +23,7 @@
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "shell/browser/net/preconnect_manager_factory.h"
 
 using content::BrowserThread;
 
@@ -43,7 +43,8 @@ AtomRenderMessageFilter::AtomRenderMessageFilter(
                            base::size(kRenderFilteredMessageClasses)),
       preconnect_manager_(nullptr),
       number_of_sockets_to_preconnect_(number_of_sockets_to_preconnect) {
-  preconnect_manager_ = atom::PreconnectManagerFactory::GetForContext(context);
+  preconnect_manager_ =
+      electron::PreconnectManagerFactory::GetForContext(context);
 }
 
 AtomRenderMessageFilter::~AtomRenderMessageFilter() {}

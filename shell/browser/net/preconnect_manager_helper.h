@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_PRECONNECT_MANAGER_TAB_HELPER_H_
-#define ATOM_BROWSER_NET_PRECONNECT_MANAGER_TAB_HELPER_H_
+#ifndef SHELL_BROWSER_NET_PRECONNECT_MANAGER_HELPER_H_
+#define SHELL_BROWSER_NET_PRECONNECT_MANAGER_HELPER_H_
 
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -13,7 +13,7 @@ namespace predictors {
 class PreconnectManager;
 }
 
-namespace atom {
+namespace electron {
 
 class WebContentsPreferences;
 
@@ -45,6 +45,6 @@ class PreconnectManagerHelper
   DISALLOW_COPY_AND_ASSIGN(PreconnectManagerHelper);
 };
 
-}  // namespace atom
+}  // namespace electron
 
-#endif  // ATOM_BROWSER_NET_PRECONNECT_MANAGER_TAB_HELPER_H_
+#endif  // SHELL_BROWSER_NET_PRECONNECT_MANAGER_HELPER_H_
