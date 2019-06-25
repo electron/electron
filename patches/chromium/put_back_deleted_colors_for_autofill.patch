@@ -40,7 +40,7 @@ index c72e78bdc7c1535d48bc13e18c1cc784051eaea8..fe07c0ac7d94cdbb7bef56f651266e63
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 489369300d48dbfacb8c5489e06b77218f526bf4..139579c6bc96c74ba9771514b28fcbd5ddde6ab9 100644
+index 489369300d48dbfacb8c5489e06b77218f526bf4..340026b3dac4e833d3448d83db7b92c136134726 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -51,6 +51,14 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
@@ -94,7 +94,7 @@ index 68d9f2a26a8616d5f4d18c89fa0f8ec7650b8c10..b624f3df1162e0f6ad4ee72bf2bb8bd0
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 0e1002339bc48c89132a118f8a95727f6981a918..ed5b1ef0ceb35809f5ade0a1791c30ed84066ab6 100644
+index e74d07035ccdb1f54ce85775ac96d8a1be40e6c6..798b96799871aea80301c3b242bc575314cb698c 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -539,6 +539,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id) const {

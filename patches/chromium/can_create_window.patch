@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index c2058950c8814bbb31141bd78c5bb008042ba9d6..95f2b97de5b1c0288ac4d4eee66d081baa5b564d 100644
+index 0f1ea54ebc4424f0b36fbc100ad13b7263fb4a91..05c2cf9cad329c07c4c7f41fbd62a79df3716219 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3762,6 +3762,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3798,6 +3798,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,10 +32,10 @@ index 3f78b3f387509d57295f8fde1588c4d2d3574b94..a8c5b4373eb0e01f901e2a2a9cd1091f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 514fddcac694c991371c7c9b1cf4484c7161645b..f99d2ea10e9f43374bc6a618a834f36769e66658 100644
+index 440244ed105c7240a52cc371bac3032945348143..1057f3096ddc91d70d3c959b4fb6980158d85c89 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -519,6 +519,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -522,6 +522,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -45,10 +45,10 @@ index 514fddcac694c991371c7c9b1cf4484c7161645b..f99d2ea10e9f43374bc6a618a834f367
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b4fa038bf23fc509722eef4b1fe5cf3c94efa2f9..1245470cc2323def4154a5bd7e7c23669a575f25 100644
+index 46eed093277079bd2bf0ecb1c799c755fc822ec3..1fccd2ce0d1fe8f062e3fe2c73e23495220dbc60 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -178,6 +178,7 @@ class RenderFrameHost;
+@@ -177,6 +177,7 @@ class RenderFrameHost;
  class RenderProcessHost;
  class RenderViewHost;
  class ResourceContext;
@@ -56,7 +56,7 @@ index b4fa038bf23fc509722eef4b1fe5cf3c94efa2f9..1245470cc2323def4154a5bd7e7c2366
  class SerialDelegate;
  class SiteInstance;
  class SpeechRecognitionManagerDelegate;
-@@ -806,6 +807,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -818,6 +819,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
