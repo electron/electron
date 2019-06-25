@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/strings/sys_string_conversions.h"
+#include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "shell/browser/ui/cocoa/atom_menu_controller.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
@@ -67,6 +68,7 @@
              owner:self
           userInfo:nil]);
   [self addTrackingArea:trackingArea_];
+  // TODO: remove LOG
   LOG(INFO) << "update tracking rect: "
             << [NSStringFromRect(trackingArea_.get().rect) UTF8String];
 }
@@ -100,7 +102,14 @@
 }
 
 - (void)setTitle:(NSString*)title {
-  [[statusItem_ button] setTitle:title];  // TODO: or [title copy] ?
+  if ([title containsANSICodes]) {
+    [[statusItem_ button]
+        setAttributedTitle:
+            [title
+                attributedStringParsingANSICodes]];  // TODO: or [title copy] ?
+  } else {
+    [[statusItem_ button] setTitle:title];  // TODO: or [title copy] ?
+  }
 
   // Fix icon margins.
   if (title.length > 0) {
@@ -274,6 +283,7 @@ std::string TrayIconCocoa::GetTitle() {
 }
 
 void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
+  // TODO: remove LOG & method?
   LOG(INFO) << "Not supported.";
 }
 
