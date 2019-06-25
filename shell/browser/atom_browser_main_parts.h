@@ -135,8 +135,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
   device::mojom::GeolocationControlPtr geolocation_control_;
 
-  const content::MainFunctionParams main_function_params_;
-
   static AtomBrowserMainParts* self_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);

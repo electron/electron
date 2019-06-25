@@ -207,8 +207,7 @@ AtomBrowserMainParts::AtomBrowserMainParts(
       browser_(new Browser),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
-      electron_bindings_(new ElectronBindings(uv_default_loop())),
-      main_function_params_(params) {
+      electron_bindings_(new ElectronBindings(uv_default_loop())) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
   // Register extension scheme as web safe scheme.
@@ -339,7 +338,7 @@ int AtomBrowserMainParts::PreCreateThreads() {
   ui::InitIdleMonitor();
 #endif
 
-  fake_browser_process_->PreCreateThreads(main_function_params_.command_line);
+  fake_browser_process_->PreCreateThreads();
 
   return 0;
 }

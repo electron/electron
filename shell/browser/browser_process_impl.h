@@ -23,10 +23,6 @@
 #include "shell/browser/io_thread.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
-namespace net_log {
-class ChromeNetLog;
-}
-
 namespace printing {
 class PrintJobManager;
 }
@@ -44,7 +40,7 @@ class BrowserProcessImpl : public BrowserProcess {
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
   void PostEarlyInitialization();
-  void PreCreateThreads(const base::CommandLine& command_line);
+  void PreCreateThreads();
   void PostDestroyThreads();
   void PostMainMessageLoopRun();
 
@@ -87,7 +83,6 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
-  net_log::ChromeNetLog* net_log() override;
   component_updater::ComponentUpdateService* component_updater() override;
   component_updater::SupervisedUserWhitelistInstaller*
   supervised_user_whitelist_installer() override;
@@ -121,7 +116,6 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::unique_ptr<IOThread> io_thread_;
-  std::unique_ptr<net_log::ChromeNetLog> net_log_;
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);
