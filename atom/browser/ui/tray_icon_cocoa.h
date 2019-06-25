@@ -30,6 +30,7 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
   void SetHighlightMode(TrayIcon::HighlightMode mode) override;
   void SetIgnoreDoubleClickEvents(bool ignore) override;
   bool GetIgnoreDoubleClickEvents() override;
+  void PopUpOnUI(AtomMenuModel* menu_model);
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
@@ -48,6 +49,8 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
 
   // Used for unregistering observer.
   AtomMenuModel* menu_model_ = nullptr;  // weak ref.
+
+  base::WeakPtrFactory<TrayIconCocoa> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };
