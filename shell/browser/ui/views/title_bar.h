@@ -8,6 +8,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/view_ids.h"
+#include "ui/gfx/text_constants.h"
 #include "ui/views/accessible_pane_view.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/controls/label.h"
@@ -95,6 +96,7 @@ class TitleBar : public views::View,
 
   IconView* window_icon_;
   views::Label* window_title_;
+  gfx::HorizontalAlignment title_alignment_;
 
   WindowsCaptionButton* minimize_button_;
   WindowsCaptionButton* maximize_button_;

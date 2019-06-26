@@ -97,6 +97,7 @@ const views::Widget* IconView::widget() const {
 const char TitleBar::kViewClassName[] = "ElectronTitleBar";
 
 TitleBar::TitleBar() {
+  title_alignment_ = gfx::HorizontalAlignment::ALIGN_LEFT;
   UpdateViewColors();
   SetLayoutManager(
       std::make_unique<views::BoxLayout>(views::BoxLayout::kHorizontal));
@@ -243,9 +244,39 @@ void TitleBar::LayoutTitleBar() {
       next_leading_x = kMinimumTitleLeftBorderMargin;
     }
     window_title_->SetText(GetWidget()->widget_delegate()->GetWindowTitle());
+    gfx::Rect title_bounds(window_title_->CalculatePreferredSize());
+
+    switch (title_alignment_) {
+      case gfx::HorizontalAlignment::ALIGN_CENTER: {
+        int left = (width() - title_bounds.width()) / 2;
+        int right = left + title_bounds.width();
+
+        if (right > next_trailing_x)
+          left = next_trailing_x - title_bounds.width();
+        if (left < next_leading_x)
+          left = next_leading_x;
+
+        title_bounds.set_origin(gfx::Point(left, topOffset));
+        break;
+      }
+      case gfx::HorizontalAlignment::ALIGN_RIGHT: {
+        title_bounds.set_origin(
+            gfx::Point(next_trailing_x - title_bounds.width(), topOffset));
+        break;
+      }
+      case gfx::HorizontalAlignment::ALIGN_LEFT:
+      default: {
+        title_bounds.set_origin(gfx::Point(next_leading_x, topOffset));
+        break;
+      }
+    }
+
     const int max_text_width = std::max(0, next_trailing_x - next_leading_x);
-    window_title_->SetBounds(next_leading_x, window_icon_bounds.y(),
-                             max_text_width, window_icon_bounds.height());
+    if (title_bounds.width() > max_text_width)
+      title_bounds.set_width(max_text_width);
+
+    window_title_->SetBounds(title_bounds.x(), title_bounds.y(),
+                             title_bounds.width(), title_bounds.height());
     window_title_->SetAutoColorReadabilityEnabled(false);
   }
 }
