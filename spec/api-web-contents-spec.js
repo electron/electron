@@ -589,7 +589,7 @@ describe('webContents module', () => {
                             const {ipcRenderer, remote} = require('electron')
                             ipcRenderer.send('set-zoom', window.location.hostname)
                             ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
-                              const zoomLevel = remote.getCurrentWebContents().getZoomLevel()
+                              const zoomLevel = remote.getCurrentWebContents().zoomLevel
                               ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
                             })
                           </script>`
@@ -602,7 +602,8 @@ describe('webContents module', () => {
       protocol.unregisterProtocol(zoomScheme, (error) => done(error))
     })
 
-    it('can set the correct zoom level', async () => {
+    // TODO(codebytere): remove in Electron v8.0.0
+    it('can set the correct zoom level (functions)', async () => {
       try {
         await w.loadURL('about:blank')
         const zoomLevel = w.webContents.getZoomLevel()
@@ -615,11 +616,25 @@ describe('webContents module', () => {
       }
     })
 
+    it('can set the correct zoom level', async () => {
+      try {
+        await w.loadURL('about:blank')
+        const zoomLevel = w.webContents.zoomLevel
+        expect(zoomLevel).to.eql(0.0)
+        w.webContents.zoomLevel = 0.5
+        const newZoomLevel = w.webContents.zoomLevel
+        expect(newZoomLevel).to.eql(0.5)
+      } finally {
+        w.webContents.zoomLevel = 0
+      }
+    })
+
     it('can persist zoom level across navigation', (done) => {
       let finalNavigation = false
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host]
-        if (!finalNavigation) w.webContents.setZoomLevel(zoomLevel)
+        if (!finalNavigation) w.webContents.zoomLevel = zoomLevel
+        console.log()
         e.sender.send(`${host}-zoom-set`)
       })
       ipcMain.on('host1-zoom-level', (e, zoomLevel) => {
@@ -645,17 +660,17 @@ describe('webContents module', () => {
         show: false
       })
       w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.getZoomLevel()
+        const zoomLevel1 = w.webContents.zoomLevel
         expect(zoomLevel1).to.equal(hostZoomMap.host3)
 
-        const zoomLevel2 = w2.webContents.getZoomLevel()
+        const zoomLevel2 = w2.webContents.zoomLevel
         expect(zoomLevel1).to.equal(zoomLevel2)
         w2.setClosable(true)
         w2.close()
         done()
       })
       w.webContents.on('did-finish-load', () => {
-        w.webContents.setZoomLevel(hostZoomMap.host3)
+        w.webContents.zoomLevel = hostZoomMap.host3
         w2.loadURL(`${zoomScheme}://host3`)
       })
       w.loadURL(`${zoomScheme}://host3`)
@@ -674,10 +689,10 @@ describe('webContents module', () => {
       }, (error) => {
         if (error) return done(error)
         w2.webContents.on('did-finish-load', () => {
-          const zoomLevel1 = w.webContents.getZoomLevel()
+          const zoomLevel1 = w.webContents.zoomLevel
           expect(zoomLevel1).to.equal(hostZoomMap.host3)
 
-          const zoomLevel2 = w2.webContents.getZoomLevel()
+          const zoomLevel2 = w2.webContents.zoomLevel
           expect(zoomLevel2).to.equal(0)
           expect(zoomLevel1).to.not.equal(zoomLevel2)
 
@@ -689,7 +704,7 @@ describe('webContents module', () => {
           })
         })
         w.webContents.on('did-finish-load', () => {
-          w.webContents.setZoomLevel(hostZoomMap.host3)
+          w.webContents.zoomLevel = hostZoomMap.host3
           w2.loadURL(`${zoomScheme}://host3`)
         })
         w.loadURL(`${zoomScheme}://host3`)
@@ -707,16 +722,16 @@ describe('webContents module', () => {
         const content = `<iframe src=${url}></iframe>`
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
           if (!isMainFrame) {
-            const zoomLevel = w.webContents.getZoomLevel()
+            const zoomLevel = w.webContents.zoomLevel
             expect(zoomLevel).to.equal(2.0)
 
-            w.webContents.setZoomLevel(0)
+            w.webContents.zoomLevel = 0
             server.close()
             done()
           }
         })
         w.webContents.on('dom-ready', () => {
-          w.webContents.setZoomLevel(2.0)
+          w.webContents.zoomLevel = 2.0
         })
         w.loadURL(`data:text/html,${content}`)
       })
@@ -728,10 +743,10 @@ describe('webContents module', () => {
         show: false
       })
       w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.getZoomLevel()
+        const zoomLevel1 = w.webContents.zoomLevel
         expect(zoomLevel1).to.equal(finalZoomLevel)
 
-        const zoomLevel2 = w2.webContents.getZoomLevel()
+        const zoomLevel2 = w2.webContents.zoomLevel
         expect(zoomLevel2).to.equal(0)
         expect(zoomLevel1).to.not.equal(zoomLevel2)
 
@@ -757,7 +772,7 @@ describe('webContents module', () => {
         if (initialNavigation) {
           w.webContents.executeJavaScript(source)
         } else {
-          const zoomLevel = w.webContents.getZoomLevel()
+          const zoomLevel = w.webContents.zoomLevel
           expect(zoomLevel).to.equal(0)
           done()
         }

@@ -979,9 +979,13 @@ Returns `Boolean` - Whether the renderer process has crashed.
 
 Overrides the user agent for this web page.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getUserAgent()`
 
 Returns `String` - The user agent for this web page.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.insertCSS(css)`
 
@@ -1049,9 +1053,13 @@ Ignore application menu shortcuts while this web contents is focused.
 
 Mute the audio on the current web page.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.isAudioMuted()`
 
 Returns `Boolean` - Whether this page has been muted.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.isCurrentlyAudible()`
 
@@ -1064,9 +1072,13 @@ Returns `Boolean` - Whether audio is currently playing.
 Changes the zoom factor to the specified factor. Zoom factor is
 zoom percent divided by 100, so 300% = 3.0.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getZoomFactor()`
 
 Returns `Number` - the current zoom factor.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.setZoomLevel(level)`
 
@@ -1077,9 +1089,13 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getZoomLevel()`
 
 Returns `Number` - the current zoom level.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -1662,9 +1678,13 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
 Only values between 1 and 60 are accepted.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getFrameRate()`
 
 Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.invalidate()`
 
@@ -1729,6 +1749,33 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
 ### Instance Properties
+
+#### `contents.audioMuted`
+
+A `Boolean` property that determines whether this page is muted.
+
+#### `contents.userAgent`
+
+A `String` property that determines the user agent for this web page.
+
+#### `contents.zoomLevel`
+
+A `Number` property that determines the zoom level for this web contents.
+
+The original size is 0 and each increment above or below represents zooming 20% larger or smaller to default limits of 300% and 50% of original size, respectively. The formula for this is `scale := 1.2 ^ level`.
+
+#### `contents.zoomFactor`
+
+A `Number` property that determines the zoom factor for this web contents.
+
+The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
+
+#### `contents.frameRate`
+
+An `Integer` property that sets the frame rate of the web contents to the specified number.
+Only values between 1 and 60 are accepted.
+
+Only applicable if *offscreen rendering* is enabled.
 
 #### `contents.id`
 

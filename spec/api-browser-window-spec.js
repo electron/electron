@@ -3032,6 +3032,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.getFrameRate()', () => {
       it('has default frame rate', (done) => {
         w.webContents.once('paint', function (event, rect, data) {
@@ -3042,12 +3043,34 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.setFrameRate(frameRate)', () => {
       it('sets custom frame rate', (done) => {
         w.webContents.on('dom-ready', () => {
           w.webContents.setFrameRate(30)
           w.webContents.once('paint', function (event, rect, data) {
             expect(w.webContents.getFrameRate()).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.FrameRate', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.frameRate = 30
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.frameRate).to.equal(30)
             done()
           })
         })
