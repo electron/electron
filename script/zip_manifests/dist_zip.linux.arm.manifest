@@ -65,6 +65,8 @@ natives_blob.bin
 resources.pak
 resources/default_app.asar
 snapshot_blob.bin
+swiftshader/libEGL.so
+swiftshader/libGLESv2.so
 swiftshader/libvulkan.so
 v8_context_snapshot.bin
 version
