@@ -7,7 +7,8 @@ import shutil
 import sys
 import tempfile
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+sys.path.append(
+  os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from lib.config import s3_config
 from lib.util import download, rm_rf, s3put, safe_mkdir
