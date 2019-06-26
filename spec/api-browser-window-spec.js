@@ -1637,6 +1637,44 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('focus event', () => {
+    it('should not emit if focusing on a main window with a modal open', (done) => {
+      let hasMainFocusAfterModalFocus = false
+      const child = new BrowserWindow({
+        parent: w,
+        modal: true,
+        show: false
+      })
+
+      child.once('ready-to-show', () => {
+        child.show()
+      })
+
+      // after child gains focus, attempt to focus on
+      // main window, and set flag if this was successful
+      child.once('focus', () => {
+        w.once('focus', () => {
+          hasMainFocusAfterModalFocus = true
+        })
+        w.focus()
+        // close child to end the spec
+        child.close()
+      })
+
+      // clean up and assert that main window never
+      // regained focus
+      child.once('closed', () => {
+        w.removeAllListeners()
+        w.close()
+        expect(hasMainFocusAfterModalFocus).to.equal(false)
+        done()
+      })
+
+      child.loadURL(server.url)
+      w.show()
+    })
+  })
+
   describe('sheet-begin event', () => {
     let sheet = null
 
