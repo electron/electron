@@ -2565,7 +2565,6 @@ describe('BrowserWindow module', () => {
 
   describe('focus event', () => {
     it('should not emit if focusing on a main window with a modal open', (done) => {
-      let hasMainFocus = false
       let childWindowClosed = false
       const child = new BrowserWindow({
         parent: w,
@@ -2577,27 +2576,20 @@ describe('BrowserWindow module', () => {
         child.show()
       })
 
-      // after child gains focus, attempt to focus on
-      // main window, and set flag if this was successful
-      child.once('focus', () => {
+      child.on('show', () => {
         w.once('focus', () => {
-          hasMainFocus = true
-          expect(childWindowClosed).to.equal(true)
+          expect(childWindowClosed).to.equal(true, 'Main window should only regain focus once the modal is closed')
           done()
         })
-        w.focus()
-        // close child to end the spec
+        w.focus() // this should not trigger the above listener
         child.close()
       })
 
-      // clean up
-      // assert that main window didn't regain focus
-      // assert that main window
-      child.once('closed', () => {
+      child.on('closed', () => {
         childWindowClosed = true
-        expect(hasMainFocus).to.equal(false)
       })
 
+      // act
       child.loadURL(server.url)
       w.show()
     })
