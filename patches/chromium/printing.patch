@@ -46,7 +46,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356
  
  void PrintJobWorker::GetSettingsWithUI(int document_page_count,
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 9cffbb0fee47f934d3bc8c4ab46a7929b176b236..79fcfb8097a25005a55cfbe6edf093685adb45b4 100644
+index a8502fdff8d39b7215f92a393a66d096bd302e25..17d9d405ade2405ec15c7d6ae68ba07c7442b8f1 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -94,8 +94,8 @@ index 9cffbb0fee47f934d3bc8c4ab46a7929b176b236..79fcfb8097a25005a55cfbe6edf09368
        Profile::FromBrowserContext(web_contents->GetBrowserContext());
    printing_enabled_.Init(
        prefs::kPrintingEnabled, profile->GetPrefs(),
-       base::Bind(&PrintViewManagerBase::UpdatePrintingEnabled,
-                  weak_ptr_factory_.GetWeakPtr()));
+       base::BindRepeating(&PrintViewManagerBase::UpdatePrintingEnabled,
+                           weak_ptr_factory_.GetWeakPtr()));
 +  #endif
  }
  

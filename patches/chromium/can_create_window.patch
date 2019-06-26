@@ -5,7 +5,7 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 0f1ea54ebc4424f0b36fbc100ad13b7263fb4a91..05c2cf9cad329c07c4c7f41fbd62a79df3716219 100644
+index 3f37130f91c275d8f26aa27f1cbaa751465e5ac0..af05172cf2bf0aa1a07c4489dc85dfaf09c683df 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -3798,6 +3798,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -32,7 +32,7 @@ index 3f78b3f387509d57295f8fde1588c4d2d3574b94..a8c5b4373eb0e01f901e2a2a9cd1091f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 440244ed105c7240a52cc371bac3032945348143..1057f3096ddc91d70d3c959b4fb6980158d85c89 100644
+index 2ff5541f02f81d8534198f08e8a51fa6d414d41e..c5286d323e92c2d02c5090b7e7f7a0fe5a508c13 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -522,6 +522,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,7 +45,7 @@ index 440244ed105c7240a52cc371bac3032945348143..1057f3096ddc91d70d3c959b4fb69801
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 46eed093277079bd2bf0ecb1c799c755fc822ec3..1fccd2ce0d1fe8f062e3fe2c73e23495220dbc60 100644
+index 56f0da1469ebdfcea63bd43399f6e278ea6e4734..87130fbbd73f8462d5b63e18864fb76b53e9e7eb 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -177,6 +177,7 @@ class RenderFrameHost;

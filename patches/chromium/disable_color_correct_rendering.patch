@@ -288,7 +288,7 @@ index 5bcfb34a98957315d0b9bb42a4d18e73f0b9a84a..66802e6806f35fc3761a2e6adf3c72e0
    if (color_space == ColorSpace::CreateSRGB()) {
      base::ScopedCFTypeRef<CFDataRef> srgb_icc(
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 189e147e908fdab38972f4f9b0ce212347a4ec2e..2a0a480d8513abc609b82f3d1eb24695d4f2146f 100644
+index ba3dbf23d1df7a3b0cc199054f36a88014daa0e7..f8a563a78cee2856da0f2ad556beba19b01a2e59 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -7,6 +7,8 @@
@@ -301,7 +301,7 @@ index 189e147e908fdab38972f4f9b0ce212347a4ec2e..2a0a480d8513abc609b82f3d1eb24695
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index c95989ae7da12585fc417a680aef6c55e4b7a8d7..9e180a6decd72e510cecfec1f43fd1ac70e8b8f7 100644
+index 1f0e63383213ac5ebc67691e5e89b501d7480e1b..14e3d1928f7485684b646629f853ea39a616995e 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -10,6 +10,8 @@
@@ -312,4 +312,4 @@ index c95989ae7da12585fc417a680aef6c55e4b7a8d7..9e180a6decd72e510cecfec1f43fd1ac
 +
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
  
- GFX_SWITCHES_EXPORT extern const char kHeadless[];
+ GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];

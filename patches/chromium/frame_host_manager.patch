@@ -180,7 +180,7 @@ index b1f7dc24b370159a103f75d9df9e4f5ce1457a98..8b3da989cd4dc4a683aa875e4380e8c1
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 1057f3096ddc91d70d3c959b4fb6980158d85c89..60e761fe2937c665a0973f06fe2434ae9cf121cd 100644
+index c5286d323e92c2d02c5090b7e7f7a0fe5a508c13..93fed6ca71ce64761b887712a9463404c7a7e3be 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -205,7 +205,7 @@ index 1057f3096ddc91d70d3c959b4fb6980158d85c89..60e761fe2937c665a0973f06fe2434ae
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 1fccd2ce0d1fe8f062e3fe2c73e23495220dbc60..b747fe035a8e83a3677a71cdc932f246e0b7b664 100644
+index 87130fbbd73f8462d5b63e18864fb76b53e9e7eb..8a49d10c2edc523239cfa92fd1547187c91bec25 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,8 +211,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
