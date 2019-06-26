@@ -28,10 +28,10 @@ describe('tray module', () => {
 
   describe('tray.destroy()', () => {
     it('destroys a tray', () => {
-      expect(tray.isDestroyed()).to.equal(false)
+      expect(tray.isDestroyed()).to.be.false('tray is destroyed')
       tray.destroy()
 
-      expect(tray.isDestroyed()).to.equal(true)
+      expect(tray.isDestroyed()).to.be.true('tray is not destroyed')
     })
   })
 
