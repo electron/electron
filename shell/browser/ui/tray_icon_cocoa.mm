@@ -174,23 +174,15 @@
     base::scoped_nsobject<AtomMenuController> menuController(
         [[AtomMenuController alloc] initWithModel:menu_model
                             useDefaultAccelerator:NO]);
-    forceHighlight_ = YES;  // Should highlight when showing menu.
-    [self setNeedsDisplay:YES];
-
-    [statusItem_ popUpStatusItemMenu:[menuController menu]];
-    forceHighlight_ = NO;
-    [self setNeedsDisplay:YES];
+    // Hacky way to mimic design of ordinary tray menu.
+    [statusItem_ setMenu:[menuController menu]];
+    [[statusItem_ button] performClick:self];
+    [statusItem_ setMenu:[menuController_ menu]];
     return;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // Redraw the tray icon to show highlight if it is enabled.
-    [self setNeedsDisplay:YES];
-
-    [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
-    // The popUpStatusItemMenu returns only after the showing menu is closed.
-    // When it returns, we need to redraw the tray icon to not show highlight.
-    [self setNeedsDisplay:YES];
+    [[statusItem_ button] performClick:self];
   }
 }
 
