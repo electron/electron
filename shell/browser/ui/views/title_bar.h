@@ -22,13 +22,14 @@ class MenuButton;
 
 namespace electron {
 
+class NativeWindow;
 class WindowsCaptionButton;
 
 class IconView : public views::Button {
  public:
   static const char kViewClassName[];
 
-  explicit IconView(TitleBar* title_bar);
+  explicit IconView(TitleBar* title_bar, NativeWindow* window);
 
  private:
   // views::Button:
@@ -41,6 +42,7 @@ class IconView : public views::Button {
   const views::Widget* widget() const;
 
   TitleBar* title_bar_;
+  NativeWindow* window_;
 
   DISALLOW_COPY_AND_ASSIGN(IconView);
 };
@@ -55,7 +57,7 @@ class TitleBar : public views::View,
 
   static const char kViewClassName[];
 
-  TitleBar();
+  TitleBar(RootView* root_view);
   ~TitleBar() override;
 
   int Height() const;
@@ -63,7 +65,6 @@ class TitleBar : public views::View,
   int NonClientHitTest(const gfx::Point& point);
   void UpdateWindowIcon();
   void UpdateWindowTitle();
-  void UpdateViewColors();
 
   void RequestSystemMenuAt(const gfx::Point& point);
   void RequestSystemMenu();
@@ -92,6 +93,10 @@ class TitleBar : public views::View,
   bool ShowHamburgerMenu() const;
 
  private:
+  void UpdateViewColors();
+
+  RootView* root_view_;
+
   WindowsCaptionButton* hamburger_button_;
 
   IconView* window_icon_;

@@ -61,6 +61,7 @@ class RootView : public views::View, public NativeWindowObserver {
   void OnWindowLeaveFullScreen() override;
 
   TitleBar* custom_title_bar() { return title_bar_.get(); }
+  NativeWindow* window() { return window_; }
 
  private:
   // Parent window, weak ref.

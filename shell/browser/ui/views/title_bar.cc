@@ -6,6 +6,7 @@
 
 #include "chrome/browser/themes/theme_properties.h"
 #include "electron/grit/electron_resources.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/common/keyboard_util.h"
 #include "ui/aura/window.h"
@@ -25,8 +26,24 @@ namespace electron {
 
 namespace {
 
-gfx::ImageSkia GetWindowIcon() {
-  HICON icon_handle = ::LoadIcon(NULL, IDI_APPLICATION);
+gfx::ImageSkia GetWindowIcon(HWND hwnd) {
+  HICON icon_handle = 0;
+
+  SendMessageTimeout(hwnd, WM_GETICON, ICON_BIG, 0, SMTO_ABORTIFHUNG, 5,
+                     (PDWORD_PTR)&icon_handle);
+  if (!icon_handle)
+    icon_handle = reinterpret_cast<HICON>(GetClassLongPtr(hwnd, GCLP_HICON));
+
+  if (!icon_handle) {
+    SendMessageTimeout(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 5,
+                       (PDWORD_PTR)&icon_handle);
+  }
+  if (!icon_handle) {
+    SendMessageTimeout(hwnd, WM_GETICON, ICON_SMALL2, 0, SMTO_ABORTIFHUNG, 5,
+                       (PDWORD_PTR)&icon_handle);
+  }
+  if (!icon_handle)
+    icon_handle = reinterpret_cast<HICON>(GetClassLongPtr(hwnd, GCLP_HICONSM));
 
   if (!icon_handle)
     return gfx::ImageSkia();
@@ -43,9 +60,10 @@ gfx::ImageSkia GetWindowIcon() {
 
 const char IconView::kViewClassName[] = "ElectronTitleBarIconView";
 
-IconView::IconView(TitleBar* title_bar)
-    : views::Button(title_bar), title_bar_(title_bar) {
+IconView::IconView(TitleBar* title_bar, NativeWindow* window)
+    : views::Button(title_bar), title_bar_(title_bar), window_(window) {
   SetFocusBehavior(View::FocusBehavior::NEVER);
+  SetID(VIEW_ID_WINDOW_ICON);
 }
 
 gfx::Size IconView::CalculatePreferredSize() const {
@@ -57,7 +75,7 @@ const char* IconView::GetClassName() const {
 }
 
 void IconView::PaintButtonContents(gfx::Canvas* canvas) {
-  gfx::ImageSkia icon = GetWindowIcon();
+  gfx::ImageSkia icon = GetWindowIcon(window_->GetAcceleratedWidget());
   if (!icon.isNull()) {
     PaintIcon(canvas, icon);
   }
@@ -96,7 +114,7 @@ const views::Widget* IconView::widget() const {
 
 const char TitleBar::kViewClassName[] = "ElectronTitleBar";
 
-TitleBar::TitleBar() {
+TitleBar::TitleBar(RootView* root_view) : root_view_(root_view) {
   title_alignment_ = gfx::HorizontalAlignment::ALIGN_LEFT;
   UpdateViewColors();
   SetLayoutManager(
@@ -105,7 +123,7 @@ TitleBar::TitleBar() {
   hamburger_button_ =
       CreateCaptionButton(VIEW_ID_HAMBURGER_BUTTON, IDS_APP_ACCNAME_HAMBURGER);
 
-  window_icon_ = new IconView(this);
+  window_icon_ = new IconView(this, root_view_->window());
   AddChildView(window_icon_);
 
   window_title_ = new views::Label(base::string16());
@@ -184,7 +202,7 @@ void TitleBar::Layout() {
 }
 
 void TitleBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
-  if (sender == hamburger_button_) {
+  if (sender == hamburger_button_ || sender == window_icon_) {
     RequestSystemMenu();
   } else if (sender == minimize_button_) {
     GetWidget()->Minimize();
@@ -212,28 +230,27 @@ void TitleBar::LayoutTitleBar() {
   if (!ShowIcon() && !ShowTitle())
     return;
 
-  gfx::Rect window_icon_bounds;
-  const int icon_size =
-      display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYSMICON);
-  int next_leading_x =
-      display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
-  constexpr int kMaximizedLeftMargin = 2;
-  if (GetWidget()->IsMaximized())
-    next_leading_x += kMaximizedLeftMargin;
-  int next_trailing_x = minimize_button_->x();
+  constexpr int kTitleBarSpacing = 5;
+  const int kIconAndTitleHeight = gfx::kFaviconSize;
+  const int topOffset = (Height() - kIconAndTitleHeight) / 2;
 
-  const int y = (Height() - icon_size) / 2;
-  window_icon_bounds = gfx::Rect(next_leading_x, y, icon_size, icon_size);
+  int next_leading_x = 0;
+  int next_trailing_x = minimize_button_->x() - kTitleBarSpacing;
 
-  constexpr int kIconTitleSpacing = 5;
   if (ShowIcon()) {
+    next_leading_x += topOffset;
+    gfx::Rect window_icon_bounds(next_leading_x, topOffset, kIconAndTitleHeight,
+                                 kIconAndTitleHeight);
+
     window_icon_->SetBoundsRect(window_icon_bounds);
-    next_leading_x = window_icon_bounds.right() + kIconTitleSpacing;
-  } else if (ShowHamburgerMenu()) {
+    next_leading_x = window_icon_bounds.right() + kTitleBarSpacing;
+  }
+
+  if (ShowHamburgerMenu()) {
     gfx::Size button_size = hamburger_button_->GetPreferredSize();
-    hamburger_button_->SetBounds(0, 0, button_size.width(),
+    hamburger_button_->SetBounds(next_leading_x, 0, button_size.width(),
                                  button_size.height());
-    next_leading_x = hamburger_button_->bounds().right() + kIconTitleSpacing;
+    next_leading_x = hamburger_button_->bounds().right() + kTitleBarSpacing;
   }
 
   if (ShowTitle()) {
@@ -305,7 +322,7 @@ bool TitleBar::ShowTitle() const {
 }
 
 bool TitleBar::ShowIcon() const {
-  return false;
+  return true;
 }
 
 bool TitleBar::ShowHamburgerMenu() const {

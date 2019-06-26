@@ -43,7 +43,7 @@ RootView::RootView(NativeWindow* window)
   set_owned_by_client();
   window_->AddObserver(this);
   if (window_->has_custom_frame()) {
-    title_bar_.reset(new TitleBar());
+    title_bar_.reset(new TitleBar(this));
     title_bar_->set_owned_by_client();
     AddChildView(title_bar_.get());
   }
