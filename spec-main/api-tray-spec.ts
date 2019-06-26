@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { Menu, Tray, nativeImage } from 'electron'
 
-describe.only('tray module', () => {
+describe('tray module', () => {
   let tray: Tray;
 
   beforeEach(() => {
