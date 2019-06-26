@@ -63,7 +63,7 @@ class Menu : public mate::TrackableObject<Menu>,
                        const base::Closure& callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
 
-  scoped_refptr<AtomMenuModel> model_;
+  std::unique_ptr<AtomMenuModel> model_;
   Menu* parent_ = nullptr;
 
   // Observable:
