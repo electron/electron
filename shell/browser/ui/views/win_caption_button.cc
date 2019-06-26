@@ -37,7 +37,22 @@ WindowsCaptionButton::WindowsCaptionButton(
 
 gfx::Size WindowsCaptionButton::CalculatePreferredSize() const {
   int height = title_bar_->Height();
-  int base_width = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
+  int base_width = 0;
+  switch (button_type_) {
+    case VIEW_ID_HAMBURGER_BUTTON:
+      base_width = height;
+      break;
+    case VIEW_ID_MINIMIZE_BUTTON:
+    case VIEW_ID_MAXIMIZE_BUTTON:
+    case VIEW_ID_RESTORE_BUTTON:
+    case VIEW_ID_CLOSE_BUTTON:
+      base_width = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
+      break;
+    default:
+      NOTREACHED();
+      return gfx::Size();
+  }
+
   return gfx::Size(base_width + GetBetweenButtonSpacing(), height);
 }
 
