@@ -6,7 +6,8 @@ import os
 import shutil
 import sys
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+sys.path.append(
+  os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from lib.config import PLATFORM, get_target_arch, s3_config
 from lib.util import safe_mkdir, scoped_cwd, s3put, get_out_dir, get_dist_dir

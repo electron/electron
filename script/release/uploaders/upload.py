@@ -12,7 +12,8 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+sys.path.append(
+  os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from io import StringIO
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
