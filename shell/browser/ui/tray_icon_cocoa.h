@@ -43,9 +43,6 @@ class TrayIconCocoa : public TrayIcon {
   // Status menu shown when right-clicking the system icon.
   base::scoped_nsobject<AtomMenuController> menu_;
 
-  // Used for unregistering observer.
-  AtomMenuModel* menu_model_ = nullptr;  // weak ref.
-
   base::WeakPtrFactory<TrayIconCocoa> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
