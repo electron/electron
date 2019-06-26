@@ -293,7 +293,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
     observers_.AddObserver(obs);
   }
   void RemoveObserver(ExtendedWebContentsObserver* obs) {
-    observers_.RemoveObserver(obs);
+    // Trying to remove from an empty collection leads to an access violation
+    if (observers_.might_have_observers())
+      observers_.RemoveObserver(obs);
   }
 
   bool EmitNavigationEvent(const std::string& event,
