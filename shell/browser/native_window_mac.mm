@@ -538,8 +538,6 @@ bool NativeWindowMac::IsFocused() {
 
 void NativeWindowMac::Show() {
   if (is_modal() && parent()) {
-    LOG(INFO) << "[LOG] Showing my modal";
-    // parent()->SetFocusable(false);
     if ([window_ sheetParent] == nil)
       [parent()->GetNativeWindow().GetNativeNSWindow()
                  beginSheet:window_
