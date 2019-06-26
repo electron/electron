@@ -1,42 +1,43 @@
 import { expect } from 'chai'
 import { Menu, Tray, nativeImage } from 'electron'
 
-describe('tray module', () => {
-  let tray: Tray | null = null
+describe.only('tray module', () => {
+  let tray: Tray;
 
   beforeEach(() => {
     tray = new Tray(nativeImage.createEmpty())
   })
 
+  afterEach(() => {
+    tray = null as any
+  })
+
   describe('tray.setContextMenu', () => {
     afterEach(() => {
-      tray!.destroy()
-      tray = null
+      tray.destroy()
     })
 
     it('accepts menu instance', () => {
-      tray!.setContextMenu(new Menu())
+      tray.setContextMenu(new Menu())
     })
 
     it('accepts null', () => {
-      tray!.setContextMenu(null)
+      tray.setContextMenu(null)
     })
   })
 
   describe('tray.destroy()', () => {
     it('destroys a tray', () => {
-      expect(tray!.isDestroyed()).to.equal(false)
-      tray!.destroy()
+      expect(tray.isDestroyed()).to.equal(false)
+      tray.destroy()
 
-      expect(tray!.isDestroyed()).to.equal(true)
-      tray = null
+      expect(tray.isDestroyed()).to.equal(true)
     })
   })
 
   describe('tray.popUpContextMenu', () => {
     afterEach(() => {
-      tray!.destroy()
-      tray = null
+      tray.destroy()
     })
 
     before(function () {
@@ -44,30 +45,28 @@ describe('tray module', () => {
     })
 
     it('can be called when menu is showing', (done) => {
-      tray!.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
+      tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
       setTimeout(() => {
-        tray!.popUpContextMenu()
+        tray.popUpContextMenu()
         done()
       })
-      tray!.popUpContextMenu()
+      tray.popUpContextMenu()
     })
   })
 
   describe('tray.setImage', () => {
     it('accepts empty image', () => {
-      tray!.setImage(nativeImage.createEmpty())
+      tray.setImage(nativeImage.createEmpty())
 
-      tray!.destroy()
-      tray = null
+      tray.destroy()
     })
   })
 
   describe('tray.setPressedImage', () => {
     it('accepts empty image', () => {
-      tray!.setPressedImage(nativeImage.createEmpty())
+      tray.setPressedImage(nativeImage.createEmpty())
 
-      tray!.destroy()
-      tray = null
+      tray.destroy()
     })
   })
 
@@ -77,22 +76,21 @@ describe('tray module', () => {
     })
 
     afterEach(() => {
-      tray!.destroy()
-      tray = null
+      tray.destroy()
     })
 
     it('sets/gets non-empty title', () => {
       const title = 'Hello World!'
-      tray!.setTitle(title)
-      const newTitle = tray!.getTitle()
+      tray.setTitle(title)
+      const newTitle = tray.getTitle()
 
       expect(newTitle).to.equal(title)
     })
 
     it('sets/gets empty title', () => {
       const title = ''
-      tray!.setTitle(title)
-      const newTitle = tray!.getTitle()
+      tray.setTitle(title)
+      const newTitle = tray.getTitle()
 
       expect(newTitle).to.equal(title)
     })
