@@ -36,7 +36,7 @@ namespace {
 
 class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                          public content::WebContentsObserver,
-                         public electron::DirectoryListerHelperDelegate {
+                         public net::DirectoryLister::DirectoryListerDelegate {
  public:
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    std::unique_ptr<content::FileSelectListener> listener,
@@ -73,28 +73,46 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
             base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this)))));
   }
 
-  void OnDirectoryListerDone(std::vector<FileChooserFileInfoPtr> file_info,
-                             base::FilePath base_dir) override {
-    OnFilesSelected(std::move(file_info), base_dir);
-    Release();
-  }
-
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
   ~FileSelectHelper() override {}
 
+  // net::DirectoryLister::DirectoryListerDelegate
+  void OnListFile(
+      const net::DirectoryLister::DirectoryListerData& data) override {
+    // We don't want to return directory paths, only file paths
+    if (data.info.IsDirectory())
+      return;
+
+    lister_paths_.push_back(data.path);
+  }
+
+  // net::DirectoryLister::DirectoryListerDelegate
+  void OnListDone(int error) override {
+    std::vector<FileChooserFileInfoPtr> file_info;
+    for (const auto& path : lister_paths_)
+      file_info.push_back(FileChooserFileInfo::NewNativeFile(
+          blink::mojom::NativeFileInfo::New(path, base::string16())));
+
+    OnFilesSelected(std::move(file_info), lister_base_dir_);
+    Release();
+  }
+
   void EnumerateDirectory(base::FilePath base_dir) {
-    auto* lister = new net::DirectoryLister(
-        base_dir, net::DirectoryLister::NO_SORT_RECURSIVE,
-        new electron::DirectoryListerHelper(base_dir, this));
-    lister->Start();
+    // Ensure that this fn is only called once
+    DCHECK(!lister_);
+    DCHECK(lister_paths_.empty());
+
+    lister_base_dir_ = base_dir;
+    lister_.reset(new net::DirectoryLister(
+        base_dir, net::DirectoryLister::NO_SORT_RECURSIVE, this));
+    lister_->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we
     // return to the caller.  Once the directory lister is complete we
-    // Release() in OnDirectoryListerDone() and at that point we run
-    // OnFilesSelected() which will deref the last reference held by the
-    // listener.
+    // Release() & at that point we run OnFilesSelected() which will
+    // deref the last reference held by the listener.
     AddRef();
   }
 
@@ -182,11 +200,19 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   // content::WebContentsObserver:
-  void WebContentsDestroyed() override { render_frame_host_ = nullptr; }
+  void WebContentsDestroyed() override {
+    render_frame_host_ = nullptr;
+    Release();
+  }
 
   content::RenderFrameHost* render_frame_host_;
   std::unique_ptr<content::FileSelectListener> listener_;
   blink::mojom::FileChooserParams::Mode mode_;
+
+  // DirectoryLister-specific members
+  std::unique_ptr<net::DirectoryLister> lister_;
+  base::FilePath lister_base_dir_;
+  std::vector<base::FilePath> lister_paths_;
 };
 
 file_dialog::Filters GetFileTypesFromAcceptType(
@@ -227,7 +253,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
       valid_type_count++;
   }
 
-  // If no valid exntesion is added, return empty filters.
+  // If no valid extension is added, return empty filters.
   if (extensions.empty())
     return filters;
 
@@ -258,30 +284,6 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 }  // namespace
 
 namespace electron {
-
-DirectoryListerHelper::DirectoryListerHelper(
-    base::FilePath base,
-    DirectoryListerHelperDelegate* helper)
-    : base_dir_(base), delegate_(helper) {}
-DirectoryListerHelper::~DirectoryListerHelper() {}
-
-void DirectoryListerHelper::OnListFile(
-    const net::DirectoryLister::DirectoryListerData& data) {
-  // We don't want to return directory paths, only file paths
-  if (data.info.IsDirectory())
-    return;
-
-  paths_.push_back(data.path);
-}
-void DirectoryListerHelper::OnListDone(int error) {
-  std::vector<FileChooserFileInfoPtr> file_info;
-  for (auto path : paths_)
-    file_info.push_back(FileChooserFileInfo::NewNativeFile(
-        blink::mojom::NativeFileInfo::New(path, base::string16())));
-
-  delegate_->OnDirectoryListerDone(std::move(file_info), base_dir_);
-  delete this;
-}
 
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window), offscreen_(offscreen), weak_factory_(this) {}
