@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: libcc-20-vs2017-15.9
+image: vs2017-15.9-10.0.18362
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
