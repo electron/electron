@@ -86,7 +86,7 @@ npm install --save-dev electron
 
 Other means for installing Electron exist. Please consult the
 [installation guide](installation.md) to learn about use with proxies, mirrors,
-and custom caches.
+and custom [caches](https://hosting.review/web-hosting-glossary/#21) .
 
 ## Electron Development in a Nutshell
 
