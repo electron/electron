@@ -5,6 +5,9 @@
 #include <dwmapi.h>
 #include <shellapi.h>
 
+#include "base/optional.h"
+#include "base/win/registry.h"
+#include "base/win/windows_version.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "shell/browser/browser.h"
@@ -12,6 +15,7 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/title_bar.h"
 #include "shell/common/atom_constants.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/base/default_theme_provider.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/win/accessibility_misc_utils.h"
@@ -26,15 +30,45 @@
 // Must be included after other Windows headers.
 #include <UIAutomationCoreApi.h>
 
+namespace {
+
+SkColor GetDefaultInactiveFrameColor() {
+  return base::win::GetVersion() < base::win::Version::WIN10
+             ? SkColorSetRGB(0xEB, 0xEB, 0xEB)
+             : SK_ColorWHITE;
+}
+
+}  // namespace
+
 namespace electron {
 
 namespace {
 
 class ThemeProvider : public ui::DefaultThemeProvider {
  public:
-  ThemeProvider() = default;
+  ThemeProvider() {
+    if (base::win::GetVersion() >= base::win::Version::WIN8) {
+      dwm_key_.reset(new base::win::RegKey(
+          HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM", KEY_READ));
+      if (dwm_key_->Valid())
+        OnDwmKeyUpdated();
+      else
+        dwm_key_.reset();
+    }
+  }
 
   SkColor GetColor(int id) const override {
+    if (base::win::GetVersion() >= base::win::Version::WIN8) {
+      if (id == ThemeProperties::COLOR_ACCENT_BORDER)
+        return dwm_accent_border_color_;
+      if (id == ThemeProperties::COLOR_FRAME && dwm_frame_color_)
+        return dwm_frame_color_.value();
+      if (id == ThemeProperties::COLOR_FRAME_INACTIVE)
+        return inactive_frame_color_from_registry_
+                   ? dwm_inactive_frame_color_.value()
+                   : GetDefaultInactiveFrameColor();
+    }
+
     return ThemeProperties::GetDefaultColor(id, false);
   }
 
@@ -48,6 +82,68 @@ class ThemeProvider : public ui::DefaultThemeProvider {
   }
 
  private:
+  void OnDwmKeyUpdated() {
+    dwm_accent_border_color_ = GetDefaultInactiveFrameColor();
+    DWORD colorization_color, colorization_color_balance;
+    if ((dwm_key_->ReadValueDW(L"ColorizationColor", &colorization_color) ==
+         ERROR_SUCCESS) &&
+        (dwm_key_->ReadValueDW(L"ColorizationColorBalance",
+                               &colorization_color_balance) == ERROR_SUCCESS)) {
+      if (colorization_color_balance > 100)
+        colorization_color_balance = 80;
+
+      SkColor input_color = SkColorSetA(colorization_color, 0xff);
+
+      dwm_accent_border_color_ =
+          color_utils::AlphaBlend(input_color, SkColorSetRGB(0xd9, 0xd9, 0xd9),
+                                  colorization_color_balance / 100.0f);
+    }
+
+    inactive_frame_color_from_registry_ = false;
+    if (base::win::GetVersion() < base::win::Version::WIN10) {
+      dwm_frame_color_ = dwm_accent_border_color_;
+    } else {
+      DWORD accent_color, color_prevalence;
+      bool use_dwm_frame_color =
+          dwm_key_->ReadValueDW(L"AccentColor", &accent_color) ==
+              ERROR_SUCCESS &&
+          dwm_key_->ReadValueDW(L"ColorPrevalence", &color_prevalence) ==
+              ERROR_SUCCESS &&
+          color_prevalence == 1;
+      if (use_dwm_frame_color) {
+        dwm_frame_color_ = skia::COLORREFToSkColor(accent_color);
+        DWORD accent_color_inactive;
+        if (dwm_key_->ReadValueDW(L"AccentColorInactive",
+                                  &accent_color_inactive) == ERROR_SUCCESS) {
+          dwm_inactive_frame_color_ =
+              skia::COLORREFToSkColor(accent_color_inactive);
+          inactive_frame_color_from_registry_ = true;
+        }
+      } else {
+        dwm_frame_color_.reset();
+        dwm_inactive_frame_color_.reset();
+      }
+    }
+
+    if (dwm_frame_color_ && !inactive_frame_color_from_registry_) {
+      dwm_inactive_frame_color_ =
+          color_utils::HSLShift(dwm_frame_color_.value(),
+                                GetTint(ThemeProperties::TINT_FRAME_INACTIVE));
+    }
+
+    ui::NativeTheme::GetInstanceForNativeUi()->NotifyObservers();
+
+    if (!dwm_key_->StartWatching(base::Bind(&ThemeProvider::OnDwmKeyUpdated,
+                                            base::Unretained(this))))
+      dwm_key_.reset();
+  }
+
+  std::unique_ptr<base::win::RegKey> dwm_key_;
+  base::Optional<SkColor> dwm_frame_color_;
+  bool inactive_frame_color_from_registry_ = false;
+  base::Optional<SkColor> dwm_inactive_frame_color_;
+  SkColor dwm_accent_border_color_;
+
   DISALLOW_COPY_AND_ASSIGN(ThemeProvider);
 };
 
