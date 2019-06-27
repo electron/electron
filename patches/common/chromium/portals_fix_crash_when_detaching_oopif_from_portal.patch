@@ -29,7 +29,7 @@ index ae486a29d07b773464dc3071dde2a33c8375f3a6..9967d0657c6ab7d72649a82b1f9c3839
      return;
    }
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 760965f134e3326676428b9fc6906f9ff740aac2..6dbb73c964601f0dae7ef6460a0ae2a048634a35 100644
+index f9f8e5204d1d92e87370f859c294919d2a1991c3..0e3fc30fae933e0493920ed1823b086ac6ceee61 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -132,14 +132,15 @@ RenderWidgetHostView* RenderFrameHostManager::GetRenderWidgetHostView() const {
@@ -89,7 +89,7 @@ index 760965f134e3326676428b9fc6906f9ff740aac2..6dbb73c964601f0dae7ef6460a0ae2a0
    GetProxyToOuterDelegate()->SetChildRWHView(child_rwhv, nullptr);
  }
  
-@@ -2636,7 +2642,7 @@ void RenderFrameHostManager::SendPageMessage(IPC::Message* msg,
+@@ -2587,7 +2593,7 @@ void RenderFrameHostManager::SendPageMessage(IPC::Message* msg,
    // When sending a PageMessage for an inner WebContents, we don't want to also
    // send it to the outer WebContent's frame as well.
    RenderFrameProxyHost* outer_delegate_proxy =
