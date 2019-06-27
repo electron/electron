@@ -39,13 +39,11 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     // if the function has already been removed, warn about it
     if (!fn) {
       deprecate.log(`Unable to remove function '${removedName}' from an object that lacks it.`)
-      return function (this: any) {
-        deprecate.log(`'${removedName} function' has been removed. See release notes for further information.`)
-      }
+      throw Error(`'${removedName} function' has been removed. See release notes for further information.`)
     }
 
     // wrap the deprecated function to warn user
-    const warn = warnOnce(`${removedName} function`)
+    const warn = warnOnce(`${fn.name} function`)
     return function (this: any) {
       warn()
       fn.apply(this, arguments)
