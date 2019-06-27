@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
-Date: Tue Jun 4 11:30:12 JST 2019
+Date: Tue, 4 Jun 2019 11:30:12 +0900
 Subject: crashpad_pid_check.patch
 
 When both browser process and renderer process are connecting to the pipe,
@@ -16,7 +16,7 @@ https://github.com/electron/electron/pull/18483#discussion_r292703588
 https://github.com/electron/electron/pull/18483#issuecomment-501090683
 
 diff --git a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
-index 2593ff2de032..e89b8ff675be 100644
+index 2593ff2de0327c393c30cae9962a329c5e27b64e..e89b8ff675bed2fa65263ea451d40995e0b010b7 100644
 --- a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
 +++ b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
 @@ -448,9 +448,16 @@ bool ExceptionHandlerServer::ServiceClientConnection(
