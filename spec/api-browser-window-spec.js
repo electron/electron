@@ -1639,7 +1639,7 @@ describe('BrowserWindow module', () => {
 
   describe('focus event', () => {
     it('should not emit if focusing on a main window with a modal open', (done) => {
-      let childWindowClosed = false
+      const childWindowClosed = false
       const child = new BrowserWindow({
         parent: w,
         modal: true,
@@ -1652,21 +1652,11 @@ describe('BrowserWindow module', () => {
 
       child.on('show', () => {
         w.once('focus', () => {
-          expect(childWindowClosed).to.equal(true,
-            'Main window should only regain focus once the modal is closed')
+          expect(child.isDestroyed()).to.equal(true)
           done()
         })
         w.focus() // this should not trigger the above listener
         child.close()
-      })
-
-      // trying stuff...
-      child.on('close', () => {
-        childWindowClosed = true
-      })
-
-      child.on('closed', () => {
-        childWindowClosed = true
       })
 
       // act
