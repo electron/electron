@@ -511,6 +511,8 @@ void NativeWindowMac::CloseImmediately() {
     [NSEvent removeMonitor:wheel_event_monitor_];
     wheel_event_monitor_ = nil;
   }
+  // Manually emit close event (not triggered from close fn)
+  [window_delegate_ windowShouldClose:window_];
 
   // Retain the child window before closing it. If the last reference to the
   // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
