@@ -340,9 +340,6 @@ const CGFloat kVerticalTitleMargin = 2;
   // Make sure events can be pumped while the menu is up.
   base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
 
-  // Ensure the UI can update while the menu is fading out.
-  base::ScopedPumpMessagesInPrivateModes pump_private;
-
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
@@ -358,6 +355,9 @@ const CGFloat kVerticalTitleMargin = 2;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
+    // Ensure the UI can update while the menu is fading out.
+    base::ScopedPumpMessagesInPrivateModes pump_private;
+
     // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
 
