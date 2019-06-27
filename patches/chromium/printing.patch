@@ -46,7 +46,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356
  
  void PrintJobWorker::GetSettingsWithUI(int document_page_count,
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 7ba43aada1ac44827cca264d6f37814e4a91f458..d811f5268334e8b75f610f1f7240a335582c67fa 100644
+index 7ba43aada1ac44827cca264d6f37814e4a91f458..1ca9fe408ec9a5129f6cec46daeeee46bab60983 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -60,13 +60,11 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..d811f5268334e8b75f610f1f7240a335
  #include "components/prefs/pref_service.h"
  #include "components/printing/browser/print_composite_client.h"
  #include "components/printing/browser/print_manager_utils.h"
-@@ -45,6 +42,9 @@
+@@ -45,6 +42,7 @@
  #include "content/public/browser/render_process_host.h"
  #include "content/public/browser/render_view_host.h"
  #include "content/public/browser/web_contents.h"
 +#include "electron/grit/electron_resources.h"
-+#include "gin/arguments.h"
-+#include "gin/converter.h"
  #include "mojo/public/cpp/system/buffer.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/metafile_skia.h"
@@ -177,26 +175,21 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..d811f5268334e8b75f610f1f7240a335
    printing_succeeded_ = false;
    return true;
  }
-@@ -594,6 +600,18 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -594,6 +600,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
 +  if (!callback_.is_null()) {
-+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-+    if (printing_cancelled_) {
-+      std::move(callback_).Run(gin::StringToV8(isolate,"cancelled"));
-+    } else {
-+      v8::Local<v8::String> cb_str =
-+          printing_succeeded_ ? 
-+            gin::StringToV8(isolate, "success") : gin::StringToV8(isolate, "failed");
-+      std::move(callback_).Run(cb_str);
-+    }
++    std::string cb_str = "";
++    if (!printing_succeeded_)
++      cb_str = printing_cancelled_ ? "cancelled" : "failed";
++    std::move(callback_).Run(printing_succeeded_, cb_str);
 +  }
 +
    if (!print_job_)
      return;
  
-@@ -604,7 +622,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -604,7 +620,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
    }
  
    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
@@ -205,7 +198,7 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..d811f5268334e8b75f610f1f7240a335
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -674,6 +692,9 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -674,6 +690,9 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;
@@ -216,22 +209,14 @@ index 7ba43aada1ac44827cca264d6f37814e4a91f458..d811f5268334e8b75f610f1f7240a335
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..292d550a5c4f7b029b596c47d691c772a2f0799d 100644
+index cf074791d0e2e17bbf8cf0b000b8d63e235b7deb..30b6e042b12f23299b3b7eaecb8a8e71c221786d 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
-@@ -21,6 +21,7 @@
- #include "content/public/browser/notification_observer.h"
- #include "content/public/browser/notification_registrar.h"
- #include "printing/buildflags/buildflags.h"
-+#include "v8/include/v8.h"
- 
- struct PrintHostMsg_DidPrintDocument_Params;
- 
 @@ -39,6 +40,8 @@ class PrintJob;
  class PrintQueriesQueue;
  class PrinterQuery;
  
-+using CompletionCallback = base::OnceCallback<void(v8::Local<v8::Value>)>;
++using CompletionCallback = base::OnceCallback<void(bool, const std::string&)>;
 +
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public content::NotificationObserver,
