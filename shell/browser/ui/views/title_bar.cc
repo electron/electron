@@ -116,7 +116,6 @@ const char TitleBar::kViewClassName[] = "ElectronTitleBar";
 
 TitleBar::TitleBar(RootView* root_view) : root_view_(root_view) {
   title_alignment_ = gfx::HorizontalAlignment::ALIGN_LEFT;
-  UpdateViewColors();
   SetLayoutManager(
       std::make_unique<views::BoxLayout>(views::BoxLayout::kHorizontal));
 
@@ -140,9 +139,16 @@ TitleBar::TitleBar(RootView* root_view) : root_view_(root_view) {
       CreateCaptionButton(VIEW_ID_RESTORE_BUTTON, IDS_APP_ACCNAME_RESTORE);
   close_button_ =
       CreateCaptionButton(VIEW_ID_CLOSE_BUTTON, IDS_APP_ACCNAME_CLOSE);
+
+  root_view_->window()->RemoveObserver(this);
+  root_view_->window()->AddObserver(this);
+
+  UpdateViewColors();
 }
 
-TitleBar::~TitleBar() {}
+TitleBar::~TitleBar() {
+  root_view_->window()->RemoveObserver(this);
+}
 
 int TitleBar::Height() const {
   return display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYCAPTION) +
@@ -185,11 +191,9 @@ const char* TitleBar::GetClassName() const {
 
 void TitleBar::AddedToWidget() {
   Layout();
-  GetWidget()->RemoveObserver(this);
-  GetWidget()->AddObserver(this);
 }
 
-void TitleBar::OnWidgetActivationChanged(views::Widget* widget, bool active) {
+void TitleBar::OnPaintAsActiveChanged(bool paint_as_active) {
   UpdateViewColors();
   Layout();
 }
@@ -294,7 +298,7 @@ void TitleBar::LayoutTitleBar() {
 
     window_title_->SetBounds(title_bounds.x(), title_bounds.y(),
                              title_bounds.width(), title_bounds.height());
-    window_title_->SetAutoColorReadabilityEnabled(false);
+    window_title_->SetAutoColorReadabilityEnabled(true);
   }
 }
 
@@ -339,6 +343,7 @@ void TitleBar::UpdateWindowTitle() {
 
 void TitleBar::UpdateViewColors() {
   SetBackground(views::CreateSolidBackground(GetFrameColor()));
+  window_title_->SetBackgroundColor(GetFrameColor());
 }
 
 void TitleBar::RequestSystemMenuAt(const gfx::Point& point) {

@@ -305,6 +305,7 @@ class NativeWindow : public base::SupportsUserData,
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
+  void OnPaintAsActiveChanged(bool paint_as_active) override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
 

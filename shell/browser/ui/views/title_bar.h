@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_UI_VIEWS_TITLE_BAR_H_
 
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/view_ids.h"
 #include "ui/gfx/text_constants.h"
@@ -49,7 +50,7 @@ class IconView : public views::Button {
 
 class TitleBar : public views::View,
                  public views::ButtonListener,
-                 public views::WidgetObserver {
+                 public NativeWindowObserver {
  public:
   // Alpha to use for features in the titlebar (the window title and caption
   // buttons) when the window is inactive. They are opaque when active.
@@ -75,8 +76,8 @@ class TitleBar : public views::View,
   void AddedToWidget() override;
   void Layout() override;
 
-  // views::WidgetObserver
-  void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
+  // NativeWindowObserver
+  void OnPaintAsActiveChanged(bool paint_as_active) override;
 
   // views::ButtonListener:
   void ButtonPressed(views::Button* sender, const ui::Event& event) override;

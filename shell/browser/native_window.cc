@@ -583,6 +583,11 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
+void NativeWindow::OnPaintAsActiveChanged(bool paint_as_active) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnPaintAsActiveChanged(paint_as_active);
+}
+
 // static
 void NativeWindowRelay::CreateForWebContents(
     content::WebContents* web_contents,
