@@ -34,27 +34,27 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     }
   },
 
-  // change the name of a function
-  function: (fn, newName) => {
-    const warn = warnOnce(fn.name, newName)
+  // remove a function with no replacement
+  removeFunction: (fn, removedName) => {
+    // if the function has already been removed, warn about it
+    if (!fn) {
+      deprecate.log(`Unable to remove function '${removedName}' from an object that lacks it.`)
+      return function (this: any) {
+        deprecate.log(`'${removedName} function' has been removed. See release notes for further information.`)
+      }
+    }
+
+    // wrap the deprecated function to warn user
+    const warn = warnOnce(`${removedName} function`)
     return function (this: any) {
       warn()
       fn.apply(this, arguments)
     }
   },
 
-  // remove a function with no replacement
-  removeFunction: (fn, name) => {
-    // if the function has already been removed, warn about it
-    if (!fn) {
-      deprecate.log(`Unable to remove function '${name}' from an object that lacks it.`)
-      return function (this: any) {
-        deprecate.log(`'${name} function' has been removed. See release notes for further information.`)
-      }
-    }
-
-    // wrap the deprecated function to warn user
-    const warn = warnOnce(`${name} function`)
+  // change the name of a function
+  renameFunction: (fn, newName) => {
+    const warn = warnOnce(`${fn.name} function`, `${newName} function`)
     return function (this: any) {
       warn()
       fn.apply(this, arguments)
