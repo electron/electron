@@ -1231,7 +1231,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md).
     the web page. Default is `false`.
   * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
 * `callback` Function (optional)
-  * `success` Boolean - Indicates success of the print call.
+  * `success` String - Indicates success of the print call; can be `success`, `cancelled` or `failed`.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings
