@@ -51,6 +51,19 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
   return array;
 }
 
+void DelayEmit(Screen* screen,
+               const base::StringPiece& name,
+               const display::Display& display) {
+  screen->Emit(name, display);
+}
+
+void DelayEmitWithMetrics(Screen* screen,
+                          const base::StringPiece& name,
+                          const display::Display& display,
+                          const std::vector<std::string>& metrics) {
+  screen->Emit(name, display, metrics);
+}
+
 }  // namespace
 
 Screen::Screen(v8::Isolate* isolate, display::Screen* screen)
@@ -100,16 +113,23 @@ static gfx::Rect DIPToScreenRect(atom::NativeWindow* window,
 #endif
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
-  Emit("display-added", new_display);
+  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+      FROM_HERE, base::Bind(&DelayEmit, base::Unretained(this), "display-added",
+                            new_display));
 }
 
 void Screen::OnDisplayRemoved(const display::Display& old_display) {
-  Emit("display-removed", old_display);
+  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+      FROM_HERE, base::Bind(&DelayEmit, base::Unretained(this),
+                            "display-removed", old_display));
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
-  Emit("display-metrics-changed", display, MetricsToArray(changed_metrics));
+  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+      FROM_HERE, base::Bind(&DelayEmitWithMetrics, base::Unretained(this),
+                            "display-metrics-changed", display,
+                            MetricsToArray(changed_metrics)));
 }
 
 // static
