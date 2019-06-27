@@ -19,13 +19,13 @@
 namespace mate {
 
 template <>
-struct Converter<electron::ConflictType> {
+struct Converter<electron::BundlerMoverConflictType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::ConflictType value) {
+                                   electron::BundlerMoverConflictType value) {
     switch (value) {
-      case electron::ConflictType::EXISTS:
+      case electron::BundlerMoverConflictType::EXISTS:
         return mate::StringToV8(isolate, "exists");
-      case electron::ConflictType::EXISTS_AND_RUNNING:
+      case electron::BundlerMoverConflictType::EXISTS_AND_RUNNING:
         return mate::StringToV8(isolate, "existsAndRunning");
       default:
         return mate::StringToV8(isolate, "");
@@ -51,11 +51,12 @@ namespace ui {
 
 namespace cocoa {
 
-bool AtomBundleMover::ShouldContinueMove(ConflictType type,
+bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
                                          mate::Arguments* args) {
   mate::Dictionary options;
   bool hasOptions = args->GetNext(&options);
-  base::OnceCallback<v8::MaybeLocal<v8::Value>(ConflictType)> conflict_cb;
+  base::OnceCallback<v8::MaybeLocal<v8::Value>(BundlerMoverConflictType)>
+      conflict_cb;
 
   if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
     v8::MaybeLocal<v8::Value> maybe = std::move(conflict_cb).Run(type);
@@ -124,7 +125,8 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
-        if (!ShouldContinueMove(ConflictType::EXISTS_AND_RUNNING, args))
+        if (!ShouldContinueMove(BundlerMoverConflictType::EXISTS_AND_RUNNING,
+                                args))
           return false;
 
         // Unless explicitly denied, give running app focus and terminate self
@@ -137,7 +139,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         return true;
       } else {
         // Check callback handler and get user choice for app trashing
-        if (!ShouldContinueMove(ConflictType::EXISTS, args))
+        if (!ShouldContinueMove(BundlerMoverConflictType::EXISTS, args))
           return false;
 
         // Unless explicitly denied, attempt to trash old app

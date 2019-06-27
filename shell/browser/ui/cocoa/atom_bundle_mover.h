@@ -12,7 +12,7 @@
 namespace electron {
 
 // Possible bundle movement conflicts
-enum class ConflictType { EXISTS, EXISTS_AND_RUNNING };
+enum class BundlerMoverConflictType { EXISTS, EXISTS_AND_RUNNING };
 
 namespace ui {
 
@@ -24,7 +24,8 @@ class AtomBundleMover {
   static bool IsCurrentAppInApplicationsFolder();
 
  private:
-  static bool ShouldContinueMove(ConflictType type, mate::Arguments* args);
+  static bool ShouldContinueMove(BundlerMoverConflictType type,
+                                 mate::Arguments* args);
   static bool IsInApplicationsFolder(NSString* bundlePath);
   static NSString* ContainingDiskImageDevice(NSString* bundlePath);
   static void Relaunch(NSString* destinationPath);
