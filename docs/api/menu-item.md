@@ -28,7 +28,7 @@ See [`Menu`](menu.md) for examples.
   * `visible` Boolean (optional) - If false, the menu item will be entirely hidden.
   * `checked` Boolean (optional) - Should only be specified for `checkbox` or `radio` type
     menu items.
-  * `registerAccelerator` Boolean (optional) - If false, the accelerator won't be registered
+  * `registerAccelerator` Boolean (optional) _Linux_ _Windows_ - If false, the accelerator won't be registered
     with the system, but it will still be displayed. Defaults to true.
   * `submenu` (MenuItemConstructorOptions[] | [Menu](menu.md)) (optional) - Should be specified
     for `submenu` type menu items. If `submenu` is specified, the `type: 'submenu'` can be omitted.
