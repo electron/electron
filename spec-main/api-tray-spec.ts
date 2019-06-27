@@ -31,7 +31,7 @@ describe('tray module', () => {
       expect(tray.isDestroyed()).to.be.false('tray should not be destroyed')
       tray.destroy()
 
-      expect(tray.isDestroyed()).to.be.true('tray is not destroyed')
+      expect(tray.isDestroyed()).to.be.true('tray should be destroyed')
     })
   })
 
