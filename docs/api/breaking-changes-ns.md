@@ -1,4 +1,4 @@
-# Breaking changes (NetworkService)
+# Breaking changes (NetworkService) (Draft)
 
 This document describes changes to Electron APIs after migrating network code
 to NetworkService API.
