@@ -21,6 +21,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/dictionary.h"
+#include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/native_window.h"
@@ -38,6 +39,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                          public content::WebContentsObserver,
                          public net::DirectoryLister::DirectoryListerDelegate {
  public:
+  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
+
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    std::unique_ptr<content::FileSelectListener> listener,
                    blink::mojom::FileChooserParams::Mode mode)
@@ -99,14 +102,14 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     Release();
   }
 
-  void EnumerateDirectory(base::FilePath base_dir) {
+  void EnumerateDirectory() {
     // Ensure that this fn is only called once
     DCHECK(!lister_);
+    DCHECK(!lister_base_dir_.empty());
     DCHECK(lister_paths_.empty());
 
-    lister_base_dir_ = base_dir;
     lister_.reset(new net::DirectoryLister(
-        base_dir, net::DirectoryLister::NO_SORT_RECURSIVE, this));
+        lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this));
     lister_->Start();
     // It is difficult for callers to know how long to keep a reference to
     // this instance.  We AddRef() here to keep the instance alive after we
@@ -120,7 +123,6 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     std::vector<FileChooserFileInfoPtr> file_info;
     bool canceled = true;
     result.Get("canceled", &canceled);
-    base::FilePath base_dir;
     // For certain file chooser modes (kUploadFolder) we need to do some async
     // work before calling back to the listener.  In that particular case the
     // listener is called from the directory enumerator.
@@ -132,12 +134,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
         // If we are uploading a folder we need to enumerate its contents
         if (mode_ == FileChooserParams::Mode::kUploadFolder &&
             paths.size() >= 1) {
-          base_dir = paths[0];
-
-          // Actually enumerate soemwhere off-thread
-          base::SequencedTaskRunnerHandle::Get()->PostTask(
-              FROM_HERE, base::BindOnce(&FileSelectHelper::EnumerateDirectory,
-                                        this, base_dir));
+          lister_base_dir_ = paths[0];
+          EnumerateDirectory();
         } else {
           for (auto& path : paths) {
             file_info.push_back(FileChooserFileInfo::NewNativeFile(
@@ -158,7 +156,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     }
 
     if (ready_to_call_listener)
-      OnFilesSelected(std::move(file_info), base_dir);
+      OnFilesSelected(std::move(file_info), lister_base_dir_);
   }
 
   void OnSaveDialogDone(mate::Dictionary result) {
@@ -200,10 +198,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   // content::WebContentsObserver:
-  void WebContentsDestroyed() override {
-    render_frame_host_ = nullptr;
-    Release();
-  }
+  void WebContentsDestroyed() override { render_frame_host_ = nullptr; }
 
   content::RenderFrameHost* render_frame_host_;
   std::unique_ptr<content::FileSelectListener> listener_;
@@ -300,8 +295,8 @@ void WebDialogHelper::RunFileChooser(
   settings.parent_window = window_;
   settings.title = base::UTF16ToUTF8(params.title);
 
-  scoped_refptr<FileSelectHelper> file_select_helper(new FileSelectHelper(
-      render_frame_host, std::move(listener), params.mode));
+  auto file_select_helper = base::MakeRefCounted<FileSelectHelper>(
+      render_frame_host, std::move(listener), params.mode);
   if (params.mode == FileChooserParams::Mode::kSave) {
     settings.default_path = params.default_file_name;
     file_select_helper->ShowSaveDialog(settings);

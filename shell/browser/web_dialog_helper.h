@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "net/base/directory_lister.h"
 #include "third_party/blink/public/mojom/choosers/file_chooser.mojom.h"
 
 namespace base {
@@ -23,32 +22,6 @@ class WebContents;
 }  // namespace content
 
 namespace electron {
-
-class DirectoryListerHelperDelegate {
- public:
-  virtual void OnDirectoryListerDone(
-      std::vector<blink::mojom::FileChooserFileInfoPtr> file_info,
-      base::FilePath base_dir) = 0;
-};
-
-class DirectoryListerHelper
-    : public net::DirectoryLister::DirectoryListerDelegate {
- public:
-  DirectoryListerHelper(base::FilePath base,
-                        DirectoryListerHelperDelegate* helper);
-  ~DirectoryListerHelper() override;
-
- private:
-  void OnListFile(
-      const net::DirectoryLister::DirectoryListerData& data) override;
-  void OnListDone(int error) override;
-
-  base::FilePath base_dir_;
-  DirectoryListerHelperDelegate* delegate_;
-  std::vector<base::FilePath> paths_;
-
-  DISALLOW_COPY_AND_ASSIGN(DirectoryListerHelper);
-};
 
 class NativeWindow;
 
