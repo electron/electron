@@ -467,7 +467,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 #if !defined(OS_WIN)
 views::Widget* NativeWindowViews::create_widget() {
-  return views::Widget;
+  return new views::Widget;
 }
 #endif
 
