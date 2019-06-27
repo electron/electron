@@ -1,0 +1,431 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Henrik Grunell <grunell@chromium.org>
+Date: Mon, 11 Mar 2019 15:22:16 +0000
+Subject: Block getUserMedia on system permissions.
+
+* New Mac functions for getting and requesting system permissions.
+* Change the request queue to a map with unique IDs for the requests since the order isn't guaranteed anymore.
+* Wait (async) for response from system permission request.
+
+Bug: 885184
+Change-Id: I17b046eaab51c5dd6dd57383fa23d3e7d567f809
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1511401
+Auto-Submit: Henrik Grunell <grunell@chromium.org>
+Commit-Queue: Tommi <tommi@chromium.org>
+Reviewed-by: Tommi <tommi@chromium.org>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#639496}
+
+diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
+index accd732a5020ab20278968fefd06345b9e88fdf3..c91072dba8a776b60e8406de896ca5bdb539cbf8 100644
+--- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
++++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
+@@ -57,7 +57,8 @@ struct PermissionBubbleMediaAccessHandler::PendingAccessRequest {
+   RepeatingMediaResponseCallback callback;
+ };
+ 
+-PermissionBubbleMediaAccessHandler::PermissionBubbleMediaAccessHandler() {
++PermissionBubbleMediaAccessHandler::PermissionBubbleMediaAccessHandler()
++    : weak_factory_(this) {
+   // PermissionBubbleMediaAccessHandler should be created on UI thread.
+   // Otherwise, it will not receive
+   // content::NOTIFICATION_WEB_CONTENTS_DESTROYED, and that will result in
+@@ -128,17 +129,7 @@ void PermissionBubbleMediaAccessHandler::HandleRequest(
+ #endif  // defined(OS_ANDROID)
+ 
+ #if defined(OS_MACOSX)
+-  // Fail if access is denied in system permissions. Note that if permissions
+-  // have not yet been determined, we don't fail. If all other permissions are
+-  // OK, we'll allow access. The reason for doing this is that if the permission
+-  // is not yet determined, the user will get an async system dialog and we
+-  // don't wait on that response before resolving getUserMedia. getUserMedia
+-  // will succeed, but audio/video will be silent/black until user allows
+-  // permission in the dialog. If the user denies permission audio/video will
+-  // continue to be silent/black but they will likely understand why since they
+-  // denied access. We trigger the system dialog explicitly in
+-  // OnAccessRequestResponse().
+-  // TODO(https://crbug.com/885184): Handle the not determined case better.
++  // Fail if access is denied in system permissions.
+   if ((request.audio_type == blink::MEDIA_DEVICE_AUDIO_CAPTURE &&
+        SystemAudioCapturePermissionIsDisallowed()) ||
+       (request.video_type == blink::MEDIA_DEVICE_VIDEO_CAPTURE &&
+@@ -150,12 +141,14 @@ void PermissionBubbleMediaAccessHandler::HandleRequest(
+   }
+ #endif  // defined(OS_MACOSX)
+ 
+-  RequestsQueue& queue = pending_requests_[web_contents];
+-  queue.push_back(PendingAccessRequest(
+-      request, base::AdaptCallbackForRepeating(std::move(callback))));
++  RequestsMap& requests_map = pending_requests_[web_contents];
++  requests_map.emplace(
++      next_request_id_++,
++      PendingAccessRequest(
++          request, base::AdaptCallbackForRepeating(std::move(callback))));
+ 
+   // If this is the only request then show the infobar.
+-  if (queue.size() == 1)
++  if (requests_map.size() == 1)
+     ProcessQueuedAccessRequest(web_contents);
+ }
+ 
+@@ -172,13 +165,15 @@ void PermissionBubbleMediaAccessHandler::ProcessQueuedAccessRequest(
+ 
+   DCHECK(!it->second.empty());
+ 
+-  const content::MediaStreamRequest request = it->second.front().request;
++  const int request_id = it->second.begin()->first;
++  const content::MediaStreamRequest& request =
++      it->second.begin()->second.request;
+ #if defined(OS_ANDROID)
+   if (IsScreenCaptureMediaType(request.video_type)) {
+     ScreenCaptureInfoBarDelegateAndroid::Create(
+         web_contents, request,
+         base::Bind(&PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
+-                   base::Unretained(this), web_contents));
++                   base::Unretained(this), web_contents, request_id));
+     return;
+   }
+ #endif
+@@ -186,7 +181,7 @@ void PermissionBubbleMediaAccessHandler::ProcessQueuedAccessRequest(
+   MediaStreamDevicesController::RequestPermissions(
+       request,
+       base::Bind(&PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
+-                 base::Unretained(this), web_contents));
++                 base::Unretained(this), web_contents, request_id));
+ }
+ 
+ void PermissionBubbleMediaAccessHandler::UpdateMediaRequestState(
+@@ -200,14 +195,15 @@ void PermissionBubbleMediaAccessHandler::UpdateMediaRequestState(
+     return;
+ 
+   bool found = false;
+-  for (auto rqs_it = pending_requests_.begin();
+-       rqs_it != pending_requests_.end(); ++rqs_it) {
+-    RequestsQueue& queue = rqs_it->second;
+-    for (RequestsQueue::iterator it = queue.begin(); it != queue.end(); ++it) {
+-      if (it->request.render_process_id == render_process_id &&
+-          it->request.render_frame_id == render_frame_id &&
+-          it->request.page_request_id == page_request_id) {
+-        queue.erase(it);
++  for (auto requests_it = pending_requests_.begin();
++       requests_it != pending_requests_.end(); ++requests_it) {
++    RequestsMap& requests_map = requests_it->second;
++    for (RequestsMap::iterator it = requests_map.begin();
++         it != requests_map.end(); ++it) {
++      if (it->second.request.render_process_id == render_process_id &&
++          it->second.request.render_frame_id == render_frame_id &&
++          it->second.request.page_request_id == page_request_id) {
++        requests_map.erase(it);
+         found = true;
+         break;
+       }
+@@ -219,38 +215,77 @@ void PermissionBubbleMediaAccessHandler::UpdateMediaRequestState(
+ 
+ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+     content::WebContents* web_contents,
++    int request_id,
+     const blink::MediaStreamDevices& devices,
+     blink::MediaStreamRequestResult result,
+     std::unique_ptr<content::MediaStreamUI> ui) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+-  auto it = pending_requests_.find(web_contents);
+-  if (it == pending_requests_.end()) {
++  auto request_maps_it = pending_requests_.find(web_contents);
++  if (request_maps_it == pending_requests_.end()) {
+     // WebContents has been destroyed. Don't need to do anything.
+     return;
+   }
+ 
+-  RequestsQueue& queue(it->second);
+-  if (queue.empty())
++  RequestsMap& requests_map(request_maps_it->second);
++  if (requests_map.empty())
++    return;
++
++  auto request_it = requests_map.find(request_id);
++  DCHECK(request_it != requests_map.end());
++  if (request_it == requests_map.end())
+     return;
+ 
++  blink::MediaStreamRequestResult final_result = result;
++
+ #if defined(OS_MACOSX)
+-  // If the request was approved, trigger system user dialogs if needed. We must
+-  // do this explicitly so that the system gives the correct information about
+-  // the permission states in future requests, see HandleRequest().
++  // If the request was approved, ask for system permissions if needed, and run
++  // this function again when done.
+   if (result == blink::MEDIA_DEVICE_OK) {
+-    const content::MediaStreamRequest& request = queue.front().request;
+-    if (request.audio_type == blink::MEDIA_DEVICE_AUDIO_CAPTURE)
+-      EnsureSystemAudioCapturePermissionIsOrGetsDetermined();
+-    if (request.video_type == blink::MEDIA_DEVICE_VIDEO_CAPTURE)
+-      EnsureSystemVideoCapturePermissionIsOrGetsDetermined();
++    const content::MediaStreamRequest& request = request_it->second.request;
++    if (request.audio_type == blink::MEDIA_DEVICE_AUDIO_CAPTURE) {
++      const SystemPermission system_audio_permission =
++          CheckSystemAudioCapturePermission();
++      if (system_audio_permission == SystemPermission::kNotDetermined) {
++        // Using WeakPtr since callback can come at any time and we might be
++        // destroyed.
++        RequestSystemAudioCapturePermisson(
++            base::BindOnce(
++                &PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
++                weak_factory_.GetWeakPtr(), web_contents, request_id, devices,
++                result, std::move(ui)),
++            {content::BrowserThread::UI});
++        return;
++      } else if (system_audio_permission == SystemPermission::kNotAllowed) {
++        final_result = blink::MEDIA_DEVICE_SYSTEM_PERMISSION_DENIED;
++      }
++    }
++
++    if (request.video_type == blink::MEDIA_DEVICE_VIDEO_CAPTURE) {
++      const SystemPermission system_video_permission =
++          CheckSystemVideoCapturePermission();
++      if (system_video_permission == SystemPermission::kNotDetermined) {
++        // Using WeakPtr since callback can come at any time and we might be
++        // destroyed.
++        RequestSystemVideoCapturePermisson(
++            base::BindOnce(
++                &PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
++                weak_factory_.GetWeakPtr(), web_contents, request_id, devices,
++                result, std::move(ui)),
++            {content::BrowserThread::UI});
++        return;
++      } else if (system_video_permission == SystemPermission::kNotAllowed) {
++        final_result = blink::MEDIA_DEVICE_SYSTEM_PERMISSION_DENIED;
++      }
++    }
+   }
+ #endif  // defined(OS_MACOSX)
+ 
+-  RepeatingMediaResponseCallback callback = queue.front().callback;
+-  queue.pop_front();
++  RepeatingMediaResponseCallback callback =
++      std::move(request_it->second.callback);
++  requests_map.erase(request_it);
+ 
+-  if (!queue.empty()) {
++  if (!requests_map.empty()) {
+     // Post a task to process next queued request. It has to be done
+     // asynchronously to make sure that calling infobar is not destroyed until
+     // after this function returns.
+@@ -261,7 +296,7 @@ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+             base::Unretained(this), web_contents));
+   }
+ 
+-  callback.Run(devices, result, std::move(ui));
++  std::move(callback).Run(devices, final_result, std::move(ui));
+ }
+ 
+ void PermissionBubbleMediaAccessHandler::Observe(
+diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
+index 0313eb77d2835653d4ad9e575735946990cd2059..18a0d3a9b8d29d4550a9233a50fcd13fd1c4cd16 100644
+--- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
++++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
+@@ -7,7 +7,7 @@
+ 
+ #include <map>
+ 
+-#include "base/containers/circular_deque.h"
++#include "base/memory/weak_ptr.h"
+ #include "chrome/browser/media/media_access_handler.h"
+ #include "content/public/browser/notification_observer.h"
+ #include "content/public/browser/notification_registrar.h"
+@@ -41,11 +41,12 @@ class PermissionBubbleMediaAccessHandler
+ 
+  private:
+   struct PendingAccessRequest;
+-  using RequestsQueue = base::circular_deque<PendingAccessRequest>;
+-  using RequestsQueues = std::map<content::WebContents*, RequestsQueue>;
++  using RequestsMap = std::map<int, PendingAccessRequest>;
++  using RequestsMaps = std::map<content::WebContents*, RequestsMap>;
+ 
+   void ProcessQueuedAccessRequest(content::WebContents* web_contents);
+   void OnAccessRequestResponse(content::WebContents* web_contents,
++                               int request_id,
+                                const blink::MediaStreamDevices& devices,
+                                blink::MediaStreamRequestResult result,
+                                std::unique_ptr<content::MediaStreamUI> ui);
+@@ -55,7 +56,11 @@ class PermissionBubbleMediaAccessHandler
+                const content::NotificationSource& source,
+                const content::NotificationDetails& details) override;
+ 
+-  RequestsQueues pending_requests_;
++  int next_request_id_ = 0;
++  RequestsMaps pending_requests_;
+   content::NotificationRegistrar notifications_registrar_;
++
++  base::WeakPtrFactory<PermissionBubbleMediaAccessHandler> weak_factory_;
+ };
++
+ #endif  // CHROME_BROWSER_MEDIA_WEBRTC_PERMISSION_BUBBLE_MEDIA_ACCESS_HANDLER_H_
+diff --git a/chrome/browser/media/webrtc/system_media_capture_permissions_mac.h b/chrome/browser/media/webrtc/system_media_capture_permissions_mac.h
+index ae201c475dfbae26024391e70eb89b051c957ed9..145cff8423e051de951ee3746bcf59745d0dcf4f 100644
+--- a/chrome/browser/media/webrtc/system_media_capture_permissions_mac.h
++++ b/chrome/browser/media/webrtc/system_media_capture_permissions_mac.h
+@@ -5,6 +5,19 @@
+ #ifndef CHROME_BROWSER_MEDIA_WEBRTC_SYSTEM_MEDIA_CAPTURE_PERMISSIONS_MAC_H_
+ #define CHROME_BROWSER_MEDIA_WEBRTC_SYSTEM_MEDIA_CAPTURE_PERMISSIONS_MAC_H_
+ 
++#include "base/callback_forward.h"
++
++namespace base {
++class TaskTraits;
++}
++
++// System permission state.
++enum class SystemPermission {
++  kNotDetermined = 0,
++  kNotAllowed = 1,
++  kAllowed = 2
++};
++
+ // On 10.14 and above: returns true if permission is not allowed in system
+ // settings, false otherwise, including if permission is not determined yet.
+ // On 10.13 and below: returns false, since there are no system media capture
+@@ -12,18 +25,24 @@
+ bool SystemAudioCapturePermissionIsDisallowed();
+ bool SystemVideoCapturePermissionIsDisallowed();
+ 
+-// On 10.14 and above: if system permission is not determined, requests
+-// permission. Otherwise, does nothing. When requesting permission, the OS will
+-// show a user dialog and respond asynchronously. This function does not wait
+-// for the response and nothing is done at the response. The reason
+-// for explicitly requesting permission is that if only implicitly requesting
+-// permission (e.g. for audio when media::AUAudioInputStream::Start() calls
+-// AudioOutputUnitStart()), the OS returns not determined when we ask what the
+-// permission state is, even though it's actually set to something else, until
+-// browser restart.
+-// On 10.13 and below: does nothing, since there are no system media capture
+-// permissions.
+-void EnsureSystemAudioCapturePermissionIsOrGetsDetermined();
+-void EnsureSystemVideoCapturePermissionIsOrGetsDetermined();
++// On 10.14 and above: returns if system permission is allowed or not, or not
++// determined.
++// On 10.13 and below: returns |SystemPermission::kAllowed|, since there are no
++// system media capture permissions.
++SystemPermission CheckSystemAudioCapturePermission();
++SystemPermission CheckSystemVideoCapturePermission();
++
++// On 10.14 and above: requests system permission and returns. When requesting
++// permission, the OS will show a user dialog and respond asynchronously. At the
++// response, |callback| is posted with |traits|.
++// On 10.13 and below: posts |callback| with |traits|, since there are no system
++// media capture permissions.
++// Note: these functions should really never be called for pre-10.14 since one
++// would normally check the permission first, and only call this if it's not
++// determined.
++void RequestSystemAudioCapturePermisson(base::OnceClosure callback,
++                                        const base::TaskTraits& traits);
++void RequestSystemVideoCapturePermisson(base::OnceClosure callback,
++                                        const base::TaskTraits& traits);
+ 
+ #endif  // CHROME_BROWSER_MEDIA_WEBRTC_SYSTEM_MEDIA_CAPTURE_PERMISSIONS_MAC_H_
+diff --git a/chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm b/chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm
+index a152da665af385178b5f334d4b000f7c2f8e07f0..b4c8470313e69a7fc0e6f377846a047720a57c50 100644
+--- a/chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm
++++ b/chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm
+@@ -18,7 +18,14 @@
+ 
+ #import <AVFoundation/AVFoundation.h>
+ 
++#include "base/bind_helpers.h"
++#include "base/callback.h"
++#include "base/callback_helpers.h"
+ #include "base/logging.h"
++#include "base/task/post_task.h"
++#include "base/task/task_traits.h"
++#include "content/public/browser/browser_task_traits.h"
++#include "content/public/browser/browser_thread.h"
+ 
+ namespace {
+ 
+@@ -48,21 +55,51 @@ bool SystemMediaCapturePermissionIsDisallowed(NSString* media_type) {
+   return false;
+ }
+ 
+-void EnsureSystemMediaCapturePermissionIsOrGetsDetermined(
+-    NSString* media_type) {
++SystemPermission CheckSystemMediaCapturePermission(NSString* media_type) {
++  if (@available(macOS 10.14, *)) {
++    NSInteger auth_status = MediaAuthorizationStatus(media_type);
++    switch (auth_status) {
++      case 0:
++        return SystemPermission::kNotDetermined;
++      case 1:
++      case 2:
++        return SystemPermission::kNotAllowed;
++      case 3:
++        return SystemPermission::kAllowed;
++      default:
++        NOTREACHED();
++        return SystemPermission::kAllowed;
++    }
++  }
++
++  // On pre-10.14, there are no system permissions, so we return allowed.
++  return SystemPermission::kAllowed;
++}
++
++// Use RepeatingCallback since it must be copyable for use in the block. It's
++// only called once though.
++void RequestSystemMediaCapturePermission(NSString* media_type,
++                                         base::RepeatingClosure callback,
++                                         const base::TaskTraits& traits) {
+   if (@available(macOS 10.14, *)) {
+-    if (MediaAuthorizationStatus(media_type) == 0) {
+       AVCaptureDevice* target = [AVCaptureDevice class];
+       SEL selector = @selector(requestAccessForMediaType:completionHandler:);
+       if ([target respondsToSelector:selector]) {
+         [target performSelector:selector
+                      withObject:media_type
+-                     withObject:^(BOOL granted){
++                     withObject:^(BOOL granted) {
++                       base::PostTaskWithTraits(FROM_HERE, traits,
++                                                std::move(callback));
+                      }];
+       } else {
+         DLOG(WARNING) << "requestAccessForMediaType could not be executed";
+       }
+-    }
++  } else {
++    NOTREACHED();
++    // Should never happen since for pre-10.14 system permissions don't exist
++    // and checking them in CheckSystemAudioCapturePermission() will always
++    // return allowed, and this function should not be called.
++    base::PostTaskWithTraits(FROM_HERE, traits, std::move(callback));
+   }
+ }
+ 
+@@ -76,10 +113,24 @@ bool SystemVideoCapturePermissionIsDisallowed() {
+   return SystemMediaCapturePermissionIsDisallowed(AVMediaTypeVideo);
+ }
+ 
+-void EnsureSystemAudioCapturePermissionIsOrGetsDetermined() {
+-  EnsureSystemMediaCapturePermissionIsOrGetsDetermined(AVMediaTypeAudio);
++SystemPermission CheckSystemAudioCapturePermission() {
++  return CheckSystemMediaCapturePermission(AVMediaTypeAudio);
++}
++
++SystemPermission CheckSystemVideoCapturePermission() {
++  return CheckSystemMediaCapturePermission(AVMediaTypeVideo);
++}
++
++void RequestSystemAudioCapturePermisson(base::OnceClosure callback,
++                                        const base::TaskTraits& traits) {
++  RequestSystemMediaCapturePermission(
++      AVMediaTypeAudio, base::AdaptCallbackForRepeating(std::move(callback)),
++      traits);
+ }
+ 
+-void EnsureSystemVideoCapturePermissionIsOrGetsDetermined() {
+-  EnsureSystemMediaCapturePermissionIsOrGetsDetermined(AVMediaTypeVideo);
++void RequestSystemVideoCapturePermisson(base::OnceClosure callback,
++                                        const base::TaskTraits& traits) {
++  RequestSystemMediaCapturePermission(
++      AVMediaTypeVideo, base::AdaptCallbackForRepeating(std::move(callback)),
++      traits);
+ }
