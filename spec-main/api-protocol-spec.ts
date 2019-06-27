@@ -74,6 +74,7 @@ function defer(): Promise<any> & {resolve: Function, reject: Function} {
 
 describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents
+  // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(() => contents = (webContents as any).create({sandbox: true}))
   after(() => (contents as any).destroy())
 
@@ -516,7 +517,6 @@ describe('protocol module', () => {
       const port = (server.address() as AddressInfo).port
       const url = `http://127.0.0.1:${port}`
       await interceptHttpProtocol('http', (request, callback) => {
-        console.log(request)
         const data = {
           url: url,
           method: 'POST',
@@ -524,7 +524,7 @@ describe('protocol module', () => {
             contentType: 'application/x-www-form-urlencoded',
             bytes: request.uploadData[0].bytes
           },
-          session: null as any
+          session: null
         }
         callback(data)
       })
