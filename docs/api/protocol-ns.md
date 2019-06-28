@@ -1,13 +1,13 @@
 # protocol (NetworkService) (Draft)
 
-This document describes the new protocol APIs based on NetworkService.
+This document describes the new protocol APIs based on the [NetworkService](https://www.chromium.org/servicification).
 
-We don't currently have an estimate of when we will enable `NetworkService` by
+We don't currently have an estimate of when we will enable the `NetworkService` by
 default in Electron, but as Chromium is already removing non-`NetworkService`
-code, we might switch before Electron 10.
+code, we will probably switch before Electron 10.
 
-The content of this document should be moved to `protocol.md` after it is
-determined when to enable `NetworkService` in Electron.
+The content of this document should be moved to `protocol.md` after we have
+enabled the `NetworkService` by default in Electron.
 
 > Register a custom protocol and intercept existing protocol requests.
 
@@ -75,7 +75,7 @@ Registers the `scheme` as standard, secure, bypasses content security policy for
 resources, allows registering ServiceWorker and supports fetch API. Specify a
 privilege with the value of `true` to enable the capability.
 
-An example of registering a privileged scheme, with bypassing Content Security
+An example of registering a privileged scheme, that bypasses Content Security
 Policy:
 
 ```javascript
@@ -120,9 +120,9 @@ it as a standard scheme.
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
-Registers a protocol of `scheme` that will send the file as a response. The
-`handler` will be called with `handler(request, callback)` when a `request` is
-going to be created with `scheme`.
+Registers a protocol of `scheme` that will send a file as the response. The
+`handler` will be called with `request` and `callback` where `request` is
+an incoming request for the `scheme`.
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
@@ -191,7 +191,7 @@ should be called with an object that has the `url` property.
 Registers a protocol of `scheme` that will send a stream as a response.
 
 The usage is the same with `registerFileProtocol`, except that the
-`callback` should be called with either a `Readable` object or an object that
+`callback` should be called with either a [`ReadableStream`](https://nodejs.org/api/stream.html#stream_class_stream_readable) object or an object that
 has the `data` property.
 
 Example:
