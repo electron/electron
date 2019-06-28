@@ -1,18 +1,20 @@
-const { remote } = require('electron')
-const { expect } = require('chai')
-const { Menu, Tray, nativeImage } = remote
+import { expect } from 'chai'
+import { Menu, Tray, nativeImage } from 'electron'
 
 describe('tray module', () => {
-  let tray
+  let tray: Tray;
 
   beforeEach(() => {
     tray = new Tray(nativeImage.createEmpty())
   })
 
+  afterEach(() => {
+    tray = null as any
+  })
+
   describe('tray.setContextMenu', () => {
     afterEach(() => {
       tray.destroy()
-      tray = null
     })
 
     it('accepts menu instance', () => {
@@ -26,18 +28,16 @@ describe('tray module', () => {
 
   describe('tray.destroy()', () => {
     it('destroys a tray', () => {
-      expect(tray.isDestroyed()).to.be.false()
+      expect(tray.isDestroyed()).to.be.false('tray should not be destroyed')
       tray.destroy()
 
-      expect(tray.isDestroyed()).to.be.true()
-      tray = null
+      expect(tray.isDestroyed()).to.be.true('tray should be destroyed')
     })
   })
 
   describe('tray.popUpContextMenu', () => {
     afterEach(() => {
       tray.destroy()
-      tray = null
     })
 
     before(function () {
@@ -59,7 +59,6 @@ describe('tray module', () => {
       tray.setImage(nativeImage.createEmpty())
 
       tray.destroy()
-      tray = null
     })
   })
 
@@ -68,7 +67,6 @@ describe('tray module', () => {
       tray.setPressedImage(nativeImage.createEmpty())
 
       tray.destroy()
-      tray = null
     })
   })
 
@@ -79,7 +77,6 @@ describe('tray module', () => {
 
     afterEach(() => {
       tray.destroy()
-      tray = null
     })
 
     it('sets/gets non-empty title', () => {
