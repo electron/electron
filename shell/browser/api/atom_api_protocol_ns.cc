@@ -9,6 +9,7 @@
 
 #include "base/stl_util.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/promise_util.h"
@@ -106,8 +107,15 @@ bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
   return base::ContainsKey(intercept_handlers_, scheme);
 }
 
-v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
-    const std::string& scheme) {
+v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
+                                                     mate::Arguments* args) {
+  node::Environment* env = node::Environment::GetCurrent(args->isolate());
+  EmitDeprecationWarning(
+      env,
+      "The protocol.isProtocolHandled API is deprecated, use "
+      "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
+      "instead.",
+      "ProtocolDeprecateIsProtocolHandled");
   util::Promise promise(isolate());
   promise.Resolve(IsProtocolRegistered(scheme) ||
                   IsProtocolIntercepted(scheme) ||
@@ -126,6 +134,11 @@ void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,
                                         ProtocolError error) {
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
+    node::Environment* env = node::Environment::GetCurrent(args->isolate());
+    EmitDeprecationWarning(
+        env,
+        "The callback argument of protocol module APIs is no longer needed.",
+        "ProtocolDeprecateCallback");
     if (error == ProtocolError::OK)
       callback.Run(v8::Null(args->isolate()));
     else
