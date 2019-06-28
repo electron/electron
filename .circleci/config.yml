@@ -1020,10 +1020,10 @@ jobs:
   linux-x64-testing.asan:
     <<: *machine-linux-2xlarge
     environment:
+      <<: *env-asan
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-enable-sccache
-      <<: *env-asan
     <<: *steps-electron-build-for-tests
 
   linux-x64-testing-gn-check:
@@ -1055,11 +1055,11 @@ jobs:
   linux-x64-release.asan:
     <<: *machine-linux-2xlarge
     environment:
+      <<: *env-asan
       <<: *env-linux-2xlarge
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
-      <<: *env-asan
     <<: *steps-electron-build-for-tests
 
   linux-x64-publish:
@@ -1114,12 +1114,12 @@ jobs:
   linux-ia32-release.asan:
     <<: *machine-linux-2xlarge
     environment:
+      <<: *env-asan
       <<: *env-linux-2xlarge
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
-      <<: *env-asan
     <<: *steps-electron-build-for-tests
 
   linux-ia32-publish:
