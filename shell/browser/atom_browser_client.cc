@@ -70,7 +70,7 @@
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
-#include "shell/browser/renderer_host/atom_render_message_filter.h"
+#include "shell/browser/renderer_host/electron_render_message_filter.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -366,7 +366,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
             web_preferences);
   }
 
-  host->AddFilter(new AtomRenderMessageFilter(
+  host->AddFilter(new ElectronRenderMessageFilter(
       process_id, host->GetBrowserContext(), number_of_sockets_to_preconnect));
 
   AddProcessPreferences(host->GetID(), prefs);

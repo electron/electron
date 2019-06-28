@@ -1,0 +1,59 @@
+diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
+index 8df721e..a3476e4 100644
+--- a/chrome/browser/predictors/preconnect_manager.cc
++++ b/chrome/browser/predictors/preconnect_manager.cc
+@@ -58,7 +58,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
+ PreresolveJob::~PreresolveJob() = default;
+ 
+ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
+-                                     Profile* profile)
++                                     content::BrowserContext* profile)
+     : delegate_(std::move(delegate)),
+       profile_(profile),
+       inflight_preresolves_count_(0),
+@@ -307,12 +307,6 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
+   if (network_context_)
+     return network_context_;
+ 
+-  if (profile_->AsTestingProfile()) {
+-    // We're testing and |network_context_| wasn't set. Return nullptr to avoid
+-    // hitting the network.
+-    return nullptr;
+-  }
+-
+   return content::BrowserContext::GetDefaultStoragePartition(profile_)
+       ->GetNetworkContext();
+ }
+diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
+index 5ff5eb6..9844abd 100644
+--- a/chrome/browser/predictors/preconnect_manager.h
++++ b/chrome/browser/predictors/preconnect_manager.h
+@@ -21,6 +21,10 @@
+ 
+ class Profile;
+ 
++namespace content {
++class BrowserContext;
++}
++
+ namespace network {
+ namespace mojom {
+ class NetworkContext;
+@@ -134,7 +138,7 @@ class PreconnectManager {
+ 
+   static const size_t kMaxInflightPreresolves = 3;
+ 
+-  PreconnectManager(base::WeakPtr<Delegate> delegate, Profile* profile);
++  PreconnectManager(base::WeakPtr<Delegate> delegate, content::BrowserContext* profile);
+   virtual ~PreconnectManager();
+ 
+   // Starts preconnect and preresolve jobs keyed by |url|.
+@@ -184,7 +188,7 @@ class PreconnectManager {
+   network::mojom::NetworkContext* GetNetworkContext() const;
+ 
+   base::WeakPtr<Delegate> delegate_;
+-  Profile* const profile_;
++  content::BrowserContext* const profile_;
+   std::list<PreresolveJobId> queued_jobs_;
+   PreresolveJobMap preresolve_jobs_;
+   std::map<std::string, std::unique_ptr<PreresolveInfo>> preresolve_info_;

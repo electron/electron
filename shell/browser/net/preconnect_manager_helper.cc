@@ -76,10 +76,17 @@ int PreconnectManagerHelper::GetNumberOfSocketsToPreconnect(
                    &num_sockets_to_preconnect)) {
     const int kMinSocketsToPreconnect = 1;
     const int kMaxSocketsToPreconnect = 6;
+    bool isInsideRange = num_sockets_to_preconnect >= kMinSocketsToPreconnect &&
+                         num_sockets_to_preconnect <= kMaxSocketsToPreconnect;
     num_sockets_to_preconnect =
         std::max(num_sockets_to_preconnect, kMinSocketsToPreconnect);
     num_sockets_to_preconnect =
         std::min(num_sockets_to_preconnect, kMaxSocketsToPreconnect);
+    if (!isInsideRange) {
+      LOG(WARNING) << "numSocketsToPreconnect is specified outside ["
+                   << kMinSocketsToPreconnect << ", " << kMaxSocketsToPreconnect
+                   << "], capping to " << num_sockets_to_preconnect;
+    }
   }
   return num_sockets_to_preconnect;
 }

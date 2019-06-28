@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/renderer_host/atom_render_message_filter.h"
+#include "shell/browser/renderer_host/electron_render_message_filter.h"
 
 #include <stdint.h>
 
@@ -35,7 +35,7 @@ const uint32_t kRenderFilteredMessageClasses[] = {
 
 }  // namespace
 
-AtomRenderMessageFilter::AtomRenderMessageFilter(
+ElectronRenderMessageFilter::ElectronRenderMessageFilter(
     int render_process_id,
     content::BrowserContext* context,
     int number_of_sockets_to_preconnect)
@@ -47,11 +47,12 @@ AtomRenderMessageFilter::AtomRenderMessageFilter(
       electron::PreconnectManagerFactory::GetForContext(context);
 }
 
-AtomRenderMessageFilter::~AtomRenderMessageFilter() {}
+ElectronRenderMessageFilter::~ElectronRenderMessageFilter() {}
 
-bool AtomRenderMessageFilter::OnMessageReceived(const IPC::Message& message) {
+bool ElectronRenderMessageFilter::OnMessageReceived(
+    const IPC::Message& message) {
   bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AtomRenderMessageFilter, message)
+  IPC_BEGIN_MESSAGE_MAP(ElectronRenderMessageFilter, message)
     IPC_MESSAGE_HANDLER(NetworkHintsMsg_Preconnect, OnPreconnect)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
@@ -59,9 +60,9 @@ bool AtomRenderMessageFilter::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void AtomRenderMessageFilter::OnPreconnect(const GURL& url,
-                                           bool allow_credentials,
-                                           int count) {
+void ElectronRenderMessageFilter::OnPreconnect(const GURL& url,
+                                               bool allow_credentials,
+                                               int count) {
   if (count < 1) {
     LOG(WARNING) << "NetworkHintsMsg_Preconnect IPC with invalid count: "
                  << count;

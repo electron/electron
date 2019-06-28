@@ -13,34 +13,16 @@
 #include "content/public/browser/storage_partition.h"
 
 namespace {
-class StubDelegate : public predictors::PreconnectManager::Delegate {
- public:
-  void PreconnectFinished(
-      std::unique_ptr<predictors::PreconnectStats> stats) override {}
-};
-
 class PreconnectManagerWrapper : public KeyedService {
  public:
-  PreconnectManagerWrapper(
-      base::WeakPtr<predictors::PreconnectManager::Delegate> delegate,
-      content::BrowserContext* context)
-      : ptr_(new predictors::PreconnectManager(
-            delegate,
-            reinterpret_cast<Profile*>(context))) {
-    if (context) {
-      ptr_->SetNetworkContextForTesting(
-          content::BrowserContext::GetDefaultStoragePartition(context)
-              ->GetNetworkContext());
-    }
+  explicit PreconnectManagerWrapper(content::BrowserContext* context)
+      : preconnect_manager_(
+            std::make_unique<predictors::PreconnectManager>(nullptr, context)) {
   }
-  ~PreconnectManagerWrapper() override {
-    delete ptr_;
-    ptr_ = NULL;
-  }
-  predictors::PreconnectManager* GetPtr() { return ptr_; }
+  predictors::PreconnectManager* GetPtr() { return preconnect_manager_.get(); }
 
  private:
-  predictors::PreconnectManager* ptr_;
+  std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
 };
 }  // namespace
 
@@ -62,14 +44,13 @@ PreconnectManagerFactory* PreconnectManagerFactory::GetInstance() {
 PreconnectManagerFactory::PreconnectManagerFactory()
     : BrowserContextKeyedServiceFactory(
           "PreconnectManager",
-          BrowserContextDependencyManager::GetInstance()),
-      weak_factory_(new StubDelegate()) {}
+          BrowserContextDependencyManager::GetInstance()) {}
 
 PreconnectManagerFactory::~PreconnectManagerFactory() {}
 
 KeyedService* PreconnectManagerFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
-  return new PreconnectManagerWrapper(weak_factory_.GetWeakPtr(), context);
+  return new PreconnectManagerWrapper(context);
 }
 
 }  // namespace electron

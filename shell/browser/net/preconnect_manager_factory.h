@@ -29,9 +29,6 @@ class PreconnectManagerFactory : public BrowserContextKeyedServiceFactory {
   KeyedService* BuildServiceInstanceFor(
       content::BrowserContext* context) const override;
 
-  mutable base::WeakPtrFactory<predictors::PreconnectManager::Delegate>
-      weak_factory_;
-
   DISALLOW_COPY_AND_ASSIGN(PreconnectManagerFactory);
 };
 
