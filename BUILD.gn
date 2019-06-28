@@ -639,6 +639,7 @@ if (is_mac) {
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
+  electron_version = read_file("ELECTRON_VERSION", "trim string")
 
   bundle_data("electron_framework_resources") {
     public_deps = [
@@ -760,7 +761,6 @@ if (is_mac) {
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
-    electron_version = read_file("ELECTRON_VERSION", "trim string")
     extra_substitutions = [
       "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
@@ -927,7 +927,6 @@ if (is_mac) {
       deps += [ ":electron_login_helper_app" ]
     }
     info_plist = "shell/browser/resources/mac/Info.plist"
-    electron_version = read_file("ELECTRON_VERSION", "trim string")
     extra_substitutions = [
       "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id",
       "ELECTRON_VERSION=$electron_version",
@@ -936,6 +935,91 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
+  }
+
+  _framework_binary_path = "$root_out_dir/$electron_framework_name.framework/Versions/$electron_framework_version/$electron_framework_name"
+  assert(_framework_binary_path != "",
+         "Ignore configuration-dependent unused variable warning")
+  if (enable_dsyms) {
+    # This list must be updated with the two targets' deps list below, and
+    # the list of _dsyms in :chrome_dsym_archive.
+    _electron_symbols_sources = [
+      _framework_binary_path,
+      "$root_out_dir/$electron_helper_name.app/Contents/MacOS/$electron_helper_name",
+      "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name",
+      "$root_out_dir/crashpad_handler",
+      "$root_out_dir/libswiftshader_libEGL.dylib",
+      "$root_out_dir/libswiftshader_libGLESv2.dylib",
+    ]
+
+    # It is possible to run dump_syms on unstripped products without dSYMs,
+    # but doing so isn't logical and won't happen in practice.
+    action_foreach("electron_dump_syms") {
+      script = "//build/redirect_stdout.py"
+
+      sources = _electron_symbols_sources
+
+      outputs = [
+        "$root_out_dir/{{source_file_part}}-$electron_version.breakpad",
+      ]
+
+      # Use an absolute path to dump_syms in case a user has it in their path.
+      args = rebase_path(outputs, root_out_dir) + [
+               rebase_path("$root_out_dir/dump_syms"),
+               "-g",
+               rebase_path(
+                   "$root_out_dir/{{source_file_part}}.dSYM/Contents/Resources/DWARF/{{source_file_part}}",
+                   root_out_dir),
+               "{{source}}",
+             ]
+
+      deps = [
+        ":electron_app",
+        ":electron_framework",
+        ":electron_helper_app",
+        "//third_party/breakpad:dump_syms",
+        "//third_party/crashpad/crashpad/handler:crashpad_handler",
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
+
+    action("electron_dsym_archive") {
+      script = "//chrome/tools/build/mac/archive_symbols.py"
+
+      # These are the dSYMs that will be archived. The sources list must be
+      # the target outputs that correspond to the dSYMs (since a dSYM is a
+      # directory it cannot be listed as a source file). The targets that
+      # generate both the dSYM and binary image are listed in deps.
+      _dsyms = [
+        "$root_out_dir/$electron_framework_name.dSYM",
+        "$root_out_dir/$electron_helper_name.dSYM",
+        "$root_out_dir/$electron_product_name.dSYM",
+        "$root_out_dir/crashpad_handler.dSYM",
+        "$root_out_dir/libswiftshader_libEGL.dylib.dSYM",
+        "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM",
+      ]
+
+      sources = _electron_symbols_sources
+
+      _output = "$root_out_dir/$electron_product_name.dSYM.tar.bz2"
+
+      outputs = [
+        _output,
+      ]
+
+      args = [ rebase_path(_output, root_out_dir) ] +
+             rebase_path(_dsyms, root_out_dir)
+
+      deps = [
+        ":electron_app",
+        ":electron_framework",
+        ":electron_helper_app",
+        "//third_party/crashpad/crashpad/handler:crashpad_handler",
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
   }
 } else {
   windows_manifest("electron_app_manifest") {
