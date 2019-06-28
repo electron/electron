@@ -1,8 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexey Kuts <kruntuid@gmail.com>
+Date: Fri, 28 Jun 2019 22:32:49 +0300
+Subject: 	preconnect feature
+
+The PreconnectManager in Chrome depends on Profile only for a testing-only feature which we don't use.  
+This patch allows us to avoid an unsafe reinterpret_cast and maintain type safety. 
+This could potentially be upstreamed if the testing-only feature were refactored 
+in such a way that Chrome's tests could still run successfully while also removing the dependency on Profile.
+
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 8df721e..a3476e4 100644
+index 149244ad99ff8e70011164d7d337b9fdd607e4ae..e41d3c19b6def1ab3f16827920ab8f090e67857c 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
-@@ -58,7 +58,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
+@@ -59,7 +59,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
  PreresolveJob::~PreresolveJob() = default;
  
  PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
@@ -11,7 +21,7 @@ index 8df721e..a3476e4 100644
      : delegate_(std::move(delegate)),
        profile_(profile),
        inflight_preresolves_count_(0),
-@@ -307,12 +307,6 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
+@@ -309,12 +309,6 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
    if (network_context_)
      return network_context_;
  
@@ -25,7 +35,7 @@ index 8df721e..a3476e4 100644
        ->GetNetworkContext();
  }
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 5ff5eb6..9844abd 100644
+index 5ff5eb627f783b0fc490313fbc1c8577942136ad..9844abdd783edbc04be64ae0be9c384cbc2ddc5c 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -21,6 +21,10 @@

@@ -1067,4 +1067,53 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('preconnect feature', () => {
+    let w = null as unknown as BrowserWindow
+    let server = null as unknown as http.Server
+    let url = null as unknown as string
+    let connections = 0
+    beforeEach((done) => {
+      connections = 0
+      server = http.createServer((req, res) => {
+        res.end()
+      })
+      server.on('connection', (connection) => {
+        connections++
+      })
+      server.listen(0, '127.0.0.1', () => {
+        url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+        done()
+      })
+    })
+    afterEach(async () => {
+      server.close()
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+    it(`preconnect number of sockets specified in constructor`, (done) => {
+      w = new BrowserWindow({ numSocketsToPreconnect: 5 })
+      w.webContents.on('did-finish-load', () => {
+        expect(connections).to.equal(5)
+        done()
+      })
+      w.loadURL(url)
+    })
+    it(`should be turned off if numSocketsToPreconnect is not specified in constructor`, (done) => {
+      w = new BrowserWindow({})
+      w.webContents.on('did-finish-load', () => {
+        expect(connections).to.equal(1)
+        done()
+      })
+      w.loadURL(url)
+    })
+    it(`preconnect number of sockets specified in constructor should be capped to 6`, (done) => {
+      w = new BrowserWindow({ numSocketsToPreconnect: 7 })
+      w.webContents.on('did-finish-load', () => {
+        expect(connections).to.equal(6)
+        done()
+      })
+      w.loadURL(url)
+    })
+  })
+
 })
