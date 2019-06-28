@@ -2,12 +2,14 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
 const { ipcRenderer, remote } = require('electron')
-const { BrowserWindow, Menu, MenuItem } = remote
+const { BrowserWindow, globalShortcut, Menu, MenuItem } = remote
 const { sortMenuItems } = require('../lib/browser/api/menu-utils')
 const { closeWindow } = require('./window-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
+
+const isCi = remote.getGlobal('isCi')
 
 describe('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
@@ -835,36 +837,63 @@ describe('Menu module', () => {
     })
   })
 
-  describe('menu accelerators', () => {
-    let testFn = it
-    try {
-      // We have other tests that check if native modules work, if we fail to require
-      // robotjs let's skip this test to avoid false negatives
-      require('robotjs')
-    } catch (err) {
-      testFn = it.skip
-    }
+  describe('menu accelerators', async () => {
     const sendRobotjsKey = (key, modifiers = [], delay = 500) => {
       return new Promise((resolve, reject) => {
-        require('robotjs').keyTap(key, modifiers)
-        setTimeout(() => {
-          resolve()
-        }, delay)
+        try {
+          require('robotjs').keyTap(key, modifiers)
+          setTimeout(() => {
+            resolve()
+          }, delay)
+        } catch (e) {
+          reject(e)
+        }
       })
     }
 
-    testFn('menu accelerators perform the specified action', async () => {
+    before(async function () {
+      // --ci flag breaks accelerator and robotjs interaction
+      if (isCi) {
+        this.skip()
+      }
+
+      // before accelerator tests, use globalShortcut to test if
+      // RobotJS is working at all
+      let isKeyPressed = false
+      globalShortcut.register('q', () => {
+        isKeyPressed = true
+      })
+      try {
+        await sendRobotjsKey('q')
+      } catch (e) {
+        this.skip()
+      }
+
+      if (!isKeyPressed) {
+        this.skip()
+      }
+
+      globalShortcut.unregister('q')
+    })
+
+    it('should perform the specified action', async () => {
+      let hasBeenClicked = false
       const menu = Menu.buildFromTemplate([
         {
           label: 'Test',
           submenu: [
             {
               label: 'Test Item',
-              accelerator: 'Ctrl+T',
-              click: () => {
-                // Test will succeed, only when the menu accelerator action
-                // is triggered
-                Promise.resolve()
+              accelerator: 'T',
+              click: (a, b, event) => {
+                hasBeenClicked = true
+                expect(event).to.deep.equal({
+                  shiftKey: false,
+                  ctrlKey: false,
+                  altKey: false,
+                  metaKey: false,
+                  triggeredByAccelerator: true
+                })
               },
               id: 'test'
             }
@@ -873,7 +902,31 @@ describe('Menu module', () => {
       ])
       Menu.setApplicationMenu(menu)
       expect(Menu.getApplicationMenu()).to.not.be.null()
-      await sendRobotjsKey('t', 'control')
+      await sendRobotjsKey('t')
+      expect(hasBeenClicked).to.equal(true)
+    })
+
+    it('should not activate upon clicking another key combination', async () => {
+      let hasBeenClicked = false
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Test',
+          submenu: [
+            {
+              label: 'Test Item',
+              accelerator: 'T',
+              click: (a, b, event) => {
+                hasBeenClicked = true
+              },
+              id: 'test'
+            }
+          ]
+        }
+      ])
+      Menu.setApplicationMenu(menu)
+      expect(Menu.getApplicationMenu()).to.not.be.null()
+      await sendRobotjsKey('t', 'shift')
+      expect(hasBeenClicked).to.equal(false)
     })
   })
 })
