@@ -493,7 +493,7 @@ void NativeWindowMac::Close() {
   if (is_modal() && parent() && IsVisible()) {
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
     // Manually emit close event (not triggered from close fn)
-    [window_delegate_ windowShouldClose:window_];
+    NotifyWindowCloseButtonClicked();
     CloseImmediately();
     return;
   }
