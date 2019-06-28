@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Alexandre=20Lach=C3=A8ze?= <alexandre.lacheze@gmail.com>
+Date: Tue, 25 Jun 2019 17:36:08 +0200
+Subject: Portals: Fix crash when detaching OOPIF from portal.
+
+Prior to this change, any detachment of a proxy would cause the
+inner WebContents to get detached from the outer WebContents. After
+this change, we only detach the inner WebContents from the outer
+WebContents when the main frame's proxy is detached.
+
+Bug: 955392
+Change-Id: I41fe61961a26636132ce2f17153b2c08b93af1e1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1577636
+Commit-Queue: Lucas Gadani <lfg@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#654071}
+
+diff --git a/content/browser/frame_host/cross_process_frame_connector.cc b/content/browser/frame_host/cross_process_frame_connector.cc
+index ae486a29d07b773464dc3071dde2a33c8375f3a6..9967d0657c6ab7d72649a82b1f9c3839043b4cda 100644
+--- a/content/browser/frame_host/cross_process_frame_connector.cc
++++ b/content/browser/frame_host/cross_process_frame_connector.cc
+@@ -386,7 +386,7 @@ void CrossProcessFrameConnector::OnVisibilityChanged(bool visible) {
+   // Show/Hide on all the RenderWidgetHostViews (including this) one.
+   if (frame_proxy_in_parent_renderer_->frame_tree_node()
+           ->render_manager()
+-          ->ForInnerDelegate()) {
++          ->IsMainFrameForInnerDelegate()) {
+     view_->host()->delegate()->OnRenderFrameProxyVisibilityChanged(visible);
+     return;
+   }
+diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
+index f9f8e5204d1d92e87370f859c294919d2a1991c3..0e3fc30fae933e0493920ed1823b086ac6ceee61 100644
+--- a/content/browser/frame_host/render_frame_host_manager.cc
++++ b/content/browser/frame_host/render_frame_host_manager.cc
+@@ -132,14 +132,15 @@ RenderWidgetHostView* RenderFrameHostManager::GetRenderWidgetHostView() const {
+   return nullptr;
+ }
+ 
+-bool RenderFrameHostManager::ForInnerDelegate() {
+-  return delegate_->GetOuterDelegateFrameTreeNodeId() !=
+-      FrameTreeNode::kFrameTreeNodeInvalidId;
++bool RenderFrameHostManager::IsMainFrameForInnerDelegate() {
++  return frame_tree_node_->IsMainFrame() &&
++         delegate_->GetOuterDelegateFrameTreeNodeId() !=
++             FrameTreeNode::kFrameTreeNodeInvalidId;
+ }
+ 
+ RenderWidgetHostImpl*
+ RenderFrameHostManager::GetOuterRenderWidgetHostForKeyboardInput() {
+-  if (!ForInnerDelegate() || !frame_tree_node_->IsMainFrame())
++  if (!IsMainFrameForInnerDelegate())
+     return nullptr;
+ 
+   FrameTreeNode* outer_contents_frame_tree_node =
+@@ -168,6 +169,8 @@ RenderFrameProxyHost* RenderFrameHostManager::GetProxyToParent() {
+ }
+ 
+ RenderFrameProxyHost* RenderFrameHostManager::GetProxyToOuterDelegate() {
++  // Only the main frame should be able to reach the outer WebContents.
++  DCHECK(frame_tree_node_->IsMainFrame());
+   int outer_contents_frame_tree_node_id =
+       delegate_->GetOuterDelegateFrameTreeNodeId();
+   FrameTreeNode* outer_contents_frame_tree_node =
+@@ -183,6 +186,9 @@ RenderFrameProxyHost* RenderFrameHostManager::GetProxyToOuterDelegate() {
+ }
+ 
+ void RenderFrameHostManager::RemoveOuterDelegateFrame() {
++  // Removing the outer delegate frame will destroy the inner WebContents. This
++  // should only be called on the main frame.
++  DCHECK(frame_tree_node_->IsMainFrame());
+   FrameTreeNode* outer_delegate_frame_tree_node =
+       FrameTreeNode::GloballyFindByID(
+           delegate_->GetOuterDelegateFrameTreeNodeId());
+@@ -1880,7 +1886,7 @@ int RenderFrameHostManager::CreateRenderFrameProxy(SiteInstance* instance) {
+ 
+ void RenderFrameHostManager::CreateProxiesForChildFrame(FrameTreeNode* child) {
+   RenderFrameProxyHost* outer_delegate_proxy =
+-      ForInnerDelegate() ? GetProxyToOuterDelegate() : nullptr;
++      IsMainFrameForInnerDelegate() ? GetProxyToOuterDelegate() : nullptr;
+   for (const auto& pair : proxy_hosts_) {
+     // Do not create proxies for subframes in the outer delegate's process,
+     // since the outer delegate does not need to interact with them.
+@@ -1944,7 +1950,7 @@ void RenderFrameHostManager::SwapOuterDelegateFrame(
+ 
+ void RenderFrameHostManager::SetRWHViewForInnerContents(
+     RenderWidgetHostView* child_rwhv) {
+-  DCHECK(ForInnerDelegate() && frame_tree_node_->IsMainFrame());
++  DCHECK(IsMainFrameForInnerDelegate());
+   GetProxyToOuterDelegate()->SetChildRWHView(child_rwhv, nullptr);
+ }
+ 
+@@ -2587,7 +2593,7 @@ void RenderFrameHostManager::SendPageMessage(IPC::Message* msg,
+   // When sending a PageMessage for an inner WebContents, we don't want to also
+   // send it to the outer WebContent's frame as well.
+   RenderFrameProxyHost* outer_delegate_proxy =
+-      ForInnerDelegate() ? GetProxyToOuterDelegate() : nullptr;
++      IsMainFrameForInnerDelegate() ? GetProxyToOuterDelegate() : nullptr;
+   for (const auto& pair : proxy_hosts_) {
+     if (outer_delegate_proxy != pair.second.get()) {
+       send_msg(pair.second.get(), pair.second->GetRoutingID(), msg,
+diff --git a/content/browser/frame_host/render_frame_host_manager.h b/content/browser/frame_host/render_frame_host_manager.h
+index 644175178623ec26f6dfcf51db5833cdb03bd5ae..937ce66cedc2ab6b14b6ba9c247597a2d757613e 100644
+--- a/content/browser/frame_host/render_frame_host_manager.h
++++ b/content/browser/frame_host/render_frame_host_manager.h
+@@ -203,9 +203,9 @@ class CONTENT_EXPORT RenderFrameHostManager
+   // there is no current one.
+   RenderWidgetHostView* GetRenderWidgetHostView() const;
+ 
+-  // Returns whether this manager belongs to a FrameTreeNode that belongs to an
+-  // inner WebContents.
+-  bool ForInnerDelegate();
++  // Returns whether this manager is a main frame and belongs to a FrameTreeNode
++  // that belongs to an inner WebContents.
++  bool IsMainFrameForInnerDelegate();
+ 
+   // Returns the RenderWidgetHost of the outer WebContents (if any) that can be
+   // used to fetch the last keyboard event.
+@@ -213,8 +213,9 @@ class CONTENT_EXPORT RenderFrameHostManager
+   // remote frames.
+   RenderWidgetHostImpl* GetOuterRenderWidgetHostForKeyboardInput();
+ 
+-  // Return the FrameTreeNode for the frame in the outer WebContents (if any)
+-  // that contains the inner WebContents.
++  // If this is a RenderFrameHostManager for a main frame, this method returns
++  // the FrameTreeNode for the frame in the outer WebContents (if any) that
++  // contains the inner WebContents.
+   FrameTreeNode* GetOuterDelegateNode();
+ 
+   // Return a proxy for this frame in the parent frame's SiteInstance.  Returns
+@@ -222,13 +223,13 @@ class CONTENT_EXPORT RenderFrameHostManager
+   // example, if this frame is same-site with its parent).
+   RenderFrameProxyHost* GetProxyToParent();
+ 
+-  // Returns the proxy to inner WebContents in the outer WebContents's
+-  // SiteInstance. Returns nullptr if this WebContents isn't part of inner/outer
+-  // relationship.
++  // If this is a RenderFrameHostManager for a main frame, returns the proxy to
++  // inner WebContents in the outer WebContents's SiteInstance. Returns nullptr
++  // if this WebContents isn't part of inner/outer relationship.
+   RenderFrameProxyHost* GetProxyToOuterDelegate();
+ 
+-  // Removes the FrameTreeNode in the outer WebContents that represents this
+-  // FrameTreeNode.
++  // If this is a RenderFrameHostManager for a main frame, removes the
++  // FrameTreeNode in the outer WebContents that represents this FrameTreeNode.
+   // TODO(lazyboy): This does not belong to RenderFrameHostManager, move it to
+   // somehwere else.
+   void RemoveOuterDelegateFrame();
+diff --git a/content/browser/frame_host/render_frame_proxy_host.cc b/content/browser/frame_host/render_frame_proxy_host.cc
+index a5e18f465f79416c05fd3ab630b40b079a7a7cbc..075810f5553731b56b08b5e6e35854bdebed2021 100644
+--- a/content/browser/frame_host/render_frame_proxy_host.cc
++++ b/content/browser/frame_host/render_frame_proxy_host.cc
+@@ -68,8 +68,7 @@ RenderFrameProxyHost::RenderFrameProxyHost(SiteInstance* site_instance,
+           RenderFrameProxyHostID(GetProcess()->GetID(), routing_id_),
+           this)).second);
+   CHECK(render_view_host ||
+-        (frame_tree_node_->render_manager()->ForInnerDelegate() &&
+-         frame_tree_node_->IsMainFrame()));
++        frame_tree_node_->render_manager()->IsMainFrameForInnerDelegate());
+   if (render_view_host)
+     frame_tree_node_->frame_tree()->AddRenderViewHostRef(render_view_host_);
+ 
+@@ -79,8 +78,7 @@ RenderFrameProxyHost::RenderFrameProxyHost(SiteInstance* site_instance,
+                                     ->current_frame_host()
+                                     ->GetSiteInstance() == site_instance;
+   bool is_proxy_to_outer_delegate =
+-      frame_tree_node_->IsMainFrame() &&
+-      frame_tree_node_->render_manager()->ForInnerDelegate();
++      frame_tree_node_->render_manager()->IsMainFrameForInnerDelegate();
+ 
+   // If this is a proxy to parent frame or this proxy is for the inner
+   // WebContents's FrameTreeNode in outer WebContents's SiteInstance, then we
+@@ -262,9 +260,7 @@ void RenderFrameProxyHost::SetDestructionCallback(
+ }
+ 
+ void RenderFrameProxyHost::OnDetach() {
+-  if (frame_tree_node_->render_manager()->ForInnerDelegate()) {
+-    // Only main frame proxy can detach for inner WebContents.
+-    DCHECK(frame_tree_node_->IsMainFrame());
++  if (frame_tree_node_->render_manager()->IsMainFrameForInnerDelegate()) {
+     frame_tree_node_->render_manager()->RemoveOuterDelegateFrame();
+     return;
+   }

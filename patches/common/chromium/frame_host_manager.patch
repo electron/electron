@@ -41,10 +41,10 @@ index d439dfbb603876f942ff40fe1a505f9498f57c23..fd576eb894e06fe6c5cb21351b2b95b0
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index f9f8e5204d1d92e87370f859c294919d2a1991c3..760965f134e3326676428b9fc6906f9ff740aac2 100644
+index 0e3fc30fae933e0493920ed1823b086ac6ceee61..6dbb73c964601f0dae7ef6460a0ae2a048634a35 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -1978,6 +1978,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -1984,6 +1984,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
@@ -61,7 +61,7 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..760965f134e3326676428b9fc6906f9f
    // First, check if the navigation can switch SiteInstances. If not, the
    // navigation should use the current SiteInstance.
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
-@@ -2010,6 +2020,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2016,6 +2026,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -113,7 +113,7 @@ index f9f8e5204d1d92e87370f859c294919d2a1991c3..760965f134e3326676428b9fc6906f9f
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2021,23 +2076,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2027,23 +2082,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
