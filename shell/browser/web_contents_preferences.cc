@@ -415,9 +415,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kNodeIntegrationInSubFrames))
     command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
 
-  if (IsEnabled(options::kDisableHtmlFullscreenWindowResize))
-    command_line->AppendSwitch(switches::kDisableHtmlFullscreenWindowResize);
-
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
