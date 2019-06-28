@@ -126,7 +126,7 @@ an incoming request for the `scheme`.
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
-`callback({ path: filePath })`.
+`callback({ path: filePath })`. The `filePath` must be an absolute path.
 
 By default the `scheme` is treated like `http:`, which is parsed differently
 from protocols that follow the "generic URI syntax" like `file:`.
