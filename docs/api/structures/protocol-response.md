@@ -28,9 +28,7 @@
 * `session` Session (optional) - The session used for requesting URL, by default
   the HTTP request will reuse the current session. Setting `session` to `null`
   would use a random independent session. This is only used for URL responses.
-* `uploadData` Object (optional) - The data used as upload data. This is only
+* `uploadData` ProtocolResponseUploadData (optional) - The data used as upload data. This is only
   used for URL responses when `method` is `"POST"`.
-  * `contentType` String - MIME type of the content.
-  * `data` String - Content to be sent.
 
 [net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h

@@ -229,9 +229,7 @@ should be called with either a `String` or an object that has the `data`,
       * `url` String
       * `method` String (optional)
       * `session` Object (optional)
-      * `uploadData` Object (optional)
-        * `contentType` String - MIME type of the content.
-        * `data` String - Content to be sent.
+      * `uploadData` [ProtocolResponseUploadData](structures/protocol-response-upload-data.md) (optional)
 * `completion` Function (optional)
   * `error` Error
 
