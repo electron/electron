@@ -32,7 +32,7 @@
 
 namespace electron {
 
-#if defined(OS_MACOSX)
+#if !defined(OS_LINUX)
 void AddExtraParameter(const std::string& key, const std::string& value) {
   crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key, value);
 }

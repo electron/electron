@@ -151,7 +151,7 @@ describe('crashReporter module', () => {
       })
 
       it('should send minidump with updated extra parameters when node processes crash', function (done) {
-        if (process.platform !== 'darwin') {
+        if (process.platform === 'linux') {
           // FIXME(alexeykuzmin): Skip the test.
           // this.skip()
           return
