@@ -20,7 +20,7 @@
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-#include "third_party/electron_node/src/node_native_module.h"
+#include "third_party/electron_node/src/node_native_module_env.h"
 
 namespace electron {
 
@@ -209,7 +209,7 @@ void AtomRendererClient::SetupMainWorldOverrides(
       env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
@@ -234,7 +234,7 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
