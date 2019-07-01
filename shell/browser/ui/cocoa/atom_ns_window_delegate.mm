@@ -88,11 +88,11 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   return frame;
 }
 
-- (void)windowDidBecomeMain:(NSNotification*)notification {
+- (void)windowDidBecomeKey:(NSNotification*)notification {
   shell_->NotifyWindowFocus();
 }
 
-- (void)windowDidResignMain:(NSNotification*)notification {
+- (void)windowDidResignKey:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
 }
 
