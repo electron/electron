@@ -242,10 +242,6 @@ const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
 // environments will be created in sub-frames.
 const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
 
-// Disable window resizing when HTML Fullscreen API is activated.
-const char kDisableHtmlFullscreenWindowResize[] =
-    "disable-html-fullscreen-window-resize";
-
 // Widevine options
 // Path to Widevine CDM binaries.
 const char kWidevineCdmPath[] = "widevine-cdm-path";
