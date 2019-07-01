@@ -903,11 +903,11 @@ Resizes and moves the window to the supplied bounds. Any properties that are not
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
- // set all bounds properties
+// set all bounds properties
 win.setBounds({ x: 440, y: 225, width: 800, height: 600 })
- // set a single bounds property
+// set a single bounds property
 win.setBounds({ width: 200 })
- // { x: 440, y: 225, width: 200, height: 600 }
+// { x: 440, y: 225, width: 200, height: 600 }
 console.log(win.getBounds())
 ```
 
