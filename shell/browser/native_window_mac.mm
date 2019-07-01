@@ -492,6 +492,8 @@ void NativeWindowMac::Close() {
   // When this is a sheet showing, performClose won't work.
   if (is_modal() && parent() && IsVisible()) {
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
+    // Manually emit close event (not triggered from close fn)
+    NotifyWindowCloseButtonClicked();
     CloseImmediately();
     return;
   }
