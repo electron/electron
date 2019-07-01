@@ -5,9 +5,10 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_H_
 #define SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_H_
 
-#include "native_mate/arguments.h"
-#include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
+#include "gin/arguments.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "shell/browser/api/trackable_object_gin.h"
 #include "shell/browser/net/atom_network_delegate.h"
 
 namespace electron {
@@ -16,13 +17,16 @@ class AtomBrowserContext;
 
 namespace api {
 
-class WebRequest : public mate::TrackableObject<WebRequest> {
+class WebRequest : public gin::TrackableObject<WebRequest> {
  public:
-  static mate::Handle<WebRequest> Create(v8::Isolate* isolate,
-                                         AtomBrowserContext* browser_context);
+  static gin::Handle<WebRequest> Create(v8::Isolate* isolate,
+                                        AtomBrowserContext* browser_context);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+
+  static gin::WrapperInfo kWrapperInfo;
 
  protected:
   WebRequest(v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -30,11 +34,11 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
 
   // C++ can not distinguish overloaded member function.
   template <AtomNetworkDelegate::SimpleEvent type>
-  void SetSimpleListener(mate::Arguments* args);
+  void SetSimpleListener(gin::Arguments* args);
   template <AtomNetworkDelegate::ResponseEvent type>
-  void SetResponseListener(mate::Arguments* args);
+  void SetResponseListener(gin::Arguments* args);
   template <typename Listener, typename Method, typename Event>
-  void SetListener(Method method, Event type, mate::Arguments* args);
+  void SetListener(Method method, Event type, gin::Arguments* args);
 
  private:
   scoped_refptr<AtomBrowserContext> browser_context_;
