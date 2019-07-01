@@ -52,6 +52,7 @@ namespace {
 
 using electron::api::Net;
 using electron::api::URLRequest;
+using electron::api::URLRequestNS;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -59,12 +60,18 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
-  URLRequest::SetConstructor(isolate, base::BindRepeating(URLRequest::New));
+  if (base::FeatureList::IsEnabled(network::features::kNetworkService))
+    URLRequestNS::SetConstructor(isolate,
+                                 base::BindRepeating(URLRequestNS::New));
+  else
+    URLRequest::SetConstructor(isolate, base::BindRepeating(URLRequest::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));
   dict.Set("Net",
            Net::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("isNetworkServiceEnabled",
+           base::FeatureList::IsEnabled(network::features::kNetworkService));
 }
 
 }  // namespace

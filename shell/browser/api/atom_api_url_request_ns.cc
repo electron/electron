@@ -11,6 +11,8 @@
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 
+#include "shell/common/node_includes.h"
+
 namespace electron {
 
 namespace api {
@@ -23,9 +25,10 @@ enum State {
   STATE_CANCELED = 1 << 2,
   STATE_FAILED = 1 << 3,
   STATE_CLOSED = 1 << 4,
+  STATE_ERROR = STATE_CANCELED | STATE_FAILED | STATE_CLOSED,
 };
 
-const net::NetworkTrafficAnnotationTag kAnnotation =
+const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
     net::DefineNetworkTrafficAnnotation("electron_net_module", R"(
         semantics {
           sender: "Electron Net module"
@@ -42,11 +45,28 @@ const net::NetworkTrafficAnnotationTag kAnnotation =
           setting: "This feature cannot be disabled."
         })");
 
+void InvokeCallback(v8::Isolate* isolate,
+                    base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
+  if (!callback.is_null())
+    std::move(callback).Run(v8::Null(isolate));
+}
+
+// Call the optional callback with error.
+void InvokeCallback(v8::Isolate* isolate,
+                    base::OnceCallback<void(v8::Local<v8::Value>)> callback,
+                    base::StringPiece error) {
+  if (!callback.is_null()) {
+    v8::Local<v8::String> msg = mate::StringToV8(isolate, error);
+    v8::Local<v8::Value> error = v8::Exception::Error(msg);
+    std::move(callback).Run(error);
+  }
+}
+
 }  // namespace
 
-URLRequestNS::URLRequestNS(mate::Arguments* args) {
-  auto request = std::make_unique<network::ResourceRequest>();
-  request_ = request.get();  // ownership of |request| will be transferred.
+URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
+  request_ = std::make_unique<network::ResourceRequest>();
+  request_ref_ = request_.get();  // ownership of |request| will be transferred.
 
   mate::Dictionary dict;
   if (args->GetNext(&dict)) {
@@ -67,7 +87,6 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) {
   url_loader_factory_ =
       content::BrowserContext::GetDefaultStoragePartition(browser_context)
           ->GetURLLoaderFactoryForBrowserProcess();
-  loader_ = network::SimpleURLLoader::Create(std::move(request), kAnnotation);
 
   InitWith(args->isolate(), args->GetThis());
 }
@@ -82,14 +101,6 @@ bool URLRequestNS::Finished() const {
   return request_state_ & STATE_FINISHED;
 }
 
-bool URLRequestNS::Canceled() const {
-  return request_state_ & STATE_CANCELED;
-}
-
-bool URLRequestNS::Failed() const {
-  return request_state_ & STATE_FAILED;
-}
-
 void URLRequestNS::Cancel() {
   // TODO(zcbenz): Implement this.
 }
@@ -98,9 +109,53 @@ void URLRequestNS::Close() {
   // TODO(zcbenz): Implement this.
 }
 
-bool URLRequestNS::Write(const std::string& data, bool is_last) {
-  // TODO(zcbenz): Implement this.
-  return false;
+bool URLRequestNS::Write(v8::Local<v8::Value> data,
+                         bool is_last,
+                         v8::Local<v8::Value> extra) {
+  if (request_state_ & (STATE_FINISHED | STATE_ERROR))
+    return false;
+
+  // Pin on first write.
+  request_state_ = STATE_STARTED;
+  Pin();
+
+  size_t length = node::Buffer::Length(data);
+  base::OnceCallback<void(v8::Local<v8::Value>)> callback;
+  mate::ConvertFromV8(isolate(), extra, &callback);
+
+  if (!loader_) {
+    loader_ = network::SimpleURLLoader::Create(std::move(request_),
+                                               kTrafficAnnotation);
+
+    if (length > 0) {
+      mojo::ScopedDataPipeProducerHandle producer;
+      mojo::ScopedDataPipeConsumerHandle consumer;
+      MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
+      if (rv != MOJO_RESULT_OK) {
+        InvokeCallback(isolate(), std::move(callback), "CreateDataPipe failed");
+        return false;
+      }
+      producer_ =
+          std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+    }
+
+    // TODO(zcbenz): Attach producer_ to request here.
+
+    // Start downloading.
+    loader_->DownloadAsStream(url_loader_factory_.get(), this);
+  }
+
+  if (length > 0) {
+    producer_->Write(
+        node::Buffer::Data(data),
+        mojo::StringDataPipeProducer::AsyncWritingMode::
+            STRING_STAYS_VALID_UNTIL_COMPLETION,
+        base::BindOnce(&URLRequestNS::OnWrite, weak_factory_.GetWeakPtr(),
+                       is_last, std::move(callback)));
+  } else {
+    InvokeCallback(isolate(), std::move(callback));
+  }
+  return true;
 }
 
 void URLRequestNS::FollowRedirect() {
@@ -134,12 +189,52 @@ void URLRequestNS::SetLoadFlags(int flags) {
   // TODO(zcbenz): Implement this.
 }
 
-void URLRequestNS::OnDataReceived(base::StringPiece string_piece,
-                                  base::OnceClosure resume) {}
+mate::Dictionary URLRequestNS::GetUploadProgress() {
+  mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate());
+  // TODO(zcbenz): Implement this.
+  return progress;
+}
+
+void URLRequestNS::OnDataReceived(base::StringPiece data,
+                                  base::OnceClosure resume) {
+  // In case we received an unexpected event from Chromium net, don't emit any
+  // data event after request cancel/error/close.
+  if (!(request_state_ & STATE_ERROR) && !(response_state_ & STATE_ERROR)) {
+    v8::HandleScope handle_scope(isolate());
+    v8::Local<v8::Value> buffer;
+    auto maybe = node::Buffer::Copy(isolate(), data.data(), data.size());
+    if (maybe.ToLocal(&buffer))
+      Emit("data", buffer);
+  }
+  std::move(resume).Run();
+}
 
 void URLRequestNS::OnRetry(base::OnceClosure start_retry) {}
 
-void URLRequestNS::OnComplete(bool success) {}
+void URLRequestNS::OnComplete(bool success) {
+  // In case we received an unexpected event from Chromium net, don't emit any
+  // data event after request cancel/error/close.
+  if (!(request_state_ & STATE_ERROR) && !(response_state_ & STATE_ERROR)) {
+    response_state_ |= STATE_FINISHED;
+    Emit("end");
+  }
+  Close();
+}
+
+void URLRequestNS::OnWrite(
+    bool is_last,
+    base::OnceCallback<void(v8::Local<v8::Value>)> callback,
+    MojoResult result) {
+  if (result == MOJO_RESULT_OK)
+    InvokeCallback(isolate(), std::move(callback));
+  else
+    InvokeCallback(isolate(), std::move(callback), "Write failed");
+
+  if (is_last) {
+    request_state_ |= STATE_FINISHED;
+    EmitRequestEvent(true, "finish");
+  }
+}
 
 void URLRequestNS::Pin() {
   if (wrapper_.IsEmpty()) {
@@ -149,6 +244,18 @@ void URLRequestNS::Pin() {
 
 void URLRequestNS::Unpin() {
   wrapper_.Reset();
+}
+
+template <typename... Args>
+void URLRequestNS::EmitRequestEvent(Args... args) {
+  v8::HandleScope handle_scope(isolate());
+  mate::CustomEmit(isolate(), GetWrapper(), "_emitRequestEvent", args...);
+}
+
+template <typename... Args>
+void URLRequestNS::EmitResponseEvent(Args... args) {
+  v8::HandleScope handle_scope(isolate());
+  mate::CustomEmit(isolate(), GetWrapper(), "_emitResponseEvent", args...);
 }
 
 // static
@@ -161,7 +268,17 @@ void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "URLRequest"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable();
+      .MakeDestroyable()
+      .SetMethod("write", &URLRequestNS::Write)
+      .SetMethod("cancel", &URLRequestNS::Cancel)
+      .SetMethod("setExtraHeader", &URLRequestNS::SetExtraHeader)
+      .SetMethod("removeExtraHeader", &URLRequestNS::RemoveExtraHeader)
+      .SetMethod("setChunkedUpload", &URLRequestNS::SetChunkedUpload)
+      .SetMethod("followRedirect", &URLRequestNS::FollowRedirect)
+      .SetMethod("_setLoadFlags", &URLRequestNS::SetLoadFlags)
+      .SetMethod("getUploadProgress", &URLRequestNS::GetUploadProgress)
+      .SetProperty("notStarted", &URLRequestNS::NotStarted)
+      .SetProperty("finished", &URLRequestNS::Finished);
 }
 
 }  // namespace api
