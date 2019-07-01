@@ -133,7 +133,7 @@ dynamically changed.
 
 A `Function` that is fired when the MenuItem receives a click event.
 It can be called with `menuItem.click(event, focusedWindow, focusedWebContents)`.
-* `event` [KeyboardEvent](structures/keyboard-event.md)
+* `event` Event
 * `focusedWindow` [BrowserWindow](browser-window.md)
 * `focusedWebContents` [WebContents](web-contents.md)
 

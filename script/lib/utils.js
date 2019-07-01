@@ -4,7 +4,6 @@ const { GitProcess } = require('dugite')
 const path = require('path')
 
 require('colors')
-const pass = '\u2713'.green
 const fail = '\u2717'.red
 
 function getElectronExec () {
