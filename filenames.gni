@@ -557,6 +557,8 @@ filenames = {
     "shell/renderer/api/atom_api_renderer_ipc.cc",
     "shell/renderer/api/atom_api_spell_check_client.cc",
     "shell/renderer/api/atom_api_spell_check_client.h",
+    "shell/renderer/api/atom_spell_check_language.cc",
+    "shell/renderer/api/atom_spell_check_language.h",
     "shell/renderer/api/atom_api_web_frame.cc",
     "shell/renderer/atom_autofill_agent.cc",
     "shell/renderer/atom_autofill_agent.h",
