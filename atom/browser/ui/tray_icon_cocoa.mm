@@ -10,8 +10,7 @@
 #include "base/mac/sdk_forward_declarations.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "base/task_scheduler/post_task.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/display/screen.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
@@ -495,8 +494,8 @@ void TrayIconCocoa::PopUpOnUI(AtomMenuModel* menu_model) {
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      AtomMenuModel* menu_model) {
-  base::PostTaskWithTraits(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
 }
