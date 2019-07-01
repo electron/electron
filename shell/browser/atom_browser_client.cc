@@ -146,6 +146,12 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
   g_io_thread_application_locale.Get() = locale;
 }
 
+#if defined(OS_WIN)
+const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
+#else
+const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
+#endif
+
 }  // namespace
 
 // static
@@ -524,8 +530,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(
           command_line, IsRendererSubFrame(process_id));
-    SessionPreferences::AppendExtraCommandLineSwitches(
-        web_contents->GetBrowserContext(), command_line);
+    auto preloads =
+        SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
+    if (!preloads.empty())
+      command_line->AppendSwitchNative(
+          switches::kPreloadScripts,
+          base::JoinString(preloads, kPathDelimiter));
     if (CanUseCustomSiteInstance()) {
       command_line->AppendSwitch(
           switches::kDisableElectronSiteInstanceOverrides);

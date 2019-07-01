@@ -545,7 +545,8 @@ describe('BrowserWindow module', () => {
     describe('session preload scripts', function () {
       const preloads = [
         path.join(fixtures, 'module', 'set-global-preload-1.js'),
-        path.join(fixtures, 'module', 'set-global-preload-2.js')
+        path.join(fixtures, 'module', 'set-global-preload-2.js'),
+        path.relative(process.cwd(), path.join(fixtures, 'module', 'set-global-preload-3.js'))
       ]
       const defaultSession = session.defaultSession
 
@@ -564,9 +565,10 @@ describe('BrowserWindow module', () => {
       const generateSpecs = (description, sandbox) => {
         describe(description, () => {
           it('loads the script before other scripts in window including normal preloads', function (done) {
-            ipcMain.once('vars', function (event, preload1, preload2) {
+            ipcMain.once('vars', function (event, preload1, preload2, preload3) {
               expect(preload1).to.equal('preload-1')
               expect(preload2).to.equal('preload-1-2')
+              expect(preload3).to.be.null()
               done()
             })
             w.destroy()

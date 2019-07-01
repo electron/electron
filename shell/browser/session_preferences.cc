@@ -4,21 +4,7 @@
 
 #include "shell/browser/session_preferences.h"
 
-#include "base/command_line.h"
-#include "base/memory/ptr_util.h"
-#include "shell/common/options_switches.h"
-
 namespace electron {
-
-namespace {
-
-#if defined(OS_WIN)
-const base::FilePath::CharType kPathDelimiter = FILE_PATH_LITERAL(';');
-#else
-const base::FilePath::CharType kPathDelimiter = FILE_PATH_LITERAL(':');
-#endif
-
-}  // namespace
 
 // static
 int SessionPreferences::kLocatorKey = 0;
@@ -36,26 +22,21 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
 }
 
 // static
-void SessionPreferences::AppendExtraCommandLineSwitches(
-    content::BrowserContext* context,
-    base::CommandLine* command_line) {
-  SessionPreferences* self = FromBrowserContext(context);
-  if (!self)
-    return;
+std::vector<base::FilePath::StringType> SessionPreferences::GetValidPreloads(
+    content::BrowserContext* context) {
+  std::vector<base::FilePath::StringType> result;
 
-  base::FilePath::StringType preloads;
-  for (const auto& preload : self->preloads()) {
-    if (!base::FilePath(preload).IsAbsolute()) {
-      LOG(ERROR) << "preload script must have absolute path: " << preload;
-      continue;
+  if (auto* self = FromBrowserContext(context)) {
+    for (const auto& preload : self->preloads()) {
+      if (base::FilePath(preload).IsAbsolute()) {
+        result.emplace_back(preload);
+      } else {
+        LOG(ERROR) << "preload script must have absolute path: " << preload;
+      }
     }
-    if (preloads.empty())
-      preloads = preload;
-    else
-      preloads += kPathDelimiter + preload;
   }
-  if (!preloads.empty())
-    command_line->AppendSwitchNative(switches::kPreloadScripts, preloads);
+
+  return result;
 }
 
 }  // namespace electron

@@ -285,7 +285,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the preload script path of current WebContents.
-  v8::Local<v8::Value> GetPreloadPath(v8::Isolate* isolate) const;
+  std::vector<base::FilePath::StringType> GetPreloadPaths() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
