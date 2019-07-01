@@ -43,6 +43,11 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void SetChunkedUpload(bool is_chunked_upload);
   void SetLoadFlags(int flags);
   mate::Dictionary GetUploadProgress();
+  int StatusCode() const;
+  std::string StatusMessage() const;
+  net::HttpResponseHeaders* RawResponseHeaders() const;
+  uint32_t ResponseHttpVersionMajor() const;
+  uint32_t ResponseHttpVersionMinor() const;
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,
@@ -51,6 +56,8 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void OnRetry(base::OnceClosure start_retry) override;
 
  private:
+  void OnResponseStarted(const GURL& final_url,
+                         const network::ResourceResponseHead& response_head);
   void OnWrite(bool is_last,
                base::OnceCallback<void(v8::Local<v8::Value>)> callback,
                MojoResult result);
@@ -67,6 +74,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   std::unique_ptr<network::ResourceRequest> request_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
   // Current status.
   int request_state_ = 0;

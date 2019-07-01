@@ -10,6 +10,7 @@
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
+#include "shell/common/native_mate_converters/net_converter.h"
 
 #include "shell/common/node_includes.h"
 
@@ -126,6 +127,8 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
   if (!loader_) {
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
+    loader_->SetOnResponseStartedCallback(base::Bind(
+        &URLRequestNS::OnResponseStarted, weak_factory_.GetWeakPtr()));
 
     if (length > 0) {
       mojo::ScopedDataPipeProducerHandle producer;
@@ -195,6 +198,34 @@ mate::Dictionary URLRequestNS::GetUploadProgress() {
   return progress;
 }
 
+int URLRequestNS::StatusCode() const {
+  if (response_headers_)
+    return response_headers_->response_code();
+  return -1;
+}
+
+std::string URLRequestNS::StatusMessage() const {
+  if (response_headers_)
+    return response_headers_->GetStatusText();
+  return "";
+}
+
+net::HttpResponseHeaders* URLRequestNS::RawResponseHeaders() const {
+  return response_headers_.get();
+}
+
+uint32_t URLRequestNS::ResponseHttpVersionMajor() const {
+  if (response_headers_)
+    return response_headers_->GetHttpVersion().major_value();
+  return 0;
+}
+
+uint32_t URLRequestNS::ResponseHttpVersionMinor() const {
+  if (response_headers_)
+    return response_headers_->GetHttpVersion().minor_value();
+  return 0;
+}
+
 void URLRequestNS::OnDataReceived(base::StringPiece data,
                                   base::OnceClosure resume) {
   // In case we received an unexpected event from Chromium net, don't emit any
@@ -219,6 +250,18 @@ void URLRequestNS::OnComplete(bool success) {
     Emit("end");
   }
   Close();
+}
+
+void URLRequestNS::OnResponseStarted(
+    const GURL& final_url,
+    const network::ResourceResponseHead& response_head) {
+  // Don't emit any event after request cancel.
+  if (request_state_ & STATE_ERROR)
+    return;
+
+  response_headers_ = response_head.headers;
+  response_state_ &= STATE_STARTED;
+  Emit("response");
 }
 
 void URLRequestNS::OnWrite(
@@ -278,7 +321,12 @@ void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_setLoadFlags", &URLRequestNS::SetLoadFlags)
       .SetMethod("getUploadProgress", &URLRequestNS::GetUploadProgress)
       .SetProperty("notStarted", &URLRequestNS::NotStarted)
-      .SetProperty("finished", &URLRequestNS::Finished);
+      .SetProperty("finished", &URLRequestNS::Finished)
+      .SetProperty("statusCode", &URLRequestNS::StatusCode)
+      .SetProperty("statusMessage", &URLRequestNS::StatusMessage)
+      .SetProperty("rawResponseHeaders", &URLRequestNS::RawResponseHeaders)
+      .SetProperty("httpVersionMajor", &URLRequestNS::ResponseHttpVersionMajor)
+      .SetProperty("httpVersionMinor", &URLRequestNS::ResponseHttpVersionMinor);
 }
 
 }  // namespace api
