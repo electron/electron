@@ -164,7 +164,9 @@ describe('app module', () => {
       let output = ''
 
       appProcess = cp.spawn(electronPath, [appPath])
-      appProcess.stdout.on('data', data => { output += data })
+      if (appProcess && appProcess.stdout) {
+        appProcess.stdout.on('data', data => { output += data })
+      }
       const [code] = await emittedOnce(appProcess, 'close')
 
       if (process.platform !== 'win32') {
@@ -196,7 +198,9 @@ describe('app module', () => {
 
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
-      appProcess.stdout.on('data', data => appProcess!.kill())
+      if (appProcess && appProcess.stdout) {
+        appProcess.stdout.on('data', data => appProcess!.kill())
+      }
       const [code, signal] = await emittedOnce(appProcess, 'close')
 
       const message = `code:\n${code}\nsignal:\n${signal}`
