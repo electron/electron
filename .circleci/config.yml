@@ -490,6 +490,39 @@ step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
       fi
 
 # Lists of steps.
+steps-lint: &steps-lint
+  steps:
+    - *step-checkout-electron
+    - run:
+        name: Setup third_party Depot Tools
+        command: |
+          # "depot_tools" has to be checkout into "//third_party/depot_tools" so pylint.py can a "pylintrc" file.
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git src/third_party/depot_tools
+          echo 'export PATH="$PATH:'"$PWD"'/src/third_party/depot_tools"' >> $BASH_ENV
+    - run:
+        name: Download GN Binary
+        command: |
+          chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+          buildtools_revision="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep buildtools_revision -A1 | tr -d '\n' | cut -d\' -f4)"
+
+          git clone https://chromium.googlesource.com/chromium/buildtools "buildtools"
+          (cd "buildtools" && git checkout "$buildtools_revision")
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+
+          download_from_google_storage --bucket chromium-gn -s "buildtools/linux64/gn.sha1"
+    - run:
+        name: Run Lint
+        command: |
+          # gn.py tries to find a gclient root folder starting from the current dir.
+          # When it fails and returns "None" path, the whole script fails. Let's "fix" it.
+          touch .gclient
+          # Another option would be to checkout "buildtools" inside the Electron checkout,
+          # but then we would lint its contents (at least gn format), and it doesn't pass it.
+
+          cd src/electron
+          npm install
+          npm run lint
+
 steps-checkout: &steps-checkout
   steps:
     - *step-checkout-electron
@@ -776,6 +809,13 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 # List of all jobs.
 version: 2
 jobs:
+  # Layer 0: Lint. Standalone.
+  lint:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+    <<: *steps-lint
+
   # Layer 1: Checkout.
   linux-checkout:
     <<: *machine-linux-2xlarge
@@ -1300,6 +1340,10 @@ jobs:
 
 workflows:
   version: 2
+  lint:
+    jobs:
+      - lint
+
   build-linux:
     jobs:
       - linux-checkout
