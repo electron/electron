@@ -15,6 +15,7 @@ def main():
   for gn_file in sys.argv[1:]:
     subprocess.check_call(
       ['gn', 'format', gn_file],
+      shell=True,
       env=new_env
     )
 
