@@ -2332,7 +2332,6 @@ describe('BrowserWindow module', () => {
 
   describe('focus event', () => {
     it('should not emit if focusing on a main window with a modal open', (done) => {
-      const childWindowClosed = false
       const child = new BrowserWindow({
         parent: w,
         modal: true,
