@@ -87,11 +87,7 @@ build_script:
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/chromedriver.zip
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
-  - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
-        ninja -C out/Default third_party/breakpad:dump_syms
-      }
-  - if "%GN_CONFIG%"=="release" ( python electron\script\dump-symbols.py -d %cd%\out\Default\breakpad_symbols -v)
+  - if "%GN_CONFIG%"=="release" ( ninja -C out/Default electron:electron_symbols )
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         python electron\script\zip-symbols.py

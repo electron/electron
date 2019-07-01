@@ -10,6 +10,7 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
+import("build/extract_symbols.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
@@ -937,88 +938,73 @@ if (is_mac) {
     ]
   }
 
-  _framework_binary_path = "$root_out_dir/$electron_framework_name.framework/Versions/$electron_framework_version/$electron_framework_name"
-  assert(_framework_binary_path != "",
-         "Ignore configuration-dependent unused variable warning")
   if (enable_dsyms) {
-    # This list must be updated with the two targets' deps list below, and
-    # the list of _dsyms in :chrome_dsym_archive.
-    _electron_symbols_sources = [
-      _framework_binary_path,
-      "$root_out_dir/$electron_helper_name.app/Contents/MacOS/$electron_helper_name",
-      "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name",
-      "$root_out_dir/crashpad_handler",
-      "$root_out_dir/libswiftshader_libEGL.dylib",
-      "$root_out_dir/libswiftshader_libGLESv2.dylib",
-    ]
-
-    # It is possible to run dump_syms on unstripped products without dSYMs,
-    # but doing so isn't logical and won't happen in practice.
-    action_foreach("electron_dump_syms") {
-      script = "//build/redirect_stdout.py"
-
-      sources = _electron_symbols_sources
-
-      outputs = [
-        "$root_out_dir/{{source_file_part}}-$electron_version.breakpad",
+    extract_symbols("electron_framework_syms") {
+      binary = "$root_out_dir/$electron_framework_name.framework/Versions/$electron_framework_version/$electron_framework_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+      deps = [
+        ":electron_framework",
       ]
+    }
 
-      # Use an absolute path to dump_syms in case a user has it in their path.
-      args = rebase_path(outputs, root_out_dir) + [
-               rebase_path("$root_out_dir/dump_syms"),
-               "-g",
-               rebase_path(
-                   "$root_out_dir/{{source_file_part}}.dSYM/Contents/Resources/DWARF/{{source_file_part}}",
-                   root_out_dir),
-               "{{source}}",
-             ]
+    extract_symbols("electron_helper_syms") {
+      binary = "$root_out_dir/$electron_helper_name.app/Contents/MacOS/$electron_helper_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_helper_name.dSYM/Contents/Resources/DWARF/$electron_helper_name"
+      deps = [
+        ":electron_helper_app",
+      ]
+    }
 
+    extract_symbols("electron_app_syms") {
+      binary = "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_product_name.dSYM/Contents/Resources/DWARF/$electron_product_name"
       deps = [
         ":electron_app",
-        ":electron_framework",
-        ":electron_helper_app",
-        "//third_party/breakpad:dump_syms",
-        "//third_party/crashpad/crashpad/handler:crashpad_handler",
+      ]
+    }
+
+    extract_symbols("swiftshader_egl_syms") {
+      binary = "$root_out_dir/libswiftshader_libEGL.dylib"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/libswiftshader_libEGL.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libEGL.dylib"
+      deps = [
         "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+      ]
+    }
+
+    extract_symbols("swiftshader_gles_syms") {
+      binary = "$root_out_dir/libswiftshader_libGLESv2.dylib"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libGLESv2.dylib"
+      deps = [
         "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
       ]
     }
 
-    action("electron_dsym_archive") {
-      script = "//chrome/tools/build/mac/archive_symbols.py"
-
-      # These are the dSYMs that will be archived. The sources list must be
-      # the target outputs that correspond to the dSYMs (since a dSYM is a
-      # directory it cannot be listed as a source file). The targets that
-      # generate both the dSYM and binary image are listed in deps.
-      _dsyms = [
-        "$root_out_dir/$electron_framework_name.dSYM",
-        "$root_out_dir/$electron_helper_name.dSYM",
-        "$root_out_dir/$electron_product_name.dSYM",
-        "$root_out_dir/crashpad_handler.dSYM",
-        "$root_out_dir/libswiftshader_libEGL.dylib.dSYM",
-        "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM",
-      ]
-
-      sources = _electron_symbols_sources
-
-      _output = "$root_out_dir/$electron_product_name.dSYM.tar.bz2"
-
-      outputs = [
-        _output,
-      ]
-
-      args = [ rebase_path(_output, root_out_dir) ] +
-             rebase_path(_dsyms, root_out_dir)
-
+    extract_symbols("crashpad_handler_syms") {
+      binary = "$root_out_dir/crashpad_handler"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/crashpad_handler.dSYM/Contents/Resources/DWARF/crashpad_handler"
       deps = [
-        ":electron_app",
-        ":electron_framework",
-        ":electron_helper_app",
         "//third_party/crashpad/crashpad/handler:crashpad_handler",
-        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
-        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
       ]
+    }
+
+    group("electron_symbols") {
+      deps = [
+        ":crashpad_handler_syms",
+        ":electron_app_syms",
+        ":electron_framework_syms",
+        ":electron_helper_syms",
+        ":swiftshader_egl_syms",
+        ":swiftshader_gles_syms",
+      ]
+    }
+  } else {
+    group("electron_symbols") {
     }
   }
 } else {
@@ -1105,6 +1091,40 @@ if (is_mac) {
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
+    }
+  }
+
+  if (is_official_build) {
+    extract_symbols("electron_app_symbols") {
+      binary = "$root_out_dir/$electron_project_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        ":electron_app",
+      ]
+    }
+
+    extract_symbols("swiftshader_egl_symbols") {
+      binary = "$root_out_dir/swiftshader/libEGL.so"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+      ]
+    }
+
+    extract_symbols("swiftshader_gles_symbols") {
+      binary = "$root_out_dir/swiftshader/libGLESv2.so"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
+
+    group("electron_symbols") {
+      deps = [
+        ":electron_app_symbols",
+        ":swiftshader_egl_symbols",
+        ":swiftshader_gles_symbols",
+      ]
     }
   }
 }
