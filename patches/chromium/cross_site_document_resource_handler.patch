@@ -8,10 +8,10 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index c432d2da03d808e81def35d584e8e541f57d7e80..b9947b1c314587788f0d3f540e003e91822bca87 100644
+index b9bd89a9c59515ac42702f010a0d3e9802a242fa..7f1e4ec569860e9bd1c608fd33f4fd6486e7fbd2 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
-@@ -586,6 +586,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+@@ -572,6 +572,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
      return false;
    }
  
@@ -22,7 +22,7 @@ index c432d2da03d808e81def35d584e8e541f57d7e80..b9947b1c314587788f0d3f540e003e91
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 93fed6ca71ce64761b887712a9463404c7a7e3be..a1502497389b5e8940fe9d5edbab83e4142d75fd 100644
+index f847cd95b561b45e9ee67ab960d7eb6d0dd1c304..95712234dafc9d6d71c83c1f785cc41a0dc00278 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -71,6 +71,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
@@ -37,7 +37,7 @@ index 93fed6ca71ce64761b887712a9463404c7a7e3be..a1502497389b5e8940fe9d5edbab83e4
      const base::Location& from_here,
      const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 8a49d10c2edc523239cfa92fd1547187c91bec25..ed6c0b37ae67f2e266b6c495f25c5c0233de9b24 100644
+index 991afd44d9f4d9cf52b68909bbcd0f5cc9aedb37..0536e491fb2182db2a46c31cc7004cfb3b215c7c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -252,6 +252,9 @@ class CONTENT_EXPORT ContentBrowserClient {

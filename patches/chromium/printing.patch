@@ -249,7 +249,7 @@ index f3e23125001c0eebebdb2e211d069cd3feb523d8..33b112be55e14562bda78bd79f07a771
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 505d662ee16f34c5581dae5635242127f35a8ebb..7e2a5cbba66b7d59d60e5714284c822a9271292b 100644
+index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..6e3c3743e5da782e227e1ec3dba83ed7b401f3de 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -281,7 +281,7 @@ index 505d662ee16f34c5581dae5635242127f35a8ebb..7e2a5cbba66b7d59d60e5714284c822a
                                   base::Unretained(this)));
 +  #if 0
    is_printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
-   is_printing_enabled_.MoveToThread(
+   is_printing_enabled_.MoveToSequence(
        base::CreateSingleThreadTaskRunnerWithTraits({BrowserThread::IO}));
 +  #endif
  }

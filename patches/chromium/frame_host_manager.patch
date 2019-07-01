@@ -8,10 +8,10 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index cfcf10a6353e11eda0cde49eada5183921b3b926..1b2038ee1a82d699627c60bfb05bba7cf0a3fa43 100644
+index f8f9c56fef1dd0a630a61ebf606f138e7ed52f19..ce002d6a4d61d3256baccf6cf84abb0ed50fba2b 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
-@@ -79,6 +79,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
+@@ -83,6 +83,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
    return instance;
  }
  
@@ -26,7 +26,7 @@ index cfcf10a6353e11eda0cde49eada5183921b3b926..1b2038ee1a82d699627c60bfb05bba7c
                                              bool allow_default_instance,
                                              GURL* site_url,
 diff --git a/content/browser/browsing_instance.h b/content/browser/browsing_instance.h
-index 775b64a8d20f89845812852a2904a1e6875c2b4a..5235b57bbf44fc7b30ca6943c43a290f07f003bf 100644
+index acbf074f6e408cdc3817580b9601ee40c036c4dd..e56456c5b6024b92dbd025a8f25d4bde5f8afe27 100644
 --- a/content/browser/browsing_instance.h
 +++ b/content/browser/browsing_instance.h
 @@ -136,6 +136,11 @@ class CONTENT_EXPORT BrowsingInstance final
@@ -153,10 +153,10 @@ index 84484b0072c2122f2321e629b28f16383a466500..470439f07c5b8afd6d42efdfa27ff74c
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index f346b897349b791bff3062cadd7ade47cdef91d8..170b0fbaa3884570629f2c5c972ff39940df42ca 100644
+index e7fadf3ac7ab5489c89b9c8168cd14f5d203c0d0..dbfb1aac710f97b1574d537413ccc726219025cf 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -352,6 +352,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
+@@ -356,6 +356,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
    return browsing_instance_->HasSiteInstance(url);
  }
  
@@ -168,7 +168,7 @@ index f346b897349b791bff3062cadd7ade47cdef91d8..170b0fbaa3884570629f2c5c972ff399
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index b1f7dc24b370159a103f75d9df9e4f5ce1457a98..8b3da989cd4dc4a683aa875e4380e8c17c4c1d53 100644
+index 5f57cd47108b85c0e884c1855af2c74b7fd02b9b..6b755ec0f9f76fa91bec975fdcf7094b4d43cea6 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -83,6 +83,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
@@ -180,7 +180,7 @@ index b1f7dc24b370159a103f75d9df9e4f5ce1457a98..8b3da989cd4dc4a683aa875e4380e8c1
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index c5286d323e92c2d02c5090b7e7f7a0fe5a508c13..93fed6ca71ce64761b887712a9463404c7a7e3be 100644
+index dfd8bbaed5cfc48a116be63a067d00bb21960e85..f847cd95b561b45e9ee67ab960d7eb6d0dd1c304 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -205,7 +205,7 @@ index c5286d323e92c2d02c5090b7e7f7a0fe5a508c13..93fed6ca71ce64761b887712a9463404
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 87130fbbd73f8462d5b63e18864fb76b53e9e7eb..8a49d10c2edc523239cfa92fd1547187c91bec25 100644
+index 19edc738013c360d839575b62ff637e6c26c0f8a..991afd44d9f4d9cf52b68909bbcd0f5cc9aedb37 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,8 +211,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
