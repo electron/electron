@@ -8,7 +8,7 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index f8f9c56fef1dd0a630a61ebf606f138e7ed52f19..ce002d6a4d61d3256baccf6cf84abb0ed50fba2b 100644
+index 0d40acea7c2c69003c54cf3ae1e1d15adcb6deee..ba28c8f315b4b89a08659b45eaff485dcb65fc39 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
 @@ -83,6 +83,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
@@ -153,7 +153,7 @@ index 84484b0072c2122f2321e629b28f16383a466500..470439f07c5b8afd6d42efdfa27ff74c
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index e7fadf3ac7ab5489c89b9c8168cd14f5d203c0d0..dbfb1aac710f97b1574d537413ccc726219025cf 100644
+index c6bc3bf3ea5fd936c8d14f07efbf2453da881342..08d0fa5c6dfe3ff46f206f7983d47e9c445c63da 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -356,6 +356,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {

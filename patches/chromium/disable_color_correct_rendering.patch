@@ -19,12 +19,12 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 092fb1b7ea3626b7649472c35ec20bf1a6aaf4cd..fed8dd322faba387ebd0508228f847766a76011e 100644
+index e2db0f24f90c44c7bf796308c126276472308dd9..8e064f130458d1fc00e499182e0de10d6026a2ee 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -99,6 +99,8 @@ class CC_EXPORT LayerTreeSettings {
- 
-   bool enable_mask_tiling = true;
+@@ -97,6 +97,8 @@ class CC_EXPORT LayerTreeSettings {
+   bool use_rgba_4444 = false;
+   bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
 +  bool enable_color_correct_rendering = true;
 +
@@ -215,10 +215,10 @@ index 4165ba000223c6d13e112a6a9861f015bb9ebbbb..70a9d11bdd1f836215724af18df18876
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index c40ea999c954bbeec12902a46ccbcbf554d89135..71511765319644353f8eb56b85b97d218ad37621 100644
+index 26b1e9e2043cd5576e58ed44c5595c42a58f9f84..b9064efa92653be6e10b78f81b2e50c8f3742657 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -217,6 +217,7 @@
+@@ -216,6 +216,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -226,7 +226,7 @@ index c40ea999c954bbeec12902a46ccbcbf554d89135..71511765319644353f8eb56b85b97d21
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  
-@@ -2886,6 +2887,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2898,6 +2899,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
