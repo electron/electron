@@ -4,7 +4,7 @@
   window.addEventListener('unload', function (e) {
     require('fs').writeFileSync(__dirname + '/close', 'close');
   }, false);
-  window.close();
+  window.onload = () => window.close();
 </script>
 </body>
 </html>
