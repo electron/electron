@@ -1095,8 +1095,16 @@ if (is_mac) {
   }
 
   if (is_official_build) {
+    if (is_linux) {
+      _target_executable_suffix = ""
+      _target_shared_library_suffix = ".so"
+    } else if (is_win) {
+      _target_executable_suffix = ".exe"
+      _target_shared_library_suffix = ".dll"
+    }
+
     extract_symbols("electron_app_symbols") {
-      binary = "$root_out_dir/$electron_project_name"
+      binary = "$root_out_dir/$electron_project_name$_target_executable_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       deps = [
         ":electron_app",
@@ -1104,7 +1112,7 @@ if (is_mac) {
     }
 
     extract_symbols("swiftshader_egl_symbols") {
-      binary = "$root_out_dir/swiftshader/libEGL.so"
+      binary = "$root_out_dir/swiftshader/libEGL$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       deps = [
         "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
@@ -1112,7 +1120,8 @@ if (is_mac) {
     }
 
     extract_symbols("swiftshader_gles_symbols") {
-      binary = "$root_out_dir/swiftshader/libGLESv2.so"
+      binary =
+          "$root_out_dir/swiftshader/libGLESv2$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       deps = [
         "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
