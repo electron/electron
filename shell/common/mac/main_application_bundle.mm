@@ -33,6 +33,8 @@ base::FilePath MainApplicationBundlePath() {
   if (!HasMainProcessKey() &&
       (base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE) ||
        base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
+                      base::CompareCase::SENSITIVE) ||
+       base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
                       base::CompareCase::SENSITIVE))) {
     // The running executable is the helper. Go up five steps:
     // Contents/Frameworks/Helper.app/Contents/MacOS/Helper
