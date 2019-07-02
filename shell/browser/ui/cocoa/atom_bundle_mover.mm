@@ -55,13 +55,12 @@ bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
                                          mate::Arguments* args) {
   mate::Dictionary options;
   bool hasOptions = args->GetNext(&options);
-  base::OnceCallback<v8::MaybeLocal<v8::Value>(BundlerMoverConflictType)>
+  base::OnceCallback<v8::Local<v8::Value>(BundlerMoverConflictType)>
       conflict_cb;
 
   if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
-    v8::MaybeLocal<v8::Value> maybe = std::move(conflict_cb).Run(type);
-    v8::Local<v8::Value> value;
-    if (maybe.ToLocal(&value) && value->IsBoolean()) {
+    v8::Local<v8::Value> value = std::move(conflict_cb).Run(type);
+    if (value->IsBoolean()) {
       if (!value.As<v8::Boolean>()->Value())
         return false;
     } else {
