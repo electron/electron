@@ -78,6 +78,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 
   void OnResponseStarted(const GURL& final_url,
                          const network::ResourceResponseHead& response_head);
+  void OnRedirect(const net::RedirectInfo& redirect_info,
+                  const network::ResourceResponseHead& response_head,
+                  std::vector<std::string>* to_be_removed_headers);
   void OnWrite(MojoResult result);
 
   // Write the first data of |pending_writes_|.

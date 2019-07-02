@@ -16,6 +16,30 @@
 
 #include "shell/common/node_includes.h"
 
+namespace mate {
+
+template <>
+struct Converter<network::mojom::FetchRedirectMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::FetchRedirectMode* out) {
+    std::string mode;
+    if (!ConvertFromV8(isolate, val, &mode))
+      return false;
+    if (mode == "follow")
+      *out = network::mojom::FetchRedirectMode::kFollow;
+    else if (mode == "error")
+      *out = network::mojom::FetchRedirectMode::kError;
+    else if (mode == "manual")
+      *out = network::mojom::FetchRedirectMode::kManual;
+    else
+      return false;
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace electron {
 
 namespace api {
@@ -164,6 +188,7 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   if (args->GetNext(&dict)) {
     dict.Get("method", &request_->method);
     dict.Get("url", &request_->url);
+    dict.Get("redirect", &request_->fetch_redirect_mode);
   }
 
   std::string partition;
@@ -242,6 +267,8 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
                                                kTrafficAnnotation);
     loader_->SetOnResponseStartedCallback(base::Bind(
         &URLRequestNS::OnResponseStarted, weak_factory_.GetWeakPtr()));
+    loader_->SetOnRedirectCallback(
+        base::Bind(&URLRequestNS::OnRedirect, weak_factory_.GetWeakPtr()));
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
@@ -381,6 +408,20 @@ void URLRequestNS::OnResponseStarted(
   response_headers_ = response_head.headers;
   response_state_ |= STATE_STARTED;
   Emit("response");
+}
+
+void URLRequestNS::OnRedirect(
+    const net::RedirectInfo& redirect_info,
+    const network::ResourceResponseHead& response_head,
+    std::vector<std::string>* to_be_removed_headers) {
+  if (request_state_ & (STATE_CLOSED | STATE_CANCELED))
+    return;
+  if (!loader_)
+    return;
+
+  EmitRequestEvent(false, "redirect", redirect_info.status_code,
+                   redirect_info.new_method, redirect_info.new_url,
+                   response_head.headers.get());
 }
 
 void URLRequestNS::OnWrite(MojoResult result) {
