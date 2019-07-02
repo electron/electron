@@ -36,11 +36,7 @@ const deprecate: ElectronInternal.DeprecationUtil = {
 
   // remove a function with no replacement
   removeFunction: (fn, removedName) => {
-    // if the function has already been removed, warn about it
-    if (!fn) {
-      deprecate.log(`Unable to remove function '${removedName}' from an object that lacks it.`)
-      throw Error(`'${removedName} function' has been removed. See release notes for further information.`)
-    }
+    if (!fn) { throw Error(`'${removedName} function' is invalid or does not exist.`) }
 
     // wrap the deprecated function to warn user
     const warn = warnOnce(`${fn.name} function`)
