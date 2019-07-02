@@ -104,7 +104,13 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   bool is_chunked_upload_ = false;
   std::unique_ptr<UploadDataPipeGetter> upload_data_pipe_getter_;
   std::unique_ptr<UploadChunkedDataPipeGetter> upload_chunked_data_pipe_getter_;
+
+  // Passed from DataPipeGetter for streaming data.
   std::unique_ptr<mojo::StringDataPipeProducer> producer_;
+  network::mojom::DataPipeGetter::ReadCallback finish_callback_;
+
+  // Uploaded data size.
+  size_t upload_size_ = 0;
 
   // Current status.
   int request_state_ = 0;

@@ -86,14 +86,9 @@ class UploadDataPipeGetter : public network::mojom::DataPipeGetter {
   // network::mojom::DataPipeGetter:
   void Read(mojo::ScopedDataPipeProducerHandle pipe,
             ReadCallback callback) override {
-    // Pass the size of all pending writes.
-    size_t size = 0;
-    for (const auto& write : request_->pending_writes_)
-      size += write.data.size();
-    std::move(callback).Run(net::OK, size);
-
     request_->producer_ =
         std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
+    request_->finish_callback_ = std::move(callback);
     request_->DoWrite();
   }
 
@@ -125,11 +120,7 @@ class UploadChunkedDataPipeGetter
  private:
   // network::mojom::ChunkedDataPipeGetter:
   void GetSize(GetSizeCallback callback) override {
-    // Pass the size of all pending writes.
-    size_t size = 0;
-    for (const auto& write : request_->pending_writes_)
-      size += write.data.size();
-    std::move(callback).Run(net::OK, size);
+    request_->finish_callback_ = std::move(callback);
   }
 
   void StartReading(mojo::ScopedDataPipeProducerHandle pipe) override {
@@ -240,10 +231,15 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
   }
 
   if (length > 0) {
+    // User calls write(data) or end(data).
     pending_writes_.emplace_back(is_last,
                                  std::string(node::Buffer::Data(data), length),
                                  std::move(callback));
+  } else if (upload_data_pipe_getter_ || upload_chunked_data_pipe_getter_) {
+    // User calls end() to finish the uploading.
+    pending_writes_.emplace_back(is_last, "", std::move(callback));
   } else {
+    // User calls end() directly without any upload data.
     InvokeCallback(isolate(), std::move(callback));
   }
   return true;
@@ -360,9 +356,10 @@ void URLRequestNS::OnWrite(MojoResult result) {
   else
     InvokeCallback(isolate(), std::move(front.callback), "Write failed");
 
+  upload_size_ += front.data.size();
   if (front.is_last) {
-    DCHECK(pending_writes_.empty());
     EmitRequestEvent(true, "finish");
+    std::move(finish_callback_).Run(net::OK, upload_size_);
   }
 
   // Continue the pending writes.
