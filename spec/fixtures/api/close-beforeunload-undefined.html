@@ -6,7 +6,7 @@
       require('electron').remote.getCurrentWindow().emit('onbeforeunload');
     }, 0);
   }
-  window.close();
+  window.onload = () => window.close();
 </script>
 </body>
 </html>
