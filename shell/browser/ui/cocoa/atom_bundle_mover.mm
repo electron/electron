@@ -53,7 +53,10 @@ bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
     if (value->IsBoolean()) {
       if (!value.As<v8::Boolean>()->Value())
         return false;
-    } else {
+    } else if (!value->IsUndefined()) {
+      // we only want to throw an error if a user has returned a non-boolean
+      // value; this allows for client-side error handling should something in
+      // the handler throw
       args->ThrowError("Invalid conflict handler return type.");
     }
   }
