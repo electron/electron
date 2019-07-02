@@ -13,11 +13,14 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "services/network/public/mojom/data_pipe_getter.mojom.h"
 #include "shell/browser/api/event_emitter.h"
 
 namespace electron {
 
 namespace api {
+
+class UploadDataPipeGetter;
 
 class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
                      public network::SimpleURLLoaderStreamConsumer {
@@ -59,6 +62,8 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void OnRetry(base::OnceClosure start_retry) override;
 
  private:
+  friend class UploadDataPipeGetter;
+
   struct WriteData {
     WriteData(bool is_last,
               std::string data,
@@ -87,11 +92,14 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   template <typename... Args>
   void EmitResponseEvent(Args... args);
 
-  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
   std::unique_ptr<network::ResourceRequest> request_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
+
+  // Upload data pipe.
+  std::unique_ptr<UploadDataPipeGetter> upload_data_pipe_getter_;
+  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
 
   // Current status.
   int request_state_ = 0;

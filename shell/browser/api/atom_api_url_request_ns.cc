@@ -67,6 +67,50 @@ void InvokeCallback(v8::Isolate* isolate,
 
 }  // namespace
 
+// Streaming data to NetworkService.
+class UploadDataPipeGetter : public network::mojom::DataPipeGetter {
+ public:
+  explicit UploadDataPipeGetter(URLRequestNS* request) : request_(request) {}
+
+  ~UploadDataPipeGetter() override = default;
+
+  // Returns a DataPipeGetterPtr for a new upload attempt, closing all
+  // previously opened pipes.
+  network::mojom::DataPipeGetterPtr GetPtrForNewUpload() {
+    // If this is a retry, need to close all bindings, since only one consumer
+    // can read from the data pipe at a time.
+    binding_set_.CloseAllBindings();
+
+    network::mojom::DataPipeGetterPtr data_pipe_getter;
+    binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
+    return data_pipe_getter;
+  }
+
+ private:
+  // network::mojom::DataPipeGetter:
+  void Read(mojo::ScopedDataPipeProducerHandle pipe,
+            ReadCallback callback) override {
+    // Pass the size of all pending writes.
+    size_t size = 0;
+    for (const auto& write : request_->pending_writes_)
+      size += write.data.size();
+    std::move(callback).Run(net::OK, size);
+
+    request_->producer_ =
+        std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
+    request_->DoWrite();
+  }
+
+  void Clone(network::mojom::DataPipeGetterRequest request) override {
+    binding_set_.AddBinding(this, std::move(request));
+  }
+
+  URLRequestNS* request_;
+  mojo::BindingSet<network::mojom::DataPipeGetter> binding_set_;
+
+  DISALLOW_COPY_AND_ASSIGN(UploadDataPipeGetter);
+};
+
 URLRequestNS::WriteData::WriteData(
     bool is_last,
     std::string data,
@@ -136,6 +180,7 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
     Pin();
 
     // Create the loader.
+    network::ResourceRequest* request_ref = request_.get();
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
     loader_->SetOnResponseStartedCallback(base::Bind(
@@ -143,17 +188,10 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
-      mojo::ScopedDataPipeProducerHandle producer;
-      mojo::ScopedDataPipeConsumerHandle consumer;
-      MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
-      if (rv != MOJO_RESULT_OK) {
-        InvokeCallback(isolate(), std::move(callback), "CreateDataPipe failed");
-        return false;
-      }
-      producer_ =
-          std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
-      loader_->AttachStringForUpload(
-          std::string(node::Buffer::Data(data), length), "text/html");
+      upload_data_pipe_getter_ = std::make_unique<UploadDataPipeGetter>(this);
+      request_ref->request_body = new network::ResourceRequestBody();
+      request_ref->request_body->AppendDataPipe(
+          upload_data_pipe_getter_->GetPtrForNewUpload());
     }
 
     // Start downloading.
@@ -161,12 +199,9 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
   }
 
   if (length > 0) {
-    bool no_pending_data = pending_writes_.empty();
     pending_writes_.emplace_back(is_last,
                                  std::string(node::Buffer::Data(data), length),
                                  std::move(callback));
-    if (no_pending_data)
-      DoWrite();
   } else {
     InvokeCallback(isolate(), std::move(callback));
   }
