@@ -69,71 +69,85 @@ void InvokeCallback(v8::Isolate* isolate,
 
 }  // namespace
 
-// Streaming multipart data to NetworkService.
-class UploadDataPipeGetter : public network::mojom::DataPipeGetter {
+// Common class for streaming data.
+class UploadDataPipeGetter {
  public:
   explicit UploadDataPipeGetter(URLRequestNS* request) : request_(request) {}
+  virtual ~UploadDataPipeGetter() = default;
 
-  ~UploadDataPipeGetter() override = default;
+  virtual void AttachToRequestBody(network::ResourceRequestBody* body) = 0;
 
-  network::mojom::DataPipeGetterPtr GetPtr() {
+ protected:
+  void SetCallback(network::mojom::DataPipeGetter::ReadCallback callback) {
+    request_->finish_callback_ = std::move(callback);
+  }
+
+  void SetPipe(mojo::ScopedDataPipeProducerHandle pipe) {
+    request_->producer_ =
+        std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
+    request_->DoWrite();
+  }
+
+ private:
+  URLRequestNS* request_;
+
+  DISALLOW_COPY_AND_ASSIGN(UploadDataPipeGetter);
+};
+
+// Streaming multipart data to NetworkService.
+class MultipartDataPipeGetter : public UploadDataPipeGetter,
+                                public network::mojom::DataPipeGetter {
+ public:
+  explicit MultipartDataPipeGetter(URLRequestNS* request)
+      : UploadDataPipeGetter(request) {}
+  ~MultipartDataPipeGetter() override = default;
+
+  void AttachToRequestBody(network::ResourceRequestBody* body) override {
     network::mojom::DataPipeGetterPtr data_pipe_getter;
     binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
-    return data_pipe_getter;
+    body->AppendDataPipe(std::move(data_pipe_getter));
   }
 
  private:
   // network::mojom::DataPipeGetter:
   void Read(mojo::ScopedDataPipeProducerHandle pipe,
             ReadCallback callback) override {
-    request_->producer_ =
-        std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
-    request_->finish_callback_ = std::move(callback);
-    request_->DoWrite();
+    SetCallback(std::move(callback));
+    SetPipe(std::move(pipe));
   }
 
   void Clone(network::mojom::DataPipeGetterRequest request) override {
     binding_set_.AddBinding(this, std::move(request));
   }
 
-  URLRequestNS* request_;
   mojo::BindingSet<network::mojom::DataPipeGetter> binding_set_;
-
-  DISALLOW_COPY_AND_ASSIGN(UploadDataPipeGetter);
 };
 
 // Streaming chunked data to NetworkService.
-class UploadChunkedDataPipeGetter
-    : public network::mojom::ChunkedDataPipeGetter {
+class ChunkedDataPipeGetter : public UploadDataPipeGetter,
+                              public network::mojom::ChunkedDataPipeGetter {
  public:
-  explicit UploadChunkedDataPipeGetter(URLRequestNS* request)
-      : request_(request) {}
+  explicit ChunkedDataPipeGetter(URLRequestNS* request)
+      : UploadDataPipeGetter(request) {}
+  ~ChunkedDataPipeGetter() override = default;
 
-  ~UploadChunkedDataPipeGetter() override = default;
-
-  network::mojom::ChunkedDataPipeGetterPtr GetPtr() {
+  void AttachToRequestBody(network::ResourceRequestBody* body) override {
     network::mojom::ChunkedDataPipeGetterPtr data_pipe_getter;
     binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
-    return data_pipe_getter;
+    body->SetToChunkedDataPipe(std::move(data_pipe_getter));
   }
 
  private:
   // network::mojom::ChunkedDataPipeGetter:
   void GetSize(GetSizeCallback callback) override {
-    request_->finish_callback_ = std::move(callback);
+    SetCallback(std::move(callback));
   }
 
   void StartReading(mojo::ScopedDataPipeProducerHandle pipe) override {
-    request_->producer_ =
-        std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
-    request_->DoWrite();
+    SetPipe(std::move(pipe));
   }
 
-  URLRequestNS* request_;
-
   mojo::BindingSet<network::mojom::ChunkedDataPipeGetter> binding_set_;
-
-  DISALLOW_COPY_AND_ASSIGN(UploadChunkedDataPipeGetter);
 };
 
 URLRequestNS::WriteData::WriteData(
@@ -214,16 +228,11 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
     // Create upload data pipe if we have data to write.
     if (length > 0) {
       request_ref->request_body = new network::ResourceRequestBody();
-      if (is_chunked_upload_) {
-        upload_chunked_data_pipe_getter_ =
-            std::make_unique<UploadChunkedDataPipeGetter>(this);
-        request_ref->request_body->SetToChunkedDataPipe(
-            upload_chunked_data_pipe_getter_->GetPtr());
-      } else {
-        upload_data_pipe_getter_ = std::make_unique<UploadDataPipeGetter>(this);
-        request_ref->request_body->AppendDataPipe(
-            upload_data_pipe_getter_->GetPtr());
-      }
+      if (is_chunked_upload_)
+        data_pipe_getter_ = std::make_unique<ChunkedDataPipeGetter>(this);
+      else
+        data_pipe_getter_ = std::make_unique<MultipartDataPipeGetter>(this);
+      data_pipe_getter_->AttachToRequestBody(request_ref->request_body.get());
     }
 
     // Start downloading.
@@ -235,7 +244,7 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
     pending_writes_.emplace_back(is_last,
                                  std::string(node::Buffer::Data(data), length),
                                  std::move(callback));
-  } else if (upload_data_pipe_getter_ || upload_chunked_data_pipe_getter_) {
+  } else if (data_pipe_getter_) {
     // User calls end() to finish the uploading.
     pending_writes_.emplace_back(is_last, "", std::move(callback));
   } else {
