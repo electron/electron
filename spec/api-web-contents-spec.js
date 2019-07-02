@@ -589,7 +589,7 @@ describe('webContents module', () => {
                             const {ipcRenderer, remote} = require('electron')
                             ipcRenderer.send('set-zoom', window.location.hostname)
                             ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
-                              const zoomLevel = remote.getCurrentWebContents().zoomLevel
+                              const { zoomLevel } = remote.getCurrentWebContents()
                               ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
                             })
                           </script>`
