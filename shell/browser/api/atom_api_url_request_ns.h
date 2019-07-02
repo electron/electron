@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_API_ATOM_API_URL_REQUEST_NS_H_
 
 #include <list>
+#include <memory>
 #include <string>
 
 #include "mojo/public/cpp/system/string_data_pipe_producer.h"
@@ -21,6 +22,7 @@ namespace electron {
 namespace api {
 
 class UploadDataPipeGetter;
+class UploadChunkedDataPipeGetter;
 
 class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
                      public network::SimpleURLLoaderStreamConsumer {
@@ -63,6 +65,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 
  private:
   friend class UploadDataPipeGetter;
+  friend class UploadChunkedDataPipeGetter;
 
   struct WriteData {
     WriteData(bool is_last,
@@ -98,7 +101,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
   // Upload data pipe.
+  bool is_chunked_upload_ = false;
   std::unique_ptr<UploadDataPipeGetter> upload_data_pipe_getter_;
+  std::unique_ptr<UploadChunkedDataPipeGetter> upload_chunked_data_pipe_getter_;
   std::unique_ptr<mojo::StringDataPipeProducer> producer_;
 
   // Current status.

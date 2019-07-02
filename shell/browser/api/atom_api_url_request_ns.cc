@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/atom_api_url_request_ns.h"
 
+#include <utility>
+
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -67,20 +69,14 @@ void InvokeCallback(v8::Isolate* isolate,
 
 }  // namespace
 
-// Streaming data to NetworkService.
+// Streaming multipart data to NetworkService.
 class UploadDataPipeGetter : public network::mojom::DataPipeGetter {
  public:
   explicit UploadDataPipeGetter(URLRequestNS* request) : request_(request) {}
 
   ~UploadDataPipeGetter() override = default;
 
-  // Returns a DataPipeGetterPtr for a new upload attempt, closing all
-  // previously opened pipes.
-  network::mojom::DataPipeGetterPtr GetPtrForNewUpload() {
-    // If this is a retry, need to close all bindings, since only one consumer
-    // can read from the data pipe at a time.
-    binding_set_.CloseAllBindings();
-
+  network::mojom::DataPipeGetterPtr GetPtr() {
     network::mojom::DataPipeGetterPtr data_pipe_getter;
     binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
     return data_pipe_getter;
@@ -109,6 +105,44 @@ class UploadDataPipeGetter : public network::mojom::DataPipeGetter {
   mojo::BindingSet<network::mojom::DataPipeGetter> binding_set_;
 
   DISALLOW_COPY_AND_ASSIGN(UploadDataPipeGetter);
+};
+
+// Streaming chunked data to NetworkService.
+class UploadChunkedDataPipeGetter
+    : public network::mojom::ChunkedDataPipeGetter {
+ public:
+  explicit UploadChunkedDataPipeGetter(URLRequestNS* request)
+      : request_(request) {}
+
+  ~UploadChunkedDataPipeGetter() override = default;
+
+  network::mojom::ChunkedDataPipeGetterPtr GetPtr() {
+    network::mojom::ChunkedDataPipeGetterPtr data_pipe_getter;
+    binding_set_.AddBinding(this, mojo::MakeRequest(&data_pipe_getter));
+    return data_pipe_getter;
+  }
+
+ private:
+  // network::mojom::ChunkedDataPipeGetter:
+  void GetSize(GetSizeCallback callback) override {
+    // Pass the size of all pending writes.
+    size_t size = 0;
+    for (const auto& write : request_->pending_writes_)
+      size += write.data.size();
+    std::move(callback).Run(net::OK, size);
+  }
+
+  void StartReading(mojo::ScopedDataPipeProducerHandle pipe) override {
+    request_->producer_ =
+        std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
+    request_->DoWrite();
+  }
+
+  URLRequestNS* request_;
+
+  mojo::BindingSet<network::mojom::ChunkedDataPipeGetter> binding_set_;
+
+  DISALLOW_COPY_AND_ASSIGN(UploadChunkedDataPipeGetter);
 };
 
 URLRequestNS::WriteData::WriteData(
@@ -188,10 +222,17 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
-      upload_data_pipe_getter_ = std::make_unique<UploadDataPipeGetter>(this);
       request_ref->request_body = new network::ResourceRequestBody();
-      request_ref->request_body->AppendDataPipe(
-          upload_data_pipe_getter_->GetPtrForNewUpload());
+      if (is_chunked_upload_) {
+        upload_chunked_data_pipe_getter_ =
+            std::make_unique<UploadChunkedDataPipeGetter>(this);
+        request_ref->request_body->SetToChunkedDataPipe(
+            upload_chunked_data_pipe_getter_->GetPtr());
+      } else {
+        upload_data_pipe_getter_ = std::make_unique<UploadDataPipeGetter>(this);
+        request_ref->request_body->AppendDataPipe(
+            upload_data_pipe_getter_->GetPtr());
+      }
     }
 
     // Start downloading.
@@ -232,7 +273,8 @@ void URLRequestNS::RemoveExtraHeader(const std::string& name) {
 }
 
 void URLRequestNS::SetChunkedUpload(bool is_chunked_upload) {
-  // TODO(zcbenz): Implement this.
+  if (request_)
+    is_chunked_upload_ = is_chunked_upload;
 }
 
 void URLRequestNS::SetLoadFlags(int flags) {
