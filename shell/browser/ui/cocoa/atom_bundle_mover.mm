@@ -33,16 +33,6 @@ struct Converter<electron::BundlerMoverConflictType> {
   }
 };
 
-template <>
-struct Converter<v8::MaybeLocal<v8::Value>> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     v8::MaybeLocal<v8::Value>* out) {
-    *out = v8::MaybeLocal<v8::Value>(val);
-    return true;
-  }
-};
-
 }  // namespace mate
 
 namespace electron {

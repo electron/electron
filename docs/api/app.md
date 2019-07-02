@@ -1257,7 +1257,7 @@ app.moveToApplicationsFolder({
         message: 'An app of this name already exists'
       }) === 1
     }
-  })
+  }
 })
 ```
 
