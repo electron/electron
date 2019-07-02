@@ -1612,7 +1612,7 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
+* `type` String | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
   `selection`, `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`. See
   the [macOS documentation][vibrancy-docs] for more details.
 

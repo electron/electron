@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
-import { app, BrowserWindow, ipcMain, OnBeforeSendHeadersListenerDetails, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, OnBeforeSendHeadersListenerDetails, screen, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
@@ -1067,4 +1067,132 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+
+    ifit(process.platform === 'darwin')('on macOS', () => {
+      it('allows changing cursor auto-hiding', () => {
+        expect(() => {
+          w.setAutoHideCursor(false)
+          w.setAutoHideCursor(true)
+        }).to.not.throw()
+      })
+    })
+
+    ifit(process.platform !== 'darwin')('on non-macOS platforms', () => {
+      it('is not available', () => {
+        expect(w.setAutoHideCursor).to.be.undefined('setAutoHideCursor function')
+      })
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.setWindowButtonVisibility()', () => {
+    afterEach(closeAllWindows)
+
+    it('does not throw', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.setWindowButtonVisibility(true)
+        w.setWindowButtonVisibility(false)
+      }).to.not.throw()
+    })
+
+    it('throws with custom title bar buttons', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          titleBarStyle: 'customButtonsOnHover',
+          frame: false
+        })
+        w.setWindowButtonVisibility(true)
+      }).to.throw('Not supported for this window')
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
+    afterEach(closeAllWindows)
+
+    it('allows setting, changing, and removing the vibrancy', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.setVibrancy('light')
+        w.setVibrancy('dark')
+        w.setVibrancy(null)
+        w.setVibrancy('ultra-dark')
+        w.setVibrancy('' as any)
+      }).to.not.throw()
+    })
+  })
+
+  ifdescribe(process.platform === 'win32')('BrowserWindow.setAppDetails(options)', () => {
+    afterEach(closeAllWindows)
+
+    it('supports setting the app details', () => {
+      const w = new BrowserWindow({show: false})
+      const iconPath = path.join(fixtures, 'assets', 'icon.ico')
+
+      expect(() => {
+        w.setAppDetails({ appId: 'my.app.id' })
+        w.setAppDetails({ appIconPath: iconPath, appIconIndex: 0 })
+        w.setAppDetails({ appIconPath: iconPath })
+        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2', relaunchDisplayName: 'My app name' })
+        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2' })
+        w.setAppDetails({ relaunchDisplayName: 'My app name' })
+        w.setAppDetails({
+          appId: 'my.app.id',
+          appIconPath: iconPath,
+          appIconIndex: 0,
+          relaunchCommand: 'my-app.exe arg1 arg2',
+          relaunchDisplayName: 'My app name'
+        })
+        w.setAppDetails({})
+      }).to.not.throw()
+
+      expect(() => {
+        (w.setAppDetails as any)()
+      }).to.throw('Insufficient number of arguments.')
+    })
+  })
+
+  describe('BrowserWindow.fromId(id)', () => {
+    afterEach(closeAllWindows)
+    it('returns the window with id', () => {
+      const w = new BrowserWindow({show: false})
+      expect(BrowserWindow.fromId(w.id).id).to.equal(w.id)
+    })
+  })
+
+  describe('BrowserWindow.fromWebContents(webContents)', () => {
+    afterEach(closeAllWindows)
+
+    it('returns the window with the webContents', () => {
+      const w = new BrowserWindow({show: false})
+      const found = BrowserWindow.fromWebContents(w.webContents)
+      expect(found.id).to.equal(w.id)
+    })
+
+    it('returns undefined for webContents without a BrowserWindow', () => {
+      const contents = (webContents as any).create({})
+      try {
+        expect(BrowserWindow.fromWebContents(contents)).to.be.undefined('BrowserWindow.fromWebContents(contents)')
+      } finally {
+        contents.destroy()
+      }
+    })
+  })
+
+  describe('BrowserWindow.openDevTools()', () => {
+    afterEach(closeAllWindows)
+    it('does not crash for frameless window', () => {
+      const w = new BrowserWindow({ show: false, frame: false })
+      w.webContents.openDevTools()
+    })
+  })
 })
