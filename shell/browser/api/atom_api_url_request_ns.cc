@@ -20,6 +20,7 @@ namespace api {
 
 namespace {
 
+// Network state for request and response.
 enum State {
   STATE_STARTED = 1 << 0,
   STATE_FINISHED = 1 << 1,
@@ -29,6 +30,7 @@ enum State {
   STATE_ERROR = STATE_CANCELED | STATE_FAILED | STATE_CLOSED,
 };
 
+// Annotation tag passed to NetworkService.
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
     net::DefineNetworkTrafficAnnotation("electron_net_module", R"(
         semantics {
@@ -46,13 +48,13 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
           setting: "This feature cannot be disabled."
         })");
 
+// Call the optional callback with error.
 void InvokeCallback(v8::Isolate* isolate,
                     base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
   if (!callback.is_null())
     std::move(callback).Run(v8::Null(isolate));
 }
 
-// Call the optional callback with error.
 void InvokeCallback(v8::Isolate* isolate,
                     base::OnceCallback<void(v8::Local<v8::Value>)> callback,
                     base::StringPiece error) {
@@ -65,10 +67,16 @@ void InvokeCallback(v8::Isolate* isolate,
 
 }  // namespace
 
+URLRequestNS::WriteData::WriteData(
+    bool is_last,
+    std::string data,
+    base::OnceCallback<void(v8::Local<v8::Value>)> callback)
+    : is_last(is_last), data(std::move(data)), callback(std::move(callback)) {}
+
+URLRequestNS::WriteData::~WriteData() = default;
+
 URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
-  request_ref_ = request_.get();  // ownership of |request| will be transferred.
-
   mate::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("method", &request_->method);
@@ -115,21 +123,25 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
                          v8::Local<v8::Value> extra) {
   if (request_state_ & (STATE_FINISHED | STATE_ERROR))
     return false;
-
-  // Pin on first write.
-  request_state_ = STATE_STARTED;
-  Pin();
+  if (is_last)
+    request_state_ |= STATE_FINISHED;
 
   size_t length = node::Buffer::Length(data);
   base::OnceCallback<void(v8::Local<v8::Value>)> callback;
   mate::ConvertFromV8(isolate(), extra, &callback);
 
   if (!loader_) {
+    // Pin on first write.
+    request_state_ = STATE_STARTED;
+    Pin();
+
+    // Create the loader.
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
     loader_->SetOnResponseStartedCallback(base::Bind(
         &URLRequestNS::OnResponseStarted, weak_factory_.GetWeakPtr()));
 
+    // Create upload data pipe if we have data to write.
     if (length > 0) {
       mojo::ScopedDataPipeProducerHandle producer;
       mojo::ScopedDataPipeConsumerHandle consumer;
@@ -140,21 +152,21 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
       }
       producer_ =
           std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+      loader_->AttachStringForUpload(
+          std::string(node::Buffer::Data(data), length), "text/html");
     }
-
-    // TODO(zcbenz): Attach producer_ to request here.
 
     // Start downloading.
     loader_->DownloadAsStream(url_loader_factory_.get(), this);
   }
 
   if (length > 0) {
-    producer_->Write(
-        node::Buffer::Data(data),
-        mojo::StringDataPipeProducer::AsyncWritingMode::
-            STRING_STAYS_VALID_UNTIL_COMPLETION,
-        base::BindOnce(&URLRequestNS::OnWrite, weak_factory_.GetWeakPtr(),
-                       is_last, std::move(callback)));
+    bool no_pending_data = pending_writes_.empty();
+    pending_writes_.emplace_back(is_last,
+                                 std::string(node::Buffer::Data(data), length),
+                                 std::move(callback));
+    if (no_pending_data)
+      DoWrite();
   } else {
     InvokeCallback(isolate(), std::move(callback));
   }
@@ -264,19 +276,32 @@ void URLRequestNS::OnResponseStarted(
   Emit("response");
 }
 
-void URLRequestNS::OnWrite(
-    bool is_last,
-    base::OnceCallback<void(v8::Local<v8::Value>)> callback,
-    MojoResult result) {
+void URLRequestNS::OnWrite(MojoResult result) {
+  auto& front = pending_writes_.front();
   if (result == MOJO_RESULT_OK)
-    InvokeCallback(isolate(), std::move(callback));
+    InvokeCallback(isolate(), std::move(front.callback));
   else
-    InvokeCallback(isolate(), std::move(callback), "Write failed");
+    InvokeCallback(isolate(), std::move(front.callback), "Write failed");
 
-  if (is_last) {
-    request_state_ |= STATE_FINISHED;
+  if (front.is_last) {
+    DCHECK(pending_writes_.empty());
     EmitRequestEvent(true, "finish");
   }
+
+  // Continue the pending writes.
+  pending_writes_.pop_front();
+  if (!pending_writes_.empty())
+    DoWrite();
+}
+
+void URLRequestNS::DoWrite() {
+  DCHECK(producer_);
+  DCHECK(!pending_writes_.empty());
+  producer_->Write(
+      pending_writes_.front().data,
+      mojo::StringDataPipeProducer::AsyncWritingMode::
+          STRING_STAYS_VALID_UNTIL_COMPLETION,
+      base::BindOnce(&URLRequestNS::OnWrite, weak_factory_.GetWeakPtr()));
 }
 
 void URLRequestNS::Pin() {

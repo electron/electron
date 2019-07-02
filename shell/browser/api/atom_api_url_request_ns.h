@@ -5,6 +5,9 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_URL_REQUEST_NS_H_
 #define SHELL_BROWSER_API_ATOM_API_URL_REQUEST_NS_H_
 
+#include <list>
+#include <string>
+
 #include "mojo/public/cpp/system/string_data_pipe_producer.h"
 #include "native_mate/dictionary.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -56,15 +59,29 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void OnRetry(base::OnceClosure start_retry) override;
 
  private:
+  struct WriteData {
+    WriteData(bool is_last,
+              std::string data,
+              base::OnceCallback<void(v8::Local<v8::Value>)> callback);
+    ~WriteData();
+
+    bool is_last = false;
+    std::string data;
+    base::OnceCallback<void(v8::Local<v8::Value>)> callback;
+  };
+
   void OnResponseStarted(const GURL& final_url,
                          const network::ResourceResponseHead& response_head);
-  void OnWrite(bool is_last,
-               base::OnceCallback<void(v8::Local<v8::Value>)> callback,
-               MojoResult result);
+  void OnWrite(MojoResult result);
 
+  // Write the first data of |pending_writes_|.
+  void DoWrite();
+
+  // Manage lifetime of wrapper.
   void Pin();
   void Unpin();
 
+  // Emit events.
   template <typename... Args>
   void EmitRequestEvent(Args... args);
   template <typename... Args>
@@ -80,8 +97,8 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   int request_state_ = 0;
   int response_state_ = 0;
 
-  // Weak ref to request, which is managed by loader_.
-  network::ResourceRequest* request_ref_;
+  // Pending writes that not yet sent to NetworkService.
+  std::list<WriteData> pending_writes_;
 
   // Used by pin/unpin to manage lifetime.
   v8::Global<v8::Object> wrapper_;
