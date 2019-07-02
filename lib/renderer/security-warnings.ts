@@ -59,6 +59,19 @@ const getIsRemoteProtocol = function () {
 }
 
 /**
+ * Checks if the current window is from localhost.
+ *
+ * @returns {boolean} - Is current window from localhost?
+ */
+const isLocalhost = function () {
+  if (!window || !window.location) {
+    return false
+  }
+
+  return window.location.hostname === 'localhost'
+}
+
+/**
  * Tries to determine whether a CSP without `unsafe-eval` is set.
  *
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
@@ -92,6 +105,7 @@ const warnAboutInsecureResources = function () {
   const resources = window.performance
     .getEntriesByType('resource')
     .filter(({ name }) => /^(http|ftp):/gi.test(name || ''))
+    .filter(({ name }) => new URL(name).hostname !== 'localhost')
     .map(({ name }) => `- ${name}`)
     .join('\n')
 
@@ -115,7 +129,7 @@ const warnAboutInsecureResources = function () {
  * Logs a warning message about Node integration.
  */
 const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
-  if (!nodeIntegration) return
+  if (!nodeIntegration || isLocalhost()) return
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has Node.js integration enabled
@@ -254,7 +268,7 @@ const warnAboutAllowedPopups = function () {
 // Logs a warning message about the remote module
 
 const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || !webPreferences.enableRemoteModule) return
+  if (!webPreferences || !webPreferences.enableRemoteModule || isLocalhost()) return
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has "enableRemoteModule" enabled
