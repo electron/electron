@@ -194,11 +194,31 @@ bool URLRequestNS::Finished() const {
 }
 
 void URLRequestNS::Cancel() {
-  // TODO(zcbenz): Implement this.
+  // Cancel only once.
+  if (request_state_ & (STATE_CANCELED | STATE_CLOSED))
+    return;
+
+  // Mark as canceled.
+  request_state_ |= STATE_CANCELED;
+  EmitRequestEvent(true, "abort");
+
+  if ((response_state_ & STATE_STARTED) && !(response_state_ & STATE_FINISHED))
+    EmitResponseEvent(true, "aborted");
+
+  Close();
 }
 
 void URLRequestNS::Close() {
-  // TODO(zcbenz): Implement this.
+  if (!(request_state_ & STATE_CLOSED)) {
+    request_state_ |= STATE_CLOSED;
+    if (response_state_ & STATE_STARTED) {
+      // Emit a close event if we really have a response object.
+      EmitResponseEvent(true, "close");
+    }
+    EmitRequestEvent(true, "close");
+  }
+  Unpin();
+  loader_.reset();
 }
 
 bool URLRequestNS::Write(v8::Local<v8::Value> data,
@@ -206,8 +226,6 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
                          v8::Local<v8::Value> extra) {
   if (request_state_ & (STATE_FINISHED | STATE_ERROR))
     return false;
-  if (is_last)
-    request_state_ |= STATE_FINISHED;
 
   size_t length = node::Buffer::Length(data);
   base::OnceCallback<void(v8::Local<v8::Value>)> callback;
@@ -250,6 +268,13 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
   } else {
     // User calls end() directly without any upload data.
     InvokeCallback(isolate(), std::move(callback));
+  }
+
+  if (is_last) {
+    // Our net module tests assume "finish" is emitted immediately when write()
+    // returns, instead of when data writing finishes,
+    request_state_ |= STATE_FINISHED;
+    EmitRequestEvent(true, "finish");
   }
   return true;
 }
@@ -354,7 +379,7 @@ void URLRequestNS::OnResponseStarted(
     return;
 
   response_headers_ = response_head.headers;
-  response_state_ &= STATE_STARTED;
+  response_state_ |= STATE_STARTED;
   Emit("response");
 }
 
@@ -367,7 +392,6 @@ void URLRequestNS::OnWrite(MojoResult result) {
 
   upload_size_ += front.data.size();
   if (front.is_last) {
-    EmitRequestEvent(true, "finish");
     std::move(finish_callback_).Run(net::OK, upload_size_);
   }
 
