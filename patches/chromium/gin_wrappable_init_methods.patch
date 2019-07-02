@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micha Hanselmann <deermichel@github.com>
+Date: Tue, 2 Jul 2019 13:28:52 -0700
+Subject: gin wrappable init methods
+
+
+diff --git a/gin/wrappable.cc b/gin/wrappable.cc
+index 258dc63502775c9d813758df815dd591bcae7198..e53e32bd18098a1e44f932278f19852c03a55f9a 100644
+--- a/gin/wrappable.cc
++++ b/gin/wrappable.cc
+@@ -5,8 +5,8 @@
+ #include "gin/wrappable.h"
+ 
+ #include "base/logging.h"
++#include "gin/dictionary.h"
+ #include "gin/object_template_builder.h"
+-#include "gin/per_isolate_data.h"
+ 
+ namespace gin {
+ 
+@@ -25,6 +25,22 @@ const char* WrappableBase::GetTypeName() {
+   return nullptr;
+ }
+ 
++void WrappableBase::InitWith(v8::Isolate* isolate,
++                             v8::Local<v8::Object> wrapper) {
++  CHECK(wrapper_.IsEmpty());
++  // isolate_ = isolate; // TODO(deermichel): needed?
++  wrapper->SetAlignedPointerInInternalField(0, this);
++  wrapper_.Reset(isolate, wrapper);
++  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
++
++  // Call object._init if we have one.
++  v8::Local<v8::Function> init;
++  if (Dictionary(isolate, wrapper).Get("_init", &init))
++    init->Call(isolate->GetCurrentContext(), wrapper, 0, nullptr).IsEmpty();
++
++  AfterInit(isolate);
++}
++
+ void WrappableBase::FirstWeakCallback(
+     const v8::WeakCallbackInfo<WrappableBase>& data) {
+   WrappableBase* wrappable = data.GetParameter();
+diff --git a/gin/wrappable.h b/gin/wrappable.h
+index d558ffb6d681f0321cbe4ab4da0d3cb2f5948c45..116953675e2cabba51279c3e5d3c8db853001135 100644
+--- a/gin/wrappable.h
++++ b/gin/wrappable.h
+@@ -10,6 +10,7 @@
+ #include "base/macros.h"
+ #include "gin/converter.h"
+ #include "gin/gin_export.h"
++#include "gin/per_isolate_data.h"
+ #include "gin/public/wrapper_info.h"
+ 
+ namespace gin {
+@@ -73,6 +74,13 @@ class GIN_EXPORT WrappableBase {
+   // Returns a readable type name that will be used in surfacing errors. The
+   // default implementation returns nullptr, which results in a generic error.
+   virtual const char* GetTypeName();
++  
++  // Called after the "_init" method gets called in JavaScript.
++  virtual void AfterInit(v8::Isolate* isolate) {}
++
++  // Bind the C++ class to the JS wrapper.
++  // This method should only be called by classes using Constructor.
++  virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+ 
+   v8::MaybeLocal<v8::Object> GetWrapperImpl(v8::Isolate* isolate,
+                                             WrapperInfo* wrapper_info);
+@@ -98,14 +106,51 @@ class Wrappable : public WrappableBase {
+     return GetWrapperImpl(isolate, &T::kWrapperInfo);
+   }
+ 
++  static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
++    // Fill the object template.
++    auto* data = gin::PerIsolateData::From(isolate);
++    auto templ = data->GetFunctionTemplate(&kWrapperInfo);
++    if (templ.IsEmpty()) {
++      templ = v8::FunctionTemplate::New(isolate);
++      templ->InstanceTemplate()->SetInternalFieldCount(1);
++      T::BuildPrototype(isolate, templ);
++      data->SetFunctionTemplate(&kWrapperInfo, templ);
++    }
++    return templ;
++  }
++
++  static gin::WrapperInfo kWrapperInfo;
++
+  protected:
+   Wrappable() {}
+   ~Wrappable() override {}
+ 
++  // Init the class with T::BuildPrototype.
++  void Init(v8::Isolate* isolate) {
++    v8::Local<v8::FunctionTemplate> templ = GetConstructor(isolate);
++
++    // |wrapper| may be empty in some extreme cases, e.g., when
++    // Object.prototype.constructor is overwritten.
++    v8::Local<v8::Object> wrapper;
++    if (!templ->InstanceTemplate()
++             ->NewInstance(isolate->GetCurrentContext())
++             .ToLocal(&wrapper)) {
++      // The current wrappable object will be no longer managed by V8. Delete
++      // this now.
++      delete this;
++      return;
++    }
++    InitWith(isolate, wrapper);
++  }
++
+  private:
+   DISALLOW_COPY_AND_ASSIGN(Wrappable);
+ };
+ 
++// static
++template <typename T>
++gin::WrapperInfo Wrappable<T>::kWrapperInfo = {gin::kEmbedderNativeGin};
++
+ template <typename T>
+ struct ToV8ReturnsMaybe<
+     T*,

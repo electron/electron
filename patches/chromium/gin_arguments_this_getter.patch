@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micha Hanselmann <deermichel@github.com>
+Date: Tue, 2 Jul 2019 13:36:10 -0700
+Subject: gin arguments this getter
+
+
+diff --git a/gin/arguments.h b/gin/arguments.h
+index eaded13e29919793494dfe2f7f85fad7dcb125cf..b29532f18cbc16fe2bf5a8ab55a31230aabae670 100644
+--- a/gin/arguments.h
++++ b/gin/arguments.h
+@@ -64,6 +64,10 @@ class GIN_EXPORT Arguments {
+     return true;
+   }
+ 
++  v8::Local<v8::Object> GetThis() {
++    return is_for_property_ ? info_for_property_->This() : info_for_function_->This();
++  }
++
+   bool Skip() {
+     if (is_for_property_)
+       return false;

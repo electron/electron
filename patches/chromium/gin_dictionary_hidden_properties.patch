@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micha Hanselmann <deermichel@github.com>
+Date: Tue, 2 Jul 2019 12:30:22 -0700
+Subject: gin dictionary hidden properties
+
+
+diff --git a/gin/dictionary.h b/gin/dictionary.h
+index 2645d328b4c1e2eb6a5b4d68b289a640fe262113..98a2e50fb9f97b483b5fa4d7d21926f5b9da1572 100644
+--- a/gin/dictionary.h
++++ b/gin/dictionary.h
+@@ -41,6 +41,19 @@ class GIN_EXPORT Dictionary {
+     return ConvertFromV8(isolate_, val, out);
+   }
+ 
++  template <typename T>
++  bool GetHidden(const base::StringPiece& key, T* out) const {
++    v8::Local<v8::Context> context = isolate_->GetCurrentContext();
++    v8::Local<v8::Private> privateKey =
++        v8::Private::ForApi(isolate_, StringToV8(isolate_, key));
++    v8::Local<v8::Value> value;
++    v8::Maybe<bool> result = object_->HasPrivate(context, privateKey);
++    if (result.IsJust() && result.FromJust() &&
++        object_->GetPrivate(context, privateKey).ToLocal(&value))
++      return ConvertFromV8(isolate_, value, out);
++    return false;
++  }
++
+   template <typename T>
+   bool Set(const std::string& key, const T& val) {
+     v8::Local<v8::Value> v8_value;
+@@ -52,6 +65,18 @@ class GIN_EXPORT Dictionary {
+     return !result.IsNothing() && result.FromJust();
+   }
+ 
++  template <typename T>
++  bool SetHidden(const base::StringPiece& key, T val) {
++    v8::Local<v8::Value> v8_value;
++    if (!TryConvertToV8(isolate_, val, &v8_value))
++      return false;
++    v8::Local<v8::Context> context = isolate_->GetCurrentContext();
++    v8::Local<v8::Private> privateKey =
++        v8::Private::ForApi(isolate_, StringToV8(isolate_, key));
++    v8::Maybe<bool> result = object_->SetPrivate(context, privateKey, v8_value);
++    return !result.IsNothing() && result.FromJust();
++  }
++
+   v8::Isolate* isolate() const { return isolate_; }
+ 
+  private:
