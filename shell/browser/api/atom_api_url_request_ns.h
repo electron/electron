@@ -8,6 +8,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "mojo/public/cpp/system/string_data_pipe_producer.h"
 #include "native_mate/dictionary.h"
@@ -41,9 +42,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void Cancel();
   void Close();
 
-  bool Write(v8::Local<v8::Value> data,
-             bool is_last,
-             v8::Local<v8::Value> extra);
+  bool Write(v8::Local<v8::Value> data, bool is_last);
   void FollowRedirect();
   bool SetExtraHeader(const std::string& name, const std::string& value);
   void RemoveExtraHeader(const std::string& name);
@@ -65,17 +64,6 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
  private:
   friend class UploadDataPipeGetter;
 
-  struct WriteData {
-    WriteData(bool is_last,
-              std::string data,
-              base::OnceCallback<void(v8::Local<v8::Value>)> callback);
-    ~WriteData();
-
-    bool is_last = false;
-    std::string data;
-    base::OnceCallback<void(v8::Local<v8::Value>)> callback;
-  };
-
   void OnResponseStarted(const GURL& final_url,
                          const network::ResourceResponseHead& response_head);
   void OnRedirect(const net::RedirectInfo& redirect_info,
@@ -85,6 +73,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 
   // Write the first data of |pending_writes_|.
   void DoWrite();
+
+  // Start streaming.
+  void StartWriting();
 
   // Manage lifetime of wrapper.
   void Pin();
@@ -106,18 +97,18 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   std::unique_ptr<UploadDataPipeGetter> data_pipe_getter_;
 
   // Passed from DataPipeGetter for streaming data.
+  network::mojom::DataPipeGetter::ReadCallback size_callback_;
   std::unique_ptr<mojo::StringDataPipeProducer> producer_;
-  network::mojom::DataPipeGetter::ReadCallback finish_callback_;
 
-  // Uploaded data size.
-  size_t upload_size_ = 0;
+  // Whether request.end() has been called.
+  bool last_chunk_written_ = false;
 
   // Current status.
   int request_state_ = 0;
   int response_state_ = 0;
 
   // Pending writes that not yet sent to NetworkService.
-  std::list<WriteData> pending_writes_;
+  std::list<std::string> pending_writes_;
 
   // Used by pin/unpin to manage lifetime.
   v8::Global<v8::Object> wrapper_;

@@ -74,23 +74,6 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
           setting: "This feature cannot be disabled."
         })");
 
-// Call the optional callback with error.
-void InvokeCallback(v8::Isolate* isolate,
-                    base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
-  if (!callback.is_null())
-    std::move(callback).Run(v8::Null(isolate));
-}
-
-void InvokeCallback(v8::Isolate* isolate,
-                    base::OnceCallback<void(v8::Local<v8::Value>)> callback,
-                    base::StringPiece error) {
-  if (!callback.is_null()) {
-    v8::Local<v8::String> msg = mate::StringToV8(isolate, error);
-    v8::Local<v8::Value> error = v8::Exception::Error(msg);
-    std::move(callback).Run(error);
-  }
-}
-
 }  // namespace
 
 // Common class for streaming data.
@@ -103,13 +86,13 @@ class UploadDataPipeGetter {
 
  protected:
   void SetCallback(network::mojom::DataPipeGetter::ReadCallback callback) {
-    request_->finish_callback_ = std::move(callback);
+    request_->size_callback_ = std::move(callback);
   }
 
   void SetPipe(mojo::ScopedDataPipeProducerHandle pipe) {
     request_->producer_ =
         std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
-    request_->DoWrite();
+    request_->StartWriting();
   }
 
  private:
@@ -173,14 +156,6 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
 
   mojo::BindingSet<network::mojom::ChunkedDataPipeGetter> binding_set_;
 };
-
-URLRequestNS::WriteData::WriteData(
-    bool is_last,
-    std::string data,
-    base::OnceCallback<void(v8::Local<v8::Value>)> callback)
-    : is_last(is_last), data(std::move(data)), callback(std::move(callback)) {}
-
-URLRequestNS::WriteData::~WriteData() = default;
 
 URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
@@ -246,15 +221,11 @@ void URLRequestNS::Close() {
   loader_.reset();
 }
 
-bool URLRequestNS::Write(v8::Local<v8::Value> data,
-                         bool is_last,
-                         v8::Local<v8::Value> extra) {
+bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
   if (request_state_ & (STATE_FINISHED | STATE_ERROR))
     return false;
 
   size_t length = node::Buffer::Length(data);
-  base::OnceCallback<void(v8::Local<v8::Value>)> callback;
-  mate::ConvertFromV8(isolate(), extra, &callback);
 
   if (!loader_) {
     // Pin on first write.
@@ -284,22 +255,22 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data,
     loader_->DownloadAsStream(url_loader_factory_.get(), this);
   }
 
-  if (length > 0) {
-    // User calls write(data) or end(data).
-    pending_writes_.emplace_back(is_last,
-                                 std::string(node::Buffer::Data(data), length),
-                                 std::move(callback));
-  } else if (data_pipe_getter_) {
-    // User calls end() to finish the uploading.
-    pending_writes_.emplace_back(is_last, "", std::move(callback));
-  } else {
-    // User calls end() directly without any upload data.
-    InvokeCallback(isolate(), std::move(callback));
-  }
+  if (length > 0)
+    pending_writes_.emplace_back(node::Buffer::Data(data), length);
 
   if (is_last) {
-    // Our net module tests assume "finish" is emitted immediately when write()
-    // returns, instead of when data writing finishes,
+    // The ElementsUploadDataStream requires the knowledge of content length
+    // before doing upload, while Node's stream does not give us any size
+    // information. So the only option left for us is to keep all the write
+    // data in memory and flush them after the write is done.
+    //
+    // While this looks frustrating, it is actually the behavior of the non-
+    // NetworkService implementation, and we are not breaking anything.
+    if (!pending_writes_.empty()) {
+      last_chunk_written_ = true;
+      StartWriting();
+    }
+
     request_state_ |= STATE_FINISHED;
     EmitRequestEvent(true, "finish");
   }
@@ -425,15 +396,9 @@ void URLRequestNS::OnRedirect(
 }
 
 void URLRequestNS::OnWrite(MojoResult result) {
-  auto& front = pending_writes_.front();
-  if (result == MOJO_RESULT_OK)
-    InvokeCallback(isolate(), std::move(front.callback));
-  else
-    InvokeCallback(isolate(), std::move(front.callback), "Write failed");
-
-  upload_size_ += front.data.size();
-  if (front.is_last) {
-    std::move(finish_callback_).Run(net::OK, upload_size_);
+  if (result != MOJO_RESULT_OK) {
+    // TODO(zcbenz): Emit error.
+    return;
   }
 
   // Continue the pending writes.
@@ -446,10 +411,21 @@ void URLRequestNS::DoWrite() {
   DCHECK(producer_);
   DCHECK(!pending_writes_.empty());
   producer_->Write(
-      pending_writes_.front().data,
+      pending_writes_.front(),
       mojo::StringDataPipeProducer::AsyncWritingMode::
           STRING_STAYS_VALID_UNTIL_COMPLETION,
       base::BindOnce(&URLRequestNS::OnWrite, weak_factory_.GetWeakPtr()));
+}
+
+void URLRequestNS::StartWriting() {
+  if (!last_chunk_written_ || size_callback_.is_null())
+    return;
+
+  size_t size = 0;
+  for (const auto& data : pending_writes_)
+    size += data.size();
+  std::move(size_callback_).Run(net::OK, size);
+  DoWrite();
 }
 
 void URLRequestNS::Pin() {
