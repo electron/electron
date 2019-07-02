@@ -149,7 +149,7 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)isDarkMode {
-  if (@available(macOS 10.14, *)) {
+  if (@available(macOS 10.15, *)) {
     return [[NSApplication sharedApplication].effectiveAppearance.name
         isEqualToString:NSAppearanceNameDarkAqua];
   }

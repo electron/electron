@@ -557,7 +557,7 @@ void SystemPreferences::RemoveUserDefault(const std::string& name) {
 }
 
 bool SystemPreferences::IsDarkMode() {
-  if (@available(macOS 10.14, *)) {
+  if (@available(macOS 10.15, *)) {
     return [[NSApplication sharedApplication].effectiveAppearance.name
         isEqualToString:NSAppearanceNameDarkAqua];
   }
