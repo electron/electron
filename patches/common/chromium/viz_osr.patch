@@ -111,7 +111,7 @@ index f17983a5cc70f8ab1e5c531de8e26fdec04a079b..16aefe38f0c674d97a89d3e511dc104a
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 8fe397588eb47224d48a8642b814583d11cc9c09..a7072c8e16434d3b15db1599f43d8fab5a97bdf3 100644
+index 1f8132354d2536c6371afeb9086626f5059b49bf..bbb0f95623958052cafb92f2534284af21a217e1 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -18,6 +18,7 @@
@@ -122,7 +122,7 @@ index 8fe397588eb47224d48a8642b814583d11cc9c09..a7072c8e16434d3b15db1599f43d8fab
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -243,6 +244,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -244,6 +245,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -481,7 +481,7 @@ index 4e3f0255d5fe4991004a50768932c36c42d999ff..bf352091cef00482e3cec74cd523e469
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
 diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index deb327b7705462d2cc07edb9d37528035377af8b..bc6958aa7e4dc14d3e0cf040299642825194e2fc 100644
+index cd8dd80230d199eb05c70710aa681c491ead1646..7b61f33156a4e182ee6ddffc267be798af335989 100644
 --- a/services/viz/privileged/interfaces/compositing/display_private.mojom
 +++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
 @@ -77,12 +77,14 @@ interface DisplayPrivate {

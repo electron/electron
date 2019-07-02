@@ -5,7 +5,7 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f88cff5ab6d117c24cd827bdf30f8dff10b09ade..8ab7f889b7bed52c03d9061c1f061472eea1d599 100644
+index 69c5bb6eaf68bfb81f86a3598091203cc98ea45f..893b8c059c986b0ec5b8602358a5eb0e8828333d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2070,6 +2070,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
