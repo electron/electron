@@ -152,7 +152,7 @@ simple template API:
 ```javascript
 const { app, Menu } = require('electron')
 
-const isMac = process.platform === 'darwin';
+const isMac = process.platform === 'darwin'
 
 const template = [
   // { role: 'appMenu' }
