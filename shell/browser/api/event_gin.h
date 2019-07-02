@@ -25,11 +25,8 @@ class Event : public Wrappable<Event>, public content::WebContentsObserver {
       electron::mojom::ElectronBrowser::MessageSyncCallback;
   static Handle<Event> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-
-  static gin::WrapperInfo kWrapperInfo;
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Pass the sender and message to be replied.
   void SetSenderAndMessage(content::RenderFrameHost* sender,

@@ -7,7 +7,6 @@
 
 #include "gin/arguments.h"
 #include "gin/handle.h"
-#include "gin/object_template_builder.h"
 #include "shell/browser/api/trackable_object_gin.h"
 #include "shell/browser/net/atom_network_delegate.h"
 
@@ -22,11 +21,8 @@ class WebRequest : public gin::TrackableObject<WebRequest> {
   static gin::Handle<WebRequest> Create(v8::Isolate* isolate,
                                         AtomBrowserContext* browser_context);
 
-  // gin::Wrappable
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-
-  static gin::WrapperInfo kWrapperInfo;
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   WebRequest(v8::Isolate* isolate, AtomBrowserContext* browser_context);

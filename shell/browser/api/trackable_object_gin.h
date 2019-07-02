@@ -113,17 +113,8 @@ class TrackableObject : public TrackableObjectBase,
 
   ~TrackableObject() override { RemoveFromWeakMap(); }
 
-  // TODO(deermichel): fix this
-  // void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override
-  // {
-  //   WrappableBase::InitWith(isolate, wrapper);
-  //   if (!weak_map_) {
-  //     weak_map_ = new electron::KeyWeakMap<int32_t>;
-  //   }
-  //   weak_map_->Set(isolate, weak_map_id_, wrapper);
-  // }
-  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
-    // WrappableBase::InitWith(isolate, wrapper);
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override {
+    WrappableBase::InitWith(isolate, wrapper);
     if (!weak_map_) {
       weak_map_ = new electron::KeyWeakMap<int32_t>;
     }

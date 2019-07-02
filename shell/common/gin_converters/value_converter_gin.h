@@ -4,8 +4,8 @@
 
 // TODO(deermichel): remove _gin suffix after removing mate
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_VALUE_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_VALUE_CONVERTER_H_
+#ifndef SHELL_COMMON_GIN_CONVERTERS_VALUE_CONVERTER_GIN_H_
+#define SHELL_COMMON_GIN_CONVERTERS_VALUE_CONVERTER_GIN_H_
 
 #include "gin/converter.h"
 
@@ -46,4 +46,4 @@ struct Converter<base::ListValue> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_VALUE_CONVERTER_H_
+#endif  // SHELL_COMMON_GIN_CONVERTERS_VALUE_CONVERTER_GIN_H_

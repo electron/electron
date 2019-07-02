@@ -4,8 +4,8 @@
 
 // TODO(deermichel): remove _gin suffix after removing mate
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_V8_VALUE_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_V8_VALUE_CONVERTER_H_
+#ifndef SHELL_COMMON_GIN_CONVERTERS_V8_VALUE_CONVERTER_GIN_H_
+#define SHELL_COMMON_GIN_CONVERTERS_V8_VALUE_CONVERTER_GIN_H_
 
 #include <memory>
 
@@ -76,4 +76,4 @@ class V8ValueConverter {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_V8_VALUE_CONVERTER_H_
+#endif  // SHELL_COMMON_GIN_CONVERTERS_V8_VALUE_CONVERTER_GIN_H_

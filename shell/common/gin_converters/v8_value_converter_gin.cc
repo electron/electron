@@ -227,8 +227,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     v8::Isolate* isolate,
     const base::DictionaryValue* val) const {
   gin::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
-  // result.SetHidden("simple", true); // TODO(deermichel): find solution
-  result.Set("simple", true);
+  result.SetHidden("simple", true);
 
   for (base::DictionaryValue::Iterator iter(*val); !iter.IsAtEnd();
        iter.Advance()) {
@@ -270,9 +269,8 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
 
   // Get the Buffer class stored as a hidden value in the global object. We'll
   // use it return a browserified Buffer.
-  // if (!global.GetHidden("Buffer", &buffer_value) ||
-  //     !buffer_value->IsFunction()) { // TODO(deermichel): find solution
-  if (!global.Get("Buffer", &buffer_value) || !buffer_value->IsFunction()) {
+  if (!global.GetHidden("Buffer", &buffer_value) ||
+      !buffer_value->IsFunction()) {
     return v8::Uint8Array::New(array_buffer, 0, length);
   }
 

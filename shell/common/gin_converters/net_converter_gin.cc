@@ -24,11 +24,11 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 #include "services/network/public/cpp/resource_request.h"
-#include "shell/common/gin_converters/array_converter_gin.h"
 #include "shell/common/gin_converters/gurl_converter_gin.h"
-// TODO(deermichel): needed?
-// #include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/gin_converters/std_converters_gin.h"
 #include "shell/common/gin_converters/value_converter_gin.h"
+// TODO(deermichel): still needed?
+// #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/node_includes.h"
 #include "storage/browser/blob/upload_blob_element_reader.h"
 

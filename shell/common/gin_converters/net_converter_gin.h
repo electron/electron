@@ -4,8 +4,8 @@
 
 // TODO(deermichel): remove _gin suffix after removing mate
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
+#ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_GIN_H_
+#define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_GIN_H_
 
 #include "base/memory/ref_counted.h"
 #include "gin/converter.h"
@@ -79,4 +79,4 @@ void GetUploadData(base::ListValue* upload_data_list,
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
+#endif  // SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_GIN_H_

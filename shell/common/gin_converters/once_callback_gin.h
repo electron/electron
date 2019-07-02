@@ -4,8 +4,8 @@
 
 // TODO(deermichel): remove _gin suffix after removing mate
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_ONCE_CALLBACK_H_
-#define SHELL_COMMON_GIN_CONVERTERS_ONCE_CALLBACK_H_
+#ifndef SHELL_COMMON_GIN_CONVERTERS_ONCE_CALLBACK_GIN_H_
+#define SHELL_COMMON_GIN_CONVERTERS_ONCE_CALLBACK_GIN_H_
 
 #include <utility>
 
@@ -86,4 +86,4 @@ struct Converter<base::OnceCallback<Sig>> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_ONCE_CALLBACK_H_
+#endif  // SHELL_COMMON_GIN_CONVERTERS_ONCE_CALLBACK_GIN_H_

@@ -42,8 +42,6 @@ namespace electron {
 
 namespace api {
 
-gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
-
 namespace {
 
 template <typename Method, typename Event, typename Listener>
@@ -65,7 +63,7 @@ void CallNetworkDelegateMethod(
 WebRequest::WebRequest(v8::Isolate* isolate,
                        AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
-  // Init(isolate); // TODO(deermichel): fix this
+  Init(isolate);
 }
 
 WebRequest::~WebRequest() {}
@@ -117,11 +115,10 @@ gin::Handle<WebRequest> WebRequest::Create(
 }
 
 // static
-// TODO(deermichel): name??
-// prototype->SetClassName(mate::StringToV8(isolate, "WebRequest"));
-gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
+void WebRequest::BuildPrototype(v8::Isolate* isolate,
+                                v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(gin::StringToV8(isolate, "WebRequest"));
+  gin::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("onBeforeRequest", &WebRequest::SetResponseListener<
                                         AtomNetworkDelegate::kOnBeforeRequest>)
       .SetMethod("onBeforeSendHeaders",

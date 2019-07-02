@@ -517,7 +517,6 @@ filenames = {
     "shell/common/crash_reporter/linux/crash_dump_handler.h",
     "shell/common/crash_reporter/win/crash_service_main.cc",
     "shell/common/crash_reporter/win/crash_service_main.h",
-    "shell/common/gin_converters/array_converter_gin.h",
     "shell/common/gin_converters/callback_gin.cc",
     "shell/common/gin_converters/callback_gin.h",
     "shell/common/gin_converters/gurl_converter_gin.h",

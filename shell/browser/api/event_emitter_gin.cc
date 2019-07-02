@@ -23,9 +23,7 @@ namespace {
 v8::Persistent<v8::ObjectTemplate> event_template;
 
 void PreventDefault(gin::Arguments* args) {
-  // TODO(deermichel): find solution
-  // gin::Dictionary self(args->isolate(), args->GetThis());
-  gin::Dictionary self(args->isolate());
+  gin::Dictionary self(args->isolate(), args->GetThis());
   self.Set("defaultPrevented", true);
 }
 
@@ -34,9 +32,7 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
   if (event_template.IsEmpty()) {
     event_template.Reset(
         isolate,
-        // TODO(deermichel): find solution
-        // ObjectTemplateBuilder(isolate, v8::ObjectTemplate::New(isolate))
-        ObjectTemplateBuilder(isolate)
+        ObjectTemplateBuilder(isolate, v8::ObjectTemplate::New(isolate))
             .SetMethod("preventDefault", &PreventDefault)
             .Build());
   }
@@ -88,7 +84,7 @@ v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
        ui::EF_MIDDLE_MOUSE_BUTTON | ui::EF_BACK_MOUSE_BUTTON |
        ui::EF_FORWARD_MOUSE_BUTTON);
   const int is_mouse_click = static_cast<bool>(flags & mouse_button_flags);
-  // TODO(deermichel): check!!
+  // TODO(deermichel): does this work? correct?
   v8::Local<v8::Object> event = CreateEventObject(isolate);
   gin::Dictionary obj = gin::Dictionary(isolate, event);
   obj.Set("shiftKey", static_cast<bool>(flags & ui::EF_SHIFT_DOWN));

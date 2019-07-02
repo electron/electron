@@ -11,6 +11,24 @@
 
 namespace gin {
 
+// v8::Array
+template <>
+struct Converter<v8::Local<v8::Array>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   v8::Local<v8::Array> val) {
+    return val;
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     v8::Local<v8::Array>* out) {
+    if (!val->IsArray())
+      return false;
+    *out = v8::Local<v8::Array>::Cast(val);
+    return true;
+  }
+};
+
+// std::set
 template <typename T>
 struct Converter<std::set<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -48,6 +66,7 @@ struct Converter<std::set<T>> {
   }
 };
 
+// T&&
 template <typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(

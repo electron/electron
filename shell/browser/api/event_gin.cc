@@ -11,16 +11,14 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/object_template_builder.h"
+#include "shell/common/gin_converters/value_converter_gin.h"
 // TODO(deermichel): needed?
 // #include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/gin_converters/value_converter_gin.h"
 
 namespace gin {
 
-gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
-
 Event::Event(v8::Isolate* isolate) {
-  // Init(isolate); // TODO(deermichel): find solution
+  Init(isolate);
 }
 
 Event::~Event() {}
@@ -56,11 +54,11 @@ void Event::FrameDeleted(content::RenderFrameHost* rfh) {
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
-  // TODO(deermichel): find solution
-  // GetWrapper()
-  //     ->Set(isolate->GetCurrentContext(),
-  //           StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
-  //     .Check();
+  GetWrapper(isolate)
+      .ToLocalChecked()  // TODO(deermichel): correct fix?
+      ->Set(isolate->GetCurrentContext(),
+            StringToV8(isolate, "defaultPrevented"), v8::True(isolate))
+      .Check();
 }
 
 bool Event::SendReply(const base::Value& result) {
@@ -78,11 +76,10 @@ Handle<Event> Event::Create(v8::Isolate* isolate) {
 }
 
 // static
-// TODO(deermichel): ??
-// prototype->SetClassName(mate::StringToV8(isolate, "Event"));
-gin::ObjectTemplateBuilder Event::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<Event>::GetObjectTemplateBuilder(isolate)
+void Event::BuildPrototype(v8::Isolate* isolate,
+                           v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(gin::StringToV8(isolate, "Event"));
+  gin::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("preventDefault", &Event::PreventDefault)
       .SetMethod("sendReply", &Event::SendReply);
 }
