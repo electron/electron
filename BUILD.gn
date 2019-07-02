@@ -1099,8 +1099,8 @@ if (is_mac) {
       _target_executable_suffix = ""
       _target_shared_library_suffix = ".so"
     } else if (is_win) {
-      _target_executable_suffix = ".exe.pdb"
-      _target_shared_library_suffix = ".dll.pdb"
+      _target_executable_suffix = ".exe"
+      _target_shared_library_suffix = ".dll"
     }
 
     extract_symbols("electron_app_symbols") {

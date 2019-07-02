@@ -90,7 +90,7 @@ build_script:
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         # Needed for msdia140.dll on 64-bit windows
-        $env:Path += ";$pwd\src\third_party\llvm-build\Release+Asserts\bin"
+        $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
         ninja -C out/Default electron:electron_symbols
       }
   - ps: >-
