@@ -188,7 +188,8 @@ void URLRequestFetchJob::StartAsync(
   else
     request_type = GetRequestType(method);
 
-  fetcher_ = net::URLFetcher::Create(formated_url, request_type, this);
+  fetcher_ = net::URLFetcher::Create(formated_url, request_type, this,
+                                     MISSING_TRAFFIC_ANNOTATION);
   fetcher_->SaveResponseWithWriter(base::WrapUnique(new ResponsePiper(this)));
 
   // A request context getter is passed by the user.
