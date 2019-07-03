@@ -26,6 +26,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
@@ -1288,20 +1289,31 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
                            relativeTo:nil];
   }
 
-  NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
+  std::string dep_warn =
+      " has been deprecated and will be removed in a future version of macOS.";
+  node::Environment* env =
+      node::Environment::GetCurrent(v8::Isolate::GetCurrent());
+
+  NSVisualEffectMaterial vibrancyType;
 
   if (type == "appearance-based") {
+    EmitDeprecationWarning(
+        env, "NSVisualEffectMaterialAppearanceBased" + dep_warn, "electron");
     vibrancyType = NSVisualEffectMaterialAppearanceBased;
   } else if (type == "light") {
+    EmitDeprecationWarning(env, "NSVisualEffectMaterialLight" + dep_warn,
+                           "electron");
     vibrancyType = NSVisualEffectMaterialLight;
   } else if (type == "dark") {
+    EmitDeprecationWarning(env, "NSVisualEffectMaterialDark" + dep_warn,
+                           "electron");
     vibrancyType = NSVisualEffectMaterialDark;
   } else if (type == "titlebar") {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
   if (@available(macOS 10.11, *)) {
-    // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
+    // TODO(codebytere): Use NSVisualEffectMaterial* constants directly once
     // they are available in the minimum SDK version
     if (type == "selection") {
       // NSVisualEffectMaterialSelection
@@ -1317,14 +1329,19 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       vibrancyType = static_cast<NSVisualEffectMaterial>(7);
     } else if (type == "medium-light") {
       // NSVisualEffectMaterialMediumLight
+      EmitDeprecationWarning(
+          env, "NSVisualEffectMaterialMediumLight" + dep_warn, "electron");
       vibrancyType = static_cast<NSVisualEffectMaterial>(8);
     } else if (type == "ultra-dark") {
       // NSVisualEffectMaterialUltraDark
+      EmitDeprecationWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
+                             "electron");
       vibrancyType = static_cast<NSVisualEffectMaterial>(9);
     }
   }
 
-  [effect_view setMaterial:vibrancyType];
+  if (vibrancyType)
+    [effect_view setMaterial:vibrancyType];
 }
 
 void NativeWindowMac::SetTouchBar(
