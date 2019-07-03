@@ -405,12 +405,11 @@ void URLRequestNS::OnRedirect(
       EmitRequestError(
           "Request cannot follow redirect with the current redirect mode");
       break;
+    case network::mojom::FetchRedirectMode::kFollow:
     case network::mojom::FetchRedirectMode::kManual:
       EmitRequestEvent(false, "redirect", redirect_info.status_code,
                        redirect_info.new_method, redirect_info.new_url,
                        response_head.headers.get());
-      break;
-    default:
       break;
   }
 }
