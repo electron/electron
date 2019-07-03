@@ -129,7 +129,7 @@ void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     int render_view_id,
     int page_request_id,
     const GURL& security_origin,
-    blink::MediaStreamType stream_type,
+    blink::mojom::MediaStreamType stream_type,
     content::MediaRequestState state) {}
 
 void MediaCaptureDevicesDispatcher::OnCreatingAudioStream(int render_process_id,
@@ -139,7 +139,7 @@ void MediaCaptureDevicesDispatcher::OnSetCapturingLinkSecured(
     int render_process_id,
     int render_frame_id,
     int page_request_id,
-    blink::MediaStreamType stream_type,
+    blink::mojom::MediaStreamType stream_type,
     bool is_secure) {}
 
 }  // namespace electron

@@ -4,6 +4,7 @@
 
 #include "shell/browser/io_thread.h"
 
+#include <string>
 #include <utility>
 
 #include "components/net_log/chrome_net_log.h"
@@ -13,18 +14,46 @@
 #include "net/cert/cert_verifier.h"
 #include "net/cert/cert_verify_proc.h"
 #include "net/cert/multi_threaded_cert_verifier.h"
+#include "net/log/net_log_util.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/url_request/url_request_context.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/network_switches.h"
+#include "services/network/public/mojom/net_log.mojom.h"
 #include "services/network/url_request_context_builder_mojo.h"
 #include "shell/browser/net/url_request_context_getter.h"
 
 using content::BrowserThread;
 
-IOThread::IOThread(net_log::ChromeNetLog* net_log,
-                   SystemNetworkContextManager* system_network_context_manager)
-    : net_log_(net_log) {
+namespace {
+
+// Parses the desired granularity of NetLog capturing specified by the command
+// line.
+net::NetLogCaptureMode GetNetCaptureModeFromCommandLine(
+    const base::CommandLine& command_line) {
+  base::StringPiece switch_name = network::switches::kNetLogCaptureMode;
+
+  if (command_line.HasSwitch(switch_name)) {
+    std::string value = command_line.GetSwitchValueASCII(switch_name);
+
+    if (value == "Default")
+      return net::NetLogCaptureMode::Default();
+    if (value == "IncludeCookiesAndCredentials")
+      return net::NetLogCaptureMode::IncludeCookiesAndCredentials();
+    if (value == "IncludeSocketBytes")
+      return net::NetLogCaptureMode::IncludeSocketBytes();
+
+    LOG(ERROR) << "Unrecognized value for --" << switch_name;
+  }
+
+  return net::NetLogCaptureMode::Default();
+}
+
+}  // namespace
+
+IOThread::IOThread(
+    SystemNetworkContextManager* system_network_context_manager) {
   BrowserThread::SetIOThreadDelegate(this);
 
   system_network_context_manager->SetUp(
@@ -74,6 +103,27 @@ void IOThread::Init() {
     network_service->ConfigureHttpAuthPrefs(
         std::move(http_auth_dynamic_params_));
 
+    const base::CommandLine* command_line =
+        base::CommandLine::ForCurrentProcess();
+    // start net log trace if --log-net-log is passed in the command line.
+    if (command_line->HasSwitch(network::switches::kLogNetLog)) {
+      base::FilePath log_file =
+          command_line->GetSwitchValuePath(network::switches::kLogNetLog);
+      base::File file(log_file,
+                      base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+      if (log_file.empty() || !file.IsValid()) {
+        LOG(ERROR) << "Failed opening NetLog: " << log_file.value();
+      } else {
+        auto platform_dict = net_log::GetPlatformConstantsForNetLog(
+            base::CommandLine::ForCurrentProcess()->GetCommandLineString(),
+            std::string(ELECTRON_PRODUCT_NAME));
+        network_service->StartNetLog(
+            std::move(file), GetNetCaptureModeFromCommandLine(*command_line),
+            platform_dict ? std::move(*platform_dict)
+                          : base::DictionaryValue());
+      }
+    }
+
     system_network_context_ = network_service->CreateNetworkContextWithBuilder(
         std::move(network_context_request_), std::move(network_context_params_),
         std::move(builder), &system_request_context_);
@@ -91,7 +141,4 @@ void IOThread::CleanUp() {
 
     system_network_context_.reset();
   }
-
-  if (net_log_)
-    net_log_->ShutDownBeforeThreadPool();
 }

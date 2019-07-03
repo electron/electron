@@ -5,99 +5,99 @@
 #include "shell/common/mouse_util.h"
 #include <string>
 
-using Cursor = blink::WebCursorInfo::Type;
+using Cursor = ui::CursorType;
 
 namespace electron {
 
 std::string CursorTypeToString(const content::CursorInfo& info) {
   switch (info.type) {
-    case Cursor::kTypePointer:
+    case Cursor::kPointer:
       return "default";
-    case Cursor::kTypeCross:
+    case Cursor::kCross:
       return "crosshair";
-    case Cursor::kTypeHand:
+    case Cursor::kHand:
       return "pointer";
-    case Cursor::kTypeIBeam:
+    case Cursor::kIBeam:
       return "text";
-    case Cursor::kTypeWait:
+    case Cursor::kWait:
       return "wait";
-    case Cursor::kTypeHelp:
+    case Cursor::kHelp:
       return "help";
-    case Cursor::kTypeEastResize:
+    case Cursor::kEastResize:
       return "e-resize";
-    case Cursor::kTypeNorthResize:
+    case Cursor::kNorthResize:
       return "n-resize";
-    case Cursor::kTypeNorthEastResize:
+    case Cursor::kNorthEastResize:
       return "ne-resize";
-    case Cursor::kTypeNorthWestResize:
+    case Cursor::kNorthWestResize:
       return "nw-resize";
-    case Cursor::kTypeSouthResize:
+    case Cursor::kSouthResize:
       return "s-resize";
-    case Cursor::kTypeSouthEastResize:
+    case Cursor::kSouthEastResize:
       return "se-resize";
-    case Cursor::kTypeSouthWestResize:
+    case Cursor::kSouthWestResize:
       return "sw-resize";
-    case Cursor::kTypeWestResize:
+    case Cursor::kWestResize:
       return "w-resize";
-    case Cursor::kTypeNorthSouthResize:
+    case Cursor::kNorthSouthResize:
       return "ns-resize";
-    case Cursor::kTypeEastWestResize:
+    case Cursor::kEastWestResize:
       return "ew-resize";
-    case Cursor::kTypeNorthEastSouthWestResize:
+    case Cursor::kNorthEastSouthWestResize:
       return "nesw-resize";
-    case Cursor::kTypeNorthWestSouthEastResize:
+    case Cursor::kNorthWestSouthEastResize:
       return "nwse-resize";
-    case Cursor::kTypeColumnResize:
+    case Cursor::kColumnResize:
       return "col-resize";
-    case Cursor::kTypeRowResize:
+    case Cursor::kRowResize:
       return "row-resize";
-    case Cursor::kTypeMiddlePanning:
+    case Cursor::kMiddlePanning:
       return "m-panning";
-    case Cursor::kTypeEastPanning:
+    case Cursor::kEastPanning:
       return "e-panning";
-    case Cursor::kTypeNorthPanning:
+    case Cursor::kNorthPanning:
       return "n-panning";
-    case Cursor::kTypeNorthEastPanning:
+    case Cursor::kNorthEastPanning:
       return "ne-panning";
-    case Cursor::kTypeNorthWestPanning:
+    case Cursor::kNorthWestPanning:
       return "nw-panning";
-    case Cursor::kTypeSouthPanning:
+    case Cursor::kSouthPanning:
       return "s-panning";
-    case Cursor::kTypeSouthEastPanning:
+    case Cursor::kSouthEastPanning:
       return "se-panning";
-    case Cursor::kTypeSouthWestPanning:
+    case Cursor::kSouthWestPanning:
       return "sw-panning";
-    case Cursor::kTypeWestPanning:
+    case Cursor::kWestPanning:
       return "w-panning";
-    case Cursor::kTypeMove:
+    case Cursor::kMove:
       return "move";
-    case Cursor::kTypeVerticalText:
+    case Cursor::kVerticalText:
       return "vertical-text";
-    case Cursor::kTypeCell:
+    case Cursor::kCell:
       return "cell";
-    case Cursor::kTypeContextMenu:
+    case Cursor::kContextMenu:
       return "context-menu";
-    case Cursor::kTypeAlias:
+    case Cursor::kAlias:
       return "alias";
-    case Cursor::kTypeProgress:
+    case Cursor::kProgress:
       return "progress";
-    case Cursor::kTypeNoDrop:
+    case Cursor::kNoDrop:
       return "nodrop";
-    case Cursor::kTypeCopy:
+    case Cursor::kCopy:
       return "copy";
-    case Cursor::kTypeNone:
+    case Cursor::kNone:
       return "none";
-    case Cursor::kTypeNotAllowed:
+    case Cursor::kNotAllowed:
       return "not-allowed";
-    case Cursor::kTypeZoomIn:
+    case Cursor::kZoomIn:
       return "zoom-in";
-    case Cursor::kTypeZoomOut:
+    case Cursor::kZoomOut:
       return "zoom-out";
-    case Cursor::kTypeGrab:
+    case Cursor::kGrab:
       return "grab";
-    case Cursor::kTypeGrabbing:
+    case Cursor::kGrabbing:
       return "grabbing";
-    case Cursor::kTypeCustom:
+    case Cursor::kCustom:
       return "custom";
     default:
       return "default";

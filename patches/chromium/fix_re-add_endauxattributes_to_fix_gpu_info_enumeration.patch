@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Tue, 2 Jul 2019 14:53:57 -0700
+Subject: fix: re-add EndAuxAttributes to fix gpu info enumeration
+
+
+diff --git a/gpu/config/gpu_info.cc b/gpu/config/gpu_info.cc
+index 963884c9e53d8d619cb076247bc4884ae0a89252..7b9fddb29c10be436857e9f035846a8996ee48a9 100644
+--- a/gpu/config/gpu_info.cc
++++ b/gpu/config/gpu_info.cc
+@@ -326,6 +326,7 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
+   enumerator->AddInt64("rgbaVisual", rgba_visual);
+ #endif
+   enumerator->AddBool("oopRasterizationSupported", oop_rasterization_supported);
++  enumerator->EndAuxAttributes();
+ }
+ 
+ }  // namespace gpu

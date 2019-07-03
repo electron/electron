@@ -382,7 +382,7 @@ describe('node feature', () => {
       function dataListener (data) {
         output += data
 
-        if (output.trim().startsWith('Debugger listening on ws://') && output.endsWith('\n')) {
+        if (output.trim().indexOf('Debugger listening on ws://') > -1 && output.indexOf('\n') > -1) {
           const socketMatch = output.trim().match(/(ws:\/\/.+:[0-9]+\/.+?)\n/gm)
           if (socketMatch && socketMatch[0]) {
             child.stderr.removeListener('data', dataListener)

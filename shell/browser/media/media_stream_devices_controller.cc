@@ -34,10 +34,12 @@ MediaStreamDevicesController::MediaStreamDevicesController(
       // For MEDIA_OPEN_DEVICE requests (Pepper) we always request both webcam
       // and microphone to avoid popping two infobars.
       microphone_requested_(
-          request.audio_type == blink::MEDIA_DEVICE_AUDIO_CAPTURE ||
+          request.audio_type ==
+              blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE ||
           request.request_type == blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY),
       webcam_requested_(
-          request.video_type == blink::MEDIA_DEVICE_VIDEO_CAPTURE ||
+          request.video_type ==
+              blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
           request.request_type == blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY) {}
 
 MediaStreamDevicesController::~MediaStreamDevicesController() {
@@ -51,10 +53,14 @@ MediaStreamDevicesController::~MediaStreamDevicesController() {
 
 bool MediaStreamDevicesController::TakeAction() {
   // Do special handling of desktop screen cast.
-  if (request_.audio_type == blink::MEDIA_GUM_TAB_AUDIO_CAPTURE ||
-      request_.video_type == blink::MEDIA_GUM_TAB_VIDEO_CAPTURE ||
-      request_.audio_type == blink::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE ||
-      request_.video_type == blink::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE) {
+  if (request_.audio_type ==
+          blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE ||
+      request_.video_type ==
+          blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
+      request_.audio_type ==
+          blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE ||
+      request_.video_type ==
+          blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
     HandleUserMediaRequest();
     return true;
   }
@@ -78,7 +84,8 @@ void MediaStreamDevicesController::Accept() {
         const blink::MediaStreamDevice* device = nullptr;
         // For open device request pick the desired device or fall back to the
         // first available of the given type.
-        if (request_.audio_type == blink::MEDIA_DEVICE_AUDIO_CAPTURE) {
+        if (request_.audio_type ==
+            blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
           device =
               MediaCaptureDevicesDispatcher::GetInstance()
                   ->GetRequestedAudioDevice(request_.requested_audio_device_id);
@@ -87,7 +94,8 @@ void MediaStreamDevicesController::Accept() {
             device = MediaCaptureDevicesDispatcher::GetInstance()
                          ->GetFirstAvailableAudioDevice();
           }
-        } else if (request_.video_type == blink::MEDIA_DEVICE_VIDEO_CAPTURE) {
+        } else if (request_.video_type ==
+                   blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
           // Pepper API opens only one device at a time.
           device =
               MediaCaptureDevicesDispatcher::GetInstance()
@@ -160,19 +168,24 @@ void MediaStreamDevicesController::Deny(
 void MediaStreamDevicesController::HandleUserMediaRequest() {
   blink::MediaStreamDevices devices;
 
-  if (request_.audio_type == blink::MEDIA_GUM_TAB_AUDIO_CAPTURE) {
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_GUM_TAB_AUDIO_CAPTURE, "", ""));
-  }
-  if (request_.video_type == blink::MEDIA_GUM_TAB_VIDEO_CAPTURE) {
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_GUM_TAB_VIDEO_CAPTURE, "", ""));
-  }
-  if (request_.audio_type == blink::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE) {
+  if (request_.audio_type ==
+      blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
     devices.push_back(blink::MediaStreamDevice(
-        blink::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE, "loopback", "System Audio"));
+        blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE, "", ""));
   }
-  if (request_.video_type == blink::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE) {
+  if (request_.video_type ==
+      blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
+    devices.push_back(blink::MediaStreamDevice(
+        blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE, "", ""));
+  }
+  if (request_.audio_type ==
+      blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE) {
+    devices.push_back(blink::MediaStreamDevice(
+        blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE, "loopback",
+        "System Audio"));
+  }
+  if (request_.video_type ==
+      blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
     content::DesktopMediaID screen_id;
     // If the device id wasn't specified then this is a screen capture request
     // (i.e. chooseDesktopMedia() API wasn't used to generate device id).
@@ -184,9 +197,9 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
           content::DesktopMediaID::Parse(request_.requested_video_device_id);
     }
 
-    devices.push_back(
-        blink::MediaStreamDevice(blink::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE,
-                                 screen_id.ToString(), "Screen"));
+    devices.push_back(blink::MediaStreamDevice(
+        blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
+        screen_id.ToString(), "Screen"));
   }
 
   std::move(callback_).Run(

@@ -64,6 +64,10 @@ webFrame.setIsolatedWorldInfo(
   })
 ```
 
+### Removal of deprecated `marked` property on getBlinkMemoryInfo
+
+This property was removed in Chromium 77, and as such is no longer available.
+
 ## Planned Breaking API Changes (6.0)
 
 ### `win.setMenu(null)`

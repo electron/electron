@@ -16,11 +16,11 @@
 
 namespace {
 
-std::string MediaStreamTypeToString(blink::MediaStreamType type) {
+std::string MediaStreamTypeToString(blink::mojom::MediaStreamType type) {
   switch (type) {
-    case blink::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
+    case blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE:
       return "audio";
-    case blink::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
+    case blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE:
       return "video";
     default:
       return "unknown";
@@ -105,11 +105,11 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   base::DictionaryValue details;
   std::unique_ptr<base::ListValue> media_types(new base::ListValue);
   if (request.audio_type ==
-      blink::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
+      blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     media_types->AppendString("audio");
   }
   if (request.video_type ==
-      blink::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
+      blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
     media_types->AppendString("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
@@ -146,7 +146,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
     const GURL& security_origin,
-    blink::MediaStreamType type) const {
+    blink::mojom::MediaStreamType type) const {
   base::DictionaryValue details;
   details.SetString("securityOrigin", security_origin.spec());
   details.SetString("mediaType", MediaStreamTypeToString(type));

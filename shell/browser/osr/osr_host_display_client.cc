@@ -35,8 +35,11 @@ void LayeredWindowUpdater::SetActive(bool active) {
 
 void LayeredWindowUpdater::OnAllocatedSharedMemory(
     const gfx::Size& pixel_size,
-    mojo::ScopedSharedBufferHandle scoped_buffer_handle) {
+    base::UnsafeSharedMemoryRegion region) {
   canvas_.reset();
+
+  if (!region.IsValid())
+    return;
 
   // Make sure |pixel_size| is sane.
   size_t expected_bytes;
@@ -46,31 +49,11 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
     return;
 
 #if defined(WIN32)
-  base::SharedMemoryHandle shm_handle;
-  size_t required_bytes;
-  MojoResult unwrap_result = mojo::UnwrapSharedMemoryHandle(
-      std::move(scoped_buffer_handle), &shm_handle, &required_bytes, nullptr);
-  if (unwrap_result != MOJO_RESULT_OK)
-    return;
-
-  base::SharedMemory shm(shm_handle, false);
-  if (!shm.Map(required_bytes)) {
-    DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
-    return;
-  }
-
   canvas_ = skia::CreatePlatformCanvasWithSharedSection(
-      pixel_size.width(), pixel_size.height(), false, shm.handle().GetHandle(),
-      skia::CRASH_ON_FAILURE);
+      pixel_size.width(), pixel_size.height(), false,
+      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
 #else
-  auto shm =
-      mojo::UnwrapWritableSharedMemoryRegion(std::move(scoped_buffer_handle));
-  if (!shm.IsValid()) {
-    DLOG(ERROR) << "Failed to unwrap shared memory region";
-    return;
-  }
-
-  shm_mapping_ = shm.Map();
+  shm_mapping_ = region.Map();
   if (!shm_mapping_.IsValid()) {
     DLOG(ERROR) << "Failed to map shared memory region";
     return;

@@ -21,9 +21,9 @@ namespace api {
 ui::ClipboardType Clipboard::GetClipboardType(mate::Arguments* args) {
   std::string type;
   if (args->GetNext(&type) && type == "selection")
-    return ui::CLIPBOARD_TYPE_SELECTION;
+    return ui::ClipboardType::kSelection;
   else
-    return ui::CLIPBOARD_TYPE_COPY_PASTE;
+    return ui::ClipboardType::kCopyPaste;
 }
 
 std::vector<base::string16> Clipboard::AvailableFormats(mate::Arguments* args) {

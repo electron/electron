@@ -286,7 +286,7 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   return source;
 }
 
-bool CommonWebContentsDelegate::CanOverscrollContent() const {
+bool CommonWebContentsDelegate::CanOverscrollContent() {
   return false;
 }
 
@@ -343,7 +343,7 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
-    const content::WebContents* source) const {
+    const content::WebContents* source) {
   return html_fullscreen_;
 }
 

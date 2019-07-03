@@ -88,7 +88,7 @@ index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e487
    ui::Accelerator accelerator(
        ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 71b417ee8b64aa2ff7f1b2390851668ec1dcd7cf..1768af408d4cc3075e5bae046649e4955cc400b3 100644
+index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4dbc342ec9 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -33,6 +33,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
@@ -104,7 +104,7 @@ index 71b417ee8b64aa2ff7f1b2390851668ec1dcd7cf..1768af408d4cc3075e5bae046649e495
    }
    return VKEY_UNKNOWN;
  }
-@@ -192,7 +198,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -193,7 +199,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

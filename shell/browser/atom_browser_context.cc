@@ -196,11 +196,11 @@ network::mojom::NetworkContextPtr AtomBrowserContext::GetNetworkContext() {
   }
 }
 
-base::FilePath AtomBrowserContext::GetPath() const {
+base::FilePath AtomBrowserContext::GetPath() {
   return path_;
 }
 
-bool AtomBrowserContext::IsOffTheRecord() const {
+bool AtomBrowserContext::IsOffTheRecord() {
   return in_memory_;
 }
 
@@ -302,24 +302,6 @@ AtomBrowserContext::GetBrowsingDataRemoverDelegate() {
 
 content::ClientHintsControllerDelegate*
 AtomBrowserContext::GetClientHintsControllerDelegate() {
-  return nullptr;
-}
-
-net::URLRequestContextGetter*
-AtomBrowserContext::CreateRequestContextForStoragePartition(
-    const base::FilePath& partition_path,
-    bool in_memory,
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector request_interceptors) {
-  NOTREACHED();
-  return nullptr;
-}
-
-net::URLRequestContextGetter*
-AtomBrowserContext::CreateMediaRequestContextForStoragePartition(
-    const base::FilePath& partition_path,
-    bool in_memory) {
-  NOTREACHED();
   return nullptr;
 }
 

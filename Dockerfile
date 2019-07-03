@@ -10,6 +10,7 @@ RUN chmod a+rwx /tmp
 # Install Linux packages
 ADD build/install-build-deps.sh /setup/install-build-deps.sh
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
+RUN dpkg --add-architecture i386
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     libnotify-bin \
@@ -22,6 +23,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     sudo \
     vim-nox \
     wget \
+    g++-multilib \
+    libgl1:i386 \
   && /setup/install-build-deps.sh --syms --no-prompt --no-chromeos-fonts --lib32 --arm \
   && rm -rf /var/lib/apt/lists/*
 

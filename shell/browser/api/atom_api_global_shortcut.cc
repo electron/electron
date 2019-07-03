@@ -107,7 +107,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
 }
 
 void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
-  if (!ContainsKey(accelerator_callback_map_, accelerator))
+  if (!base::Contains(accelerator_callback_map_, accelerator))
     return;
 
   accelerator_callback_map_.erase(accelerator);
@@ -123,7 +123,7 @@ void GlobalShortcut::UnregisterSome(
 }
 
 bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
-  return ContainsKey(accelerator_callback_map_, accelerator);
+  return base::Contains(accelerator_callback_map_, accelerator);
 }
 
 void GlobalShortcut::UnregisterAll() {

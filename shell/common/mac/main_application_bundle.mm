@@ -10,6 +10,7 @@
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
+#include "content/common/mac_helpers.h"
 
 namespace electron {
 
@@ -30,7 +31,11 @@ base::FilePath MainApplicationBundlePath() {
 
   // Up to Contents.
   if (!HasMainProcessKey() &&
-      base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE)) {
+      (base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE) ||
+       base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
+                      base::CompareCase::SENSITIVE) ||
+       base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
+                      base::CompareCase::SENSITIVE))) {
     // The running executable is the helper. Go up five steps:
     // Contents/Frameworks/Helper.app/Contents/MacOS/Helper
     // ^ to here                                     ^ from here

@@ -60,8 +60,8 @@ class AtomBrowserContext
   ResolveProxyHelper* GetResolveProxyHelper();
 
   // content::BrowserContext:
-  base::FilePath GetPath() const override;
-  bool IsOffTheRecord() const override;
+  base::FilePath GetPath() override;
+  bool IsOffTheRecord() override;
   content::ResourceContext* GetResourceContext() override;
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
@@ -71,14 +71,6 @@ class AtomBrowserContext
   content::BackgroundSyncController* GetBackgroundSyncController() override;
   content::BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate()
       override;
-  net::URLRequestContextGetter* CreateRequestContextForStoragePartition(
-      const base::FilePath& partition_path,
-      bool in_memory,
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector request_interceptors) override;
-  net::URLRequestContextGetter* CreateMediaRequestContextForStoragePartition(
-      const base::FilePath& partition_path,
-      bool in_memory) override;
   std::string GetMediaDeviceIDSalt() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;

@@ -37,7 +37,7 @@ class WebContentsPermissionHelper
 
   // Synchronous Checks
   bool CheckMediaAccessPermission(const GURL& security_origin,
-                                  blink::MediaStreamType type) const;
+                                  blink::mojom::MediaStreamType type) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
