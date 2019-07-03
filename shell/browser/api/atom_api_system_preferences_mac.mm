@@ -212,11 +212,14 @@ int SystemPreferences::DoSubscribeNotification(
                     NSDictionaryToDictionaryValue(notification.userInfo);
                 if (user_info) {
                   copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name), *user_info);
+                      base::SysNSStringToUTF8(notification.name),
+                      *user_info,
+                      base::SysNSStringToUTF8(notification.object));
                 } else {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
-                      base::DictionaryValue());
+                      base::DictionaryValue(),
+                      base::SysNSStringToUTF8(notification.object));
                 }
               }];
   return request_id;
