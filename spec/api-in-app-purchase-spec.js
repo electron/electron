@@ -38,17 +38,22 @@ describe('inAppPurchase module', function () {
     expect(correctUrlEnd).to.be.true()
   })
 
-  it('purchaseProduct() fails when buying invalid product', async () => {
+  // The following three tests are disabled because they hit Apple servers, and
+  // Apple started blocking requests from AWS IPs (we think), so they fail on
+  // CI.
+  // TODO: find a way to mock out the server requests so we can test these APIs
+  // without relying on a remote service.
+  xit('purchaseProduct() fails when buying invalid product', async () => {
     const success = await inAppPurchase.purchaseProduct('non-exist', 1)
     expect(success).to.be.false()
   })
 
-  it('purchaseProduct() accepts optional arguments', async () => {
+  xit('purchaseProduct() accepts optional arguments', async () => {
     const success = await inAppPurchase.purchaseProduct('non-exist')
     expect(success).to.be.false()
   })
 
-  it('getProducts() returns an empty list when getting invalid product', async () => {
+  xit('getProducts() returns an empty list when getting invalid product', async () => {
     const products = await inAppPurchase.getProducts(['non-exist'])
     expect(products).to.be.an('array').of.length(0)
   })
