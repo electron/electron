@@ -307,10 +307,6 @@ void URLRequestNS::SetChunkedUpload(bool is_chunked_upload) {
     is_chunked_upload_ = is_chunked_upload;
 }
 
-void URLRequestNS::SetLoadFlags(int flags) {
-  // TODO(zcbenz): Implement this.
-}
-
 mate::Dictionary URLRequestNS::GetUploadProgress() {
   mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate());
   // TODO(zcbenz): Implement this.
@@ -491,7 +487,6 @@ void URLRequestNS::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeExtraHeader", &URLRequestNS::RemoveExtraHeader)
       .SetMethod("setChunkedUpload", &URLRequestNS::SetChunkedUpload)
       .SetMethod("followRedirect", &URLRequestNS::FollowRedirect)
-      .SetMethod("_setLoadFlags", &URLRequestNS::SetLoadFlags)
       .SetMethod("getUploadProgress", &URLRequestNS::GetUploadProgress)
       .SetProperty("notStarted", &URLRequestNS::NotStarted)
       .SetProperty("finished", &URLRequestNS::Finished)

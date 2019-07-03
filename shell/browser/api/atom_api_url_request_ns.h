@@ -47,7 +47,6 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   bool SetExtraHeader(const std::string& name, const std::string& value);
   void RemoveExtraHeader(const std::string& name);
   void SetChunkedUpload(bool is_chunked_upload);
-  void SetLoadFlags(int flags);
   mate::Dictionary GetUploadProgress();
   int StatusCode() const;
   std::string StatusMessage() const;
