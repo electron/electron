@@ -377,10 +377,18 @@ void URLRequestNS::OnComplete(bool success) {
       Emit("end");
     }
   } else {  // failed
-    // Only emit error when there is no previous failure.
-    // This is to align with the behavior of non-NetworkService implementation.
-    if (!(request_state_ & STATE_FAILED))
-      EmitError(EventType::kRequest, net::ErrorToString(loader_->NetError()));
+    // If response is started then emit response event, else emit request error.
+    //
+    // Error is only emitted when there is no previous failure. This is to align
+    // with the behavior of non-NetworkService implementation.
+    std::string error = net::ErrorToString(loader_->NetError());
+    if (response_state_ & STATE_STARTED) {
+      if (!(response_state_ & STATE_FAILED))
+        EmitError(EventType::kResponse, error);
+    } else {
+      if (!(request_state_ & STATE_FAILED))
+        EmitError(EventType::kRequest, error);
+    }
   }
 
   Close();
