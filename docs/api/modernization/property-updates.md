@@ -4,11 +4,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
 
 ## Candidates
 
-* `app` module
-  * `dock`
-    * `badge`
-* `autoUpdater` module
-  * `feedUrl`
 * `BrowserWindow`
   * `fullscreen`
   * `simpleFullscreen`
@@ -20,14 +15,6 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `visibleOnAllWorkspaces`
 * `crashReporter` module
   * `uploadToServer`
-* `Session` module
-  * `preloads`
-* `webContents` module
-  * `zoomFactor`
-  * `zoomLevel`
-  * `audioMuted`
-  * `userAgent`
-  * `frameRate`
 * `webFrame` modules
   * `zoomFactor`
   * `zoomLevel`
@@ -58,3 +45,9 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `isMacTemplateImage`
 * `SystemPreferences` module
   * `appLevelAppearance`
+* `webContents` module
+  * `audioMuted`
+  * `frameRate`
+  * `userAgent`
+  * `zoomFactor`
+  * `zoomLevel`
