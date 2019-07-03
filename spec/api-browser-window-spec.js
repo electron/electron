@@ -113,24 +113,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('BrowserWindow.fromDevToolsWebContents(webContents)', () => {
-    let contents = null
-
-    beforeEach(() => { contents = webContents.create({}) })
-
-    afterEach(() => { contents.destroy() })
-
-    it('returns the window with the webContents', (done) => {
-      w.webContents.once('devtools-opened', () => {
-        expect(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id).to.equal(w.id)
-        expect(BrowserWindow.fromDevToolsWebContents(w.webContents)).to.be.undefined()
-        expect(BrowserWindow.fromDevToolsWebContents(contents)).to.be.undefined()
-        done()
-      })
-      w.webContents.openDevTools()
-    })
-  })
-
   describe('"webPreferences" option', () => {
     afterEach(() => { ipcMain.removeAllListeners('answer') })
 
@@ -228,7 +210,8 @@ describe('BrowserWindow module', () => {
     describe('session preload scripts', function () {
       const preloads = [
         path.join(fixtures, 'module', 'set-global-preload-1.js'),
-        path.join(fixtures, 'module', 'set-global-preload-2.js')
+        path.join(fixtures, 'module', 'set-global-preload-2.js'),
+        path.relative(process.cwd(), path.join(fixtures, 'module', 'set-global-preload-3.js'))
       ]
       const defaultSession = session.defaultSession
 
@@ -247,9 +230,10 @@ describe('BrowserWindow module', () => {
       const generateSpecs = (description, sandbox) => {
         describe(description, () => {
           it('loads the script before other scripts in window including normal preloads', function (done) {
-            ipcMain.once('vars', function (event, preload1, preload2) {
+            ipcMain.once('vars', function (event, preload1, preload2, preload3) {
               expect(preload1).to.equal('preload-1')
               expect(preload2).to.equal('preload-1-2')
+              expect(preload3).to.be.null()
               done()
             })
             w.destroy()
@@ -2715,6 +2699,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.getFrameRate()', () => {
       it('has default frame rate', (done) => {
         w.webContents.once('paint', function (event, rect, data) {
@@ -2725,12 +2710,34 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.setFrameRate(frameRate)', () => {
       it('sets custom frame rate', (done) => {
         w.webContents.on('dom-ready', () => {
           w.webContents.setFrameRate(30)
           w.webContents.once('paint', function (event, rect, data) {
             expect(w.webContents.getFrameRate()).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.FrameRate', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.frameRate = 30
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.frameRate).to.equal(30)
             done()
           })
         })
