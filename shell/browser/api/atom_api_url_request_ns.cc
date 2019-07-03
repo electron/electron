@@ -360,12 +360,21 @@ void URLRequestNS::OnDataReceived(base::StringPiece data,
 void URLRequestNS::OnRetry(base::OnceClosure start_retry) {}
 
 void URLRequestNS::OnComplete(bool success) {
-  // In case we received an unexpected event from Chromium net, don't emit any
-  // data event after request cancel/error/close.
-  if (!(request_state_ & STATE_ERROR) && !(response_state_ & STATE_ERROR)) {
-    response_state_ |= STATE_FINISHED;
-    Emit("end");
+  if (success) {
+    // In case we received an unexpected event from Chromium net, don't emit any
+    // data event after request cancel/error/close.
+    if (!(request_state_ & STATE_ERROR) && !(response_state_ & STATE_ERROR)) {
+      response_state_ |= STATE_FINISHED;
+      Emit("end");
+    }
+  } else {
+    v8::HandleScope handle_scope(isolate());
+    auto error = v8::Exception::Error(
+        mate::StringToV8(isolate(), net::ErrorToString(loader_->NetError())));
+    request_state_ |= STATE_FAILED;
+    EmitRequestEvent(false, "error", error);
   }
+
   Close();
 }
 
