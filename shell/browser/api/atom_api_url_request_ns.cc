@@ -242,6 +242,8 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
         &URLRequestNS::OnResponseStarted, weak_factory_.GetWeakPtr()));
     loader_->SetOnRedirectCallback(
         base::Bind(&URLRequestNS::OnRedirect, weak_factory_.GetWeakPtr()));
+    loader_->SetOnUploadProgressCallback(base::Bind(
+        &URLRequestNS::OnUploadProgress, weak_factory_.GetWeakPtr()));
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
@@ -309,7 +311,17 @@ void URLRequestNS::SetChunkedUpload(bool is_chunked_upload) {
 
 mate::Dictionary URLRequestNS::GetUploadProgress() {
   mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate());
-  // TODO(zcbenz): Implement this.
+  if (loader_) {
+    if (request_)
+      progress.Set("started", false);
+    else
+      progress.Set("started", true);
+    progress.Set("current", upload_position_);
+    progress.Set("total", upload_total_);
+    progress.Set("active", true);
+  } else {
+    progress.Set("active", false);
+  }
   return progress;
 }
 
@@ -408,6 +420,11 @@ void URLRequestNS::OnRedirect(
                        response_head.headers.get());
       break;
   }
+}
+
+void URLRequestNS::OnUploadProgress(uint64_t position, uint64_t total) {
+  upload_position_ = position;
+  upload_total_ = total;
 }
 
 void URLRequestNS::OnWrite(MojoResult result) {

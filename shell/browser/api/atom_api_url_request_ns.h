@@ -68,6 +68,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void OnRedirect(const net::RedirectInfo& redirect_info,
                   const network::ResourceResponseHead& response_head,
                   std::vector<std::string>* to_be_removed_headers);
+  void OnUploadProgress(uint64_t position, uint64_t total);
   void OnWrite(MojoResult result);
 
   // Write the first data of |pending_writes_|.
@@ -106,6 +107,10 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 
   // Whether request.end() has been called.
   bool last_chunk_written_ = false;
+
+  // Upload progress.
+  uint64_t upload_position_ = 0;
+  uint64_t upload_total_ = 0;
 
   // Current status.
   int request_state_ = 0;
