@@ -159,6 +159,8 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
 
 URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
+  request_ref_ = request_.get();
+
   mate::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("method", &request_->method);
@@ -219,6 +221,7 @@ void URLRequestNS::Close() {
   }
   Unpin();
   loader_.reset();
+  request_ref_ = nullptr;
 }
 
 bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
@@ -233,7 +236,6 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
     Pin();
 
     // Create the loader.
-    network::ResourceRequest* request_ref = request_.get();
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
     loader_->SetOnResponseStartedCallback(base::Bind(
@@ -243,12 +245,12 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
-      request_ref->request_body = new network::ResourceRequestBody();
+      request_ref_->request_body = new network::ResourceRequestBody();
       if (is_chunked_upload_)
         data_pipe_getter_ = std::make_unique<ChunkedDataPipeGetter>(this);
       else
         data_pipe_getter_ = std::make_unique<MultipartDataPipeGetter>(this);
-      data_pipe_getter_->AttachToRequestBody(request_ref->request_body.get());
+      data_pipe_getter_->AttachToRequestBody(request_ref_->request_body.get());
     }
 
     // Start downloading.
@@ -367,7 +369,7 @@ void URLRequestNS::OnComplete(bool success) {
       response_state_ |= STATE_FINISHED;
       Emit("end");
     }
-  } else {
+  } else if (!(request_state_ & STATE_FAILED)) {
     v8::HandleScope handle_scope(isolate());
     auto error = v8::Exception::Error(
         mate::StringToV8(isolate(), net::ErrorToString(loader_->NetError())));
@@ -399,9 +401,24 @@ void URLRequestNS::OnRedirect(
   if (!loader_)
     return;
 
-  EmitRequestEvent(false, "redirect", redirect_info.status_code,
-                   redirect_info.new_method, redirect_info.new_url,
-                   response_head.headers.get());
+  switch (request_ref_->fetch_redirect_mode) {
+    case network::mojom::FetchRedirectMode::kError: {
+      v8::HandleScope handle_scope(isolate());
+      auto error = v8::Exception::Error(mate::StringToV8(
+          isolate(),
+          "Request cannot follow redirect with the current redirect mode"));
+      request_state_ |= STATE_FAILED;
+      EmitRequestEvent(false, "error", error);
+      break;
+    }
+    case network::mojom::FetchRedirectMode::kManual:
+      EmitRequestEvent(false, "redirect", redirect_info.status_code,
+                       redirect_info.new_method, redirect_info.new_url,
+                       response_head.headers.get());
+      break;
+    default:
+      break;
+  }
 }
 
 void URLRequestNS::OnWrite(MojoResult result) {

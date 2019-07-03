@@ -92,6 +92,10 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
+  // Weak ref to the |request_|, which is transferred to |loader_| after first
+  // write.
+  network::ResourceRequest* request_ref_ = nullptr;
+
   // The DataPipeGetter passed to reader.
   bool is_chunked_upload_ = false;
   std::unique_ptr<UploadDataPipeGetter> data_pipe_getter_;
