@@ -233,24 +233,6 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.fromDevToolsWebContents(webContents)', () => {
-    let contents = null
-
-    beforeEach(() => { contents = webContents.create({}) })
-
-    afterEach(() => { contents.destroy() })
-
-    it('returns the window with the webContents', (done) => {
-      w.webContents.once('devtools-opened', () => {
-        expect(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id).to.equal(w.id)
-        expect(BrowserWindow.fromDevToolsWebContents(w.webContents)).to.be.undefined()
-        expect(BrowserWindow.fromDevToolsWebContents(contents)).to.be.undefined()
-        done()
-      })
-      w.webContents.openDevTools()
-    })
-  })
-
   describe('BrowserWindow.openDevTools()', () => {
     it('does not crash for frameless window', () => {
       w.destroy()
