@@ -200,8 +200,11 @@ void AtomRendererClient::SetupMainWorldOverrides(
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
       node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
 
+  auto* env = GetEnvironment(render_frame);
+  DCHECK(env);
+
   std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      GetEnvironment(render_frame)->process_object(),
+      env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
   node::per_process::native_module_loader.CompileAndCall(
@@ -220,8 +223,12 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
       node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
       node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
 
+  auto* env = GetEnvironment(render_frame);
+  if (!env)
+    return;
+
   std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      GetEnvironment(render_frame)->process_object(),
+      env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
