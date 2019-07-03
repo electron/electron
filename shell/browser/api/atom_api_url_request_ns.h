@@ -93,9 +93,13 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
-  // Weak ref to the |request_|, which is transferred to |loader_| after first
-  // write.
-  network::ResourceRequest* request_ref_ = nullptr;
+  // Redirect mode.
+  //
+  // Note that we store it ourselves instead of reading from the one stored in
+  // |request_|, this is because with multiple redirections, the original one
+  // might be modified.
+  network::mojom::FetchRedirectMode redirect_mode_ =
+      network::mojom::FetchRedirectMode::kFollow;
 
   // The DataPipeGetter passed to reader.
   bool is_chunked_upload_ = false;

@@ -159,13 +159,12 @@ class ChunkedDataPipeGetter : public UploadDataPipeGetter,
 
 URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   request_ = std::make_unique<network::ResourceRequest>();
-  request_ref_ = request_.get();
-
   mate::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("method", &request_->method);
     dict.Get("url", &request_->url);
-    dict.Get("redirect", &request_->fetch_redirect_mode);
+    dict.Get("redirect", &redirect_mode_);
+    request_->fetch_redirect_mode = redirect_mode_;
   }
 
   std::string partition;
@@ -221,7 +220,6 @@ void URLRequestNS::Close() {
   }
   Unpin();
   loader_.reset();
-  request_ref_ = nullptr;
 }
 
 bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
@@ -236,6 +234,7 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
     Pin();
 
     // Create the loader.
+    network::ResourceRequest* request_ref = request_.get();
     loader_ = network::SimpleURLLoader::Create(std::move(request_),
                                                kTrafficAnnotation);
     loader_->SetOnResponseStartedCallback(base::Bind(
@@ -247,12 +246,12 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
 
     // Create upload data pipe if we have data to write.
     if (length > 0) {
-      request_ref_->request_body = new network::ResourceRequestBody();
+      request_ref->request_body = new network::ResourceRequestBody();
       if (is_chunked_upload_)
         data_pipe_getter_ = std::make_unique<ChunkedDataPipeGetter>(this);
       else
         data_pipe_getter_ = std::make_unique<MultipartDataPipeGetter>(this);
-      data_pipe_getter_->AttachToRequestBody(request_ref_->request_body.get());
+      data_pipe_getter_->AttachToRequestBody(request_ref->request_body.get());
     }
 
     // Start downloading.
@@ -412,7 +411,7 @@ void URLRequestNS::OnRedirect(
     return;
   }
 
-  switch (request_ref_->fetch_redirect_mode) {
+  switch (redirect_mode_) {
     case network::mojom::FetchRedirectMode::kError:
       EmitRequestError(
           "Request cannot follow redirect with the current redirect mode");
