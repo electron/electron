@@ -14,9 +14,9 @@ ipcRendererInternal.sendSync = function (channel, ...args) {
 }
 
 ipcRendererInternal.sendTo = function (webContentsId, channel, ...args) {
-  return binding.sendTo(internal, false, webContentsId, channel, args)
+  return binding.ipc.sendTo(internal, false, webContentsId, channel, args)
 }
 
 ipcRendererInternal.sendToAll = function (webContentsId, channel, ...args) {
-  return binding.sendTo(internal, true, webContentsId, channel, args)
+  return binding.ipc.sendTo(internal, true, webContentsId, channel, args)
 }
