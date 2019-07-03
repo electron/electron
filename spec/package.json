@@ -32,7 +32,7 @@
     "yargs": "^12.0.5"
   },
   "optionalDependencies": {
-    "abstract-socket": "^2.1.0",
+    "abstract-socket": "github:nornagon/node-abstractsocket#v8-compat",
     "robotjs": "github:octalmage/robotjs#d870ddb486e893361e10d23d32c95c9d2b4710c9"
   }
 }
