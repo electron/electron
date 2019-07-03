@@ -201,10 +201,10 @@ void URLRequestNS::Cancel() {
 
   // Mark as canceled.
   request_state_ |= STATE_CANCELED;
-  EmitRequestEvent(true, "abort");
+  EmitEvent(EventType::kRequest, true, "abort");
 
   if ((response_state_ & STATE_STARTED) && !(response_state_ & STATE_FINISHED))
-    EmitResponseEvent(true, "aborted");
+    EmitEvent(EventType::kResponse, true, "aborted");
 
   Close();
 }
@@ -214,9 +214,9 @@ void URLRequestNS::Close() {
     request_state_ |= STATE_CLOSED;
     if (response_state_ & STATE_STARTED) {
       // Emit a close event if we really have a response object.
-      EmitResponseEvent(true, "close");
+      EmitEvent(EventType::kResponse, true, "close");
     }
-    EmitRequestEvent(true, "close");
+    EmitEvent(EventType::kRequest, true, "close");
   }
   Unpin();
   loader_.reset();
@@ -275,7 +275,7 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
     }
 
     request_state_ |= STATE_FINISHED;
-    EmitRequestEvent(true, "finish");
+    EmitEvent(EventType::kRequest, true, "finish");
   }
   return true;
 }
@@ -380,7 +380,7 @@ void URLRequestNS::OnComplete(bool success) {
     // Only emit error when there is no previous failure.
     // This is to align with the behavior of non-NetworkService implementation.
     if (!(request_state_ & STATE_FAILED))
-      EmitRequestError(net::ErrorToString(loader_->NetError()));
+      EmitError(EventType::kRequest, net::ErrorToString(loader_->NetError()));
   }
 
   Close();
@@ -413,7 +413,8 @@ void URLRequestNS::OnRedirect(
 
   switch (redirect_mode_) {
     case network::mojom::FetchRedirectMode::kError:
-      EmitRequestError(
+      EmitError(
+          EventType::kRequest,
           "Request cannot follow redirect with the current redirect mode");
       break;
     case network::mojom::FetchRedirectMode::kManual:
@@ -425,16 +426,16 @@ void URLRequestNS::OnRedirect(
       // provide a formal way for us to cancel redirection, we have to cancel
       // the request to prevent the redirection.
       follow_redirect_ = false;
-      EmitRequestEvent(false, "redirect", redirect_info.status_code,
-                       redirect_info.new_method, redirect_info.new_url,
-                       response_head.headers.get());
+      EmitEvent(EventType::kRequest, false, "redirect",
+                redirect_info.status_code, redirect_info.new_method,
+                redirect_info.new_url, response_head.headers.get());
       if (!follow_redirect_)
         Cancel();
       break;
     case network::mojom::FetchRedirectMode::kFollow:
-      EmitRequestEvent(false, "redirect", redirect_info.status_code,
-                       redirect_info.new_method, redirect_info.new_url,
-                       response_head.headers.get());
+      EmitEvent(EventType::kRequest, false, "redirect",
+                redirect_info.status_code, redirect_info.new_method,
+                redirect_info.new_url, response_head.headers.get());
       break;
   }
 }
@@ -485,23 +486,22 @@ void URLRequestNS::Unpin() {
   wrapper_.Reset();
 }
 
-void URLRequestNS::EmitRequestError(base::StringPiece message) {
+void URLRequestNS::EmitError(EventType type, base::StringPiece message) {
+  if (type == EventType::kRequest)
+    request_state_ |= STATE_FAILED;
+  else
+    response_state_ |= STATE_FAILED;
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
-  request_state_ |= STATE_FAILED;
-  EmitRequestEvent(false, "error", error);
+  EmitEvent(type, false, "error", error);
 }
 
 template <typename... Args>
-void URLRequestNS::EmitRequestEvent(Args... args) {
+void URLRequestNS::EmitEvent(EventType type, Args... args) {
+  const char* method =
+      type == EventType::kRequest ? "_emitRequestEvent" : "_emitResponseEvent";
   v8::HandleScope handle_scope(isolate());
-  mate::CustomEmit(isolate(), GetWrapper(), "_emitRequestEvent", args...);
-}
-
-template <typename... Args>
-void URLRequestNS::EmitResponseEvent(Args... args) {
-  v8::HandleScope handle_scope(isolate());
-  mate::CustomEmit(isolate(), GetWrapper(), "_emitResponseEvent", args...);
+  mate::CustomEmit(isolate(), GetWrapper(), method, args...);
 }
 
 // static

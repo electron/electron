@@ -82,11 +82,13 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void Unpin();
 
   // Emit events.
-  void EmitRequestError(base::StringPiece error);
+  enum class EventType {
+    kRequest,
+    kResponse,
+  };
+  void EmitError(EventType type, base::StringPiece error);
   template <typename... Args>
-  void EmitRequestEvent(Args... args);
-  template <typename... Args>
-  void EmitResponseEvent(Args... args);
+  void EmitEvent(EventType type, Args... args);
 
   std::unique_ptr<network::ResourceRequest> request_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
