@@ -5,7 +5,7 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 4689fe5c142b7d975fa94f1edb2f00f33201f0b9..6ca068087123a9b8150864ee2b3a4d39bfef007b 100644
+index 59306bf01c17e252d9ab11d0883fc94ec4736a84..e4a733bd0f46e326afb3efa1f29206bc8aef1637 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -91,6 +91,11 @@
@@ -109,8 +109,8 @@ index 4689fe5c142b7d975fa94f1edb2f00f33201f0b9..6ca068087123a9b8150864ee2b3a4d39
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2137,12 +2217,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
-               net::CreateCertVerifyProcBuiltin(cert_net_fetcher_)));
+@@ -2138,12 +2218,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+                   cert_net_fetcher_, /*system_trust_store_provider=*/nullptr)));
      }
  #endif
 -    if (!cert_verifier)
