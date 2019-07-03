@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 36e6f08c3d0ed6ef7f7d071b01c70e99c16efc05..2ada995112fec477e186a9de3e815d3be5dc1292 100644
+index ad82e3695847dcb3f71b3a26d4609029b6201ee8..01c3c1ece91a6478d1a7d075d304359de9050cb2 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3807,6 +3807,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3809,6 +3809,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,

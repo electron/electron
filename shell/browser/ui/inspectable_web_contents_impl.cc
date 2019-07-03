@@ -536,7 +536,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
   auto factory = partition->GetURLLoaderFactoryForBrowserProcess();
 
   auto simple_url_loader = network::SimpleURLLoader::Create(
-      std::move(resource_request), NO_TRAFFIC_ANNOTATION_YET);
+      std::move(resource_request), MISSING_TRAFFIC_ANNOTATION);
   auto resource_loader = std::make_unique<NetworkResourceLoader>(
       stream_id, this, std::move(simple_url_loader), factory.get(), callback);
   loaders_.insert(std::move(resource_loader));
