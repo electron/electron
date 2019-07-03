@@ -284,7 +284,7 @@ bool URLRequestNS::Write(v8::Local<v8::Value> data, bool is_last) {
 void URLRequestNS::FollowRedirect() {
   if (request_state_ & (STATE_CANCELED | STATE_CLOSED))
     return;
-  // TODO(zcbenz): Implement this.
+  follow_redirect_ = true;
 }
 
 bool URLRequestNS::SetExtraHeader(const std::string& name,
@@ -403,18 +403,36 @@ void URLRequestNS::OnRedirect(
     const net::RedirectInfo& redirect_info,
     const network::ResourceResponseHead& response_head,
     std::vector<std::string>* to_be_removed_headers) {
-  if (request_state_ & (STATE_CLOSED | STATE_CANCELED))
-    return;
   if (!loader_)
     return;
+
+  if (request_state_ & (STATE_CLOSED | STATE_CANCELED)) {
+    NOTREACHED();
+    Cancel();
+    return;
+  }
 
   switch (request_ref_->fetch_redirect_mode) {
     case network::mojom::FetchRedirectMode::kError:
       EmitRequestError(
           "Request cannot follow redirect with the current redirect mode");
       break;
-    case network::mojom::FetchRedirectMode::kFollow:
     case network::mojom::FetchRedirectMode::kManual:
+      // When redirect mode is "manual", the user has to explicitly call the
+      // FollowRedirect method to continue redirecting, otherwise the request
+      // would be cancelled.
+      //
+      // Note that the SimpleURLLoader always calls FollowRedirect and does not
+      // provide a formal way for us to cancel redirection, we have to cancel
+      // the request to prevent the redirection.
+      follow_redirect_ = false;
+      EmitRequestEvent(false, "redirect", redirect_info.status_code,
+                       redirect_info.new_method, redirect_info.new_url,
+                       response_head.headers.get());
+      if (!follow_redirect_)
+        Cancel();
+      break;
+    case network::mojom::FetchRedirectMode::kFollow:
       EmitRequestEvent(false, "redirect", redirect_info.status_code,
                        redirect_info.new_method, redirect_info.new_url,
                        response_head.headers.get());

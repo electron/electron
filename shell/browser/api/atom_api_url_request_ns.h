@@ -108,6 +108,9 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   // Whether request.end() has been called.
   bool last_chunk_written_ = false;
 
+  // Whether the redirect should be followed.
+  bool follow_redirect_ = true;
+
   // Upload progress.
   uint64_t upload_position_ = 0;
   uint64_t upload_total_ = 0;
