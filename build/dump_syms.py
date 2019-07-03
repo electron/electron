@@ -4,6 +4,7 @@ import collections
 import os
 import subprocess
 import sys
+import errno
 
 # The BINARY_INFO tuple describes a binary as dump_syms identifies it.
 BINARY_INFO = collections.namedtuple('BINARY_INFO',
