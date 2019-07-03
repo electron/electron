@@ -11,18 +11,14 @@
 #include "base/supports_user_data.h"
 #include "content/public/browser/browser_context.h"
 
-namespace base {
-class CommandLine;
-}
-
 namespace electron {
 
 class SessionPreferences : public base::SupportsUserData::Data {
  public:
   static SessionPreferences* FromBrowserContext(
       content::BrowserContext* context);
-  static void AppendExtraCommandLineSwitches(content::BrowserContext* context,
-                                             base::CommandLine* command_line);
+  static std::vector<base::FilePath::StringType> GetValidPreloads(
+      content::BrowserContext* context);
 
   explicit SessionPreferences(content::BrowserContext* context);
   ~SessionPreferences() override;
