@@ -199,7 +199,7 @@ bool TaskbarHost::SetThumbnailToolTip(HWND window, const std::string& tooltip) {
 }
 
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
-  if (ContainsKey(callback_map_, button_id)) {
+  if (base::Contains(callback_map_, button_id)) {
     auto callback = callback_map_[button_id];
     if (!callback.is_null())
       callback.Run();

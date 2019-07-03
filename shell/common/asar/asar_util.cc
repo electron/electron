@@ -31,7 +31,7 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   if (!g_archive_map_tls.Pointer()->Get())
     g_archive_map_tls.Pointer()->Set(new ArchiveMap);
   ArchiveMap& archive_map = *g_archive_map_tls.Pointer()->Get();
-  if (!ContainsKey(archive_map, path)) {
+  if (!base::Contains(archive_map, path)) {
     std::shared_ptr<Archive> archive(new Archive(path));
     if (!archive->Init())
       return nullptr;

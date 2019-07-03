@@ -71,6 +71,7 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   IconManager* GetIconManager();
 
   Browser* browser() { return browser_.get(); }
+  BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
 
  protected:
   // content::BrowserMainParts:
@@ -133,8 +134,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::list<base::OnceClosure> destructors_;
 
   device::mojom::GeolocationControlPtr geolocation_control_;
-
-  const content::MainFunctionParams main_function_params_;
 
   static AtomBrowserMainParts* self_;
 

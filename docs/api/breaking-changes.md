@@ -64,6 +64,10 @@ webFrame.setIsolatedWorldInfo(
   })
 ```
 
+### Removal of deprecated `marked` property on getBlinkMemoryInfo
+
+This property was removed in Chromium 77, and as such is no longer available.
+
 ## Planned Breaking API Changes (6.0)
 
 ### `win.setMenu(null)`
@@ -172,7 +176,7 @@ const w = new BrowserWindow({
 
 ### `nativeWindowOpen`
 
-Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled.
+Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled, unless `nodeIntegrationInSubFrames` is `true.
 
 ### Privileged Schemes Registration
 

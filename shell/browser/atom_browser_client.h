@@ -63,7 +63,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
 
-  std::string GetUserAgent() const override;
+  std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
 
   void SetCanUseCustomSiteInstance(bool should_disable);
@@ -109,7 +109,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool expired_previous_decision,
       const base::Callback<void(content::CertificateRequestResultType)>&
           callback) override;
-  void SelectClientCertificate(
+  base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList client_certs,
@@ -146,7 +146,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
   std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
-  net::NetLog* GetNetLog() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
@@ -160,7 +159,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       network::mojom::NetworkService* network_service) override;
   std::vector<base::FilePath> GetNetworkContextsParentDirectory() override;
   bool ShouldBypassCORB(int render_process_id) const override;
-  std::string GetProduct() const override;
+  std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
       NonNetworkURLLoaderFactoryMap* factories) override;

@@ -6,7 +6,8 @@ import os
 import sys
 import urllib2
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+sys.path.append(
+  os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from lib.config import s3_config
 from lib.util import s3put, scoped_cwd, safe_mkdir, get_out_dir, ELECTRON_DIR

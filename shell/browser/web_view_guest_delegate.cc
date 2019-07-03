@@ -61,7 +61,7 @@ void WebViewGuestDelegate::DidDetach() {
   ResetZoomController();
 }
 
-content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
+content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() {
   return embedder_web_contents_;
 }
 

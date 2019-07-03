@@ -8,19 +8,19 @@
   integrity sha512-ugvXJjwF5ldtUpa7D95kruNJ41yFQDEKyF5CW4TgKJnh+W/zmlBzXXeKTyqIgwMFrkePN2JqOBqcF0M0oOunow==
 
 abstract-socket@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/abstract-socket/-/abstract-socket-2.0.0.tgz#d83c93e7df30d27e23f3e82a763e7f5e78d916f9"
-  integrity sha1-2DyT598w0n4j8+gqdj5/XnjZFvk=
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/abstract-socket/-/abstract-socket-2.1.0.tgz#a57193dbbf585991b0dc811d7b18e053ff846f8a"
+  integrity sha512-rZ3G6Eqkdi/9PzYu03Xt1QEZ9aHYTnUpxLyV5EtjM/06BCDzYORTAfmCRAL6jIj98YqVviKGgt1qXcFUsM4e0w==
   dependencies:
     bindings "^1.2.1"
-    nan "^2.0.9"
+    nan "^2.12.1"
 
 "abstract-socket@github:nornagon/node-abstractsocket#v8-compat":
-  version "2.0.0"
-  resolved "https://codeload.github.com/nornagon/node-abstractsocket/tar.gz/7d9c770f9ffef14373349034f8820ff059879845"
+  version "2.1.0"
+  resolved "https://codeload.github.com/nornagon/node-abstractsocket/tar.gz/10c40472a0132c14451d1d8e4fdf534b00dc3797"
   dependencies:
     bindings "^1.2.1"
-    nan "^2.0.9"
+    nan "^2.12.1"
 
 ansi-regex@^2.0.0:
   version "2.1.1"
@@ -739,10 +739,10 @@ multiparty@^4.2.1:
     safe-buffer "5.1.2"
     uid-safe "2.1.5"
 
-nan@2.x, nan@^2.0.9, nan@^2.2.1:
-  version "2.13.2"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.13.2.tgz#f51dc7ae66ba7d5d55e1e6d4d8092e802c9aefe7"
-  integrity sha512-TghvYc72wlMGMVMluVo9WRJc0mB8KxxF/gZ4YYFy7V2ZQX9l7rgbPg7vjS9mt6U5HXODVFVI2bOduCzwOMv/lw==
+nan@2.x, nan@^2.12.1, nan@^2.2.1:
+  version "2.14.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.14.0.tgz#7818f722027b2459a86f0295d434d1fc2336c52c"
+  integrity sha512-INOFj37C7k3AfaNTtX8RhsTw7qRy7eLET14cROi9+5HAVbbHuIWUHEauBv5qT4Av2tWasiTY1Jw6puUNqRJXQg==
 
 nice-try@^1.0.4:
   version "1.0.5"

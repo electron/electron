@@ -58,8 +58,8 @@ MenuBar::MenuBar(RootView* window)
   RefreshColorCache();
   UpdateViewColors();
   SetFocusBehavior(FocusBehavior::ALWAYS);
-  SetLayoutManager(
-      std::make_unique<views::BoxLayout>(views::BoxLayout::kHorizontal));
+  SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal));
   window_->GetFocusManager()->AddFocusChangeListener(color_updater_.get());
 }
 

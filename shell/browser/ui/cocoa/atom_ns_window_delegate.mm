@@ -28,7 +28,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   // window delegate.
   auto* bridge_host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
       shell->GetNativeWindow());
-  auto* bridged_view = bridge_host->bridge_impl();
+  auto* bridged_view = bridge_host->GetInProcessNSWindowBridge();
   if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
     shell_ = shell;
     is_zooming_ = false;
@@ -88,11 +88,11 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   return frame;
 }
 
-- (void)windowDidBecomeMain:(NSNotification*)notification {
+- (void)windowDidBecomeKey:(NSNotification*)notification {
   shell_->NotifyWindowFocus();
 }
 
-- (void)windowDidResignMain:(NSNotification*)notification {
+- (void)windowDidResignKey:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
 }
 
@@ -249,7 +249,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   // has been closed.
   auto* bridge_host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
       shell_->GetNativeWindow());
-  auto* bridged_view = bridge_host->bridge_impl();
+  auto* bridged_view = bridge_host->GetInProcessNSWindowBridge();
   bridged_view->OnWindowWillClose();
 }
 

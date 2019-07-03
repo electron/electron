@@ -258,7 +258,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
     * `nodeIntegrationInSubFrames` Boolean (optional) - Experimental option for
-      enabling Node.js support in sub-frames such as iframes. All your preloads will load for
+      enabling Node.js support in sub-frames such as iframes and child windows. All your preloads will load for
       every iframe, you can use `process.isMainFrame` to determine if you are
       in the main frame or not.
     * `preload` String (optional) - Specifies a script that will be loaded before other
@@ -355,7 +355,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Console tab.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`. Child windows will always have node
-      integration disabled. **Note:** This option is currently
+      integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** This option is currently
       experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to `false`. **Note:** The

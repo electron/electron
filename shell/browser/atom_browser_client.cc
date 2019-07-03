@@ -116,6 +116,11 @@
 #include "chrome/browser/printing/printing_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
+#if defined(OS_MACOSX)
+#include "content/common/mac_helpers.h"
+#include "content/public/common/child_process_host.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -184,7 +189,7 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
   // for the frame host passed into RegisterPendingProcess.
-  if (base::ContainsKey(pending_processes_, process_id))
+  if (base::Contains(pending_processes_, process_id))
     return pending_processes_[process_id];
 
   // Certain render process will be created with no associated render view,
@@ -330,7 +335,7 @@ void AtomBrowserClient::ConsiderSiteInstanceForAffinity(
 }
 
 bool AtomBrowserClient::IsRendererSubFrame(int process_id) const {
-  return base::ContainsKey(renderer_is_subframe_, process_id);
+  return base::Contains(renderer_is_subframe_, process_id);
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
@@ -490,7 +495,17 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Make sure we're about to launch a known executable
   {
     base::FilePath child_path;
+#if defined(OS_MACOSX)
+    int flags = content::ChildProcessHost::CHILD_NORMAL;
+    if (base::EndsWith(command_line->GetProgram().value(),
+                       content::kMacHelperSuffix_renderer,
+                       base::CompareCase::SENSITIVE)) {
+      flags = content::ChildProcessHost::CHILD_RENDERER;
+    }
+    child_path = content::ChildProcessHost::GetChildPath(flags);
+#else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+#endif
 
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
@@ -601,7 +616,7 @@ void AtomBrowserClient::AllowCertificateError(
   }
 }
 
-void AtomBrowserClient::SelectClientCertificate(
+base::OnceClosure AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
@@ -611,6 +626,7 @@ void AtomBrowserClient::SelectClientCertificate(
                                        std::move(client_certs),
                                        std::move(delegate));
   }
+  return base::OnceClosure();
 }
 
 bool AtomBrowserClient::CanCreateWindow(
@@ -737,10 +753,6 @@ AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
 std::vector<service_manager::Manifest>
 AtomBrowserClient::GetExtraServiceManifests() {
   return GetElectronBuiltinServiceManifests();
-}
-
-net::NetLog* AtomBrowserClient::GetNetLog() {
-  return g_browser_process->net_log();
 }
 
 std::unique_ptr<content::BrowserMainParts>
@@ -917,11 +929,11 @@ bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
   return it != process_preferences_.end() && !it->second.web_security;
 }
 
-std::string AtomBrowserClient::GetProduct() const {
+std::string AtomBrowserClient::GetProduct() {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
-std::string AtomBrowserClient::GetUserAgent() const {
+std::string AtomBrowserClient::GetUserAgent() {
   if (user_agent_override_.empty())
     return GetApplicationUserAgent();
   return user_agent_override_;

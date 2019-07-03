@@ -9,6 +9,7 @@
 
 #include "base/stl_util.h"
 #include "shell/browser/atom_browser_context.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/native_mate_converters/once_callback.h"
 #include "shell/common/promise_util.h"
@@ -60,7 +61,7 @@ ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
   ProtocolError error = ProtocolError::OK;
-  if (!base::ContainsKey(handlers_, scheme))
+  if (!base::Contains(handlers_, scheme))
     handlers_[scheme] = std::make_pair(type, handler);
   else
     error = ProtocolError::REGISTERED;
@@ -70,7 +71,7 @@ ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
                                     mate::Arguments* args) {
   ProtocolError error = ProtocolError::OK;
-  if (base::ContainsKey(handlers_, scheme))
+  if (base::Contains(handlers_, scheme))
     handlers_.erase(scheme);
   else
     error = ProtocolError::NOT_REGISTERED;
@@ -78,14 +79,14 @@ void ProtocolNS::UnregisterProtocol(const std::string& scheme,
 }
 
 bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
-  return base::ContainsKey(handlers_, scheme);
+  return base::Contains(handlers_, scheme);
 }
 
 ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
                                             const std::string& scheme,
                                             const ProtocolHandler& handler) {
   ProtocolError error = ProtocolError::OK;
-  if (!base::ContainsKey(intercept_handlers_, scheme))
+  if (!base::Contains(intercept_handlers_, scheme))
     intercept_handlers_[scheme] = std::make_pair(type, handler);
   else
     error = ProtocolError::INTERCEPTED;
@@ -95,7 +96,7 @@ ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
                                      mate::Arguments* args) {
   ProtocolError error = ProtocolError::OK;
-  if (base::ContainsKey(intercept_handlers_, scheme))
+  if (base::Contains(intercept_handlers_, scheme))
     intercept_handlers_.erase(scheme);
   else
     error = ProtocolError::NOT_INTERCEPTED;
@@ -103,11 +104,18 @@ void ProtocolNS::UninterceptProtocol(const std::string& scheme,
 }
 
 bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
-  return base::ContainsKey(intercept_handlers_, scheme);
+  return base::Contains(intercept_handlers_, scheme);
 }
 
-v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
-    const std::string& scheme) {
+v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
+                                                     mate::Arguments* args) {
+  node::Environment* env = node::Environment::GetCurrent(args->isolate());
+  EmitDeprecationWarning(
+      env,
+      "The protocol.isProtocolHandled API is deprecated, use "
+      "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
+      "instead.",
+      "ProtocolDeprecateIsProtocolHandled");
   util::Promise promise(isolate());
   promise.Resolve(IsProtocolRegistered(scheme) ||
                   IsProtocolIntercepted(scheme) ||
@@ -118,7 +126,7 @@ v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(
                   // So we have to test against a hard-coded builtin schemes
                   // list make it work with old code. We should deprecate this
                   // API with the new |isProtocolRegistered| API.
-                  base::ContainsValue(kBuiltinSchemes, scheme));
+                  base::Contains(kBuiltinSchemes, scheme));
   return promise.GetHandle();
 }
 
@@ -126,6 +134,11 @@ void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,
                                         ProtocolError error) {
   CompletionCallback callback;
   if (args->GetNext(&callback)) {
+    node::Environment* env = node::Environment::GetCurrent(args->isolate());
+    EmitDeprecationWarning(
+        env,
+        "The callback argument of protocol module APIs is no longer needed.",
+        "ProtocolDeprecateCallback");
     if (error == ProtocolError::OK)
       callback.Run(v8::Null(args->isolate()));
     else

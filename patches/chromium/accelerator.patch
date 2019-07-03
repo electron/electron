@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= should show as Ctrl-+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index dadc140e9429c166ecd4c653c9ef5d0d4c4db2a4..bc93a9ecb28ff6973fc4d15f67a17d545c169a89 100644
+index 841a8ccd1f0ca5073cf0f0621f81561ed6425e0d..ac4c04b74b0a3b8e6d6c375fef021abbd8789a14 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -32,7 +32,7 @@ index dadc140e9429c166ecd4c653c9ef5d0d4c4db2a4..bc93a9ecb28ff6973fc4d15f67a17d54
  namespace ui {
  
 @@ -150,7 +149,15 @@ base::string16 Accelerator::GetShortcutText() const {
-   shortcut = KeyCodeToName(key_code_);
+   shortcut = KeyCodeToName();
  #endif
  
 +  unsigned int flags = 0;
@@ -75,7 +75,7 @@ index dadc140e9429c166ecd4c653c9ef5d0d4c4db2a4..bc93a9ecb28ff6973fc4d15f67a17d54
    }
  
    // Checking whether the character used for the accelerator is alphanumeric.
-@@ -237,7 +237,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+@@ -356,7 +356,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);

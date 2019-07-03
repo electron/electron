@@ -271,7 +271,7 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     net::CompletionOnceCallback callback,
     GURL* new_url) {
-  if (!base::ContainsKey(response_listeners_, kOnBeforeRequest)) {
+  if (!base::Contains(response_listeners_, kOnBeforeRequest)) {
     for (const auto& domain : ignore_connections_limit_domains_) {
       if (request->url().DomainIs(domain)) {
         // Allow unlimited concurrent connections.
@@ -291,7 +291,7 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
     net::URLRequest* request,
     net::CompletionOnceCallback callback,
     net::HttpRequestHeaders* headers) {
-  if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
+  if (!base::Contains(response_listeners_, kOnBeforeSendHeaders))
     return net::OK;
 
   return HandleResponseEvent(kOnBeforeSendHeaders, request, std::move(callback),
@@ -301,7 +301,7 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
 void AtomNetworkDelegate::OnStartTransaction(
     net::URLRequest* request,
     const net::HttpRequestHeaders& headers) {
-  if (!base::ContainsKey(simple_listeners_, kOnSendHeaders))
+  if (!base::Contains(simple_listeners_, kOnSendHeaders))
     return;
 
   HandleSimpleEvent(kOnSendHeaders, request, headers);
@@ -313,7 +313,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
     const net::HttpResponseHeaders* original,
     scoped_refptr<net::HttpResponseHeaders>* override,
     GURL* allowed) {
-  if (!base::ContainsKey(response_listeners_, kOnHeadersReceived))
+  if (!base::Contains(response_listeners_, kOnHeadersReceived))
     return net::OK;
 
   return HandleResponseEvent(
@@ -323,7 +323,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
 
 void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                                            const GURL& new_location) {
-  if (!base::ContainsKey(simple_listeners_, kOnBeforeRedirect))
+  if (!base::Contains(simple_listeners_, kOnBeforeRedirect))
     return;
 
   HandleSimpleEvent(
@@ -333,7 +333,7 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
 
 void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request,
                                             int net_error) {
-  if (!base::ContainsKey(simple_listeners_, kOnResponseStarted))
+  if (!base::Contains(simple_listeners_, kOnResponseStarted))
     return;
 
   if (request->status().status() != net::URLRequestStatus::SUCCESS)
@@ -363,7 +363,7 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request,
     return;
   }
 
-  if (!base::ContainsKey(simple_listeners_, kOnCompleted))
+  if (!base::Contains(simple_listeners_, kOnCompleted))
     return;
 
   HandleSimpleEvent(kOnCompleted, request, request->response_headers(),
@@ -454,7 +454,7 @@ bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request,
                                           bool started,
                                           int net_error) {
-  if (!base::ContainsKey(simple_listeners_, kOnErrorOccurred))
+  if (!base::Contains(simple_listeners_, kOnErrorOccurred))
     return;
 
   HandleSimpleEvent(kOnErrorOccurred, request, request->was_cached(),
@@ -519,7 +519,7 @@ void AtomNetworkDelegate::OnListenerResultInIO(
     T out,
     std::unique_ptr<base::DictionaryValue> response) {
   // The request has been destroyed.
-  if (!base::ContainsKey(callbacks_, id))
+  if (!base::Contains(callbacks_, id))
     return;
 
   ReadFromResponseObject(*response, out);

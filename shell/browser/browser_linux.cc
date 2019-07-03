@@ -147,21 +147,32 @@ bool Browser::IsEmojiPanelSupported() {
 }
 
 void Browser::ShowAboutPanel() {
-  std::string app_name, version, copyright, icon_path, website;
-
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
 
-  if (about_panel_options_.GetString("applicationName", &app_name))
-    gtk_about_dialog_set_program_name(dialog, app_name.c_str());
-  if (about_panel_options_.GetString("applicationVersion", &version))
-    gtk_about_dialog_set_version(dialog, version.c_str());
-  if (about_panel_options_.GetString("copyright", &copyright))
-    gtk_about_dialog_set_copyright(dialog, copyright.c_str());
-  if (about_panel_options_.GetString("website", &website))
-    gtk_about_dialog_set_website(dialog, website.c_str());
-  if (about_panel_options_.GetString("iconPath", &icon_path)) {
+  const auto& opts = about_panel_options_;
+  const std::string* str;
+  const base::Value* val;
+
+  if ((str = opts.FindStringKey("applicationName"))) {
+    gtk_about_dialog_set_program_name(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("applicationVersion"))) {
+    gtk_about_dialog_set_version(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("copyright"))) {
+    gtk_about_dialog_set_copyright(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("website"))) {
+    gtk_about_dialog_set_website(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("iconPath"))) {
     GError* error = nullptr;
-    GdkPixbuf* icon = gdk_pixbuf_new_from_file(icon_path.c_str(), &error);
+    constexpr int width = 64;   // width of about panel icon in pixels
+    constexpr int height = 64;  // height of about panel icon in pixels
+
+    // set preserve_aspect_ratio to true
+    GdkPixbuf* icon =
+        gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
     if (error != nullptr) {
       g_warning("%s", error->message);
       g_clear_error(&error);
@@ -171,19 +182,27 @@ void Browser::ShowAboutPanel() {
     }
   }
 
+  if ((val = opts.FindListKey("authors"))) {
+    std::vector<const char*> cstrs;
+    for (const auto& authorVal : val->GetList()) {
+      if (authorVal.is_string()) {
+        cstrs.push_back(authorVal.GetString().c_str());
+      }
+    }
+    if (cstrs.empty()) {
+      LOG(WARNING) << "No author strings found in 'authors' array";
+    } else {
+      cstrs.push_back(nullptr);  // null-terminated char* array
+      gtk_about_dialog_set_authors(dialog, cstrs.data());
+    }
+  }
+
   gtk_dialog_run(GTK_DIALOG(dialog));
   g_clear_object(&dialog);
 }
 
 void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
-  about_panel_options_.Clear();
-
-  for (const auto& pair : options) {
-    const std::string& key = pair.first;
-    const auto& val = pair.second;
-    if (!key.empty() && val->is_string())
-      about_panel_options_.SetString(key, val->GetString());
-  }
+  about_panel_options_ = options.Clone();
 }
 
 }  // namespace electron

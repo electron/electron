@@ -13,8 +13,7 @@
 
 namespace electron {
 
-class AtomMenuModel : public ui::SimpleMenuModel,
-                      public base::RefCounted<AtomMenuModel> {
+class AtomMenuModel : public ui::SimpleMenuModel {
  public:
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
@@ -49,6 +48,7 @@ class AtomMenuModel : public ui::SimpleMenuModel,
   };
 
   explicit AtomMenuModel(Delegate* delegate);
+  ~AtomMenuModel() override;
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
@@ -69,9 +69,6 @@ class AtomMenuModel : public ui::SimpleMenuModel,
   AtomMenuModel* GetSubmenuModelAt(int index);
 
  private:
-  friend class base::RefCounted<AtomMenuModel>;
-  ~AtomMenuModel() override;
-
   Delegate* delegate_;  // weak ref.
 
   std::map<int, base::string16> roles_;  // command id -> role

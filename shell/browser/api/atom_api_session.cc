@@ -28,6 +28,7 @@
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/completion_repeating_callback.h"
@@ -39,6 +40,7 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
 #include "shell/browser/api/atom_api_download_item.h"
@@ -415,6 +417,40 @@ void Session::DisableNetworkEmulation() {
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
 
+class ElectronCertVerifierClient : public network::mojom::CertVerifierClient {
+ public:
+  using CertVerifyProc =
+      base::RepeatingCallback<void(const VerifyRequestParams& request,
+                                   base::RepeatingCallback<void(int)>)>;
+  explicit ElectronCertVerifierClient(CertVerifyProc proc)
+      : cert_verify_proc_(proc) {}
+  ~ElectronCertVerifierClient() override = default;
+
+  // network::mojom::CertVerifierClient
+  void Verify(int default_error,
+              const net::CertVerifyResult& default_result,
+              const scoped_refptr<net::X509Certificate>& certificate,
+              const std::string& hostname,
+              int flags,
+              const base::Optional<std::string>& ocsp_response,
+              VerifyCallback callback) override {
+    VerifyRequestParams params;
+    params.hostname = hostname;
+    params.default_result = net::ErrorToString(default_error);
+    params.error_code = default_error;
+    params.certificate = certificate;
+    cert_verify_proc_.Run(
+        params,
+        base::AdaptCallbackForRepeating(base::BindOnce(
+            [](VerifyCallback callback, const net::CertVerifyResult& result,
+               int err) { std::move(callback).Run(err, result); },
+            std::move(callback), default_result)));
+  }
+
+ private:
+  CertVerifyProc cert_verify_proc_;
+};
+
 void WrapVerifyProc(
     base::RepeatingCallback<void(const VerifyRequestParams& request,
                                  base::RepeatingCallback<void(int)>)> proc,
@@ -425,19 +461,32 @@ void WrapVerifyProc(
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  base::RepeatingCallback<void(const VerifyRequestParams& request,
-                               base::RepeatingCallback<void(int)>)>
-      proc;
+  ElectronCertVerifierClient::CertVerifyProc proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
   }
 
-  base::PostTaskWithTraits(
-      FROM_HERE, {BrowserThread::IO},
-      base::BindOnce(&SetCertVerifyProcInIO,
-                     WrapRefCounted(browser_context_->GetRequestContext()),
-                     base::BindRepeating(&WrapVerifyProc, proc)));
+  if (base::FeatureList::IsEnabled(network::features::kNetworkService)) {
+    network::mojom::CertVerifierClientPtr cert_verifier_client;
+    if (proc) {
+      mojo::MakeStrongBinding(
+          std::make_unique<ElectronCertVerifierClient>(proc),
+          mojo::MakeRequest(&cert_verifier_client));
+    }
+    content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+        ->GetNetworkContext()
+        ->SetCertVerifierClient(std::move(cert_verifier_client));
+
+    // This causes the cert verifier cache to be cleared.
+    content::GetNetworkService()->OnCertDBChanged();
+  } else {
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::IO},
+        base::BindOnce(&SetCertVerifyProcInIO,
+                       WrapRefCounted(browser_context_->GetRequestContext()),
+                       base::BindRepeating(&WrapVerifyProc, proc)));
+  }
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,

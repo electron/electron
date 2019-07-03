@@ -38,7 +38,7 @@ AtomWebUIControllerFactory::~AtomWebUIControllerFactory() {}
 
 content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
-    const GURL& url) const {
+    const GURL& url) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (url.host() == kPdfViewerUIHost) {
     return const_cast<AtomWebUIControllerFactory*>(this);
@@ -53,19 +53,19 @@ content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
 
 bool AtomWebUIControllerFactory::UseWebUIForURL(
     content::BrowserContext* browser_context,
-    const GURL& url) const {
+    const GURL& url) {
   return GetWebUIType(browser_context, url) != content::WebUI::kNoWebUI;
 }
 
 bool AtomWebUIControllerFactory::UseWebUIBindingsForURL(
     content::BrowserContext* browser_context,
-    const GURL& url) const {
+    const GURL& url) {
   return UseWebUIForURL(browser_context, url);
 }
 
 std::unique_ptr<content::WebUIController>
 AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
-                                                        const GURL& url) const {
+                                                        const GURL& url) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (url.host() == kPdfViewerUIHost) {
     base::StringPairs toplevel_params;

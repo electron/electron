@@ -10,7 +10,6 @@
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
-#include "components/net_log/net_export_file_writer.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
@@ -158,14 +157,6 @@ SystemNetworkContextManager::GetSharedURLLoaderFactory() {
   return shared_url_loader_factory_;
 }
 
-net_log::NetExportFileWriter*
-SystemNetworkContextManager::GetNetExportFileWriter() {
-  if (!net_export_file_writer_) {
-    net_export_file_writer_ = std::make_unique<net_log::NetExportFileWriter>();
-  }
-  return net_export_file_writer_.get();
-}
-
 network::mojom::NetworkContextParamsPtr
 SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
@@ -177,6 +168,10 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithSelfOwnedReceiver();
+
+#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
+  network_context_params->enable_ftp_url_support = true;
+#endif
 
   return network_context_params;
 }
@@ -256,10 +251,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
       electron::AtomBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
-
-#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
-  network_context_params->enable_ftp_url_support = true;
-#endif
 
   network_context_params->primary_network_context = true;
 

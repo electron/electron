@@ -10,11 +10,11 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    'f200986dfaabd6aad6a4b37dad7aae42fec349e9',
+    '3062b7cf090f1d9522c04ca8fa0a906f88ababe9',
   'node_version':
-    '0a300f60bce0c8f0cb3d846fcb0e1f55f26013ee',
+    'f4a3ef181f7e52663034aff129d6b91230a318bd',
   'nan_version':
-    '960dd6c70fc9eb136efdf37b4bef18fadbc3436f',
+    '2ee313aaca52e2b478965ac50eb5082520380d1b',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -23,8 +23,7 @@ vars = {
   'boto_git': 'https://github.com/boto',
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
-  # FIXME: Once https://github.com/nodejs/nan/pull/857 lands this should point at nodejs/nan
-  'nodejs_git': 'https://github.com/marshallofsound',
+  'nodejs_git': 'https://github.com/nodejs',
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
 

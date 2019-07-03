@@ -65,7 +65,8 @@ class ProtocolNS : public mate::TrackableObject<ProtocolNS> {
   bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
-  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme);
+  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme,
+                                           mate::Arguments* args);
 
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>

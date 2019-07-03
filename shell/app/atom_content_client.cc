@@ -177,24 +177,24 @@ AtomContentClient::AtomContentClient() {}
 
 AtomContentClient::~AtomContentClient() {}
 
-base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
+base::string16 AtomContentClient::GetLocalizedString(int message_id) {
   return l10n_util::GetStringUTF16(message_id);
 }
 
 base::StringPiece AtomContentClient::GetDataResource(
     int resource_id,
-    ui::ScaleFactor scale_factor) const {
+    ui::ScaleFactor scale_factor) {
   return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
       resource_id, scale_factor);
 }
 
-gfx::Image& AtomContentClient::GetNativeImageNamed(int resource_id) const {
+gfx::Image& AtomContentClient::GetNativeImageNamed(int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(
       resource_id);
 }
 
 base::RefCountedMemory* AtomContentClient::GetDataResourceBytes(
-    int resource_id) const {
+    int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
       resource_id);
 }
@@ -268,7 +268,7 @@ void AtomContentClient::AddContentDecryptionModules(
   }
 }
 
-bool AtomContentClient::IsDataResourceGzipped(int resource_id) const {
+bool AtomContentClient::IsDataResourceGzipped(int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().IsGzipped(resource_id);
 }
 

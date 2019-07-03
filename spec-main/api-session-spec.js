@@ -468,6 +468,26 @@ describe('session module', () => {
       await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/)
       expect(w.webContents.getTitle()).to.equal(url)
     })
+
+    it('saves cached results', async () => {
+      let numVerificationRequests = 0
+      session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
+        numVerificationRequests++
+        callback(-2)
+      })
+
+      const url = `https://127.0.0.1:${server.address().port}`
+      await expect(w.loadURL(url), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/)
+      await emittedOnce(w.webContents, 'did-stop-loading')
+      await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/)
+      expect(w.webContents.getTitle()).to.equal(url + '/test')
+
+      // TODO(nornagon): there's no way to check if the network service is
+      // enabled from JS, so once we switch it on by default just change this
+      // test :)
+      const networkServiceEnabled = false
+      expect(numVerificationRequests).to.equal(networkServiceEnabled ? 1 : 2)
+    })
   })
 
   describe('ses.clearAuthCache(options)', () => {
@@ -792,9 +812,22 @@ describe('session module', () => {
 
   describe('ses.setPermissionRequestHandler(handler)', () => {
     it('cancels any pending requests when cleared', async () => {
+      if (w != null) w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: `very-temp-permision-handler`,
+          nodeIntegration: true,
+        }
+      })
+
       const ses = w.webContents.session
       ses.setPermissionRequestHandler(() => {
         ses.setPermissionRequestHandler(null)
+      })
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb(`<html><script>(${remote})()</script></html>`)
       })
 
       const result = emittedOnce(require('electron').ipcMain, 'message')
@@ -805,7 +838,7 @@ describe('session module', () => {
         });
       }
 
-      await w.loadURL(`data:text/html,<script>(${remote})()</script>`)
+      await w.loadURL('https://myfakesite')
 
       const [,name] = await result
       expect(name).to.deep.equal('SecurityError')

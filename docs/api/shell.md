@@ -36,9 +36,8 @@ Open the given file in the desktop's default manner.
 
 * `url` String - Max 2081 characters on windows.
 * `options` Object (optional)
-  * `activate` Boolean (optional) - `true` to bring the opened application to the
-    foreground. The default is `true`. _macOS_
-  * `workingDirectory` String (optional) - The working directory. _Windows_
+  * `activate` Boolean (optional) _macOS_ - `true` to bring the opened application to the foreground. The default is `true`.
+  * `workingDirectory` String (optional) _Windows_ - The working directory.
 
 Returns `Promise<void>`
 

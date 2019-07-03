@@ -74,6 +74,7 @@ steps:
   timeoutInMinutes: 10
   env:
     ELECTRON_DISABLE_SANDBOX: 1
+    ELECTRON_DISABLE_SECURITY_WARNINGS: 1
 
 - bash: |
     cd src

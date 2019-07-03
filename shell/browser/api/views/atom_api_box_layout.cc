@@ -22,9 +22,9 @@ struct Converter<views::BoxLayout::Orientation> {
     if (!ConvertFromV8(isolate, val, &orientation))
       return false;
     if (orientation == "horizontal")
-      *out = views::BoxLayout::kHorizontal;
+      *out = views::BoxLayout::Orientation::kHorizontal;
     else if (orientation == "vertical")
-      *out = views::BoxLayout::kVertical;
+      *out = views::BoxLayout::Orientation::kVertical;
     else
       return false;
     return true;

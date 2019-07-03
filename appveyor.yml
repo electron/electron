@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: libcc-20-vs2017-15.9
+image: vs2017-15.9-10.0.18362
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -52,7 +52,7 @@ build_script:
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - ps: if (Test-Path src\electron) { Remove-Item src\electron -Recurse }
+  - mkdir src
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"

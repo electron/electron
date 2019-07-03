@@ -23,10 +23,6 @@
 #include "shell/browser/io_thread.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
-namespace net_log {
-class ChromeNetLog;
-}
-
 namespace printing {
 class PrintJobManager;
 }
@@ -44,7 +40,7 @@ class BrowserProcessImpl : public BrowserProcess {
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
   void PostEarlyInitialization();
-  void PreCreateThreads(const base::CommandLine& command_line);
+  void PreCreateThreads();
   void PostDestroyThreads();
   void PostMainMessageLoopRun();
 
@@ -58,7 +54,6 @@ class BrowserProcessImpl : public BrowserProcess {
   rappor::RapporServiceImpl* rappor_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
-  net::URLRequestContextGetter* system_request_context() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()
       override;
   variations::VariationsService* variations_service() override;
@@ -66,7 +61,6 @@ class BrowserProcessImpl : public BrowserProcess {
   extensions::EventRouterForwarder* extension_event_router_forwarder() override;
   NotificationUIManager* notification_ui_manager() override;
   NotificationPlatformBridge* notification_platform_bridge() override;
-  IOThread* io_thread() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
   WatchDogThread* watchdog_thread() override;
@@ -89,7 +83,6 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
-  net_log::ChromeNetLog* net_log() override;
   component_updater::ComponentUpdateService* component_updater() override;
   component_updater::SupervisedUserWhitelistInstaller*
   supervised_user_whitelist_installer() override;
@@ -115,13 +108,14 @@ class BrowserProcessImpl : public BrowserProcess {
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
 
+  IOThread* io_thread() const { return io_thread_.get(); }
+
  private:
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::unique_ptr<IOThread> io_thread_;
-  std::unique_ptr<net_log::ChromeNetLog> net_log_;
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);

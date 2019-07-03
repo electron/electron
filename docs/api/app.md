@@ -1178,10 +1178,11 @@ Show the app's about panel options. These options can be overridden with `app.se
   * `applicationName` String (optional) - The app's name.
   * `applicationVersion` String (optional) - The app's version.
   * `copyright` String (optional) - Copyright information.
-  * `version` String (optional) - The app's build version number. _macOS_
-  * `credits` String (optional) - Credit information. _macOS_
-  * `website` String (optional) - The app's website. _Linux_
-  * `iconPath` String (optional) - Path to the app's icon. _Linux_
+  * `version` String (optional) - The app's build version number.
+  * `credits` String (optional) _macOS_ - Credit information.
+  * `authors` String[] (optional) _Linux_ - List of app authors.
+  * `website` String (optional) _Linux_ - The app's website.
+  * `iconPath` String (optional) _Linux_ - Path to the app's icon. Will be shown as 64x64 pixels while retaining aspect ratio.
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file on MacOS. See the [Apple docs][about-panel-options] for more details. On Linux, values must be set in order to be shown; there are no defaults.
