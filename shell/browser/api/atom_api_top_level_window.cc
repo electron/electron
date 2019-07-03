@@ -943,14 +943,14 @@ bool TopLevelWindow::HookWindowMessage(UINT message,
 }
 
 void TopLevelWindow::UnhookWindowMessage(UINT message) {
-  if (!ContainsKey(messages_callback_map_, message))
+  if (!base::Contains(messages_callback_map_, message))
     return;
 
   messages_callback_map_.erase(message);
 }
 
 bool TopLevelWindow::IsWindowMessageHooked(UINT message) {
-  return ContainsKey(messages_callback_map_, message);
+  return base::Contains(messages_callback_map_, message);
 }
 
 void TopLevelWindow::UnhookAllWindowMessages() {

@@ -53,7 +53,7 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
     return true;
   }
 
-  if (base::ContainsKey(protocol_handler_map_, scheme))
+  if (base::Contains(protocol_handler_map_, scheme))
     return false;
   protocol_handler_map_[scheme] = protocol_handler.release();
   return true;
@@ -62,8 +62,8 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
 bool AtomURLRequestJobFactory::InterceptProtocol(
     const std::string& scheme,
     std::unique_ptr<ProtocolHandler> protocol_handler) {
-  if (!base::ContainsKey(protocol_handler_map_, scheme) ||
-      base::ContainsKey(original_protocols_, scheme))
+  if (!base::Contains(protocol_handler_map_, scheme) ||
+      base::Contains(original_protocols_, scheme))
     return false;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
   protocol_handler_map_[scheme] = protocol_handler.release();
@@ -82,7 +82,7 @@ bool AtomURLRequestJobFactory::UninterceptProtocol(const std::string& scheme) {
 
 bool AtomURLRequestJobFactory::HasProtocolHandler(
     const std::string& scheme) const {
-  return base::ContainsKey(protocol_handler_map_, scheme);
+  return base::Contains(protocol_handler_map_, scheme);
 }
 
 void AtomURLRequestJobFactory::Clear() {

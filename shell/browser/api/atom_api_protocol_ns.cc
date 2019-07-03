@@ -61,7 +61,7 @@ ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
   ProtocolError error = ProtocolError::OK;
-  if (!base::ContainsKey(handlers_, scheme))
+  if (!base::Contains(handlers_, scheme))
     handlers_[scheme] = std::make_pair(type, handler);
   else
     error = ProtocolError::REGISTERED;
@@ -71,7 +71,7 @@ ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
                                     mate::Arguments* args) {
   ProtocolError error = ProtocolError::OK;
-  if (base::ContainsKey(handlers_, scheme))
+  if (base::Contains(handlers_, scheme))
     handlers_.erase(scheme);
   else
     error = ProtocolError::NOT_REGISTERED;
@@ -79,14 +79,14 @@ void ProtocolNS::UnregisterProtocol(const std::string& scheme,
 }
 
 bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
-  return base::ContainsKey(handlers_, scheme);
+  return base::Contains(handlers_, scheme);
 }
 
 ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
                                             const std::string& scheme,
                                             const ProtocolHandler& handler) {
   ProtocolError error = ProtocolError::OK;
-  if (!base::ContainsKey(intercept_handlers_, scheme))
+  if (!base::Contains(intercept_handlers_, scheme))
     intercept_handlers_[scheme] = std::make_pair(type, handler);
   else
     error = ProtocolError::INTERCEPTED;
@@ -96,7 +96,7 @@ ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
                                      mate::Arguments* args) {
   ProtocolError error = ProtocolError::OK;
-  if (base::ContainsKey(intercept_handlers_, scheme))
+  if (base::Contains(intercept_handlers_, scheme))
     intercept_handlers_.erase(scheme);
   else
     error = ProtocolError::NOT_INTERCEPTED;
@@ -104,7 +104,7 @@ void ProtocolNS::UninterceptProtocol(const std::string& scheme,
 }
 
 bool ProtocolNS::IsProtocolIntercepted(const std::string& scheme) {
-  return base::ContainsKey(intercept_handlers_, scheme);
+  return base::Contains(intercept_handlers_, scheme);
 }
 
 v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
@@ -126,7 +126,7 @@ v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
                   // So we have to test against a hard-coded builtin schemes
                   // list make it work with old code. We should deprecate this
                   // API with the new |isProtocolRegistered| API.
-                  base::ContainsValue(kBuiltinSchemes, scheme));
+                  base::Contains(kBuiltinSchemes, scheme));
   return promise.GetHandle();
 }
 

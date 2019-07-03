@@ -25,7 +25,7 @@ index a2902adc59b6b4083334130f3a8e29fca0c440d2..34673d9ab62311c458a581f98865014f
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0720b7fcb 100644
+index 81bdc91eb3513fc9ebf3a5fc93e1cdb02b0ac11a..db980868272e5398d2100d5968d1b35f0d48e3eb 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -24,9 +24,11 @@
@@ -40,7 +40,7 @@ index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/input_event_ack_state.h"
  #include "content/public/common/screen_info.h"
-@@ -75,10 +77,12 @@ class CursorManager;
+@@ -75,9 +77,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -48,12 +48,11 @@ index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0
  class SyntheticGestureTarget;
  class TextInputManager;
  class TouchSelectionControllerClientManager;
- class WebContentsAccessibility;
 +class WebContentsView;
  class WebCursor;
  class DelegatedFrameHost;
  struct TextInputState;
-@@ -136,6 +140,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -135,6 +139,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
                                       bool destination_is_loaded,
                                       bool destination_is_frozen) final;
  
@@ -63,7 +62,7 @@ index 903131f45d4fa82af9a6315227505b54ee0f1560..6450a05a4829731d3dc2338fd51ef6d0
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -364,6 +371,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -363,6 +370,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

@@ -36,12 +36,12 @@ void StopWorker(int document_cookie) {
     return;
   scoped_refptr<printing::PrintQueriesQueue> queue =
       g_browser_process->print_job_manager()->queue();
-  scoped_refptr<printing::PrinterQuery> printer_query =
+  std::unique_ptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&printing::PrinterQuery::StopWorker, printer_query));
+    base::PostTaskWithTraits(FROM_HERE, {BrowserThread::IO},
+                             base::BindOnce(&printing::PrinterQuery::StopWorker,
+                                            std::move(printer_query)));
   }
 }
 
@@ -113,7 +113,7 @@ void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  if (status != printing::mojom::PdfCompositor::Status::SUCCESS) {
+  if (status != printing::mojom::PdfCompositor::Status::kSuccess) {
     DLOG(ERROR) << "Compositing pdf failed with error " << status;
     RejectPromise(ids.request_id);
     return;

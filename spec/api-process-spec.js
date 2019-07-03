@@ -42,7 +42,6 @@ describe('process module', () => {
     it('returns blink memory information object', () => {
       const heapStats = process.getBlinkMemoryInfo()
       expect(heapStats.allocated).to.be.a('number')
-      expect(heapStats.marked).to.be.a('number')
       expect(heapStats.total).to.be.a('number')
     })
   })

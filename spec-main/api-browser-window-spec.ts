@@ -6,7 +6,7 @@ import * as os from 'os'
 import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
-import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, screen, webContents } from 'electron'
+import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
@@ -215,6 +215,18 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.loadURL(url)', () => {
     let w = null as unknown as BrowserWindow
+    const scheme = 'other'
+    const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js')
+    before((done) => {
+      protocol.registerFileProtocol(scheme, (request, callback) => {
+        callback(srcPath)
+      }, (error) => done(error))
+    })
+
+    after(() => {
+      protocol.unregisterProtocol(scheme)
+    })
+
     beforeEach(() => {
       w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
     })
@@ -399,7 +411,7 @@ describe('BrowserWindow module', () => {
         expect(test).to.equal('test')
         done()
       })
-      w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}` })
+      w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `other://${path.join(fixtures, 'api')}${path.sep}` })
     })
   })
 

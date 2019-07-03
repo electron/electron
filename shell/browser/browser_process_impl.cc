@@ -7,8 +7,6 @@
 #include <utility>
 
 #include "chrome/common/chrome_switches.h"
-#include "components/net_log/chrome_net_log.h"
-#include "components/net_log/net_export_file_writer.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
@@ -18,7 +16,6 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/common/content_switches.h"
-#include "net/log/net_log_capture_mode.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
@@ -90,33 +87,16 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
 
-void BrowserProcessImpl::PreCreateThreads(
-    const base::CommandLine& command_line) {
+void BrowserProcessImpl::PreCreateThreads() {
   // Must be created before the IOThread.
   // Once IOThread class is no longer needed,
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
 
-  net_log_ = std::make_unique<net_log::ChromeNetLog>();
-  // start net log trace if --log-net-log is passed in the command line.
-  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
-    base::FilePath log_file =
-        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
-    if (!log_file.empty()) {
-      net_log_->StartWritingToFile(
-          log_file,
-          net::GetNetCaptureModeFromCommandLine(
-              command_line, network::switches::kNetLogCaptureMode),
-          command_line.GetCommandLineString(), std::string());
-    }
-  }
-  // Initialize net log file exporter.
-  system_network_context_manager()->GetNetExportFileWriter()->Initialize();
-
   // Manage global state of net and other IO thread related.
-  io_thread_ = std::make_unique<IOThread>(
-      net_log_.get(), SystemNetworkContextManager::GetInstance());
+  io_thread_ =
+      std::make_unique<IOThread>(SystemNetworkContextManager::GetInstance());
 }
 
 void BrowserProcessImpl::PostDestroyThreads() {
@@ -157,10 +137,6 @@ PrefService* BrowserProcessImpl::local_state() {
   return local_state_.get();
 }
 
-net::URLRequestContextGetter* BrowserProcessImpl::system_request_context() {
-  return nullptr;
-}
-
 scoped_refptr<network::SharedURLLoaderFactory>
 BrowserProcessImpl::shared_url_loader_factory() {
   return system_network_context_manager()->GetSharedURLLoaderFactory();
@@ -185,11 +161,6 @@ NotificationUIManager* BrowserProcessImpl::notification_ui_manager() {
 
 NotificationPlatformBridge* BrowserProcessImpl::notification_platform_bridge() {
   return nullptr;
-}
-
-IOThread* BrowserProcessImpl::io_thread() {
-  DCHECK(io_thread_.get());
-  return io_thread_.get();
 }
 
 SystemNetworkContextManager*
@@ -271,11 +242,6 @@ BrowserProcessImpl::subresource_filter_ruleset_service() {
 optimization_guide::OptimizationGuideService*
 BrowserProcessImpl::optimization_guide_service() {
   return nullptr;
-}
-
-net_log::ChromeNetLog* BrowserProcessImpl::net_log() {
-  DCHECK(net_log_.get());
-  return net_log_.get();
 }
 
 component_updater::ComponentUpdateService*

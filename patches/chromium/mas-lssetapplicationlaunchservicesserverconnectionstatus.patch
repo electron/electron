@@ -7,10 +7,10 @@ Removes usage of the _LSSetApplicationLaunchServicesServerConnectionStatus
 private API.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index f0d320c6772acb67752a997f507c96844e3549b8..82f0c4f62be2f210db2c3ed1169c2a816c59cf1f 100644
+index 35be2f60e8377708a25d1f62b7998311822fda2b..ad0d612eb6b87cb320047ebaaff5220f46d8fb8c 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -283,8 +283,10 @@ int GpuMain(const MainFunctionParams& parameters) {
+@@ -285,8 +285,10 @@ int GpuMain(const MainFunctionParams& parameters) {
          std::make_unique<base::SingleThreadTaskExecutor>(
              base::MessagePump::Type::NS_RUNLOOP);
  

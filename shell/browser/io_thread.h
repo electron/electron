@@ -22,14 +22,9 @@ namespace net {
 class URLRequestContext;
 }
 
-namespace net_log {
-class ChromeNetLog;
-}
-
 class IOThread : public content::BrowserThreadDelegate {
  public:
   explicit IOThread(
-      net_log::ChromeNetLog* net_log,
       SystemNetworkContextManager* system_network_context_manager);
   ~IOThread() override;
 
@@ -44,10 +39,6 @@ class IOThread : public content::BrowserThreadDelegate {
   void CleanUp() override;
 
  private:
-  // The NetLog is owned by the browser process, to allow logging from other
-  // threads during shutdown, but is used most frequently on the IOThread.
-  net_log::ChromeNetLog* net_log_;
-
   // When the network service is disabled, this holds on to a
   // content::NetworkContext class that owns |system_request_context_|.
   std::unique_ptr<network::mojom::NetworkContext> system_network_context_;
