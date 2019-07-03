@@ -369,12 +369,11 @@ void URLRequestNS::OnComplete(bool success) {
       response_state_ |= STATE_FINISHED;
       Emit("end");
     }
-  } else if (!(request_state_ & STATE_FAILED)) {
-    v8::HandleScope handle_scope(isolate());
-    auto error = v8::Exception::Error(
-        mate::StringToV8(isolate(), net::ErrorToString(loader_->NetError())));
-    request_state_ |= STATE_FAILED;
-    EmitRequestEvent(false, "error", error);
+  } else {  // failed
+    // Only emit error when there is no previous failure.
+    // This is to align with the behavior of non-NetworkService implementation.
+    if (!(request_state_ & STATE_FAILED))
+      EmitRequestError(net::ErrorToString(loader_->NetError()));
   }
 
   Close();
@@ -402,15 +401,10 @@ void URLRequestNS::OnRedirect(
     return;
 
   switch (request_ref_->fetch_redirect_mode) {
-    case network::mojom::FetchRedirectMode::kError: {
-      v8::HandleScope handle_scope(isolate());
-      auto error = v8::Exception::Error(mate::StringToV8(
-          isolate(),
-          "Request cannot follow redirect with the current redirect mode"));
-      request_state_ |= STATE_FAILED;
-      EmitRequestEvent(false, "error", error);
+    case network::mojom::FetchRedirectMode::kError:
+      EmitRequestError(
+          "Request cannot follow redirect with the current redirect mode");
       break;
-    }
     case network::mojom::FetchRedirectMode::kManual:
       EmitRequestEvent(false, "redirect", redirect_info.status_code,
                        redirect_info.new_method, redirect_info.new_url,
@@ -422,10 +416,8 @@ void URLRequestNS::OnRedirect(
 }
 
 void URLRequestNS::OnWrite(MojoResult result) {
-  if (result != MOJO_RESULT_OK) {
-    // TODO(zcbenz): Emit error.
+  if (result != MOJO_RESULT_OK)
     return;
-  }
 
   // Continue the pending writes.
   pending_writes_.pop_front();
@@ -462,6 +454,13 @@ void URLRequestNS::Pin() {
 
 void URLRequestNS::Unpin() {
   wrapper_.Reset();
+}
+
+void URLRequestNS::EmitRequestError(base::StringPiece message) {
+  v8::HandleScope handle_scope(isolate());
+  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  request_state_ |= STATE_FAILED;
+  EmitRequestEvent(false, "error", error);
 }
 
 template <typename... Args>

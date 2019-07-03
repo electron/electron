@@ -82,6 +82,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   void Unpin();
 
   // Emit events.
+  void EmitRequestError(base::StringPiece error);
   template <typename... Args>
   void EmitRequestEvent(Args... args);
   template <typename... Args>
