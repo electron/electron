@@ -1305,7 +1305,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  ifdescribe(process.platform !== 'linux')('"enableLargerThanScreen" option', () => {
+  ifdescribe(process.platform === 'darwin')('"enableLargerThanScreen" option', () => {
     afterEach(closeAllWindows)
     it('can move the window out of screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: true })
@@ -1313,7 +1313,7 @@ describe('BrowserWindow module', () => {
       const after = w.getPosition()
       expect(after).to.deep.equal([-10, -10])
     })
-    ifit(process.platform !== 'win32')('without it, cannot move the window out of screen', () => {
+    it('without it, cannot move the window out of screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: false })
       w.setPosition(-10, -10)
       const after = w.getPosition()
@@ -1327,7 +1327,7 @@ describe('BrowserWindow module', () => {
       w.setSize(size.width, size.height)
       expectBoundsEqual(w.getSize(), [size.width, size.height])
     })
-    ifit(process.platform !== 'win32')('without it, cannot set the window larger than screen', () => {
+    it('without it, cannot set the window larger than screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: false })
       const size = screen.getPrimaryDisplay().size
       size.width += 100
