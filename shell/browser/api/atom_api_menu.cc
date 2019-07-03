@@ -141,6 +141,10 @@ void Menu::SetSublabel(int index, const base::string16& sublabel) {
   model_->SetSublabel(index, sublabel);
 }
 
+void Menu::SetToolTip(int index, const base::string16& toolTip) {
+  model_->SetToolTip(index, toolTip);
+}
+
 void Menu::SetRole(int index, const base::string16& role) {
   model_->SetRole(index, role);
 }
@@ -167,6 +171,10 @@ base::string16 Menu::GetLabelAt(int index) const {
 
 base::string16 Menu::GetSublabelAt(int index) const {
   return model_->GetSublabelAt(index);
+}
+
+base::string16 Menu::GetToolTipAt(int index) const {
+  return model_->GetToolTipAt(index);
 }
 
 base::string16 Menu::GetAcceleratorTextAt(int index) const {
@@ -212,6 +220,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
       .SetMethod("setSublabel", &Menu::SetSublabel)
+      .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
@@ -219,6 +228,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
+      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
       .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)

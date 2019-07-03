@@ -19,6 +19,19 @@ AtomMenuModel::AtomMenuModel(Delegate* delegate)
 
 AtomMenuModel::~AtomMenuModel() {}
 
+void AtomMenuModel::SetToolTip(int index, const base::string16& toolTip) {
+  int command_id = GetCommandIdAt(index);
+  toolTips_[command_id] = toolTip;
+}
+
+base::string16 AtomMenuModel::GetToolTipAt(int index) {
+  int command_id = GetCommandIdAt(index);
+  if (base::Contains(toolTips_, command_id))
+    return toolTips_[command_id];
+  else
+    return base::string16();
+}
+
 void AtomMenuModel::SetRole(int index, const base::string16& role) {
   int command_id = GetCommandIdAt(index);
   roles_[command_id] = role;

@@ -86,6 +86,7 @@ class Menu : public mate::TrackableObject<Menu>,
                        Menu* menu);
   void SetIcon(int index, const gfx::Image& image);
   void SetSublabel(int index, const base::string16& sublabel);
+  void SetToolTip(int index, const base::string16& toolTip);
   void SetRole(int index, const base::string16& role);
   void Clear();
   int GetIndexOfCommandId(int command_id);
@@ -93,6 +94,7 @@ class Menu : public mate::TrackableObject<Menu>,
   int GetCommandIdAt(int index) const;
   base::string16 GetLabelAt(int index) const;
   base::string16 GetSublabelAt(int index) const;
+  base::string16 GetToolTipAt(int index) const;
   base::string16 GetAcceleratorTextAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
