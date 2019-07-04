@@ -39,8 +39,8 @@ def main(dump_syms, binary, out_dir, stamp_file, dsym_file=None):
   args += [binary]
 
   symbol_data = subprocess.check_output(args)
-  symbol_path = get_symbol_path(symbol_data)
-  mkdir_p(os.path.join(out_dir, os.path.dirname(symbol_path)))
+  symbol_path = os.path.join(out_dir, get_symbol_path(symbol_data))
+  mkdir_p(os.path.dirname(symbol_path))
 
   with open(symbol_path, 'w') as out:
     out.write(symbol_data)
