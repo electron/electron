@@ -5,10 +5,10 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 5a3b90ecf7360ee1f484ac430afb649f022279c8..35470301d6a20c2652284c679dde6cff47cedfec 100644
+index f960f6cad7fa60bbdbfff630b52563a742e7d6d1..f63db9cb27224664b6d54df2fa4f731f0bbad5eb 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -665,6 +665,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
+@@ -666,6 +666,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
    return frame_sink_id.is_valid() ? frame_sink_id : GetFrameSinkId();
  }
  
@@ -25,7 +25,7 @@ index 5a3b90ecf7360ee1f484ac430afb649f022279c8..35470301d6a20c2652284c679dde6cff
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index a5f11d99f8f6c4302adfe0feee161b5472006a62..a7791bceff8ebf9725c2b830e36dbb06b2b61b1f 100644
+index 11cd4896141eda4621f9302e1c20031fce789457..5d65b91a707e9a2f2b88f87433a6e2f0deb465c0 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -24,9 +24,11 @@
@@ -62,7 +62,7 @@ index a5f11d99f8f6c4302adfe0feee161b5472006a62..a7791bceff8ebf9725c2b830e36dbb06
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -371,6 +378,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -372,6 +379,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

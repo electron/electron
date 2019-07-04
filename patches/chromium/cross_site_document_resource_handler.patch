@@ -8,12 +8,12 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index b9bd89a9c59515ac42702f010a0d3e9802a242fa..7f1e4ec569860e9bd1c608fd33f4fd6486e7fbd2 100644
+index 8bbfacaa267dd0fac51593c0f8d6ba6b6ccfe5ee..caf8357a86182996bffbd3ee394c026189709e18 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
-@@ -572,6 +572,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+@@ -578,6 +578,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+       request()->initiator()->scheme() == url::kFileScheme)
      return false;
-   }
  
 +  if (GetContentClient()->browser()->ShouldBypassCORB(info->GetChildID()))
 +    return false;
@@ -22,7 +22,7 @@ index b9bd89a9c59515ac42702f010a0d3e9802a242fa..7f1e4ec569860e9bd1c608fd33f4fd64
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index f847cd95b561b45e9ee67ab960d7eb6d0dd1c304..95712234dafc9d6d71c83c1f785cc41a0dc00278 100644
+index 090eaa070e56d84255f570af3d9f0ea56d02cb69..682b2156f40326ebad00231c0e8bb472fdaf1bbb 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -71,6 +71,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
@@ -37,7 +37,7 @@ index f847cd95b561b45e9ee67ab960d7eb6d0dd1c304..95712234dafc9d6d71c83c1f785cc41a
      const base::Location& from_here,
      const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 991afd44d9f4d9cf52b68909bbcd0f5cc9aedb37..0536e491fb2182db2a46c31cc7004cfb3b215c7c 100644
+index e67ab701d608f87cfaf259d44b17605467181fea..0127e41aaadf18effcc66e1743ef1ab6223b1d10 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -252,6 +252,9 @@ class CONTENT_EXPORT ContentBrowserClient {
