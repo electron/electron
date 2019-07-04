@@ -320,6 +320,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
+  DCHECK(env);
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment

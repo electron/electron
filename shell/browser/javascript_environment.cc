@@ -30,7 +30,7 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
-      context_(isolate_, v8::Context::New(isolate_)),
+      context_(isolate_, node::NewContext(isolate_)),
       context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
