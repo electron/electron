@@ -67,9 +67,9 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
+    v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(context, render_frame);
+  RendererClientBase::DidCreateScriptContext(renderer_context, render_frame);
 
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
@@ -103,6 +103,9 @@ void AtomRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
+  v8::Local<v8::Context> context =
+      node::MaybeInitializeContext(renderer_context);
+  DCHECK(!context.IsEmpty());
   node::Environment* env = node_bindings_->CreateEnvironment(context);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   // If we have disabled the site instance overrides we should prevent loading
