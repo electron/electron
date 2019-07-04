@@ -100,8 +100,8 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
   // Note that we store it ourselves instead of reading from the one stored in
   // |request_|, this is because with multiple redirections, the original one
   // might be modified.
-  network::mojom::FetchRedirectMode redirect_mode_ =
-      network::mojom::FetchRedirectMode::kFollow;
+  network::mojom::RedirectMode redirect_mode_ =
+      network::mojom::RedirectMode::kFollow;
 
   // The DataPipeGetter passed to reader.
   bool is_chunked_upload_ = false;

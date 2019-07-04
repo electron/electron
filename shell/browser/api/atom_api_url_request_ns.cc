@@ -19,19 +19,19 @@
 namespace mate {
 
 template <>
-struct Converter<network::mojom::FetchRedirectMode> {
+struct Converter<network::mojom::RedirectMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     network::mojom::FetchRedirectMode* out) {
+                     network::mojom::RedirectMode* out) {
     std::string mode;
     if (!ConvertFromV8(isolate, val, &mode))
       return false;
     if (mode == "follow")
-      *out = network::mojom::FetchRedirectMode::kFollow;
+      *out = network::mojom::RedirectMode::kFollow;
     else if (mode == "error")
-      *out = network::mojom::FetchRedirectMode::kError;
+      *out = network::mojom::RedirectMode::kError;
     else if (mode == "manual")
-      *out = network::mojom::FetchRedirectMode::kManual;
+      *out = network::mojom::RedirectMode::kManual;
     else
       return false;
     return true;
@@ -164,7 +164,7 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
     dict.Get("method", &request_->method);
     dict.Get("url", &request_->url);
     dict.Get("redirect", &redirect_mode_);
-    request_->fetch_redirect_mode = redirect_mode_;
+    request_->redirect_mode = redirect_mode_;
   }
 
   std::string partition;
@@ -420,12 +420,12 @@ void URLRequestNS::OnRedirect(
   }
 
   switch (redirect_mode_) {
-    case network::mojom::FetchRedirectMode::kError:
+    case network::mojom::RedirectMode::kError:
       EmitError(
           EventType::kRequest,
           "Request cannot follow redirect with the current redirect mode");
       break;
-    case network::mojom::FetchRedirectMode::kManual:
+    case network::mojom::RedirectMode::kManual:
       // When redirect mode is "manual", the user has to explicitly call the
       // FollowRedirect method to continue redirecting, otherwise the request
       // would be cancelled.
@@ -440,7 +440,7 @@ void URLRequestNS::OnRedirect(
       if (!follow_redirect_)
         Cancel();
       break;
-    case network::mojom::FetchRedirectMode::kFollow:
+    case network::mojom::RedirectMode::kFollow:
       EmitEvent(EventType::kRequest, false, "redirect",
                 redirect_info.status_code, redirect_info.new_method,
                 redirect_info.new_url, response_head.headers.get());
