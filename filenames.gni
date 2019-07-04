@@ -93,6 +93,8 @@ filenames = {
     "shell/browser/api/atom_api_tray.h",
     "shell/browser/api/atom_api_url_request.cc",
     "shell/browser/api/atom_api_url_request.h",
+    "shell/browser/api/atom_api_url_request_ns.cc",
+    "shell/browser/api/atom_api_url_request_ns.h",
     "shell/browser/api/atom_api_view.cc",
     "shell/browser/api/atom_api_view.h",
     "shell/browser/api/atom_api_web_contents.cc",

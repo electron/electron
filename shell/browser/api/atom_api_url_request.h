@@ -25,7 +25,6 @@ class AtomURLRequest;
 
 namespace api {
 
-//
 // The URLRequest class implements the V8 binding between the JavaScript API
 // and Chromium native net library. It is responsible for handling HTTP/HTTPS
 // requests.
@@ -114,7 +113,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   mate::Dictionary GetUploadProgress(v8::Isolate* isolate);
 
  protected:
-  explicit URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
 
  private:
