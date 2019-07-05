@@ -18,5 +18,6 @@ buildflag_header("buildflags") {
     "ENABLE_TTS=$enable_tts",
     "ENABLE_COLOR_CHOOSER=$enable_color_chooser",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
+    "ENABLE_CUSTOM_MEDIA_STREAM=$enable_custom_media_stream",
   ]
 }

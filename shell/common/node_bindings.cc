@@ -65,8 +65,7 @@
   V(atom_common_shell)               \
   V(atom_common_v8_util)             \
   V(atom_renderer_ipc)               \
-  V(atom_renderer_web_frame)         \
-  V(atom_renderer_custom_media_stream)
+  V(atom_renderer_web_frame)
 
 #define ELECTRON_VIEW_MODULES(V) \
   V(atom_browser_box_layout)     \
@@ -78,6 +77,8 @@
   V(atom_browser_text_field)
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)
+#define ELECTRON_CUSTOM_MEDIA_STREAM_MODULE(V) \
+  V(atom_renderer_custom_media_stream)
 
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
@@ -91,6 +92,9 @@ ELECTRON_VIEW_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if BUILDFLAG(ENABLE_CUSTOM_MEDIA_STREAM)
+ELECTRON_CUSTOM_MEDIA_STREAM_MODULE(V)
 #endif
 #undef V
 
@@ -192,6 +196,9 @@ void NodeBindings::RegisterBuiltinModules() {
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if BUILDFLAG(ENABLE_CUSTOM_MEDIA_STREAM)
+  ELECTRON_CUSTOM_MEDIA_STREAM_MODULE(V)
 #endif
 #undef V
 }

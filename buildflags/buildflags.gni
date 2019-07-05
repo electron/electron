@@ -26,4 +26,6 @@ declare_args() {
 
   # Enable flash plugin support.
   enable_pepper_flash = true
+
+  enable_custom_media_stream = true
 }

@@ -49,6 +49,10 @@ bool IsComponentBuild() {
 #endif
 }
 
+bool IsCustomMediaStreamEnabled() {
+  return BUILDFLAG(ENABLE_CUSTOM_MEDIA_STREAM);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -64,6 +68,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
+  dict.SetMethod("isCustomMediaStreamEnabled", &IsCustomMediaStreamEnabled);
 }
 
 }  // namespace
