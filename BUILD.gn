@@ -13,6 +13,7 @@ import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
+import("build/extract_symbols.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -478,6 +479,7 @@ if (is_mac) {
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
+  electron_version = read_file("VERSION", "trim string")
 
   mac_xib_bundle_data("electron_xibs") {
     sources = [
@@ -560,7 +562,6 @@ if (is_mac) {
     }
     info_plist = "atom/common/resources/mac/Info.plist"
 
-    electron_version = read_file("VERSION", "trim string")
     extra_substitutions = [
       "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
@@ -716,6 +717,76 @@ if (is_mac) {
       "@executable_path/../Frameworks",
     ]
   }
+
+  if (enable_dsyms) {
+    extract_symbols("electron_framework_syms") {
+      binary = "$root_out_dir/$electron_framework_name.framework/Versions/$electron_framework_version/$electron_framework_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+      deps = [
+        ":electron_framework",
+      ]
+    }
+
+    extract_symbols("electron_helper_syms") {
+      binary = "$root_out_dir/$electron_helper_name.app/Contents/MacOS/$electron_helper_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_helper_name.dSYM/Contents/Resources/DWARF/$electron_helper_name"
+      deps = [
+        ":electron_helper_app",
+      ]
+    }
+
+    extract_symbols("electron_app_syms") {
+      binary = "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_product_name.dSYM/Contents/Resources/DWARF/$electron_product_name"
+      deps = [
+        ":electron_app",
+      ]
+    }
+
+    extract_symbols("swiftshader_egl_syms") {
+      binary = "$root_out_dir/libswiftshader_libEGL.dylib"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/libswiftshader_libEGL.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libEGL.dylib"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+      ]
+    }
+
+    extract_symbols("swiftshader_gles_syms") {
+      binary = "$root_out_dir/libswiftshader_libGLESv2.dylib"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libGLESv2.dylib"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
+
+    extract_symbols("crashpad_handler_syms") {
+      binary = "$root_out_dir/crashpad_handler"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/crashpad_handler.dSYM/Contents/Resources/DWARF/crashpad_handler"
+      deps = [
+        "//third_party/crashpad/crashpad/handler:crashpad_handler",
+      ]
+    }
+
+    group("electron_symbols") {
+      deps = [
+        ":crashpad_handler_syms",
+        ":electron_app_syms",
+        ":electron_framework_syms",
+        ":electron_helper_syms",
+        ":swiftshader_egl_syms",
+        ":swiftshader_gles_syms",
+      ]
+    }
+  } else {
+    group("electron_symbols") {
+    }
+  }
 } else {
   windows_manifest("electron_app_manifest") {
     sources = [
@@ -811,6 +882,49 @@ if (is_mac) {
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
+    }
+  }
+
+  if (is_official_build) {
+    if (is_linux) {
+      _target_executable_suffix = ""
+      _target_shared_library_suffix = ".so"
+    } else if (is_win) {
+      _target_executable_suffix = ".exe"
+      _target_shared_library_suffix = ".dll"
+    }
+
+    extract_symbols("electron_app_symbols") {
+      binary = "$root_out_dir/$electron_project_name$_target_executable_suffix"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        ":electron_app",
+      ]
+    }
+
+    extract_symbols("swiftshader_egl_symbols") {
+      binary = "$root_out_dir/swiftshader/libEGL$_target_shared_library_suffix"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+      ]
+    }
+
+    extract_symbols("swiftshader_gles_symbols") {
+      binary =
+          "$root_out_dir/swiftshader/libGLESv2$_target_shared_library_suffix"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
+
+    group("electron_symbols") {
+      deps = [
+        ":electron_app_symbols",
+        ":swiftshader_egl_symbols",
+        ":swiftshader_gles_symbols",
+      ]
     }
   }
 }
