@@ -89,11 +89,31 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
-  shell_->NotifyWindowFocus();
+  NSWindow* window = notification.object;
+  if (window.sheet) {
+    shell_->NotifyWindowFocus();
+  }
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification {
-  shell_->NotifyWindowBlur();
+  NSWindow* window = notification.object;
+  if (window.sheet) {
+    shell_->NotifyWindowBlur();
+  }
+}
+
+- (void)windowDidBecomeMain:(NSNotification*)notification {
+  NSWindow* window = notification.object;
+  if (!window.sheet) {
+    shell_->NotifyWindowFocus();
+  }
+}
+
+- (void)windowDidResignMain:(NSNotification*)notification {
+  NSWindow* window = notification.object;
+  if (!window.sheet) {
+    shell_->NotifyWindowBlur();
+  }
 }
 
 - (NSSize)windowWillResize:(NSWindow*)sender toSize:(NSSize)frameSize {
