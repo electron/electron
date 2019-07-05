@@ -89,29 +89,19 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
-  NSWindow* window = notification.object;
-  if (window.sheet) {
-    shell_->NotifyWindowFocus();
-  }
+  // NSWindow* window = notification.object;
+  // LOG(INFO) << window.childWindows.count;
+  shell_->NotifyWindowFocus();
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification {
-  NSWindow* window = notification.object;
-  if (window.sheet) {
-    shell_->NotifyWindowBlur();
-  }
-}
-
-- (void)windowDidBecomeMain:(NSNotification*)notification {
-  NSWindow* window = notification.object;
-  if (!window.sheet) {
-    shell_->NotifyWindowFocus();
-  }
-}
-
-- (void)windowDidResignMain:(NSNotification*)notification {
-  NSWindow* window = notification.object;
-  if (!window.sheet) {
+  NSWindow* resigningWindow = notification.object;
+  NSWindow* newKeyWindow = [NSApp keyWindow];
+  // macOS character palette will not be detected as the
+  // app's key window. We don't want to send a blur
+  // event when the palette activates because we don't want
+  // the original window's input to lose focus
+  if (newKeyWindow != resigningWindow) {
     shell_->NotifyWindowBlur();
   }
 }
