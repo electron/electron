@@ -65,7 +65,8 @@
   V(atom_common_shell)               \
   V(atom_common_v8_util)             \
   V(atom_renderer_ipc)               \
-  V(atom_renderer_web_frame)
+  V(atom_renderer_web_frame)         \
+  V(atom_renderer_custom_media_stream)
 
 #define ELECTRON_VIEW_MODULES(V) \
   V(atom_browser_box_layout)     \

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/api/custom_media_stream.h"
+#include "shell/common/api/custom_media_stream.h"
 
 #define INSIDE_BLINK \
   1  // we need to be able to convert WebMediaStreamTrack to
@@ -31,9 +31,9 @@
 #include <string>
 #include <utility>
 
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/shell/common/native_mate_converters/callback.h"
+#include "electron/shell/common/native_mate_converters/gfx_converter.h"
+#include "electron/shell/common/node_includes.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"

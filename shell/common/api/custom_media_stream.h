@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_API_CUSTOM_MEDIA_STREAM_H_
-#define ATOM_RENDERER_API_CUSTOM_MEDIA_STREAM_H_
+#ifndef SHELL_COMMON_API_CUSTOM_MEDIA_STREAM_H_
+#define SHELL_COMMON_API_CUSTOM_MEDIA_STREAM_H_
 
 #include <v8.h>
 #include <memory>
@@ -124,4 +124,4 @@ inline void VideoFrameReleaser::operator()(VideoFrame* frame) const {
 
 }  // namespace CustomMediaStream
 
-#endif  // ATOM_RENDERER_API_CUSTOM_MEDIA_STREAM_H_
+#endif  // SHELL_COMMON_API_CUSTOM_MEDIA_STREAM_H_
