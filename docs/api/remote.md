@@ -22,7 +22,7 @@ win.loadURL('https://github.com')
 ```
 
 **Note:** For the reverse (access the renderer process from the main process),
-you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture-callback).
+you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture).
 
 **Note:** The remote module can be disabled for security reasons in the following contexts:
 - [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.
@@ -201,7 +201,7 @@ process.
 
 ### `remote.process`
 
-The `process` object in the main process. This is the same as
+A `NodeJS.Process` object.  The `process` object in the main process. This is the same as
 `remote.getGlobal('process')` but is cached.
 
 [rmi]: https://en.wikipedia.org/wiki/Java_remote_method_invocation

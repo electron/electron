@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:49:34 -0700
+Subject: mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
+
+Removes usage of the _LSSetApplicationLaunchServicesServerConnectionStatus
+private API.
+
+diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
+index 5433738c34d60f07d17567a24448f9147bf18adc..877495568fddbc7dae5835ead41faf37be77208a 100644
+--- a/content/gpu/gpu_main.cc
++++ b/content/gpu/gpu_main.cc
+@@ -285,8 +285,10 @@ int GpuMain(const MainFunctionParams& parameters) {
+         std::make_unique<base::SingleThreadTaskExecutor>(
+             base::MessagePump::Type::NS_RUNLOOP);
+ 
++#ifndef MAS_BUILD
+     // Tell LaunchServices to continue without a connection to the daemon.
+     _LSSetApplicationLaunchServicesServerConnectionStatus(0, nullptr);
++#endif
+ #else
+     main_thread_task_executor =
+         std::make_unique<base::SingleThreadTaskExecutor>(

@@ -15,6 +15,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `hang()`
 - `getCreationTime()`
 - `getHeapStatistics()`
+- `getBlinkMemoryInfo()`
 - `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
 - `getSystemVersion()`
@@ -170,6 +171,18 @@ Returns `Object`:
 
 Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
 
+### `process.getBlinkMemoryInfo()`
+
+Returns `Object`:
+
+* `allocated` Integer - Size of all allocated objects in Kilobytes.
+* `marked` Integer - Size of all marked objects in Kilobytes.
+* `total` Integer - Total allocated space in Kilobytes.
+
+Returns an object with Blink memory information.
+It can be useful for debugging rendering / DOM related memory issues.
+Note that all values are reported in Kilobytes.
+
 ### `process.getProcessMemoryInfo()`
 
 Returns `Promise<ProcessMemoryInfo>` - Resolves with a [ProcessMemoryInfo](structures/process-memory-info.md)
@@ -206,11 +219,9 @@ Returns `String` - The version of the host operating system.
 
 Examples:
 
-| Platform | Version |
-|----------|---------|
-| macOS | `10.13.6` |
-| Windows | `10.0.17763` |
-| Linux | `4.15.0-45-generic` |
+* `macOS` -> `10.13.6`
+* `Windows` -> `10.0.17763`
+* `Linux` -> `4.15.0-45-generic`
 
 **Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 

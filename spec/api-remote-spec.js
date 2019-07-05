@@ -1,11 +1,10 @@
 'use strict'
 
-const assert = require('assert')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
-const { resolveGetters } = require('./assert-helpers')
+const { resolveGetters } = require('./expect-helpers')
 
 const { remote, ipcRenderer } = require('electron')
 const { ipcMain, BrowserWindow } = remote
@@ -18,73 +17,33 @@ const comparePaths = (path1, path2) => {
     path1 = path1.toLowerCase()
     path2 = path2.toLowerCase()
   }
-  assert.strictEqual(path1, path2)
+  expect(path1).to.equal(path2)
 }
 
 describe('remote module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
-  let w = null
-
-  afterEach(() => closeWindow(w).then(() => { w = null }))
-
-  describe('remote.getGlobal filtering', () => {
-    it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-get-global', { test: 'Hello World!' })
-      expect(remote.getGlobal('test')).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-global')
-      expect(() => remote.getGlobal('test')).to.throw(`Blocked remote.getGlobal('test')`)
-    })
-  })
-
-  describe('remote.getBuiltin filtering', () => {
-    it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-get-builtin', { test: 'Hello World!' })
-      expect(remote.getBuiltin('test')).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-builtin')
-      expect(() => remote.getBuiltin('test')).to.throw(`Blocked remote.getBuiltin('test')`)
-    })
-  })
-
-  describe('remote.require filtering', () => {
-    it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-require', { test: 'Hello World!' })
-      expect(remote.require('test')).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-require')
-      expect(() => remote.require('test')).to.throw(`Blocked remote.require('test')`)
-    })
-  })
-
   describe('remote.require', () => {
     it('should returns same object for the same module', () => {
       const dialog1 = remote.require('electron')
       const dialog2 = remote.require('electron')
-      assert.strictEqual(dialog1, dialog2)
+      expect(dialog1).to.equal(dialog2)
     })
 
     it('should work when object contains id property', () => {
       const a = remote.require(path.join(fixtures, 'module', 'id.js'))
-      assert.strictEqual(a.id, 1127)
+      expect(a.id).to.equal(1127)
     })
 
     it('should work when object has no prototype', () => {
       const a = remote.require(path.join(fixtures, 'module', 'no-prototype.js'))
-      assert.strictEqual(a.foo.constructor.name, '')
-      assert.strictEqual(a.foo.bar, 'baz')
-      assert.strictEqual(a.foo.baz, false)
-      assert.strictEqual(a.bar, 1234)
-      assert.strictEqual(a.anonymous.constructor.name, '')
-      assert.strictEqual(a.getConstructorName(Object.create(null)), '')
-      assert.strictEqual(a.getConstructorName(new (class {})()), '')
+      expect(a.foo.constructor.name).to.equal('')
+      expect(a.foo.bar).to.equal('baz')
+      expect(a.foo.baz).to.equal(false)
+      expect(a.bar).to.equal(1234)
+      expect(a.anonymous.constructor.name).to.equal('')
+      expect(a.getConstructorName(Object.create(null))).to.equal('')
+      expect(a.getConstructorName(new (class {})())).to.equal('')
     })
 
     it('should search module from the user app', () => {
@@ -94,41 +53,41 @@ describe('remote module', () => {
 
     it('should work with function properties', () => {
       let a = remote.require(path.join(fixtures, 'module', 'export-function-with-properties.js'))
-      assert.strictEqual(typeof a, 'function')
-      assert.strictEqual(a.bar, 'baz')
+      expect(a).to.be.a('function')
+      expect(a.bar).to.equal('baz')
 
       a = remote.require(path.join(fixtures, 'module', 'function-with-properties.js'))
-      assert.strictEqual(typeof a, 'object')
-      assert.strictEqual(a.foo(), 'hello')
-      assert.strictEqual(a.foo.bar, 'baz')
-      assert.strictEqual(a.foo.nested.prop, 'yes')
-      assert.strictEqual(a.foo.method1(), 'world')
-      assert.strictEqual(a.foo.method1.prop1(), 123)
+      expect(a).to.be.an('object')
+      expect(a.foo()).to.equal('hello')
+      expect(a.foo.bar).to.equal('baz')
+      expect(a.foo.nested.prop).to.equal('yes')
+      expect(a.foo.method1()).to.equal('world')
+      expect(a.foo.method1.prop1()).to.equal(123)
 
-      assert.ok(Object.keys(a.foo).includes('bar'))
-      assert.ok(Object.keys(a.foo).includes('nested'))
-      assert.ok(Object.keys(a.foo).includes('method1'))
+      expect(a.foo).to.have.a.property('bar')
+      expect(a.foo).to.have.a.property('nested')
+      expect(a.foo).to.have.a.property('method1')
 
       a = remote.require(path.join(fixtures, 'module', 'function-with-missing-properties.js')).setup()
-      assert.strictEqual(a.bar(), true)
-      assert.strictEqual(a.bar.baz, undefined)
+      expect(a.bar()).to.equal(true)
+      expect(a.bar.baz).to.be.undefined()
     })
 
     it('should work with static class members', () => {
       const a = remote.require(path.join(fixtures, 'module', 'remote-static.js'))
-      assert.strictEqual(typeof a.Foo, 'function')
-      assert.strictEqual(a.Foo.foo(), 3)
-      assert.strictEqual(a.Foo.bar, 'baz')
+      expect(a.Foo).to.be.a('function')
+      expect(a.Foo.foo()).to.equal(3)
+      expect(a.Foo.bar).to.equal('baz')
 
       const foo = new a.Foo()
-      assert.strictEqual(foo.baz(), 123)
+      expect(foo.baz()).to.equal(123)
     })
 
     it('includes the length of functions specified as arguments', () => {
       const a = remote.require(path.join(fixtures, 'module', 'function-with-args.js'))
-      assert.strictEqual(a((a, b, c, d, f) => {}), 5)
-      assert.strictEqual(a((a) => {}), 1)
-      assert.strictEqual(a((...args) => {}), 0)
+      expect(a((a, b, c, d, f) => {})).to.equal(5)
+      expect(a((a) => {})).to.equal(1)
+      expect(a((...args) => {})).to.equal(0)
     })
 
     it('handles circular references in arrays and objects', () => {
@@ -137,7 +96,7 @@ describe('remote module', () => {
       let arrayA = ['foo']
       const arrayB = [arrayA, 'bar']
       arrayA.push(arrayB)
-      assert.deepStrictEqual(a.returnArgs(arrayA, arrayB), [
+      expect(a.returnArgs(arrayA, arrayB)).to.deep.equal([
         ['foo', [null, 'bar']],
         [['foo', null], 'bar']
       ])
@@ -145,40 +104,40 @@ describe('remote module', () => {
       let objectA = { foo: 'bar' }
       const objectB = { baz: objectA }
       objectA.objectB = objectB
-      assert.deepStrictEqual(a.returnArgs(objectA, objectB), [
+      expect(a.returnArgs(objectA, objectB)).to.deep.equal([
         { foo: 'bar', objectB: { baz: null } },
         { baz: { foo: 'bar', objectB: null } }
       ])
 
       arrayA = [1, 2, 3]
-      assert.deepStrictEqual(a.returnArgs({ foo: arrayA }, { bar: arrayA }), [
+      expect(a.returnArgs({ foo: arrayA }, { bar: arrayA })).to.deep.equal([
         { foo: [1, 2, 3] },
         { bar: [1, 2, 3] }
       ])
 
       objectA = { foo: 'bar' }
-      assert.deepStrictEqual(a.returnArgs({ foo: objectA }, { bar: objectA }), [
+      expect(a.returnArgs({ foo: objectA }, { bar: objectA })).to.deep.equal([
         { foo: { foo: 'bar' } },
         { bar: { foo: 'bar' } }
       ])
 
       arrayA = []
       arrayA.push(arrayA)
-      assert.deepStrictEqual(a.returnArgs(arrayA), [
+      expect(a.returnArgs(arrayA)).to.deep.equal([
         [null]
       ])
 
       objectA = {}
       objectA.foo = objectA
       objectA.bar = 'baz'
-      assert.deepStrictEqual(a.returnArgs(objectA), [
+      expect(a.returnArgs(objectA)).to.deep.equal([
         { foo: null, bar: 'baz' }
       ])
 
       objectA = {}
       objectA.foo = { bar: objectA }
       objectA.bar = 'baz'
-      assert.deepStrictEqual(a.returnArgs(objectA), [
+      expect(a.returnArgs(objectA)).to.deep.equal([
         { foo: { bar: null }, bar: 'baz' }
       ])
     })
@@ -189,84 +148,83 @@ describe('remote module', () => {
       const buf = Buffer.from('test')
       const call = remote.require(path.join(fixtures, 'module', 'call.js'))
       const result = call.call(remote.createFunctionWithReturnValue(buf))
-      assert.strictEqual(result.constructor.name, 'Buffer')
+      expect(result).to.be.an.instanceOf(Buffer)
     })
   })
 
   describe('remote modules', () => {
     it('includes browser process modules as properties', () => {
-      assert.strictEqual(typeof remote.app.getPath, 'function')
-      assert.strictEqual(typeof remote.webContents.getFocusedWebContents, 'function')
-      assert.strictEqual(typeof remote.clipboard.readText, 'function')
-      assert.strictEqual(typeof remote.shell.openExternalSync, 'function')
+      expect(remote.app.getPath).to.be.a('function')
+      expect(remote.webContents.getFocusedWebContents).to.be.a('function')
+      expect(remote.clipboard.readText).to.be.a('function')
     })
 
     it('returns toString() of original function via toString()', () => {
       const { readText } = remote.clipboard
-      assert(readText.toString().startsWith('function'))
+      expect(readText.toString().startsWith('function')).to.be.true()
 
       const { functionWithToStringProperty } = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
-      assert.strictEqual(functionWithToStringProperty.toString, 'hello')
+      expect(functionWithToStringProperty.toString).to.equal('hello')
     })
   })
 
   describe('remote object in renderer', () => {
     it('can change its properties', () => {
       const property = remote.require(path.join(fixtures, 'module', 'property.js'))
-      assert.strictEqual(property.property, 1127)
+      expect(property).to.have.a.property('property').that.is.equal(1127)
 
       property.property = null
-      assert.strictEqual(property.property, null)
+      expect(property).to.have.a.property('property').that.is.null()
       property.property = undefined
-      assert.strictEqual(property.property, undefined)
+      expect(property).to.have.a.property('property').that.is.undefined()
       property.property = 1007
-      assert.strictEqual(property.property, 1007)
+      expect(property).to.have.a.property('property').that.is.equal(1007)
 
-      assert.strictEqual(property.getFunctionProperty(), 'foo-browser')
+      expect(property.getFunctionProperty()).to.equal('foo-browser')
       property.func.property = 'bar'
-      assert.strictEqual(property.getFunctionProperty(), 'bar-browser')
+      expect(property.getFunctionProperty()).to.equal('bar-browser')
       property.func.property = 'foo' // revert back
 
       const property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
-      assert.strictEqual(property2.property, 1007)
+      expect(property2.property).to.equal(1007)
       property.property = 1127
     })
 
     it('rethrows errors getting/setting properties', () => {
       const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
 
-      assert.throws(() => {
+      expect(() => {
         // eslint-disable-next-line
         foo.bar
-      }, /getting error/)
+      }).to.throw('getting error')
 
-      assert.throws(() => {
+      expect(() => {
         foo.bar = 'test'
-      }, /setting error/)
+      }).to.throw('setting error')
     })
 
     it('can set a remote property with a remote object', () => {
       const foo = remote.require(path.join(fixtures, 'module', 'remote-object-set.js'))
 
-      assert.doesNotThrow(() => {
+      expect(() => {
         foo.bar = remote.getCurrentWindow()
-      })
+      }).to.not.throw()
     })
 
     it('can construct an object from its member', () => {
       const call = remote.require(path.join(fixtures, 'module', 'call.js'))
       const obj = new call.constructor()
-      assert.strictEqual(obj.test, 'test')
+      expect(obj.test).to.equal('test')
     })
 
     it('can reassign and delete its member functions', () => {
       const remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'))
-      assert.strictEqual(remoteFunctions.aFunction(), 1127)
+      expect(remoteFunctions.aFunction()).to.equal(1127)
 
       remoteFunctions.aFunction = () => { return 1234 }
-      assert.strictEqual(remoteFunctions.aFunction(), 1234)
+      expect(remoteFunctions.aFunction()).to.equal(1234)
 
-      assert.strictEqual(delete remoteFunctions.aFunction, true)
+      expect(delete remoteFunctions.aFunction).to.equal(true)
     })
 
     it('is referenced by its members', () => {
@@ -281,35 +239,35 @@ describe('remote module', () => {
     const printName = remote.require(print)
 
     it('converts NaN to undefined', () => {
-      assert.strictEqual(printName.getNaN(), undefined)
-      assert.strictEqual(printName.echo(NaN), undefined)
+      expect(printName.getNaN()).to.be.undefined()
+      expect(printName.echo(NaN)).to.be.undefined()
     })
 
     it('converts Infinity to undefined', () => {
-      assert.strictEqual(printName.getInfinity(), undefined)
-      assert.strictEqual(printName.echo(Infinity), undefined)
+      expect(printName.getInfinity()).to.be.undefined()
+      expect(printName.echo(Infinity)).to.be.undefined()
     })
 
     it('keeps its constructor name for objects', () => {
       const buf = Buffer.from('test')
-      assert.strictEqual(printName.print(buf), 'Buffer')
+      expect(printName.print(buf)).to.equal('Buffer')
     })
 
     it('supports instanceof Date', () => {
       const now = new Date()
-      assert.strictEqual(printName.print(now), 'Date')
-      assert.deepStrictEqual(printName.echo(now), now)
+      expect(printName.print(now)).to.equal('Date')
+      expect(printName.echo(now)).to.deep.equal(now)
     })
 
     it('supports instanceof Buffer', () => {
       const buffer = Buffer.from('test')
-      assert.ok(buffer.equals(printName.echo(buffer)))
+      expect(buffer.equals(printName.echo(buffer))).to.be.true()
 
       const objectWithBuffer = { a: 'foo', b: Buffer.from('bar') }
-      assert.ok(objectWithBuffer.b.equals(printName.echo(objectWithBuffer).b))
+      expect(objectWithBuffer.b.equals(printName.echo(objectWithBuffer).b)).to.be.true()
 
       const arrayWithBuffer = [1, 2, Buffer.from('baz')]
-      assert.ok(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2]))
+      expect(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2])).to.be.true()
     })
 
     it('supports instanceof ArrayBuffer', () => {
@@ -317,89 +275,89 @@ describe('remote module', () => {
       const view = new DataView(buffer)
 
       view.setFloat64(0, Math.PI)
-      assert.deepStrictEqual(printName.echo(buffer), buffer)
-      assert.strictEqual(printName.print(buffer), 'ArrayBuffer')
+      expect(printName.echo(buffer)).to.deep.equal(buffer)
+      expect(printName.print(buffer)).to.equal('ArrayBuffer')
     })
 
     it('supports instanceof Int8Array', () => {
       const values = [1, 2, 3, 4]
-      assert.deepStrictEqual([...printName.typedArray('Int8Array', values)], values)
+      expect([...printName.typedArray('Int8Array', values)]).to.deep.equal(values)
 
       const int8values = new Int8Array(values)
-      assert.deepStrictEqual(printName.typedArray('Int8Array', int8values), int8values)
-      assert.strictEqual(printName.print(int8values), 'Int8Array')
+      expect(printName.typedArray('Int8Array', int8values)).to.deep.equal(int8values)
+      expect(printName.print(int8values)).to.equal('Int8Array')
     })
 
     it('supports instanceof Uint8Array', () => {
       const values = [1, 2, 3, 4]
-      assert.deepStrictEqual([...printName.typedArray('Uint8Array', values)], values)
+      expect([...printName.typedArray('Uint8Array', values)]).to.deep.equal(values)
 
       const uint8values = new Uint8Array(values)
-      assert.deepStrictEqual(printName.typedArray('Uint8Array', uint8values), uint8values)
-      assert.strictEqual(printName.print(uint8values), 'Uint8Array')
+      expect(printName.typedArray('Uint8Array', uint8values)).to.deep.equal(uint8values)
+      expect(printName.print(uint8values)).to.equal('Uint8Array')
     })
 
     it('supports instanceof Uint8ClampedArray', () => {
       const values = [1, 2, 3, 4]
-      assert.deepStrictEqual([...printName.typedArray('Uint8ClampedArray', values)], values)
+      expect([...printName.typedArray('Uint8ClampedArray', values)]).to.deep.equal(values)
 
       const uint8values = new Uint8ClampedArray(values)
-      assert.deepStrictEqual(printName.typedArray('Uint8ClampedArray', uint8values), uint8values)
-      assert.strictEqual(printName.print(uint8values), 'Uint8ClampedArray')
+      expect(printName.typedArray('Uint8ClampedArray', uint8values)).to.deep.equal(uint8values)
+      expect(printName.print(uint8values)).to.equal('Uint8ClampedArray')
     })
 
     it('supports instanceof Int16Array', () => {
       const values = [0x1234, 0x2345, 0x3456, 0x4567]
-      assert.deepStrictEqual([...printName.typedArray('Int16Array', values)], values)
+      expect([...printName.typedArray('Int16Array', values)]).to.deep.equal(values)
 
       const int16values = new Int16Array(values)
-      assert.deepStrictEqual(printName.typedArray('Int16Array', int16values), int16values)
-      assert.strictEqual(printName.print(int16values), 'Int16Array')
+      expect(printName.typedArray('Int16Array', int16values)).to.deep.equal(int16values)
+      expect(printName.print(int16values)).to.equal('Int16Array')
     })
 
     it('supports instanceof Uint16Array', () => {
       const values = [0x1234, 0x2345, 0x3456, 0x4567]
-      assert.deepStrictEqual([...printName.typedArray('Uint16Array', values)], values)
+      expect([...printName.typedArray('Uint16Array', values)]).to.deep.equal(values)
 
       const uint16values = new Uint16Array(values)
-      assert.deepStrictEqual(printName.typedArray('Uint16Array', uint16values), uint16values)
-      assert.strictEqual(printName.print(uint16values), 'Uint16Array')
+      expect(printName.typedArray('Uint16Array', uint16values)).to.deep.equal(uint16values)
+      expect(printName.print(uint16values)).to.equal('Uint16Array')
     })
 
     it('supports instanceof Int32Array', () => {
       const values = [0x12345678, 0x23456789]
-      assert.deepStrictEqual([...printName.typedArray('Int32Array', values)], values)
+      expect([...printName.typedArray('Int32Array', values)]).to.deep.equal(values)
 
       const int32values = new Int32Array(values)
-      assert.deepStrictEqual(printName.typedArray('Int32Array', int32values), int32values)
-      assert.strictEqual(printName.print(int32values), 'Int32Array')
+      expect(printName.typedArray('Int32Array', int32values)).to.deep.equal(int32values)
+      expect(printName.print(int32values)).to.equal('Int32Array')
     })
 
     it('supports instanceof Uint32Array', () => {
       const values = [0x12345678, 0x23456789]
-      assert.deepStrictEqual([...printName.typedArray('Uint32Array', values)], values)
+      expect([...printName.typedArray('Uint32Array', values)]).to.deep.equal(values)
 
       const uint32values = new Uint32Array(values)
-      assert.deepStrictEqual(printName.typedArray('Uint32Array', uint32values), uint32values)
-      assert.strictEqual(printName.print(uint32values), 'Uint32Array')
+      expect(printName.typedArray('Uint32Array', uint32values)).to.deep.equal(uint32values)
+      expect(printName.print(uint32values)).to.equal('Uint32Array')
     })
 
     it('supports instanceof Float32Array', () => {
       const values = [0.5, 1.0, 1.5]
-      assert.deepStrictEqual([...printName.typedArray('Float32Array', values)], values)
+      expect([...printName.typedArray('Float32Array', values)]).to.deep.equal(values)
 
       const float32values = new Float32Array()
-      assert.deepStrictEqual(printName.typedArray('Float32Array', float32values), float32values)
-      assert.strictEqual(printName.print(float32values), 'Float32Array')
+      expect(printName.typedArray('Float32Array', float32values)).to.deep.equal(float32values)
+      expect(printName.print(float32values)).to.equal('Float32Array')
     })
 
     it('supports instanceof Float64Array', () => {
       const values = [0.5, 1.0, 1.5]
-      assert.deepStrictEqual([...printName.typedArray('Float64Array', values)], values)
+      expect([...printName.typedArray('Float64Array', values)]).to.deep.equal(values)
 
       const float64values = new Float64Array([0.5, 1.0, 1.5])
-      assert.deepStrictEqual(printName.typedArray('Float64Array', float64values), float64values)
-      assert.strictEqual(printName.print(float64values), 'Float64Array')
+      expect(printName.typedArray('Float64Array', float64values)).to.deep.equal(float64values)
+      expect(printName.print(float64values)).to.equal('Float64Array')
     })
   })
 
@@ -407,7 +365,7 @@ describe('remote module', () => {
     it('can be used as promise in each side', (done) => {
       const promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
       promise.twicePromise(Promise.resolve(1234)).then((value) => {
-        assert.strictEqual(value, 2468)
+        expect(value).to.equal(2468)
         done()
       })
     })
@@ -415,7 +373,7 @@ describe('remote module', () => {
     it('handles rejections via catch(onRejected)', (done) => {
       const promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
       promise.reject(Promise.resolve(1234)).catch((error) => {
-        assert.strictEqual(error.message, 'rejected')
+        expect(error.message).to.equal('rejected')
         done()
       })
     })
@@ -423,7 +381,7 @@ describe('remote module', () => {
     it('handles rejections via then(onFulfilled, onRejected)', (done) => {
       const promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
       promise.reject(Promise.resolve(1234)).then(() => {}, (error) => {
-        assert.strictEqual(error.message, 'rejected')
+        expect(error.message).to.equal('rejected')
         done()
       })
     })
@@ -437,7 +395,7 @@ describe('remote module', () => {
       promise.reject().then(() => {
         done(new Error('Promise was not rejected'))
       }).catch((error) => {
-        assert.strictEqual(error.message, 'rejected')
+        expect(error.message).to.equal('rejected')
         done()
       })
     })
@@ -445,7 +403,7 @@ describe('remote module', () => {
     it('emits unhandled rejection events in the renderer process', (done) => {
       window.addEventListener('unhandledrejection', function handler (event) {
         event.preventDefault()
-        assert.strictEqual(event.reason.message, 'rejected')
+        expect(event.reason.message).to.equal('rejected')
         window.removeEventListener('unhandledrejection', handler)
         done()
       })
@@ -461,31 +419,7 @@ describe('remote module', () => {
     it('can return same object with different getters', () => {
       const contents1 = remote.getCurrentWindow().webContents
       const contents2 = remote.getCurrentWebContents()
-      assert(contents1 === contents2)
-    })
-  })
-
-  describe('remote.getCurrentWindow filtering', () => {
-    it('can return custom value', () => {
-      ipcRenderer.send('handle-next-remote-get-current-window', 'Hello World!')
-      expect(remote.getCurrentWindow()).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-current-window')
-      expect(() => remote.getCurrentWindow()).to.throw('Blocked remote.getCurrentWindow()')
-    })
-  })
-
-  describe('remote.getCurrentWebContents filtering', () => {
-    it('can return custom value', () => {
-      ipcRenderer.send('handle-next-remote-get-current-web-contents', 'Hello World!')
-      expect(remote.getCurrentWebContents()).to.be.equal('Hello World!')
-    })
-
-    it('throws when no returnValue set', () => {
-      ipcRenderer.send('handle-next-remote-get-current-web-contents')
-      expect(() => remote.getCurrentWebContents()).to.throw('Blocked remote.getCurrentWebContents()')
+      expect(contents1).to.equal(contents2)
     })
   })
 
@@ -495,39 +429,39 @@ describe('remote module', () => {
     let derived = cl.derived
 
     it('can get methods', () => {
-      assert.strictEqual(base.method(), 'method')
+      expect(base.method()).to.equal('method')
     })
 
     it('can get properties', () => {
-      assert.strictEqual(base.readonly, 'readonly')
+      expect(base.readonly).to.equal('readonly')
     })
 
     it('can change properties', () => {
-      assert.strictEqual(base.value, 'old')
+      expect(base.value).to.equal('old')
       base.value = 'new'
-      assert.strictEqual(base.value, 'new')
+      expect(base.value).to.equal('new')
       base.value = 'old'
     })
 
     it('has unenumerable methods', () => {
-      assert(!base.hasOwnProperty('method'))
-      assert(Object.getPrototypeOf(base).hasOwnProperty('method'))
+      expect(base).to.not.have.own.property('method')
+      expect(Object.getPrototypeOf(base)).to.have.own.property('method')
     })
 
     it('keeps prototype chain in derived class', () => {
-      assert.strictEqual(derived.method(), 'method')
-      assert.strictEqual(derived.readonly, 'readonly')
-      assert(!derived.hasOwnProperty('method'))
+      expect(derived.method()).to.equal('method')
+      expect(derived.readonly).to.equal('readonly')
+      expect(derived).to.not.have.own.property('method')
       const proto = Object.getPrototypeOf(derived)
-      assert(!proto.hasOwnProperty('method'))
-      assert(Object.getPrototypeOf(proto).hasOwnProperty('method'))
+      expect(proto).to.not.have.own.property('method')
+      expect(Object.getPrototypeOf(proto)).to.have.own.property('method')
     })
 
     it('is referenced by methods in prototype chain', () => {
       const method = derived.method
       derived = null
       global.gc()
-      assert.strictEqual(method(), 'method')
+      expect(method()).to.equal('method')
     })
   })
 
@@ -535,9 +469,9 @@ describe('remote module', () => {
     const throwFunction = remote.require(path.join(fixtures, 'module', 'exception.js'))
 
     it('throws errors from the main process', () => {
-      assert.throws(() => {
+      expect(() => {
         throwFunction()
-      })
+      }).to.throw()
     })
 
     it('throws custom errors from the main process', () => {
@@ -547,13 +481,16 @@ describe('remote module', () => {
       try {
         throwFunction(err)
       } catch (error) {
-        assert.ok(error.from)
-        assert.deepStrictEqual(error.cause, ...resolveGetters(err))
+        expect(error.from).to.equal('browser')
+        expect(error.cause).to.deep.equal(...resolveGetters(err))
       }
     })
   })
 
   describe('remote function in renderer', () => {
+    let w = null
+
+    afterEach(() => closeWindow(w).then(() => { w = null }))
     afterEach(() => {
       ipcMain.removeAllListeners('done')
     })

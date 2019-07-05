@@ -21,7 +21,7 @@ template("typescript_build") {
     inputs = [
       invoker.tsconfig,
       "//electron/tsconfig.json",
-      "//electron/package-lock.json",
+      "//electron/yarn.lock",
       "//electron/typings/internal-ambient.d.ts",
       "//electron/typings/internal-electron.d.ts",
       "//electron/typings/internal-helpers.d.ts",

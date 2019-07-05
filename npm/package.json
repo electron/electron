@@ -1,29 +1,18 @@
 {
-  "scripts": {
-    "cache-clean": "rm -rf ~/.electron && rm -rf dist",
-    "postinstall": "node install.js",
-    "pretest": "npm run cache-clean",
-    "test": "standard"
-  },
+  "main": "index.js",
+  "types": "electron.d.ts",
   "bin": {
     "electron": "cli.js"
   },
-  "main": "index.js",
-  "types": "electron.d.ts",
+  "scripts": {
+    "postinstall": "node install.js"
+  },
   "dependencies": {
-    "@types/node": "^10.12.18",
-    "electron-download": "^4.1.0",
+    "@electron/get": "^1.0.1",
+    "@types/node": "^12.0.12",
     "extract-zip": "^1.0.3"
   },
-  "devDependencies": {
-    "home-path": "^0.1.1",
-    "path-exists": "^2.0.0",
-    "standard": "^5.4.1"
-  },
-  "directories": {
-    "test": "test"
-  },
   "engines": {
-    "node": ">= 4.0"
+    "node": ">= 8.6"
   }
 }

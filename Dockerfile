@@ -10,18 +10,21 @@ RUN chmod a+rwx /tmp
 # Install Linux packages
 ADD build/install-build-deps.sh /setup/install-build-deps.sh
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
+RUN dpkg --add-architecture i386
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     libnotify-bin \
     locales \
     lsb-release \
     nano \
-    python-dbusmock \
+    python-dbus \
     python-pip \
     python-setuptools \
     sudo \
     vim-nox \
     wget \
+    g++-multilib \
+    libgl1:i386 \
   && /setup/install-build-deps.sh --syms --no-prompt --no-chromeos-fonts --lib32 --arm \
   && rm -rf /var/lib/apt/lists/*
 
@@ -32,6 +35,9 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
 
 # crcmod is required by gsutil, which is used for filling the gclient git cache
 RUN pip install -U crcmod
+
+# dbusmock is needed for Electron tests
+RUN pip install python-dbusmock
 
 RUN mkdir /tmp/workspace
 RUN chown builduser:builduser /tmp/workspace

@@ -1,7 +1,5 @@
 # Issues In Electron
 
-# Issues
-
 * [How to Contribute in Issues](#how-to-contribute-in-issues)
 * [Asking for General Help](#asking-for-general-help)
 * [Submitting a Bug Report](#submitting-a-bug-report)

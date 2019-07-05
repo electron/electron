@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:24 -0700
+Subject: blink_initialization_order.patch
+
+Backport of https://chromium-review.googlesource.com/c/chromium/src/+/1030530
+to fix the order of V8 and Blink initialization.  Also fixes order
+of DidCreateScriptContext notification with initialization of window globals
+to fix electron/electron#13787.  The backport landed in Chromium 67 but the
+DidCreateScriptContext re-ordering needs to be upstreamed or kept indefinitely
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
+index 59af62ece264de7f392f8b13ae373700d6aafc56..2d547910eaef8ba2194a012f8a6c9a444b7de741 100644
+--- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
++++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
+@@ -191,11 +191,10 @@ void LocalWindowProxy::Initialize() {
+                  GetFrame()->IsMainFrame());
+     MainThreadDebugger::Instance()->ContextCreated(script_state_, GetFrame(),
+                                                    origin);
++    InstallConditionalFeatures();
+     GetFrame()->Client()->DidCreateScriptContext(context, world_->GetWorldId());
+   }
+ 
+-  InstallConditionalFeatures();
+-
+   // This needs to go after everything else since it accesses the window object.
+   InitializeV8ExtrasBinding(script_state_);
+ 

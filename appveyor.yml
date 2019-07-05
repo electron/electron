@@ -29,12 +29,21 @@
 
 version: 1.0.{build}
 build_cloud: libcc-20
-image: libcc-20-vs2017-15.9
+image: vs2017-15.9-10.0.18362
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
-  DISABLE_CRASH_REPORTER_TESTS: true
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
+notifications:
+  - provider: Webhook
+    url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook
+    method: POST
+    headers:
+      x-mission-control-secret:
+        secure: 90BLVPcqhJPG7d24v0q/RRray6W3wDQ8uVQlQjOHaBWkw1i8FoA1lsjr2C/v1dVok+tS2Pi6KxDctPUkwIb4T27u4RhvmcPzQhVpfwVJAG9oNtq+yKN7vzHfg7k/pojEzVdJpQLzeJGcSrZu7VY39Q==
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: false
 build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
@@ -43,13 +52,15 @@ build_script:
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - ps: if (Test-Path src\electron) { Remove-Item src\electron -Recurse }
+  - mkdir src
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         $env:GCLIENT_EXTRA_ARGS="--custom-var=checkout_boto=True --custom-var=checkout_requests=True"
+      } else {
+        $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
       gclient config
@@ -64,8 +75,9 @@ build_script:
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron:manifests
-  - gn check out/Default //electron/atom/common/api:mojo
+  - gn check out/Default //electron/shell/common/api:mojo
   - ninja -C out/Default electron:electron_app
+  - if "%GN_CONFIG%"=="testing" ( python C:\Users\electron\depot_tools\post_build_ninja_summary.py -C out\Default )  
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
@@ -85,6 +97,7 @@ build_script:
         python electron\script\zip-symbols.py
         appveyor PushArtifact out/Default/symbols.zip
       }
+  - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
 test_script:
   # Workaround for https://github.com/appveyor/ci/issues/2420
   - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
@@ -100,7 +113,7 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & npm run test -- --ci --enable-logging)
+  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --ci --enable-logging)
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -112,9 +125,9 @@ deploy_script:
       if (Test-Path Env:\ELECTRON_RELEASE) {
         if (Test-Path Env:\UPLOAD_TO_S3) {
           Write-Output "Uploading Electron release distribution to s3"
-          & python script\upload.py --upload_to_s3
+          & python script\release\uploaders\upload.py --upload_to_s3
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
-          & python script\upload.py
+          & python script\release\uploaders\upload.py
         }
       }

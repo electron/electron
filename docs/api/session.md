@@ -70,6 +70,8 @@ The following events are available on instances of `Session`:
 
 #### Event: 'will-download'
 
+Returns:
+
 * `event` Event
 * `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
@@ -93,50 +95,15 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 
 The following methods are available on instances of `Session`:
 
-#### `ses.getCacheSize(callback)`
-
-* `callback` Function
-  * `size` Integer - Cache size used in bytes.
-  * `error` Integer - The error code corresponding to the failure.
-
-Callback is invoked with the session's current cache size.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `ses.getCacheSize()`
 
 Returns `Promise<Integer>` - the session's current cache size, in bytes.
-
-#### `ses.clearCache(callback)`
-
-* `callback` Function - Called when operation is done.
-  * `error` Integer - The error code corresponding to the failure.
-
-Clears the session’s HTTP cache.
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearCache()`
 
 Returns `Promise<void>` - resolves when the cache clear operation is complete.
 
 Clears the session’s HTTP cache.
-
-#### `ses.clearStorageData([options,] callback)`
-
-* `options` Object (optional)
-  * `origin` String (optional) - Should follow `window.location.origin`’s representation
-    `scheme://host:port`.
-  * `storages` String[] (optional) - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`, `cachestorage`.
-  * `quotas` String[] (optional) - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`.
-* `callback` Function (optional) - Called when operation is done.
-
-Clears the storage data for the current session.
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearStorageData([options])`
 
@@ -154,84 +121,6 @@ Returns `Promise<void>` - resolves when the storage data has been cleared.
 #### `ses.flushStorageData()`
 
 Writes any unwritten DOMStorage data to disk.
-
-#### `ses.setProxy(config, callback)`
-
-* `config` Object
-  * `pacScript` String - The URL associated with the PAC file.
-  * `proxyRules` String - Rules indicating which proxies to use.
-  * `proxyBypassRules` String - Rules indicating which URLs should
-    bypass the proxy settings.
-* `callback` Function - Called when operation is done.
-
-Sets the proxy settings.
-
-When `pacScript` and `proxyRules` are provided together, the `proxyRules`
-option is ignored and `pacScript` configuration is applied.
-
-The `proxyRules` has to follow the rules below:
-
-```sh
-proxyRules = schemeProxies[";"<schemeProxies>]
-schemeProxies = [<urlScheme>"="]<proxyURIList>
-urlScheme = "http" | "https" | "ftp" | "socks"
-proxyURIList = <proxyURL>[","<proxyURIList>]
-proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
-```
-
-For example:
-
-* `http=foopy:80;ftp=foopy2` - Use HTTP proxy `foopy:80` for `http://` URLs, and
-  HTTP proxy `foopy2:80` for `ftp://` URLs.
-* `foopy:80` - Use HTTP proxy `foopy:80` for all URLs.
-* `foopy:80,bar,direct://` - Use HTTP proxy `foopy:80` for all URLs, failing
-  over to `bar` if `foopy:80` is unavailable, and after that using no proxy.
-* `socks4://foopy` - Use SOCKS v4 proxy `foopy:1080` for all URLs.
-* `http=foopy,socks5://bar.com` - Use HTTP proxy `foopy` for http URLs, and fail
-  over to the SOCKS5 proxy `bar.com` if `foopy` is unavailable.
-* `http=foopy,direct://` - Use HTTP proxy `foopy` for http URLs, and use no
-  proxy if `foopy` is unavailable.
-* `http=foopy;socks=foopy2` - Use HTTP proxy `foopy` for http URLs, and use
-  `socks4://foopy2` for all other URLs.
-
-The `proxyBypassRules` is a comma separated list of rules described below:
-
-* `[ URL_SCHEME "://" ] HOSTNAME_PATTERN [ ":" <port> ]`
-
-   Match all hostnames that match the pattern HOSTNAME_PATTERN.
-
-   Examples:
-     "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
-     "https://x.*.y.com:99"
-
- * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
-
-   Match a particular domain suffix.
-
-   Examples:
-     ".google.com", ".com", "http://.google.com"
-
-* `[ SCHEME "://" ] IP_LITERAL [ ":" PORT ]`
-
-   Match URLs which are IP address literals.
-
-   Examples:
-     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
-
-* `IP_LITERAL "/" PREFIX_LENGTH_IN_BITS`
-
-   Match any URL that is to an IP literal that falls between the
-   given range. IP range is specified using CIDR notation.
-
-   Examples:
-     "192.168.1.1/16", "fefe:13::abc/33".
-
-* `<local>`
-
-   Match local addresses. The meaning of `<local>` is whether the
-   host matches one of: "127.0.0.1", "::1", "localhost".
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.setProxy(config)`
 
@@ -310,22 +199,11 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match local addresses. The meaning of `<local>` is whether the
    host matches one of: "127.0.0.1", "::1", "localhost".
 
-#### `ses.resolveProxy(url, callback)`
-
-* `url` URL
-* `callback` Function
-  * `proxy` String
-
-Resolves the proxy information for `url`. The `callback` will be called with
-`callback(proxy)` when the request is performed.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `ses.resolveProxy(url)`
 
 * `url` URL
 
-Returns `Promise<string>` - Resolves with the proxy information for `url`.
+Returns `Promise<String>` - Resolves with the proxy information for `url`.
 
 #### `ses.setDownloadPath(path)`
 
@@ -406,15 +284,17 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 #### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function | null
-  * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.
+  * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
   * `callback` Function
     * `permissionGranted` Boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.
-    * `externalURL` String - The url of the `openExternal` request.
-    * `mediaTypes` String[] - The types of media access being requested, elements can be `video`
+    * `externalURL` String (optional) - The url of the `openExternal` request.
+    * `mediaTypes` String[] (optional) - The types of media access being requested, elements can be `video`
       or `audio`
+    * `requestingUrl` String - The last URL the requesting frame loaded
+    * `isMainFrame` Boolean - Whether the frame making the request is the main frame
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
@@ -434,13 +314,15 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 #### `ses.setPermissionCheckHandler(handler)`
 
 * `handler` Function<Boolean> | null
-  * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.
+  * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
   * `permission` String - Enum of 'media'.
   * `requestingOrigin` String - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `securityOrigin` String - The security orign of the `media` check.
     * `mediaType` String - The type of media access being requested, can be `video`,
       `audio` or `unknown`
+    * `requestingUrl` String - The last URL the requesting frame loaded
+    * `isMainFrame` Boolean - Whether the frame making the request is the main frame
 
 Sets the handler which can be used to respond to permission checks for the `session`.
 Returning `true` will allow the permission and `false` will reject it.
@@ -456,14 +338,6 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   return true
 })
 ```
-
-#### `ses.clearHostResolverCache(callback)`
-
-* `callback` Function (optional) - Called when operation is done.
-
-Clears the host resolver cache.
-
-**[Deprecated Soon](modernization/promisification.md)**
 
 #### `ses.clearHostResolverCache()`
 
@@ -506,14 +380,6 @@ This doesn't affect existing `WebContents`, and each `WebContents` can use
 
 Returns `String` - The user agent for this session.
 
-#### `ses.getBlobData(identifier, callback)`
-
-* `identifier` String - Valid UUID.
-* `callback` Function
-  * `result` Buffer - Blob data.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `ses.getBlobData(identifier)`
 
 * `identifier` String - Valid UUID.
@@ -539,15 +405,6 @@ event. The [DownloadItem](download-item.md) will not have any `WebContents` asso
 the initial state will be `interrupted`. The download will start only when the
 `resume` API is called on the [DownloadItem](download-item.md).
 
-#### `ses.clearAuthCache(options, callback)`
-
-* `options` ([RemovePassword](structures/remove-password.md) | [RemoveClientCertificate](structures/remove-client-certificate.md))
-* `callback` Function - Called when operation is done.
-
-Clears the session’s HTTP authentication cache.
-
-**[Deprecated Soon](modernization/promisification.md)**
-
 #### `ses.clearAuthCache(options)`
 
 * `options` ([RemovePassword](structures/remove-password.md) | [RemoveClientCertificate](structures/remove-client-certificate.md))
@@ -561,8 +418,6 @@ Returns `Promise<void>` - resolves when the session’s HTTP authentication cach
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
-**Note:** For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
-
 #### `ses.getPreloads()`
 
 Returns `String[]` an array of paths to preload scripts that have been
@@ -574,15 +429,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-A [Cookies](cookies.md) object for this session.
+A [`Cookies`](cookies.md) object for this session.
 
 #### `ses.webRequest`
 
-A [WebRequest](web-request.md) object for this session.
+A [`WebRequest`](web-request.md) object for this session.
 
 #### `ses.protocol`
 
-A [Protocol](protocol.md) object for this session.
+A [`Protocol`](protocol.md) object for this session.
 
 ```javascript
 const { app, session } = require('electron')
@@ -601,7 +456,7 @@ app.on('ready', function () {
 
 #### `ses.netLog`
 
-A [NetLog](net-log.md) object for this session.
+A [`NetLog`](net-log.md) object for this session.
 
 ```javascript
 const { app, session } = require('electron')

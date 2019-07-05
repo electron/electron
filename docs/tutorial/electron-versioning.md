@@ -87,9 +87,9 @@ e.g. `2.0.1`.
 
 Specifically, the above means:
 
-1. Admitting non-breaking-API changes early in the beta cycle is okay, even if those changes have the potential to cause moderate side-affects
+1. Admitting non-breaking-API changes before Week 3 in the beta cycle is okay, even if those changes have the potential to cause moderate side-affects
 2. Admitting feature-flagged changes, that do not otherwise alter existing code paths, at most points in the beta cycle is okay. Users can explicitly enable those flags in their apps.
-3. Admitting features of any sort very late in the beta cycle is 👎 without a very good reason.
+3. Admitting features of any sort after Week 3 in the beta cycle is 👎 without a very good reason.
 
 For each major and minor bump, you should expect to see something like the following:
 

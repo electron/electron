@@ -1,17 +1,20 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import subprocess
 import sys
 import zipfile
 
 EXTENSIONS_TO_SKIP = [
-  '.pdb'
+  '.pdb',
+  '.mojom.js',
+  '.mojom-lite.js',
 ]
 
 PATHS_TO_SKIP = [
   'angledata', #Skipping because it is an output of //ui/gl that we don't need
-  './libVkLayer_', #Skipping because these are outputs that we don't need
-  './VkLayerLayer_', #Skipping because these are outputs that we don't need
+  './libVkICD_mock_', #Skipping because these are outputs that we don't need
+  './VkICD_mock_', #Skipping because these are outputs that we don't need
 
   # //chrome/browser:resources depends on this via
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
@@ -39,7 +42,7 @@ def execute(argv):
     output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
     return output
   except subprocess.CalledProcessError as e:
-    print e.output
+    print(e.output)
     raise e
 
 def main(argv):
@@ -52,7 +55,7 @@ def main(argv):
   if sys.platform == 'darwin':
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
-    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, True) as z:
+    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
       for dep in dist_files:
         if skip_path(dep, dist_zip, target_cpu):
           continue

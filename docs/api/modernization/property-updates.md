@@ -4,46 +4,17 @@ The Electron team is currently undergoing an initiative to convert separate gett
 
 ## Candidates
 
-* `app` module
-  * `badgeCount`
-  * `name`
-  * `dock`
-    * `badge`
-* `autoUpdater` module
-  * `feedUrl`
 * `BrowserWindow`
   * `fullscreen`
   * `simpleFullscreen`
-  * `movable`
-  * `resizable`
-  * `maximizable`
-  * `minimizable`
-  * `fullscreenable`
-  * `closable`
   * `alwaysOnTop`
   * `title`
   * `documentEdited`
   * `hasShadow`
-  * `autohideMenuBar`
   * `menubarVisible`
   * `visibleOnAllWorkspaces`
 * `crashReporter` module
   * `uploadToServer`
-* `DownloadItem` class
-  * `savePath`
-  * `paused`
-* `NativeImage`
-  * `templateImage`
-* `Session` module
-  * `preloads`
-* `SystemPreferences` module
-  * `appLevelAppearance`
-* `webContents` module
-  * `zoomFactor`
-  * `zoomLevel`
-  * `audioMuted`
-  * `userAgent`
-  * `frameRate`
 * `webFrame` modules
   * `zoomFactor`
   * `zoomLevel`
@@ -58,3 +29,25 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `app` module
   * `accessibilitySupport`
   * `applicationMenu`
+  * `badgeCount`
+  * `name`
+* `DownloadItem` class
+  * `savePath`
+* `BrowserWindow` module
+  * `autohideMenuBar`
+  * `resizable`
+  * `maximizable`
+  * `minimizable`
+  * `fullscreenable`
+  * `movable`
+  * `closable`
+* `NativeImage`
+  * `isMacTemplateImage`
+* `SystemPreferences` module
+  * `appLevelAppearance`
+* `webContents` module
+  * `audioMuted`
+  * `frameRate`
+  * `userAgent`
+  * `zoomFactor`
+  * `zoomLevel`

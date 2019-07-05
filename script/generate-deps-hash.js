@@ -8,7 +8,7 @@ const HASH_VERSION = 1
 // Base files to hash
 const filesToHash = [
   path.resolve(__dirname, '../DEPS'),
-  path.resolve(__dirname, '../package-lock.json')
+  path.resolve(__dirname, '../yarn.lock')
 ]
 
 const addAllFiles = (dir) => {

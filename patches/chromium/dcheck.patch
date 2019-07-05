@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:44:38 -0700
+Subject: dcheck.patch
+
+This disables some debug checks which currently fail when running the Electron
+test suite. In general there should be sustained effort to have all debug checks
+enabled. If you want to help, choose one of the diffs below and remove it. Then
+build Electron (debug configuration) and make sure all tests pass on the CI
+systems. Unfortunately the tests don't always cover the check failures, so it's
+good to also run some non-trivial Electron app to verify.
+
+Apart from getting rid of a whole diff, you may also be able to replace one diff
+with another which enables at least some of the previously disabled checks. For
+example, the checks might be disabled for a whole build target, but actually
+only one or two specific checks fail. Then it's better to simply comment out the
+failing checks and allow the rest of the target to have them enabled.
+
+diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
+index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a9657c2dbf0d 100644
+--- a/content/browser/frame_host/navigation_controller_impl.cc
++++ b/content/browser/frame_host/navigation_controller_impl.cc
+@@ -1206,8 +1206,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+     return NAVIGATION_TYPE_NEW_SUBFRAME;
+   }
+ 
+-  // We only clear the session history when navigating to a new page.
+-  DCHECK(!params.history_list_was_cleared);
++  // Electron does its own book keeping of navigation entries and we
++  // expect content to not track any, by clearing history list for
++  // all navigations.
++  // DCHECK(!params.history_list_was_cleared);
+ 
+   if (rfh->GetParent()) {
+     // All manual subframes would be did_create_new_entry and handled above, so
+@@ -1452,7 +1454,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+     new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
+   }
+ 
+-  DCHECK(!params.history_list_was_cleared || !replace_entry);
++  // Electron does its own book keeping of navigation entries and we
++  // expect content to not track any, by clearing history list for
++  // all navigations.
++  // DCHECK(!params.history_list_was_cleared || !replace_entry);
+   // The browser requested to clear the session history when it initiated the
+   // navigation. Now we know that the renderer has updated its state accordingly
+   // and it is safe to also clear the browser side history.
+diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
+index 7ed451db1a95409492f231d6cdde0da4fe2d6123..51dd41bd85bdbbf125747d514ff52ca5debe3638 100644
+--- a/ui/base/clipboard/clipboard_win.cc
++++ b/ui/base/clipboard/clipboard_win.cc
+@@ -729,9 +729,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+ }
+ 
+ void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {
+-  DCHECK(clipboard_owner_->hwnd() != NULL);
++  // DCHECK(clipboard_owner_->hwnd() != NULL);
+   if (handle && !::SetClipboardData(format, handle)) {
+-    DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());
++    // DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());
+     FreeData(format, handle);
+   }
+ }

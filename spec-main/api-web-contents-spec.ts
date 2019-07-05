@@ -9,7 +9,7 @@ const { expect } = chai
 
 chai.use(chaiAsPromised)
 
-const fixturesPath = path.resolve(__dirname, '../spec/fixtures')
+const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 describe('webContents module', () => {
   let w: BrowserWindow = (null as unknown as BrowserWindow)
@@ -50,6 +50,27 @@ describe('webContents module', () => {
       expect(all[0].getType()).to.equal('window')
       expect(all[all.length - 2].getType()).to.equal('webview')
       expect(all[all.length - 1].getType()).to.equal('remote')
+    })
+  })
+
+  describe('will-prevent-unload event', () => {
+    it('does not emit if beforeunload returns undefined', (done) => {
+      w.once('closed', () => done())
+      w.webContents.once('will-prevent-unload', (e) => {
+        expect.fail('should not have fired')
+      })
+      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-undefined.html'))
+    })
+
+    it('emits if beforeunload returns false', (done) => {
+      w.webContents.once('will-prevent-unload', () => done())
+      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
+    })
+
+    it('supports calling preventDefault on will-prevent-unload events', (done) => {
+      w.webContents.once('will-prevent-unload', event => event.preventDefault())
+      w.once('closed', () => done())
+      w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
     })
   })
 })

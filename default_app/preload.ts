@@ -1,7 +1,7 @@
 import { ipcRenderer } from 'electron'
 
-function initialize () {
-  const electronPath = ipcRenderer.sendSync('bootstrap')
+async function initialize () {
+  const electronPath = await ipcRenderer.invoke('bootstrap')
 
   function replaceText (selector: string, text: string) {
     const element = document.querySelector<HTMLElement>(selector)

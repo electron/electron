@@ -33,8 +33,6 @@ static_library("chrome") {
     "//chrome/browser/icon_manager.h",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
-    "//chrome/browser/net/chrome_net_log_helper.cc",
-    "//chrome/browser/net/chrome_net_log_helper.h",
     "//chrome/browser/net/proxy_config_monitor.cc",
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
@@ -103,6 +101,10 @@ static_library("chrome") {
         "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
         "//chrome/browser/ui/cocoa/color_chooser_mac.h",
         "//chrome/browser/ui/cocoa/color_chooser_mac.mm",
+      ]
+      deps += [
+        "//components/remote_cocoa/app_shim",
+        "//components/remote_cocoa/browser",
       ]
     }
 

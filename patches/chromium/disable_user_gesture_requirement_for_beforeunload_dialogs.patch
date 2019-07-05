@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Thu, 20 Sep 2018 17:47:33 -0700
+Subject: disable_user_gesture_requirement_for_beforeunload_dialogs.patch
+
+See https://github.com/electron/electron/issues/10754
+
+diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
+index a532335fbe025ca34a1f2df8803225b7a4943bd0..2b2439bae4a1989c94026976d157522a3274aafb 100644
+--- a/third_party/blink/renderer/core/dom/document.cc
++++ b/third_party/blink/renderer/core/dom/document.cc
+@@ -3992,7 +3992,9 @@ bool Document::DispatchBeforeUnloadEvent(ChromeClient* chrome_client,
+         "frame that never had a user gesture since its load. "
+         "https://www.chromestatus.com/feature/5082396709879808";
+     Intervention::GenerateReport(frame_, "BeforeUnloadNoGesture", message);
+-    return true;
++    // TODO(alexeykuzmin): Uncomment `return true` when Electron tests are fixed.
++    // See https://github.com/electron/electron/issues/10754
++    // return true;
+   }
+ 
+   if (did_allow_navigation) {

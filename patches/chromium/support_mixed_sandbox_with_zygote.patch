@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 28 Nov 2018 13:20:27 -0800
+Subject: support mixed-sandbox with zygote
+
+On Linux, Chromium launches all new renderer processes via a "zygote"
+process which has the sandbox pre-initialized (see
+//docs/linux_zygote.md). In order to support mixed-sandbox mode, in
+which some renderers are launched with the sandbox engaged and others
+without it, we need the option to launch non-sandboxed renderers without
+going through the zygote.
+
+Chromium already supports a `--no-zygote` flag, but it turns off the
+zygote completely, and thus also disables sandboxing. This patch allows
+the `--no-zygote` flag to affect renderer processes on a case-by-case
+basis, checking immediately prior to launch whether to go through the
+zygote or not based on the command-line of the to-be-launched renderer.
+
+This patch could conceivably be upstreamed, as it does not affect
+production Chromium (which does not use the `--no-zygote` flag).
+However, the patch would need to be reviewed by the security team, as it
+does touch a security-sensitive class.
+
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index f1ada24a428765ed52174598c736b25e89a1e7d2..ce456a679fe94077c1a69b5eb697eba746ddba85 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -396,6 +396,10 @@ class RendererSandboxedProcessLauncherDelegate
+     : public SandboxedProcessLauncherDelegate {
+  public:
+   RendererSandboxedProcessLauncherDelegate() {}
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++  RendererSandboxedProcessLauncherDelegate(bool use_zygote):
++    use_zygote_(use_zygote) {}
++#endif
+ 
+   ~RendererSandboxedProcessLauncherDelegate() override {}
+ 
+@@ -415,6 +419,9 @@ class RendererSandboxedProcessLauncherDelegate
+ 
+ #if BUILDFLAG(USE_ZYGOTE_HANDLE)
+   service_manager::ZygoteHandle GetZygote() override {
++    if (!use_zygote_) {
++      return nullptr;
++    }
+     const base::CommandLine& browser_command_line =
+         *base::CommandLine::ForCurrentProcess();
+     base::CommandLine::StringType renderer_prefix =
+@@ -428,6 +435,11 @@ class RendererSandboxedProcessLauncherDelegate
+   service_manager::SandboxType GetSandboxType() override {
+     return service_manager::SANDBOX_TYPE_RENDERER;
+   }
++
++ private:
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++  bool use_zygote_ = true;
++#endif
+ };
+ 
+ const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
+@@ -1749,11 +1761,18 @@ bool RenderProcessHostImpl::Init() {
+       cmd_line->PrependWrapper(renderer_prefix);
+     AppendRendererCommandLine(cmd_line.get());
+ 
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);
++    auto delegate = std::make_unique<RendererSandboxedProcessLauncherDelegate>(use_zygote);
++#else
++    auto delegate = std::make_unique<RendererSandboxedProcessLauncherDelegate>();
++#endif
++
+     // Spawn the child process asynchronously to avoid blocking the UI thread.
+     // As long as there's no renderer prefix, we can use the zygote process
+     // at this stage.
+     child_process_launcher_ = std::make_unique<ChildProcessLauncher>(
+-        std::make_unique<RendererSandboxedProcessLauncherDelegate>(),
++        std::move(delegate),
+         std::move(cmd_line), GetID(), this, std::move(mojo_invitation_),
+         base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_));
+     channel_->Pause();

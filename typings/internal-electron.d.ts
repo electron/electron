@@ -47,9 +47,9 @@ declare namespace Electron {
     allFrames: boolean
   }
 
-  interface RendererProcessPreference {
-    contentScripts: Array<ContentScript>
+  type ContentScriptEntry = {
     extensionId: string;
+    contentScripts: ContentScript[];
   }
 
   interface IpcRendererInternal extends Electron.IpcRenderer {
@@ -71,6 +71,7 @@ declare namespace Electron {
 declare namespace ElectronInternal {
   type DeprecationHandler = (message: string) => void;
   interface DeprecationUtil {
+    warnOnce(oldName: string, newName?: string): () => void;
     setHandler(handler: DeprecationHandler): void;
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;
@@ -87,12 +88,32 @@ declare namespace ElectronInternal {
     promisifyMultiArg<T extends (...args: any[]) => any>(fn: T, /*convertPromiseValue: (v: any) => any*/): T;
   }
 
+  interface DesktopCapturer {
+    startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
+    emit: typeof NodeJS.EventEmitter.prototype.emit | null;
+  }
+
+  interface GetSourcesOptions {
+    captureWindow: boolean;
+    captureScreen: boolean;
+    thumbnailSize: Electron.Size;
+    fetchWindowIcons: boolean;
+  }
+
+  interface GetSourcesResult {
+    id: string;
+    name: string;
+    thumbnail: string;
+    display_id: string;
+    appIcon: string | null;
+  }
+
   // Internal IPC has _replyInternal and NO reply method
   interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
     _replyInternal(...args: any[]): void;
   }
 
-  interface IpcMainInternal extends Electron.EventEmitter {
+  interface IpcMainInternal extends NodeJS.EventEmitter {
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }

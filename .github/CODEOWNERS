@@ -4,17 +4,18 @@
 # https://git-scm.com/docs/gitignore
 
 # Most stuff in here is owned by the Community & Safety WG...
-/.github/* @electron/wg-community
+/.github/*                              @electron/wg-community
 
 # ...except the Admin WG maintains this file.
-/.github/CODEOWNERS @electron/wg-admin
+/.github/CODEOWNERS                     @electron/wg-admin
 
 # Upgrades WG
-/patches/ @electron/wg-upgrades
+/patches/                               @electron/wg-upgrades
 
 # Docs & Tooling WG
 /default_app/ @electron/wg-docs-tools
-/docs/ @electron/wg-docs-tools
+/docs/                                  @electron/wg-docs-tools
 
 # Releases WG
-/npm/ @electron/wg-releases
+/npm/                                   @electron/wg-releases
+/script/release                         @electron/wg-releases

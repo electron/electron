@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import { deprecate } from 'electron'
 
 const binding = process.electronBinding('web_frame')
 
@@ -46,26 +45,6 @@ class WebFrame extends EventEmitter {
   get routingId () {
     return binding._getRoutingId(this.context)
   }
-
-  // Deprecations
-  // TODO(nitsakh): Remove in 6.0
-  setIsolatedWorldSecurityOrigin (worldId: number, securityOrigin: string) {
-    deprecate.warn('webFrame.setIsolatedWorldSecurityOrigin', 'webFrame.setIsolatedWorldInfo')
-    binding.setIsolatedWorldInfo(this.context, worldId, { securityOrigin })
-  }
-
-  setIsolatedWorldContentSecurityPolicy (worldId: number, csp: string) {
-    deprecate.warn('webFrame.setIsolatedWorldContentSecurityPolicy', 'webFrame.setIsolatedWorldInfo')
-    binding.setIsolatedWorldInfo(this.context, worldId, {
-      securityOrigin: window.location.origin,
-      csp
-    })
-  }
-
-  setIsolatedWorldHumanReadableName (worldId: number, name: string) {
-    deprecate.warn('webFrame.setIsolatedWorldHumanReadableName', 'webFrame.setIsolatedWorldInfo')
-    binding.setIsolatedWorldInfo(this.context, worldId, { name })
-  }
 }
 
 // Populate the methods.
@@ -83,15 +62,6 @@ for (const name in binding) {
 // TODO(zcbenz): Consider returning same WebFrame for the same frame.
 function getWebFrame (context: Window) {
   return context ? new WebFrame(context) : null
-}
-
-const promisifiedMethods = new Set<string>([
-  'executeJavaScript',
-  'executeJavaScriptInIsolatedWorld'
-])
-
-for (const method of promisifiedMethods) {
-  (WebFrame as any).prototype[method] = deprecate.promisify((WebFrame as any).prototype[method])
 }
 
 const _webFrame = new WebFrame(window)

@@ -1,14 +1,76 @@
-# API Contract
+# Breaking Changes
 
 Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](../tutorial/electron-versioning.md#semver) before the change is made.
 
-# `FIXME` comments
+## `FIXME` comments
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
-# Planned Breaking API Changes (6.0)
+## Planned Breaking API Changes (7.0)
 
-## `win.setMenu(null)`
+### Node Headers URL
+
+This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
+command line flag when building native Node modules.  Both will be supported for
+the foreseeable future but it is recommended that you switch.
+
+Deprecated: https://atom.io/download/electron
+
+Replace with: https://electronjs.org/headers
+
+### `session.clearAuthCache(options)`
+
+The `session.clearAuthCache` API no longer accepts options for what to clear, and instead unconditionally clears the whole cache.
+
+```js
+// Deprecated
+session.clearAuthCache({ type: 'password' })
+// Replace with
+session.clearAuthCache()
+```
+
+### `powerMonitor.querySystemIdleState`
+
+```js
+// Removed in Electron 7.0
+powerMonitor.querySystemIdleState(threshold, callback)
+// Replace with synchronous API
+const idleState = getSystemIdleState(threshold)
+```
+
+### `powerMonitor.querySystemIdleTime`
+
+```js
+// Removed in Electron 7.0
+powerMonitor.querySystemIdleTime(callback)
+// Replace with synchronous API
+const idleTime = getSystemIdleTime()
+```
+
+### webFrame Isolated World APIs
+
+```js
+// Removed in Elecron 7.0
+webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
+webFrame.setIsolatedWorldHumanReadableName(worldId, name)
+webFrame.setIsolatedWorldSecurityOrigin(worldId, securityOrigin)
+// Replace with
+webFrame.setIsolatedWorldInfo(
+  worldId,
+  {
+    securityOrigin: 'some_origin',
+    name: 'human_readable_name',
+    csp: 'content_security_policy'
+  })
+```
+
+### Removal of deprecated `marked` property on getBlinkMemoryInfo
+
+This property was removed in Chromium 77, and as such is no longer available.
+
+## Planned Breaking API Changes (6.0)
+
+### `win.setMenu(null)`
 
 ```js
 // Deprecated
@@ -17,7 +79,7 @@ win.setMenu(null)
 win.removeMenu()
 ```
 
-## `contentTracing.getTraceBufferUsage()`
+### `contentTracing.getTraceBufferUsage()`
 
 ```js
 // Deprecated
@@ -30,7 +92,7 @@ contentTracing.getTraceBufferUsage().then(infoObject => {
 })
 ```
 
-## `electron.screen` in renderer process
+### `electron.screen` in renderer process
 
 ```js
 // Deprecated
@@ -39,7 +101,7 @@ require('electron').screen
 require('electron').remote.screen
 ```
 
-## `require` in sandboxed renderers
+### `require` in sandboxed renderers
 
 ```js
 // Deprecated
@@ -63,7 +125,7 @@ require('path')
 require('electron').remote.require('path')
 ```
 
-## `powerMonitor.querySystemIdleState`
+### `powerMonitor.querySystemIdleState`
 
 ```js
 // Deprecated
@@ -72,7 +134,7 @@ powerMonitor.querySystemIdleState(threshold, callback)
 const idleState = getSystemIdleState(threshold)
 ```
 
-## `powerMonitor.querySystemIdleTime`
+### `powerMonitor.querySystemIdleTime`
 
 ```js
 // Deprecated
@@ -81,7 +143,7 @@ powerMonitor.querySystemIdleTime(callback)
 const idleTime = getSystemIdleTime()
 ```
 
-## `app.enableMixedSandbox`
+### `app.enableMixedSandbox`
 
 ```js
 // Deprecated
@@ -90,13 +152,9 @@ app.enableMixedSandbox()
 
 Mixed-sandbox mode is now enabled by default.
 
-## Preload scripts outside of app path are not allowed
+## Planned Breaking API Changes (5.0)
 
-For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
-
-# Planned Breaking API Changes (5.0)
-
-## `new BrowserWindow({ webPreferences })`
+### `new BrowserWindow({ webPreferences })`
 
 The following `webPreferences` option default values are deprecated in favor of the new defaults listed below.
 
@@ -106,16 +164,26 @@ The following `webPreferences` option default values are deprecated in favor of 
 | `nodeIntegration` | `true` | `false` |
 | `webviewTag` | `nodeIntegration` if set else `true` | `false` |
 
-## `nativeWindowOpen`
+E.g. Re-enabling the webviewTag
 
-Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled.
+```js
+const w = new BrowserWindow({
+  webPreferences: {
+    webviewTag: true
+  }
+})
+```
 
-## Privileged Schemes Registration
+### `nativeWindowOpen`
+
+Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled, unless `nodeIntegrationInSubFrames` is `true.
+
+### Privileged Schemes Registration
 
 Renderer process APIs `webFrame.setRegisterURLSchemeAsPrivileged` and `webFrame.registerURLSchemeAsBypassingCSP` as well as browser process API `protocol.registerStandardSchemes` have been removed.
 A new API, `protocol.registerSchemesAsPrivileged` has been added and should be used for registering custom schemes with the required privileges. Custom schemes are required to be registered before app ready.
 
-## webFrame Isolated World APIs
+### webFrame Isolated World APIs
 
 ```js
 // Deprecated
@@ -132,11 +200,28 @@ webFrame.setIsolatedWorldInfo(
   })
 ```
 
-# Planned Breaking API Changes (4.0)
+## `webFrame.setSpellCheckProvider`
+The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+```js
+// Deprecated
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck: (text) => {
+    return !spellchecker.isMisspelled(text)
+  }
+})
+// Replace with
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck: (words, callback) => {
+    callback(words.filter(text => spellchecker.isMisspelled(text)))
+  }
+})
+```
+
+## Planned Breaking API Changes (4.0)
 
 The following list includes the breaking API changes made in Electron 4.0.
 
-## `app.makeSingleInstance`
+### `app.makeSingleInstance`
 
 ```js
 // Deprecated
@@ -150,7 +235,7 @@ app.on('second-instance', (event, argv, cwd) => {
 })
 ```
 
-## `app.releaseSingleInstance`
+### `app.releaseSingleInstance`
 
 ```js
 // Deprecated
@@ -159,7 +244,7 @@ app.releaseSingleInstance()
 app.releaseSingleInstanceLock()
 ```
 
-## `app.getGPUInfo`
+### `app.getGPUInfo`
 
 ```js
 app.getGPUInfo('complete')
@@ -167,7 +252,7 @@ app.getGPUInfo('complete')
 app.getGPUInfo('basic')
 ```
 
-## `win_delay_load_hook`
+### `win_delay_load_hook`
 
 When building native modules for windows, the `win_delay_load_hook` variable in
 the module's `binding.gyp` must be true (which is the default). If this hook is
@@ -175,11 +260,11 @@ not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
 guide](/docs/tutorial/using-native-node-modules.md) for more.
 
-# Breaking API Changes (3.0)
+## Breaking API Changes (3.0)
 
 The following list includes the breaking API changes in Electron 3.0.
 
-## `app`
+### `app`
 
 ```js
 // Deprecated
@@ -192,7 +277,7 @@ const metrics = app.getAppMetrics()
 const { memory } = metrics[0] // Deprecated property
 ```
 
-## `BrowserWindow`
+### `BrowserWindow`
 
 ```js
 // Deprecated
@@ -216,7 +301,7 @@ window.on('app-command', (e, cmd) => {
 })
 ```
 
-## `clipboard`
+### `clipboard`
 
 ```js
 // Deprecated
@@ -240,7 +325,7 @@ clipboard.writeHtml()
 clipboard.writeHTML()
 ```
 
-## `crashReporter`
+### `crashReporter`
 
 ```js
 // Deprecated
@@ -257,7 +342,7 @@ crashReporter.start({
 })
 ```
 
-## `nativeImage`
+### `nativeImage`
 
 ```js
 // Deprecated
@@ -268,14 +353,14 @@ nativeImage.createFromBuffer(buffer, {
 })
 ```
 
-## `process`
+### `process`
 
 ```js
 // Deprecated
 const info = process.getProcessMemoryInfo()
 ```
 
-## `screen`
+### `screen`
 
 ```js
 // Deprecated
@@ -284,7 +369,7 @@ screen.getMenuBarHeight()
 screen.getPrimaryDisplay().workArea
 ```
 
-## `session`
+### `session`
 
 ```js
 // Deprecated
@@ -297,7 +382,7 @@ ses.setCertificateVerifyProc((request, callback) => {
 })
 ```
 
-## `Tray`
+### `Tray`
 
 ```js
 // Deprecated
@@ -311,7 +396,7 @@ tray.setHighlightMode(false)
 tray.setHighlightMode('off')
 ```
 
-## `webContents`
+### `webContents`
 
 ```js
 // Deprecated
@@ -324,7 +409,7 @@ webContents.setSize(options)
 // There is no replacement for this API
 ```
 
-## `webFrame`
+### `webFrame`
 
 ```js
 // Deprecated
@@ -338,7 +423,7 @@ webFrame.registerURLSchemeAsPrivileged('app', { secure: true })
 protocol.registerStandardSchemes(['app'], { secure: true })
 ```
 
-## `<webview>`
+### `<webview>`
 
 ```js
 // Removed
@@ -354,7 +439,7 @@ webview.onkeydown = () => { /* handler */ }
 webview.onkeyup = () => { /* handler */ }
 ```
 
-## Node Headers URL
+### Node Headers URL
 
 This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
 command line flag when building native Node modules.
@@ -363,12 +448,11 @@ Deprecated: https://atom.io/download/atom-shell
 
 Replace with: https://atom.io/download/electron
 
-
-# Breaking API Changes (2.0)
+## Breaking API Changes (2.0)
 
 The following list includes the breaking API changes made in Electron 2.0.
 
-## `BrowserWindow`
+### `BrowserWindow`
 
 ```js
 // Deprecated
@@ -379,7 +463,7 @@ let optionsB = { titleBarStyle: 'hiddenInset' }
 let windowB = new BrowserWindow(optionsB)
 ```
 
-## `menu`
+### `menu`
 
 ```js
 // Removed
@@ -388,7 +472,7 @@ menu.popup(browserWindow, 100, 200, 2)
 menu.popup(browserWindow, { x: 100, y: 200, positioningItem: 2 })
 ```
 
-## `nativeImage`
+### `nativeImage`
 
 ```js
 // Removed
@@ -402,13 +486,13 @@ nativeImage.toJpeg()
 nativeImage.toJPEG()
 ```
 
-## `process`
+### `process`
 
 * `process.versions.electron` and `process.version.chrome` will be made
   read-only properties for consistency with the other `process.versions`
   properties set by Node.
 
-## `webContents`
+### `webContents`
 
 ```js
 // Removed
@@ -417,7 +501,7 @@ webContents.setZoomLevelLimits(1, 2)
 webContents.setVisualZoomLevelLimits(1, 2)
 ```
 
-## `webFrame`
+### `webFrame`
 
 ```js
 // Removed
@@ -426,7 +510,7 @@ webFrame.setZoomLevelLimits(1, 2)
 webFrame.setVisualZoomLevelLimits(1, 2)
 ```
 
-## `<webview>`
+### `<webview>`
 
 ```js
 // Removed
@@ -435,7 +519,7 @@ webview.setZoomLevelLimits(1, 2)
 webview.setVisualZoomLevelLimits(1, 2)
 ```
 
-## Duplicate ARM Assets
+### Duplicate ARM Assets
 
 Each Electron release includes two identical ARM builds with slightly different
 filenames, like `electron-v1.7.3-linux-arm.zip` and
@@ -444,7 +528,7 @@ to clarify to users which ARM version it supports, and to disambiguate it from
 future armv6l and arm64 assets that may be produced.
 
 The file _without the prefix_ is still being published to avoid breaking any
-setups that may be consuming it. Starting at 2.0, the un-prefixed file will
+setups that may be consuming it. Starting at 2.0, the unprefixed file will
 no longer be published.
 
 For details, see

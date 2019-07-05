@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:32 -0700
+Subject: can_create_window.patch
+
+
+diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
+index ad82e3695847dcb3f71b3a26d4609029b6201ee8..01c3c1ece91a6478d1a7d075d304359de9050cb2 100644
+--- a/content/browser/frame_host/render_frame_host_impl.cc
++++ b/content/browser/frame_host/render_frame_host_impl.cc
+@@ -3809,6 +3809,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+           last_committed_origin_, params->window_container_type,
+           params->target_url, params->referrer.To<Referrer>(),
+           params->frame_name, params->disposition, *params->features,
++          params->additional_features, params->body,
+           effective_transient_activation_state, params->opener_suppressed,
+           &no_javascript_access);
+ 
+diff --git a/content/common/frame.mojom b/content/common/frame.mojom
+index c5078d23ace270e1e7f479a827712f24aaf729a4..4dab0367f1280b2c9374309c3803436df2929ef0 100644
+--- a/content/common/frame.mojom
++++ b/content/common/frame.mojom
+@@ -303,6 +303,10 @@ struct CreateNewWindowParams {
+ 
+   // The window features to use for the new window.
+   blink.mojom.WindowFeatures features;
++
++  // Extra fields added by Electron.
++  array<string> additional_features;
++  network.mojom.URLRequestBody? body;
+ };
+ 
+ // Operation result when the renderer asks the browser to create a new window.
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index fae53a985a2adcf7e27ca799ff19bf2032c68529..dfd8bbaed5cfc48a116be63a067d00bb21960e85 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -517,6 +517,8 @@ bool ContentBrowserClient::CanCreateWindow(
+     const std::string& frame_name,
+     WindowOpenDisposition disposition,
+     const blink::mojom::WindowFeatures& features,
++    const std::vector<std::string>& additional_features,
++    const scoped_refptr<network::ResourceRequestBody>& body,
+     bool user_gesture,
+     bool opener_suppressed,
+     bool* no_javascript_access) {
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index d1d54b95082f594fdf044f386ccddd7e1ececb1d..19edc738013c360d839575b62ff637e6c26c0f8a 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -177,6 +177,7 @@ class RenderFrameHost;
+ class RenderProcessHost;
+ class RenderViewHost;
+ class ResourceContext;
++class ResourceRequestBody;
+ class SerialDelegate;
+ class SiteInstance;
+ class SpeechRecognitionManagerDelegate;
+@@ -807,6 +808,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+       const std::string& frame_name,
+       WindowOpenDisposition disposition,
+       const blink::mojom::WindowFeatures& features,
++      const std::vector<std::string>& additional_features,
++      const scoped_refptr<network::ResourceRequestBody>& body,
+       bool user_gesture,
+       bool opener_suppressed,
+       bool* no_javascript_access);
+diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
+index dae2f5a0dfedc5f7cd81c479cfab383730e61d9c..960fe49cab461b2f34793959bde0bbd829fe56bd 100644
+--- a/content/renderer/render_view_impl.cc
++++ b/content/renderer/render_view_impl.cc
+@@ -76,6 +76,7 @@
+ #include "content/renderer/ime_event_guard.h"
+ #include "content/renderer/internal_document_state_data.h"
+ #include "content/renderer/loader/request_extra_data.h"
++#include "content/renderer/loader/web_url_request_util.h"
+ #include "content/renderer/media/audio/audio_device_factory.h"
+ #include "content/renderer/media/stream/media_stream_device_observer.h"
+ #include "content/renderer/media/video_capture/video_capture_impl_manager.h"
+@@ -1359,6 +1360,8 @@ WebView* RenderViewImpl::CreateView(
+   }
+   params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
+ 
++  params->body = GetRequestBodyForWebURLRequest(request);
++
+   // We preserve this information before sending the message since |params| is
+   // moved on send.
+   bool is_background_tab =
+diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
+index c8aa2f99f40d038b73d0c9dbec2d941b1c652a6f..b8c17c44f3884e1f60ffd42dbae433392dde6307 100644
+--- a/content/shell/browser/web_test/web_test_content_browser_client.cc
++++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
+@@ -308,6 +308,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+     const std::string& frame_name,
+     WindowOpenDisposition disposition,
+     const blink::mojom::WindowFeatures& features,
++    const std::vector<std::string>& additional_features,
++    const scoped_refptr<network::ResourceRequestBody>& body,
+     bool user_gesture,
+     bool opener_suppressed,
+     bool* no_javascript_access) {
+diff --git a/content/shell/browser/web_test/web_test_content_browser_client.h b/content/shell/browser/web_test/web_test_content_browser_client.h
+index c07734ff32037fe4de7a5082d3409ee99ae19870..f0b47cc56ba5565d142e5b38efcefe333ce89e2f 100644
+--- a/content/shell/browser/web_test/web_test_content_browser_client.h
++++ b/content/shell/browser/web_test/web_test_content_browser_client.h
+@@ -69,6 +69,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
+                        const std::string& frame_name,
+                        WindowOpenDisposition disposition,
+                        const blink::mojom::WindowFeatures& features,
++                       const std::vector<std::string>& additional_features,
++                       const scoped_refptr<network::ResourceRequestBody>& body,
+                        bool user_gesture,
+                        bool opener_suppressed,
+                        bool* no_javascript_access) override;

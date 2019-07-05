@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Wed, 8 May 2019 17:25:55 -0700
+Subject: network service: allow remote certificate verification logic
+
+
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index 59306bf01c17e252d9ab11d0883fc94ec4736a84..e4a733bd0f46e326afb3efa1f29206bc8aef1637 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -91,6 +91,11 @@
+ #include "services/network/url_loader.h"
+ #include "services/network/url_request_context_builder_mojo.h"
+ 
++// Electron
++#include "net/cert/caching_cert_verifier.h"
++#include "net/cert/cert_verify_proc.h"
++#include "net/cert/multi_threaded_cert_verifier.h"
++
+ #if BUILDFLAG(IS_CT_SUPPORTED)
+ #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
+ #include "components/certificate_transparency/chrome_require_ct_delegate.h"
+@@ -316,6 +321,75 @@ std::string HashesToBase64String(const net::HashValueVector& hashes) {
+ 
+ }  // namespace
+ 
++class RemoteCertVerifier : public net::CertVerifier {
++ public:
++  RemoteCertVerifier(std::unique_ptr<net::CertVerifier> upstream): upstream_(std::move(upstream)) {
++  }
++  ~RemoteCertVerifier() override = default;
++
++  void Bind(mojom::CertVerifierClientPtr client_info) {
++    client_ = std::move(client_info);
++  }
++
++  // CertVerifier implementation
++  int Verify(const RequestParams& params,
++             net::CertVerifyResult* verify_result,
++             net::CompletionOnceCallback callback,
++             std::unique_ptr<Request>* out_req,
++             const net::NetLogWithSource& net_log) override {
++    out_req->reset();
++
++    net::CompletionOnceCallback callback2 = base::BindOnce(
++        &RemoteCertVerifier::OnRequestFinished, base::Unretained(this),
++        params, std::move(callback), verify_result);
++    int result = upstream_->Verify(params, verify_result,
++                                   std::move(callback2), out_req, net_log);
++    if (result != net::ERR_IO_PENDING) {
++      // Synchronous completion
++    }
++
++    return result;
++  }
++
++
++  void SetConfig(const Config& config) override {
++    upstream_->SetConfig(config);
++  }
++
++  void OnRequestFinished(const RequestParams& params, net::CompletionOnceCallback callback, net::CertVerifyResult* verify_result, int error) {
++    if (client_) {
++      client_->Verify(error, *verify_result, params.certificate(),
++          params.hostname(), params.flags(), params.ocsp_response(),
++          base::BindOnce(&RemoteCertVerifier::OnRemoteResponse,
++            base::Unretained(this), params, verify_result, error,
++            std::move(callback)));
++    } else {
++      std::move(callback).Run(error);
++    }
++  }
++
++  void OnRemoteResponse(
++      const RequestParams& params,
++      net::CertVerifyResult* verify_result,
++      int error,
++      net::CompletionOnceCallback callback,
++      int error2,
++      const net::CertVerifyResult& verify_result2) {
++    if (error2 == net::ERR_ABORTED) {
++      // use the default
++      std::move(callback).Run(error);
++    } else {
++      // use the override
++      verify_result->Reset();
++      verify_result->verified_cert = verify_result2.verified_cert;
++      std::move(callback).Run(error2);
++    }
++  }
++ private:
++  std::unique_ptr<net::CertVerifier> upstream_;
++  mojom::CertVerifierClientPtr client_;
++};
++
+ constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
+ constexpr bool NetworkContext::enable_resource_scheduler_;
+ 
+@@ -676,6 +750,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
+   client_ = std::move(client);
+ }
+ 
++void NetworkContext::SetCertVerifierClient(mojom::CertVerifierClientPtr client) {
++  if (remote_cert_verifier_) {
++    remote_cert_verifier_->Bind(std::move(client));
++  }
++}
++
+ void NetworkContext::CreateURLLoaderFactory(
+     mojom::URLLoaderFactoryRequest request,
+     mojom::URLLoaderFactoryParamsPtr params) {
+@@ -2138,12 +2218,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+                   cert_net_fetcher_, /*system_trust_store_provider=*/nullptr)));
+     }
+ #endif
+-    if (!cert_verifier)
+-      cert_verifier = net::CertVerifier::CreateDefault(cert_net_fetcher_);
++    if (!cert_verifier) {
++      auto mt_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
++              net::CertVerifyProc::CreateDefault(std::move(cert_net_fetcher_)));
++      auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(mt_verifier));
++      remote_cert_verifier_ = remote_cert_verifier.get();
++      cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
++    }
+   }
+ 
+-  builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
+-      *command_line, nullptr, std::move(cert_verifier)));
++  cert_verifier = IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
++      *command_line, nullptr, std::move(cert_verifier));
++
++  builder.SetCertVerifier(std::move(cert_verifier));
+ 
+   std::unique_ptr<net::NetworkDelegate> network_delegate =
+       std::make_unique<NetworkServiceNetworkDelegate>(this);
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index 704a2401fd2a0b408deee82d1f01827fe41d2db2..58235aea3a520a6e5dd377b9c7080fa0304ebc0b 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -74,6 +74,7 @@ class DomainReliabilityMonitor;
+ 
+ namespace network {
+ class CertVerifierWithTrustAnchors;
++class RemoteCertVerifier;
+ class CookieManager;
+ class ExpectCTReporter;
+ class HostResolver;
+@@ -176,6 +177,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+ 
+   // mojom::NetworkContext implementation:
+   void SetClient(mojom::NetworkContextClientPtr client) override;
++  void SetCertVerifierClient(mojom::CertVerifierClientPtr client) override;
+   void CreateURLLoaderFactory(mojom::URLLoaderFactoryRequest request,
+                               mojom::URLLoaderFactoryParamsPtr params) override;
+   void ResetURLLoaderFactories() override;
+@@ -556,6 +558,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
+ #endif
+ 
++  RemoteCertVerifier* remote_cert_verifier_ = nullptr;
++
+   // CertNetFetcher used by the context's CertVerifier. May be nullptr if
+   // CertNetFetcher is not used by the current platform.
+   scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index d41870d77155a95f34ca125daaf71bb5f820f3de..5e8acb5e7fb83408d58a59bb755c209133644ab3 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -161,6 +161,17 @@ interface TrustedURLLoaderHeaderClient {
+   OnLoaderCreated(int32 request_id, TrustedHeaderClient& header_client);
+ };
+ 
++interface CertVerifierClient {
++  Verify(
++    int32 default_error,
++    CertVerifyResult default_result,
++    X509Certificate certificate,
++    string hostname,
++    int32 flags,
++    string? ocsp_response
++  ) => (int32 error_code, CertVerifyResult result);
++};
++
+ // Parameters for constructing a network context.
+ struct NetworkContextParams {
+   // Name used by memory tools to identify the context.
+@@ -560,6 +571,9 @@ interface NetworkContext {
+   // Sets a client for this network context.
+   SetClient(NetworkContextClient client);
+ 
++  // Sets a certificate verifier client for this network context.
++  SetCertVerifierClient(CertVerifierClient? client);
++
+   // Creates a new URLLoaderFactory with the given |params|.
+   CreateURLLoaderFactory(URLLoaderFactory& url_loader_factory,
+                          URLLoaderFactoryParams params);

@@ -6,29 +6,12 @@
 
 #include "v8/include/v8.h"
 
-using v8::Array;
-using v8::Boolean;
-using v8::External;
-using v8::Function;
-using v8::Int32;
-using v8::Integer;
-using v8::Isolate;
-using v8::Local;
-using v8::Maybe;
-using v8::MaybeLocal;
-using v8::Number;
-using v8::Object;
-using v8::Promise;
-using v8::String;
-using v8::Uint32;
-using v8::Value;
-
 namespace mate {
 
 namespace {
 
 template <typename T, typename U>
-bool FromMaybe(Maybe<T> maybe, U* out) {
+bool FromMaybe(v8::Maybe<T> maybe, U* out) {
   if (maybe.IsNothing())
     return false;
   *out = static_cast<U>(maybe.FromJust());
@@ -37,64 +20,71 @@ bool FromMaybe(Maybe<T> maybe, U* out) {
 
 }  // namespace
 
-Local<Value> Converter<bool>::ToV8(Isolate* isolate, bool val) {
+v8::Local<v8::Value> Converter<bool>::ToV8(v8::Isolate* isolate, bool val) {
   return v8::Boolean::New(isolate, val);
 }
 
-bool Converter<bool>::FromV8(Isolate* isolate, Local<Value> val, bool* out) {
+bool Converter<bool>::FromV8(v8::Isolate* isolate,
+                             v8::Local<v8::Value> val,
+                             bool* out) {
   if (!val->IsBoolean())
     return false;
-  *out = val.As<Boolean>()->Value();
+  *out = val.As<v8::Boolean>()->Value();
   return true;
 }
 
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
-Local<Value> Converter<unsigned long>::ToV8(Isolate* isolate,
-                                            unsigned long val) {
+v8::Local<v8::Value> Converter<unsigned long>::ToV8(  // NOLINT(runtime/int)
+    v8::Isolate* isolate,
+    unsigned long val) {  // NOLINT(runtime/int)
   return v8::Integer::New(isolate, val);
 }
 
-bool Converter<unsigned long>::FromV8(Isolate* isolate,
-                                      Local<Value> val,
-                                      unsigned long* out) {
+bool Converter<unsigned long>::FromV8(  // NOLINT(runtime/int)
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    unsigned long* out) {  // NOLINT(runtime/int)
   if (!val->IsNumber())
     return false;
   return FromMaybe(val->IntegerValue(isolate->GetCurrentContext()), out);
 }
 #endif
 
-Local<Value> Converter<int32_t>::ToV8(Isolate* isolate, int32_t val) {
+v8::Local<v8::Value> Converter<int32_t>::ToV8(v8::Isolate* isolate,
+                                              int32_t val) {
   return v8::Integer::New(isolate, val);
 }
 
-bool Converter<int32_t>::FromV8(Isolate* isolate,
-                                Local<Value> val,
+bool Converter<int32_t>::FromV8(v8::Isolate* isolate,
+                                v8::Local<v8::Value> val,
                                 int32_t* out) {
   if (!val->IsInt32())
     return false;
-  *out = val.As<Int32>()->Value();
+  *out = val.As<v8::Int32>()->Value();
   return true;
 }
 
-Local<Value> Converter<uint32_t>::ToV8(Isolate* isolate, uint32_t val) {
+v8::Local<v8::Value> Converter<uint32_t>::ToV8(v8::Isolate* isolate,
+                                               uint32_t val) {
   return v8::Integer::NewFromUnsigned(isolate, val);
 }
 
-bool Converter<uint32_t>::FromV8(Isolate* isolate,
-                                 Local<Value> val,
+bool Converter<uint32_t>::FromV8(v8::Isolate* isolate,
+                                 v8::Local<v8::Value> val,
                                  uint32_t* out) {
   if (!val->IsUint32())
     return false;
-  *out = val.As<Uint32>()->Value();
+  *out = val.As<v8::Uint32>()->Value();
   return true;
 }
 
-Local<Value> Converter<int64_t>::ToV8(Isolate* isolate, int64_t val) {
+v8::Local<v8::Value> Converter<int64_t>::ToV8(v8::Isolate* isolate,
+                                              int64_t val) {
   return v8::Number::New(isolate, static_cast<double>(val));
 }
 
-bool Converter<int64_t>::FromV8(Isolate* isolate,
-                                Local<Value> val,
+bool Converter<int64_t>::FromV8(v8::Isolate* isolate,
+                                v8::Local<v8::Value> val,
                                 int64_t* out) {
   if (!val->IsNumber())
     return false;
@@ -103,154 +93,168 @@ bool Converter<int64_t>::FromV8(Isolate* isolate,
   return FromMaybe(val->IntegerValue(isolate->GetCurrentContext()), out);
 }
 
-Local<Value> Converter<uint64_t>::ToV8(Isolate* isolate, uint64_t val) {
+v8::Local<v8::Value> Converter<uint64_t>::ToV8(v8::Isolate* isolate,
+                                               uint64_t val) {
   return v8::Number::New(isolate, static_cast<double>(val));
 }
 
-bool Converter<uint64_t>::FromV8(Isolate* isolate,
-                                 Local<Value> val,
+bool Converter<uint64_t>::FromV8(v8::Isolate* isolate,
+                                 v8::Local<v8::Value> val,
                                  uint64_t* out) {
   if (!val->IsNumber())
     return false;
   return FromMaybe(val->IntegerValue(isolate->GetCurrentContext()), out);
 }
 
-Local<Value> Converter<float>::ToV8(Isolate* isolate, float val) {
+v8::Local<v8::Value> Converter<float>::ToV8(v8::Isolate* isolate, float val) {
   return v8::Number::New(isolate, val);
 }
 
-bool Converter<float>::FromV8(Isolate* isolate, Local<Value> val, float* out) {
+bool Converter<float>::FromV8(v8::Isolate* isolate,
+                              v8::Local<v8::Value> val,
+                              float* out) {
   if (!val->IsNumber())
     return false;
-  *out = static_cast<float>(val.As<Number>()->Value());
+  *out = static_cast<float>(val.As<v8::Number>()->Value());
   return true;
 }
 
-Local<Value> Converter<double>::ToV8(Isolate* isolate, double val) {
+v8::Local<v8::Value> Converter<double>::ToV8(v8::Isolate* isolate, double val) {
   return v8::Number::New(isolate, val);
 }
 
-bool Converter<double>::FromV8(Isolate* isolate,
-                               Local<Value> val,
+bool Converter<double>::FromV8(v8::Isolate* isolate,
+                               v8::Local<v8::Value> val,
                                double* out) {
   if (!val->IsNumber())
     return false;
-  *out = val.As<Number>()->Value();
+  *out = val.As<v8::Number>()->Value();
   return true;
 }
 
-Local<Value> Converter<const char*>::ToV8(Isolate* isolate, const char* val) {
+v8::Local<v8::Value> Converter<const char*>::ToV8(v8::Isolate* isolate,
+                                                  const char* val) {
   return v8::String::NewFromUtf8(isolate, val, v8::NewStringType::kNormal)
       .ToLocalChecked();
 }
 
-Local<Value> Converter<base::StringPiece>::ToV8(Isolate* isolate,
-                                                const base::StringPiece& val) {
+v8::Local<v8::Value> Converter<base::StringPiece>::ToV8(
+    v8::Isolate* isolate,
+    const base::StringPiece& val) {
   return v8::String::NewFromUtf8(isolate, val.data(),
                                  v8::NewStringType::kNormal,
                                  static_cast<uint32_t>(val.length()))
       .ToLocalChecked();
 }
 
-Local<Value> Converter<std::string>::ToV8(Isolate* isolate,
-                                          const std::string& val) {
+v8::Local<v8::Value> Converter<std::string>::ToV8(v8::Isolate* isolate,
+                                                  const std::string& val) {
   return Converter<base::StringPiece>::ToV8(isolate, val);
 }
 
-bool Converter<std::string>::FromV8(Isolate* isolate,
-                                    Local<Value> val,
+bool Converter<std::string>::FromV8(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> val,
                                     std::string* out) {
   if (!val->IsString())
     return false;
-  Local<String> str = Local<String>::Cast(val);
+  v8::Local<v8::String> str = v8::Local<v8::String>::Cast(val);
   int length = str->Utf8Length(isolate);
   out->resize(length);
   str->WriteUtf8(isolate, &(*out)[0], length, NULL,
-                 String::NO_NULL_TERMINATION);
+                 v8::String::NO_NULL_TERMINATION);
   return true;
 }
 
-Local<Value> Converter<Local<Function>>::ToV8(Isolate* isolate,
-                                              Local<Function> val) {
+v8::Local<v8::Value> Converter<v8::Local<v8::Function>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Function> val) {
   return val;
 }
 
-bool Converter<Local<Function>>::FromV8(Isolate* isolate,
-                                        Local<Value> val,
-                                        Local<Function>* out) {
+bool Converter<v8::Local<v8::Function>>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                v8::Local<v8::Function>* out) {
   if (!val->IsFunction())
     return false;
-  *out = Local<Function>::Cast(val);
+  *out = v8::Local<v8::Function>::Cast(val);
   return true;
 }
 
-Local<Value> Converter<Local<Object>>::ToV8(Isolate* isolate,
-                                            Local<Object> val) {
+v8::Local<v8::Value> Converter<v8::Local<v8::Object>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> val) {
   return val;
 }
 
-bool Converter<Local<Object>>::FromV8(Isolate* isolate,
-                                      Local<Value> val,
-                                      Local<Object>* out) {
+bool Converter<v8::Local<v8::Object>>::FromV8(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> val,
+                                              v8::Local<v8::Object>* out) {
   if (!val->IsObject())
     return false;
-  *out = Local<Object>::Cast(val);
+  *out = v8::Local<v8::Object>::Cast(val);
   return true;
 }
 
-Local<Value> Converter<Local<String>>::ToV8(Isolate* isolate,
-                                            Local<String> val) {
+v8::Local<v8::Value> Converter<v8::Local<v8::String>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::String> val) {
   return val;
 }
 
-bool Converter<Local<String>>::FromV8(Isolate* isolate,
-                                      Local<Value> val,
-                                      Local<String>* out) {
+bool Converter<v8::Local<v8::String>>::FromV8(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> val,
+                                              v8::Local<v8::String>* out) {
   if (!val->IsString())
     return false;
-  *out = Local<String>::Cast(val);
+  *out = v8::Local<v8::String>::Cast(val);
   return true;
 }
 
-Local<Value> Converter<Local<External>>::ToV8(Isolate* isolate,
-                                              Local<External> val) {
+v8::Local<v8::Value> Converter<v8::Local<v8::External>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::External> val) {
   return val;
 }
 
-bool Converter<Local<External>>::FromV8(Isolate* isolate,
-                                        v8::Local<Value> val,
-                                        Local<External>* out) {
+bool Converter<v8::Local<v8::External>>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                v8::Local<v8::External>* out) {
   if (!val->IsExternal())
     return false;
-  *out = Local<External>::Cast(val);
+  *out = v8::Local<v8::External>::Cast(val);
   return true;
 }
 
-Local<Value> Converter<Local<Array>>::ToV8(Isolate* isolate, Local<Array> val) {
+v8::Local<v8::Value> Converter<v8::Local<v8::Array>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Array> val) {
   return val;
 }
 
-bool Converter<Local<Array>>::FromV8(Isolate* isolate,
-                                     v8::Local<Value> val,
-                                     Local<Array>* out) {
+bool Converter<v8::Local<v8::Array>>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             v8::Local<v8::Array>* out) {
   if (!val->IsArray())
     return false;
-  *out = Local<Array>::Cast(val);
+  *out = v8::Local<v8::Array>::Cast(val);
   return true;
 }
 
-Local<Value> Converter<Local<Value>>::ToV8(Isolate* isolate, Local<Value> val) {
+v8::Local<v8::Value> Converter<v8::Local<v8::Value>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val) {
   return val;
 }
 
-Local<Promise> Converter<Local<Promise>>::ToV8(Isolate* isolate,
-                                               Local<Promise> val) {
+v8::Local<v8::Promise> Converter<v8::Local<v8::Promise>>::ToV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Promise> val) {
   return val;
 }
 
-bool Converter<Local<Value>>::FromV8(Isolate* isolate,
-                                     Local<Value> val,
-                                     Local<Value>* out) {
+bool Converter<v8::Local<v8::Value>>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             v8::Local<v8::Value>* out) {
   *out = val;
   return true;
 }

@@ -128,44 +128,6 @@ describe('powerMonitor', () => {
       powerMonitor = require('electron').remote.powerMonitor
     })
 
-    // TODO(nitsakh): Remove in 7.0
-    describe('powerMonitor.querySystemIdleState', () => {
-      it('notify current system idle state', done => {
-        // this function is not mocked out, so we can test the result's
-        // form and type but not its value.
-        powerMonitor.querySystemIdleState(1, idleState => {
-          expect(idleState).to.be.a('string')
-          const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
-          expect(validIdleStates).to.include(idleState)
-          done()
-        })
-      })
-
-      it('does not accept non positive integer threshold', () => {
-        expect(() => {
-          powerMonitor.querySystemIdleState(-1, (idleState) => {})
-        }).to.throw()
-
-        expect(() => {
-          powerMonitor.querySystemIdleState(NaN, (idleState) => {})
-        }).to.throw()
-
-        expect(() => {
-          powerMonitor.querySystemIdleState('a', (idleState) => {})
-        }).to.throw()
-      })
-    })
-
-    // TODO(nitsakh): Remove in 7.0
-    describe('powerMonitor.querySystemIdleTime', () => {
-      it('notify current system idle time', done => {
-        powerMonitor.querySystemIdleTime(idleTime => {
-          expect(idleTime).to.be.at.least(0)
-          done()
-        })
-      })
-    })
-
     describe('powerMonitor.getSystemIdleState', () => {
       it('gets current system idle state', () => {
         // this function is not mocked out, so we can test the result's

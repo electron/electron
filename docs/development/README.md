@@ -25,4 +25,3 @@ For guides on Electron app development, see
 * [Upgrading Chromium](upgrading-chromium.md)
 * [Upgrading Crashpad](upgrading-crashpad.md)
 * [Upgrading Node](upgrading-node.md)
-* [Releasing](releasing.md)

@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Wed, 10 Oct 2018 15:07:34 -0700
+Subject: define Command::IsMediaKey on mac
+
+the definition is copied from //chrome/common/extensions/command.cc,
+which also defines a bunch of other stuff that depends on extensions.
+since we only need IsMediaKey, and we don't want the extensions stuff
+(and aren't compiling command.cc), it's safe to duplicate the
+definition. A candidate for upstreaming would be to move the IsMediaKey
+function into //ui.
+
+Also apply electron/electron@0f67b1866a9f00b852370e721affa4efda623f3a
+and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
+patches.
+
+diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/browser/extensions/global_shortcut_listener_mac.mm
+index befe726af9c10b1563a7fc0bb77cc55f65943d5c..46c6fe08bab8471007f78d3ef227e5195bfdf0e1 100644
+--- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
++++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
+@@ -21,6 +21,26 @@
+ 
+ namespace extensions {
+ 
++// NOTE: this is defined in command.cc, but command.cc is full of
++// chrome-extensions-specific logic that we don't want to depend on.
++// Since we don't build command.cc in Electron, it's safe to re-define this
++// function here. Ideally, though, `IsMediaKey` would be the responsibility of
++// `ui::Accelerator`, rather than `extensions::Command`.
++
++// static
++bool Command::IsMediaKey(const ui::Accelerator& accelerator) {
++  if (accelerator.modifiers() != 0)
++    return false;
++
++  return (accelerator.key_code() == ui::VKEY_MEDIA_NEXT_TRACK ||
++          accelerator.key_code() == ui::VKEY_MEDIA_PREV_TRACK ||
++          accelerator.key_code() == ui::VKEY_MEDIA_PLAY_PAUSE ||
++          accelerator.key_code() == ui::VKEY_MEDIA_STOP ||
++          accelerator.key_code() == ui::VKEY_VOLUME_UP ||
++          accelerator.key_code() == ui::VKEY_VOLUME_DOWN ||
++          accelerator.key_code() == ui::VKEY_VOLUME_MUTE);
++}
++
+ // static
+ GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
+   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
+index c5125495b4d178ffb18be4d2d9670f7556412cbd..cddb321abb938c667a4a2089f87eab999510e9b1 100644
+--- a/chrome/browser/extensions/global_shortcut_listener_win.cc
++++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
+@@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
+   modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
+   modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
+   modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
++  modifiers |= (LOWORD(lparam) & MOD_WIN) ? ui::EF_COMMAND_DOWN : 0;
++
+   ui::Accelerator accelerator(
+       ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
+ 
+@@ -92,6 +94,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
+   modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
+   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
+   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
++  modifiers |= accelerator.IsCmdDown() ? MOD_WIN : 0;
+ 
+   // Create an observer that registers a hot key for |accelerator|.
+   std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
+diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
+index 392cf3d58c64c088596e8d321a2ce37b0ec60b6e..43e30f47240dc10a3a9b950255d4e48792cc4159 100644
+--- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
++++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
+@@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
+   modifiers |= accelerator.IsShiftDown() ? ShiftMask : 0;
+   modifiers |= accelerator.IsCtrlDown() ? ControlMask : 0;
+   modifiers |= accelerator.IsAltDown() ? Mod1Mask : 0;
++  modifiers |= accelerator.IsCmdDown() ? Mod4Mask : 0;
+ 
+   return modifiers;
+ }
+@@ -151,6 +152,8 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
+   modifiers |= (x_event->xkey.state & ShiftMask) ? ui::EF_SHIFT_DOWN : 0;
+   modifiers |= (x_event->xkey.state & ControlMask) ? ui::EF_CONTROL_DOWN : 0;
+   modifiers |= (x_event->xkey.state & Mod1Mask) ? ui::EF_ALT_DOWN : 0;
++  // For Windows key
++  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN: 0;
+ 
+   ui::Accelerator accelerator(
+       ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
+diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
+index f4e3126a4efd66f05c4f13e40ba23db10b8cca96..bb4c1a891dd13855227b39a0e582fd4dbc342ec9 100644
+--- a/ui/base/accelerators/media_keys_listener_mac.mm
++++ b/ui/base/accelerators/media_keys_listener_mac.mm
+@@ -33,6 +33,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+     case NX_KEYTYPE_NEXT:
+     case NX_KEYTYPE_FAST:
+       return VKEY_MEDIA_NEXT_TRACK;
++    case NX_KEYTYPE_SOUND_UP:
++      return VKEY_VOLUME_UP;
++    case NX_KEYTYPE_SOUND_DOWN:
++      return VKEY_VOLUME_DOWN;
++    case NX_KEYTYPE_MUTE:
++      return VKEY_VOLUME_MUTE;
+   }
+   return VKEY_UNKNOWN;
+ }
+@@ -193,7 +199,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+   int key_code = (data1 & 0xFFFF0000) >> 16;
+   if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
+       key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
+-      key_code != NX_KEYTYPE_REWIND) {
++      key_code != NX_KEYTYPE_REWIND &&
++      key_code != NX_KEYTYPE_SOUND_UP &&
++      key_code != NX_KEYTYPE_SOUND_DOWN &&
++      key_code != NX_KEYTYPE_MUTE) {
+     return event;
+   }
+ 

@@ -1,4 +1,6 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
@@ -8,6 +10,9 @@ const { remote } = require('electron')
 const { BrowserWindow } = remote
 
 const { closeWindow } = require('./window-helpers')
+
+const { expect } = chai
+chai.use(dirtyChai)
 
 describe('security warnings', () => {
   let server
@@ -66,11 +71,29 @@ describe('security warnings', () => {
       }
     })
     w.webContents.once('console-message', (e, level, message) => {
-      assert(message.includes('Node.js Integration with Remote Content'), message)
+      expect(message).to.include('Node.js Integration with Remote Content')
       done()
     })
 
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+  })
+
+  it('should not warn about Node.js integration with remote content from localhost', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: true
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      expect(message).to.not.include('Node.js Integration with Remote Content')
+
+      if (message === 'loaded') {
+        done()
+      }
+    })
+
+    w.loadURL(`http://localhost:8881/base-page-security-onload-message.html`)
   })
 
   const generateSpecs = (description, webPreferences) => {
@@ -84,7 +107,7 @@ describe('security warnings', () => {
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('Disabled webSecurity'), message)
+          expect(message).to.include('Disabled webSecurity')
           done()
         })
 
@@ -94,11 +117,14 @@ describe('security warnings', () => {
       it('should warn about insecure Content-Security-Policy', (done) => {
         w = new BrowserWindow({
           show: false,
-          webPreferences
+          webPreferences: {
+            enableRemoteModule: false,
+            ...webPreferences
+          }
         })
 
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('Insecure Content-Security-Policy'), message)
+          expect(message).to.include('Insecure Content-Security-Policy')
           done()
         })
 
@@ -115,7 +141,7 @@ describe('security warnings', () => {
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('allowRunningInsecureContent'), message)
+          expect(message).to.include('allowRunningInsecureContent')
           done()
         })
 
@@ -131,7 +157,7 @@ describe('security warnings', () => {
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('experimentalFeatures'), message)
+          expect(message).to.include('experimentalFeatures')
           done()
         })
 
@@ -147,7 +173,7 @@ describe('security warnings', () => {
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('enableBlinkFeatures'), message)
+          expect(message).to.include('enableBlinkFeatures')
           done()
         })
 
@@ -160,7 +186,7 @@ describe('security warnings', () => {
           webPreferences
         })
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('allowpopups'), message)
+          expect(message).to.include('allowpopups')
           done()
         })
 
@@ -173,17 +199,59 @@ describe('security warnings', () => {
           webPreferences
         })
         w.webContents.once('console-message', (e, level, message) => {
-          assert(message.includes('Insecure Resources'), message)
+          expect(message).to.include('Insecure Resources')
           done()
         })
 
         w.loadURL(`http://127.0.0.1:8881/insecure-resources.html`)
         w.webContents.openDevTools()
       })
+
+      it('should not warn about loading insecure-resources.html from localhost', (done) => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+        w.webContents.once('console-message', (e, level, message) => {
+          expect(message).to.not.include('insecure-resources.html')
+          done()
+        })
+
+        w.loadURL(`http://localhost:8881/insecure-resources.html`)
+        w.webContents.openDevTools()
+      })
+
+      it('should warn about enabled remote module with remote content', (done) => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+        w.webContents.once('console-message', (e, level, message) => {
+          expect(message).to.include('enableRemoteModule')
+          done()
+        })
+
+        w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+      })
+
+      it('should not warn about enabled remote module with remote content from localhost', (done) => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+        w.webContents.once('console-message', (e, level, message) => {
+          expect(message).to.not.include('enableRemoteModule')
+
+          if (message === 'loaded') {
+            done()
+          }
+        })
+
+        w.loadURL(`http://localhost:8881/base-page-security-onload-message.html`)
+      })
     })
   }
 
   generateSpecs('without sandbox', {})
   generateSpecs('with sandbox', { sandbox: true })
-  generateSpecs('with remote module disabled', { enableRemoteModule: false })
 })

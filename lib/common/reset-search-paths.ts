@@ -5,10 +5,6 @@ const Module = require('module')
 // Clear Node's global search paths.
 Module.globalPaths.length = 0
 
-// Clear current and parent(init.js)'s search paths.
-module.paths = []
-module.parent!.paths = []
-
 // Prevent Node from adding paths outside this app to search paths.
 const resourcesPathWithTrailingSlash = process.resourcesPath + path.sep
 const originalNodeModulePaths = Module._nodeModulePaths
@@ -25,19 +21,21 @@ Module._nodeModulePaths = function (from: string) {
   }
 }
 
-const BASE_INTERNAL_PATH = path.resolve(__dirname, '..')
-const INTERNAL_MODULE_PREFIX = '@electron/internal/'
+// Make a fake Electron module that we will insert into the module cache
+const electronModule = new Module('electron', null)
+electronModule.id = 'electron'
+electronModule.loaded = true
+electronModule.filename = 'electron'
+Object.defineProperty(electronModule, 'exports', {
+  get: () => require('electron')
+})
 
-// Patch Module._resolveFilename to always require the Electron API when
-// require('electron') is done.
-const electronPath = path.join(__dirname, '..', process.type!, 'api', 'exports', 'electron.js')
+Module._cache['electron'] = electronModule
+
 const originalResolveFilename = Module._resolveFilename
 Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean) {
   if (request === 'electron') {
-    return electronPath
-  } else if (request.startsWith(INTERNAL_MODULE_PREFIX) && request.length > INTERNAL_MODULE_PREFIX.length) {
-    const slicedRequest = request.slice(INTERNAL_MODULE_PREFIX.length)
-    return path.resolve(BASE_INTERNAL_PATH, `${slicedRequest}${slicedRequest.endsWith('.js') ? '' : '.js'}`)
+    return 'electron'
   } else {
     return originalResolveFilename(request, parent, isMain)
   }

@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 22 Oct 2018 10:47:13 -0700
+Subject: expose_mksnapshot.patch
+
+Needed in order to target mksnapshot for mksnapshot zip.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 7f5730e3069626a9078a5faf15385bf18519fe12..77942b37474195ea07c59c67b1dda8ed8d14d751 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -3799,7 +3799,6 @@ if (current_toolchain == v8_generator_toolchain) {
+ 
+ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+   v8_executable("mksnapshot") {
+-    visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
+     sources = [
+       "src/diagnostics/crash-key-noop.cc",

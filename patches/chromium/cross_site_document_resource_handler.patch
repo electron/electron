@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 3 Jun 2019 14:07:40 -0700
+Subject: cross_site_document_resource_handler.patch
+
+Add a content layer hook to disable CORB for a renderer process,
+this patch can be removed once we switch to network service,
+where the embedders have a chance to design their URLLoaders.
+
+diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
+index b9bd89a9c59515ac42702f010a0d3e9802a242fa..7f1e4ec569860e9bd1c608fd33f4fd6486e7fbd2 100644
+--- a/content/browser/loader/cross_site_document_resource_handler.cc
++++ b/content/browser/loader/cross_site_document_resource_handler.cc
+@@ -572,6 +572,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+     return false;
+   }
+ 
++  if (GetContentClient()->browser()->ShouldBypassCORB(info->GetChildID()))
++    return false;
++
+   return true;
+ }
+ 
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index f847cd95b561b45e9ee67ab960d7eb6d0dd1c304..95712234dafc9d6d71c83c1f785cc41a0dc00278 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -71,6 +71,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
+   return nullptr;
+ }
+ 
++bool ContentBrowserClient::ShouldBypassCORB(int render_process_id) const {
++  return false;
++}
++
+ void ContentBrowserClient::PostAfterStartupTask(
+     const base::Location& from_here,
+     const scoped_refptr<base::TaskRunner>& task_runner,
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 991afd44d9f4d9cf52b68909bbcd0f5cc9aedb37..0536e491fb2182db2a46c31cc7004cfb3b215c7c 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -252,6 +252,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+   virtual std::unique_ptr<BrowserMainParts> CreateBrowserMainParts(
+       const MainFunctionParams& parameters);
+ 
++  // Electron: Allows bypassing CORB checks for a renderer process.
++  virtual bool ShouldBypassCORB(int render_process_id) const;
++
+   // Allows the embedder to change the default behavior of
+   // BrowserThread::PostAfterStartupTask to better match whatever
+   // definition of "startup" the embedder has in mind. This may be

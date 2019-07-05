@@ -71,7 +71,6 @@ images/
 └── icon@3x.png
 ```
 
-
 ```javascript
 const { Tray } = require('electron')
 let appIcon = new Tray('/Users/somebody/images/icon.png')
@@ -173,12 +172,12 @@ Creates a new `NativeImage` instance from `dataURL`.
 ### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
 
 * `imageName` String
-* `hslShift` Number[]
+* `hslShift` Number[] (optional)
 
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the NSImage that maps to the
-given image name. See [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename?language=objc)
+given image name. See [`System Icons`](https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/system-icons/)
 for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules
@@ -223,7 +222,7 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 #### `image.toJPEG(quality)`
 
-* `quality` Integer (**required**) - Between 0 - 100.
+* `quality` Integer - Between 0 - 100.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
@@ -276,9 +275,13 @@ Returns [`Size`](structures/size.md)
 
 Marks the image as a template image.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - Whether the image is a template image.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `image.crop(rect)`
 
@@ -324,3 +327,11 @@ to explicitly add different scale factor representations to an image. This
 can be called on empty images.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+
+## Properties
+
+### `nativeImage.isMacTemplateImage` _macOS_
+
+A `Boolean` property that determines whether the image is considered a [template image](https://developer.apple.com/documentation/appkit/nsimage/1520017-template).
+
+Please note that this property only has an effect on macOS.

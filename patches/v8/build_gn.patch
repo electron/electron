@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 16 Apr 2019 10:43:04 -0700
+Subject: build_gn.patch
+
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 6a5dff6d2281b38a444878ef6b11d9d4bfe49d08..7f5730e3069626a9078a5faf15385bf18519fe12 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -271,7 +271,7 @@ config("internal_config") {
+     ":v8_header_features",
+   ]
+ 
+-  if (is_component_build) {
++  if (is_component_build || is_electron_build) {
+     defines += [ "BUILDING_V8_SHARED" ]
+   }
+ }
+@@ -3788,7 +3788,7 @@ if (current_toolchain == v8_generator_toolchain) {
+       "src/interpreter/bytecodes.h",
+     ]
+ 
+-    configs = [ ":internal_config" ]
++    configs = [ ":internal_config_base" ]
+ 
+     deps = [
+       ":v8_libbase",
+@@ -3820,6 +3820,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+ 
+     configs = [ ":internal_config" ]
+ 
++    configs += [ "//electron/build/config:build_time_executable" ]
++
+     deps = [
+       ":v8_base_without_compiler",
+       ":v8_compiler_for_mksnapshot",

@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:49:31 -0700
+Subject: mas-audiodeviceduck.patch
+
+Removes usage of the AudioDeviceDuck private API.
+
+diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
+index 7d55649a7e06637bdddf56428936ef8db5793f60..031aa47edb46243e1f6b212f3dbff5ba793e1f3a 100644
+--- a/media/audio/mac/audio_low_latency_input_mac.cc
++++ b/media/audio/mac/audio_low_latency_input_mac.cc
+@@ -33,19 +33,23 @@
+ 
+ namespace {
+ extern "C" {
++#ifndef MAS_BUILD
+ // See:
+ // https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/PAL/pal/spi/cf/CoreAudioSPI.h?rev=228264
+ OSStatus AudioDeviceDuck(AudioDeviceID inDevice,
+                          Float32 inDuckedLevel,
+                          const AudioTimeStamp* __nullable inStartTime,
+                          Float32 inRampDuration) __attribute__((weak_import));
++#endif
+ }
+ 
+ void UndoDucking(AudioDeviceID output_device_id) {
++#ifndef MAS_BUILD
+   if (AudioDeviceDuck != nullptr) {
+     // Ramp the volume back up over half a second.
+     AudioDeviceDuck(output_device_id, 1.0, nullptr, 0.5);
+   }
++#endif
+ }
+ 
+ }  // namespace

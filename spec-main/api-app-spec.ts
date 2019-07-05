@@ -84,19 +84,35 @@ describe('app module', () => {
     })
   })
 
+  describe('app.name', () => {
+    it('returns the name field of package.json', () => {
+      expect(app.name).to.equal('Electron Test Main')
+    })
+
+    it('overrides the name', () => {
+      expect(app.name).to.equal('Electron Test Main')
+      app.name = 'test-name'
+
+      expect(app.name).to.equal('test-name')
+      app.name = 'Electron Test Main'
+    })
+  })
+
+  // TODO(codebytere): remove when propertyification is complete
   describe('app.getName()', () => {
     it('returns the name field of package.json', () => {
       expect(app.getName()).to.equal('Electron Test Main')
     })
   })
 
+  // TODO(codebytere): remove when propertyification is complete
   describe('app.setName(name)', () => {
     it('overrides the name', () => {
       expect(app.getName()).to.equal('Electron Test Main')
       app.setName('test-name')
 
       expect(app.getName()).to.equal('test-name')
-      app.setName('Electron Test')
+      app.setName('Electron Test Main')
     })
   })
 
@@ -148,7 +164,9 @@ describe('app module', () => {
       let output = ''
 
       appProcess = cp.spawn(electronPath, [appPath])
-      appProcess.stdout.on('data', data => { output += data })
+      if (appProcess && appProcess.stdout) {
+        appProcess.stdout.on('data', data => { output += data })
+      }
       const [code] = await emittedOnce(appProcess, 'close')
 
       if (process.platform !== 'win32') {
@@ -180,7 +198,9 @@ describe('app module', () => {
 
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
-      appProcess.stdout.on('data', data => appProcess!.kill())
+      if (appProcess && appProcess.stdout) {
+        appProcess.stdout.on('data', data => appProcess!.kill())
+      }
       const [code, signal] = await emittedOnce(appProcess, 'close')
 
       const message = `code:\n${code}\nsignal:\n${signal}`
@@ -386,7 +406,10 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
-    it('should emit renderer-process-crashed event when renderer crashes', async () => {
+    it('should emit renderer-process-crashed event when renderer crashes', async function() {
+      // FIXME: re-enable this test on win32.
+      if (process.platform === 'win32')
+        return this.skip()
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -412,7 +435,7 @@ describe('app module', () => {
       await w.loadURL('about:blank')
 
       const promise = emittedOnce(app, 'desktop-capturer-get-sources')
-      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
+      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`)
 
       const [, webContents] = await promise
       expect(webContents).to.equal(w.webContents)
@@ -502,51 +525,31 @@ describe('app module', () => {
     })
   })
 
-  describe('app.setBadgeCount', () => {
+  describe('app.badgeCount', () => {
     const platformIsNotSupported =
         (process.platform === 'win32') ||
         (process.platform === 'linux' && !app.isUnityRunning())
     const platformIsSupported = !platformIsNotSupported
 
     const expectedBadgeCount = 42
-    let returnValue: boolean | null = null
 
-    beforeEach(() => { returnValue = app.setBadgeCount(expectedBadgeCount) })
-
-    after(() => {
-      // Remove the badge.
-      app.setBadgeCount(0)
-    })
+    after(() => { app.badgeCount = 0 })
 
     describe('on supported platform', () => {
-      before(function () {
-        if (platformIsNotSupported) {
-          this.skip()
-        }
-      })
+      it('sets a badge count', function () {
+        if (platformIsNotSupported) return this.skip()
 
-      it('returns true', () => {
-        expect(returnValue).to.equal(true)
-      })
-
-      it('sets a badge count', () => {
-        expect(app.getBadgeCount()).to.equal(expectedBadgeCount)
+        app.badgeCount = expectedBadgeCount
+        expect(app.badgeCount).to.equal(expectedBadgeCount)
       })
     })
 
     describe('on unsupported platform', () => {
-      before(function () {
-        if (platformIsSupported) {
-          this.skip()
-        }
-      })
+      it('does not set a badge count', function () {
+        if (platformIsSupported) return this.skip()
 
-      it('returns false', () => {
-        expect(returnValue).to.equal(false)
-      })
-
-      it('does not set a badge count', () => {
-        expect(app.getBadgeCount()).to.equal(0)
+        app.badgeCount = 9999
+        expect(app.badgeCount).to.equal(0)
       })
     })
   })
@@ -646,6 +649,28 @@ describe('app module', () => {
     })
   })
 
+  describe('getAppPath', () => {
+    it('works for directories with package.json', async () => {
+      const { appPath } = await runTestApp('app-path')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'))
+    })
+
+    it('works for directories with index.js', async () => {
+      const { appPath } = await runTestApp('app-path/lib')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+    })
+
+    it('works for files without extension', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+    })
+
+    it('works for files', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index.js')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+    })
+  })
+
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
       const paths = [
@@ -665,6 +690,18 @@ describe('app module', () => {
     it('returns the overridden path', () => {
       app.setPath('music', __dirname)
       expect(app.getPath('music')).to.equal(__dirname)
+    })
+  })
+
+  describe('setPath(name, path)', () => {
+    it('does not create a new directory by default', () => {
+      const badPath = path.join(__dirname, 'music')
+
+      expect(fs.existsSync(badPath)).to.be.false
+      app.setPath('music', badPath)
+      expect(fs.existsSync(badPath)).to.be.false
+
+      expect(() => { app.getPath(badPath) }).to.throw()
     })
   })
 
@@ -876,33 +913,12 @@ describe('app module', () => {
       expect(icon.isEmpty()).to.equal(false)
     })
 
-    // TODO(codebytere): remove when promisification is complete
-    it('fetches a non-empty icon (callback)', (done) => {
-      app.getFileIcon(iconPath, (error, icon) => {
-        expect(error).to.equal(null)
-        expect(icon.isEmpty()).to.equal(false)
-        done()
-      })
-    })
-
     it('fetches normal icon size by default', async () => {
       const icon = await app.getFileIcon(iconPath)
       const size = icon.getSize()
 
       expect(size.height).to.equal(sizes.normal)
       expect(size.width).to.equal(sizes.normal)
-    })
-
-    // TODO(codebytere): remove when promisification is complete
-    it('fetches normal icon size by default (callback)', (done) => {
-      app.getFileIcon(iconPath, (error, icon) => {
-        expect(error).to.equal(null)
-        const size = icon.getSize()
-
-        expect(size.height).to.equal(sizes.normal)
-        expect(size.width).to.equal(sizes.normal)
-        done()
-      })
     })
 
     describe('size option', () => {
@@ -920,18 +936,6 @@ describe('app module', () => {
 
         expect(size.height).to.equal(sizes.normal)
         expect(size.width).to.equal(sizes.normal)
-      })
-
-      // TODO(codebytere): remove when promisification is complete
-      it('fetches a normal icon (callback)', (done) => {
-        app.getFileIcon(iconPath, { size: 'normal' }, (error, icon) => {
-          expect(error).to.equal(null)
-          const size = icon.getSize()
-
-          expect(size.height).to.equal(sizes.normal)
-          expect(size.width).to.equal(sizes.normal)
-          done()
-        })
       })
 
       it('fetches a large icon', async () => {
@@ -953,13 +957,22 @@ describe('app module', () => {
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
 
       const types = []
-      for (const { pid, type, cpu } of appMetrics) {
-        expect(pid).to.be.above(0, 'pid is not > 0')
-        expect(type).to.be.a('string').that.does.not.equal('')
+      for (const entry of appMetrics) {
+        expect(entry.pid).to.be.above(0, 'pid is not > 0')
+        expect(entry.type).to.be.a('string').that.does.not.equal('')
+        expect(entry.creationTime).to.be.a('number').that.is.greaterThan(0)
 
-        types.push(type)
-        expect(cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
-        expect(cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
+        types.push(entry.type)
+        expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
+        expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
+
+        if (process.platform !== 'linux') {
+          expect(entry.sandboxed).to.be.a('boolean')
+        }
+
+        if (process.platform === 'win32') {
+          expect(entry.integrityLevel).to.be.a('string')
+        }
       }
 
       if (process.platform === 'darwin') {
@@ -1328,6 +1341,50 @@ describe('default behavior', () => {
     it('does not quit when the app handles the event', async () => {
       const result = await runTestApp('window-all-closed', '--handle-event')
       expect(result).to.equal(true)
+    })
+  })
+
+  describe('user agent fallback', () => {
+    let initialValue: string
+
+    before(() => {
+      initialValue = app.userAgentFallback!
+    })
+
+    it('should have a reasonable default', () => {
+      expect(initialValue).to.include(`Electron/${process.versions.electron}`)
+      expect(initialValue).to.include(`Chrome/${process.versions.chrome}`)
+    })
+
+    it('should be overridable', () => {
+      app.userAgentFallback = 'test-agent/123'
+      expect(app.userAgentFallback).to.equal('test-agent/123')
+    })
+
+    it('should be restorable', () => {
+      app.userAgentFallback = 'test-agent/123'
+      app.userAgentFallback = ''
+      expect(app.userAgentFallback).to.equal(initialValue)
+    })
+  })
+
+  describe('app.allowRendererProcessReuse', () => {
+    it('should default to false', () => {
+      expect(app.allowRendererProcessReuse).to.equal(false)
+    })
+
+    it('should cause renderer processes to get new PIDs when false', async () => {
+      const output = await runTestApp('site-instance-overrides', 'false')
+      expect(output[0]).to.be.a('number').that.is.greaterThan(0)
+      expect(output[1]).to.be.a('number').that.is.greaterThan(0)
+      expect(output[0]).to.not.equal(output[1])
+    })
+
+    it('should cause renderer processes to keep the same PID when true', async () => {
+      const output = await runTestApp('site-instance-overrides', 'true')
+      expect(output[0]).to.be.a('number').that.is.greaterThan(0)
+      expect(output[1]).to.be.a('number').that.is.greaterThan(0)
+      expect(output[0]).to.equal(output[1])
     })
   })
 })

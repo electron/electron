@@ -13,15 +13,17 @@ async function makeRequest (requestOptions, parseResponse) {
           resolve(body)
         }
       } else {
-        console.error('Error occurred while requesting:', requestOptions.url)
-        if (parseResponse) {
-          try {
-            console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body), requestOptions)
-          } catch (err) {
+        if (args.verbose) {
+          console.error('Error occurred while requesting:', requestOptions.url)
+          if (parseResponse) {
+            try {
+              console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body), requestOptions)
+            } catch (err) {
+              console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
+            }
+          } else {
             console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
           }
-        } else {
-          console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
         }
         reject(err)
       }
@@ -39,7 +41,11 @@ async function downloadArtifact (name, buildNum, dest) {
       'Accept': 'application/json'
     }
   }, true).catch(err => {
-    console.log('Error calling CircleCI:', err)
+    if (args.verbose) {
+      console.log('Error calling CircleCI:', err)
+    } else {
+      console.error('Error calling CircleCI to get artifact details')
+    }
   })
   const artifactToDownload = artifacts.find(artifact => {
     return (artifact.path === name)
@@ -49,15 +55,41 @@ async function downloadArtifact (name, buildNum, dest) {
     process.exit(1)
   } else {
     console.log(`Downloading ${artifactToDownload.url}.`)
-    await downloadFile(artifactToDownload.url, dest)
-    console.log(`Successfully downloaded ${name}.`)
+    let downloadError = false
+    await downloadWithRetry(artifactToDownload.url, dest).catch(err => {
+      if (args.verbose) {
+        console.log(`${artifactToDownload.url} could not be successfully downloaded.  Error was:`, err)
+      } else {
+        console.log(`${artifactToDownload.url} could not be successfully downloaded.`)
+      }
+      downloadError = true
+    })
+    if (!downloadError) {
+      console.log(`Successfully downloaded ${name}.`)
+    }
   }
+}
+
+async function downloadWithRetry (url, directory) {
+  let lastError
+  const downloadURL = `${url}?circle-token=${process.env.CIRCLE_TOKEN}`
+  for (let i = 0; i < 5; i++) {
+    console.log(`Attempting to download ${url} - attempt #${(i + 1)}`)
+    try {
+      return await downloadFile(downloadURL, directory)
+    } catch (err) {
+      lastError = err
+      await new Promise((resolve, reject) => setTimeout(resolve, 30000))
+    }
+  }
+  throw lastError
 }
 
 function downloadFile (url, directory) {
   return new Promise((resolve, reject) => {
     const nuggetOpts = {
-      dir: directory
+      dir: directory,
+      quiet: args.verbose
     }
     nugget(url, nuggetOpts, (err) => {
       if (err) {
@@ -71,7 +103,7 @@ function downloadFile (url, directory) {
 
 if (!args.name || !args.buildNum || !args.dest) {
   console.log(`Download CircleCI artifacts.
-    Usage: download-circleci-artifacts.js [--buildNum=CIRCLE_BUILD_NUMBER] [--name=artifactName] [--dest]`)
+    Usage: download-circleci-artifacts.js [--buildNum=CIRCLE_BUILD_NUMBER] [--name=artifactName] [--dest] [--verbose]`)
   process.exit(0)
 } else {
   downloadArtifact(args.name, args.buildNum, args.dest)

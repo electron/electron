@@ -1,7 +1,7 @@
 const { expect } = require('chai')
 const { remote } = require('electron')
-const { nextVersion } = require('../script/bump-version')
-const utils = require('../script/lib/version-utils')
+const { nextVersion } = require('../script/release/version-bumper')
+const utils = require('../script/release/version-utils')
 
 const isCi = remote.getGlobal('isCi')
 
@@ -9,7 +9,7 @@ const isCi = remote.getGlobal('isCi')
 // gclient sync on a linux machine.  These tests therefore don't run as expected
 const describeFn = (isCi && process.platform === 'darwin') ? describe.skip : describe
 
-describeFn('bump-version utils', () => {
+describeFn('version-bumper', () => {
   it('makes a version with a period delimeter', () => {
     const components = {
       major: 2,
@@ -46,7 +46,7 @@ describeFn('bump-version utils', () => {
   })
 })
 
-describeFn('bump-version script', () => {
+describeFn('version-bumper script', () => {
   const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g
   const betaPattern = /[0-9.]*(-beta[0-9.]*)/g
 

@@ -1,8 +1,16 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { shell } = require('electron')
+const { shell, remote } = require('electron')
+const { BrowserWindow } = remote
+
+const { closeWindow } = require('./window-helpers')
+
+const { expect } = chai
+chai.use(dirtyChai)
 
 describe('shell module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -18,6 +26,7 @@ describe('shell module', () => {
 
   describe('shell.openExternal()', () => {
     let envVars = {}
+    let w
 
     beforeEach(function () {
       envVars = {
@@ -27,7 +36,9 @@ describe('shell module', () => {
       }
     })
 
-    afterEach(() => {
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null
       // reset env vars to prevent side effects
       if (process.platform === 'linux') {
         process.env.DE = envVars.de
@@ -36,7 +47,7 @@ describe('shell module', () => {
       }
     })
 
-    it('opens an external link asynchronously', done => {
+    it('opens an external link', done => {
       const url = 'http://www.example.com'
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true'
@@ -44,19 +55,24 @@ describe('shell module', () => {
         process.env.DISPLAY = ''
       }
 
-      shell.openExternal(url).then(() => done())
-    })
+      // Ensure an external window is activated via a new window's blur event
+      w = new BrowserWindow()
+      let promiseResolved = false
+      let blurEventEmitted = false
 
-    it('opens an external link synchronously', () => {
-      const url = 'http://www.example.com'
-      if (process.platform === 'linux') {
-        process.env.DE = 'generic'
-        process.env.DE = '/bin/true'
-        process.env.DISPLAY = ''
-      }
+      w.on('blur', () => {
+        blurEventEmitted = true
+        if (promiseResolved) {
+          done()
+        }
+      })
 
-      const success = shell.openExternalSync(url)
-      assert.strictEqual(true, success)
+      shell.openExternal(url).then(() => {
+        promiseResolved = true
+        if (blurEventEmitted || process.platform === 'linux') {
+          done()
+        }
+      })
     })
   })
 
@@ -66,14 +82,14 @@ describe('shell module', () => {
     })
 
     it('throws when failed', () => {
-      assert.throws(() => {
+      expect(() => {
         shell.readShortcutLink('not-exist')
-      }, /Failed to read shortcut link/)
+      }).to.throw('Failed to read shortcut link')
     })
 
     it('reads all properties of a shortcut', () => {
       const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'))
-      assert.deepStrictEqual(shortcut, shortcutOptions)
+      expect(shortcut).to.deep.equal(shortcutOptions)
     })
   })
 
@@ -89,28 +105,28 @@ describe('shell module', () => {
     })
 
     it('writes the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' }), true)
-      assert.strictEqual(fs.existsSync(tmpShortcut), true)
+      expect(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' })).to.be.true()
+      expect(fs.existsSync(tmpShortcut)).to.be.true()
     })
 
     it('correctly sets the fields', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, shortcutOptions), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
+      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true()
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions)
     })
 
     it('updates the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions), false)
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
+      expect(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions)).to.be.false()
+      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).to.be.true()
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions)
       const change = { target: 'D:\\' }
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', change), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), Object.assign(shortcutOptions, change))
+      expect(shell.writeShortcutLink(tmpShortcut, 'update', change)).to.be.true()
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(Object.assign(shortcutOptions, change))
     })
 
     it('replaces the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions), false)
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
+      expect(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions)).to.be.false()
+      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).to.be.true()
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions)
       const change = {
         target: 'D:\\',
         description: 'description2',
@@ -120,8 +136,8 @@ describe('shell module', () => {
         icon: 'icon2',
         iconIndex: 2
       }
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', change), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), change)
+      expect(shell.writeShortcutLink(tmpShortcut, 'replace', change)).to.be.true()
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(change)
     })
   })
 })

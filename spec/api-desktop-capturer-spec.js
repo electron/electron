@@ -30,15 +30,6 @@ describe('desktopCapturer', () => {
     expect(sources).to.be.an('array').that.is.not.empty()
   })
 
-  // TODO(codebytere): remove when promisification is complete
-  it('should return a non-empty array of sources (callback)', (done) => {
-    desktopCapturer.getSources({ types: ['window', 'screen'] }, (err, sources) => {
-      expect(sources).to.be.an('array').that.is.not.empty()
-      expect(err).to.be.null()
-      done()
-    })
-  })
-
   it('throws an error for invalid options', async () => {
     const promise = desktopCapturer.getSources(['window', 'screen'])
     expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options')
@@ -58,20 +49,6 @@ describe('desktopCapturer', () => {
 
     const promise2 = desktopCapturer.getSources({ types: ['screen'] })
     expect(promise2).to.not.eventually.be.rejected()
-  })
-
-  // TODO(codebytere): remove when promisification is complete
-  it('responds to subsequent calls of different options (callback)', (done) => {
-    let callCount = 0
-    const callback = (err, sources) => {
-      callCount++
-      expect(err).to.be.null()
-      expect(sources).to.not.be.null()
-      if (callCount === 2) done()
-    }
-
-    desktopCapturer.getSources({ types: ['window'] }, callback)
-    desktopCapturer.getSources({ types: ['screen'] }, callback)
   })
 
   it('returns an empty display_id for window sources on Windows and Mac', async () => {

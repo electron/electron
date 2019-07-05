@@ -1,6 +1,6 @@
 import * as path from 'path'
 
-import * as electron from 'electron'
+import { deprecate, Menu } from 'electron'
 import { EventEmitter } from 'events'
 
 const bindings = process.electronBinding('app')
@@ -10,8 +10,6 @@ const { app, App } = bindings
 // Only one app object permitted.
 export default app
 
-const { deprecate, Menu } = electron
-
 let dockMenu: Electron.Menu | null = null
 
 // App is an EventEmitter.
@@ -19,14 +17,6 @@ Object.setPrototypeOf(App.prototype, EventEmitter.prototype)
 EventEmitter.call(app as any)
 
 Object.assign(app, {
-  // TODO(codebytere): remove in 7.0
-  setApplicationMenu (menu: Electron.Menu | null) {
-    return Menu.setApplicationMenu(menu)
-  },
-  // TODO(codebytere): remove in 7.0
-  getApplicationMenu () {
-    return Menu.getApplicationMenu()
-  },
   commandLine: {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
     getSwitchValue: (theSwitch: string) => commandLine.getSwitchValue(String(theSwitch)),
@@ -56,26 +46,24 @@ app.isPackaged = (() => {
 
 app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
-  app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
-  app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
+  app.setPath('userData', path.join(app.getPath('appData'), app.name!))
+  app.setPath('userCache', path.join(app.getPath('cache'), app.name!))
   app.setAppPath(packagePath)
 
   // Add support for --user-data-dir=
-  const userDataDirFlag = '--user-data-dir='
-  const userDataArg = process.argv.find(arg => arg.startsWith(userDataDirFlag))
-  if (userDataArg) {
-    const userDataDir = userDataArg.substr(userDataDirFlag.length)
+  if (app.commandLine.hasSwitch('user-data-dir')) {
+    const userDataDir = app.commandLine.getSwitchValue('user-data-dir')
     if (path.isAbsolute(userDataDir)) app.setPath('userData', userDataDir)
   }
 }
 
 if (process.platform === 'darwin') {
-  const setDockMenu = app.dock.setMenu
-  app.dock.setMenu = (menu) => {
+  const setDockMenu = app.dock!.setMenu
+  app.dock!.setMenu = (menu) => {
     dockMenu = menu
     setDockMenu(menu)
   }
-  app.dock.getMenu = () => dockMenu
+  app.dock!.getMenu = () => dockMenu
 }
 
 // Routes the events to webContents.
@@ -86,11 +74,10 @@ for (const name of events) {
   })
 }
 
-// Function Deprecations
-app.getFileIcon = deprecate.promisify(app.getFileIcon)
-
 // Property Deprecations
-deprecate.fnToProperty(app, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
+deprecate.fnToProperty(App.prototype, 'accessibilitySupportEnabled', '_isAccessibilitySupportEnabled', '_setAccessibilitySupportEnabled')
+deprecate.fnToProperty(App.prototype, 'badgeCount', '_getBadgeCount', '_setBadgeCount')
+deprecate.fnToProperty(App.prototype, 'name', '_getName', '_setName')
 
 // Wrappers for native classes.
 const { DownloadItem } = process.electronBinding('download_item')

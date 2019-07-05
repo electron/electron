@@ -9,7 +9,7 @@ A `BrowserView` can be used to embed additional web content into a
 relative to its owning window. It is meant to be an alternative to the
 `webview` tag.
 
-## Example
+### Example
 
 ```javascript
 // In the main process.
@@ -84,9 +84,9 @@ Returns `Boolean` - Whether the view is destroyed.
   * `height` Boolean - If `true`, the view's height will grow and shrink
     together with the window. `false` by default.
   * `horizontal` Boolean - If `true`, the view's x position and width will grow
-    and shrink proportionly with the window. `false` by default.
+    and shrink proportionally with the window. `false` by default.
   * `vertical` Boolean - If `true`, the view's y position and height will grow
-    and shrink proportinaly with the window. `false` by default.
+    and shrink proportionally with the window. `false` by default.
 
 #### `view.setBounds(bounds)` _Experimental_
 
