@@ -34,7 +34,6 @@ class NodeBindings {
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
   static bool IsInitialized();
-  static base::FilePath::StringType GetHelperResourcesPath();
 
   virtual ~NodeBindings();
 

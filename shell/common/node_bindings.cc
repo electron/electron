@@ -26,6 +26,7 @@
 #include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/api/locker.h"
 #include "shell/common/atom_command_line.h"
+#include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -136,21 +137,16 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
   return array;
 }
 
-base::FilePath GetResourcesPath(bool is_browser) {
+base::FilePath GetResourcesPath() {
+#if defined(OS_MACOSX)
+  return MainApplicationBundlePath().Append("Contents").Append("Resources");
+#else
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
   base::PathService::Get(base::FILE_EXE, &exec_path);
 
-  base::FilePath resources_path =
-#if defined(OS_MACOSX)
-      is_browser
-          ? exec_path.DirName().DirName().Append("Resources")
-          : exec_path.DirName().DirName().DirName().DirName().DirName().Append(
-                "Resources");
-#else
-      exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
-  return resources_path;
 }
 
 }  // namespace
@@ -197,10 +193,6 @@ void NodeBindings::RegisterBuiltinModules() {
 
 bool NodeBindings::IsInitialized() {
   return g_is_initialized;
-}
-
-base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
-  return GetResourcesPath(false).value();
 }
 
 void NodeBindings::Initialize() {
@@ -318,8 +310,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = "worker";
       break;
   }
-  base::FilePath resources_path =
-      GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
+  base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
