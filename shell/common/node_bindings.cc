@@ -98,13 +98,14 @@ namespace {
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   // Close any active handles
   uv_stop(loop);
-  uv_walk(loop,
-          [](uv_handle_t* handle, void*) {
-            if (!uv_is_closing(handle)) {
-              uv_close(handle, nullptr);
-            }
-          },
-          nullptr);
+  uv_walk(
+      loop,
+      [](uv_handle_t* handle, void*) {
+        if (!uv_is_closing(handle)) {
+          uv_close(handle, nullptr);
+        }
+      },
+      nullptr);
 
   // Run the loop to let it finish all the closing handles
   // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
