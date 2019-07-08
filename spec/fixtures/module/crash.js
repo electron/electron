@@ -10,7 +10,7 @@ process.crashReporter.start({
   }
 })
 
-if (process.platform === 'darwin') {
+if (process.platform !== 'linux') {
   process.crashReporter.addExtraParameter('newExtra', 'newExtra')
   process.crashReporter.addExtraParameter('removeExtra', 'removeExtra')
   process.crashReporter.removeExtraParameter('removeExtra')

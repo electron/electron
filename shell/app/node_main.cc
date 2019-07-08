@@ -32,7 +32,7 @@
 
 namespace electron {
 
-#if defined(OS_MACOSX)
+#if !defined(OS_LINUX)
 void AddExtraParameter(const std::string& key, const std::string& value) {
   crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key, value);
 }
@@ -96,7 +96,7 @@ int NodeMain(int argc, char* argv[]) {
     auto reporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
     reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
 
-#if defined(OS_MACOSX)
+#if !defined(OS_LINUX)
     reporter.SetMethod("addExtraParameter", &AddExtraParameter);
     reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
 #endif
