@@ -246,3 +246,15 @@ def get_electron_exec():
 
   raise Exception(
       "get_electron_exec: unexpected platform '{0}'".format(sys.platform))
+
+def get_path_in_buildtools(name):
+  buildtools = os.path.realpath(os.path.join(ELECTRON_DIR, '..', 'buildtools'))
+  chromium_platform = {
+    'darwin': 'mac',
+    'linux2': 'linux64',
+    'win32': 'win',
+  }[sys.platform]
+  path = os.path.join(buildtools, chromium_platform, name)
+  if sys.platform == 'win32':
+    path += '.exe'
+  return path
