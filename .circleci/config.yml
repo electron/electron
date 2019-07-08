@@ -553,11 +553,20 @@ steps-lint: &steps-lint
 
           cipd ensure -ensure-file - -root . <<-CIPD
           \$ServiceURL https://chrome-infra-packages.appspot.com/
-          @Subdir buildtools/linux64
+          @Subdir src/buildtools/linux64
           gn/gn/linux-amd64 $gn_version
           CIPD
 
-          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+    - run:
+        name: Download clang-format Binary
+        command: |
+          chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+
+          sha1_path='buildtools/linux64/clang-format.sha1'
+          curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/${sha1_path}?format=TEXT" | base64 -d > "src/${sha1_path}"
+
+          download_from_google_storage.py --no_resume --no_auth --bucket chromium-clang-format -s "src/${sha1_path}"
     - run:
         name: Run Lint
         command: |
