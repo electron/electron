@@ -2,10 +2,11 @@ import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as fs from 'fs'
+import * as os from 'os'
 import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
-import { app, BrowserWindow, ipcMain, OnBeforeSendHeadersListenerDetails, screen, protocol } from 'electron'
+import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
@@ -1076,6 +1077,304 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.equal(false)
       w.restore()
       expect(w.isAlwaysOnTop()).to.equal(true)
+    })
+  })
+
+  describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
+    let w = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false})
+    })
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
+    })
+
+    ifit(process.platform === 'darwin')('on macOS', () => {
+      it('allows changing cursor auto-hiding', () => {
+        expect(() => {
+          w.setAutoHideCursor(false)
+          w.setAutoHideCursor(true)
+        }).to.not.throw()
+      })
+    })
+
+    ifit(process.platform !== 'darwin')('on non-macOS platforms', () => {
+      it('is not available', () => {
+        expect(w.setAutoHideCursor).to.be.undefined('setAutoHideCursor function')
+      })
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.setWindowButtonVisibility()', () => {
+    afterEach(closeAllWindows)
+
+    it('does not throw', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.setWindowButtonVisibility(true)
+        w.setWindowButtonVisibility(false)
+      }).to.not.throw()
+    })
+
+    it('throws with custom title bar buttons', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          titleBarStyle: 'customButtonsOnHover',
+          frame: false
+        })
+        w.setWindowButtonVisibility(true)
+      }).to.throw('Not supported for this window')
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
+    afterEach(closeAllWindows)
+
+    it('allows setting, changing, and removing the vibrancy', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.setVibrancy('light')
+        w.setVibrancy('dark')
+        w.setVibrancy(null)
+        w.setVibrancy('ultra-dark')
+        w.setVibrancy('' as any)
+      }).to.not.throw()
+    })
+  })
+
+  ifdescribe(process.platform === 'win32')('BrowserWindow.setAppDetails(options)', () => {
+    afterEach(closeAllWindows)
+
+    it('supports setting the app details', () => {
+      const w = new BrowserWindow({show: false})
+      const iconPath = path.join(fixtures, 'assets', 'icon.ico')
+
+      expect(() => {
+        w.setAppDetails({ appId: 'my.app.id' })
+        w.setAppDetails({ appIconPath: iconPath, appIconIndex: 0 })
+        w.setAppDetails({ appIconPath: iconPath })
+        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2', relaunchDisplayName: 'My app name' })
+        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2' })
+        w.setAppDetails({ relaunchDisplayName: 'My app name' })
+        w.setAppDetails({
+          appId: 'my.app.id',
+          appIconPath: iconPath,
+          appIconIndex: 0,
+          relaunchCommand: 'my-app.exe arg1 arg2',
+          relaunchDisplayName: 'My app name'
+        })
+        w.setAppDetails({})
+      }).to.not.throw()
+
+      expect(() => {
+        (w.setAppDetails as any)()
+      }).to.throw('Insufficient number of arguments.')
+    })
+  })
+
+  describe('BrowserWindow.fromId(id)', () => {
+    afterEach(closeAllWindows)
+    it('returns the window with id', () => {
+      const w = new BrowserWindow({show: false})
+      expect(BrowserWindow.fromId(w.id).id).to.equal(w.id)
+    })
+  })
+
+  describe('BrowserWindow.fromWebContents(webContents)', () => {
+    afterEach(closeAllWindows)
+
+    it('returns the window with the webContents', () => {
+      const w = new BrowserWindow({show: false})
+      const found = BrowserWindow.fromWebContents(w.webContents)
+      expect(found.id).to.equal(w.id)
+    })
+
+    it('returns undefined for webContents without a BrowserWindow', () => {
+      const contents = (webContents as any).create({})
+      try {
+        expect(BrowserWindow.fromWebContents(contents)).to.be.undefined('BrowserWindow.fromWebContents(contents)')
+      } finally {
+        contents.destroy()
+      }
+    })
+  })
+
+  describe('BrowserWindow.openDevTools()', () => {
+    afterEach(closeAllWindows)
+    it('does not crash for frameless window', () => {
+      const w = new BrowserWindow({ show: false, frame: false })
+      w.webContents.openDevTools()
+    })
+  })
+
+  describe('BrowserWindow.fromBrowserView(browserView)', () => {
+    afterEach(closeAllWindows)
+
+    it('returns the window with the browserView', () => {
+      const w = new BrowserWindow({ show: false })
+      const bv = new BrowserView
+      w.setBrowserView(bv)
+      expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id)
+    })
+
+    it('returns undefined if not attached', () => {
+      const bv = new BrowserView
+      expect(BrowserWindow.fromBrowserView(bv)).to.be.null('BrowserWindow associated with bv')
+    })
+  })
+
+  describe('BrowserWindow.setOpacity(opacity)', () => {
+    afterEach(closeAllWindows)
+    it('make window with initial opacity', () => {
+      const w = new BrowserWindow({ show: false, opacity: 0.5 })
+      expect(w.getOpacity()).to.equal(0.5)
+    })
+    it('allows setting the opacity', () => {
+      const w = new BrowserWindow({ show: false })
+      expect(() => {
+        w.setOpacity(0.0)
+        expect(w.getOpacity()).to.equal(0.0)
+        w.setOpacity(0.5)
+        expect(w.getOpacity()).to.equal(0.5)
+        w.setOpacity(1.0)
+        expect(w.getOpacity()).to.equal(1.0)
+      }).to.not.throw()
+    })
+  })
+
+  describe('BrowserWindow.setShape(rects)', () => {
+    afterEach(closeAllWindows)
+    it('allows setting shape', () => {
+      const w = new BrowserWindow({ show: false })
+      expect(() => {
+        w.setShape([])
+        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }])
+        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 200, width: 1000, height: 100 }])
+        w.setShape([])
+      }).to.not.throw()
+    })
+  })
+
+  describe('"useContentSize" option', () => {
+    afterEach(closeAllWindows)
+    it('make window created with content size when used', () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        useContentSize: true
+      })
+      const contentSize = w.getContentSize()
+      expect(contentSize).to.deep.equal([400, 400])
+    })
+    it('make window created with window size when not used', () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+      })
+      const size = w.getSize()
+      expect(size).to.deep.equal([400, 400])
+    })
+    it('works for a frameless window', () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        width: 400,
+        height: 400,
+        useContentSize: true
+      })
+      const contentSize = w.getContentSize()
+      expect(contentSize).to.deep.equal([400, 400])
+      const size = w.getSize()
+      expect(size).to.deep.equal([400, 400])
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin' && parseInt(os.release().split('.')[0]) >= 14)('"titleBarStyle" option', () => {
+    afterEach(closeAllWindows)
+    it('creates browser window with hidden title bar', () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden'
+      })
+      const contentSize = w.getContentSize()
+      expect(contentSize).to.deep.equal([400, 400])
+    })
+    it('creates browser window with hidden inset title bar', () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hiddenInset'
+      })
+      const contentSize = w.getContentSize()
+      expect(contentSize).to.deep.equal([400, 400])
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('"enableLargerThanScreen" option', () => {
+    afterEach(closeAllWindows)
+    it('can move the window out of screen', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: true })
+      w.setPosition(-10, -10)
+      const after = w.getPosition()
+      expect(after).to.deep.equal([-10, -10])
+    })
+    it('without it, cannot move the window out of screen', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: false })
+      w.setPosition(-10, -10)
+      const after = w.getPosition()
+      expect(after[1]).to.be.at.least(0)
+    })
+    it('can set the window larger than screen', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: true })
+      const size = screen.getPrimaryDisplay().size
+      size.width += 100
+      size.height += 100
+      w.setSize(size.width, size.height)
+      expectBoundsEqual(w.getSize(), [size.width, size.height])
+    })
+    it('without it, cannot set the window larger than screen', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: false })
+      const size = screen.getPrimaryDisplay().size
+      size.width += 100
+      size.height += 100
+      w.setSize(size.width, size.height)
+      expect(w.getSize()[1]).to.at.most(screen.getPrimaryDisplay().size.height)
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('"zoomToPageWidth" option', () => {
+    afterEach(closeAllWindows)
+    it('sets the window width to the page width when used', () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 500,
+        height: 400,
+        zoomToPageWidth: true
+      })
+      w.maximize()
+      expect(w.getSize()[0]).to.equal(500)
+    })
+  })
+
+  describe('"tabbingIdentifier" option', () => {
+    afterEach(closeAllWindows)
+    it('can be set on a window', () => {
+      expect(() => {
+        new BrowserWindow({
+          tabbingIdentifier: 'group1'
+        })
+        new BrowserWindow({
+          tabbingIdentifier: 'group2',
+          frame: false
+        })
+      }).not.to.throw()
     })
   })
 
