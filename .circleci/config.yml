@@ -402,25 +402,13 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-maybe-build-dump-syms: &step-maybe-build-dump-syms
-  run:
-    name: Build dump_syms binary
-    command: |
-      if [ "$GENERATE_SYMBOLS" == "true" ]; then
-        cd src
-        # Build needed dump_syms executable
-        ninja -C out/Default third_party/breakpad:dump_syms
-      fi
-
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
     command: |
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
-        export BUILD_PATH="$PWD/out/Default"
-        export DEST_PATH="$BUILD_PATH/breakpad_symbols"
-        electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
+        ninja -C out/Default electron:electron_symbols
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -629,7 +617,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
-    - *step-maybe-build-dump-syms
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
@@ -654,7 +641,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-build-dump-syms
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
