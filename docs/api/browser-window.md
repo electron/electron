@@ -234,10 +234,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
   * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
-    macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
-    `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.  Please note that
-    using `frame: false` in combination with a vibrancy value requires that you use a
-    non-default `titleBarStyle` as well.
+    macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`, `menu`,
+    `popover`, `sidebar`, `medium-light` or `ultra-dark`.  Please note that using `frame: false` in combination with a vibrancy value requires that you use a non-default `titleBarStyle` as well.
+    Also note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been deprecated and will be removed in an upcoming version of macOS.
   * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
     option-clicking the green stoplight button on the toolbar or by clicking the
     Window > Zoom menu item. If `true`, the window will grow to the preferred
@@ -1553,11 +1552,13 @@ Prevents the window contents from being captured by other apps.
 On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
-#### `win.setFocusable(focusable)` _Windows_
+#### `win.setFocusable(focusable)` _macOS_ _Windows_
 
 * `focusable` Boolean
 
 Changes whether the window can be focused.
+
+On macOS it does not remove the focus from the window.
 
 #### `win.setParentWindow(parent)`
 
@@ -1619,6 +1620,9 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
+
+Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
+deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 

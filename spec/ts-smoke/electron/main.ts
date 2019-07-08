@@ -324,8 +324,10 @@ window.setRepresentedFilename('/etc/passwd')
 window.setDocumentEdited(true)
 window.previewFile('/path/to/file')
 window.previewFile('/path/to/file', 'Displayed Name')
-window.setVibrancy('light')
+window.setVibrancy('menu')
 window.setVibrancy('titlebar')
+window.setVibrancy('selection')
+window.setVibrancy('popover')
 
 // Online/Offline Event Detection
 // https://github.com/atom/electron/blob/master/docs/tutorial/online-offline-events.md

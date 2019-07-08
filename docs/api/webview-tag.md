@@ -162,7 +162,7 @@ When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
 after this script has finished executing.
 
-**Note:** This option will be appear as `preloadURL` (not `preload`) in
+**Note:** This option will appear as `preloadURL` (not `preload`) in
 the `webPreferences` specified to the `will-attach-webview` event.
 
 ### `httpreferrer`

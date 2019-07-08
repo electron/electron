@@ -115,8 +115,9 @@ void AtomURLRequest::DoInitialize(
   }
 
   DCHECK(context);
-  request_ = context->CreateRequest(
-      GURL(url), net::RequestPriority::DEFAULT_PRIORITY, this);
+  request_ =
+      context->CreateRequest(GURL(url), net::RequestPriority::DEFAULT_PRIORITY,
+                             this, MISSING_TRAFFIC_ANNOTATION);
   if (!request_) {
     DoCancelWithError("Failed to create a net::URLRequest.", true);
     return;

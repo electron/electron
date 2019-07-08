@@ -1355,7 +1355,7 @@ void WebContents::DownloadURL(const GURL& url) {
       content::BrowserContext::GetDownloadManager(browser_context);
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
-          web_contents(), url, NO_TRAFFIC_ANNOTATION_YET));
+          web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
   download_manager->DownloadUrl(std::move(download_params));
 }
 
