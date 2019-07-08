@@ -618,9 +618,9 @@ describe('chromium feature', () => {
       w.close()
     })
 
-    it('does nothing when origin of current window does not match opener', (done) => {
+    it('fails when origin of current window does not match opener', (done) => {
       listener = (event) => {
-        expect(event.data).to.equal('')
+        expect(event.data).to.equal(null)
         done()
       }
       window.addEventListener('message', listener)
@@ -666,10 +666,10 @@ describe('chromium feature', () => {
       if (webview != null) webview.remove()
     })
 
-    it('does nothing when origin of webview src URL does not match opener', (done) => {
+    it('fails when origin of webview src URL does not match opener', (done) => {
       webview = new WebView()
       webview.addEventListener('console-message', (e) => {
-        expect(e.message).to.equal('')
+        expect(e.message).to.equal('null')
         done()
       })
       webview.setAttribute('allowpopups', 'on')
