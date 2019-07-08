@@ -1551,11 +1551,13 @@ Prevents the window contents from being captured by other apps.
 On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
-#### `win.setFocusable(focusable)` _Windows_
+#### `win.setFocusable(focusable)` _macOS_ _Windows_
 
 * `focusable` Boolean
 
 Changes whether the window can be focused.
+
+On macOS it does not remove the focus from the window.
 
 #### `win.setParentWindow(parent)`
 

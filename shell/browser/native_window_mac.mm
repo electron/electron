@@ -1076,6 +1076,13 @@ void NativeWindowMac::SetContentProtection(bool enable) {
       setSharingType:enable ? NSWindowSharingNone : NSWindowSharingReadOnly];
 }
 
+void NativeWindowMac::SetFocusable(bool focusable) {
+  // No known way to unfocus the window if it had the focus. Here we do not
+  // want to call Focus(false) because it moves the window to the back, i.e.
+  // at the bottom in term of z-order.
+  [window_ setDisableKeyOrMainWindow:!focusable];
+}
+
 void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
