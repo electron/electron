@@ -61,7 +61,6 @@ filenames = {
     "lib/common/error-utils.js",
     "lib/common/init.ts",
     "lib/common/parse-features-string.js",
-    "lib/common/path-utils.ts",
     "lib/common/reset-search-paths.ts",
     "lib/common/web-view-methods.js",
     "lib/renderer/callbacks-registry.js",
