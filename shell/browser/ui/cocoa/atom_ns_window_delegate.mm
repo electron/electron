@@ -89,8 +89,6 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
-  // NSWindow* window = notification.object;
-  // LOG(INFO) << window.childWindows.count;
   shell_->NotifyWindowFocus();
 }
 
