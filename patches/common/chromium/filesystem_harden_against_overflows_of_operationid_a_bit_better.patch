@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marijn Kruisselbrink <mek@chromium.org>
 Date: Tue, 29 Jan 2019 19:51:07 +0000
-Subject: [FileSystem] Harden against overflows of OperationID a bit better.
+Subject: Harden against overflows of OperationID a bit better.
 
 Rather than having a UAF when OperationID overflows instead overwrite
 the old operation with the new one. Can still cause weirdness, but at

@@ -1,0 +1,253 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lan Wei <lanwei@chromium.org>
+Date: Tue, 11 Sep 2018 19:41:33 +0000
+Subject: Do not show virtual keyboard for all mouse inputs
+
+We have an issue that Windows virtual Keyboard appears whenever a text
+area is selected with the mouse or keyboard. Since we decide to only
+show the virtual keyboard when the input type is touch.
+
+Bug: 871756
+Change-Id: Ia804afad907341ed478409d223b67f09c6b7f8f3
+Reviewed-on: https://chromium-review.googlesource.com/1194406
+Reviewed-by: Pavel Feldman <pfeldman@chromium.org>
+Reviewed-by: Marc Treib <treib@chromium.org>
+Reviewed-by: Keigo Oka <oka@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Navid Zolghadr <nzolghadr@chromium.org>
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Commit-Queue: Lan Wei <lanwei@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#590440}
+
+diff --git a/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc b/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc
+index 5c8bdc8c73dc2047175f16c658428c9f2c038412..f7c8c33b3d6764116e0713244e446356873e015f 100644
+--- a/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc
++++ b/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc
+@@ -1154,6 +1154,9 @@ IN_PROC_BROWSER_TEST_F(SitePerProcessTextInputManagerTest,
+ 
+   // Set |TextInputState.show_ime_if_needed| to true. Expect IME.
+   sender.SetShowVirtualKeyboardIfEnabled(true);
++#if defined(OS_WIN)
++  sender.SetLastPointerType(ui::EventPointerType::POINTER_TYPE_TOUCH);
++#endif
+   EXPECT_TRUE(send_and_check_show_ime());
+ 
+   // Send the same message. Expect IME (no change).
+@@ -1171,6 +1174,12 @@ IN_PROC_BROWSER_TEST_F(SitePerProcessTextInputManagerTest,
+   sender.SetShowVirtualKeyboardIfEnabled(true);
+   EXPECT_TRUE(send_and_check_show_ime());
+ 
++#if defined(OS_WIN)
++  // Set input type to mouse. Expect no IME.
++  sender.SetLastPointerType(ui::EventPointerType::POINTER_TYPE_MOUSE);
++  EXPECT_FALSE(send_and_check_show_ime());
++#endif
++
+   // Set |TextInputState.type| to ui::TEXT_INPUT_TYPE_NONE. Expect no IME.
+   sender.SetType(ui::TEXT_INPUT_TYPE_NONE);
+   EXPECT_FALSE(send_and_check_show_ime());
+diff --git a/chrome/browser/ui/search/search_tab_helper.cc b/chrome/browser/ui/search/search_tab_helper.cc
+index 1445829a89caaeeea602cd050b9c3bf0161f5881..0bb77fbfee6a4c08ce261bbc4846c8ec0755b01a 100644
+--- a/chrome/browser/ui/search/search_tab_helper.cc
++++ b/chrome/browser/ui/search/search_tab_helper.cc
+@@ -271,7 +271,9 @@ void SearchTabHelper::FocusOmnibox(OmniboxFocusState state) {
+       // visual cue to users who really understand selection state about what
+       // will happen if they start typing.
+       omnibox_view->SelectAll(false);
++#if !defined(OS_WIN)      
+       omnibox_view->ShowVirtualKeyboardIfEnabled();
++#endif
+       break;
+     case OMNIBOX_FOCUS_NONE:
+       // Remove focus only if the popup is closed. This will prevent someone
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 0eec5c7a6861f189192ab0cf8b3dbb3b452292e0..de9490d94d98afa6812e81b0cf50fb4adc81887c 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -756,9 +756,11 @@ void RenderWidgetHostViewAura::FocusedNodeTouched(bool editable) {
+     return;
+   auto* controller = input_method->GetInputMethodKeyboardController();
+   if (editable && host()->GetView() && host()->delegate()) {
+-    keyboard_observer_.reset(new WinScreenKeyboardObserver(this));
+-    if (!controller->DisplayVirtualKeyboard())
+-      keyboard_observer_.reset(nullptr);
++    keyboard_observer_.reset(nullptr);
++    if (last_pointer_type_ == ui::EventPointerType::POINTER_TYPE_TOUCH &&
++        controller->DisplayVirtualKeyboard()) {
++      keyboard_observer_.reset(new WinScreenKeyboardObserver(this));
++    }
+     virtual_keyboard_requested_ = keyboard_observer_.get();
+   } else {
+     virtual_keyboard_requested_ = false;
+@@ -2341,9 +2343,16 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+   const TextInputState* state = text_input_manager_->GetTextInputState();
+   if (state && state->type != ui::TEXT_INPUT_TYPE_NONE &&
+       state->mode != ui::TEXT_INPUT_MODE_NONE) {
++    bool show_virtual_keyboard = true;
++#if defined(OS_WIN)
++    show_virtual_keyboard =
++        last_pointer_type_ == ui::EventPointerType::POINTER_TYPE_TOUCH;
++#endif
+     if (state->show_ime_if_needed &&
+-        GetInputMethod()->GetTextInputClient() == this)
++        GetInputMethod()->GetTextInputClient() == this &&
++        show_virtual_keyboard) {
+       GetInputMethod()->ShowVirtualKeyboardIfEnabled();
++    }
+     // Ensure that accessibility events are fired when the selection location
+     // moves from UI back to content.
+     text_input_manager->NotifySelectionBoundsChanged(updated_view);
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
+index 5f75e19c4a9fa8aaa57882dcbb094a73199f50d0..2257552851e933a06cb9addbee00e511573561ec 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.h
++++ b/content/browser/renderer_host/render_widget_host_view_aura.h
+@@ -342,6 +342,12 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+ 
+   void ScrollFocusedEditableNodeIntoRect(const gfx::Rect& rect);
+ 
++  // TODO(lanwei): Use TestApi interface to write functions that are used in
++  // tests and remove FRIEND_TEST_ALL_PREFIXES.
++  void SetLastPointerType(ui::EventPointerType last_pointer_type) {
++    last_pointer_type_ = last_pointer_type;
++  }
++
+  protected:
+   ~RenderWidgetHostViewAura() override;
+ 
+@@ -408,6 +414,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+                            DiscardDelegatedFramesWithMemoryPressure);
+   FRIEND_TEST_ALL_PREFIXES(RenderWidgetHostViewAuraKeyboardTest,
+                            KeyboardObserverDestroyed);
++  FRIEND_TEST_ALL_PREFIXES(RenderWidgetHostViewAuraKeyboardTest,
++                           KeyboardObserverForOnlyTouchInput);
+   FRIEND_TEST_ALL_PREFIXES(RenderWidgetHostViewAuraSurfaceSynchronizationTest,
+                            DropFallbackWhenHidden);
+   FRIEND_TEST_ALL_PREFIXES(RenderWidgetHostViewAuraSurfaceSynchronizationTest,
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index 9aac9b4c740245727124991a750a36b54f3d7ac5..f7b9e13226b1896028044d389ace5383554b5dce 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -6735,6 +6735,7 @@ class RenderWidgetHostViewAuraKeyboardTest
+ };
+ 
+ TEST_F(RenderWidgetHostViewAuraKeyboardTest, KeyboardObserverDestroyed) {
++  parent_view_->SetLastPointerType(ui::EventPointerType::POINTER_TYPE_TOUCH);
+   parent_view_->FocusedNodeTouched(true);
+   EXPECT_NE(parent_view_->keyboard_observer_.get(), nullptr);
+   EXPECT_EQ(keyboard_controller_observer_count(), 1u);
+@@ -6744,6 +6745,20 @@ TEST_F(RenderWidgetHostViewAuraKeyboardTest, KeyboardObserverDestroyed) {
+   EXPECT_EQ(keyboard_controller_observer_count(), 0u);
+ }
+ 
++TEST_F(RenderWidgetHostViewAuraKeyboardTest,
++       KeyboardObserverForOnlyTouchInput) {
++  // Show virtual keyboard for touch inputs.
++  parent_view_->SetLastPointerType(ui::EventPointerType::POINTER_TYPE_TOUCH);
++  parent_view_->FocusedNodeTouched(true);
++  EXPECT_NE(parent_view_->keyboard_observer_.get(), nullptr);
++  EXPECT_EQ(keyboard_controller_observer_count(), 1u);
++  // Do not show virtual keyboard for mouse inputs.
++  parent_view_->SetLastPointerType(ui::EventPointerType::POINTER_TYPE_MOUSE);
++  parent_view_->FocusedNodeTouched(true);
++  EXPECT_EQ(parent_view_->keyboard_observer_.get(), nullptr);
++  EXPECT_EQ(keyboard_controller_observer_count(), 0u);
++}
++
+ #endif  // defined(OS_WIN)
+ 
+ }  // namespace content
+diff --git a/content/public/test/text_input_test_utils.cc b/content/public/test/text_input_test_utils.cc
+index 3d27041d9cfae4d87e4b2b26983f7a004ffc31d9..2d724b57c213052b184fc3b4c012bb0d8ad25b50 100644
+--- a/content/public/test/text_input_test_utils.cc
++++ b/content/public/test/text_input_test_utils.cc
+@@ -186,7 +186,7 @@ class TestRenderWidgetHostViewDestructionObserver::InternalObserver
+   DISALLOW_COPY_AND_ASSIGN(InternalObserver);
+ };
+ 
+-#ifdef USE_AURA
++#if defined(USE_AURA)
+ class InputMethodObserverAura : public TestInputMethodObserver,
+                                 public ui::InputMethodObserver {
+  public:
+@@ -453,6 +453,15 @@ void TextInputStateSender::SetShowVirtualKeyboardIfEnabled(
+   text_input_state_->show_ime_if_needed = show_ime_if_needed;
+ }
+ 
++#if defined(USE_AURA)
++void TextInputStateSender::SetLastPointerType(
++    ui::EventPointerType last_pointer_type) {
++  RenderWidgetHostViewAura* rwhva =
++      static_cast<RenderWidgetHostViewAura*>(view_);
++  rwhva->SetLastPointerType(last_pointer_type);
++}
++#endif
++
+ TestInputMethodObserver::TestInputMethodObserver() {}
+ 
+ TestInputMethodObserver::~TestInputMethodObserver() {}
+@@ -462,7 +471,7 @@ std::unique_ptr<TestInputMethodObserver> TestInputMethodObserver::Create(
+     WebContents* web_contents) {
+   std::unique_ptr<TestInputMethodObserver> observer;
+ 
+-#ifdef USE_AURA
++#if defined(USE_AURA)
+   RenderWidgetHostViewAura* view = static_cast<RenderWidgetHostViewAura*>(
+       web_contents->GetRenderWidgetHostView());
+   observer.reset(new InputMethodObserverAura(view->GetInputMethod()));
+diff --git a/content/public/test/text_input_test_utils.h b/content/public/test/text_input_test_utils.h
+index d438b72e176adbcb1240848c223596ffef2c558d..2bb337c19de138a106f8f3fe8c631aa8ca717df5 100644
+--- a/content/public/test/text_input_test_utils.h
++++ b/content/public/test/text_input_test_utils.h
+@@ -17,6 +17,10 @@
+ #include "content/public/browser/browser_message_filter.h"
+ #endif
+ 
++#if defined(USE_AURA)
++#include "ui/events/event_constants.h"
++#endif
++
+ namespace ipc {
+ class Message;
+ }
+@@ -194,6 +198,9 @@ class TextInputStateSender {
+   void SetFlags(int flags);
+   void SetCanComposeInline(bool can_compose_inline);
+   void SetShowVirtualKeyboardIfEnabled(bool show_ime_if_needed);
++#if defined(USE_AURA)
++  void SetLastPointerType(ui::EventPointerType last_pointer_type);
++#endif
+ 
+  private:
+   std::unique_ptr<TextInputState> text_input_state_;
+diff --git a/ui/views/controls/textfield/textfield.cc b/ui/views/controls/textfield/textfield.cc
+index c9a96b43788835476310c96b71b1ced21737a3c3..7963a4d1912eb8ba03d46dd353665f977680a2c5 100644
+--- a/ui/views/controls/textfield/textfield.cc
++++ b/ui/views/controls/textfield/textfield.cc
+@@ -666,7 +666,9 @@ bool Textfield::OnMousePressed(const ui::MouseEvent& event) {
+       (event.IsOnlyLeftMouseButton() || event.IsOnlyRightMouseButton())) {
+     if (!had_focus)
+       RequestFocusWithPointer(ui::EventPointerType::POINTER_TYPE_MOUSE);
++#if !defined(OS_WIN)
+     ShowVirtualKeyboardIfEnabled();
++#endif
+   }
+ 
+ #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+@@ -743,10 +745,16 @@ bool Textfield::OnKeyReleased(const ui::KeyEvent& event) {
+ }
+ 
+ void Textfield::OnGestureEvent(ui::GestureEvent* event) {
++  bool show_virtual_keyboard = true;
++#if defined(OS_WIN)
++  show_virtual_keyboard = event->details().primary_pointer_type() ==
++                          ui::EventPointerType::POINTER_TYPE_TOUCH;
++#endif
+   switch (event->type()) {
+     case ui::ET_GESTURE_TAP_DOWN:
+       RequestFocusWithPointer(event->details().primary_pointer_type());
+-      ShowVirtualKeyboardIfEnabled();
++      if (show_virtual_keyboard)
++        ShowVirtualKeyboardIfEnabled();
+       event->SetHandled();
+       break;
+     case ui::ET_GESTURE_TAP:

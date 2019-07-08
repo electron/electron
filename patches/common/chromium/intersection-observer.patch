@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Milan Burda <milan.burda@gmail.com>
 Date: Wed, 27 Mar 2019 23:27:40 +0100
-Subject: [IntersectionObserver] Report coordinates as CSS pixels.
+Subject: Report coordinates as CSS pixels.
 
 Prior to this patch, IntersectionObserverEntry was reporting
 coordinates in device pixels.
