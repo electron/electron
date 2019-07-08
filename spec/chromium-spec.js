@@ -397,7 +397,7 @@ describe('chromium feature', () => {
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
           app.once('browser-window-created', (event, window) => {
-            const preferences = window.webContents.getLastWebPreferences()
+            const preferences = window.webContents.getWebPreferences()
             expect(preferences.javascript).to.be.false()
             window.destroy()
             b.close()

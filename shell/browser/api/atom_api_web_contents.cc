@@ -2228,14 +2228,6 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(
   return mate::ConvertToV8(isolate, *web_preferences->preference());
 }
 
-v8::Local<v8::Value> WebContents::GetLastWebPreferences(
-    v8::Isolate* isolate) const {
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (!web_preferences)
-    return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->last_preference());
-}
-
 bool WebContents::IsRemoteModuleEnabled() const {
   if (web_contents()->GetVisibleURL().SchemeIs("devtools")) {
     return false;
@@ -2453,7 +2445,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
-      .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("_isRemoteModuleEnabled", &WebContents::IsRemoteModuleEnabled)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)

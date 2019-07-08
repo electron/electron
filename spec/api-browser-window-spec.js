@@ -2888,7 +2888,7 @@ describe('BrowserWindow module', () => {
       const browserWindowCreated = emittedOnce(app, 'browser-window-created')
       iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
       const [, window] = await browserWindowCreated
-      expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true()
+      expect(window.webContents.getWebPreferences().contextIsolation).to.be.true()
     })
     it('separates the page context from the Electron/preload context with sandbox on', async () => {
       const p = emittedOnce(ipcMain, 'isolated-world')

@@ -67,7 +67,6 @@ class WebContentsPreferences
 
   // Returns the web preferences.
   base::Value* preference() { return &preference_; }
-  base::Value* last_preference() { return &last_preference_; }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -87,7 +86,6 @@ class WebContentsPreferences
   content::WebContents* web_contents_;
 
   base::Value preference_ = base::Value(base::Value::Type::DICTIONARY);
-  base::Value last_preference_ = base::Value(base::Value::Type::DICTIONARY);
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

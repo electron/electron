@@ -299,9 +299,9 @@ const logSecurityWarnings = function (
 
 const getWebPreferences = async function () {
   try {
-    return invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
+    return invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_WEB_PREFERENCES')
   } catch (error) {
-    console.warn(`getLastWebPreferences() failed: ${error}`)
+    console.warn(`getWebPreferences() failed: ${error}`)
   }
 }
 

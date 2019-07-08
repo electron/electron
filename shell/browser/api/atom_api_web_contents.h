@@ -289,7 +289,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
-  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
   bool IsRemoteModuleEnabled() const;
 
