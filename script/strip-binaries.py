@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import argparse
+import glob
 import os
 import sys
 
@@ -8,21 +9,17 @@ from lib.util import execute, get_out_dir
 
 LINUX_BINARIES_TO_STRIP = [
   'electron',
-  'libffmpeg.so',
-  'libGLESv2.so',
-  'libEGL.so',
-  'swiftshader/libGLESv2.so',
-  'swiftshader/libEGL.so',
-  'swiftshader/libvulkan.so'
+  '*.so',
+  'swiftshader/*.so',
 ]
 
 def strip_binaries(directory, target_cpu):
-  for binary in LINUX_BINARIES_TO_STRIP:
-    binary_path = os.path.join(directory, binary)
-    if os.path.isfile(binary_path):
+  for pattern in LINUX_BINARIES_TO_STRIP:
+    for binary_path in glob.glob(os.path.join(directory, pattern)):
       strip_binary(binary_path, target_cpu)
 
 def strip_binary(binary_path, target_cpu):
+  print(binary_path)
   if target_cpu == 'arm':
     strip = 'arm-linux-gnueabihf-strip'
   elif target_cpu == 'arm64':
