@@ -952,7 +952,13 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
     }
 
-    [window setFrame:fullscreenFrame display:YES animate:YES];
+    // There is a bug with Chromium that, after setting window style, calling
+    // setFrame with animation immediately would block window rendering for
+    // a few seconds.
+    // This Chromium bug is fixed in later versions, but it is hard to find
+    // out how to backport the fix or how to work around it, disabling the
+    // animation is the easist fix and most users would not even notice it.
+    [window setFrame:fullscreenFrame display:YES animate:NO];
 
     // Fullscreen windows can't be resized, minimized, maximized, or moved
     SetMinimizable(false);
@@ -976,7 +982,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     [[window standardWindowButton:NSWindowCloseButton]
         setHidden:window_button_hidden];
 
-    [window setFrame:original_frame_ display:YES animate:YES];
+    [window setFrame:original_frame_ display:YES animate:NO];
     window.level = original_level_;
 
     [NSApp setPresentationOptions:simple_fullscreen_options_];
