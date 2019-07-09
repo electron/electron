@@ -6,10 +6,9 @@ import * as os from 'os'
 import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
-import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents } from 'electron'
+import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
-
 const { expect } = chai
 
 const ifit = (condition: boolean) => (condition ? it : it.skip)
@@ -1378,4 +1377,804 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('"webPreferences" option', () => {
+    afterEach(() => { ipcMain.removeAllListeners('answer') })
+    afterEach(closeAllWindows)
+
+    describe('"preload" option', () => {
+      const doesNotLeakSpec = (name: string, webPrefs: {nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean}) => {
+        it(name, async () => {
+          const w = new BrowserWindow({
+            webPreferences: {
+              ...webPrefs,
+              preload: path.resolve(fixtures, 'module', 'empty.js')
+            },
+            show: false
+          })
+          w.loadFile(path.join(fixtures, 'api', 'no-leak.html'))
+          const [, result] = await emittedOnce(ipcMain, 'leak-result')
+          expect(result).to.have.property('require', 'undefined')
+          expect(result).to.have.property('exports', 'undefined')
+          expect(result).to.have.property('windowExports', 'undefined')
+          expect(result).to.have.property('windowPreload', 'undefined')
+          expect(result).to.have.property('windowRequire', 'undefined')
+        })
+      }
+      doesNotLeakSpec('does not leak require', {
+        nodeIntegration: false,
+        sandbox: false,
+        contextIsolation: false
+      })
+      doesNotLeakSpec('does not leak require when sandbox is enabled', {
+        nodeIntegration: false,
+        sandbox: true,
+        contextIsolation: false
+      })
+      doesNotLeakSpec('does not leak require when context isolation is enabled', {
+        nodeIntegration: false,
+        sandbox: false,
+        contextIsolation: true
+      })
+      doesNotLeakSpec('does not leak require when context isolation and sandbox are enabled', {
+        nodeIntegration: false,
+        sandbox: true,
+        contextIsolation: true
+      })
+
+      it('loads the script before other scripts in window', async () => {
+        const preload = path.join(fixtures, 'module', 'set-global.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            preload
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'preload.html'))
+        const [, test] = await emittedOnce(ipcMain, 'answer')
+        expect(test).to.eql('preload')
+      })
+      it('can successfully delete the Buffer global', async () => {
+        const preload = path.join(fixtures, 'module', 'delete-buffer.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            preload
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'preload.html'))
+        const [, test] = await emittedOnce(ipcMain, 'answer')
+        expect(test.toString()).to.eql('buffer')
+      })
+      it('has synchronous access to all eventual window APIs', async () => {
+        const preload = path.join(fixtures, 'module', 'access-blink-apis.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            preload
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'preload.html'))
+        const [, test] = await emittedOnce(ipcMain, 'answer')
+        expect(test).to.be.an('object')
+        expect(test.atPreload).to.be.an('array')
+        expect(test.atLoad).to.be.an('array')
+        expect(test.atPreload).to.deep.equal(test.atLoad, 'should have access to the same window APIs')
+      })
+    })
+
+    describe('session preload scripts', function () {
+      const preloads = [
+        path.join(fixtures, 'module', 'set-global-preload-1.js'),
+        path.join(fixtures, 'module', 'set-global-preload-2.js'),
+        path.relative(process.cwd(), path.join(fixtures, 'module', 'set-global-preload-3.js'))
+      ]
+      const defaultSession = session.defaultSession
+
+      beforeEach(() => {
+        expect(defaultSession.getPreloads()).to.deep.equal([])
+        defaultSession.setPreloads(preloads)
+      })
+      afterEach(() => {
+        defaultSession.setPreloads([])
+      })
+
+      it('can set multiple session preload script', () => {
+        expect(defaultSession.getPreloads()).to.deep.equal(preloads)
+      })
+
+      const generateSpecs = (description: string, sandbox: boolean) => {
+        describe(description, () => {
+          it('loads the script before other scripts in window including normal preloads', function (done) {
+            ipcMain.once('vars', function (event, preload1, preload2, preload3) {
+              expect(preload1).to.equal('preload-1')
+              expect(preload2).to.equal('preload-1-2')
+              expect(preload3).to.be.null('preload 3')
+              done()
+            })
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: {
+                sandbox,
+                preload: path.join(fixtures, 'module', 'get-global-preload.js')
+              }
+            })
+            w.loadURL('about:blank')
+          })
+        })
+      }
+
+      generateSpecs('without sandbox', false)
+      generateSpecs('with sandbox', true)
+    })
+
+    describe('"additionalArguments" option', () => {
+      it('adds extra args to process.argv in the renderer process', async () => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            preload,
+            additionalArguments: ['--my-magic-arg']
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+        const [, argv] = await emittedOnce(ipcMain, 'answer')
+        expect(argv).to.include('--my-magic-arg')
+      })
+
+      it('adds extra value args to process.argv in the renderer process', async () => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            preload,
+            additionalArguments: ['--my-magic-arg=foo']
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+        const [, argv] = await emittedOnce(ipcMain, 'answer')
+        expect(argv).to.include('--my-magic-arg=foo')
+      })
+    })
+
+    describe('"node-integration" option', () => {
+      it('disables node integration by default', async () => {
+        const preload = path.join(fixtures, 'module', 'send-later.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+        const [, typeofProcess, typeofBuffer] = await emittedOnce(ipcMain, 'answer')
+        expect(typeofProcess).to.equal('undefined')
+        expect(typeofBuffer).to.equal('undefined')
+      })
+    })
+
+    describe('"enableRemoteModule" option', () => {
+      const generateSpecs = (description: string, sandbox: boolean) => {
+        describe(description, () => {
+          const preload = path.join(fixtures, 'module', 'preload-remote.js')
+
+          it('enables the remote module by default', async () => {
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: {
+                preload,
+                sandbox
+              }
+            })
+            const p = emittedOnce(ipcMain, 'remote')
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await p
+            expect(remote).to.equal('object')
+          })
+
+          it('disables the remote module when false', async () => {
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: {
+                preload,
+                sandbox,
+                enableRemoteModule: false
+              }
+            })
+            const p = emittedOnce(ipcMain, 'remote')
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await p
+            expect(remote).to.equal('undefined')
+          })
+        })
+      }
+
+      generateSpecs('without sandbox', false)
+      generateSpecs('with sandbox', true)
+    })
+
+    describe('"sandbox" option', () => {
+      function waitForEvents<T>(emitter: {once: Function}, events: string[], callback: () => void) {
+        let count = events.length
+        for (const event of events) {
+          emitter.once(event, () => {
+            if (!--count) callback()
+          })
+        }
+      }
+
+      const preload = path.join(fixtures, 'module', 'preload-sandbox.js')
+
+      it('exposes ipcRenderer to preload script', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'preload.html'))
+        const [, test] = await emittedOnce(ipcMain, 'answer')
+        expect(test).to.equal('preload')
+      })
+
+      it('exposes ipcRenderer to preload script (path has special chars)', async () => {
+        const preloadSpecialChars = path.join(fixtures, 'module', 'preload-sandboxæø åü.js')
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preloadSpecialChars
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'preload.html'))
+        const [, test] = await emittedOnce(ipcMain, 'answer')
+        expect(test).to.equal('preload')
+      })
+
+      it('exposes "loaded" event to preload script', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        w.loadURL('about:blank')
+        await emittedOnce(ipcMain, 'process-loaded')
+      })
+
+      it('exposes "exit" event to preload script', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
+        const pageUrl = 'file://' + htmlPath
+        w.loadURL(pageUrl)
+        const [, url] = await emittedOnce(ipcMain, 'answer')
+        const expectedUrl = process.platform === 'win32'
+          ? 'file:///' + htmlPath.replace(/\\/g, '/')
+          : pageUrl
+        expect(url).to.equal(expectedUrl)
+      })
+
+      it('should open windows in same domain with cross-scripting enabled', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preload
+        })
+        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
+        const pageUrl = 'file://' + htmlPath
+        const answer = emittedOnce(ipcMain, 'answer')
+        w.loadURL(pageUrl)
+        const [, url, frameName, , options] = await emittedOnce(w.webContents, 'new-window')
+        const expectedUrl = process.platform === 'win32'
+          ? 'file:///' + htmlPath.replace(/\\/g, '/')
+          : pageUrl
+        expect(url).to.equal(expectedUrl)
+        expect(frameName).to.equal('popup!')
+        expect(options.width).to.equal(500)
+        expect(options.height).to.equal(600)
+        const [, html] = await answer
+        expect(html).to.equal('<h1>scripting from opener</h1>')
+      })
+
+      /*
+      it('should open windows in another domain with cross-scripting disabled', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preload
+        })
+        w.loadFile(
+          path.join(fixtures, 'api', 'sandbox.html'),
+          { search: 'window-open-external' }
+        )
+
+        // Wait for a message from the main window saying that it's ready.
+        await emittedOnce(ipcMain, 'opener-loaded')
+
+        // Ask the opener to open a popup with window.opener.
+        const expectedPopupUrl = `${server.url}/cross-site` // Set in "sandbox.html".
+
+        w.webContents.send('open-the-popup', expectedPopupUrl)
+
+        // The page is going to open a popup that it won't be able to close.
+        // We have to close it from here later.
+        const [, popupWindow] = await emittedOnce(app, 'browser-window-created')
+
+        // Ask the popup window for details.
+        const detailsAnswer = emittedOnce(ipcMain, 'child-loaded')
+        popupWindow.webContents.send('provide-details')
+        const [, openerIsNull, , locationHref] = await detailsAnswer
+        expect(openerIsNull).to.be.false('window.opener is null')
+        expect(locationHref).to.equal(expectedPopupUrl)
+
+        // Ask the page to access the popup.
+        const touchPopupResult = emittedOnce(ipcMain, 'answer')
+        w.webContents.send('touch-the-popup')
+        const [, popupAccessMessage] = await touchPopupResult
+
+        // Ask the popup to access the opener.
+        const touchOpenerResult = emittedOnce(ipcMain, 'answer')
+        popupWindow.webContents.send('touch-the-opener')
+        const [, openerAccessMessage] = await touchOpenerResult
+
+        // We don't need the popup anymore, and its parent page can't close it,
+        // so let's close it from here before we run any checks.
+        await closeWindow(popupWindow, { assertNotWindows: false })
+
+        expect(popupAccessMessage).to.be.a('string',
+          `child's .document is accessible from its parent window`)
+        expect(popupAccessMessage).to.match(/^Blocked a frame with origin/)
+        expect(openerAccessMessage).to.be.a('string',
+          `opener .document is accessible from a popup window`)
+        expect(openerAccessMessage).to.match(/^Blocked a frame with origin/)
+      })
+      */
+
+      it('should inherit the sandbox setting in opened windows', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        })
+
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preloadPath
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
+        const [, args] = await emittedOnce(ipcMain, 'answer')
+        expect(args).to.include('--enable-sandbox')
+      })
+
+      it('should open windows with the options configured via new-window event listeners', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        })
+
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preloadPath
+          options.webPreferences.foo = 'bar'
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
+        const [, , webPreferences] = await emittedOnce(ipcMain, 'answer')
+        expect(webPreferences.foo).to.equal('bar')
+      })
+
+      it('should set ipc event sender correctly', (done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        let childWc: WebContents | null = null
+        w.webContents.on('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preload
+          childWc = options.webContents
+          expect(w.webContents).to.not.equal(childWc)
+        })
+        ipcMain.once('parent-ready', function (event) {
+          expect(event.sender).to.equal(w.webContents, 'sender should be the parent')
+          event.sender.send('verified')
+        })
+        ipcMain.once('child-ready', function (event) {
+          expect(childWc).to.not.be.null('child webcontents should be available')
+          expect(event.sender).to.equal(childWc, 'sender should be the child')
+          event.sender.send('verified')
+        })
+        waitForEvents(ipcMain, [
+          'parent-answer',
+          'child-answer'
+        ], done)
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'verify-ipc-sender' })
+      })
+
+      describe('event handling', () => {
+        let w: BrowserWindow = null as unknown as BrowserWindow
+        beforeEach(() => {
+          w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+        })
+        it('works for window events', (done) => {
+          waitForEvents(w, [
+            'page-title-updated'
+          ], done)
+          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'window-events' })
+        })
+
+        it('works for stop events', (done) => {
+          waitForEvents(w.webContents, [
+            'did-navigate',
+            'did-fail-load',
+            'did-stop-loading'
+          ], done)
+          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'webcontents-stop' })
+        })
+
+        it('works for web contents events', (done) => {
+          waitForEvents(w.webContents, [
+            'did-finish-load',
+            'did-frame-finish-load',
+            'did-navigate-in-page',
+            'will-navigate',
+            'did-start-loading',
+            'did-stop-loading',
+            'did-frame-finish-load',
+            'dom-ready'
+          ], done)
+          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'webcontents-events' })
+        })
+      })
+
+      it('supports calling preventDefault on new-window events', (done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        })
+        const initialWebContents = webContents.getAllWebContents().map((i) => i.id)
+        w.webContents.once('new-window', (e) => {
+          e.preventDefault()
+          // We need to give it some time so the windows get properly disposed (at least on OSX).
+          setTimeout(() => {
+            const currentWebContents = webContents.getAllWebContents().map((i) => i.id)
+            expect(currentWebContents).to.deep.equal(initialWebContents)
+            done()
+          }, 100)
+        })
+        w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
+      })
+
+      // see #9387
+      it('properly manages remote object references after page reload', (done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload,
+            sandbox: true
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote' })
+
+        ipcMain.on('get-remote-module-path', (event) => {
+          event.returnValue = path.join(fixtures, 'module', 'hello.js')
+        })
+
+        let reload = false
+        ipcMain.on('reloaded', (event) => {
+          event.returnValue = reload
+          reload = !reload
+        })
+
+        ipcMain.once('reload', (event) => {
+          event.sender.reload()
+        })
+
+        ipcMain.once('answer', (event, arg) => {
+          ipcMain.removeAllListeners('reloaded')
+          ipcMain.removeAllListeners('get-remote-module-path')
+          expect(arg).to.equal('hi')
+          done()
+        })
+      })
+
+      it('properly manages remote object references after page reload in child window', (done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload,
+            sandbox: true
+          }
+        })
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preload
+        })
+
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote-child' })
+
+        ipcMain.on('get-remote-module-path', (event) => {
+          event.returnValue = path.join(fixtures, 'module', 'hello-child.js')
+        })
+
+        let reload = false
+        ipcMain.on('reloaded', (event) => {
+          event.returnValue = reload
+          reload = !reload
+        })
+
+        ipcMain.once('reload', (event) => {
+          event.sender.reload()
+        })
+
+        ipcMain.once('answer', (event, arg) => {
+          ipcMain.removeAllListeners('reloaded')
+          ipcMain.removeAllListeners('get-remote-module-path')
+          expect(arg).to.equal('hi child window')
+          done()
+        })
+      })
+
+      it('validates process APIs access in sandboxed renderer', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload
+          }
+        })
+        w.webContents.once('preload-error', (event, preloadPath, error) => {
+          throw error
+        })
+        process.env.sandboxmain = 'foo'
+        w.loadFile(path.join(fixtures, 'api', 'preload.html'))
+        const [, test] = await emittedOnce(ipcMain, 'answer')
+        expect(test.hasCrash).to.be.true('has crash')
+        expect(test.hasHang).to.be.true('has hang')
+        expect(test.heapStatistics).to.be.an('object')
+        expect(test.blinkMemoryInfo).to.be.an('object')
+        expect(test.processMemoryInfo).to.be.an('object')
+        expect(test.systemVersion).to.be.a('string')
+        expect(test.cpuUsage).to.be.an('object')
+        expect(test.ioCounters).to.be.an('object')
+        expect(test.arch).to.equal(process.arch)
+        expect(test.platform).to.equal(process.platform)
+        expect(test.env).to.deep.equal(process.env)
+        expect(test.execPath).to.equal(process.helperExecPath)
+        expect(test.sandboxed).to.be.true('sandboxed')
+        expect(test.type).to.equal('renderer')
+        expect(test.version).to.equal(process.version)
+        expect(test.versions).to.deep.equal(process.versions)
+
+        if (process.platform === 'linux' && test.osSandbox) {
+          expect(test.creationTime).to.be.null('creation time')
+          expect(test.systemMemoryInfo).to.be.null('system memory info')
+        } else {
+          expect(test.creationTime).to.be.a('number')
+          expect(test.systemMemoryInfo).to.be.an('object')
+        }
+      })
+
+      it('webview in sandbox renderer', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload,
+            webviewTag: true
+          }
+        })
+        const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview')
+        const webviewDomReady = emittedOnce(ipcMain, 'webview-dom-ready')
+        w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'))
+
+        const [, webContents] = await didAttachWebview
+        const [, id] = await webviewDomReady
+        expect(webContents.id).to.equal(id)
+      })
+    })
+
+    describe('nativeWindowOpen option', () => {
+      let w: BrowserWindow = null as unknown as BrowserWindow
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nativeWindowOpen: true,
+            // tests relies on preloads in opened windows
+            nodeIntegrationInSubFrames: true
+          }
+        })
+      })
+
+      it('opens window of about:blank with cross-scripting enabled', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          expect(content).to.equal('Hello')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-blank.html'))
+      })
+      it('opens window of same domain with cross-scripting enabled', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          expect(content).to.equal('Hello')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-file.html'))
+      })
+      it('blocks accessing cross-origin frames', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          expect(content).to.equal('Blocked a frame with origin "file://" from accessing a cross-origin frame.')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-cross-origin.html'))
+      })
+      it('opens window from <iframe> tags', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          expect(content).to.equal('Hello')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-iframe.html'))
+      });
+      ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+        {
+          const [, content] = await emittedOnce(ipcMain, 'answer')
+          expect(content).to.equal('function')
+        }
+        w.reload()
+        {
+          const [, content] = await emittedOnce(ipcMain, 'answer')
+          expect(content).to.equal('function')
+        }
+      })
+      it('should inherit the nativeWindowOpen setting in opened windows', async () => {
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preloadPath
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
+        const [, args] = await emittedOnce(ipcMain, 'answer')
+        expect(args).to.include('--native-window-open')
+      })
+      it('should open windows with the options configured via new-window event listeners', async () => {
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.webPreferences.preload = preloadPath
+          options.webPreferences.foo = 'bar'
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
+        const [, , webPreferences] = await emittedOnce(ipcMain, 'answer')
+        expect(webPreferences.foo).to.equal('bar')
+      })
+      it('should have nodeIntegration disabled in child windows', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nativeWindowOpen: true,
+          }
+        })
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
+        const [, typeofProcess] = await emittedOnce(ipcMain, 'answer')
+        expect(typeofProcess).to.eql('undefined')
+      })
+
+      describe.only('window.location', () => {
+        const protocols = [
+          ['foo', path.join(fixtures, 'api', 'window-open-location-change.html')],
+          ['bar', path.join(fixtures, 'api', 'window-open-location-final.html')]
+        ]
+        beforeEach(async () => {
+          await Promise.all(protocols.map(([scheme, path]) => new Promise((resolve, reject) => {
+            protocol.registerBufferProtocol(scheme, (request, callback) => {
+              callback({
+                mimeType: 'text/html',
+                data: fs.readFileSync(path)
+              })
+            }, (error) => {
+              if (error != null) {
+                reject(error)
+              } else {
+                resolve()
+              }
+            })
+          })))
+        })
+        afterEach(async () => {
+          await Promise.all(protocols.map(([scheme,]) => {
+            return new Promise(resolve => protocol.unregisterProtocol(scheme, () => resolve()))
+          }))
+        })
+        it('retains the original web preferences when window.location is changed to a new origin', async () => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              nativeWindowOpen: true,
+              // test relies on preloads in opened window
+              nodeIntegrationInSubFrames: true
+            }
+          })
+  
+          w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+            options.webPreferences.preload = path.join(fixtures, 'api', 'window-open-preload.js')
+          })
+          w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
+          const [, args, typeofProcess] = await emittedOnce(ipcMain, 'answer')
+          expect(args).not.to.include('--node-integration')
+          expect(args).to.include('--native-window-open')
+          expect(typeofProcess).to.eql('undefined')
+        })
+  
+        it('window.opener is not null when window.location is changed to a new origin', async () => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              nativeWindowOpen: true,
+              // test relies on preloads in opened window
+              nodeIntegrationInSubFrames: true
+            }
+          })
+  
+          w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+            options.webPreferences.preload = path.join(fixtures, 'api', 'window-open-preload.js')
+          })
+          w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
+          const [, , , windowOpenerIsNull] = await emittedOnce(ipcMain, 'answer')
+          expect(windowOpenerIsNull).to.be.false('window.opener is null')
+        })
+      })
+    })
+
+    describe('"disableHtmlFullscreenWindowResize" option', () => {
+      it('prevents window from resizing when set', (done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            disableHtmlFullscreenWindowResize: true
+          }
+        })
+        w.webContents.once('did-finish-load', () => {
+          const size = w.getSize()
+          w.webContents.once('enter-html-full-screen', () => {
+            const newSize = w.getSize()
+            expect(newSize).to.deep.equal(size)
+            done()
+          })
+          w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true)
+        })
+        w.loadURL('about:blank')
+      })
+    })
+  })
 })
