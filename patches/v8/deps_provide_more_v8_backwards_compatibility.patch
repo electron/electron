@@ -22,7 +22,7 @@ Reviewed-By: Yang Guo <yangguo@chromium.org>
 Reviewed-By: Michaël Zasso <targos@protonmail.com>
 
 diff --git a/include/v8.h b/include/v8.h
-index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51bdcf45cb7 100644
+index c803face77b37bbef34804a054e8d55fe4e35816..07b66e8c7be12dc44fdda26f5bd7cc6d242543bd 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -1108,6 +1108,10 @@ class V8_EXPORT PrimitiveArray {
@@ -36,7 +36,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
    void Set(Isolate* isolate, int index, Local<Primitive> item);
    Local<Primitive> Get(Isolate* isolate, int index);
  };
-@@ -1844,6 +1848,8 @@ class V8_EXPORT StackTrace {
+@@ -1847,6 +1851,8 @@ class V8_EXPORT StackTrace {
    /**
     * Returns a StackFrame at a particular index.
     */
@@ -45,7 +45,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
    Local<StackFrame> GetFrame(Isolate* isolate, uint32_t index) const;
  
    /**
-@@ -2537,6 +2543,13 @@ class V8_EXPORT Value : public Data {
+@@ -2540,6 +2546,13 @@ class V8_EXPORT Value : public Data {
  
    Local<Boolean> ToBoolean(Isolate* isolate) const;
  
@@ -59,7 +59,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
    /**
     * Attempts to convert a string to an array index.
     * Returns an empty handle if the conversion fails.
-@@ -2553,7 +2566,14 @@ class V8_EXPORT Value : public Data {
+@@ -2556,7 +2569,14 @@ class V8_EXPORT Value : public Data {
        Local<Context> context) const;
    V8_WARN_UNUSED_RESULT Maybe<int32_t> Int32Value(Local<Context> context) const;
  
@@ -74,7 +74,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
    V8_WARN_UNUSED_RESULT Maybe<bool> Equals(Local<Context> context,
                                             Local<Value> that) const;
    bool StrictEquals(Local<Value> that) const;
-@@ -2660,6 +2680,8 @@ class V8_EXPORT String : public Name {
+@@ -2663,6 +2683,8 @@ class V8_EXPORT String : public Name {
     * Returns the number of bytes in the UTF-8 encoded
     * representation of this string.
     */
@@ -83,7 +83,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
    int Utf8Length(Isolate* isolate) const;
  
    /**
-@@ -2716,12 +2738,23 @@ class V8_EXPORT String : public Name {
+@@ -2719,12 +2741,23 @@ class V8_EXPORT String : public Name {
    // 16-bit character codes.
    int Write(Isolate* isolate, uint16_t* buffer, int start = 0, int length = -1,
              int options = NO_OPTIONS) const;
@@ -107,7 +107,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
  
    /**
     * A zero length string.
-@@ -2889,6 +2922,9 @@ class V8_EXPORT String : public Name {
+@@ -2892,6 +2925,9 @@ class V8_EXPORT String : public Name {
     */
    static Local<String> Concat(Isolate* isolate, Local<String> left,
                                Local<String> right);
@@ -117,7 +117,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
  
    /**
     * Creates a new external string using the data defined in the given
-@@ -2953,6 +2989,8 @@ class V8_EXPORT String : public Name {
+@@ -2956,6 +2992,8 @@ class V8_EXPORT String : public Name {
     */
    class V8_EXPORT Utf8Value {
     public:
@@ -126,7 +126,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
      Utf8Value(Isolate* isolate, Local<v8::Value> obj);
      ~Utf8Value();
      char* operator*() { return str_; }
-@@ -2976,6 +3014,7 @@ class V8_EXPORT String : public Name {
+@@ -2979,6 +3017,7 @@ class V8_EXPORT String : public Name {
     */
    class V8_EXPORT Value {
     public:
@@ -134,7 +134,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
      Value(Isolate* isolate, Local<v8::Value> obj);
      ~Value();
      uint16_t* operator*() { return str_; }
-@@ -5303,6 +5342,8 @@ class V8_EXPORT BooleanObject : public Object {
+@@ -5307,6 +5346,8 @@ class V8_EXPORT BooleanObject : public Object {
  class V8_EXPORT StringObject : public Object {
   public:
    static Local<Value> New(Isolate* isolate, Local<String> value);
@@ -143,7 +143,7 @@ index 6d5a9a08a6d5fb98893f996e1f0b9432e3899853..dc5d3ba4c06d19948b5610ce830ab51b
  
    Local<String> ValueOf() const;
  
-@@ -10491,6 +10532,29 @@ template <class T> Value* Value::Cast(T* value) {
+@@ -10495,6 +10536,29 @@ template <class T> Value* Value::Cast(T* value) {
  }
  
  
