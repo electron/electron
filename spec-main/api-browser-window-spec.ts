@@ -1610,6 +1610,28 @@ describe('BrowserWindow module', () => {
 
       const preload = path.join(fixtures, 'module', 'preload-sandbox.js')
 
+      let server: http.Server = null as unknown as http.Server
+      let serverUrl: string = null as unknown as string
+
+      before((done) => {
+        server = http.createServer((request, response) => {
+          switch (request.url) {
+            case '/cross-site':
+              response.end(`<html><body><h1>${request.url}</h1></body></html>`)
+              break
+            default:
+              throw new Error(`unsupported endpoint: ${request.url}`)
+          }
+        }).listen(0, '127.0.0.1', () => {
+          serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port
+          done()
+        })
+      })
+
+      after(() => {
+        server.close()
+      })
+
       it('exposes ipcRenderer to preload script', async () => {
         const w = new BrowserWindow({
           show: false,
@@ -1694,7 +1716,6 @@ describe('BrowserWindow module', () => {
         expect(html).to.equal('<h1>scripting from opener</h1>')
       })
 
-      /*
       it('should open windows in another domain with cross-scripting disabled', async () => {
         const w = new BrowserWindow({
           show: false,
@@ -1716,7 +1737,7 @@ describe('BrowserWindow module', () => {
         await emittedOnce(ipcMain, 'opener-loaded')
 
         // Ask the opener to open a popup with window.opener.
-        const expectedPopupUrl = `${server.url}/cross-site` // Set in "sandbox.html".
+        const expectedPopupUrl = `${serverUrl}/cross-site` // Set in "sandbox.html".
 
         w.webContents.send('open-the-popup', expectedPopupUrl)
 
@@ -1752,7 +1773,6 @@ describe('BrowserWindow module', () => {
           `opener .document is accessible from a popup window`)
         expect(openerAccessMessage).to.match(/^Blocked a frame with origin/)
       })
-      */
 
       it('should inherit the sandbox setting in opened windows', async () => {
         const w = new BrowserWindow({
@@ -2090,7 +2110,7 @@ describe('BrowserWindow module', () => {
         expect(typeofProcess).to.eql('undefined')
       })
 
-      describe.only('window.location', () => {
+      describe('window.location', () => {
         const protocols = [
           ['foo', path.join(fixtures, 'api', 'window-open-location-change.html')],
           ['bar', path.join(fixtures, 'api', 'window-open-location-final.html')]
