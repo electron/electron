@@ -682,10 +682,6 @@ async-each@^1.0.0, async-each@^1.0.1:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/async-each/-/async-each-1.0.3.tgz#b727dbf87d7651602f06f4d4ac387f47d91b0cbf"
 
-async@^1.5.2:
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/async/-/async-1.5.2.tgz#ec6a61ae56480c0c3cb241c95618e20892f9672a"
-
 asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
@@ -1185,14 +1181,6 @@ cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
 circular-json@^0.3.1:
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/circular-json/-/circular-json-0.3.3.tgz#815c99ea84f6809529d2f45791bdf82711352d66"
-
-clang-format@^1.2.3:
-  version "1.2.4"
-  resolved "https://registry.yarnpkg.com/clang-format/-/clang-format-1.2.4.tgz#4bb4b0a98180428deb093cf20982e9fc1af20b6c"
-  dependencies:
-    async "^1.5.2"
-    glob "^7.0.0"
-    resolve "^1.1.6"
 
 class-utils@^0.3.5:
   version "0.3.6"
