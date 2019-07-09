@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index ad82e3695847dcb3f71b3a26d4609029b6201ee8..01c3c1ece91a6478d1a7d075d304359de9050cb2 100644
+index ee3bf9edbd615fb238d541f1baab5bcda1897d56..045b136fd6659f746affcd3ace85092111fec602 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3809,6 +3809,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3814,6 +3814,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -32,7 +32,7 @@ index c5078d23ace270e1e7f479a827712f24aaf729a4..4dab0367f1280b2c9374309c3803436d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index fae53a985a2adcf7e27ca799ff19bf2032c68529..dfd8bbaed5cfc48a116be63a067d00bb21960e85 100644
+index d7d2b18dbded3b1041ac8bd93ee5a5161d220aed..b7a903ae979f56e79603af1a6edf395d67e0e982 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -517,6 +517,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,7 +45,7 @@ index fae53a985a2adcf7e27ca799ff19bf2032c68529..dfd8bbaed5cfc48a116be63a067d00bb
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d1d54b95082f594fdf044f386ccddd7e1ececb1d..19edc738013c360d839575b62ff637e6c26c0f8a 100644
+index b422bbf7baa6252ce97670c0b8c16e1eb526f627..86755824ccbaef2d5eeea63166d2243228bd5a4a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -177,6 +177,7 @@ class RenderFrameHost;

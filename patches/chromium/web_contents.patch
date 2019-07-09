@@ -5,10 +5,10 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ba964827ded606182e3254eaf26947802b2d9ec0..a5385fb69fb6df931341a04a6f29add6f09352be 100644
+index 37e9397ccf47519fd4a5867034df8513d8532366..e427908b3d284ae56f8592d3e7c5dc0d9a6a7684 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2089,6 +2089,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2090,6 +2090,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -21,7 +21,7 @@ index ba964827ded606182e3254eaf26947802b2d9ec0..a5385fb69fb6df931341a04a6f29add6
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2104,6 +2110,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2105,6 +2111,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }

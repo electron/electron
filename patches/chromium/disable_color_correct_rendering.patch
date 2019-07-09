@@ -65,7 +65,7 @@ index 3b99fdc36afc5c5bb97bc8570da39b8edfed70e0..2143644bd748c1390f362fa7f4d8b24a
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 782b68bfed162ca4014a2586ba7a26349ca575ee..00ebe013f9a91a2e7140a9b6f071253f918a3e51 100644
+index c48e95b2a6f5d0f35cc85bf25fb8bef3644ef36f..2ba05e863b682ee2f2ffb707c21714194afea647 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -80,6 +80,9 @@
@@ -175,7 +175,7 @@ index 782b68bfed162ca4014a2586ba7a26349ca575ee..00ebe013f9a91a2e7140a9b6f071253f
  
    ProgramKey program_key = program_key_no_color;
    const gfx::ColorTransform* color_transform =
-@@ -3461,7 +3468,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3463,7 +3470,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -184,7 +184,7 @@ index 782b68bfed162ca4014a2586ba7a26349ca575ee..00ebe013f9a91a2e7140a9b6f071253f
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3665,8 +3672,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3670,8 +3677,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -196,7 +196,7 @@ index 782b68bfed162ca4014a2586ba7a26349ca575ee..00ebe013f9a91a2e7140a9b6f071253f
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -3826,3 +3834,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -3831,3 +3839,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
@@ -215,18 +215,18 @@ index 4165ba000223c6d13e112a6a9861f015bb9ebbbb..70a9d11bdd1f836215724af18df18876
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ce456a679fe94077c1a69b5eb697eba746ddba85..880d0e759659c62b3401d46fa962abadf8146a95 100644
+index 44ebbd3cafad0cdb26affe92c56377ca5b668094..3c53ff3ae2cb2cf7890d929c49fb64cb8ab3523f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -217,6 +217,7 @@
+@@ -218,6 +218,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
 +#include "ui/gfx/switches.h"
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
- 
-@@ -2908,6 +2909,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+ #include "url/url_constants.h"
+@@ -2926,6 +2927,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,7 +235,7 @@ index ce456a679fe94077c1a69b5eb697eba746ddba85..880d0e759659c62b3401d46fa962abad
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 70a3e142d9f4987c694dced5433611d8e937eb75..7de24a3a7b5bfc66c14d023ea3ec49ca4692f8e5 100644
+index 5af098309d377a78822d8ecd6e637553b965d968..fb81bb77bbc722623fd79fe34bab99fe462893c7 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2837,6 +2837,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
