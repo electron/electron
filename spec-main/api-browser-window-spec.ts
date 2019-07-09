@@ -2197,4 +2197,89 @@ describe('BrowserWindow module', () => {
       })
     })
   })
+
+  describe('nativeWindowOpen + contextIsolation options', () => {
+    afterEach(closeAllWindows)
+    it('opens window with cross-scripting enabled from isolated context', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
+        }
+      })
+      w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'))
+      const [, content] = await emittedOnce(ipcMain, 'answer')
+      expect(content).to.equal('Hello')
+    })
+  })
+
+  describe('beforeunload handler', () => {
+    let w: BrowserWindow = null as unknown as BrowserWindow
+    beforeEach(() => {
+      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+    })
+    it('returning undefined would not prevent close', (done) => {
+      w.once('closed', () => { done() })
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
+    })
+    it('returning false would prevent close', (done) => {
+      w.once('onbeforeunload' as any, () => { done() })
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
+    })
+    it('returning empty string would prevent close', (done) => {
+      w.once('onbeforeunload' as any, () => { done() })
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
+    })
+    it('emits for each close attempt', (done) => {
+      let beforeUnloadCount = 0
+      w.on('onbeforeunload' as any, () => {
+        beforeUnloadCount += 1
+        if (beforeUnloadCount < 3) {
+          w.close()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', () => { w.close() })
+      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+    it('emits for each reload attempt', (done) => {
+      let beforeUnloadCount = 0
+      w.on('onbeforeunload' as any, () => {
+        beforeUnloadCount += 1
+        if (beforeUnloadCount < 3) {
+          w.reload()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
+          expect.fail('Reload was not prevented')
+        })
+        w.reload()
+      })
+      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+    it('emits for each navigation attempt', (done) => {
+      let beforeUnloadCount = 0
+      w.on('onbeforeunload' as any, () => {
+        beforeUnloadCount += 1
+        if (beforeUnloadCount < 3) {
+          w.loadURL('about:blank')
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
+          expect.fail('Navigation was not prevented')
+        })
+        w.loadURL('about:blank')
+      })
+      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+  })
 })
