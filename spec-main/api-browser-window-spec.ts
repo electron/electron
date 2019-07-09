@@ -2220,6 +2220,7 @@ describe('BrowserWindow module', () => {
     beforeEach(() => {
       w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
     })
+    afterEach(closeAllWindows)
     it('returning undefined would not prevent close', (done) => {
       w.once('closed', () => { done() })
       w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
@@ -2280,6 +2281,150 @@ describe('BrowserWindow module', () => {
         w.loadURL('about:blank')
       })
       w.loadFile(path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+  })
+
+  describe('document.visibilityState/hidden', () => {
+    afterEach(closeAllWindows)
+
+    it('visibilityState is initially visible despite window being hidden', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+
+      let readyToShow = false
+      w.once('ready-to-show', () => {
+        readyToShow = true
+      })
+
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
+
+      const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+
+      expect(readyToShow).to.be.false('ready to show')
+      expect(visibilityState).to.equal('visible')
+      expect(hidden).to.be.false('hidden')
+    })
+
+    it('visibilityState changes when window is hidden', async () => {
+      const w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false('hidden')
+      }
+
+      w.hide()
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+        expect(visibilityState).to.equal('hidden')
+        expect(hidden).to.be.true('hidden')
+      }
+    })
+
+    it('visibilityState changes when window is shown', async () => {
+      const w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
+      await emittedOnce(w, 'show')
+      w.hide()
+      w.show()
+      const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
+      expect(visibilityState).to.equal('visible')
+    })
+
+    ifit(!(isCI && process.platform === 'win32'))('visibilityState changes when window is shown inactive', async () => {
+      const w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
+      await emittedOnce(w, 'show')
+      w.hide()
+      w.showInactive()
+      const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
+      expect(visibilityState).to.equal('visible')
+    })
+
+    ifit(!(isCI && process.platform === 'linux'))('visibilityState changes when window is minimized', async () => {
+      const w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false('hidden')
+      }
+
+      w.minimize()
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+        expect(visibilityState).to.equal('hidden')
+        expect(hidden).to.be.true('hidden')
+      }
+    })
+
+    it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 100,
+        height: 100,
+        webPreferences: {
+          backgroundThrottling: false,
+          nodeIntegration: true
+        }
+      })
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+        expect(visibilityState).to.equal('visible')
+        expect(hidden).to.be.false('hidden')
+      }
+
+      ipcMain.once('pong', (event, visibilityState, hidden) => {
+        throw new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`)
+      })
+      try {
+        w.show()
+        await emittedOnce(w, 'show')
+        w.hide()
+        await emittedOnce(w, 'hide')
+        w.show()
+        await emittedOnce(w, 'show')
+      } finally {
+        ipcMain.removeAllListeners('pong')
+      }
     })
   })
 })
