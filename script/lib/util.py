@@ -247,7 +247,7 @@ def get_electron_exec():
   raise Exception(
       "get_electron_exec: unexpected platform '{0}'".format(sys.platform))
 
-def get_path_in_buildtools(name):
+def get_buildtools_executable(name):
   buildtools = os.path.realpath(os.path.join(ELECTRON_DIR, '..', 'buildtools'))
   chromium_platform = {
     'darwin': 'mac',

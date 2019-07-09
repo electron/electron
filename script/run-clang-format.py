@@ -22,7 +22,7 @@ import traceback
 import tempfile
 
 from functools import partial
-from lib.util import get_path_in_buildtools
+from lib.util import get_buildtools_executable
 
 DEFAULT_EXTENSIONS = 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx,mm'
 
@@ -189,7 +189,7 @@ def main():
         '--clang-format-executable',
         metavar='EXECUTABLE',
         help='path to the clang-format executable',
-        default=get_path_in_buildtools('clang-format'))
+        default=get_buildtools_executable('clang-format'))
     parser.add_argument(
         '--extensions',
         help='comma separated list of file extensions (default: {})'.format(
