@@ -13,7 +13,7 @@ Reviewed-by: John Abd-El-Malek <jam@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#620910}
 
 diff --git a/chrome/browser/ui/startup/startup_browser_creator.cc b/chrome/browser/ui/startup/startup_browser_creator.cc
-index 665718d90bf66061f92164c2715f5e500608beb5..63b88c0051354eab316edd16c522b3c7f89158ca 100644
+index e2afc34bd98f6a6cc76132dc4d1f8ca5c84afbaf..1a86063573849d5e174603ce418beebd103120d3 100644
 --- a/chrome/browser/ui/startup/startup_browser_creator.cc
 +++ b/chrome/browser/ui/startup/startup_browser_creator.cc
 @@ -66,7 +66,6 @@
@@ -96,10 +96,10 @@ index 0000000000000000000000000000000000000000..e47cbbf08076216f60f0d01942626f16
 +
 +}  // namespace content
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index aac3f05054724c2fa030efd4c8d7543de9433612..b8a0e794b9ea2791a699d84fa3d4987cced36324 100644
+index 35fdb9d351db5a6bdaa61742ec49dc75fe70cfa4..c72025ad2e825d3c7f8136434587bcebf8f858e0 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2793,6 +2793,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2782,6 +2782,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    static const char* const kSwitchNames[] = {
      switches::kDisableColorCorrectRendering,
      network::switches::kNoReferrers,
@@ -107,7 +107,7 @@ index aac3f05054724c2fa030efd4c8d7543de9433612..b8a0e794b9ea2791a699d84fa3d4987c
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
      service_manager::switches::kNoSandbox,
-@@ -2875,7 +2876,6 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2863,7 +2864,6 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
      switches::kEnableWebGLDraftExtensions,
      switches::kEnableWebGLImageChromium,
      switches::kEnableWebVR,
@@ -116,7 +116,7 @@ index aac3f05054724c2fa030efd4c8d7543de9433612..b8a0e794b9ea2791a699d84fa3d4987c
      switches::kFMPNetworkQuietTimeout,
      switches::kForceColorProfile,
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 074f290638ff7311d6c9683a63f7a7c39a402876..5e1c9138bcf604831fca12a9673675e0d9d4734f 100644
+index 9d7c9791bd99c361a9ba3edc539d9b48b46659d4..3d11373b77af8bc0db42a27fcfab3089f8aaed1c 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -286,6 +286,7 @@ bool UtilityProcessHost::StartProcess() {
@@ -128,10 +128,10 @@ index 074f290638ff7311d6c9683a63f7a7c39a402876..5e1c9138bcf604831fca12a9673675e0
  #if defined(OS_MACOSX)
        service_manager::switches::kEnableSandboxLogging,
 diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
-index eeb540ba52e109aff7348714a0ad22399a460a2d..512d0bb910bf9d5091943a5a40b253ad7ac43e65 100644
+index 19c2246a3bd8dcc3d1e070b74ff3d416adc473fe..cdf81f6c35cd78b4fff4d666284d0615e6c057c6 100644
 --- a/content/public/common/content_switches.cc
 +++ b/content/public/common/content_switches.cc
-@@ -473,10 +473,6 @@ const char kEnableWebVR[] = "enable-webvr";
+@@ -469,10 +469,6 @@ const char kEnableWebVR[] = "enable-webvr";
  // Enable rasterizer that writes directly to GPU memory associated with tiles.
  const char kEnableZeroCopy[]                = "enable-zero-copy";
  
@@ -143,10 +143,10 @@ index eeb540ba52e109aff7348714a0ad22399a460a2d..512d0bb910bf9d5091943a5a40b253ad
  // be shared between processes. The argument to this switch is the handle id
  // (pointer on Windows) as a string, followed by a comma, then the size of the
 diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
-index 2a08de6a59bb67bfe0f65f82f6ba3397a4896056..f420773ee9fe29e5562878ded07ad98ad6700e5f 100644
+index 2c795e814b13961eb190d5c7f9bce3c854dbfc17..a4da6292e7c5784e06e686cd62e017b010fa7e27 100644
 --- a/content/public/common/content_switches.h
 +++ b/content/public/common/content_switches.h
-@@ -148,7 +148,6 @@ CONTENT_EXPORT extern const char kEnableWebGLDraftExtensions[];
+@@ -147,7 +147,6 @@ CONTENT_EXPORT extern const char kEnableWebGLDraftExtensions[];
  CONTENT_EXPORT extern const char kEnableWebGLImageChromium[];
  CONTENT_EXPORT extern const char kEnableWebVR[];
  CONTENT_EXPORT extern const char kEnableZeroCopy[];
@@ -155,7 +155,7 @@ index 2a08de6a59bb67bfe0f65f82f6ba3397a4896056..f420773ee9fe29e5562878ded07ad98a
  CONTENT_EXPORT extern const char kFileUrlPathAlias[];
  CONTENT_EXPORT extern const char kForceDisplayList2dCanvas[];
 diff --git a/content/renderer/render_thread_impl.cc b/content/renderer/render_thread_impl.cc
-index 2e17bf6f1522d3f8557b5d4bac0fb76fec034418..44df5d5461c718d2a793171d3592691c7bba12c8 100644
+index 5c31ab7654d0168d232e9974105573fa01543aed..b670c95891ab80e749209a843d958ffcbdcc6ba2 100644
 --- a/content/renderer/render_thread_impl.cc
 +++ b/content/renderer/render_thread_impl.cc
 @@ -143,6 +143,7 @@
@@ -180,7 +180,7 @@ index 2e17bf6f1522d3f8557b5d4bac0fb76fec034418..44df5d5461c718d2a793171d3592691c
    }
  }
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9e705c8b905c21db05b9e6461c31b0cea7d30980..dab1cfc7e2dd3ad65e9a554362f159970eb5cbd4 100644
+index 15a64a49d5c821d3cb10b9dfd99725296e6a912c..a28467ec68e2b63964e396977c17a2cbb5cf2407 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -791,6 +791,7 @@ test("content_browsertests") {
@@ -192,7 +192,7 @@ index 9e705c8b905c21db05b9e6461c31b0cea7d30980..dab1cfc7e2dd3ad65e9a554362f15997
      "../browser/network_service_browsertest.cc",
      "../browser/network_service_restart_browsertest.cc",
 diff --git a/services/network/network_service.cc b/services/network/network_service.cc
-index e4cf8022f4d017321fb2f684ec0ade3bbd122df3..d22a74c6a8d7cc2e3acc1f0adc15f4b3a6b47867 100644
+index a91a9f4b5866c11ae76e2d173a92579f0b7d12a1..404c3fa8316abdd77b492468e29a577c0c9c0988 100644
 --- a/services/network/network_service.cc
 +++ b/services/network/network_service.cc
 @@ -19,6 +19,7 @@
@@ -218,7 +218,7 @@ index e4cf8022f4d017321fb2f684ec0ade3bbd122df3..d22a74c6a8d7cc2e3acc1f0adc15f4b3
    // per-NetworkContext basis.
    UMA_HISTOGRAM_BOOLEAN(
 diff --git a/services/network/public/cpp/network_switches.cc b/services/network/public/cpp/network_switches.cc
-index 8b2d4ed3b39e35e1a078ad26a946cc752a830310..60859bc46e6420165a11e2c4bd03dcd81345b122 100644
+index 7790a6fa6e749f0f87d104f0175ad76d5aace108..6e489aafa30155fbbf75edfbffd17f93159e5665 100644
 --- a/services/network/public/cpp/network_switches.cc
 +++ b/services/network/public/cpp/network_switches.cc
 @@ -37,6 +37,10 @@ const char kLogNetLog[] = "log-net-log";
@@ -233,7 +233,7 @@ index 8b2d4ed3b39e35e1a078ad26a946cc752a830310..60859bc46e6420165a11e2c4bd03dcd8
  
  }  // namespace network
 diff --git a/services/network/public/cpp/network_switches.h b/services/network/public/cpp/network_switches.h
-index 83e78d0f3f705dc4082992ad8147bb5145308152..db64e5af747369823f91eb5d596ecb6f0cf94f96 100644
+index 3829a2d4360e6b04fc348712f236451ee704c575..28edfb93d4eaa3797a24691772850dc0009d50c9 100644
 --- a/services/network/public/cpp/network_switches.h
 +++ b/services/network/public/cpp/network_switches.h
 @@ -18,6 +18,7 @@ COMPONENT_EXPORT(NETWORK_CPP)

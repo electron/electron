@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
-Date: Thu May 16 13:52:12 JST 2019
+Date: Thu, 16 May 2019 13:52:12 +0900
 Subject: tabbed_window_lagging.patch
 
 Fix lagging when using tabbed windows.
@@ -12,10 +12,10 @@ we can not just cherry-pick them.
 Instead I'm just using the dummy fix and it does not seem to have side effects.
 
 diff --git a/ui/views/cocoa/bridged_native_widget.mm b/ui/views/cocoa/bridged_native_widget.mm
-index 69c5f1f44d7e..45aba19b2390 100644
+index 8841b59f6b70ac4687adfde61a1fba1424e57e48..cc3659319c4076043a0493798db3c7b8a4afd21e 100644
 --- a/ui/views/cocoa/bridged_native_widget.mm
 +++ b/ui/views/cocoa/bridged_native_widget.mm
-@@ -1037,6 +1037,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1039,6 +1039,12 @@ bool BridgedNativeWidget::ShouldRunCustomAnimationFor(
  // BridgedNativeWidget, ui::CATransactionObserver
  
  bool BridgedNativeWidget::ShouldWaitInPreCommit() {

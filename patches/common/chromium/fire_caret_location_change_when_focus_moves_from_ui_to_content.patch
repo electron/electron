@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aaron Leventhal <aleventhal@chromium.org>
+Date: Wed, 25 Jul 2018 14:05:53 +0000
+Subject: Fire caret location change when focus moves from UI to content
+
+When focus moves from UI back into content, but the same content element
+is focused as was previously, an accessibility event must be fired for
+the caret location change, as it is no longer in the UI.
+
+This fix assists screen magnification software that must track the caret
+location.
+
+Bug: 864563
+Change-Id: Ie9cc745288c124ddd73a54906c41dc16e07b9ff6
+Reviewed-on: https://chromium-review.googlesource.com/1140199
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Reviewed-by: Kinuko Yasuda <kinuko@chromium.org>
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Commit-Queue: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#577868}
+
+diff --git a/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc b/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc
+index c06ff416d83c943731166501260a7a4d9b36b078..5c8bdc8c73dc2047175f16c658428c9f2c038412 100644
+--- a/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc
++++ b/chrome/browser/renderer_host/site_per_process_text_input_browsertest.cc
+@@ -10,6 +10,8 @@
+ #include "build/build_config.h"
+ #include "chrome/browser/chrome_content_browser_client.h"
+ #include "chrome/browser/ui/browser.h"
++#include "chrome/browser/ui/browser_window.h"
++#include "chrome/browser/ui/location_bar/location_bar.h"
+ #include "chrome/browser/ui/tabs/tab_strip_model.h"
+ #include "chrome/test/base/in_process_browser_test.h"
+ #include "chrome/test/base/interactive_test_utils.h"
+@@ -639,6 +641,41 @@ IN_PROC_BROWSER_TEST_F(SitePerProcessTextInputManagerTest,
+   reset_state_observer.Wait();
+ }
+ 
++#if defined(USE_AURA)
++// This test creates a blank page and adds an <input> to it. Then, the <input>
++// is focused, UI is focused, then the input is refocused. The test verifies
++// that selection bounds change with the refocus (see https://crbug.com/864563).
++IN_PROC_BROWSER_TEST_F(SitePerProcessTextInputManagerTest,
++                       SelectionBoundsChangeAfterRefocusInput) {
++  CreateIframePage("a()");
++  content::RenderFrameHost* main_frame = GetFrame(IndexVector{});
++  content::RenderWidgetHostView* view = main_frame->GetView();
++  content::WebContents* web_contents = active_contents();
++  AddInputFieldToFrame(main_frame, "text", "", false);
++
++  auto focus_input_and_wait_for_selection_bounds_change =
++      [&main_frame, &web_contents, &view]() {
++        ViewSelectionBoundsChangedObserver bounds_observer(web_contents, view);
++        // SimulateKeyPress(web_contents, ui::DomKey::TAB, ui::DomCode::TAB,
++        //               ui::VKEY_TAB, false, true, false, false);
++        EXPECT_TRUE(ExecuteScript(main_frame,
++                                  "document.querySelector('input').focus();"));
++        bounds_observer.Wait();
++      };
++
++  focus_input_and_wait_for_selection_bounds_change();
++
++  // Focus location bar.
++  BrowserWindow* window = browser()->window();
++  ASSERT_TRUE(window);
++  LocationBar* location_bar = window->GetLocationBar();
++  ASSERT_TRUE(location_bar);
++  location_bar->FocusLocation(true);
++
++  focus_input_and_wait_for_selection_bounds_change();
++}
++#endif
++
+ // This test verifies that if we have a focused <input> in the main frame and
+ // the tab is closed, TextInputManager handles unregistering itself and
+ // notifying the observers properly (see https://crbug.com/669375).
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 09168578786f9ecfa3e1c44b134d7fe76af9504c..0eec5c7a6861f189192ab0cf8b3dbb3b452292e0 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -2339,11 +2339,14 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+     GetInputMethod()->OnTextInputTypeChanged(this);
+ 
+   const TextInputState* state = text_input_manager_->GetTextInputState();
+-  if (state && state->show_ime_if_needed &&
+-      state->type != ui::TEXT_INPUT_TYPE_NONE &&
+-      state->mode != ui::TEXT_INPUT_MODE_NONE &&
+-      GetInputMethod()->GetTextInputClient() == this) {
+-    GetInputMethod()->ShowVirtualKeyboardIfEnabled();
++  if (state && state->type != ui::TEXT_INPUT_TYPE_NONE &&
++      state->mode != ui::TEXT_INPUT_MODE_NONE) {
++    if (state->show_ime_if_needed &&
++        GetInputMethod()->GetTextInputClient() == this)
++      GetInputMethod()->ShowVirtualKeyboardIfEnabled();
++    // Ensure that accessibility events are fired when the selection location
++    // moves from UI back to content.
++    text_input_manager->NotifySelectionBoundsChanged(updated_view);
+   }
+ 
+   if (auto* render_widget_host = updated_view->host()) {
+diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
+index 24f32e7228aa2b7ece229312a79cc0c95251a31f..ce3a5ff83cf2e0ca9e3cda56308b3b00f6471f16 100644
+--- a/content/browser/renderer_host/text_input_manager.cc
++++ b/content/browser/renderer_host/text_input_manager.cc
+@@ -209,6 +209,11 @@ void TextInputManager::SelectionBoundsChanged(
+   selection_region_map_[view].first_selection_rect.set_size(
+       params.anchor_rect.size());
+ 
++  NotifySelectionBoundsChanged(view);
++}
++
++void TextInputManager::NotifySelectionBoundsChanged(
++    RenderWidgetHostViewBase* view) {
+   for (auto& observer : observer_list_)
+     observer.OnSelectionBoundsChanged(this, view);
+ }
+diff --git a/content/browser/renderer_host/text_input_manager.h b/content/browser/renderer_host/text_input_manager.h
+index 8e4ecfe5be2defa1578eec9be3c713be0b07e84d..d145a992144079401817e2e24f664576c493b3fb 100644
+--- a/content/browser/renderer_host/text_input_manager.h
++++ b/content/browser/renderer_host/text_input_manager.h
+@@ -184,6 +184,10 @@ class CONTENT_EXPORT TextInputManager {
+   void SelectionBoundsChanged(RenderWidgetHostViewBase* view,
+                               const ViewHostMsg_SelectionBounds_Params& params);
+ 
++  // Notify observers that the selection bounds have been updated. This is also
++  // called when a view with a selection is reactivated.
++  void NotifySelectionBoundsChanged(RenderWidgetHostViewBase* view);
++
+   // Called when the composition range and/or character bounds have changed.
+   void ImeCompositionRangeChanged(
+       RenderWidgetHostViewBase* view,

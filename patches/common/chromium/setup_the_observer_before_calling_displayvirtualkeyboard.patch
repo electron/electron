@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lan Wei <lanwei@chromium.org>
+Date: Wed, 12 Sep 2018 00:36:53 +0000
+Subject: Setup the observer before calling DisplayVirtualKeyboard
+
+This is a follow up CL of
+https://chromium-review.googlesource.com/c/chromium/src/+/1194406
+
+We should setup the keyboard observer before displaying the virtual
+keyboard otherwise the observer won't see the change of the virtual
+keyboard.
+
+Bug: 871756
+Change-Id: I6b13072ed06d9e10d188c553082b411f2bb09326
+Reviewed-on: https://chromium-review.googlesource.com/1220560
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Commit-Queue: Lan Wei <lanwei@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#590553}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index de9490d94d98afa6812e81b0cf50fb4adc81887c..a1ae227501930e918ea87d2013f6c300fd83644d 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -756,10 +756,12 @@ void RenderWidgetHostViewAura::FocusedNodeTouched(bool editable) {
+     return;
+   auto* controller = input_method->GetInputMethodKeyboardController();
+   if (editable && host()->GetView() && host()->delegate()) {
+-    keyboard_observer_.reset(nullptr);
+-    if (last_pointer_type_ == ui::EventPointerType::POINTER_TYPE_TOUCH &&
+-        controller->DisplayVirtualKeyboard()) {
++    if (last_pointer_type_ == ui::EventPointerType::POINTER_TYPE_TOUCH) {
+       keyboard_observer_.reset(new WinScreenKeyboardObserver(this));
++      if (!controller->DisplayVirtualKeyboard())
++        keyboard_observer_.reset(nullptr);
++    } else {
++      keyboard_observer_.reset(nullptr);
+     }
+     virtual_keyboard_requested_ = keyboard_observer_.get();
+   } else {

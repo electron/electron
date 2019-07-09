@@ -41,7 +41,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/cont
 index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518325ef70a 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -135,6 +135,7 @@
+@@ -135,6 +135,7 @@ NSDictionary* attributeToMethodNameMap = nil;
  // VoiceOver uses -1 to mean "no limit" for AXResultsLimit.
  const int kAXResultsLimitNoLimit = -1;
  
@@ -49,7 +49,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  extern "C" {
  
  // The following are private accessibility APIs required for cursor navigation
-@@ -341,6 +342,7 @@ void AddMisspelledTextAttributes(
+@@ -341,6 +342,7 @@ NSAttributedString* GetAttributedTextForTextMarkerRange(
    AddMisspelledTextAttributes(text_only_objects, attributed_text);
    return [attributed_text attributedSubstringFromRange:range];
  }
@@ -57,7 +57,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  
  // Returns an autoreleased copy of the AXNodeData's attribute.
  NSString* NSStringForStringAttribute(
-@@ -595,7 +597,9 @@ + (void)initialize {
+@@ -595,7 +597,9 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
        {NSAccessibilityDOMIdentifierAttribute, @"domIdentifier"},
        {NSAccessibilityEditableAncestorAttribute, @"editableAncestor"},
        {NSAccessibilityEnabledAttribute, @"enabled"},
@@ -67,7 +67,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
        {NSAccessibilityExpandedAttribute, @"expanded"},
        {NSAccessibilityFocusableAncestorAttribute, @"focusableAncestor"},
        {NSAccessibilityFocusedAttribute, @"focused"},
-@@ -630,13 +634,17 @@ + (void)initialize {
+@@ -630,13 +634,17 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
        {NSAccessibilityRowsAttribute, @"rows"},
        // TODO(aboxhall): expose
        // NSAccessibilityServesAsTitleForUIElementsAttribute
@@ -85,7 +85,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
        {NSAccessibilitySizeAttribute, @"size"},
        {NSAccessibilitySortDirectionAttribute, @"sortDirection"},
        {NSAccessibilitySubroleAttribute, @"subrole"},
-@@ -1114,6 +1122,7 @@ - (NSNumber*)enabled {
+@@ -1114,6 +1122,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
                                    ax::mojom::Restriction::kDisabled];
  }
  
@@ -93,7 +93,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  // Returns a text marker that points to the last character in the document that
  // can be selected with VoiceOver.
  - (id)endTextMarker {
-@@ -1124,6 +1133,7 @@ - (id)endTextMarker {
+@@ -1124,6 +1133,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    BrowserAccessibilityPositionInstance position = root->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtEndOfAnchor());
  }
@@ -101,7 +101,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  
  - (NSNumber*)expanded {
    if (![self instanceActive])
-@@ -2029,6 +2039,7 @@ - (NSValue*)selectedTextRange {
+@@ -2029,6 +2039,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
  }
  
@@ -109,7 +109,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
-@@ -2061,6 +2072,7 @@ - (id)selectedTextMarkerRange {
+@@ -2061,6 +2072,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
                                                 anchorAffinity, *focusObject,
                                                 focusOffset, focusAffinity));
  }
@@ -117,7 +117,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  
  - (NSValue*)size {
    if (![self instanceActive])
-@@ -2093,6 +2105,7 @@ - (NSString*)sortDirection {
+@@ -2093,6 +2105,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    return nil;
  }
  
@@ -125,7 +125,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  // Returns a text marker that points to the first character in the document that
  // can be selected with VoiceOver.
  - (id)startTextMarker {
-@@ -2103,6 +2116,7 @@ - (id)startTextMarker {
+@@ -2103,6 +2116,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    BrowserAccessibilityPositionInstance position = root->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtStartOfAnchor());
  }
@@ -133,7 +133,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  
  // Returns a subrole based upon the role.
  - (NSString*) subrole {
-@@ -2405,12 +2419,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
+@@ -2405,12 +2419,14 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    NSMutableAttributedString* attributedValue =
        [[[NSMutableAttributedString alloc] initWithString:value] autorelease];
  
@@ -148,7 +148,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  
    return [attributedValue attributedSubstringFromRange:range];
  }
-@@ -2527,6 +2543,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2527,6 +2543,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
      return nil;
    }
  
@@ -156,7 +156,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
    if ([attribute isEqualToString:@"AXUIElementForTextMarker"]) {
      BrowserAccessibilityPositionInstance position =
          CreatePositionFromTextMarker(parameter);
-@@ -2704,6 +2721,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2704,6 +2721,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
      NSString* text = GetTextForTextMarkerRange(parameter);
      return [NSNumber numberWithInt:[text length]];
    }
@@ -164,7 +164,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
  
    if ([attribute isEqualToString:
        NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -2741,6 +2759,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2741,6 +2759,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
      return nil;
    }
  
@@ -172,7 +172,7 @@ index 07e9862b76a920438a779f22d67d3a45ab39abf7..efa52aa9de2f819f28109978c8cef518
    if ([attribute isEqualToString:
             NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
      BrowserAccessibilityPositionInstance position =
-@@ -2820,6 +2839,7 @@ AXPlatformRange range(position->CreatePreviousLineStartPosition(
+@@ -2820,6 +2839,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
  
      return @(child->GetIndexInParent());
    }
@@ -184,7 +184,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm 
 index 8e32a08226079c6d7515b8e784babacb3226ecd6..93bb7273684fa529bdc6049af2ed379f8b059397 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -437,6 +437,7 @@
+@@ -437,6 +437,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -192,7 +192,7 @@ index 8e32a08226079c6d7515b8e784babacb3226ecd6..93bb7273684fa529bdc6049af2ed379f
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -444,6 +445,7 @@
+@@ -444,6 +445,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -220,7 +220,7 @@ index 1e2cc38d3868ceccf8e45f5f82f57bcaa478f982..daa934c345e2686fd2174b7721d0f69a
  
  namespace content {
  
-@@ -38,6 +40,7 @@ void _LSSetApplicationLaunchServicesServerConnectionStatus(
+@@ -38,6 +40,7 @@ namespace {
  // This disconnects from the window server, and then indicates that Chrome
  // should continue execution without access to launchservicesd.
  void DisconnectWindowServer() {
@@ -248,7 +248,7 @@ index 8b2092ec78f9f6bc1bd4c8af21ada74538f54d29..4f2ee8e2809790df68aedcee09462631
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -47,6 +48,7 @@
+@@ -47,6 +48,7 @@ extern "C" {
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -256,7 +256,7 @@ index 8b2092ec78f9f6bc1bd4c8af21ada74538f54d29..4f2ee8e2809790df68aedcee09462631
  
  namespace {
  
-@@ -120,8 +122,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -120,8 +122,10 @@ BluetoothAdapterMac::BluetoothAdapterMac()
        controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -267,7 +267,7 @@ index 8b2092ec78f9f6bc1bd4c8af21ada74538f54d29..4f2ee8e2809790df68aedcee09462631
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -314,8 +318,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -314,8 +318,12 @@ bool BluetoothAdapterMac::IsLowEnergyAvailable() {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

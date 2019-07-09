@@ -1,9 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Milan Burda <milan.burda@gmail.com>
 Date: Sun, 31 Mar 2019 21:12:59 +0200
-Subject: =?UTF-8?q?Enable=20support=20for=20sending=20HTTPS=20URLs=20via?=
- =?UTF-8?q?=20QUIC=20proxies=20only=20when=0Athe=20finch=20param=20enable?=
- =?UTF-8?q?=5Fquic=5Fproxies=5Ffor=5Fhttps=5Furls=20is=20set.?=
+Subject: Enable support for sending HTTPS URLs via QUIC proxies only when the
+ finch param enable_quic_proxies_for_https_urls is set.
 
 Backports:
 - https://chromium-review.googlesource.com/c/chromium/src/+/1377709
