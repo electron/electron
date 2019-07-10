@@ -77,7 +77,10 @@ class FileChooserDialog {
 
     if (parent_) {
       parent_->SetEnabled(false);
-      libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      if (GTK_IS_WIDGET(dialog_))
+        libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      else
+        SetGtkTransientForAura(parent_->GetNativeWindow());
       if (GTK_IS_WINDOW(dialog_)) {
         gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
       } else {
@@ -236,6 +239,19 @@ class FileChooserDialog {
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
 
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
+
+  // Sets |dialog| as transient for |parent|, which will keep it on top and
+  // center it above |parent|. Do nothing if |parent| is nullptr.
+  void SetGtkTransientForAura(aura::Window* parent) {
+    if (!parent || !parent->GetHost())
+      return;
+
+    void (*dl_gtk_native_dialog_set_transient_for)(void*, GtkWindow*) = nullptr;
+    g_module_symbol(
+        gtk_module_, "gtk_native_dialog_set_transient_for",
+        reinterpret_cast<void**>(&dl_gtk_native_dialog_set_transient_for);
+    dl_gtk_native_dialog_set_transient_for(dialog_, reinterpret_cast<GtkWindow*>(parent));
+  }
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkFileChooser* widget,
