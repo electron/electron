@@ -836,6 +836,27 @@ describe('BrowserWindow module', () => {
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
       })
+      it('<webview> works in a scriptable popup', (done) => {
+        const preload = path.join(fixtures, 'api', 'new-window-webview-preload.js')
+
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegrationInSubFrames: true,
+            nativeWindowOpen: true,
+            webviewTag: true,
+            preload
+          }
+        })
+
+        ipcRenderer.send('set-options-on-next-new-window', w.webContents.id, 'show', false)
+
+        ipcMain.once('webview-loaded', () => {
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'))
+      })
       it('should inherit the nativeWindowOpen setting in opened windows', (done) => {
         w.destroy()
         w = new BrowserWindow({

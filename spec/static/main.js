@@ -231,6 +231,12 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
+ipcMain.on('set-options-on-next-new-window', (event, id, key, value) => {
+  webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
+    options[key] = value
+  })
+})
+
 ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
   webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
     options.webPreferences[key] = value
