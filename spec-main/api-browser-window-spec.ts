@@ -2467,4 +2467,34 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('maximize event', () => {
+    afterEach(closeAllWindows)
+    it('emits when window is maximized', (done) => {
+      const w = new BrowserWindow({show: false})
+      w.once('maximize', () => { done() })
+      w.show()
+      w.maximize()
+    })
+  })
+
+  describe('unmaximize event', () => {
+    afterEach(closeAllWindows)
+    it('emits when window is unmaximized', (done) => {
+      const w = new BrowserWindow({show: false})
+      w.once('unmaximize', () => { done() })
+      w.show()
+      w.maximize()
+      w.unmaximize()
+    })
+  })
+
+  describe('minimize event', () => {
+    afterEach(closeAllWindows)
+    it('emits when window is minimized', (done) => {
+      const w = new BrowserWindow({show: false})
+      w.once('minimize', () => { done() })
+      w.show()
+      w.minimize()
+    })
+  })
 })

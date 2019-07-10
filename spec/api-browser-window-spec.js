@@ -112,37 +112,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('maximize event', () => {
-    if (isCI) return
-
-    it('emits when window is maximized', (done) => {
-      w.once('maximize', () => { done() })
-      w.show()
-      w.maximize()
-    })
-  })
-
-  describe('unmaximize event', () => {
-    if (isCI) return
-
-    it('emits when window is unmaximized', (done) => {
-      w.once('unmaximize', () => { done() })
-      w.show()
-      w.maximize()
-      w.unmaximize()
-    })
-  })
-
-  describe('minimize event', () => {
-    if (isCI) return
-
-    it('emits when window is minimized', (done) => {
-      w.once('minimize', () => { done() })
-      w.show()
-      w.minimize()
-    })
-  })
-
   describe('focus event', () => {
     it('should not emit if focusing on a main window with a modal open', (done) => {
       const childWindowClosed = false
