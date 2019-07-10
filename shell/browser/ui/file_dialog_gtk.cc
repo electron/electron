@@ -62,9 +62,9 @@ class FileChooserDialog {
     void*(dl_gtk_file_chooser_native_new)(const char*, GtkWindow*,
                                           GtkFileChooserAction, const char*,
                                           const char*) = nullptr;
-    bool found =
-        g_module_symbol(gtk_module_, "gtk_file_chooser_native_new",
-                        static_cast<void*>(&dl_gtk_file_chooser_native_new));
+    bool found = g_module_symbol(
+        gtk_module_, "gtk_file_chooser_native_new",
+        reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
     if (gtk_module_ != nullptr && found &&
         dl_gtk_file_chooser_native_new != nullptr) {
       dialog_ = GTK_FILE_CHOOSER(dl_gtk_file_chooser_native_new(
@@ -82,8 +82,9 @@ class FileChooserDialog {
         gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
       } else {
         void (*dl_gtk_native_dialog_set_modal)(void*, bool) = nullptr;
-        g_module_symbol(gtk_module_, "gtk_native_dialog_set_modal",
-                        static_cast<void*>(&dl_gtk_native_dialog_set_modal));
+        g_module_symbol(
+            gtk_module_, "gtk_native_dialog_set_modal",
+            reinterpret_cast<void**>(&dl_gtk_native_dialog_set_modal));
         dl_gtk_native_dialog_set_modal(static_cast<void*>(dialog_), TRUE);
       }
     }
@@ -123,7 +124,7 @@ class FileChooserDialog {
     } else {
       void (*dl_gtk_native_dialog_destroy)(void*) = nullptr;
       g_module_symbol(gtk_module_, "gtk_native_dialog_destroy",
-                      static_cast<void*>(&dl_gtk_native_dialog_destroy));
+                      reinterpret_cast<void**>(&dl_gtk_native_dialog_destroy));
       dl_gtk_native_dialog_destroy(static_cast<void*>(dialog_));
     }
     if (gtk_module_ != nullptr) {
@@ -167,7 +168,7 @@ class FileChooserDialog {
     } else {
       void (*dl_gtk_native_dialog_show)(void*) = nullptr;
       g_module_symbol(gtk_module_, "gtk_native_dialog_show",
-                      static_cast<void*>(&dl_gtk_native_dialog_show));
+                      reinterpret_cast<void**>(&dl_gtk_native_dialog_show));
       dl_gtk_native_dialog_show(static_cast<void*>(dialog_));
     }
 
@@ -211,7 +212,7 @@ class FileChooserDialog {
   CHROMEG_CALLBACK_1(FileChooserDialog,
                      void,
                      OnFileDialogResponse,
-                     GtkWidget*,
+                     GtkFileChooser*,
                      int);
 
   GtkFileChooser* dialog() const { return dialog_; }
@@ -232,18 +233,19 @@ class FileChooserDialog {
   std::unique_ptr<electron::util::Promise> open_promise_;
 
   // Callback for when we update the preview for the selection.
-  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkWidget*);
+  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
 
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
 
-void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
+void FileChooserDialog::OnFileDialogResponse(GtkFileChooser* widget,
+                                             int response) {
   if (GTK_IS_WIDGET(dialog_)) {
     gtk_widget_hide(GTK_WIDGET(dialog_));
   } else {
     void (*dl_gtk_native_dialog_hide)(void*) = nullptr;
     g_module_symbol(gtk_module_, "gtk_native_dialog_hide",
-                    static_cast<void*>(&dl_gtk_native_dialog_hide));
+                    reinterpret_cast<void**>(&dl_gtk_native_dialog_hide));
     dl_gtk_native_dialog_hide(static_cast<void*>(dialog_));
   }
   if (save_promise_) {
@@ -334,7 +336,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   } else {
     void (*dl_gtk_native_dialog_show)(void*) = nullptr;
     g_module_symbol(open_dialog.gtk_module(), "gtk_native_dialog_show",
-                    static_cast<void*>(&dl_gtk_native_dialog_show));
+                    reinterpret_cast<void**>(&dl_gtk_native_dialog_show));
     dl_gtk_native_dialog_show(static_cast<void*>(open_dialog.dialog()));
   }
 
@@ -344,7 +346,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   } else {
     int (*dl_gtk_native_dialog_run)(void*) = nullptr;
     g_module_symbol(open_dialog.gtk_module(), "gtk_native_dialog_run",
-                    static_cast<void*>(&dl_gtk_native_dialog_run));
+                    reinterpret_cast<void**>(&dl_gtk_native_dialog_run));
     response =
         dl_gtk_native_dialog_run(static_cast<void*>(open_dialog.dialog()));
   }
@@ -373,7 +375,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   } else {
     void (*dl_gtk_native_dialog_show)(void*) = nullptr;
     g_module_symbol(save_dialog.gtk_module(), "gtk_native_dialog_show",
-                    static_cast<void**>(&dl_gtk_native_dialog_show));
+                    reinterpret_cast<void**>(&dl_gtk_native_dialog_show));
     dl_gtk_native_dialog_show(static_cast<void*>(save_dialog.dialog()));
   }
 
@@ -383,7 +385,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   } else {
     int (*dl_gtk_native_dialog_run)(void*) = nullptr;
     g_module_symbol(save_dialog.gtk_module(), "gtk_native_dialog_run",
-                    static_cast<void*>(&dl_gtk_native_dialog_run));
+                    reinterpret_cast<void**>(&dl_gtk_native_dialog_run));
     response =
         dl_gtk_native_dialog_run(static_cast<void*>(save_dialog.dialog()));
   }
