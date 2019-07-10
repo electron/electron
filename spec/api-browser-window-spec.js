@@ -112,34 +112,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('savePage method', () => {
-    const savePageDir = path.join(fixtures, 'save_page')
-    const savePageHtmlPath = path.join(savePageDir, 'save_page.html')
-    const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js')
-    const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css')
-
-    after(() => {
-      try {
-        fs.unlinkSync(savePageCssPath)
-        fs.unlinkSync(savePageJsPath)
-        fs.unlinkSync(savePageHtmlPath)
-        fs.rmdirSync(path.join(savePageDir, 'save_page_files'))
-        fs.rmdirSync(savePageDir)
-      } catch (e) {
-        // Ignore error
-      }
-    })
-
-    it('should save page to disk', async () => {
-      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'))
-      await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete')
-
-      expect(fs.existsSync(savePageHtmlPath)).to.be.true()
-      expect(fs.existsSync(savePageJsPath)).to.be.true()
-      expect(fs.existsSync(savePageCssPath)).to.be.true()
-    })
-  })
-
   describe('BrowserWindow options argument is optional', () => {
     it('should create a window with default size (800x600)', () => {
       w.destroy()

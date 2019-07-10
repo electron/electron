@@ -2635,4 +2635,35 @@ describe('BrowserWindow module', () => {
       }).to.throw('Error processing argument at index 1, conversion failure from true')
     })
   })
+
+  describe('savePage method', () => {
+    const savePageDir = path.join(fixtures, 'save_page')
+    const savePageHtmlPath = path.join(savePageDir, 'save_page.html')
+    const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js')
+    const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css')
+
+    after(() => {
+      try {
+        fs.unlinkSync(savePageCssPath)
+        fs.unlinkSync(savePageJsPath)
+        fs.unlinkSync(savePageHtmlPath)
+        fs.rmdirSync(path.join(savePageDir, 'save_page_files'))
+        fs.rmdirSync(savePageDir)
+      } catch (e) {
+        // Ignore error
+      }
+    })
+    afterEach(closeAllWindows)
+
+    it('should save page to disk', async () => {
+      const w = new BrowserWindow({show: false})
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'))
+      await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete')
+
+      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path')
+      expect(fs.existsSync(savePageJsPath)).to.be.true('js path')
+      expect(fs.existsSync(savePageCssPath)).to.be.true('css path')
+    })
+  })
+
 })
