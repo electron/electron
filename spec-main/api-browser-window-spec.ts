@@ -2427,4 +2427,44 @@ describe('BrowserWindow module', () => {
       }
     })
   })
+
+  describe('new-window event', () => {
+    afterEach(closeAllWindows)
+
+    it('emits when window.open is called', (done) => {
+      const w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
+        e.preventDefault()
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('host')
+        expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature')
+        done()
+      })
+      w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
+    })
+
+    it('emits when window.open is called with no webPreferences', (done) => {
+      const w = new BrowserWindow({ show: false })
+      w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
+        e.preventDefault()
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('host')
+        expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature')
+        done()
+      })
+      w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
+    })
+
+    it('emits when link with target is called', (done) => {
+      const w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w.webContents.once('new-window', (e, url, frameName) => {
+        e.preventDefault()
+        expect(url).to.equal('http://host/')
+        expect(frameName).to.equal('target')
+        done()
+      })
+      w.loadFile(path.join(fixtures, 'pages', 'target-name.html'))
+    })
+  })
+
 })
