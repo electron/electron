@@ -955,6 +955,10 @@ Returns [`Rectangle`](structures/rectangle.md) - Contains the window bounds of t
 
 Disable or enable the window.
 
+#### `win.isEnabled()`
+
+Returns Boolean - whether the window is enabled.
+
 #### `win.setSize(width, height[, animate])`
 
 * `width` Integer
@@ -1562,7 +1566,7 @@ On macOS it does not remove the focus from the window.
 
 #### `win.setParentWindow(parent)`
 
-* `parent` BrowserWindow
+* `parent` BrowserWindow | null
 
 Sets `parent` as current window's parent window, passing `null` will turn
 current window into a top-level window.

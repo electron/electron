@@ -2498,64 +2498,6 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('focus event', () => {
-    afterEach(closeAllWindows)
-    it('should not emit if focusing on a main window with a modal open', (done) => {
-      const w = new BrowserWindow({show: false})
-      const child = new BrowserWindow({
-        parent: w,
-        modal: true,
-        show: false
-      })
-
-      child.once('ready-to-show', () => {
-        child.show()
-      })
-
-      child.on('show', () => {
-        w.once('focus', () => {
-          expect(child.isDestroyed()).to.equal(true)
-          done()
-        })
-        w.focus() // this should not trigger the above listener
-        child.close()
-      })
-
-      // act
-      child.loadURL('about:blank')
-      w.show()
-    })
-  })
-
-  ifdescribe(process.platform === 'darwin')('sheet-begin event', () => {
-    afterEach(closeAllWindows)
-
-    it('emits when window opens a sheet', (done) => {
-      const w = new BrowserWindow()
-      w.once('sheet-begin', () => {
-        done()
-      })
-      new BrowserWindow({
-        modal: true,
-        parent: w
-      })
-    })
-  })
-
-  ifdescribe(process.platform === 'darwin')('sheet-end event', () => {
-    afterEach(closeAllWindows)
-
-    it('emits when window has closed a sheet', (done) => {
-      const w = new BrowserWindow()
-      const sheet = new BrowserWindow({
-        modal: true,
-        parent: w
-      })
-      w.once('sheet-end', () => { done() })
-      sheet.close()
-    })
-  })
-
   describe('beginFrameSubscription method', () => {
     it('does not crash when callback returns nothing', (done) => {
       const w = new BrowserWindow({show: false})
@@ -2741,4 +2683,168 @@ describe('BrowserWindow module', () => {
       })
     })
   })
+
+  describe('parent window', () => {
+    afterEach(closeAllWindows)
+
+    it('should not emit focus event if focusing on a main window with a modal open', (done) => {
+      const w = new BrowserWindow({show: false})
+      const child = new BrowserWindow({
+        parent: w,
+        modal: true,
+        show: false
+      })
+
+      child.once('ready-to-show', () => {
+        child.show()
+      })
+
+      child.on('show', () => {
+        w.once('focus', () => {
+          expect(child.isDestroyed()).to.equal(true)
+          done()
+        })
+        w.focus() // this should not trigger the above listener
+        child.close()
+      })
+
+      // act
+      child.loadURL('about:blank')
+      w.show()
+    })
+
+    ifit(process.platform === 'darwin')('sheet-begin event emits when window opens a sheet', (done) => {
+      const w = new BrowserWindow()
+      w.once('sheet-begin', () => {
+        done()
+      })
+      new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+    })
+
+    ifit(process.platform === 'darwin')('sheet-end event emits when window has closed a sheet', (done) => {
+      const w = new BrowserWindow()
+      const sheet = new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+      w.once('sheet-end', () => { done() })
+      sheet.close()
+    })
+
+    describe('parent option', () => {
+      it('sets parent window', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false, parent: w})
+        expect(c.getParentWindow()).to.equal(w)
+      })
+      it('adds window to child windows of parent', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false, parent: w})
+        expect(w.getChildWindows()).to.deep.equal([c])
+      })
+      it('removes from child windows of parent when window is closed', (done) => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false, parent: w})
+        c.once('closed', () => {
+          // The child window list is not immediately cleared, so wait a tick until it's ready.
+          setTimeout(() => {
+            expect(w.getChildWindows().length).to.equal(0)
+            done()
+          })
+        })
+        c.close()
+      })
+
+      it('should not affect the show option', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false, parent: w})
+        expect(c.isVisible()).to.be.false('child is visible')
+        expect(c.getParentWindow().isVisible()).to.be.false('parent is visible')
+      })
+    })
+
+    describe('win.setParentWindow(parent)', () => {
+      it('sets parent window', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false})
+        expect(w.getParentWindow()).to.be.null('w.parent')
+        expect(c.getParentWindow()).to.be.null('c.parent')
+        c.setParentWindow(w)
+        expect(c.getParentWindow()).to.equal(w)
+        c.setParentWindow(null)
+        expect(c.getParentWindow()).to.be.null('c.parent')
+      })
+      it('adds window to child windows of parent', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false})
+        expect(w.getChildWindows()).to.deep.equal([])
+        c.setParentWindow(w)
+        expect(w.getChildWindows()).to.deep.equal([c])
+        c.setParentWindow(null)
+        expect(w.getChildWindows()).to.deep.equal([])
+      })
+      it('removes from child windows of parent when window is closed', (done) => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({show: false})
+        c.once('closed', () => {
+          // The child window list is not immediately cleared, so wait a tick until it's ready.
+          setTimeout(() => {
+            expect(w.getChildWindows().length).to.equal(0)
+            done()
+          })
+        })
+        c.setParentWindow(w)
+        c.close()
+      })
+    })
+
+    // The isEnabled API is not reliable on macOS.
+    ifdescribe(process.platform !== 'darwin')('modal option', () => {
+      it('disables parent window', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({ show: false, parent: w, modal: true })
+        expect(w.isEnabled()).to.be.true('w.isEnabled')
+        c.show()
+        expect(w.isEnabled()).to.be.false('w.isEnabled')
+      })
+      it('re-enables an enabled parent window when closed', (done) => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({ show: false, parent: w, modal: true })
+        c.once('closed', () => {
+          expect(w.isEnabled()).to.be.true('w.isEnabled')
+          done()
+        })
+        c.show()
+        c.close()
+      })
+      it('does not re-enable a disabled parent window when closed', (done) => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({ show: false, parent: w, modal: true })
+        c.once('closed', () => {
+          expect(w.isEnabled()).to.be.false('w.isEnabled')
+          done()
+        })
+        w.setEnabled(false)
+        c.show()
+        c.close()
+      })
+      it('disables parent window recursively', () => {
+        const w = new BrowserWindow({show: false})
+        const c = new BrowserWindow({ show: false, parent: w, modal: true })
+        const c2 = new BrowserWindow({ show: false, parent: w, modal: true })
+        c.show()
+        expect(w.isEnabled()).to.be.false('w.isEnabled')
+        c2.show()
+        expect(w.isEnabled()).to.be.false('w.isEnabled')
+        c.destroy()
+        expect(w.isEnabled()).to.be.false('w.isEnabled')
+        c2.destroy()
+        expect(w.isEnabled()).to.be.true('w.isEnabled')
+      })
+    })
+  })
+
 })
