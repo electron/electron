@@ -2556,4 +2556,83 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('beginFrameSubscription method', () => {
+    it('does not crash when callback returns nothing', (done) => {
+      const w = new BrowserWindow({show: false})
+      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
+      w.webContents.on('dom-ready', () => {
+        w.webContents.beginFrameSubscription(function (data) {
+          // Pending endFrameSubscription to next tick can reliably reproduce
+          // a crash which happens when nothing is returned in the callback.
+          setTimeout(() => {
+            w.webContents.endFrameSubscription()
+            done()
+          })
+        })
+      })
+    })
+
+    it('subscribes to frame updates', (done) => {
+      const w = new BrowserWindow({show: false})
+      let called = false
+      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
+      w.webContents.on('dom-ready', () => {
+        w.webContents.beginFrameSubscription(function (data) {
+          // This callback might be called twice.
+          if (called) return
+          called = true
+
+          expect(data.constructor.name).to.equal('NativeImage')
+          expect(data.isEmpty()).to.be.false('data is empty')
+
+          w.webContents.endFrameSubscription()
+          done()
+        })
+      })
+    })
+
+    it('subscribes to frame updates (only dirty rectangle)', (done) => {
+      const w = new BrowserWindow({show: false})
+      let called = false
+      let gotInitialFullSizeFrame = false
+      const [contentWidth, contentHeight] = w.getContentSize()
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.beginFrameSubscription(true, (image, rect) => {
+          if (image.isEmpty()) {
+            // Chromium sometimes sends a 0x0 frame at the beginning of the
+            // page load.
+            return
+          }
+          if (rect.height === contentHeight && rect.width === contentWidth &&
+              !gotInitialFullSizeFrame) {
+            // The initial frame is full-size, but we're looking for a call
+            // with just the dirty-rect. The next frame should be a smaller
+            // rect.
+            gotInitialFullSizeFrame = true
+            return
+          }
+          // This callback might be called twice.
+          if (called) return
+          // We asked for just the dirty rectangle, so we expect to receive a
+          // rect smaller than the full size.
+          // TODO(jeremy): this is failing on windows currently; investigate.
+          // assert(rect.width < contentWidth || rect.height < contentHeight)
+          called = true
+
+          const expectedSize = rect.width * rect.height * 4
+          expect(image.getBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize)
+          w.webContents.endFrameSubscription()
+          done()
+        })
+      })
+      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
+    })
+
+    it('throws error when subscriber is not well defined', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.webContents.beginFrameSubscription(true, true as any)
+      }).to.throw('Error processing argument at index 1, conversion failure from true')
+    })
+  })
 })
