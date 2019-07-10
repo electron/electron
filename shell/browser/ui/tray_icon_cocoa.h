@@ -27,7 +27,6 @@ class TrayIconCocoa : public TrayIcon {
   void SetToolTip(const std::string& tool_tip) override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() override;
-  void SetHighlightMode(TrayIcon::HighlightMode mode) override;
   void SetIgnoreDoubleClickEvents(bool ignore) override;
   bool GetIgnoreDoubleClickEvents() override;
   void PopUpOnUI(AtomMenuModel* menu_model);

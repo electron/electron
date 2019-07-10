@@ -68,6 +68,11 @@ webFrame.setIsolatedWorldInfo(
 
 This property was removed in Chromium 77, and as such is no longer available.
 
+### Removal of deprecated `setHighlightMode` method on `Tray`
+
+Under macOS Catalina our former Tray implementation breaks.
+Apple's native substitute doesn't support changing the highlighting behavior.
+
 ## Planned Breaking API Changes (6.0)
 
 ### `win.setMenu(null)`
