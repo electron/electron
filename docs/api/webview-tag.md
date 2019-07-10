@@ -277,6 +277,11 @@ webview.addEventListener('dom-ready', () => {
   * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
+Returns `Promise<void>` - The promise will resolve when the page has finished loading
+(see [`did-finish-load`](webview-tag.md#event-did-finish-load)), and rejects
+if the page fails to load (see
+[`did-fail-load`](webview-tag.md#event-did-fail-load)).
+
 Loads the `url` in the webview, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
 
