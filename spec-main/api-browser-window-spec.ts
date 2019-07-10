@@ -2497,4 +2497,63 @@ describe('BrowserWindow module', () => {
       w.minimize()
     })
   })
+
+  describe('focus event', () => {
+    afterEach(closeAllWindows)
+    it('should not emit if focusing on a main window with a modal open', (done) => {
+      const w = new BrowserWindow({show: false})
+      const child = new BrowserWindow({
+        parent: w,
+        modal: true,
+        show: false
+      })
+
+      child.once('ready-to-show', () => {
+        child.show()
+      })
+
+      child.on('show', () => {
+        w.once('focus', () => {
+          expect(child.isDestroyed()).to.equal(true)
+          done()
+        })
+        w.focus() // this should not trigger the above listener
+        child.close()
+      })
+
+      // act
+      child.loadURL('about:blank')
+      w.show()
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('sheet-begin event', () => {
+    afterEach(closeAllWindows)
+
+    it('emits when window opens a sheet', (done) => {
+      const w = new BrowserWindow()
+      w.once('sheet-begin', () => {
+        done()
+      })
+      new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('sheet-end event', () => {
+    afterEach(closeAllWindows)
+
+    it('emits when window has closed a sheet', (done) => {
+      const w = new BrowserWindow()
+      const sheet = new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+      w.once('sheet-end', () => { done() })
+      sheet.close()
+    })
+  })
+
 })
