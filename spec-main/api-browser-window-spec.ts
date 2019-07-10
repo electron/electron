@@ -2145,7 +2145,7 @@ describe('BrowserWindow module', () => {
               nodeIntegrationInSubFrames: true
             }
           })
-  
+
           w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
             options.webPreferences.preload = path.join(fixtures, 'api', 'window-open-preload.js')
           })
@@ -2155,7 +2155,7 @@ describe('BrowserWindow module', () => {
           expect(args).to.include('--native-window-open')
           expect(typeofProcess).to.eql('undefined')
         })
-  
+
         it('window.opener is not null when window.location is changed to a new origin', async () => {
           const w = new BrowserWindow({
             show: false,
@@ -2165,7 +2165,7 @@ describe('BrowserWindow module', () => {
               nodeIntegrationInSubFrames: true
             }
           })
-  
+
           w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
             options.webPreferences.preload = path.join(fixtures, 'api', 'window-open-preload.js')
           })
@@ -2671,6 +2671,74 @@ describe('BrowserWindow module', () => {
     it('should create a window with default size (800x600)', () => {
       const w = new BrowserWindow()
       expect(w.getSize()).to.deep.equal([800, 600])
+    })
+  })
+
+  describe('BrowserWindow.restore()', () => {
+    afterEach(closeAllWindows)
+    it('should restore the previous window size', () => {
+      const w = new BrowserWindow({
+        minWidth: 800,
+        width: 800
+      })
+
+      const initialSize = w.getSize()
+      w.minimize()
+      w.restore()
+      expectBoundsEqual(w.getSize(), initialSize)
+    })
+  })
+
+  describe('BrowserWindow.unmaximize()', () => {
+    afterEach(closeAllWindows)
+    it('should restore the previous window position', () => {
+      const w = new BrowserWindow()
+
+      const initialPosition = w.getPosition()
+      w.maximize()
+      w.unmaximize()
+      expectBoundsEqual(w.getPosition(), initialPosition)
+    })
+  })
+
+  describe('setFullScreen(false)', () => {
+    afterEach(closeAllWindows)
+
+    // only applicable to windows: https://github.com/electron/electron/issues/6036
+    ifdescribe(process.platform === 'win32')('on windows', () => {
+      it('should restore a normal visible window from a fullscreen startup state', async () => {
+        const w = new BrowserWindow({show: false})
+        await w.loadURL('about:blank')
+        // start fullscreen and hidden
+        w.setFullScreen(true)
+        w.show()
+        await emittedOnce(w, 'show')
+        w.setFullScreen(false)
+        await emittedOnce(w, 'leave-full-screen')
+        expect(w.isVisible()).to.be.true('visible')
+        expect(w.isFullScreen()).to.be.false('fullscreen')
+      })
+      it('should keep window hidden if already in hidden state', async () => {
+        const w = new BrowserWindow({show: false})
+        await w.loadURL('about:blank')
+        w.setFullScreen(false)
+        await emittedOnce(w, 'leave-full-screen')
+        expect(w.isVisible()).to.be.false('visible')
+        expect(w.isFullScreen()).to.be.false('fullscreen')
+      })
+    })
+
+    ifdescribe(process.platform === 'darwin')('BrowserWindow.setFullScreen(false) when HTML fullscreen', () => {
+      it('exits HTML fullscreen when window leaves fullscreen', async () => {
+        const w = new BrowserWindow()
+        await w.loadURL('about:blank')
+        await w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true)
+        await emittedOnce(w, 'enter-full-screen')
+        // Wait a tick for the full-screen state to 'stick'
+        await new Promise(resolve => setTimeout(resolve))
+        w.setFullScreen(false)
+        await emittedOnce(w, 'leave-html-full-screen')
+      })
     })
   })
 })
