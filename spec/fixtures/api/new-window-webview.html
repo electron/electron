@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    <script type="text/javascript">
+      const code = `
+var webview = document.createElement('webview')
+webview.src = 'about:blank'
+webview.addEventListener('did-finish-load', () => {
+  ipcRenderer.send('webview-loaded')
+}, {once: true})
+document.body.appendChild(webview)
+`
+      open('about:blank').eval(code)
+    </script>
+  </body>
+</html>
