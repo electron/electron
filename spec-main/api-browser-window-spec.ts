@@ -2666,4 +2666,11 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow options argument is optional', () => {
+    afterEach(closeAllWindows)
+    it('should create a window with default size (800x600)', () => {
+      const w = new BrowserWindow()
+      expect(w.getSize()).to.deep.equal([800, 600])
+    })
+  })
 })

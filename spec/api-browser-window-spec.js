@@ -112,15 +112,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('BrowserWindow options argument is optional', () => {
-    it('should create a window with default size (800x600)', () => {
-      w.destroy()
-      w = new BrowserWindow()
-      const size = w.getSize()
-      expect(size).to.deep.equal([800, 600])
-    })
-  })
-
   describe('window states', () => {
     it('does not resize frameless windows when states change', () => {
       w.destroy()
