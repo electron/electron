@@ -59,9 +59,9 @@ class FileChooserDialog {
       confirm_text = _("_Open");
 
     gtk_module_ = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
-    void*(dl_gtk_file_chooser_native_new)(const char*, GtkWindow*,
-                                          GtkFileChooserAction, const char*,
-                                          const char*) = nullptr;
+    void* (*dl_gtk_file_chooser_native_new)(const char*, GtkWindow*,
+                                            GtkFileChooserAction, const char*,
+                                            const char*) = nullptr;
     bool found = g_module_symbol(
         gtk_module_, "gtk_file_chooser_native_new",
         reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
