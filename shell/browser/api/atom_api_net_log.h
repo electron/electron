@@ -31,7 +31,8 @@ class NetLog : public mate::TrackableObject<NetLog> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  v8::Local<v8::Promise> StartLogging(mate::Arguments* args);
+  v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
+                                      mate::Arguments* args);
   v8::Local<v8::Promise> StopLogging(mate::Arguments* args);
   bool IsCurrentlyLogging() const;
 

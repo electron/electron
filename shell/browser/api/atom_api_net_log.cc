@@ -11,6 +11,7 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
+#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -19,6 +20,30 @@
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
+
+namespace mate {
+
+template <>
+struct Converter<net::NetLogCaptureMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::NetLogCaptureMode* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "default")
+      *out = net::NetLogCaptureMode::Default();
+    else if (type == "includePrivacyInfo")
+      *out = net::NetLogCaptureMode::IncludeCookiesAndCredentials();
+    else if (type == "everything")
+      *out = net::NetLogCaptureMode::IncludeSocketBytes();
+    else
+      return false;
+    return true;
+  }
+};
+
+}  // namespace mate
 
 namespace electron {
 
@@ -60,11 +85,34 @@ NetLog::NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 NetLog::~NetLog() = default;
 
-v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
-  base::FilePath log_path;
-  if (!args->GetNext(&log_path) || log_path.empty()) {
+v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
+                                            mate::Arguments* args) {
+  if (log_path.empty()) {
     args->ThrowError("The first parameter must be a valid string");
     return v8::Local<v8::Promise>();
+  }
+
+  net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
+  uint64_t max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
+
+  mate::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    v8::Local<v8::Value> capture_mode_v8;
+    if (dict.Get("captureMode", &capture_mode_v8)) {
+      if (!mate::ConvertFromV8(args->isolate(), capture_mode_v8,
+                               &capture_mode)) {
+        args->ThrowError("Invalid value for captureMode");
+        return v8::Local<v8::Promise>();
+      }
+    }
+    v8::Local<v8::Value> max_file_size_v8;
+    if (dict.Get("maxFileSize", &max_file_size_v8)) {
+      if (!mate::ConvertFromV8(args->isolate(), max_file_size_v8,
+                               &max_file_size)) {
+        args->ThrowError("Invalid value for maxFileSize");
+        return v8::Local<v8::Promise>();
+      }
+    }
   }
 
   if (net_log_exporter_) {
@@ -89,11 +137,6 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
   network_context->CreateNetLogExporter(mojo::MakeRequest(&net_log_exporter_));
   net_log_exporter_.set_connection_error_handler(
       base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
-
-  // TODO(deepak1556): Provide more flexibility to this module
-  // by allowing customizations on the capturing options.
-  auto capture_mode = net::NetLogCaptureMode::kDefault;
-  auto max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
 
   base::PostTaskAndReplyWithResult(
       file_task_runner_.get(), FROM_HERE,
