@@ -1216,11 +1216,15 @@ describe('BrowserWindow module', () => {
       const bv = new BrowserView
       w.setBrowserView(bv)
       expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id)
+      // if BrowserView isn't explicitly destroyed, it will crash in GC later
+      bv.destroy()
     })
 
     it('returns undefined if not attached', () => {
       const bv = new BrowserView
       expect(BrowserWindow.fromBrowserView(bv)).to.be.null('BrowserWindow associated with bv')
+      // if BrowserView isn't explicitly destroyed, it will crash in GC later
+      bv.destroy()
     })
   })
 
