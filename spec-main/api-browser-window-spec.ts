@@ -2656,21 +2656,28 @@ describe('BrowserWindow module', () => {
     ifdescribe(process.platform === 'win32')('on windows', () => {
       it('should restore a normal visible window from a fullscreen startup state', async () => {
         const w = new BrowserWindow({show: false})
+        console.log("a 1")
         await w.loadURL('about:blank')
+        console.log("a 2")
         // start fullscreen and hidden
         w.setFullScreen(true)
         w.show()
         await emittedOnce(w, 'show')
+        console.log("a 3")
         w.setFullScreen(false)
         await emittedOnce(w, 'leave-full-screen')
+        console.log("a 4")
         expect(w.isVisible()).to.be.true('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
       })
       it('should keep window hidden if already in hidden state', async () => {
         const w = new BrowserWindow({show: false})
+        console.log("b 1")
         await w.loadURL('about:blank')
+        console.log("b 2")
         w.setFullScreen(false)
         await emittedOnce(w, 'leave-full-screen')
+        console.log("b 3")
         expect(w.isVisible()).to.be.false('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
       })
