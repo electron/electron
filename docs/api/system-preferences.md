@@ -35,14 +35,6 @@ Returns:
 * `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as
   a high contrast theme, is being used, `false` otherwise.
 
-### Event: 'appearance-changed' _macOS_
-
-Returns:
-
-* `newAppearance` String - Can be `dark` or `light`
-
-**NOTE:** This event is only emitted after you have called `startAppLevelAppearanceTrackingOS`
-
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
