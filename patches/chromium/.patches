@@ -41,7 +41,6 @@ enable_widevine.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
-disable_detach_webview_frame.patch
 ssl_security_state_tab_helper.patch
 exclude-a-few-test-files-from-build.patch
 expose-net-observer-api.patch

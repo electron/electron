@@ -495,12 +495,7 @@ WebContents::~WebContents() {
 
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
-    if (type_ == Type::WEB_VIEW) {
-      DCHECK(!web_contents()->GetOuterWebContents())
-          << "Should never manually destroy an attached webview";
-      // For webview simply destroy the WebContents immediately.
-      DestroyWebContents(false /* async */);
-    } else if (type_ == Type::BROWSER_WINDOW && owner_window()) {
+    if (type_ == Type::BROWSER_WINDOW && owner_window()) {
       // For BrowserWindow we should close the window and clean up everything
       // before WebContents is destroyed.
       for (ExtendedWebContentsObserver& observer : observers_)
@@ -514,7 +509,7 @@ WebContents::~WebContents() {
     } else {
       // Destroy WebContents asynchronously unless app is shutting down,
       // because destroy() might be called inside WebContents's event handler.
-      DestroyWebContents(true /* async */);
+      DestroyWebContents(!IsGuest() /* async */);
       // The WebContentsDestroyed will not be called automatically because we
       // destroy the webContents in the next tick. So we have to manually
       // call it here to make sure "destroyed" event is emitted.
@@ -1190,7 +1185,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // 2. garbage collection;
 // 3. user closes the window of webContents;
 // 4. the embedder detaches the frame.
-// For webview both #1 and #4 may happen, for BrowserWindow both #1 and #3 may
+// For webview only #4 will happen, for BrowserWindow both #1 and #3 may
 // happen. The #2 should never happen for webContents, because webview is
 // managed by GuestViewManager, and BrowserWindow's webContents is managed
 // by api::BrowserWindow.
