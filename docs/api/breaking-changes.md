@@ -94,6 +94,17 @@ powerMonitor.querySystemIdleTime(callback)
 const idleTime = getSystemIdleTime()
 ```
 
+## `Tray`
+
+Under macOS Catalina our former Tray implementation breaks.
+Apple's native substitute doesn't support changing the highlighting behavior.
+
+```js
+// Deprecated
+tray.setHighlightMode(mode)
+// API will be removed in v7.0 without replacement.
+```
+
 # Planned Breaking API Changes (5.0)
 
 ## `new BrowserWindow({ webPreferences })`
