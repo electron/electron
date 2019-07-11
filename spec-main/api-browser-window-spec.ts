@@ -2427,14 +2427,17 @@ describe('BrowserWindow module', () => {
       })
       try {
         console.log("c 1")
+        const shown1 = emittedOnce(w, 'show')
         w.show()
-        await emittedOnce(w, 'show')
+        await shown1
         console.log("c 2")
+        const hidden = emittedOnce(w, 'hide')
         w.hide()
-        await emittedOnce(w, 'hide')
+        await hidden
         console.log("c 3")
+        const shown2 = emittedOnce(w, 'show')
         w.show()
-        await emittedOnce(w, 'show')
+        await shown2
       } finally {
         ipcMain.removeAllListeners('pong')
       }
@@ -2666,14 +2669,15 @@ describe('BrowserWindow module', () => {
         console.log("a 1")
         await w.loadURL('about:blank')
         console.log("a 2")
-        const p = emittedOnce(w, 'show')
+        const shown = emittedOnce(w, 'show')
         // start fullscreen and hidden
         w.setFullScreen(true)
         w.show()
-        await p
+        await shown
         console.log("a 3")
+        const leftFullScreen = emittedOnce(w, 'leave-full-screen')
         w.setFullScreen(false)
-        await emittedOnce(w, 'leave-full-screen')
+        await leftFullScreen
         console.log("a 4")
         expect(w.isVisible()).to.be.true('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
@@ -2683,9 +2687,9 @@ describe('BrowserWindow module', () => {
         console.log("b 1")
         await w.loadURL('about:blank')
         console.log("b 2")
-        const p = emittedOnce(w, 'leave-full-screen')
+        const leftFullScreen = emittedOnce(w, 'leave-full-screen')
         w.setFullScreen(false)
-        await p
+        await leftFullScreen
         console.log("b 3")
         expect(w.isVisible()).to.be.false('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
