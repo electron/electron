@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 22 Nov 2018 14:05:57 +0000
+Subject: Workaround apparent data corruption in blockfile on OS X 10.14 by
+ switching backends.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is slower, but it's better than not loading pages at all since important resources
+got corrupted:(
+
+Bug: 899874
+Change-Id: I19f7eccff0c8aa119e522aee9cf728934906b917
+Reviewed-on: https://chromium-review.googlesource.com/c/1347109
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Reviewed-by: Elly Fong-Jones <ellyjones@chromium.org>
+Reviewed-by: Bence Béky <bnc@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#610404}
+
+diff --git a/components/network_session_configurator/browser/network_session_configurator.cc b/components/network_session_configurator/browser/network_session_configurator.cc
+index 21d34cfab2c426ae367148433d21916fcd92c757..8d98b44fe167f2229dc7204027878f79be533b83 100644
+--- a/components/network_session_configurator/browser/network_session_configurator.cc
++++ b/components/network_session_configurator/browser/network_session_configurator.cc
+@@ -27,6 +27,10 @@
+ #include "net/third_party/quic/core/quic_packets.h"
+ #include "net/third_party/spdy/core/spdy_protocol.h"
+ 
++#if defined(OS_MACOSX) && !defined(OS_IOS)
++#include "base/mac/mac_util.h"
++#endif
++
+ namespace {
+ 
+ // Map from name to value for all parameters associate with a field trial.
+@@ -589,12 +593,25 @@ net::URLRequestContextBuilder::HttpCacheParams::Type ChooseCacheType(
+     if (opt_value.empty() || base::LowerCaseEqualsASCII(opt_value, "on"))
+       return net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE;
+   }
++
+   const std::string experiment_name =
+       base::FieldTrialList::FindFullName("SimpleCacheTrial");
+   if (base::StartsWith(experiment_name, "Disable",
+                        base::CompareCase::INSENSITIVE_ASCII)) {
+     return net::URLRequestContextBuilder::HttpCacheParams::DISK_BLOCKFILE;
+   }
++
++  // Blockfile breaks on OSX 10.14 (see https://crbug.com/899874); so use
++  // SimpleCache even when we don't enable it via experiment, as long as we
++  // don't force it off (not used at this time). This unfortunately
++  // muddles the experiment data, but as this was written to be considered for
++  // backport, having it behave differently than in stable would be a bigger
++  // problem.
++#if defined(OS_MACOSX) && !defined(OS_IOS)
++  if (base::mac::IsAtLeastOS10_14())
++    return net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE;
++#endif  // defined(OS_MACOSX) && !defined(OS_IOS)
++
+   if (base::StartsWith(experiment_name, "ExperimentYes",
+                        base::CompareCase::INSENSITIVE_ASCII)) {
+     return net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE;
+diff --git a/components/network_session_configurator/browser/network_session_configurator_unittest.cc b/components/network_session_configurator/browser/network_session_configurator_unittest.cc
+index 1e3f7b89c3c1ef5b3da2c89516acd13ac1ad283f..80e5d7ada3f0044f16aeb73891e20316c6cd2461 100644
+--- a/components/network_session_configurator/browser/network_session_configurator_unittest.cc
++++ b/components/network_session_configurator/browser/network_session_configurator_unittest.cc
+@@ -25,6 +25,10 @@
+ #include "net/url_request/url_request_context_builder.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
++#if defined(OS_MACOSX) && !defined(OS_IOS)
++#include "base/mac/mac_util.h"
++#endif
++
+ namespace network_session_configurator {
+ 
+ class NetworkSessionConfiguratorTest : public testing::Test {
+@@ -735,6 +739,12 @@ TEST_F(NetworkSessionConfiguratorTest, DefaultCacheBackend) {
+ #if defined(OS_ANDROID) || defined(OS_LINUX) || defined(OS_CHROMEOS)
+   EXPECT_EQ(net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE,
+             ChooseCacheType(command_line));
++#elif defined(OS_MACOSX) && !defined(OS_IOS)
++  EXPECT_EQ(
++      base::mac::IsAtLeastOS10_14()
++          ? net::URLRequestContextBuilder::HttpCacheParams::DISK_SIMPLE
++          : net::URLRequestContextBuilder::HttpCacheParams::DISK_BLOCKFILE,
++      ChooseCacheType(command_line));
+ #else
+   EXPECT_EQ(net::URLRequestContextBuilder::HttpCacheParams::DISK_BLOCKFILE,
+             ChooseCacheType(command_line));
