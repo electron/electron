@@ -21,17 +21,17 @@ void DragFileItems(const std::vector<base::FilePath>& files,
                    const gfx::Image& icon,
                    gfx::NativeView view) {
   // Set up our OLE machinery
-  ui::OSExchangeData data;
+  auto data = std::make_unique<ui::OSExchangeData>();
 
   button_drag_utils::SetDragImage(
       GURL(), files[0].LossyDisplayName(), icon.AsImageSkia(), nullptr,
-      *views::Widget::GetTopLevelWidgetForNativeView(view), &data);
+      *views::Widget::GetTopLevelWidgetForNativeView(view), data.get());
 
   std::vector<ui::FileInfo> file_infos;
   for (const base::FilePath& file : files) {
     file_infos.push_back(ui::FileInfo(file, base::FilePath()));
   }
-  data.SetFilenames(file_infos);
+  data->SetFilenames(file_infos);
 
   aura::Window* root_window = view->GetRootWindow();
   if (!root_window || !aura::client::GetDragDropClient(root_window))
@@ -41,7 +41,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   // TODO(varunjain): Properly determine and send DRAG_EVENT_SOURCE below.
   aura::client::GetDragDropClient(root_window)
       ->StartDragAndDrop(
-          data, root_window, view, location,
+          std::move(data), root_window, view, location,
           ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_LINK,
           ui::DragDropTypes::DRAG_EVENT_SOURCE_MOUSE);
 }
