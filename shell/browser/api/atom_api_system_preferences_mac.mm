@@ -213,7 +213,7 @@ int SystemPreferences::DoSubscribeNotification(
 
                 std::string object = "";
                 if ([notification.object isKindOfClass:[NSString class]]) {
-                  object = base::SysNSStringToUTF8(notification.object));
+                  object = base::SysNSStringToUTF8(notification.object);
                 }
 
                 if (user_info) {
