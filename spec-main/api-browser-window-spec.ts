@@ -2351,7 +2351,7 @@ describe('BrowserWindow module', () => {
       })
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
-      if (process.platform !== 'win32') {
+      if (process.platform === 'darwin') {
         // See https://github.com/electron/electron/issues/8664
         await emittedOnce(w, 'show')
       }
@@ -2370,7 +2370,7 @@ describe('BrowserWindow module', () => {
         }
       })
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
-      if (process.platform !== 'win32') {
+      if (process.platform === 'darwin') {
         // See https://github.com/electron/electron/issues/8664
         await emittedOnce(w, 'show')
       }
