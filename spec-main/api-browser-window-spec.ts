@@ -2347,7 +2347,10 @@ describe('BrowserWindow module', () => {
       })
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
-      await emittedOnce(w, 'show')
+      if (process.platform !== 'win32') {
+        // See https://github.com/electron/electron/issues/8664
+        await emittedOnce(w, 'show')
+      }
       w.hide()
       w.show()
       const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
@@ -2363,7 +2366,10 @@ describe('BrowserWindow module', () => {
         }
       })
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
-      await emittedOnce(w, 'show')
+      if (process.platform !== 'win32') {
+        // See https://github.com/electron/electron/issues/8664
+        await emittedOnce(w, 'show')
+      }
       w.hide()
       w.showInactive()
       const [, visibilityState] = await emittedOnce(ipcMain, 'pong')
