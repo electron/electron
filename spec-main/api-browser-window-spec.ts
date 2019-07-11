@@ -2422,10 +2422,13 @@ describe('BrowserWindow module', () => {
         throw new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`)
       })
       try {
+        console.log("c 1")
         w.show()
         await emittedOnce(w, 'show')
+        console.log("c 2")
         w.hide()
         await emittedOnce(w, 'hide')
+        console.log("c 3")
         w.show()
         await emittedOnce(w, 'show')
       } finally {
@@ -2659,10 +2662,11 @@ describe('BrowserWindow module', () => {
         console.log("a 1")
         await w.loadURL('about:blank')
         console.log("a 2")
+        const p = emittedOnce(w, 'show')
         // start fullscreen and hidden
         w.setFullScreen(true)
         w.show()
-        await emittedOnce(w, 'show')
+        await p
         console.log("a 3")
         w.setFullScreen(false)
         await emittedOnce(w, 'leave-full-screen')
@@ -2675,8 +2679,9 @@ describe('BrowserWindow module', () => {
         console.log("b 1")
         await w.loadURL('about:blank')
         console.log("b 2")
+        const p = emittedOnce(w, 'leave-full-screen')
         w.setFullScreen(false)
-        await emittedOnce(w, 'leave-full-screen')
+        await p
         console.log("b 3")
         expect(w.isVisible()).to.be.false('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
