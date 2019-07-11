@@ -25,7 +25,7 @@ of the `app` module gets emitted.
 ### `netLog.startLogging(path[, options])`
 
 * `path` String - File path to record network logs.
-* `options` Object
+* `options` Object (optional)
   * `captureMode` String (optional) - What kinds of data should be captured. By
     default, only metadata about requests will be captured. Setting this to
     `includePrivacyInfo` will include cookies and authentication data. Setting
