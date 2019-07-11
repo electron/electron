@@ -202,6 +202,8 @@ Returns `String` - the title displayed next to the tray icon in the status bar
 
 Sets when the tray's icon background becomes highlighted (in blue).
 
+**[Deprecated](breaking-changes.md#tray)**
+
 **Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md)
 by toggling between `'never'` and `'always'` modes when the window visibility
 changes.
