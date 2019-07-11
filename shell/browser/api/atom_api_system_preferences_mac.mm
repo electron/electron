@@ -210,13 +210,22 @@ int SystemPreferences::DoSubscribeNotification(
               usingBlock:^(NSNotification* notification) {
                 std::unique_ptr<base::DictionaryValue> user_info =
                     NSDictionaryToDictionaryValue(notification.userInfo);
+
+                std::string object = "";
+                if ([notification.object isKindOfClass:[NSString class]]) {
+                  object = base::SysNSStringToUTF8(notification.object);
+                }
+
                 if (user_info) {
                   copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name), *user_info);
+                      base::SysNSStringToUTF8(notification.name),
+                      *user_info,
+                      object);
                 } else {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
-                      base::DictionaryValue());
+                      base::DictionaryValue(),
+                      object);
                 }
               }];
   return request_id;

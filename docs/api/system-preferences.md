@@ -82,13 +82,15 @@ that contains the user information dictionary sent along with the notification.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Returns `Number` - The ID of this subscription
 
 Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
 `userInfo` is an Object that contains the user information dictionary sent
-along with the notification.
+along with the notification. The `object` is the sender of the notification,
+and only supports `NSString` values for now.
 
 The `id` of the subscriber is returned, which can be used to unsubscribe the
 `event`.
@@ -107,6 +109,7 @@ example values of `event` are:
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Returns `Number` - The ID of this subscription
 
@@ -119,6 +122,7 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.

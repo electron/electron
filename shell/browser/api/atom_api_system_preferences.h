@@ -67,7 +67,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #elif defined(OS_MACOSX)
   using NotificationCallback =
       base::RepeatingCallback<void(const std::string&,
-                                   const base::DictionaryValue&)>;
+                                   const base::DictionaryValue&,
+                                   const std::string&)>;
 
   void PostNotification(const std::string& name,
                         const base::DictionaryValue& user_info,
