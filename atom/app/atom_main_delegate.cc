@@ -199,6 +199,14 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
     base::win::PinUser32();
 #endif
 
+#if defined(OS_LINUX)
+  // Check for --no-sandbox parameter when running as root.
+  if (getuid() == 0 && IsSandboxEnabled(command_line))
+    LOG(FATAL) << "Running as root without --"
+               << service_manager::switches::kNoSandbox
+               << " is not supported. See https://crbug.com/638180.";
+#endif
+
   content_client_ = std::make_unique<AtomContentClient>();
   SetContentClient(content_client_.get());
 
