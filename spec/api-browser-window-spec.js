@@ -1305,6 +1305,7 @@ describe('BrowserWindow module', () => {
   })
 
   // temporarily removing test due to regression
+  // uncomment when https://github.com/electron/electron/issues/18502 is fixed
 
   // describe('focus event', () => {
   //   it('should not emit if focusing on a main window with a modal open', (done) => {
