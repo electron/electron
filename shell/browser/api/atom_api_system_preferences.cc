@@ -28,7 +28,7 @@ SystemPreferences::~SystemPreferences() {
 #endif
 }
 
-#if !defined(OS_MACOSX)
+#if defined(OS_LINUX)
 bool SystemPreferences::IsDarkMode() {
   return false;
 }

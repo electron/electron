@@ -43,7 +43,7 @@ Returns:
 
 ## Methods
 
-### `systemPreferences.isDarkMode()` _macOS_
+### `systemPreferences.isDarkMode()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the system is in Dark Mode.
 
