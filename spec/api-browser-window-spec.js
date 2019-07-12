@@ -2563,37 +2563,6 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // temporarily removing test due to regression
-  // uncomment when https://github.com/electron/electron/issues/18502 is fixed
-
-  // describe('focus event', () => {
-  //   it('should not emit if focusing on a main window with a modal open', (done) => {
-  //     const childWindowClosed = false
-  //     const child = new BrowserWindow({
-  //       parent: w,
-  //       modal: true,
-  //       show: false
-  //     })
-
-  //     child.once('ready-to-show', () => {
-  //       child.show()
-  //     })
-
-  //     child.on('show', () => {
-  //       w.once('focus', () => {
-  //         expect(child.isDestroyed()).to.equal(true)
-  //         done()
-  //       })
-  //       w.focus() // this should not trigger the above listener
-  //       child.close()
-  //     })
-
-  //     // act
-  //     child.loadURL(server.url)
-  //     w.show()
-  //   })
-  // })
-
   describe('sheet-begin event', () => {
     let sheet = null
 
