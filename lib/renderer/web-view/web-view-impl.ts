@@ -69,7 +69,6 @@ export class WebViewImpl {
     // heard back from createGuest yet. We will not reset the flag in this case so
     // that we don't end up allocating a second guest.
     if (this.guestInstanceId) {
-      guestViewInternal.destroyGuest(this.guestInstanceId)
       this.guestInstanceId = void 0
     }
 

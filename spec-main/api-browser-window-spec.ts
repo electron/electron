@@ -2713,32 +2713,6 @@ describe('BrowserWindow module', () => {
   describe('parent window', () => {
     afterEach(closeAllWindows)
 
-    it('should not emit focus event if focusing on a main window with a modal open', (done) => {
-      const w = new BrowserWindow({show: false})
-      const child = new BrowserWindow({
-        parent: w,
-        modal: true,
-        show: false
-      })
-
-      child.once('ready-to-show', () => {
-        child.show()
-      })
-
-      child.on('show', () => {
-        w.once('focus', () => {
-          expect(child.isDestroyed()).to.equal(true)
-          done()
-        })
-        w.focus() // this should not trigger the above listener
-        child.close()
-      })
-
-      // act
-      child.loadURL('about:blank')
-      w.show()
-    })
-
     ifit(process.platform === 'darwin')('sheet-begin event emits when window opens a sheet', (done) => {
       const w = new BrowserWindow()
       w.once('sheet-begin', () => {

@@ -100,10 +100,6 @@ export function createGuestSync (params: Record<string, any>): number {
   return invokeSync('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', params)
 }
 
-export function destroyGuest (guestInstanceId: number): void {
-  invoke('ELECTRON_GUEST_VIEW_MANAGER_DESTROY_GUEST', guestInstanceId)
-}
-
 export function attachGuest (
   elementInstanceId: number, guestInstanceId: number, params: Record<string, any>, contentWindow: Window
 ) {
@@ -118,6 +114,5 @@ export const guestViewInternalModule = {
   deregisterEvents,
   createGuest,
   createGuestSync,
-  destroyGuest,
   attachGuest
 }

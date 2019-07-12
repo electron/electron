@@ -234,9 +234,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
   * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
-    macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`, `menu`,
-    `popover`, `sidebar`, `medium-light` or `ultra-dark`.  Please note that using `frame: false` in combination with a vibrancy value requires that you use a non-default `titleBarStyle` as well.
-    Also note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been deprecated and will be removed in an upcoming version of macOS.
+    macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
+    `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`.  Please note that using `frame: false` in combination with a vibrancy value requires that you use a non-default `titleBarStyle` as well. Also note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been deprecated and will be removed in an upcoming version of macOS.
   * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
     option-clicking the green stoplight button on the toolbar or by clicking the
     Window > Zoom menu item. If `true`, the window will grow to the preferred
@@ -1104,10 +1103,15 @@ On Linux always returns `true`.
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` Boolean
-* `level` String (optional) _macOS_ - Values include `normal`, `floating`,
-  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
-  `screen-saver`, and ~~`dock`~~ (Deprecated). The default is `floating`. See the
-  [macOS docs][window-levels] for more details.
+* `level` String (optional) _macOS_ _Windows_ - Values include `normal`,
+  `floating`, `torn-off-menu`, `modal-panel`, `main-menu`, `status`,
+  `pop-up-menu`, `screen-saver`, and ~~`dock`~~ (Deprecated). The default is
+  `floating` when `flag` is true. The `level` is reset to `normal` when the
+  flag is false. Note that from `floating` to `status` included, the window is
+  placed below the Dock on macOS and below the taskbar on Windows. From
+  `pop-up-menu` to a higher it is shown above the Dock on macOS and above the
+  taskbar on Windows. See the [macOS docs][window-levels] for more details.
+
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
   discourages setting levels higher than 1 above `screen-saver`.
@@ -1619,7 +1623,7 @@ Adds a window as a tab on this window, after the tab for the window instance.
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`. See
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string

@@ -233,6 +233,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (model->GetIconAt(index, &icon) && !icon.IsEmpty())
     [item setImage:icon.ToNSImage()];
 
+  base::string16 toolTip = model->GetToolTipAt(index);
+  [item setToolTip:base::SysUTF16ToNSString(toolTip)];
+
   base::string16 role = model->GetRoleAt(index);
   electron::AtomMenuModel::ItemType type = model->GetTypeAt(index);
 
@@ -344,8 +347,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   DCHECK(model);
   if (model) {
     NSEvent* event = [NSApp currentEvent];
-    model->ActivatedAt(modelIndex,
-                       ui::EventFlagsFromNSEventWithModifiers(event, [event modifierFlags]));
+    model->ActivatedAt(modelIndex, ui::EventFlagsFromNSEventWithModifiers(
+                                       event, [event modifierFlags]));
   }
 }
 

@@ -1347,6 +1347,37 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     }
   }
 
+  if (@available(macOS 10.14, *)) {
+    if (type == "header") {
+      // NSVisualEffectMaterialHeaderView
+      vibrancyType = static_cast<NSVisualEffectMaterial>(10);
+    } else if (type == "sheet") {
+      // NSVisualEffectMaterialSheet
+      vibrancyType = static_cast<NSVisualEffectMaterial>(11);
+    } else if (type == "window") {
+      // NSVisualEffectMaterialWindowBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(12);
+    } else if (type == "hud") {
+      // NSVisualEffectMaterialHUDWindow
+      vibrancyType = static_cast<NSVisualEffectMaterial>(13);
+    } else if (type == "fullscreen-ui") {
+      // NSVisualEffectMaterialFullScreenUI
+      vibrancyType = static_cast<NSVisualEffectMaterial>(16);
+    } else if (type == "tooltip") {
+      // NSVisualEffectMaterialToolTip
+      vibrancyType = static_cast<NSVisualEffectMaterial>(17);
+    } else if (type == "content") {
+      // NSVisualEffectMaterialContentBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(18);
+    } else if (type == "under-window") {
+      // NSVisualEffectMaterialUnderWindowBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(21);
+    } else if (type == "under-page") {
+      // NSVisualEffectMaterialUnderPageBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(22);
+    }
+  }
+
   if (vibrancyType)
     [effect_view setMaterial:vibrancyType];
 }

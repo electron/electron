@@ -875,7 +875,7 @@ steps-tests: &steps-tests
         name: Run Electron tests
         environment:
           MOCHA_REPORTER: mocha-multi-reporters
-          MOCHA_FILE: junit/test-results.xml
+          ELECTRON_TEST_RESULTS_DIR: junit
           MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
@@ -885,15 +885,13 @@ steps-tests: &steps-tests
     - run:
         name: Check test results existence
         command: |
-          MOCHA_FILE='src/junit/test-results-remote.xml'
-          # Check if it exists and not empty.
-          if [ ! -s "$MOCHA_FILE" ]; then
+          cd src
+
+          # Check if test results exist and are not empty.
+          if [ ! -s "junit/test-results-remote.xml" ]; then
             exit 1
           fi
-
-          MOCHA_FILE='src/junit/test-results-main.xml'
-          # Check if it exists and not empty.
-          if [ ! -s "$MOCHA_FILE" ]; then
+          if [ ! -s "junit/test-results-main.xml" ]; then
             exit 1
           fi
     - store_test_results:
