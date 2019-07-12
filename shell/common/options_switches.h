@@ -107,7 +107,7 @@ extern const char kBackgroundColor[];
 extern const char kPreloadScript[];
 extern const char kPreloadScripts[];
 extern const char kNodeIntegration[];
-extern const char kDisableRemoteModule[];
+extern const char kEnableRemoteModule[];
 extern const char kContextIsolation[];
 extern const char kGuestInstanceID[];
 extern const char kOpenerID[];
