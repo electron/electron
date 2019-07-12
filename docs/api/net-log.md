@@ -30,7 +30,7 @@ of the `app` module gets emitted.
     default, only metadata about requests will be captured. Setting this to
     `includePrivacyInfo` will include cookies and authentication data. Setting
     it to `everything` will include all bytes transferred on sockets. Can be
-    `default`, `includePrivacyInfo`, or `everything`.
+    `default`, `includePrivacyInfo` or `everything`.
   * `maxFileSize` Number (optional) - When the log grows beyond this size,
     logging will automatically stop. Defaults to unlimited.
 
