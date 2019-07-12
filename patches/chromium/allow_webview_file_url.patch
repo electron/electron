@@ -6,7 +6,7 @@ Subject: allow_webview_file_url.patch
 Allow webview to load non-web URLs.
 
 diff --git a/content/browser/loader/resource_dispatcher_host_impl.cc b/content/browser/loader/resource_dispatcher_host_impl.cc
-index c4db9c98e4e909cea8ba000402afdb32ff57cb4e..28325e6f6f64922c4ba0daf2c94dcae34d5b4855 100644
+index b2a8edaddd069ece196c54dc562675863fc0f7d9..e49ca848fb5fbc21b0e619a2c00752563890137b 100644
 --- a/content/browser/loader/resource_dispatcher_host_impl.cc
 +++ b/content/browser/loader/resource_dispatcher_host_impl.cc
 @@ -1429,6 +1429,8 @@ void ResourceDispatcherHostImpl::BeginNavigationRequest(

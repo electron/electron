@@ -54,10 +54,10 @@ index 3b7875f0df1f96f98a6088a8899d86d9d19d8a42..097607d267d55675ab91ad21f126acb8
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index cbac30fa7a12db927ba6a15173ba1181e03e0723..4d26fd795a7ce1ffd046c4a0f2ec17793bf33e6a 100644
+index a1f831283db5267cd6ab3e0a83010bd4abc6aef2..223c9d2607dc1a03750bca71674a3535bcabe683 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -135,7 +135,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -134,7 +134,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
  
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
@@ -67,7 +67,7 @@ index cbac30fa7a12db927ba6a15173ba1181e03e0723..4d26fd795a7ce1ffd046c4a0f2ec1779
          mojo::MakeRequest(&notification_service_ptr_));
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 6ae821791660dfbda93430a937ba75b596332091..a17515d29eb5ed643e684d33a8ecd92b28902c13 100644
+index 74b9766de56e4ea5b0ce2861eae87bb3272bee4d..3305abee25ce9b1cf1a46ffa8e31c64396f5de8d 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -207,12 +207,13 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -143,7 +143,7 @@ index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68
        const GURL& origin,
        const blink::PlatformNotificationData& notification_data,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index be4638a9a8c355353424c07b73583e01c5422192..92383a54a9f86f92846b34e15a3d4a5a4f9624d3 100644
+index faa8e541d9cb530f9212420a4dfd0318069320db..0a244000e60daf8e6bd8e783b41124528a117026 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(

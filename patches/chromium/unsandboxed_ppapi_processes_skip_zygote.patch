@@ -5,7 +5,7 @@ Subject: unsandboxed ppapi processes skip zygote
 
 
 diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppapi_plugin_process_host.cc
-index 56a1b68a0d03f2a5ea7fc809e383a82579ef01a2..70d083de6b6db96c6a2ce8a412f59b824656b29e 100644
+index 68a9f8568d242fafd104c47ad67a7fb1d0b593e7..fa6492acd3d4c12fbebbef94540c675aeda99cdc 100644
 --- a/content/browser/ppapi_plugin_process_host.cc
 +++ b/content/browser/ppapi_plugin_process_host.cc
 @@ -121,6 +121,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate

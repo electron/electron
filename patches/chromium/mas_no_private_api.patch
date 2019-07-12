@@ -180,10 +180,10 @@ index eee18607118ba4be6d5be9d343d7af8d0f5b270b..21c417f461f13387d5fdace51600f3d7
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index ff366b2691c6d72e196b20f224ef0c77f932c301..80de4d4127c723655c0ed62700fdf6e22019815f 100644
+index cd447453b5a8877a9b1da7eab28130a795e3015b..9ef9a7aa5733b8591ed96511e9cdbc8f51875d04 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -492,6 +492,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -493,6 +493,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -191,7 +191,7 @@ index ff366b2691c6d72e196b20f224ef0c77f932c301..80de4d4127c723655c0ed62700fdf6e2
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -499,6 +500,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -500,6 +501,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -276,7 +276,7 @@ index b6bea74d9f9c2fcfba381477895e4c15741318fc..4a02e5659e85c507d480d7fb9b63ee10
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index cb7a5305c2d6cbe7b3aa13efdfe6dcc6dfd857e9..e3f3ee7fee0a8f9cf7b3c1b6bed7c2a6cf443954 100644
+index d8ae83ce63aafdd0fcd1994a144465791e94ba4a..d19096f9afd606bb7bfd6c377f8a976417d3bff2 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -180,6 +180,12 @@ source_set("audio") {
@@ -306,10 +306,10 @@ index 7ec6dab821b542cb0096e7f8875ba21703463087..3e26c9dd0a296b8d9c99ca1ee9d9faba
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 21852feee1ae251f7c0693d26ca4e23ebaa2739c..acaf99c718895bae548b2e4960aa96cfc8dc3494 100644
+index c1b8d1aeb6340821d66ddd8bc9416a86e7a35384..0250e16cbe24d184c04331473be192f93ee05e8b 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -245,6 +245,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -244,6 +244,7 @@ class DnsConfigServicePosix::Watcher {
  
    bool Watch() {
      bool success = true;
@@ -317,7 +317,7 @@ index 21852feee1ae251f7c0693d26ca4e23ebaa2739c..acaf99c718895bae548b2e4960aa96cf
      if (!config_watcher_.Watch(base::Bind(&Watcher::OnConfigChanged,
                                            base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -266,6 +267,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -265,6 +266,7 @@ class DnsConfigServicePosix::Watcher {
                                  DNS_CONFIG_WATCH_MAX);
      }
  #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)

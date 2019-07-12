@@ -78,7 +78,7 @@ index 489369300d48dbfacb8c5489e06b77218f526bf4..340026b3dac4e833d3448d83db7b92c1
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 68d9f2a26a8616d5f4d18c89fa0f8ec7650b8c10..b624f3df1162e0f6ad4ee72bf2bb8bd071744fae 100644
+index 6f0ee21c619de21b9782fc46c780d184e4206b0f..082242dda33be741f04725acf8ef867d5879d025 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -367,6 +367,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -94,10 +94,10 @@ index 68d9f2a26a8616d5f4d18c89fa0f8ec7650b8c10..b624f3df1162e0f6ad4ee72bf2bb8bd0
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index e74d07035ccdb1f54ce85775ac96d8a1be40e6c6..798b96799871aea80301c3b242bc575314cb698c 100644
+index 8e1736018b7c8612963f6bda18aa9454e4170453..a00c3fbbb08a1305def65c2f6bb595140a87205c 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -539,6 +539,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id) const {
+@@ -544,6 +544,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id) const {
      case kColorId_TableGroupingIndicatorColor:
        return system_colors_[COLOR_GRAYTEXT];
  

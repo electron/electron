@@ -5,7 +5,7 @@ Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index cd8d45ce9c70e3e1836580f29a28228aaf7ff19f..533fb6a26d445d81a16967c5e3fedfdba146c44b 100644
+index f41270e262784602c90b79b7aefbcd1a7af43dd8..a28ea7ee72fbf596b2b1d10cacaad4068d62e4d4 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -627,6 +627,15 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -25,7 +25,7 @@ index cd8d45ce9c70e3e1836580f29a28228aaf7ff19f..533fb6a26d445d81a16967c5e3fedfdb
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 5bac450f680b839a3636adef6cb9f53dae6a6f5e..f336561be067af75cd5cb6328b75b4ec77c66b7a 100644
+index 39081269755b111085b357e74b26471ec67ffe17..7c266eb8a4cac8faccefaeb1193ed6b789f8579e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -24,9 +24,11 @@

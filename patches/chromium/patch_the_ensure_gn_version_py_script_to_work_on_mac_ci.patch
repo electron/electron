@@ -8,10 +8,10 @@ patch it because on mac CI, we check out the source code on Linux, which
 confuses the script.
 
 diff --git a/buildtools/ensure_gn_version.py b/buildtools/ensure_gn_version.py
-index 9c01f58b44991cf8b48ef8c68ca17946e73e1c3d..a4618353f722e04ea54f84c6eb1f193d3bb97dee 100755
+index acb1c1ddf046fd7c19ef428ca4b099ee60c7ff3c..4128853c41a75351d849cea0985f764fb504eca1 100755
 --- a/buildtools/ensure_gn_version.py
 +++ b/buildtools/ensure_gn_version.py
-@@ -38,6 +38,11 @@ SRC_DIR = os.path.dirname(BUILDTOOLS_DIR)
+@@ -39,6 +39,11 @@ SRC_DIR = os.path.dirname(BUILDTOOLS_DIR)
  
  
  def main():
