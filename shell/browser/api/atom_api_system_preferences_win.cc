@@ -7,7 +7,6 @@
 
 #include "shell/browser/api/atom_api_system_preferences.h"
 
-#include "base/win/registry.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "ui/base/win/shell.h"
@@ -45,15 +44,6 @@ bool SystemPreferences::IsHighContrastColorScheme() {
   if (!g_is_high_contract_color_scheme_initialized)
     UpdateHighContrastColorScheme();
   return g_is_high_contract_color_scheme;
-}
-
-bool SystemPreferences::IsDarkMode() {
-  base::string16 keyPath =
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
-  DWORD value = 1;  // defaults to light theme if registry entry does not exist
-  key.ReadValueDW(L"AppsUseLightTheme", &value);
-  return (value == 0);
 }
 
 std::string hexColorDWORDToRGBA(DWORD color) {
