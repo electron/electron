@@ -10,7 +10,7 @@ ipcRendererInternal.send = function (channel, ...args) {
 }
 
 ipcRendererInternal.sendSync = function (channel, ...args) {
-  return binding.ipc.sendSync(internal, channel, args)[0]
+  return binding.ipc.sendSync(internal, channel, args)
 }
 
 ipcRendererInternal.sendTo = function (webContentsId, channel, ...args) {

@@ -304,6 +304,9 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8ValueImpl(
   if (val->IsNull())
     return std::make_unique<base::Value>();
 
+  if (val->IsUndefined())
+    return std::make_unique<base::Value>();
+
   auto context = isolate->GetCurrentContext();
 
   if (val->IsBoolean())
