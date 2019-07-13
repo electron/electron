@@ -84,11 +84,11 @@
   return frame;
 }
 
-- (void)windowDidBecomeKey:(NSNotification*)notification {
+- (void)windowDidBecomeMain:(NSNotification*)notification {
   shell_->NotifyWindowFocus();
 }
 
-- (void)windowDidResignKey:(NSNotification*)notification {
+- (void)windowDidResignMain:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
 }
 
