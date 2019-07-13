@@ -27,6 +27,7 @@ const { YARN_VERSION } = require('./yarn')
 const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+const NODE_HEADERS_DIR = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
@@ -43,6 +44,10 @@ async function main () {
   const [currentSpecHash, currentSpecInstallHash] = await getSpecHash()
   const somethingChanged = (currentSpecHash !== lastSpecHash) ||
       (lastSpecInstallHash !== currentSpecInstallHash)
+
+  if (somethingChanged || !fs.existsSync(NODE_HEADERS_DIR)) {
+    refreshNodeHeadersDir()
+  }
 
   if (somethingChanged) {
     await installSpecModules()
@@ -139,10 +144,20 @@ async function runMainProcessElectronTests () {
   }
 }
 
+function refreshNodeHeadersDir () {
+  const { error } = childProcess.spawnSync(
+    'ninja',
+    [ '-C', path.resolve(BASE, `out/${utils.OUT_DIR}`), 'third_party/electron_node:headers' ],
+    { stdio: 'inherit' }
+  )
+  if (error) {
+    throw error
+  }
+}
+
 async function installSpecModules () {
-  const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
-    npm_config_nodedir: nodeDir,
+    npm_config_nodedir: NODE_HEADERS_DIR,
     npm_config_msvs_version: '2017'
   })
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
