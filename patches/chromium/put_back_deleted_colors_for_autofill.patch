@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like chromium.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index c72e78bdc7c1535d48bc13e18c1cc784051eaea8..fe07c0ac7d94cdbb7bef56f651266e63ec06f767 100644
+index 3044d7b1829397a97b9a1ef9f115587bab74339d..c578d16c995c11daf90484593b5f9649d37b7041 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 @@ -280,6 +280,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -78,7 +78,7 @@ index 489369300d48dbfacb8c5489e06b77218f526bf4..340026b3dac4e833d3448d83db7b92c1
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 6f0ee21c619de21b9782fc46c780d184e4206b0f..082242dda33be741f04725acf8ef867d5879d025 100644
+index 5ce6577ec03eb15f89fca3c204211742085eef5c..729252c60d9c1a429e566e366c4dbad0259a201c 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -367,6 +367,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -94,10 +94,10 @@ index 6f0ee21c619de21b9782fc46c780d184e4206b0f..082242dda33be741f04725acf8ef867d
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 8e1736018b7c8612963f6bda18aa9454e4170453..a00c3fbbb08a1305def65c2f6bb595140a87205c 100644
+index c6a0c1b9775f9d7e7a9be15d6f15ce84acf68b68..3b3a909bd920a7bf8f54fac4c00f29ce9556c20c 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -544,6 +544,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id) const {
+@@ -548,6 +548,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id) const {
      case kColorId_TableGroupingIndicatorColor:
        return system_colors_[COLOR_GRAYTEXT];
  

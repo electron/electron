@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356d1e56dfb 100644
+index 63f432b58371cfa0f8079fa78a51c8865a00c183..7b39523e0b8b840191ea517d5f5e8eda701995bc 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -28,7 +28,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -225,7 +225,15 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -224,7 +224,15 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -46,7 +46,7 @@ index 88a6142eea4c7a219c08fe3463c44711f5c9fada..81db315a0036a123658697aa677e2356
  
  void PrintJobWorker::GetSettingsWithUI(int document_page_count,
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4fbb2bb75c 100644
+index c4e0992f6265b34659514ef5f15eb8d78645161c..e95f62c0761d1a5829cc4403434fd643e45a0a69 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -85,9 +85,9 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -111,12 +112,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
-       queue_(g_browser_process->print_job_manager()->queue()),
-       weak_ptr_factory_(this) {
+@@ -110,12 +111,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
+       printing_succeeded_(false),
+       queue_(g_browser_process->print_job_manager()->queue()) {
    DCHECK(queue_);
 +#if 0
    Profile* profile =
@@ -100,7 +100,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  }
  
  PrintViewManagerBase::~PrintViewManagerBase() {
-@@ -124,12 +127,14 @@ PrintViewManagerBase::~PrintViewManagerBase() {
+@@ -123,12 +126,14 @@ PrintViewManagerBase::~PrintViewManagerBase() {
    DisconnectFromCurrentPrintJob();
  }
  
@@ -118,7 +118,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -245,9 +250,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -244,9 +249,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -131,7 +131,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -339,7 +344,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
+@@ -338,7 +343,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
    PrintManager::OnPrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -140,7 +140,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  #endif
  
    ReleasePrinterQuery();
-@@ -439,9 +444,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -438,9 +443,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -156,7 +156,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
        NOTREACHED();
        break;
      }
-@@ -536,8 +545,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -535,8 +544,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -165,7 +165,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -548,8 +555,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -547,8 +554,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!print_job_);
    print_job_ = base::MakeRefCounted<PrintJob>();
    print_job_->Initialize(std::move(query), RenderSourceName(), number_pages_);
@@ -174,7 +174,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
    printing_succeeded_ = false;
    return true;
  }
-@@ -598,6 +603,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -597,6 +602,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -188,7 +188,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
    if (!print_job_)
      return;
  
-@@ -608,7 +620,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -607,7 +619,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
    }
  
    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
@@ -197,7 +197,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -678,6 +690,9 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -677,6 +689,9 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;
@@ -208,7 +208,7 @@ index a8502fdff8d39b7215f92a393a66d096bd302e25..38f213b0f6d6872d08981d265105cd4f
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index f3e23125001c0eebebdb2e211d069cd3feb523d8..345b1925a7b29152206c6784a2a56f4b96bb89ab 100644
+index a465fd21db9b4025dde34534b06a2701e857b630..44ddf21a3629ee6e3510ff6048728b97a2d9551b 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -39,6 +39,8 @@ class PrintJob;

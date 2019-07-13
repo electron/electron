@@ -36,7 +36,7 @@ index 8e02a8a95eb07516162eacdf5b361231d3a02975..3497b85428a52c6019cfb5d30229071f
    virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index a68d5d774489fe95968046001b8540d74f36dc97..ca1077801ae18862618964a9675a4101b9c3a393 100644
+index 983a8303b11527cdab449d03485653b8c27102de..1362161da462be4eb70f9e698eb274c1890ac0ab 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -21,6 +21,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
@@ -98,7 +98,7 @@ index a68d5d774489fe95968046001b8540d74f36dc97..ca1077801ae18862618964a9675a4101
                                    base::BindOnce(&DesktopMediaListBase::Refresh,
                                                   weak_factory_.GetWeakPtr()),
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index 746df1210aa92af5c9d4703112b4bd6c09b94fdf..461e0edf8509569d05c86f466c02b5035183d0df 100644
+index 29ef83096f7a7c69c67e9ad1bee2c45723e58f3f..ec228a826b298eb590f15c843e3346460ae13321 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
 @@ -24,12 +24,14 @@ class DesktopMediaListBase : public DesktopMediaList {
@@ -133,7 +133,7 @@ index 47401abc984e6fe26c7f4c5399aa565c687060b0..ca6a527ffac877c27aac94337ec5a7b5
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index e8f454aa3ae7f5646a2158b84c2281f5bbfdca4a..01ffcc13ff0bdc626e7518aeb4993f0403ab41e8 100644
+index 872152cededb29ca3c04b2deb3fe6491be001af9..4ca62f03abf11bf9d0a48c85a79e098fb6758a30 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -7,14 +7,15 @@

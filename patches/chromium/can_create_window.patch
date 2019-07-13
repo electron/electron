@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index e605afcd3c9ed974a108c61c8b3ba2c7a4d361e1..bb5e423a369868b009fffae01dc5043ef22a1b10 100644
+index b835b550515d453621638f7984d5bdbfe342bd9d..b85bf2d92b6d20faee2094698801e797db75e646 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3797,6 +3797,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3802,6 +3802,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,10 +66,10 @@ index 82b0be67f519b66f07e29b98286e0b3a8eb8cbfa..e6dc965f308a9b3ffa6ce300526a21dd
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index ed526425fa937119e112061202b854718bdb787a..ca3c1bd472acfe60ee779b548b8ab16a417842fb 100644
+index 134af7b3ccfeb46e1a8e8f3ede56f4e9770081e7..e93fc75442f4084b0665e9b4aae3e51a6998bdc0 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -76,6 +76,7 @@
+@@ -75,6 +75,7 @@
  #include "content/renderer/ime_event_guard.h"
  #include "content/renderer/internal_document_state_data.h"
  #include "content/renderer/loader/request_extra_data.h"
@@ -77,7 +77,7 @@ index ed526425fa937119e112061202b854718bdb787a..ca3c1bd472acfe60ee779b548b8ab16a
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/stream/media_stream_device_observer.h"
  #include "content/renderer/media/video_capture/video_capture_impl_manager.h"
-@@ -1365,6 +1366,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1366,6 +1367,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
