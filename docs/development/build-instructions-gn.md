@@ -38,17 +38,6 @@ $ mkdir -p "${GIT_CACHE_PATH}"
 # This will use about 16G.
 ```
 
-> **NOTE**: the git cache will set the `origin` of the `src/electron`
-> repository to point to the local cache, instead of the upstream git
-> repository. This is undesirable when running `git push` — you probably
-> want to push to github, not your local cache. To fix this, from the
-> `src/electron` directory, run:
-
-```sh
-$ git remote set-url origin https://github.com/electron/electron
-$ git remote set-url --push origin https://github.com/electron/electron
-```
-
 ### sccache
 
 Thousands of files must be compiled to build Chromium and Electron.
