@@ -1,5 +1,5 @@
 import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron'
-const roles = require('../lib/browser/api/menu-item-roles')
+const { roleList, execute } = require('../lib/browser/api/menu-item-roles')
 import { expect } from 'chai'
 import { closeAllWindows } from './window-helpers';
 
@@ -142,7 +142,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 })
       const item = new MenuItem({ role: 'asdfghjkl' as any })
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
+      const canExecute = execute(item.role, win, win.webContents)
       expect(canExecute).to.be.false('can execute')
     })
 
@@ -150,7 +150,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 })
       const item = new MenuItem({ role: 'reload' })
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
+      const canExecute = execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true('can execute')
     })
 
@@ -158,7 +158,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 })
       const item = new MenuItem({ role: 'resetzoom' })
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
+      const canExecute = execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true('can execute')
     })
   })
@@ -199,38 +199,17 @@ describe('MenuItems', () => {
   })
 
   describe('MenuItem role', () => {
-    // FIXME: this test is wrong; when it was written it used for..in instead of for..of and now it doesn't pass.
-    xit('returns undefined for items without default accelerator', () => {
-      const roleList: MenuItem["role"][] = [
-        'close',
-        'copy',
-        'cut',
-        'forcereload',
-        'hide',
-        'hideothers',
-        'minimize',
-        'paste',
-        'pasteandmatchstyle',
-        'quit',
-        'redo',
-        'reload',
-        'resetzoom',
-        'selectall',
-        'toggledevtools',
-        'togglefullscreen',
-        'undo',
-        'zoomin',
-        'zoomout'
-      ]
+    it('returns undefined for items without default accelerator', () => {
+      const list = Object.keys(roleList).filter(key => !roleList[key].accelerator)
 
-      for (const role of roleList) {
-        const item = new MenuItem({ role })
+      for (const role of list) {
+        const item = new MenuItem({ role: role as any })
         expect(item.getDefaultRoleAccelerator()).to.be.undefined('default accelerator')
       }
     })
 
     it('returns the correct default label', () => {
-      const roleList = {
+      const roles = {
         'close': process.platform === 'darwin' ? 'Close Window' : 'Close',
         'copy': 'Copy',
         'cut': 'Cut',
@@ -252,14 +231,14 @@ describe('MenuItems', () => {
         'zoomout': 'Zoom Out'
       }
 
-      for (const [role, label] of Object.entries(roleList)) {
+      for (const [role, label] of Object.entries(roles)) {
         const item = new MenuItem({ role: role as any })
         expect(item.label).to.equal(label)
       }
     })
 
     it('returns the correct default accelerator', () => {
-      const roleList = {
+      const roles = {
         'close': 'CommandOrControl+W',
         'copy': 'CommandOrControl+C',
         'cut': 'CommandOrControl+X',
@@ -281,7 +260,7 @@ describe('MenuItems', () => {
         'zoomout': 'CommandOrControl+-'
       }
 
-      for (const [role, accelerator] of Object.entries(roleList)) {
+      for (const [role, accelerator] of Object.entries(roles)) {
         const item = new MenuItem({ role: role as any })
         expect(item.getDefaultRoleAccelerator()).to.equal(accelerator)
       }
