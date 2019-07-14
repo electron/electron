@@ -39,7 +39,7 @@ For bugs that can be encapsulated in a small experiment, you can use Electron Fi
 -->
 
 <!--
-If Fiddle is insufficient to produce an example, please provide an example REPOSITORY. You can fork electron-quick-start (https://github.com/electron/electron-quick-start) and include a link to the branch with your changes.
+If Fiddle is insufficient to produce an example, please provide an example REPOSITORY that can be cloned and run. You can fork electron-quick-start (https://github.com/electron/electron-quick-start) and include a link to the branch with your changes.
 -->
 
 <!--
