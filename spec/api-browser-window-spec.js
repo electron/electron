@@ -2563,34 +2563,6 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('focus event', () => {
-    it('should not emit if focusing on a main window with a modal open', (done) => {
-      const childWindowClosed = false
-      const child = new BrowserWindow({
-        parent: w,
-        modal: true,
-        show: false
-      })
-
-      child.once('ready-to-show', () => {
-        child.show()
-      })
-
-      child.on('show', () => {
-        w.once('focus', () => {
-          expect(child.isDestroyed()).to.equal(true)
-          done()
-        })
-        w.focus() // this should not trigger the above listener
-        child.close()
-      })
-
-      // act
-      child.loadURL(server.url)
-      w.show()
-    })
-  })
-
   describe('sheet-begin event', () => {
     let sheet = null
 
