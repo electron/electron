@@ -31,11 +31,15 @@ about: Create a report to help us improve Electron
 
 ### To Reproduce
 <!--
-Your best chance of getting this bug looked at quickly is to provide a REPOSITORY that can be cloned and run.
+Your best chance of getting this bug looked at quickly is to provide an example.
 -->
 
 <!--
-You can fork electron-quick-start (https://github.com/electron/electron-quick-start) and include a link to the branch with your changes.
+For bugs that can be encapsulated in a small experiment, you can use Electron Fiddle (https://github.com/electron/fiddle) to publish your example to a GitHub Gist and link it your bug report.
+-->
+
+<!--
+If Fiddle is insufficient to produce an example, please provide an example REPOSITORY. You can fork electron-quick-start (https://github.com/electron/electron-quick-start) and include a link to the branch with your changes.
 -->
 
 <!--
