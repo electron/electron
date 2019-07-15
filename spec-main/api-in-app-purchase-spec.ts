@@ -1,19 +1,10 @@
-'use strict'
-
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const { remote } = require('electron')
+import { expect } from 'chai'
+import { inAppPurchase } from 'electron'
 
 describe('inAppPurchase module', function () {
   if (process.platform !== 'darwin') return
 
   this.timeout(3 * 60 * 1000)
-
-  const { inAppPurchase } = remote
 
   it('canMakePayments() does not throw', () => {
     expect(() => {
@@ -34,8 +25,7 @@ describe('inAppPurchase module', function () {
   })
 
   it('getReceiptURL() returns receipt URL', () => {
-    const correctUrlEnd = inAppPurchase.getReceiptURL().endsWith('_MASReceipt/receipt')
-    expect(correctUrlEnd).to.be.true()
+    expect(inAppPurchase.getReceiptURL()).to.match(/_MASReceipt\/receipt$/)
   })
 
   // The following three tests are disabled because they hit Apple servers, and
@@ -45,12 +35,12 @@ describe('inAppPurchase module', function () {
   // without relying on a remote service.
   xit('purchaseProduct() fails when buying invalid product', async () => {
     const success = await inAppPurchase.purchaseProduct('non-exist', 1)
-    expect(success).to.be.false()
+    expect(success).to.be.false('failed to purchase non-existent product')
   })
 
   xit('purchaseProduct() accepts optional arguments', async () => {
     const success = await inAppPurchase.purchaseProduct('non-exist')
-    expect(success).to.be.false()
+    expect(success).to.be.false('failed to purchase non-existent product')
   })
 
   xit('getProducts() returns an empty list when getting invalid product', async () => {
