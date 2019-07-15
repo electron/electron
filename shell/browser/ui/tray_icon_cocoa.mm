@@ -106,7 +106,7 @@
 - (void)setTitle:(NSString*)title {
   if ([title containsANSICodes]) {
     [[statusItem_ button]
-        setAttributedTitle:[[title copy] attributedStringParsingANSICodes]];
+        setAttributedTitle:[title attributedStringParsingANSICodes]];
   } else {
     [[statusItem_ button] setTitle:[title copy]];
   }
@@ -268,12 +268,11 @@ TrayIconCocoa::~TrayIconCocoa() {
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
-  [status_item_view_ setImage:image.IsEmpty() ? nil : image.AsNSImage()];
+  [status_item_view_ setImage:image.AsNSImage()];
 }
 
 void TrayIconCocoa::SetPressedImage(const gfx::Image& image) {
-  [status_item_view_
-      setAlternateImage:image.IsEmpty() ? nil : image.AsNSImage()];
+  [status_item_view_ setAlternateImage:image.AsNSImage()];
 }
 
 void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
