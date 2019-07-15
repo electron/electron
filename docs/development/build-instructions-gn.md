@@ -265,6 +265,12 @@ HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameter
 
 to 0. More information: https://stackoverflow.com/a/9935126
 
+This can be set quickly in powershell (ran as administrator):
+
+```powershell
+New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\Lanmanworkstation\Parameters" -Name DirectoryCacheLifetime -Value 0 -PropertyType DWORD -Force
+```
+
 ## Troubleshooting
 
 ### Stale locks in the git cache
