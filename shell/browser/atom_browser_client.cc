@@ -79,6 +79,7 @@
 #include "shell/common/platform_util.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
 #if defined(OS_WIN)
@@ -407,6 +408,11 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+
+  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+                                      ? blink::PreferredColorScheme::kDark
+                                      : blink::PreferredColorScheme::kLight;
 
   SetFontDefaults(prefs);
 
