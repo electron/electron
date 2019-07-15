@@ -975,9 +975,13 @@ if (is_mac) {
     group("electron_symbols") {
       deps = [
         ":electron_app_symbols",
-        ":swiftshader_egl_symbols",
-        ":swiftshader_gles_symbols",
       ]
+      if (target_cpu == "x86" || target_cpu == "x64") {
+        deps += [
+          ":swiftshader_egl_symbols",
+          ":swiftshader_gles_symbols",
+        ]
+      }
     }
   }
 }
