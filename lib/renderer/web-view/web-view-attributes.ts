@@ -196,7 +196,7 @@ class SrcAttribute extends WebViewAttribute {
     const method = 'loadURL'
     const args = [this.getValue(), opts]
 
-    ipcRendererUtils.invokeSync('ELECTRON_GUEST_VIEW_MANAGER_CALL', guestInstanceId, method, args)
+    ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', guestInstanceId, method, args)
   }
 }
 
