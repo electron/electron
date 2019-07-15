@@ -11,6 +11,7 @@
 #include "base/logging.h"
 #include "base/sequenced_task_runner.h"
 #include "base/task_runner_util.h"
+#include "base/threading/thread_restrictions.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
@@ -66,6 +67,9 @@ AtomExtensionLoader::~AtomExtensionLoader() = default;
 
 const Extension* AtomExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir) {
+  // TODO(nornagon): load extensions asynchronously on
+  // GetExtensionFileTaskRunner()
+  base::ScopedAllowBlockingForTesting allow_blocking;
   scoped_refptr<const Extension> extension = LoadUnpacked(extension_dir);
   if (extension)
     extension_registrar_.AddExtension(extension);
