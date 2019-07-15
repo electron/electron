@@ -40,10 +40,10 @@ class Port {
     })
 
     ipcRendererInternal.on(`CHROME_PORT_POSTMESSAGE_${portId}`, (
-      _event: Electron.Event, message: string
+      _event: Electron.Event, message: any
     ) => {
       const sendResponse = function () { console.error('sendResponse is not implemented') }
-      this.onMessage.emit(message, this.sender, sendResponse)
+      this.onMessage.emit(JSON.parse(message), this.sender, sendResponse)
     })
   }
 
@@ -54,8 +54,8 @@ class Port {
     this._onDisconnect()
   }
 
-  postMessage (message: string) {
-    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_POSTMESSAGE_${this.portId}`, message)
+  postMessage (message: any) {
+    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_POSTMESSAGE_${this.portId}`, JSON.stringify(message))
   }
 
   _onDisconnect () {
