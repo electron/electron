@@ -33,7 +33,7 @@ you can use the [Frameless Window](frameless-window.md) API.
 When loading a page in the window directly, users may see the page load incrementally, which is not a good experience for a native app. To make the window display
 without visual flash, there are two solutions for different situations.
 
-### Using `ready-to-show` event
+## Using `ready-to-show` event
 
 While loading the page, the `ready-to-show` event will be emitted when the renderer
 process has rendered the page for the first time if the window has not been shown yet. Showing
@@ -51,7 +51,7 @@ This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
-### Setting `backgroundColor`
+## Setting `backgroundColor`
 
 For a complex app, the `ready-to-show` event could be emitted too late, making
 the app feel slow. In this case, it is recommended to show the window
@@ -82,7 +82,7 @@ top.show()
 
 The `child` window will always show on top of the `top` window.
 
-### Modal windows
+## Modal windows
 
 A modal window is a child window that disables parent window, to create a modal
 window, you have to set both `parent` and `modal` options:
@@ -97,7 +97,7 @@ child.once('ready-to-show', () => {
 })
 ```
 
-### Page visibility
+## Page visibility
 
 The [Page Visibility API][page-visibility-api] works as follows:
 
@@ -116,7 +116,7 @@ The [Page Visibility API][page-visibility-api] works as follows:
 It is recommended that you pause expensive operations when the visibility
 state is `hidden` in order to minimize power consumption.
 
-### Platform notices
+## Platform notices
 
 * On macOS modal windows will be displayed as sheets attached to the parent window.
 * On macOS the child windows will keep the relative position to parent window
@@ -748,7 +748,66 @@ events.
 
 #### `win.id`
 
-A `Integer` representing the unique ID of the window.
+A `Integer` property representing the unique ID of the window.
+
+#### `win.autoHideMenuBar`
+
+A `Boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
+
+If the menu bar is already visible, setting this property to `true` won't
+hide it immediately.
+
+#### `win.minimizable`
+
+A `Boolean` property that determines whether the window can be manually minimized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.maximizable`
+
+A `Boolean` property that determines whether the window can be manually maximized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.fullScreenable`
+
+A `Boolean` property that determines whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window.
+
+#### `win.resizable`
+
+A `Boolean` property that determines whether the window can be manually resized by user.
+
+#### `win.closable`
+
+A `Boolean` property that determines whether the window can be manually closed by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+### `win.movable`
+
+A `Boolean` property that determines Whether the window can be moved by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+### `win.excludedFromShownWindowsMenu` _macOS_
+
+A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
+
+```js
+const win = new BrowserWindow({ height: 600, width: 600 })
+
+const template = [
+  {
+    role: 'windowmenu'
+  }
+]
+
+win.excludedFromShownWindowsMenu = true
+
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```
 
 ### Instance Methods
 
@@ -1674,64 +1733,3 @@ removed in future Electron releases.
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
-
-### Properties
-
-#### `win.autoHideMenuBar`
-
-A `Boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
-
-If the menu bar is already visible, setting this property to `true` won't
-hide it immediately.
-
-#### `win.minimizable`
-
-A `Boolean` property that determines whether the window can be manually minimized by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.maximizable`
-
-A `Boolean` property that determines whether the window can be manually maximized by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.fullScreenable`
-
-A `Boolean` property that determines whether the maximize/zoom window button toggles fullscreen mode or
-maximizes the window.
-
-#### `win.resizable`
-
-A `Boolean` property that determines whether the window can be manually resized by user.
-
-#### `win.closable`
-
-A `Boolean` property that determines whether the window can be manually closed by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.movable`
-
-A `Boolean` property that determines Whether the window can be moved by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.excludedFromShownWindowsMenu` _macOS_
-
-A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
-
-```js
-const win = new BrowserWindow({ height: 600, width: 600 })
-
-const template = [
-  {
-    role: 'windowmenu'
-  }
-]
-
-win.excludedFromShownWindowsMenu = true
-
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
-```
