@@ -65,6 +65,13 @@ void NotifyIcon::HandleClickEvent(int modifiers,
   }
 }
 
+void NotifyIcon::HandleMouseMoveEvent(int modifiers) {
+  gfx::Point cursorPos = display::Screen::GetScreen()->GetCursorScreenPoint();
+  // Omit event fired when tray icon is created but cursor is outside of it.
+  if (GetBounds().Contains(cursorPos))
+    NotifyMouseMoved(cursorPos, modifiers);
+}
+
 void NotifyIcon::ResetIcon() {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
