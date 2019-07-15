@@ -65,6 +65,11 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
+bool IsSandboxEnabled(base::CommandLine* command_line) {
+  return command_line->HasSwitch(switches::kEnableSandbox) ||
+         !command_line->HasSwitch(service_manager::switches::kNoSandbox);
+}
+
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
 bool SubprocessNeedsResourceBundle(const std::string& process_type) {
@@ -199,6 +204,14 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
     base::win::PinUser32();
 #endif
 
+#if defined(OS_LINUX)
+  // Check for --no-sandbox parameter when running as root.
+  if (getuid() == 0 && IsSandboxEnabled(command_line))
+    LOG(FATAL) << "Running as root without --"
+               << service_manager::switches::kNoSandbox
+               << " is not supported. See https://crbug.com/638180.";
+#endif
+
   content_client_ = std::make_unique<AtomContentClient>();
   SetContentClient(content_client_.get());
 
@@ -275,10 +288,9 @@ content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
 
 content::ContentRendererClient*
 AtomMainDelegate::CreateContentRendererClient() {
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableSandbox) ||
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          service_manager::switches::kNoSandbox)) {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  if (IsSandboxEnabled(command_line)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);
