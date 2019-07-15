@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Wed, 31 Jul 2019 14:36:27 -0400
+Subject: fix: use WeakPtr to detect deletion
+
+
+diff --git a/ui/compositor/callback_layer_animation_observer.cc b/ui/compositor/callback_layer_animation_observer.cc
+index 639caf4d1411b867a31ce29e6c6ec4ae846359a8..6296afa55e38494cf0232f8bcd05811bfd4ebe38 100644
+--- a/ui/compositor/callback_layer_animation_observer.cc
++++ b/ui/compositor/callback_layer_animation_observer.cc
+@@ -38,22 +38,18 @@ CallbackLayerAnimationObserver::CallbackLayerAnimationObserver(
+           &CallbackLayerAnimationObserver::DummyAnimationStartedCallback)),
+       animation_ended_callback_(animation_ended_callback) {}
+ 
+-CallbackLayerAnimationObserver::~CallbackLayerAnimationObserver() {
+-  if (destroyed_)
+-    *destroyed_ = true;
+-}
++CallbackLayerAnimationObserver::~CallbackLayerAnimationObserver() {}
+ 
+ void CallbackLayerAnimationObserver::SetActive() {
+   active_ = true;
+ 
+-  bool destroyed = false;
+-  destroyed_ = &destroyed;
++  base::WeakPtr<CallbackLayerAnimationObserver> weak_this =
++      weak_factory_.GetWeakPtr();
+ 
+   CheckAllSequencesStarted();
+ 
+-  if (destroyed)
++  if (!weak_this)
+     return;
+-  destroyed_ = nullptr;
+ 
+   CheckAllSequencesCompleted();
+ }
+@@ -110,19 +106,17 @@ void CallbackLayerAnimationObserver::CheckAllSequencesStarted() {
+ void CallbackLayerAnimationObserver::CheckAllSequencesCompleted() {
+   if (active_ && GetNumSequencesCompleted() == attached_sequence_count_) {
+     active_ = false;
+-    bool destroyed = false;
+-    destroyed_ = &destroyed;
+-
++    base::WeakPtr<CallbackLayerAnimationObserver> weak_this =
++        weak_factory_.GetWeakPtr();
+     bool should_delete = animation_ended_callback_.Run(*this);
+ 
+-    if (destroyed) {
++    if (!weak_this) {
+       if (should_delete)
+         LOG(WARNING) << "CallbackLayerAnimationObserver was explicitly "
+                         "destroyed AND was requested to be destroyed via the "
+                         "AnimationEndedCallback's return value.";
+       return;
+     }
+-    destroyed_ = nullptr;
+ 
+     if (should_delete)
+       delete this;
+diff --git a/ui/compositor/callback_layer_animation_observer.h b/ui/compositor/callback_layer_animation_observer.h
+index fc631cc21ccc83a74955cd1af8bf43b879b6bc80..9b3448eecbc6a9bc75719c8df08586fe8870fa96 100644
+--- a/ui/compositor/callback_layer_animation_observer.h
++++ b/ui/compositor/callback_layer_animation_observer.h
+@@ -167,9 +167,8 @@ class COMPOSITOR_EXPORT CallbackLayerAnimationObserver
+   // The callback to invoke once all the animation sequences have finished.
+   AnimationEndedCallback animation_ended_callback_;
+ 
+-  // Set to true in the destructor (if non-NULL). Used to detect deletion while
+-  // calling out.
+-  bool* destroyed_ = nullptr;
++  // Used to detect deletion while calling out.
++  base::WeakPtrFactory<CallbackLayerAnimationObserver> weak_factory_{this};
+ 
+   DISALLOW_COPY_AND_ASSIGN(CallbackLayerAnimationObserver);
+ };
