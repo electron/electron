@@ -194,15 +194,38 @@ $ gn gen out/Debug-x86 --args='... target_cpu = "x86"'
 ```
 
 Not all combinations of source and target CPU/OS are supported by Chromium.
-Only cross-compiling Windows 32-bit from Windows 64-bit and Linux 32-bit from
-Linux 64-bit have been tested in Electron. If you test other combinations and
-find them to work, please update this document :)
+
+<table>
+<tr><th>Host</th><th>Target</th><th>Status</th></tr>
+<tr><td>Windows x64</td><td>Windows arm64</td><td>Experimental</td>
+<tr><td>Windows x64</td><td>Windows x86</td><td>Automatically tested</td></tr>
+<tr><td>Linux x64</td><td>Linux x86</td><td>Automatically tested</td></tr>
+</table>
+
+If you test other combinations and find them to work, please update this document :)
 
 See the GN reference for allowable values of [`target_os`][target_os values]
-and [`target_cpu`][target_cpu values]
+and [`target_cpu`][target_cpu values].
 
 [target_os values]: https://gn.googlesource.com/gn/+/master/docs/reference.md#built_in-predefined-variables-target_os_the-desired-operating-system-for-the-build-possible-values
 [target_cpu values]: https://gn.googlesource.com/gn/+/master/docs/reference.md#built_in-predefined-variables-target_cpu_the-desired-cpu-architecture-for-the-build-possible-values
+
+#### Windows on Arm (experimental)
+To cross-compile for Windows on Arm, [follow Chromium's guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/docs/windows_build_instructions.md#Visual-Studio) to get the necessary dependencies, SDK and libraries, then build with `ELECTRON_BUILDING_WOA=1` in your environment before running `gclient sync`.
+
+```bat
+set ELECTRON_BUILDING_WOA=1
+gclient sync -f --with_branch_heads --with_tags
+```
+
+Or (if using PowerShell):
+```powershell
+$env:ELECTRON_BUILDING_WOA=1
+gclient sync -f --with_branch_heads --with_tags
+```
+
+Next, run `gn gen` as above with `target_cpu="arm64"`.
+
 
 ## Tests
 

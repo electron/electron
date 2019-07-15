@@ -212,6 +212,16 @@ describe('node feature', () => {
       })
     })
 
+    describe('setTimeout called under blink env in renderer process', () => {
+      it('can be scheduled in time', (done) => {
+        setTimeout(done, 10)
+      })
+
+      it('works from the timers module', (done) => {
+        require('timers').setTimeout(done, 10)
+      })
+    })
+
     describe('setInterval called under Chromium event loop in browser process', () => {
       it('can be scheduled in time', (done) => {
         let interval = null
@@ -227,6 +237,40 @@ describe('node feature', () => {
           done()
         }
         interval = remote.getGlobal('setInterval')(clear, 10)
+      })
+    })
+
+    describe('setInterval called under blink env in renderer process', () => {
+      it('can be scheduled in time', (done) => {
+        let interval = null
+        let clearing = false
+        const clear = () => {
+          if (interval === null || clearing) return
+
+          // interval might trigger while clearing (remote is slow sometimes)
+          clearing = true
+          clearInterval(interval)
+          clearing = false
+          interval = null
+          done()
+        }
+        interval = setInterval(clear, 10)
+      })
+
+      it('can be scheduled in time from timers module', (done) => {
+        let interval = null
+        let clearing = false
+        const clear = () => {
+          if (interval === null || clearing) return
+
+          // interval might trigger while clearing (remote is slow sometimes)
+          clearing = true
+          require('timers').clearInterval(interval)
+          clearing = false
+          interval = null
+          done()
+        }
+        interval = require('timers').setInterval(clear, 10)
       })
     })
   })
@@ -338,7 +382,7 @@ describe('node feature', () => {
       function dataListener (data) {
         output += data
 
-        if (output.trim().startsWith('Debugger listening on ws://') && output.endsWith('\n')) {
+        if (output.trim().indexOf('Debugger listening on ws://') > -1 && output.indexOf('\n') > -1) {
           const socketMatch = output.trim().match(/(ws:\/\/.+:[0-9]+\/.+?)\n/gm)
           if (socketMatch && socketMatch[0]) {
             child.stderr.removeListener('data', dataListener)

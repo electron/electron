@@ -22,6 +22,7 @@ for (const flag of unknownFlags) {
 }
 
 const utils = require('./lib/utils')
+const { YARN_VERSION } = require('./yarn')
 
 const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
@@ -78,25 +79,25 @@ function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
 
 async function runElectronTests () {
   const errors = []
-  const runners = [
-    ['Main process specs', 'main', runMainProcessElectronTests],
-    ['Remote based specs', 'remote', runRemoteBasedElectronTests]
-  ]
+  const runners = new Map([
+    ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
+    ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }]
+  ])
 
-  const mochaFile = process.env.MOCHA_FILE
-  for (const runner of runners) {
-    if (runnersToRun && !runnersToRun.includes(runner[1])) {
-      console.info('\nSkipping:', runner[0])
+  const testResultsDir = process.env.ELECTRON_TEST_RESULTS_DIR
+  for (const [runnerId, { description, run }] of runners) {
+    if (runnersToRun && !runnersToRun.includes(runnerId)) {
+      console.info('\nSkipping:', description)
       continue
     }
     try {
-      console.info('\nRunning:', runner[0])
-      if (mochaFile) {
-        process.env.MOCHA_FILE = mochaFile.replace('.xml', `-${runner[1]}.xml`)
+      console.info('\nRunning:', description)
+      if (testResultsDir) {
+        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`)
       }
-      await runner[2]()
+      await run()
     } catch (err) {
-      errors.push([runner[0], err])
+      errors.push([runnerId, err])
     }
   }
 
@@ -144,7 +145,7 @@ async function installSpecModules () {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'
   })
-  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${utils.YARN_VERSION}`, 'install', '--frozen-lockfile'], {
+  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'

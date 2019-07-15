@@ -1,11 +1,12 @@
 const { expect } = require('chai')
 const { remote } = require('electron')
 const path = require('path')
+const http = require('http')
 
 const { emittedNTimes, emittedOnce } = require('./events-helpers')
 const { closeWindow } = require('./window-helpers')
 
-const { BrowserWindow } = remote
+const { app, BrowserWindow, ipcMain } = remote
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description, webPreferences) => {
@@ -30,7 +31,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should load preload scripts in top level iframes', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [event1, event2] = await detailsPromise
         expect(event1[0].frameId).to.not.equal(event2[0].frameId)
@@ -39,7 +40,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should load preload scripts in nested iframes', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`))
         const [event1, event2, event3] = await detailsPromise
         expect(event1[0].frameId).to.not.equal(event2[0].frameId)
@@ -51,37 +52,37 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should correctly reply to the main frame with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [event1] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event1[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event1[0].frameId)
       })
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [, event2] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event2[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event2[0].frameId)
       })
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`))
         const [, , event3] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event3[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event3[0].frameId)
       })
 
       it('should not expose globals in main world', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const details = await detailsPromise
         const senders = details.map(event => event[0].sender)
@@ -147,5 +148,87 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     }
   ).forEach(config => {
     generateTests(config.title, config.webPreferences)
+  })
+})
+
+describe('cross-site frame sandboxing', () => {
+  let server = null
+
+  beforeEach(function () {
+    if (process.platform === 'linux') {
+      this.skip()
+    }
+  })
+
+  before(function (done) {
+    server = http.createServer((req, res) => {
+      res.end(`<iframe name="frame" src="${server.cross_site_url}" />`)
+    })
+    server.listen(0, '127.0.0.1', () => {
+      server.url = `http://127.0.0.1:${server.address().port}/`
+      server.cross_site_url = `http://localhost:${server.address().port}/`
+      done()
+    })
+  })
+
+  after(() => {
+    server.close()
+    server = null
+  })
+
+  let w
+
+  afterEach(() => {
+    return closeWindow(w).then(() => {
+      w = null
+    })
+  })
+
+  const generateSpecs = (description, webPreferences) => {
+    describe(description, () => {
+      it('iframe process is sandboxed if possible', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        })
+
+        await w.loadURL(server.url)
+
+        const pidMain = w.webContents.getOSProcessId()
+        const pidFrame = w.webContents._getOSProcessIdForFrame('frame', server.cross_site_url)
+
+        const metrics = app.getAppMetrics()
+        const isProcessSandboxed = function (pid) {
+          const entry = metrics.filter(metric => metric.pid === pid)[0]
+          return entry && entry.sandboxed
+        }
+
+        const sandboxMain = !!(webPreferences.sandbox || process.mas)
+        const sandboxFrame = sandboxMain || !webPreferences.nodeIntegrationInSubFrames
+
+        expect(isProcessSandboxed(pidMain)).to.equal(sandboxMain)
+        expect(isProcessSandboxed(pidFrame)).to.equal(sandboxFrame)
+      })
+    })
+  }
+
+  generateSpecs('nodeIntegrationInSubFrames = false, sandbox = false', {
+    nodeIntegrationInSubFrames: false,
+    sandbox: false
+  })
+
+  generateSpecs('nodeIntegrationInSubFrames = false, sandbox = true', {
+    nodeIntegrationInSubFrames: false,
+    sandbox: true
+  })
+
+  generateSpecs('nodeIntegrationInSubFrames = true, sandbox = false', {
+    nodeIntegrationInSubFrames: true,
+    sandbox: false
+  })
+
+  generateSpecs('nodeIntegrationInSubFrames = true, sandbox = true', {
+    nodeIntegrationInSubFrames: true,
+    sandbox: true
   })
 })

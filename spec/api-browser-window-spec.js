@@ -9,6 +9,7 @@ const qs = require('querystring')
 const http = require('http')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
+const { createNetworkSandbox } = require('./network-helper')
 const { ipcRenderer, remote } = require('electron')
 const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, webContents } = remote
 
@@ -112,1232 +113,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('BrowserWindow constructor', () => {
-    it('allows passing void 0 as the webContents', async () => {
-      await openTheWindow({
-        webContents: void 0
-      })
-    })
-  })
-
-  describe('BrowserWindow.close()', () => {
-    let server
-
-    before((done) => {
-      server = http.createServer((request, response) => {
-        switch (request.url) {
-          case '/404':
-            response.statusCode = '404'
-            response.end()
-            break
-          case '/301':
-            response.statusCode = '301'
-            response.setHeader('Location', '/200')
-            response.end()
-            break
-          case '/200':
-            response.statusCode = '200'
-            response.end('hello')
-            break
-          case '/title':
-            response.statusCode = '200'
-            response.end('<title>Hello</title>')
-            break
-          default:
-            done('unsupported endpoint')
-        }
-      }).listen(0, '127.0.0.1', () => {
-        server.url = 'http://127.0.0.1:' + server.address().port
-        done()
-      })
-    })
-
-    after(() => {
-      server.close()
-      server = null
-    })
-
-    it('should emit unload handler', (done) => {
-      w.webContents.once('did-finish-load', () => { w.close() })
-      w.once('closed', () => {
-        const test = path.join(fixtures, 'api', 'unload')
-        const content = fs.readFileSync(test)
-        fs.unlinkSync(test)
-        expect(String(content)).to.equal('unload')
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'unload.html'))
-    })
-    it('should emit beforeunload handler', (done) => {
-      w.once('onbeforeunload', () => { done() })
-      w.webContents.once('did-finish-load', () => { w.close() })
-      w.loadFile(path.join(fixtures, 'api', 'beforeunload-false.html'))
-    })
-    it('should not crash when invoked synchronously inside navigation observer', (done) => {
-      const events = [
-        { name: 'did-start-loading', url: `${server.url}/200` },
-        { name: 'dom-ready', url: `${server.url}/200` },
-        { name: 'page-title-updated', url: `${server.url}/title` },
-        { name: 'did-stop-loading', url: `${server.url}/200` },
-        { name: 'did-finish-load', url: `${server.url}/200` },
-        { name: 'did-frame-finish-load', url: `${server.url}/200` },
-        { name: 'did-fail-load', url: `${server.url}/404` }
-      ]
-      const responseEvent = 'window-webContents-destroyed'
-
-      function * genNavigationEvent () {
-        let eventOptions = null
-        while ((eventOptions = events.shift()) && events.length) {
-          const w = new BrowserWindow({ show: false })
-          eventOptions.id = w.id
-          eventOptions.responseEvent = responseEvent
-          ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
-          yield 1
-        }
-      }
-
-      const gen = genNavigationEvent()
-      ipcRenderer.on(responseEvent, () => {
-        if (!gen.next().value) done()
-      })
-      gen.next()
-    })
-  })
-
-  describe('window.close()', () => {
-    it('should emit unload handler', (done) => {
-      w.once('closed', () => {
-        const test = path.join(fixtures, 'api', 'close')
-        const content = fs.readFileSync(test)
-        fs.unlinkSync(test)
-        expect(String(content)).to.equal('close')
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'close.html'))
-    })
-    it('should emit beforeunload handler', (done) => {
-      w.once('onbeforeunload', () => { done() })
-      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
-    })
-  })
-
-  describe('BrowserWindow.destroy()', () => {
-    it('prevents users to access methods of webContents', () => {
-      const contents = w.webContents
-      w.destroy()
-      expect(() => {
-        contents.getProcessId()
-      }).to.throw('Object has been destroyed')
-    })
-    it('should not crash when destroying windows with pending events', (done) => {
-      const responseEvent = 'destroy-test-completed'
-      ipcRenderer.on(responseEvent, () => done())
-      ipcRenderer.send('test-browserwindow-destroy', { responseEvent })
-    })
-  })
-
-  describe('BrowserWindow.loadURL(url)', () => {
-    it('should emit did-start-loading event', (done) => {
-      w.webContents.on('did-start-loading', () => { done() })
-      w.loadURL('about:blank')
-    })
-    it('should emit ready-to-show event', (done) => {
-      w.on('ready-to-show', () => { done() })
-      w.loadURL('about:blank')
-    })
-    it('should emit did-fail-load event for files that do not exist', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(code).to.equal(-6)
-        expect(desc).to.equal('ERR_FILE_NOT_FOUND')
-        expect(isMainFrame).to.be.true()
-        done()
-      })
-      w.loadURL('file://a.txt')
-    })
-    it('should emit did-fail-load event for invalid URL', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(desc).to.equal('ERR_INVALID_URL')
-        expect(code).to.equal(-300)
-        expect(isMainFrame).to.be.true()
-        done()
-      })
-      w.loadURL('http://example:port')
-    })
-    it('should set `mainFrame = false` on did-fail-load events in iframes', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(isMainFrame).to.be.false()
-        done()
-      })
-      w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'))
-    })
-    it('does not crash in did-fail-provisional-load handler', (done) => {
-      w.webContents.once('did-fail-provisional-load', () => {
-        w.loadURL('http://127.0.0.1:11111')
-        done()
-      })
-      w.loadURL('http://127.0.0.1:11111')
-    })
-    it('should emit did-fail-load event for URL exceeding character limit', (done) => {
-      w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
-        expect(desc).to.equal('ERR_INVALID_URL')
-        expect(code).to.equal(-300)
-        expect(isMainFrame).to.be.true()
-        done()
-      })
-      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
-      w.loadURL(`data:image/png;base64,${data}`)
-    })
-
-    it('should return a promise', () => {
-      const p = w.loadURL('about:blank')
-      expect(p).to.have.property('then')
-    })
-
-    it('should return a promise that resolves', async () => {
-      expect(w.loadURL('about:blank')).to.eventually.be.fulfilled()
-    })
-
-    it('should return a promise that rejects on a load failure', async () => {
-      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
-      const p = w.loadURL(`data:image/png;base64,${data}`)
-      await expect(p).to.eventually.be.rejected()
-    })
-
-    it('should return a promise that resolves even if pushState occurs during navigation', async () => {
-      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
-      const p = w.loadURL('data:text/html,<script>window.history.pushState({}, "/foo")</script>')
-      await expect(p).to.eventually.be.fulfilled()
-    })
-
-    describe('POST navigations', () => {
-      afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
-
-      it('supports specifying POST data', async () => {
-        await w.loadURL(server.url, { postData: postData })
-      })
-      it('sets the content type header on URL encoded forms', async () => {
-        await w.loadURL(server.url)
-        const requestDetails = new Promise(resolve => {
-          w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-            resolve(details)
-          })
-        })
-        w.webContents.executeJavaScript(`
-          form = document.createElement('form')
-          document.body.appendChild(form)
-          form.method = 'POST'
-          form.target = '_blank'
-          form.submit()
-        `)
-        const details = await requestDetails
-        expect(details.requestHeaders['content-type']).to.equal('application/x-www-form-urlencoded')
-      })
-      it('sets the content type header on multi part forms', async () => {
-        await w.loadURL(server.url)
-        const requestDetails = new Promise(resolve => {
-          w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-            resolve(details)
-          })
-        })
-        w.webContents.executeJavaScript(`
-          form = document.createElement('form')
-          document.body.appendChild(form)
-          form.method = 'POST'
-          form.target = '_blank'
-          form.enctype = 'multipart/form-data'
-          file = document.createElement('input')
-          file.type = 'file'
-          file.name = 'file'
-          form.appendChild(file)
-          form.submit()
-        `)
-        const details = await requestDetails
-        expect(details.requestHeaders['content-type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary')).to.be.true()
-      })
-    })
-
-    it('should support support base url for data urls', (done) => {
-      ipcMain.once('answer', (event, test) => {
-        expect(test).to.equal('test')
-        done()
-      })
-      w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}` })
-    })
-  })
-
-  describe('will-navigate event', () => {
-    it('allows the window to be closed from the event listener', (done) => {
-      ipcRenderer.send('close-on-will-navigate', w.id)
-      ipcRenderer.once('closed-on-will-navigate', () => { done() })
-      w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
-    })
-  })
-
-  describe('will-redirect event', () => {
-    it('is emitted on redirects', (done) => {
-      w.webContents.on('will-redirect', (event, url) => {
-        done()
-      })
-      w.loadURL(`${server.url}/302`)
-    })
-
-    it('is emitted after will-navigate on redirects', (done) => {
-      let navigateCalled = false
-      w.webContents.on('will-navigate', () => {
-        navigateCalled = true
-      })
-      w.webContents.on('will-redirect', (event, url) => {
-        expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
-        done()
-      })
-      w.loadURL(`${server.url}/navigate-302`)
-    })
-
-    it('is emitted before did-stop-loading on redirects', (done) => {
-      let stopCalled = false
-      w.webContents.on('did-stop-loading', () => {
-        stopCalled = true
-      })
-      w.webContents.on('will-redirect', (event, url) => {
-        expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
-        done()
-      })
-      w.loadURL(`${server.url}/302`)
-    })
-
-    it('allows the window to be closed from the event listener', (done) => {
-      ipcRenderer.send('close-on-will-redirect', w.id)
-      ipcRenderer.once('closed-on-will-redirect', () => { done() })
-      w.loadURL(`${server.url}/302`)
-    })
-
-    it.skip('can be prevented', (done) => {
-      ipcRenderer.send('prevent-will-redirect', w.id)
-      w.webContents.on('will-navigate', (e, url) => {
-        expect(url).to.equal(`${server.url}/302`)
-      })
-      w.webContents.on('did-stop-loading', () => {
-        expect(w.webContents.getURL()).to.equal(
-          `${server.url}/navigate-302`,
-          'url should not have changed after navigation event'
-        )
-        done()
-      })
-      w.webContents.on('will-redirect', (e, url) => {
-        expect(url).to.equal(`${server.url}/200`)
-      })
-      w.loadURL(`${server.url}/navigate-302`)
-    })
-  })
-
-  describe('BrowserWindow.show()', () => {
-    before(function () {
-      if (isCI) {
-        this.skip()
-      }
-    })
-
-    it('should focus on window', () => {
-      w.show()
-      expect(w.isFocused()).to.be.true()
-    })
-    it('should make the window visible', () => {
-      w.show()
-      expect(w.isVisible()).to.be.true()
-    })
-    it('emits when window is shown', (done) => {
-      w.once('show', () => {
-        expect(w.isVisible()).to.be.true()
-        done()
-      })
-      w.show()
-    })
-  })
-
-  describe('BrowserWindow.hide()', () => {
-    before(function () {
-      if (isCI) {
-        this.skip()
-      }
-    })
-
-    it('should defocus on window', () => {
-      w.hide()
-      expect(w.isFocused()).to.be.false()
-    })
-    it('should make the window not visible', () => {
-      w.show()
-      w.hide()
-      expect(w.isVisible()).to.be.false()
-    })
-    it('emits when window is hidden', (done) => {
-      w.show()
-      w.once('hide', () => {
-        expect(w.isVisible()).to.be.false()
-        done()
-      })
-      w.hide()
-    })
-  })
-
-  describe('BrowserWindow.showInactive()', () => {
-    it('should not focus on window', () => {
-      w.showInactive()
-      expect(w.isFocused()).to.be.false()
-    })
-  })
-
-  describe('BrowserWindow.focus()', () => {
-    it('does not make the window become visible', () => {
-      expect(w.isVisible()).to.be.false()
-      w.focus()
-      expect(w.isVisible()).to.be.false()
-    })
-  })
-
-  describe('BrowserWindow.blur()', () => {
-    it('removes focus from window', () => {
-      w.blur()
-      expect(w.isFocused()).to.be.false()
-    })
-  })
-
-  describe('BrowserWindow.getFocusedWindow()', () => {
-    it('returns the opener window when dev tools window is focused', (done) => {
-      w.show()
-      w.webContents.once('devtools-focused', () => {
-        expect(BrowserWindow.getFocusedWindow()).to.equal(w)
-        done()
-      })
-      w.webContents.openDevTools({ mode: 'undocked' })
-    })
-  })
-
-  describe('BrowserWindow autoHideMenuBar property', () => {
-    it('has an autoHideMenuBar property', () => {
-      expect(w).to.have.a.property('autoHideMenuBar')
-
-      // TODO(codebytere): remove when propertyification is complete
-      expect(w.setAutoHideMenuBar).to.be.a('function')
-      expect(w.isMenuBarAutoHide).to.be.a('function')
-    })
-  })
-
-  describe('BrowserWindow.moveTop()', () => {
-    it('should not steal focus', async () => {
-      const posDelta = 50
-      const wShownInactive = emittedOnce(w, 'show')
-      w.showInactive()
-      await wShownInactive
-      expect(w.isFocused()).to.be.false()
-
-      const otherWindow = new BrowserWindow({ show: false, title: 'otherWindow' })
-      const otherWindowShown = emittedOnce(otherWindow, 'show')
-      otherWindow.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
-      otherWindow.show()
-      await otherWindowShown
-      expect(otherWindow.isFocused()).to.be.true()
-
-      w.moveTop()
-      const wPos = w.getPosition()
-      const wMoving = emittedOnce(w, 'move')
-      w.setPosition(wPos[0] + posDelta, wPos[1] + posDelta)
-      await wMoving
-      expect(w.isFocused()).to.be.false()
-      expect(otherWindow.isFocused()).to.be.true()
-
-      const wFocused = emittedOnce(w, 'focus')
-      w.focus()
-      await wFocused
-      expect(w.isFocused()).to.be.true()
-
-      otherWindow.moveTop()
-      const otherWindowPos = otherWindow.getPosition()
-      const otherWindowMoving = emittedOnce(otherWindow, 'move')
-      otherWindow.setPosition(otherWindowPos[0] + posDelta, otherWindowPos[1] + posDelta)
-      await otherWindowMoving
-      expect(otherWindow.isFocused()).to.be.false()
-      expect(w.isFocused()).to.be.true()
-
-      await closeWindow(otherWindow, { assertSingleWindow: false }).then(() => {
-        expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2) // Test window + w
-      })
-    })
-  })
-
-  describe('BrowserWindow.capturePage(rect)', (done) => {
-    it('returns a Promise with a Buffer', async () => {
-      const image = await w.capturePage({
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 100
-      })
-
-      expect(image.isEmpty()).to.be.true()
-    })
-
-    it('preserves transparency', async () => {
-      const w = await openTheWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        transparent: true
-      })
-      const p = emittedOnce(w, 'ready-to-show')
-      w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
-      await p
-      w.show()
-
-      const image = await w.capturePage()
-      const imgBuffer = image.toPNG()
-
-      // Check the 25th byte in the PNG.
-      // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
-      expect(imgBuffer[25]).to.equal(6)
-    })
-  })
-
-  describe('BrowserWindow.setBounds(bounds[, animate])', () => {
-    it('sets the window bounds with full bounds', () => {
-      const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
-      w.setBounds(fullBounds)
-
-      expectBoundsEqual(w.getBounds(), fullBounds)
-    })
-
-    it('sets the window bounds with partial bounds', () => {
-      const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
-      w.setBounds(fullBounds)
-
-      const boundsUpdate = { width: 200 }
-      w.setBounds(boundsUpdate)
-
-      const expectedBounds = Object.assign(fullBounds, boundsUpdate)
-      expectBoundsEqual(w.getBounds(), expectedBounds)
-    })
-  })
-
-  describe('BrowserWindow.setSize(width, height)', () => {
-    it('sets the window size', async () => {
-      const size = [300, 400]
-
-      const resized = emittedOnce(w, 'resize')
-      w.setSize(size[0], size[1])
-      await resized
-
-      expectBoundsEqual(w.getSize(), size)
-    })
-  })
-
-  describe('BrowserWindow.setMinimum/MaximumSize(width, height)', () => {
-    it('sets the maximum and minimum size of the window', () => {
-      expect(w.getMinimumSize()).to.deep.equal([0, 0])
-      expect(w.getMaximumSize()).to.deep.equal([0, 0])
-
-      w.setMinimumSize(100, 100)
-      expectBoundsEqual(w.getMinimumSize(), [100, 100])
-      expectBoundsEqual(w.getMaximumSize(), [0, 0])
-
-      w.setMaximumSize(900, 600)
-      expectBoundsEqual(w.getMinimumSize(), [100, 100])
-      expectBoundsEqual(w.getMaximumSize(), [900, 600])
-    })
-  })
-
-  describe('BrowserWindow.setAspectRatio(ratio)', () => {
-    it('resets the behaviour when passing in 0', (done) => {
-      const size = [300, 400]
-      w.setAspectRatio(1 / 2)
-      w.setAspectRatio(0)
-      w.once('resize', () => {
-        expectBoundsEqual(w.getSize(), size)
-        done()
-      })
-      w.setSize(size[0], size[1])
-    })
-  })
-
-  describe('BrowserWindow.setPosition(x, y)', () => {
-    it('sets the window position', (done) => {
-      const pos = [10, 10]
-      w.once('move', () => {
-        const newPos = w.getPosition()
-        expect(newPos).to.deep.equal(pos)
-        done()
-      })
-      w.setPosition(pos[0], pos[1])
-    })
-  })
-
-  describe('BrowserWindow.setContentSize(width, height)', () => {
-    it('sets the content size', () => {
-      const size = [400, 400]
-      w.setContentSize(size[0], size[1])
-      const after = w.getContentSize()
-      expect(after).to.deep.equal(size)
-    })
-    it('works for a frameless window', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        frame: false,
-        width: 400,
-        height: 400
-      })
-      const size = [400, 400]
-      w.setContentSize(size[0], size[1])
-      const after = w.getContentSize()
-      expect(after).to.deep.equal(size)
-    })
-  })
-
-  describe('BrowserWindow.setContentBounds(bounds)', () => {
-    it('sets the content size and position', (done) => {
-      const bounds = { x: 10, y: 10, width: 250, height: 250 }
-      w.once('resize', () => {
-        expectBoundsEqual(w.getContentBounds(), bounds)
-        done()
-      })
-      w.setContentBounds(bounds)
-    })
-    it('works for a frameless window', (done) => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        frame: false,
-        width: 300,
-        height: 300
-      })
-      const bounds = { x: 10, y: 10, width: 250, height: 250 }
-      w.once('resize', () => {
-        expect(w.getContentBounds()).to.deep.equal(bounds)
-        done()
-      })
-      w.setContentBounds(bounds)
-    })
-  })
-
-  describe(`BrowserWindow.getNormalBounds()`, () => {
-    describe(`Normal state`, () => {
-      it(`checks normal bounds after resize`, (done) => {
-        const size = [300, 400]
-        w.once('resize', () => {
-          expectBoundsEqual(w.getNormalBounds(), w.getBounds())
-          done()
-        })
-        w.setSize(size[0], size[1])
-      })
-      it(`checks normal bounds after move`, (done) => {
-        const pos = [10, 10]
-        w.once('move', () => {
-          expectBoundsEqual(w.getNormalBounds(), w.getBounds())
-          done()
-        })
-        w.setPosition(pos[0], pos[1])
-      })
-    })
-    describe(`Maximized state`, () => {
-      before(function () {
-        if (isCI) {
-          this.skip()
-        }
-      })
-      it(`checks normal bounds when maximized`, (done) => {
-        const bounds = w.getBounds()
-        w.once('maximize', () => {
-          expectBoundsEqual(w.getNormalBounds(), bounds)
-          done()
-        })
-        w.show()
-        w.maximize()
-      })
-      it(`checks normal bounds when unmaximized`, (done) => {
-        const bounds = w.getBounds()
-        w.once('maximize', () => {
-          w.unmaximize()
-        })
-        w.once('unmaximize', () => {
-          expectBoundsEqual(w.getNormalBounds(), bounds)
-          done()
-        })
-        w.show()
-        w.maximize()
-      })
-    })
-    describe(`Minimized state`, () => {
-      before(function () {
-        if (isCI) {
-          this.skip()
-        }
-      })
-      it(`checks normal bounds when minimized`, (done) => {
-        const bounds = w.getBounds()
-        w.once('minimize', () => {
-          expectBoundsEqual(w.getNormalBounds(), bounds)
-          done()
-        })
-        w.show()
-        w.minimize()
-      })
-      it(`checks normal bounds when restored`, (done) => {
-        const bounds = w.getBounds()
-        w.once('minimize', () => {
-          w.restore()
-        })
-        w.once('restore', () => {
-          expectBoundsEqual(w.getNormalBounds(), bounds)
-          done()
-        })
-        w.show()
-        w.minimize()
-      })
-    })
-    describe(`Fullscreen state`, () => {
-      before(function () {
-        if (isCI) {
-          this.skip()
-        }
-        if (process.platform === 'darwin') {
-          this.skip()
-        }
-      })
-      it(`checks normal bounds when fullscreen'ed`, (done) => {
-        const bounds = w.getBounds()
-        w.once('enter-full-screen', () => {
-          expectBoundsEqual(w.getNormalBounds(), bounds)
-          done()
-        })
-        w.show()
-        w.setFullScreen(true)
-      })
-      it(`checks normal bounds when unfullscreen'ed`, (done) => {
-        const bounds = w.getBounds()
-        w.once('enter-full-screen', () => {
-          w.setFullScreen(false)
-        })
-        w.once('leave-full-screen', () => {
-          expectBoundsEqual(w.getNormalBounds(), bounds)
-          done()
-        })
-        w.show()
-        w.setFullScreen(true)
-      })
-    })
-  })
-
-  describe('BrowserWindow.setProgressBar(progress)', () => {
-    it('sets the progress', () => {
-      expect(() => {
-        if (process.platform === 'darwin') {
-          app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'))
-        }
-        w.setProgressBar(0.5)
-
-        if (process.platform === 'darwin') {
-          app.dock.setIcon(null)
-        }
-        w.setProgressBar(-1)
-      }).to.not.throw()
-    })
-    it('sets the progress using "paused" mode', () => {
-      expect(() => {
-        w.setProgressBar(0.5, { mode: 'paused' })
-      }).to.not.throw()
-    })
-    it('sets the progress using "error" mode', () => {
-      expect(() => {
-        w.setProgressBar(0.5, { mode: 'error' })
-      }).to.not.throw()
-    })
-    it('sets the progress using "normal" mode', () => {
-      expect(() => {
-        w.setProgressBar(0.5, { mode: 'normal' })
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
-    it('sets the window as always on top', () => {
-      expect(w.isAlwaysOnTop()).to.be.false()
-      w.setAlwaysOnTop(true, 'screen-saver')
-      expect(w.isAlwaysOnTop()).to.be.true()
-      w.setAlwaysOnTop(false)
-      expect(w.isAlwaysOnTop()).to.be.false()
-      w.setAlwaysOnTop(true)
-      expect(w.isAlwaysOnTop()).to.be.true()
-    })
-    it('raises an error when relativeLevel is out of bounds', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
-        // afterEach hook won't be run if a test is skipped dynamically.
-        // If afterEach isn't run current window won't be destroyed
-        // and the next test will fail on assertion in `closeWindow()`.
-        // this.skip()
-        return
-      }
-
-      expect(() => {
-        w.setAlwaysOnTop(true, '', -2147483644)
-      }).to.throw()
-
-      expect(() => {
-        w.setAlwaysOnTop(true, '', 2147483632)
-      }).to.throw()
-    })
-  })
-
-  describe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('resets the windows level on minimize', () => {
-      expect(w.isAlwaysOnTop()).to.be.false()
-      w.setAlwaysOnTop(true, 'screen-saver')
-      expect(w.isAlwaysOnTop()).to.be.true()
-      w.minimize()
-      expect(w.isAlwaysOnTop()).to.be.false()
-      w.restore()
-      expect(w.isAlwaysOnTop()).to.be.true()
-    })
-  })
-
-  describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
-    describe('on macOS', () => {
-      before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
-      it('allows changing cursor auto-hiding', () => {
-        expect(() => {
-          w.setAutoHideCursor(false)
-          w.setAutoHideCursor(true)
-        }).to.not.throw()
-      })
-    })
-
-    describe('on non-macOS platforms', () => {
-      before(function () {
-        if (process.platform === 'darwin') {
-          this.skip()
-        }
-      })
-
-      it('is not available', () => {
-        expect(w.setAutoHideCursor).to.be.undefined()
-      })
-    })
-  })
-
-  describe('BrowserWindow.selectPreviousTab()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.selectPreviousTab()
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.selectNextTab()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.selectNextTab()
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.mergeAllWindows()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.mergeAllWindows()
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.moveTabToNewWindow()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.moveTabToNewWindow()
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.toggleTabBar()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.toggleTabBar()
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.addTabbedWindow()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', (done) => {
-      const tabbedWindow = new BrowserWindow({})
-      expect(() => {
-        w.addTabbedWindow(tabbedWindow)
-      }).to.not.throw()
-
-      expect(BrowserWindow.getAllWindows()).to.have.lengthOf(3) // Test window + w + tabbedWindow
-
-      closeWindow(tabbedWindow, { assertSingleWindow: false }).then(() => {
-        expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2) // Test window + w
-        done()
-      })
-    })
-
-    it('throws when called on itself', () => {
-      expect(() => {
-        w.addTabbedWindow(w)
-      }).to.throw('AddTabbedWindow cannot be called by a window on itself.')
-    })
-  })
-
-  describe('BrowserWindow.setWindowButtonVisibility()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.setWindowButtonVisibility(true)
-        w.setWindowButtonVisibility(false)
-      }).to.not.throw()
-    })
-
-    it('throws with custom title bar buttons', () => {
-      expect(() => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          titleBarStyle: 'customButtonsOnHover',
-          frame: false
-        })
-        w.setWindowButtonVisibility(true)
-      }).to.throw('Not supported for this window')
-    })
-  })
-
-  describe('BrowserWindow.setVibrancy(type)', () => {
-    it('allows setting, changing, and removing the vibrancy', () => {
-      expect(() => {
-        w.setVibrancy('light')
-        w.setVibrancy('dark')
-        w.setVibrancy(null)
-        w.setVibrancy('ultra-dark')
-        w.setVibrancy('')
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.setAppDetails(options)', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
-    it('supports setting the app details', () => {
-      const iconPath = path.join(fixtures, 'assets', 'icon.ico')
-
-      expect(() => {
-        w.setAppDetails({ appId: 'my.app.id' })
-        w.setAppDetails({ appIconPath: iconPath, appIconIndex: 0 })
-        w.setAppDetails({ appIconPath: iconPath })
-        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2', relaunchDisplayName: 'My app name' })
-        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2' })
-        w.setAppDetails({ relaunchDisplayName: 'My app name' })
-        w.setAppDetails({
-          appId: 'my.app.id',
-          appIconPath: iconPath,
-          appIconIndex: 0,
-          relaunchCommand: 'my-app.exe arg1 arg2',
-          relaunchDisplayName: 'My app name'
-        })
-        w.setAppDetails({})
-      }).to.not.throw()
-
-      expect(() => {
-        w.setAppDetails()
-      }).to.throw('Insufficient number of arguments.')
-    })
-  })
-
-  describe('BrowserWindow.fromId(id)', () => {
-    it('returns the window with id', () => {
-      expect(BrowserWindow.fromId(w.id).id).to.equal(w.id)
-    })
-  })
-
-  describe('BrowserWindow.fromWebContents(webContents)', () => {
-    let contents = null
-
-    beforeEach(() => { contents = webContents.create({}) })
-
-    afterEach(() => { contents.destroy() })
-
-    it('returns the window with the webContents', () => {
-      expect(BrowserWindow.fromWebContents(w.webContents).id).to.equal(w.id)
-      expect(BrowserWindow.fromWebContents(contents)).to.be.undefined()
-    })
-  })
-
-  describe('BrowserWindow.fromDevToolsWebContents(webContents)', () => {
-    let contents = null
-
-    beforeEach(() => { contents = webContents.create({}) })
-
-    afterEach(() => { contents.destroy() })
-
-    it('returns the window with the webContents', (done) => {
-      w.webContents.once('devtools-opened', () => {
-        expect(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id).to.equal(w.id)
-        expect(BrowserWindow.fromDevToolsWebContents(w.webContents)).to.be.undefined()
-        expect(BrowserWindow.fromDevToolsWebContents(contents)).to.be.undefined()
-        done()
-      })
-      w.webContents.openDevTools()
-    })
-  })
-
-  describe('BrowserWindow.openDevTools()', () => {
-    it('does not crash for frameless window', () => {
-      w.destroy()
-      w = new BrowserWindow({ show: false })
-      w.openDevTools()
-    })
-  })
-
-  describe('BrowserWindow.fromBrowserView(browserView)', () => {
-    let bv = null
-
-    beforeEach(() => {
-      bv = new BrowserView()
-      w.setBrowserView(bv)
-    })
-
-    afterEach(() => {
-      w.setBrowserView(null)
-      bv.destroy()
-    })
-
-    it('returns the window with the browserView', () => {
-      expect(BrowserWindow.fromBrowserView(bv).id).to.equal(w.id)
-    })
-
-    it('returns undefined if not attached', () => {
-      w.setBrowserView(null)
-      expect(BrowserWindow.fromBrowserView(bv)).to.be.null()
-    })
-  })
-
-  describe('BrowserWindow.setOpacity(opacity)', () => {
-    it('make window with initial opacity', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        opacity: 0.5
-      })
-      expect(w.getOpacity()).to.equal(0.5)
-    })
-    it('allows setting the opacity', () => {
-      expect(() => {
-        w.setOpacity(0.0)
-        expect(w.getOpacity()).to.equal(0.0)
-        w.setOpacity(0.5)
-        expect(w.getOpacity()).to.equal(0.5)
-        w.setOpacity(1.0)
-        expect(w.getOpacity()).to.equal(1.0)
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.setShape(rects)', () => {
-    it('allows setting shape', () => {
-      expect(() => {
-        w.setShape([])
-        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }])
-        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 200, width: 1000, height: 100 }])
-        w.setShape([])
-      }).to.not.throw()
-    })
-  })
-
-  describe('"useContentSize" option', () => {
-    it('make window created with content size when used', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        useContentSize: true
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-    })
-    it('make window created with window size when not used', () => {
-      const size = w.getSize()
-      expect(size).to.deep.equal([400, 400])
-    })
-    it('works for a frameless window', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        frame: false,
-        width: 400,
-        height: 400,
-        useContentSize: true
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-      const size = w.getSize()
-      expect(size).to.deep.equal([400, 400])
-    })
-  })
-
-  describe('"titleBarStyle" option', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-
-      if (parseInt(os.release().split('.')[0]) < 14) {
-        this.skip()
-      }
-    })
-
-    it('creates browser window with hidden title bar', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        titleBarStyle: 'hidden'
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-    })
-    it('creates browser window with hidden inset title bar', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        titleBarStyle: 'hiddenInset'
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-    })
-  })
-
-  describe('enableLargerThanScreen" option', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
-    beforeEach(() => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: true,
-        width: 400,
-        height: 400,
-        enableLargerThanScreen: true
-      })
-    })
-
-    it('can move the window out of screen', () => {
-      w.setPosition(-10, -10)
-      const after = w.getPosition()
-      expect(after).to.deep.equal([-10, -10])
-    })
-    it('can set the window larger than screen', () => {
-      const size = screen.getPrimaryDisplay().size
-      size.width += 100
-      size.height += 100
-      w.setSize(size.width, size.height)
-      expectBoundsEqual(w.getSize(), [size.width, size.height])
-    })
-  })
-
-  describe('"zoomToPageWidth" option', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('sets the window width to the page width when used', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 500,
-        height: 400,
-        zoomToPageWidth: true
-      })
-      w.maximize()
-      expect(w.getSize()[0]).to.equal(500)
-    })
-  })
-
-  describe('"tabbingIdentifier" option', () => {
-    it('can be set on a window', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        tabbingIdentifier: 'group1'
-      })
-      w.destroy()
-      w = new BrowserWindow({
-        tabbingIdentifier: 'group2',
-        frame: false
-      })
-    })
-  })
-
   describe('"webPreferences" option', () => {
     afterEach(() => { ipcMain.removeAllListeners('answer') })
 
@@ -1435,7 +210,8 @@ describe('BrowserWindow module', () => {
     describe('session preload scripts', function () {
       const preloads = [
         path.join(fixtures, 'module', 'set-global-preload-1.js'),
-        path.join(fixtures, 'module', 'set-global-preload-2.js')
+        path.join(fixtures, 'module', 'set-global-preload-2.js'),
+        path.relative(process.cwd(), path.join(fixtures, 'module', 'set-global-preload-3.js'))
       ]
       const defaultSession = session.defaultSession
 
@@ -1454,9 +230,10 @@ describe('BrowserWindow module', () => {
       const generateSpecs = (description, sandbox) => {
         describe(description, () => {
           it('loads the script before other scripts in window including normal preloads', function (done) {
-            ipcMain.once('vars', function (event, preload1, preload2) {
+            ipcMain.once('vars', function (event, preload1, preload2, preload3) {
               expect(preload1).to.equal('preload-1')
               expect(preload2).to.equal('preload-1-2')
+              expect(preload3).to.be.null()
               done()
             })
             w.destroy()
@@ -1997,15 +774,27 @@ describe('BrowserWindow module', () => {
     })
 
     describe('nativeWindowOpen option', () => {
-      beforeEach(() => {
+      const networkSandbox = createNetworkSandbox(protocol)
+
+      beforeEach(async () => {
+        // used to create cross-origin navigation situations
+        await networkSandbox.serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
+        await networkSandbox.serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
+
         w.destroy()
         w = new BrowserWindow({
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // tests relies on preloads in opened windows
+            nodeIntegrationInSubFrames: true
           }
         })
+      })
+
+      afterEach(async () => {
+        await networkSandbox.reset()
       })
 
       it('opens window of about:blank with cross-scripting enabled', (done) => {
@@ -2047,12 +836,35 @@ describe('BrowserWindow module', () => {
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
       })
+      it('<webview> works in a scriptable popup', (done) => {
+        const preload = path.join(fixtures, 'api', 'new-window-webview-preload.js')
+
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegrationInSubFrames: true,
+            nativeWindowOpen: true,
+            webviewTag: true,
+            preload
+          }
+        })
+
+        ipcRenderer.send('set-options-on-next-new-window', w.webContents.id, 'show', false)
+
+        ipcMain.once('webview-loaded', () => {
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'))
+      })
       it('should inherit the nativeWindowOpen setting in opened windows', (done) => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2069,7 +881,9 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2083,14 +897,13 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
       })
       it('retains the original web preferences when window.location is changed to a new origin', async () => {
-        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
-        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
-
         w.destroy()
         w = new BrowserWindow({
           show: true,
           webPreferences: {
-            nativeWindowOpen: true
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
           }
         })
 
@@ -2103,7 +916,33 @@ describe('BrowserWindow module', () => {
         expect(typeofProcess).to.eql('undefined')
       })
 
+      it('window.opener is not null when window.location is changed to a new origin', async () => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            nativeWindowOpen: true,
+            // test relies on preloads in opened window
+            nodeIntegrationInSubFrames: true
+          }
+        })
+
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', path.join(fixtures, 'api', 'window-open-preload.js'))
+        const p = emittedOnce(ipcMain, 'answer')
+        w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
+        const [, , , windowOpenerIsNull] = await p
+        expect(windowOpenerIsNull).to.be.false('window.opener is null')
+      })
+
       it('should have nodeIntegration disabled in child windows', async () => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nativeWindowOpen: true
+          }
+        })
         const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
         const [, typeofProcess] = await p
@@ -2662,24 +1501,24 @@ describe('BrowserWindow module', () => {
         show: false
       })
 
-      w.setMinimizable(false)
-      w.setMinimizable(true)
+      w.minimizable = false
+      w.minimizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setResizable(false)
-      w.setResizable(true)
+      w.resizable = false
+      w.resizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setMaximizable(false)
-      w.setMaximizable(true)
+      w.maximizable = false
+      w.maximizable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setFullScreenable(false)
-      w.setFullScreenable(true)
+      w.fullScreenable = false
+      w.fullScreenable = true
       expect(w.getSize()).to.deep.equal([300, 200])
 
-      w.setClosable(false)
-      w.setClosable(true)
+      w.closable = false
+      w.closable = true
       expect(w.getSize()).to.deep.equal([300, 200])
     })
 
@@ -2687,13 +1526,14 @@ describe('BrowserWindow module', () => {
       it('can be changed with resizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, resizable: false })
-        expect(w.isResizable()).to.be.false()
+        expect(w.resizable).to.be.false()
 
         if (process.platform === 'darwin') {
-          expect(w.isMaximizable()).to.to.true()
+          expect(w.maximizable).to.to.true()
         }
       })
 
+      // TODO(codebytere): remove when propertyification is complete
       it('can be changed with setResizable method', () => {
         expect(w.isResizable()).to.be.true()
         w.setResizable(false)
@@ -2702,15 +1542,23 @@ describe('BrowserWindow module', () => {
         expect(w.isResizable()).to.be.true()
       })
 
+      it('can be changed with resizable property', () => {
+        expect(w.resizable).to.be.true()
+        w.resizable = false
+        expect(w.resizable).to.be.false()
+        w.resizable = true
+        expect(w.resizable).to.be.true()
+      })
+
       it('works for a frameless window', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, frame: false })
-        expect(w.isResizable()).to.be.true()
+        expect(w.resizable).to.be.true()
 
         if (process.platform === 'win32') {
           w.destroy()
           w = new BrowserWindow({ show: false, thickFrame: false })
-          expect(w.isResizable()).to.be.false()
+          expect(w.resizable).to.be.false()
         }
       })
 
@@ -2782,7 +1630,23 @@ describe('BrowserWindow module', () => {
       return
     }
 
-    describe('movable state', () => {
+    describe('movable state (property)', () => {
+      it('can be changed with movable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, movable: false })
+        expect(w.movable).to.be.false()
+      })
+      it('can be changed with movable property', () => {
+        expect(w.movable).to.be.true()
+        w.movable = false
+        expect(w.movable).to.be.false()
+        w.movable = true
+        expect(w.movable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('movable state (methods)', () => {
       it('can be changed with movable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, movable: false })
@@ -2797,7 +1661,24 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('minimizable state', () => {
+    describe('minimizable state (property)', () => {
+      it('can be changed with minimizable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, minimizable: false })
+        expect(w.minimizable).to.be.false()
+      })
+
+      it('can be changed with minimizable property', () => {
+        expect(w.minimizable).to.be.true()
+        w.minimizable = false
+        expect(w.minimizable).to.be.false()
+        w.minimizable = true
+        expect(w.minimizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('minimizable state (methods)', () => {
       it('can be changed with minimizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, minimizable: false })
@@ -2813,7 +1694,40 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('maximizable state', () => {
+    describe('maximizable state (property)', () => {
+      it('can be changed with maximizable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, maximizable: false })
+        expect(w.maximizable).to.be.false()
+      })
+
+      it('can be changed with maximizable property', () => {
+        expect(w.maximizable).to.be.true()
+        w.maximizable = false
+        expect(w.maximizable).to.be.false()
+        w.maximizable = true
+        expect(w.maximizable).to.be.true()
+      })
+
+      it('is not affected when changing other states', () => {
+        w.maximizable = false
+        expect(w.maximizable).to.be.false()
+        w.minimizable = false
+        expect(w.maximizable).to.be.false()
+        w.closable = false
+        expect(w.maximizable).to.be.false()
+
+        w.maximizable = true
+        expect(w.maximizable).to.be.true()
+        w.closable = true
+        expect(w.maximizable).to.be.true()
+        w.fullScreenable = false
+        expect(w.maximizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('maximizable state (methods)', () => {
       it('can be changed with maximizable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, maximizable: false })
@@ -2850,6 +1764,23 @@ describe('BrowserWindow module', () => {
       if (process.platform !== 'win32') return
 
       it('is reset to its former state', () => {
+        w.maximizable = false
+        w.resizable = false
+        w.resizable = true
+        expect(w.maximizable).to.be.false()
+        w.maximizable = true
+        w.resizable = false
+        w.resizable = true
+        expect(w.maximizable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('maximizable state (Windows only) (methods)', () => {
+      // Only implemented on windows.
+      if (process.platform !== 'win32') return
+
+      it('is reset to its former state', () => {
         w.setMaximizable(false)
         w.setResizable(false)
         w.setResizable(true)
@@ -2861,12 +1792,30 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('fullscreenable state', () => {
+    describe('fullscreenable state (property)', () => {
       before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
+      })
+
+      it('can be changed with fullscreenable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, fullscreenable: false })
+        expect(w.fullScreenable).to.be.false()
+      })
+
+      it('can be changed with fullScreenable property', () => {
+        expect(w.fullScreenable).to.be.true()
+        w.fullScreenable = false
+        expect(w.fullScreenable).to.be.false()
+        w.fullScreenable = true
+        expect(w.fullScreenable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('fullscreenable state (methods)', () => {
+      before(function () {
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('can be changed with fullscreenable option', () => {
@@ -2910,21 +1859,18 @@ describe('BrowserWindow module', () => {
 
     describe('fullscreen state with resizable set', () => {
       before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
+        if (process.platform !== 'darwin') this.skip()
       })
 
       it('resizable flag should be set to true and restored', (done) => {
         w.destroy()
         w = new BrowserWindow({ resizable: false })
         w.once('enter-full-screen', () => {
-          expect(w.isResizable()).to.be.true()
+          expect(w.resizable).to.be.true()
           w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
-          expect(w.isResizable()).to.be.false()
+          expect(w.resizable).to.be.false()
           done()
         })
         w.setFullScreen(true)
@@ -2971,7 +1917,24 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('closable state', () => {
+    describe('closable state (property)', () => {
+      it('can be changed with closable option', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, closable: false })
+        expect(w.closable).to.be.false()
+      })
+
+      it('can be changed with setClosable method', () => {
+        expect(w.closable).to.be.true()
+        w.closable = false
+        expect(w.closable).to.be.false()
+        w.closable = true
+        expect(w.closable).to.be.true()
+      })
+    })
+
+    // TODO(codebytere): remove when propertyification is complete
+    describe('closable state (methods)', () => {
       it('can be changed with closable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, closable: false })
@@ -3729,6 +2692,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.getFrameRate()', () => {
       it('has default frame rate', (done) => {
         w.webContents.once('paint', function (event, rect, data) {
@@ -3739,12 +2703,34 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.setFrameRate(frameRate)', () => {
       it('sets custom frame rate', (done) => {
         w.webContents.on('dom-ready', () => {
           w.webContents.setFrameRate(30)
           w.webContents.once('paint', function (event, rect, data) {
             expect(w.webContents.getFrameRate()).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.FrameRate', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.frameRate = 30
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.frameRate).to.equal(30)
             done()
           })
         })
@@ -3776,23 +2762,4 @@ const isScaleFactorRounding = () => {
   if (Math.round(scaleFactor) !== scaleFactor) return true
   // Return true if scale factor is odd number above 2
   return scaleFactor > 2 && scaleFactor % 2 === 1
-}
-
-function serveFileFromProtocol (protocolName, filePath) {
-  return new Promise((resolve, reject) => {
-    protocol.registerBufferProtocol(protocolName, (request, callback) => {
-      // Disabled due to false positive in StandardJS
-      // eslint-disable-next-line standard/no-callback-literal
-      callback({
-        mimeType: 'text/html',
-        data: fs.readFileSync(filePath)
-      })
-    }, (error) => {
-      if (error != null) {
-        reject(error)
-      } else {
-        resolve()
-      }
-    })
-  })
 }

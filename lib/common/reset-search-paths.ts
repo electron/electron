@@ -5,12 +5,6 @@ const Module = require('module')
 // Clear Node's global search paths.
 Module.globalPaths.length = 0
 
-// Clear current bundles search paths.
-const currentNodeModule = Module._cache[__filename]
-if (currentNodeModule) {
-  currentNodeModule.paths = []
-}
-
 // Prevent Node from adding paths outside this app to search paths.
 const resourcesPathWithTrailingSlash = process.resourcesPath + path.sep
 const originalNodeModulePaths = Module._nodeModulePaths

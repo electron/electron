@@ -160,8 +160,8 @@ describe('systemPreferences module', () => {
       expect(systemPreferences).to.have.a.property('appLevelAppearance')
 
       // TODO(codebytere): remove when propertyification is complete
-      expect(systemPreferences.getAppLevelAppearance).to.be.a('function')
       expect(systemPreferences.setAppLevelAppearance).to.be.a('function')
+      expect(() => { systemPreferences.getAppLevelAppearance() }).to.not.throw()
     })
   })
 

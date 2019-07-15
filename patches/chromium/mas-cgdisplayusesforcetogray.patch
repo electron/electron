@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:49:24 -0700
+Subject: mas-cgdisplayusesforcetogray.patch
+
+Removes usage of the CGDisplayUsesForceToGray private API.
+
+diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
+index 170963e32063b82f789692652092501fb2b1bc48..4e0a2cb6991cafa96c1e2077f38ef315544890fc 100644
+--- a/ui/display/mac/screen_mac.mm
++++ b/ui/display/mac/screen_mac.mm
+@@ -108,7 +108,17 @@ Display BuildDisplayForScreen(NSScreen* screen) {
+ 
+   display.set_color_depth(NSBitsPerPixelFromDepth([screen depth]));
+   display.set_depth_per_component(NSBitsPerSampleFromDepth([screen depth]));
++#ifdef MAS_BUILD
++  // This is equivalent to the CGDisplayUsesForceToGray() API as at 2018-08-06,
++  // but avoids usage of the private API.
++  CFStringRef app = CFSTR("com.apple.CoreGraphics");
++  CFStringRef key = CFSTR("DisplayUseForcedGray");
++  Boolean key_valid = false;
++  display.set_is_monochrome(
++      CFPreferencesGetAppBooleanValue(key, app, &key_valid));
++#else
+   display.set_is_monochrome(CGDisplayUsesForceToGray());
++#endif
+ 
+   if (auto display_link = ui::DisplayLinkMac::GetForDisplay(display_id))
+     display.set_display_frequency(display_link->GetRefreshRate());

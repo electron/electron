@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:49:42 -0700
+Subject: allow_webview_file_url.patch
+
+Allow webview to load non-web URLs.
+
+diff --git a/content/browser/loader/resource_dispatcher_host_impl.cc b/content/browser/loader/resource_dispatcher_host_impl.cc
+index c4db9c98e4e909cea8ba000402afdb32ff57cb4e..28325e6f6f64922c4ba0daf2c94dcae34d5b4855 100644
+--- a/content/browser/loader/resource_dispatcher_host_impl.cc
++++ b/content/browser/loader/resource_dispatcher_host_impl.cc
+@@ -1429,6 +1429,8 @@ void ResourceDispatcherHostImpl::BeginNavigationRequest(
+       !policy->IsWebSafeScheme(info.common_params.url.scheme()) &&
+       !is_external_protocol;
+ 
++  non_web_url_in_guest = false;
++
+   if (is_shutdown_ || non_web_url_in_guest) {
+     url_loader_client->OnComplete(
+         network::URLLoaderCompletionStatus(net::ERR_ABORTED));

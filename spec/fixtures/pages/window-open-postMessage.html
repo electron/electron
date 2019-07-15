@@ -8,6 +8,7 @@
       sourceEqualsOpener: e.source === window.opener
     }), '*');
   });
+  window.opener.postMessage("ready", "*")
 </script>
 </body>
 </html>

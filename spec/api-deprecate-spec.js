@@ -87,7 +87,7 @@ describe('deprecate', () => {
     deprecate.setHandler(m => { msg = m })
 
     function oldFn () { return 'hello' }
-    const deprecatedFn = deprecate.function(oldFn)
+    const deprecatedFn = deprecate.removeFunction(oldFn, 'oldFn')
     deprecatedFn()
 
     expect(msg).to.be.a('string')
@@ -100,7 +100,7 @@ describe('deprecate', () => {
 
     function oldFn () { return 'hello' }
     function newFn () { return 'goodbye' }
-    const deprecatedFn = deprecate.function(oldFn, newFn)
+    const deprecatedFn = deprecate.renameFunction(oldFn, newFn)
     deprecatedFn()
 
     expect(msg).to.be.a('string')

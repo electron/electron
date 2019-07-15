@@ -12,7 +12,7 @@ you can interact with the community in these locations:
 - [`electron`](https://discuss.atom.io/c/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
-- [`Electron`](https://atom-slack.herokuapp.com) channel on Atom's Slack
+- `#electron` channel on [Atom's Slack](https://discuss.atom.io/t/join-us-on-slack/16638?source_topic_id=25406)
 - [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
@@ -36,6 +36,16 @@ tools and resources.
 The latest three major versions are supported by the Electron team.
 For example, if the latest release is 5.0.x, then the 4.x.y series
 is supported, as are the two previous release series 3.x.y and 2.x.y.
+
+The latest stable release unilaterally receives all fixes from `master`,
+and the version prior to that receives the vast majority of those fixes
+as time and bandwidth warrants. The oldest supported release line will receive
+only security fixes directly.
+
+All supported release lines will accept external pull requests to backport
+fixes previously merged to `master`, though this may be on a case-by-case
+basis for some older supported lines. All contested decisions around release
+line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/master/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
 
 ### Currently supported versions
 - 5.x

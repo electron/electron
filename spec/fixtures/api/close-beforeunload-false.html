@@ -12,7 +12,8 @@
       return false;
     }
   }
-  window.close();
+  // unload events don't get run unless load events have run.
+  window.onload = () => window.close()
 </script>
 </body>
 </html>

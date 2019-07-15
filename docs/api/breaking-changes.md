@@ -12,7 +12,7 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
 command line flag when building native Node modules.  Both will be supported for
-the forseeable future but it is reccomened that you switch.
+the foreseeable future but it is recommended that you switch.
 
 Deprecated: https://atom.io/download/electron
 
@@ -63,6 +63,10 @@ webFrame.setIsolatedWorldInfo(
     csp: 'content_security_policy'
   })
 ```
+
+### Removal of deprecated `marked` property on getBlinkMemoryInfo
+
+This property was removed in Chromium 77, and as such is no longer available.
 
 ## Planned Breaking API Changes (6.0)
 
@@ -148,9 +152,16 @@ app.enableMixedSandbox()
 
 Mixed-sandbox mode is now enabled by default.
 
-### Preload scripts outside of app path are not allowed
+### `Tray`
 
-For security reasons, preload scripts can only be loaded from a subpath of the [app path](app.md#appgetapppath).
+Under macOS Catalina our former Tray implementation breaks.
+Apple's native substitute doesn't support changing the highlighting behavior.
+
+```js
+// Deprecated
+tray.setHighlightMode(mode)
+// API will be removed in v7.0 without replacement.
+```
 
 ## Planned Breaking API Changes (5.0)
 
@@ -176,7 +187,7 @@ const w = new BrowserWindow({
 
 ### `nativeWindowOpen`
 
-Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled.
+Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled, unless `nodeIntegrationInSubFrames` is `true.
 
 ### Privileged Schemes Registration
 
@@ -198,6 +209,23 @@ webFrame.setIsolatedWorldInfo(
     name: 'human_readable_name',
     csp: 'content_security_policy'
   })
+```
+
+## `webFrame.setSpellCheckProvider`
+The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+```js
+// Deprecated
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck: (text) => {
+    return !spellchecker.isMisspelled(text)
+  }
+})
+// Replace with
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck: (words, callback) => {
+    callback(words.filter(text => spellchecker.isMisspelled(text)))
+  }
+})
 ```
 
 ## Planned Breaking API Changes (4.0)
@@ -511,7 +539,7 @@ to clarify to users which ARM version it supports, and to disambiguate it from
 future armv6l and arm64 assets that may be produced.
 
 The file _without the prefix_ is still being published to avoid breaking any
-setups that may be consuming it. Starting at 2.0, the un-prefixed file will
+setups that may be consuming it. Starting at 2.0, the unprefixed file will
 no longer be published.
 
 For details, see

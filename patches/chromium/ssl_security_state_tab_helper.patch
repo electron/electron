@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:34 -0700
+Subject: ssl_security_state_tab_helper.patch
+
+Allows populating security tab info for devtools in Electron.
+
+diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
+index 45e0f485363a282e2e0caf227c2a7fbc8309acee..a05e16eba687d34e0cbad8cdc6159156cea59abd 100644
+--- a/chrome/browser/ssl/security_state_tab_helper.cc
++++ b/chrome/browser/ssl/security_state_tab_helper.cc
+@@ -13,14 +13,18 @@
+ #include "base/strings/pattern.h"
+ #include "base/strings/string_util.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/safe_browsing/safe_browsing_service.h"
+ #include "chrome/browser/safe_browsing/ui_manager.h"
++#endif
+ #include "chrome/common/secure_origin_whitelist.h"
++#if 0
+ #include "components/omnibox/browser/omnibox_field_trial.h"
+ #include "components/omnibox/common/omnibox_features.h"
+ #include "components/password_manager/core/browser/password_manager_metrics_util.h"
++#endif
+ #include "components/security_state/content/content_utils.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/navigation_entry.h"
+@@ -43,8 +47,10 @@
+ #endif  // defined(OS_CHROMEOS)
+ 
+ #if defined(FULL_SAFE_BROWSING)
++#if 0
+ #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
+ #endif
++#endif
+ 
+ namespace {
+ 
+@@ -64,8 +70,9 @@ void RecordSecurityLevel(
+ 
+ }  // namespace
+ 
++#if 0
+ using password_manager::metrics_util::PasswordType;
+-using safe_browsing::SafeBrowsingUIManager;
++#endif
+ 
+ SecurityStateTabHelper::SecurityStateTabHelper(
+     content::WebContents* web_contents)
+@@ -153,6 +160,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+       web_contents()->GetController().GetVisibleEntry();
+   if (!entry)
+     return security_state::MALICIOUS_CONTENT_STATUS_NONE;
++#if 0
+   safe_browsing::SafeBrowsingService* sb_service =
+       g_browser_process->safe_browsing_service();
+   if (!sb_service)
+@@ -219,6 +227,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+         break;
+     }
+   }
++#endif
+   return security_state::MALICIOUS_CONTENT_STATUS_NONE;
+ }
+ 

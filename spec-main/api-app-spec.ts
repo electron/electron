@@ -164,7 +164,9 @@ describe('app module', () => {
       let output = ''
 
       appProcess = cp.spawn(electronPath, [appPath])
-      appProcess.stdout.on('data', data => { output += data })
+      if (appProcess && appProcess.stdout) {
+        appProcess.stdout.on('data', data => { output += data })
+      }
       const [code] = await emittedOnce(appProcess, 'close')
 
       if (process.platform !== 'win32') {
@@ -196,7 +198,9 @@ describe('app module', () => {
 
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
-      appProcess.stdout.on('data', data => appProcess!.kill())
+      if (appProcess && appProcess.stdout) {
+        appProcess.stdout.on('data', data => appProcess!.kill())
+      }
       const [code, signal] = await emittedOnce(appProcess, 'close')
 
       const message = `code:\n${code}\nsignal:\n${signal}`
@@ -645,6 +649,28 @@ describe('app module', () => {
     })
   })
 
+  describe('getAppPath', () => {
+    it('works for directories with package.json', async () => {
+      const { appPath } = await runTestApp('app-path')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'))
+    })
+
+    it('works for directories with index.js', async () => {
+      const { appPath } = await runTestApp('app-path/lib')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+    })
+
+    it('works for files without extension', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+    })
+
+    it('works for files', async () => {
+      const { appPath } = await runTestApp('app-path/lib/index.js')
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+    })
+  })
+
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
       const paths = [
@@ -931,13 +957,22 @@ describe('app module', () => {
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
 
       const types = []
-      for (const { pid, type, cpu } of appMetrics) {
-        expect(pid).to.be.above(0, 'pid is not > 0')
-        expect(type).to.be.a('string').that.does.not.equal('')
+      for (const entry of appMetrics) {
+        expect(entry.pid).to.be.above(0, 'pid is not > 0')
+        expect(entry.type).to.be.a('string').that.does.not.equal('')
+        expect(entry.creationTime).to.be.a('number').that.is.greaterThan(0)
 
-        types.push(type)
-        expect(cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
-        expect(cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
+        types.push(entry.type)
+        expect(entry.cpu).to.have.ownProperty('percentCPUUsage').that.is.a('number')
+        expect(entry.cpu).to.have.ownProperty('idleWakeupsPerSecond').that.is.a('number')
+
+        if (process.platform !== 'linux') {
+          expect(entry.sandboxed).to.be.a('boolean')
+        }
+
+        if (process.platform === 'win32') {
+          expect(entry.integrityLevel).to.be.a('string')
+        }
       }
 
       if (process.platform === 'darwin') {

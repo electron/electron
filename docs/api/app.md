@@ -122,7 +122,7 @@ Returns:
 * `url` String
 
 Emitted when the user wants to open a URL with the application. Your application's
-`Info.plist` file must define the url scheme within the `CFBundleURLTypes` key, and
+`Info.plist` file must define the URL scheme within the `CFBundleURLTypes` key, and
 set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
@@ -354,7 +354,7 @@ Returns:
 * `event` Event
 * `killed` Boolean
 
-Emitted when the gpu process crashes or is killed.
+Emitted when the GPU process crashes or is killed.
 
 ### Event: 'renderer-process-crashed'
 
@@ -576,13 +576,13 @@ Hides all application windows without minimizing them.
 Shows application windows after they were hidden. Does not automatically focus
 them.
 
-### `app.setAppLogsPath(path)`
+### `app.setAppLogsPath([path])`
 
 * `path` String (optional) - A custom path for your logs. Must be absolute.
 
 Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(pathName, newPath)`.
 
-On _macOS_, this directory will be set by deafault to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
+On _macOS_, this directory will be set by default to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
 
 ### `app.getAppPath()`
 
@@ -662,7 +662,7 @@ executable is returned.
 Returns `String` - The current application's name, which is the name in the application's
 `package.json` file.
 
-Usually the `name` field of `package.json` is a short lowercased name, according
+Usually the `name` field of `package.json` is a short lowercase name, according
 to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
@@ -772,7 +772,7 @@ The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internall
 
 * `tasks` [Task[]](structures/task.md) - Array of `Task` objects
 
-Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
+Adds `tasks` to the [Tasks][tasks] category of the Jump List on Windows.
 
 `tasks` is an array of [`Task`](structures/task.md) objects.
 
@@ -964,10 +964,11 @@ Returns `String` - The type of the currently running activity.
 
 ### `app.invalidateCurrentActivity()` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
-  [`NSUserActivity.activityType`][activity-type].
-
 Invalidates the current [Handoff][handoff] user activity.
+
+### `app.resignCurrentActivity()` _macOS_
+
+Marks the current [Handoff][handoff] user activity as inactive without invalidating it.
 
 ### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
@@ -1012,7 +1013,7 @@ This method can only be called before app is ready.
 
 ### `app.getAppMetrics()`
 
-Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and CPU usage statistics of all the processes associated with the app.
 
 ### `app.getGPUFeatureStatus()`
 
@@ -1177,10 +1178,11 @@ Show the app's about panel options. These options can be overridden with `app.se
   * `applicationName` String (optional) - The app's name.
   * `applicationVersion` String (optional) - The app's version.
   * `copyright` String (optional) - Copyright information.
-  * `version` String (optional) - The app's build version number. _macOS_
-  * `credits` String (optional) - Credit information. _macOS_
-  * `website` String (optional) - The app's website. _Linux_
-  * `iconPath` String (optional) - Path to the app's icon. _Linux_
+  * `version` String (optional) - The app's build version number.
+  * `credits` String (optional) _macOS_ - Credit information.
+  * `authors` String[] (optional) _Linux_ - List of app authors.
+  * `website` String (optional) _Linux_ - The app's website.
+  * `iconPath` String (optional) _Linux_ - Path to the app's icon. Will be shown as 64x64 pixels while retaining aspect ratio.
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file on MacOS. See the [Apple docs][about-panel-options] for more details. On Linux, values must be set in order to be shown; there are no defaults.
@@ -1293,7 +1295,7 @@ A `Boolean` property that returns  `true` if the app is packaged, `false` otherw
 
 A `String` property that indicates the current application's name, which is the name in the application's `package.json` file.
 
-Usually the `name` field of `package.json` is a short lowercased name, according
+Usually the `name` field of `package.json` is a short lowercase name, according
 to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.

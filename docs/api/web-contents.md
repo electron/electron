@@ -70,9 +70,23 @@ Returns:
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
-This event is like `did-finish-load` but emitted when the load failed or was
-cancelled, e.g. `window.stop()` is invoked.
+This event is like `did-finish-load` but emitted when the load failed.
 The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+
+#### Event: 'did-fail-provisional-load'
+
+Returns:
+
+* `event` Event
+* `errorCode` Integer
+* `errorDescription` String
+* `validatedURL` String
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+This event is like `did-fail-load` but emitted when the load was cancelled
+(e.g. `window.stop()` was invoked).
 
 #### Event: 'did-frame-finish-load'
 
@@ -738,7 +752,7 @@ Calling `event.preventDefault()` will make it return empty sources.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.require()` is called in the renderer process.
@@ -749,7 +763,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `globalName` String
 
 Emitted when `remote.getGlobal()` is called in the renderer process.
@@ -760,7 +774,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `moduleName` String
 
 Emitted when `remote.getBuiltin()` is called in the renderer process.
@@ -771,7 +785,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWindow()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -781,7 +795,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
@@ -791,7 +805,7 @@ Custom value can be returned by setting `event.returnValue`.
 
 Returns:
 
-* `event` Event
+* `event` IpcMainEvent
 * `guestWebContents` [WebContents](web-contents.md)
 
 Emitted when `<webview>.getWebContents()` is called in the renderer process.
@@ -965,19 +979,44 @@ Returns `Boolean` - Whether the renderer process has crashed.
 
 Overrides the user agent for this web page.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getUserAgent()`
 
 Returns `String` - The user agent for this web page.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.insertCSS(css)`
 
 * `css` String
 
-Injects CSS into the current web page.
+Returns `Promise<String>` - A promise that resolves with a key for the inserted
+CSS that can later be used to remove the CSS via
+`contents.removeInsertedCSS(key)`.
+
+Injects CSS into the current web page and returns a unique key for the inserted
+stylesheet.
 
 ```js
 contents.on('did-finish-load', function () {
   contents.insertCSS('html, body { background-color: #f00; }')
+})
+```
+
+#### `contents.removeInsertedCSS(key)`
+
+* `key` String
+
+Returns `Promise<void>` - Resolves if the removal was successful.
+
+Removes the inserted CSS from the current web page. The stylesheet is identified
+by its key, which is returned from `contents.insertCSS(css)`.
+
+```js
+contents.on('did-finish-load', async function () {
+  const key = await contents.insertCSS('html, body { background-color: #f00; }')
+  contents.removeInsertedCSS(key)
 })
 ```
 
@@ -994,6 +1033,8 @@ Evaluates `code` in page.
 In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
+
+Code execution will be suspended until web page stop loading.
 
 ```js
 contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
@@ -1014,9 +1055,13 @@ Ignore application menu shortcuts while this web contents is focused.
 
 Mute the audio on the current web page.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.isAudioMuted()`
 
 Returns `Boolean` - Whether this page has been muted.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.isCurrentlyAudible()`
 
@@ -1029,9 +1074,13 @@ Returns `Boolean` - Whether audio is currently playing.
 Changes the zoom factor to the specified factor. Zoom factor is
 zoom percent divided by 100, so 300% = 3.0.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getZoomFactor()`
 
 Returns `Number` - the current zoom factor.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.setZoomLevel(level)`
 
@@ -1042,14 +1091,20 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getZoomLevel()`
 
 Returns `Number` - the current zoom level.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
 * `minimumLevel` Number
 * `maximumLevel` Number
+
+Returns `Promise<void>`
 
 Sets the maximum and minimum pinch-to-zoom level.
 
@@ -1063,6 +1118,8 @@ Sets the maximum and minimum pinch-to-zoom level.
 
 * `minimumLevel` Number
 * `maximumLevel` Number
+
+Returns `Promise<void>`
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
@@ -1125,6 +1182,8 @@ Executes the editing command `replaceMisspelling` in web page.
 
 * `text` String
 
+Returns `Promise<void>`
+
 Inserts `text` to the focused element.
 
 #### `contents.findInPage(text[, options])`
@@ -1186,11 +1245,29 @@ Returns [`PrinterInfo[]`](structures/printer-info.md).
 
 * `options` Object (optional)
   * `silent` Boolean (optional) - Don't ask user for print settings. Default is `false`.
-  * `printBackground` Boolean (optional) - Also prints the background color and image of
+  * `printBackground` Boolean (optional) - Prints the background color and image of
     the web page. Default is `false`.
   * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
+  * `color` Boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
+  * `margins` Object (optional)
+    * `marginType` String (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
+    * `top` Number (optional) - The top margin of the printed web page, in pixels.
+    * `bottom` Number (optional) - The bottom margin of the printed web page, in pixels.
+    * `left` Number (optional) - The left margin of the printed web page, in pixels.
+    * `right` Number (optional) - The right margin of the printed web page, in pixels.
+  * `landscape` Boolean (optional) - Whether the web page should be printed in landscape mode. Default is `false`.
+  * `scaleFactor` Number (optional) - The scale factor of the web page.
+  * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
+  * `collate` Boolean (optional) - Whether the web page should be collated.
+  * `copies` Number (optional) - The number of copies of the web page to print.
+  * `pageRanges` Record<string, number> (optional) - The page range to print. Should have two keys: `from` and `to`.
+  * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
+  * `dpi` Object (optional)
+    * `horizontal` Number (optional) - The horizontal dpi.
+    * `vertical` Number (optional) - The vertical dpi.
 * `callback` Function (optional)
   * `success` Boolean - Indicates success of the print call.
+  * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings
@@ -1199,7 +1276,16 @@ for printing.
 Calling `window.print()` in web page is equivalent to calling
 `webContents.print({ silent: false, printBackground: false, deviceName: '' })`.
 
-Use `page-break-before: always; ` CSS style to force to print to a new page.
+Use `page-break-before: always;` CSS style to force to print to a new page.
+
+Example usage:
+
+```js
+const options = { silent: true, deviceName: 'My-Printer' }
+win.webContents.print(options, (success, errorType) => {
+  if (!success) console.log(errorType)
+})
+```
 
 #### `contents.printToPDF(options)`
 
@@ -1382,7 +1468,7 @@ Opens the developer tools for the shared worker context.
 
 Opens the developer tools for the service worker context.
 
-#### `contents.send(channel[, arg1][, arg2][, ...])`
+#### `contents.send(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
@@ -1423,7 +1509,7 @@ app.on('ready', () => {
 </html>
 ```
 
-#### `contents.sendToFrame(frameId, channel[, arg1][, arg2][, ...])`
+#### `contents.sendToFrame(frameId, channel, ...args)`
 
 * `frameId` Integer
 * `channel` String
@@ -1604,9 +1690,13 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
 Only values between 1 and 60 are accepted.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `contents.getFrameRate()`
 
 Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `contents.invalidate()`
 
@@ -1671,6 +1761,33 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
 ### Instance Properties
+
+#### `contents.audioMuted`
+
+A `Boolean` property that determines whether this page is muted.
+
+#### `contents.userAgent`
+
+A `String` property that determines the user agent for this web page.
+
+#### `contents.zoomLevel`
+
+A `Number` property that determines the zoom level for this web contents.
+
+The original size is 0 and each increment above or below represents zooming 20% larger or smaller to default limits of 300% and 50% of original size, respectively. The formula for this is `scale := 1.2 ^ level`.
+
+#### `contents.zoomFactor`
+
+A `Number` property that determines the zoom factor for this web contents.
+
+The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
+
+#### `contents.frameRate`
+
+An `Integer` property that sets the frame rate of the web contents to the specified number.
+Only values between 1 and 60 are accepted.
+
+Only applicable if *offscreen rendering* is enabled.
 
 #### `contents.id`
 

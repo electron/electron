@@ -162,10 +162,7 @@ When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
 after this script has finished executing.
 
-**Note:** For security reasons, preload scripts can only be loaded from
-a subpath of the [app path](app.md#appgetapppath).
-
-**Note:** This option will be appear as `preloadURL` (not `preload`) in
+**Note:** This option will appear as `preloadURL` (not `preload`) in
 the `webPreferences` specified to the `will-attach-webview` event.
 
 ### `httpreferrer`
@@ -280,6 +277,11 @@ webview.addEventListener('dom-ready', () => {
   * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
+Returns `Promise<void>` - The promise will resolve when the page has finished loading
+(see [`did-finish-load`](webview-tag.md#event-did-finish-load)), and rejects
+if the page fails to load (see
+[`did-fail-load`](webview-tag.md#event-did-fail-load)).
+
 Loads the `url` in the webview, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
 
@@ -379,7 +381,21 @@ Returns `String` - The user agent for guest page.
 
 * `css` String
 
-Injects CSS into the guest page.
+Returns `Promise<String>` - A promise that resolves with a key for the inserted
+CSS that can later be used to remove the CSS via
+`<webview>.removeInsertedCSS(key)`.
+
+Injects CSS into the current web page and returns a unique key for the inserted
+stylesheet.
+
+### `<webview>.removeInsertedCSS(key)`
+
+* `key` String
+
+Returns `Promise<void>` - Resolves if the removal was successful.
+
+Removes the inserted CSS from the current web page. The stylesheet is identified
+by its key, which is returned from `<webview>.insertCSS(css)`.
 
 ### `<webview>.executeJavaScript(code[, userGesture])`
 
@@ -490,6 +506,8 @@ Executes editing command `replaceMisspelling` in page.
 
 * `text` String
 
+Returns `Promise<void>`
+
 Inserts `text` to the focused element.
 
 ### `<webview>.findInPage(text[, options])`
@@ -531,6 +549,8 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     the web page. Default is `false`.
   * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
 
+Returns `Promise<void>`
+
 Prints `webview`'s web page. Same as `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options)`
@@ -557,21 +577,25 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 
-### `<webview>.send(channel[, arg1][, arg2][, ...])`
+### `<webview>.send(channel, ...args)`
 
 * `channel` String
 * `...args` any[]
+
+Returns `Promise<void>`
 
 Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. The renderer process can handle the message by
 listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) module.
 
-See [webContents.send](web-contents.md#contentssendchannel-arg1-arg2-) for
+See [webContents.send](web-contents.md#contentssendchannel-args) for
 examples.
 
 ### `<webview>.sendInputEvent(event)`
 
 * `event` Object
+
+Returns `Promise<void>`
 
 Sends an input `event` to the page.
 
@@ -607,12 +631,16 @@ Returns `Number` - the current zoom level.
 * `minimumLevel` Number
 * `maximumLevel` Number
 
+Returns `Promise<void>`
+
 Sets the maximum and minimum pinch-to-zoom level.
 
 ### `<webview>.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
 
 * `minimumLevel` Number
 * `maximumLevel` Number
+
+Returns `Promise<void>`
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import argparse
 import glob
 import os
@@ -29,7 +30,7 @@ def main():
                     '--turbo_instruction_scheduling',
                     '--no-native-code-counters' ]
         subprocess.check_call(mkargs)
-        print 'ok mksnapshot successfully created snapshot_blob.bin.'
+        print('ok mksnapshot successfully created snapshot_blob.bin.')
         context_snapshot = 'v8_context_snapshot.bin'
         context_snapshot_path = os.path.join(app_path, context_snapshot)
         gen_binary = get_binary_path('v8_context_snapshot_generator', \
@@ -37,8 +38,8 @@ def main():
         genargs = [ gen_binary, \
                   '--output_file={0}'.format(context_snapshot_path) ]
         subprocess.check_call(genargs)
-        print 'ok v8_context_snapshot_generator successfully created ' \
-              + context_snapshot
+        print('ok v8_context_snapshot_generator successfully created ' \
+              + context_snapshot)
         if args.create_snapshot_only:
           return 0
       else:
@@ -65,21 +66,21 @@ def main():
         electron = os.path.join(app_path, PROJECT_NAME)
 
       subprocess.check_call([electron, test_path])
-      print 'ok successfully used custom snapshot.'
+      print('ok successfully used custom snapshot.')
   except subprocess.CalledProcessError as e:
-    print 'not ok an error was encountered while testing mksnapshot.'
-    print e
+    print('not ok an error was encountered while testing mksnapshot.')
+    print(e)
     returncode = e.returncode
   except KeyboardInterrupt:
-    print 'Other error'
+    print('Other error')
     returncode = 0
-  print 'Returning with error code: {0}'.format(returncode)
+  print('Returning with error code: {0}'.format(returncode))
   return returncode
 
 
 # Create copy of app to install custom snapshot
 def create_app_copy(initial_app_path):
-  print 'Creating copy of app for testing'
+  print('Creating copy of app for testing')
   app_path = os.path.join(os.path.dirname(initial_app_path),
                           os.path.basename(initial_app_path)
                           + '-mksnapshot-test')

@@ -198,7 +198,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
-    than screen. Default is `false`.
+    than screen. Only relevant for macOS, as other OSes allow
+    larger-than-screen windows by default. Default is `false`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
     `transparent` is set to `true`). Default is `#FFF` (white).
@@ -234,9 +235,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     window shadow and window animations. Default is `true`.
   * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
-    `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.  Please note that
-    using `frame: false` in combination with a vibrancy value requires that you use a
-    non-default `titleBarStyle` as well.
+    `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`.  Please note that using `frame: false` in combination with a vibrancy value requires that you use a non-default `titleBarStyle` as well. Also note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been deprecated and will be removed in an upcoming version of macOS.
   * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
     option-clicking the green stoplight button on the toolbar or by clicking the
     Window > Zoom menu item. If `true`, the window will grow to the preferred
@@ -256,7 +255,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
     * `nodeIntegrationInSubFrames` Boolean (optional) - Experimental option for
-      enabling NodeJS support in sub-frames such as iframes. All your preloads will load for
+      enabling Node.js support in sub-frames such as iframes and child windows. All your preloads will load for
       every iframe, you can use `process.isMainFrame` to determine if you are
       in the main frame or not.
     * `preload` String (optional) - Specifies a script that will be loaded before other
@@ -266,8 +265,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
-      **Note:** For security reasons, preload scripts can only be loaded from
-      a subpath of the [app path](app.md#appgetapppath).
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
@@ -355,7 +352,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Console tab.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`. Child windows will always have node
-      integration disabled. **Note:** This option is currently
+      integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** This option is currently
       experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to `false`. **Note:** The
@@ -420,7 +417,7 @@ Returns:
 
 Emitted when the document changed its title, calling `event.preventDefault()`
 will prevent the native window's title from changing.
-`explicitSet` is false when title is synthesized from file url.
+`explicitSet` is false when title is synthesized from file URL.
 
 #### Event: 'close'
 
@@ -864,7 +861,7 @@ Returns `Boolean` - Whether the window is in normal state (not maximized, not mi
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` [Size](structures/size.md) - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) (optional) - The extra size not to be included while
 maintaining the aspect ratio.
 
 This will make a window maintain an aspect ratio. The extra size allows a
@@ -1009,9 +1006,13 @@ Returns `Integer[]` - Contains the window's maximum width and height.
 
 Sets whether the window can be manually resized by user.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isResizable()`
 
 Returns `Boolean` - Whether the window can be manually resized by user.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMovable(movable)` _macOS_ _Windows_
 
@@ -1019,11 +1020,15 @@ Returns `Boolean` - Whether the window can be manually resized by user.
 
 Sets whether the window can be moved by user. On Linux does nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMovable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be moved by user.
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
@@ -1032,11 +1037,15 @@ On Linux always returns `true`.
 Sets whether the window can be manually minimized by user. On Linux does
 nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMinimizable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be manually minimized by user
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
@@ -1045,11 +1054,15 @@ On Linux always returns `true`.
 Sets whether the window can be manually maximized by user. On Linux does
 nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isMaximizable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be manually maximized by user.
 
 On Linux always returns `true`.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setFullScreenable(fullscreenable)`
 
@@ -1058,10 +1071,14 @@ On Linux always returns `true`.
 Sets whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isFullScreenable()`
 
 Returns `Boolean` - Whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window.
+
+**[Deprecated](modernization/property-updates.md)**
 
 #### `win.setClosable(closable)` _macOS_ _Windows_
 
@@ -1069,19 +1086,28 @@ maximizes the window.
 
 Sets whether the window can be manually closed by user. On Linux does nothing.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.isClosable()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
+**[Deprecated](modernization/property-updates.md)**
+
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` Boolean
-* `level` String (optional) _macOS_ - Values include `normal`, `floating`,
-  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
-  `screen-saver`, and ~~`dock`~~ (Deprecated). The default is `floating`. See the
-  [macOS docs][window-levels] for more details.
+* `level` String (optional) _macOS_ _Windows_ - Values include `normal`,
+  `floating`, `torn-off-menu`, `modal-panel`, `main-menu`, `status`,
+  `pop-up-menu`, `screen-saver`, and ~~`dock`~~ (Deprecated). The default is
+  `floating` when `flag` is true. The `level` is reset to `normal` when the
+  flag is false. Note that from `floating` to `status` included, the window is
+  placed below the Dock on macOS and below the taskbar on Windows. From
+  `pop-up-menu` to a higher it is shown above the Dock on macOS and above the
+  taskbar on Windows. See the [macOS docs][window-levels] for more details.
+
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
   discourages setting levels higher than 1 above `screen-saver`.
@@ -1235,11 +1261,11 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 * `url` String
 * `options` Object (optional)
-  * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
+  * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer URL.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
-  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
+  * `baseURLForDataURL` String (optional) - Base URL (with trailing path separator) for files to be loaded by the data URL. This is needed only if the specified `url` is a data URL and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
 (see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
@@ -1530,11 +1556,13 @@ Prevents the window contents from being captured by other apps.
 On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
-#### `win.setFocusable(focusable)` _Windows_
+#### `win.setFocusable(focusable)` _macOS_ _Windows_
 
 * `focusable` Boolean
 
 Changes whether the window can be focused.
+
+On macOS it does not remove the focus from the window.
 
 #### `win.setParentWindow(parent)`
 
@@ -1590,12 +1618,15 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`. See
+* `type` String | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
+
+Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
+deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 
@@ -1652,6 +1683,39 @@ A `Boolean` property that determines whether the window menu bar should hide its
 
 If the menu bar is already visible, setting this property to `true` won't
 hide it immediately.
+
+#### `win.minimizable`
+
+A `Boolean` property that determines whether the window can be manually minimized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.maximizable`
+
+A `Boolean` property that determines whether the window can be manually maximized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.fullScreenable`
+
+A `Boolean` property that determines whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window.
+
+#### `win.resizable`
+
+A `Boolean` property that determines whether the window can be manually resized by user.
+
+#### `win.closable`
+
+A `Boolean` property that determines whether the window can be manually closed by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.movable`
+
+A `Boolean` property that determines Whether the window can be moved by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
 
 #### `win.excludedFromShownWindowsMenu` _macOS_
 

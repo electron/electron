@@ -4,11 +4,11 @@
 
 Process: [Main](../glossary.md#main-process)
 
-An example of showing a dialog to select multiple files and directories:
+An example of showing a dialog to select multiple files:
 
 ```javascript
 const { dialog } = require('electron')
-console.log(dialog.showOpenDialog({ properties: ['openFile', 'openDirectory', 'multiSelections'] }))
+console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 ```
 
 The Dialog is opened from Electron's main thread. If you want to use the dialog
@@ -154,7 +154,7 @@ dialog.showOpenDialog(mainWindow, {
 })
 ```
 
-### `dialog.showSaveDialog([browserWindow, ]options)`
+### `dialog.showSaveDialogSync([browserWindow, ]options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object

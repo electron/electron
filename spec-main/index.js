@@ -27,6 +27,9 @@ global.standardScheme = 'app'
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-fetch', privileges: { corsEnabled: true } }
 ])
 
 app.whenReady().then(() => {
@@ -86,6 +89,6 @@ app.whenReady().then(() => {
         process.exit(runner.failures)
       })
     }
-    const runner = (isCI) ? mocha.forbidOnly().run(cb) : mocha.run(cb)
+    const runner = mocha.run(cb)
   })
 })

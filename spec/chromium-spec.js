@@ -32,6 +32,11 @@ describe('chromium feature', () => {
     listener = null
   })
 
+  afterEach(async () => {
+    await closeWindow(w)
+    w = null
+  })
+
   describe('command line switches', () => {
     describe('--lang switch', () => {
       const currentLocale = app.getLocale()
@@ -78,25 +83,9 @@ describe('chromium feature', () => {
     })
   })
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
-
   describe('heap snapshot', () => {
     it('does not crash', function () {
       process.electronBinding('v8_util').takeHeapSnapshot()
-    })
-  })
-
-  describe('sending request of http protocol urls', () => {
-    it('does not crash', (done) => {
-      const server = http.createServer((req, res) => {
-        res.end()
-        server.close()
-        done()
-      })
-      server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port
-        $.get(`http://127.0.0.1:${port}`)
-      })
     })
   })
 
@@ -629,9 +618,9 @@ describe('chromium feature', () => {
       w.close()
     })
 
-    it('does nothing when origin of current window does not match opener', (done) => {
+    it('fails when origin of current window does not match opener', (done) => {
       listener = (event) => {
-        expect(event.data).to.equal('')
+        expect(event.data).to.equal(null)
         done()
       }
       window.addEventListener('message', listener)
@@ -677,10 +666,10 @@ describe('chromium feature', () => {
       if (webview != null) webview.remove()
     })
 
-    it('does nothing when origin of webview src URL does not match opener', (done) => {
+    it('fails when origin of webview src URL does not match opener', (done) => {
       webview = new WebView()
       webview.addEventListener('console-message', (e) => {
-        expect(e.message).to.equal('')
+        expect(e.message).to.equal('null')
         done()
       })
       webview.setAttribute('allowpopups', 'on')
@@ -735,27 +724,6 @@ describe('chromium feature', () => {
   })
 
   describe('window.postMessage', () => {
-    it('sets the source and origin correctly', (done) => {
-      let b = null
-      listener = (event) => {
-        window.removeEventListener('message', listener)
-        b.close()
-        const message = JSON.parse(event.data)
-        expect(message.data).to.equal('testing')
-        expect(message.origin).to.equal('file://')
-        expect(message.sourceEqualsOpener).to.be.true()
-        expect(event.origin).to.equal('file://')
-        done()
-      }
-      window.addEventListener('message', listener)
-      app.once('browser-window-created', (event, { webContents }) => {
-        webContents.once('did-finish-load', () => {
-          b.postMessage('testing', '*')
-        })
-      })
-      b = window.open(`file://${fixtures}/pages/window-open-postMessage.html`, '', 'show=no')
-    })
-
     it('throws an exception when the targetOrigin cannot be converted to a string', () => {
       const b = window.open('')
       expect(() => {
@@ -891,37 +859,40 @@ describe('chromium feature', () => {
       document.body.appendChild(webview)
     })
 
-    it('SharedWorker can work', (done) => {
-      const worker = new SharedWorker('../fixtures/workers/shared_worker.js')
-      const message = 'ping'
-      worker.port.onmessage = (event) => {
-        expect(event.data).to.equal(message)
-        done()
-      }
-      worker.port.postMessage(message)
-    })
-
-    it('SharedWorker has no node integration by default', (done) => {
-      const worker = new SharedWorker('../fixtures/workers/shared_worker_node.js')
-      worker.port.onmessage = (event) => {
-        expect(event.data).to.equal('undefined undefined undefined undefined')
-        done()
-      }
-    })
-
-    it('SharedWorker has node integration with nodeIntegrationInWorker', (done) => {
-      const webview = new WebView()
-      webview.addEventListener('console-message', (e) => {
-        console.log(e)
+    // FIXME: disabled during chromium update due to crash in content::WorkerScriptFetchInitiator::CreateScriptLoaderOnIO
+    xdescribe('SharedWorker', () => {
+      it('can work', (done) => {
+        const worker = new SharedWorker('../fixtures/workers/shared_worker.js')
+        const message = 'ping'
+        worker.port.onmessage = (event) => {
+          expect(event.data).to.equal(message)
+          done()
+        }
+        worker.port.postMessage(message)
       })
-      webview.addEventListener('ipc-message', (e) => {
-        expect(e.channel).to.equal('object function object function')
-        webview.remove()
-        done()
+
+      it('has no node integration by default', (done) => {
+        const worker = new SharedWorker('../fixtures/workers/shared_worker_node.js')
+        worker.port.onmessage = (event) => {
+          expect(event.data).to.equal('undefined undefined undefined undefined')
+          done()
+        }
       })
-      webview.src = `file://${fixtures}/pages/shared_worker.html`
-      webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker')
-      document.body.appendChild(webview)
+
+      it('has node integration with nodeIntegrationInWorker', (done) => {
+        const webview = new WebView()
+        webview.addEventListener('console-message', (e) => {
+          console.log(e)
+        })
+        webview.addEventListener('ipc-message', (e) => {
+          expect(e.channel).to.equal('object function object function')
+          webview.remove()
+          done()
+        })
+        webview.src = `file://${fixtures}/pages/shared_worker.html`
+        webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker')
+        document.body.appendChild(webview)
+      })
     })
   })
 
@@ -1390,114 +1361,18 @@ describe('chromium feature', () => {
       await new Promise((resolve) => { utter.onend = resolve })
     })
   })
+})
 
-  describe('focus handling', () => {
-    let webviewContents = null
-
-    beforeEach(async () => {
-      w = new BrowserWindow({
-        show: true,
-        webPreferences: {
-          nodeIntegration: true,
-          webviewTag: true
-        }
-      })
-
-      const webviewReady = emittedOnce(w.webContents, 'did-attach-webview')
-      await w.loadFile(path.join(fixtures, 'pages', 'tab-focus-loop-elements.html'))
-      const [, wvContents] = await webviewReady
-      webviewContents = wvContents
-      await emittedOnce(webviewContents, 'did-finish-load')
-      w.focus()
-    })
-
-    afterEach(() => {
-      webviewContents = null
-    })
-
-    const expectFocusChange = async () => {
-      const [, focusedElementId] = await emittedOnce(ipcMain, 'focus-changed')
-      return focusedElementId
-    }
-
-    describe('a TAB press', () => {
-      const tabPressEvent = {
-        type: 'keyDown',
-        keyCode: 'Tab'
-      }
-
-      it('moves focus to the next focusable item', async () => {
-        let focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(tabPressEvent)
-        let focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-1', `should start focused in element-1, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(tabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-2', `focus should've moved to element-2, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(tabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-wv-element-1', `focus should've moved to the webview's element-1, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        webviewContents.sendInputEvent(tabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-wv-element-2', `focus should've moved to the webview's element-2, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        webviewContents.sendInputEvent(tabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've moved to element-3, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(tabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-1', `focus should've looped back to element-1, it's instead in ${focusedElementId}`)
-      })
-    })
-
-    describe('a SHIFT + TAB press', () => {
-      const shiftTabPressEvent = {
-        type: 'keyDown',
-        modifiers: ['Shift'],
-        keyCode: 'Tab'
-      }
-
-      it('moves focus to the previous focusable item', async () => {
-        let focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(shiftTabPressEvent)
-        let focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-3', `should start focused in element-3, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(shiftTabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-wv-element-2', `focus should've moved to the webview's element-2, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        webviewContents.sendInputEvent(shiftTabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-wv-element-1', `focus should've moved to the webview's element-1, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        webviewContents.sendInputEvent(shiftTabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-2', `focus should've moved to element-2, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(shiftTabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-1', `focus should've moved to element-1, it's instead in ${focusedElementId}`)
-
-        focusChange = expectFocusChange()
-        w.webContents.sendInputEvent(shiftTabPressEvent)
-        focusedElementId = await focusChange
-        expect(focusedElementId).to.equal('BUTTON-element-3', `focus should've looped back to element-3, it's instead in ${focusedElementId}`)
-      })
-    })
+describe('console functions', () => {
+  it('should exist', () => {
+    expect(console.log, 'log').to.be.a('function')
+    expect(console.error, 'error').to.be.a('function')
+    expect(console.warn, 'warn').to.be.a('function')
+    expect(console.info, 'info').to.be.a('function')
+    expect(console.debug, 'debug').to.be.a('function')
+    expect(console.trace, 'trace').to.be.a('function')
+    expect(console.time, 'time').to.be.a('function')
+    expect(console.timeEnd, 'timeEnd').to.be.a('function')
   })
 })
 

@@ -1,0 +1,78 @@
+module electron.mojom;
+
+import "mojo/public/mojom/base/values.mojom";
+import "mojo/public/mojom/base/string16.mojom";
+import "ui/gfx/geometry/mojo/geometry.mojom";
+
+interface ElectronRenderer {
+  Message(
+      bool internal,
+      bool send_to_all,
+      string channel,
+      mojo_base.mojom.ListValue arguments,
+      int32 sender_id);
+
+  UpdateCrashpadPipeName(string pipe_name);
+
+  TakeHeapSnapshot(handle file) => (bool success);
+};
+
+interface ElectronAutofillAgent {
+  AcceptDataListSuggestion(mojo_base.mojom.String16 value);
+};
+
+struct DraggableRegion {
+  bool draggable;
+  gfx.mojom.Rect bounds;
+};
+
+interface ElectronBrowser {
+  // Emits an event on |channel| from the ipcMain JavaScript object in the main
+  // process.
+  Message(
+      bool internal,
+      string channel,
+      mojo_base.mojom.ListValue arguments);
+
+  // Emits an event on |channel| from the ipcMain JavaScript object in the main
+  // process, and returns the response.
+  Invoke(
+      string channel,
+      mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
+
+  // Emits an event on |channel| from the ipcMain JavaScript object in the main
+  // process, and waits synchronously for a response.
+  //
+  // NB. this is not marked [Sync] because mojo synchronous methods can be
+  // reordered with respect to asynchronous methods on the same channel.
+  // Instead, callers can manually block on the response to this method.
+  MessageSync(
+    bool internal,
+    string channel,
+    mojo_base.mojom.ListValue arguments) => (mojo_base.mojom.Value result);
+
+  // Emits an event from the |ipcRenderer| JavaScript object in the target
+  // WebContents's main frame, specified by |web_contents_id|.
+  MessageTo(
+    bool internal,
+    bool send_to_all,
+    int32 web_contents_id,
+    string channel,
+    mojo_base.mojom.ListValue arguments);
+
+  MessageHost(
+    string channel,
+    mojo_base.mojom.ListValue arguments);
+
+  UpdateDraggableRegions(
+    array<DraggableRegion> regions);
+
+  SetTemporaryZoomLevel(double zoom_level);
+
+  [Sync]
+  DoGetZoomLevel() => (double result);
+
+  // TODO: move these into a separate interface
+  ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);
+  HideAutofillPopup();
+};

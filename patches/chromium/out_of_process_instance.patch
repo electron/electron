@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:17 -0700
+Subject: out_of_process_instance.patch
+
+
+diff --git a/pdf/out_of_process_instance.cc b/pdf/out_of_process_instance.cc
+index 5caf9abe451504ebf4f2cd9b770af188534f13d7..37cc07c74cd046d67ac53891dcf3c7003300549b 100644
+--- a/pdf/out_of_process_instance.cc
++++ b/pdf/out_of_process_instance.cc
+@@ -471,7 +471,9 @@ bool OutOfProcessInstance::Init(uint32_t argc,
+   std::string document_url = document_url_var.AsString();
+   base::StringPiece document_url_piece(document_url);
+   is_print_preview_ = IsPrintPreviewUrl(document_url_piece);
+-  if (!document_url_piece.starts_with(kChromeExtension) && !is_print_preview_)
++  if (!document_url_piece.starts_with(kChromeExtension) &&
++      !document_url_piece.starts_with("chrome://pdf-viewer") &&
++      !is_print_preview_)
+     return false;
+ 
+   // Check if the plugin is full frame. This is passed in from JS.

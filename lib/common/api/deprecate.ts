@@ -34,9 +34,21 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     }
   },
 
+  // remove a function with no replacement
+  removeFunction: (fn, removedName) => {
+    if (!fn) { throw Error(`'${removedName} function' is invalid or does not exist.`) }
+
+    // wrap the deprecated function to warn user
+    const warn = warnOnce(`${fn.name} function`)
+    return function (this: any) {
+      warn()
+      fn.apply(this, arguments)
+    }
+  },
+
   // change the name of a function
-  function: (fn, newName) => {
-    const warn = warnOnce(fn.name, newName)
+  renameFunction: (fn, newName) => {
+    const warn = warnOnce(`${fn.name} function`, `${newName} function`)
     return function (this: any) {
       warn()
       fn.apply(this, arguments)
@@ -57,17 +69,18 @@ const deprecate: ElectronInternal.DeprecationUtil = {
   },
 
   // deprecate a getter/setter function pair in favor of a property
-  fnToProperty: (module: any, prop: string, getter: string, setter: string) => {
-    const withWarnOnce = (obj: any, key: any, oldName: string, newName: string) => {
+  fnToProperty: (prototype: any, prop: string, getter: string, setter: string) => {
+    const withWarnOnce = function (obj: any, key: any, oldName: string, newName: string) {
       const warn = warnOnce(oldName, newName)
-      return (...args: any) => {
+      const method = obj[key]
+      return function (this: any, ...args: any) {
         warn()
-        return obj[key](...args)
+        return method.apply(this, args)
       }
     }
 
-    module[getter.substr(1)] = withWarnOnce(module, getter, `${getter.substr(1)} function`, `${prop} property`)
-    module[setter.substr(1)] = withWarnOnce(module, setter, `${setter.substr(1)} function`, `${prop} property`)
+    prototype[getter.substr(1)] = withWarnOnce(prototype, getter, `${getter.substr(1)} function`, `${prop} property`)
+    prototype[setter.substr(1)] = withWarnOnce(prototype, setter, `${setter.substr(1)} function`, `${prop} property`)
   },
 
   // remove a property with no replacement
