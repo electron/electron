@@ -1,30 +1,18 @@
-const { remote } = require('electron')
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const fs = require('fs')
-const path = require('path')
+import { expect } from 'chai'
+import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron'
+import * as fs from 'fs'
+import * as path from 'path'
+import { ifdescribe } from './spec-helpers'
 
-const { expect } = chai
-const { app, contentTracing } = remote
-
-chai.use(dirtyChai)
-
-const timeout = async (milliseconds) => {
+const timeout = async (milliseconds: number) => {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds)
   })
 }
 
-describe('contentTracing', () => {
-  beforeEach(function () {
-    // FIXME: The tests are skipped on arm/arm64.
-    if (process.platform === 'linux' &&
-        ['arm', 'arm64'].includes(process.arch)) {
-      this.skip()
-    }
-  })
-
-  const record = async (options, outputFilePath, recordTimeInMilliseconds = 1e3) => {
+// FIXME: The tests are skipped on arm/arm64.
+ifdescribe(!(process.platform === 'linux' && ['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
+  const record = async (options: TraceConfig | TraceCategoriesAndOptions, outputFilePath: string | undefined, recordTimeInMilliseconds = 1e1) => {
     await app.whenReady()
 
     await contentTracing.startRecording(options)
@@ -44,7 +32,7 @@ describe('contentTracing', () => {
   describe('startRecording', function () {
     this.timeout(5e3)
 
-    const getFileSizeInKiloBytes = (filePath) => {
+    const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath)
       const fileSizeInBytes = stats.size
       const fileSizeInKiloBytes = fileSizeInBytes / 1024
@@ -55,7 +43,7 @@ describe('contentTracing', () => {
       const config = {}
       await record(config, outputFilePath)
 
-      expect(fs.existsSync(outputFilePath)).to.be.true()
+      expect(fs.existsSync(outputFilePath)).to.be.true('output exists')
 
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath)
       expect(fileSizeInKiloBytes).to.be.above(0,
@@ -70,7 +58,7 @@ describe('contentTracing', () => {
       }
       await record(config, outputFilePath)
 
-      expect(fs.existsSync(outputFilePath)).to.be.true()
+      expect(fs.existsSync(outputFilePath)).to.be.true('output exists')
 
       // If the `excluded_categories` param above is not respected
       // the file size will be above 50KB.
@@ -93,7 +81,7 @@ describe('contentTracing', () => {
       }
       await record(config, outputFilePath)
 
-      expect(fs.existsSync(outputFilePath)).to.be.true()
+      expect(fs.existsSync(outputFilePath)).to.be.true('output exists')
 
       // If the `categoryFilter` param above is not respected
       // the file size will be above 50KB.
@@ -119,8 +107,8 @@ describe('contentTracing', () => {
 
       await contentTracing.startRecording(options)
       const path = await contentTracing.stopRecording('')
-      expect(path).to.be.a('string').that.is.not.empty()
-      expect(fs.statSync(path).isFile()).to.be.true()
+      expect(path).to.be.a('string').that.is.not.empty('result path')
+      expect(fs.statSync(path).isFile()).to.be.true('output exists')
     })
 
     it('calls its callback with a result file path', async () => {
@@ -130,12 +118,12 @@ describe('contentTracing', () => {
 
     it('creates a temporary file when an empty string is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '')
-      expect(resultFilePath).to.be.a('string').that.is.not.empty()
+      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path')
     })
 
     it('creates a temporary file when no path is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined)
-      expect(resultFilePath).to.be.a('string').that.is.not.empty()
+      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path')
     })
   })
 })
