@@ -17,8 +17,8 @@ which is exactly what we need.
 Then, create a virtual Xvfb screen and export an environment variable
 called DISPLAY that points to it. Chromium in Electron will automatically look
 for `$DISPLAY`, so no further configuration of your app is required.
-This step can be automated with Paul Betts's
-[xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe): Prepend your test
+This step can be automated with Anaïs Betts'
+[xvfb-maybe](https://github.com/anaisbetts/xvfb-maybe): Prepend your test
 commands with `xvfb-maybe` and the little tool will automatically configure
 Xvfb, if required by the current system. On Windows or macOS, it will
 do nothing.
