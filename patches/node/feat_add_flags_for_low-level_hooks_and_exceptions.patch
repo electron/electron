@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 13 Sep 2018 08:42:22 -0700
+Subject: feat: add flags for low-level hooks and exceptions
+
+This commit adds two new exposed methods to `node.cc`, `InitGeneric` and
+`LoadEnvironmentGeneric` that allow for control of which mode Node
+should run, which i have called `standalone_mode` and
+`upstream_node_mode`. Default behavior of `Init` and `LoadEnvironment`
+remain the same.
+
+We have 3 modes when running Node in Electron:
+1. In the main process, we want to have a full Node environment, but
+with signal handlers and other low level things disabled
+2. In renderer process, we want Node to reuse the web page's context
+3. In `ELECTRON_RUN_AS_NODE`, we want Node to run as it runs officially
+by default
+
+For modes 1 and 3, we have Node create a new V8 context with a Node
+Environment on it. However, for mode 2, since the V8 context is created
+by blink for web frames and web workers we make Node create the Node
+Environment on the V8 context of blink, so no new V8 context is created.
+
+As a result, a renderer process may have multiple Node Environments in it.
+
+diff --git a/src/env.cc b/src/env.cc
+index bc43fac963bbc334ccf5c5e3895e9dbd568bcdb4..a942a880e93b11cbc0cfb3c86d3950bd7f261e77 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -318,6 +318,12 @@ Environment::Environment(IsolateData* isolate_data,
+   if (options_->no_force_async_hooks_checks) {
+     async_hooks_.no_force_checks();
+   }
++
++  // TODO(addaleax): the per-isolate state should not be controlled by
++  // a single Environment.
++  if (g_standalone_mode) {
++    isolate()->SetPromiseRejectCallback(task_queue::PromiseRejectCallback);
++  }
+ }
+ 
+ CompileFnEntry::CompileFnEntry(Environment* env, uint32_t id)
+diff --git a/src/node.cc b/src/node.cc
+index f8b6fa6f33b67394ca68acabd4df0c64653083fe..eff0be6fef1274cd4210811bdc377702ca70b2a2 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -27,6 +27,7 @@
+ #include "env-inl.h"
+ #include "memory_tracker-inl.h"
+ #include "node_binding.h"
++#include "node_errors.h"
+ #include "node_internals.h"
+ #include "node_main_instance.h"
+ #include "node_metadata.h"
+@@ -131,6 +132,9 @@ using v8::Undefined;
+ using v8::V8;
+ using v8::Value;
+ 
++bool g_standalone_mode = true;
++bool g_upstream_node_mode = true;
++
+ namespace per_process {
+ 
+ // node_revert.h
+@@ -224,6 +228,12 @@ MaybeLocal<Value> ExecuteBootstrapper(Environment* env,
+ 
+ MaybeLocal<Value> RunBootstrapping(Environment* env) {
+   CHECK(!env->has_run_bootstrapping_code());
++  if (g_standalone_mode) {
++    env->isolate()->AddMessageListener(errors::PerIsolateMessageListener);
++  }
++  if (g_upstream_node_mode) {
++    env->isolate()->SetFatalErrorHandler(OnFatalError);
++  }
+ 
+   EscapableHandleScope scope(env->isolate());
+   Isolate* isolate = env->isolate();
+@@ -618,7 +628,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   binding::RegisterBuiltinModules();
+ 
+   // Make inherited handles noninheritable.
+-  uv_disable_stdio_inheritance();
++  if (g_upstream_node_mode) {
++    uv_disable_stdio_inheritance();
++  }
+ 
+ #ifdef NODE_REPORT
+   // Cache the original command line to be
+@@ -720,6 +732,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   }
+ #endif
+ 
++  if (g_upstream_node_mode) {
++  // NOTE(jeremy): indentation is intentionally wrong here, to ease rebasing.
++
+   const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, false);
+   if (exit_code != 0) return exit_code;
+ 
+@@ -742,6 +757,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   per_process::metadata.versions.InitializeIntlVersions();
+ #endif
+ 
++  }  // g_upstream_node_mode
++
+   NativeModuleEnv::InitializeCodeCache();
+ 
+   // We should set node_is_initialized here instead of in node::Start,
+diff --git a/src/node.h b/src/node.h
+index 5098dc9c7e77df62b90e4332c6695dfb48b430a0..9df33dfb47e591728c9502fea8152e4344b2b275 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -203,6 +203,9 @@ namespace node {
+ 
+ class IsolateData;
+ class Environment;
++// Whether node should open some low level hooks.
++NODE_EXTERN extern bool g_standalone_mode;
++NODE_EXTERN extern bool g_upstream_node_mode;
+ 
+ // TODO(addaleax): Officially deprecate this and replace it with something
+ // better suited for a public embedder API.

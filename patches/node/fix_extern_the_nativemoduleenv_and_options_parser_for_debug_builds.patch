@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 15 Jul 2019 14:20:10 -0700
+Subject: fix: extern the NativeModuleEnv and options parser for debug builds
+
+
+diff --git a/src/node_native_module_env.h b/src/node_native_module_env.h
+index b91a5059cd1f19d87e5876c372f3ded60681a5df..f81cf8dfb892a8ddd9084c5d9477b17867cae82d 100644
+--- a/src/node_native_module_env.h
++++ b/src/node_native_module_env.h
+@@ -12,7 +12,7 @@ namespace native_module {
+ 
+ extern const bool has_code_cache;
+ 
+-class NativeModuleEnv {
++class NODE_EXTERN NativeModuleEnv {
+  public:
+   static void Initialize(v8::Local<v8::Object> target,
+                          v8::Local<v8::Value> unused,
+diff --git a/src/node_options.h b/src/node_options.h
+index c79b08ad09c183ad24faf864fb8ba4692b527c70..a116b2fdaad590c8999142d18b9b81dac67b5359 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -44,7 +44,7 @@ class HostPort {
+   int port_;
+ };
+ 
+-class Options {
++class NODE_EXTERN Options {
+  public:
+   virtual void CheckOptions(std::vector<std::string>* errors) {}
+   virtual ~Options() = default;
+@@ -427,7 +427,7 @@ class NODE_EXTERN DebugOptionsParser : public OptionsParser<DebugOptions> {
+ 
+ using StringVector = std::vector<std::string>;
+ template <class OptionsType, class = Options>
+-void Parse(
++void NODE_EXTERN Parse(
+   StringVector* const args, StringVector* const exec_args,
+   StringVector* const v8_args, OptionsType* const options,
+   OptionEnvvarSettings required_env_settings, StringVector* const errors);

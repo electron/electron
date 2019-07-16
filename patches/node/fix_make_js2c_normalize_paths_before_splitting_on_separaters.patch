@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 15 Jul 2019 11:41:22 -0700
+Subject: fix: make js2c normalize paths before splitting on separaters
+
+
+diff --git a/tools/js2c.py b/tools/js2c.py
+index 4b0b631c46901c8ff01341c8d7f63c13008a5798..4e63ceefe1ff41d2105c3d71980c4f5f5ad11a30 100755
+--- a/tools/js2c.py
++++ b/tools/js2c.py
+@@ -258,7 +258,7 @@ def AddModule(filename, consts, macros, definitions, initializers, FileReadFn=Re
+   initializers.append(initializer)
+ 
+ def NormalizeFileName(filename):
+-  split = filename.split(os.path.sep)
++  split = os.path.normpath(filename).split(os.path.sep)
+   if split[0] == 'deps':
+     split = ['internal'] + split
+   else:  # `lib/**/*.js` so drop the 'lib' part
