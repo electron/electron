@@ -4,7 +4,7 @@ import { systemPreferences } from 'electron'
 const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
 
 describe('systemPreferences module', () => {
-  describe('systemPreferences.getAccentColor', () => {
+  ifdescribe(process.platform !== 'darwin')('systemPreferences.getAccentColor', () => {
     it('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor()
       expect(accentColor).to.be.a('string').that.is.not.empty('accent color')
