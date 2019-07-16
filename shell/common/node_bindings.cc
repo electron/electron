@@ -311,6 +311,14 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = "worker";
       break;
   }
+
+  mate::Dictionary global(context->GetIsolate(), context->Global());
+  // Do not set DOM globals for renderer process.
+  // We must set this before the node bootstrapper which is run inside
+  // CreateEnvironment
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    global.Set("_noBrowserGlobals", true);
+
   base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
@@ -321,6 +329,11 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
   DCHECK(env);
+
+  // Clean up the global _noBrowserGlobals that we unironically injected into
+  // the global scope
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    global.Delete("_noBrowserGlobals");
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
@@ -335,9 +348,6 @@ node::Environment* NodeBindings::CreateEnvironment(
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
-  // Do not set DOM globals for renderer process.
-  if (browser_env_ != BrowserEnvironment::BROWSER)
-    process.Set("_noBrowserGlobals", true);
   // The path to helper app.
   base::FilePath helper_exec_path;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
