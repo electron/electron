@@ -52,21 +52,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('previewFile', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('opens the path in Quick Look on macOS', () => {
-      expect(() => {
-        w.previewFile(__filename)
-        w.closeFilePreview()
-      }).to.not.throw()
-    })
-  })
-
   describe('contextIsolation option with and without sandbox option', () => {
     const expectedContextData = {
       preloadContext: {

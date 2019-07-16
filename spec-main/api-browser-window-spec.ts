@@ -3533,4 +3533,15 @@ describe('BrowserWindow module', () => {
       })
     })
   })
+
+  ifdescribe(process.platform === 'darwin')('previewFile', () => {
+    afterEach(closeAllWindows)
+    it('opens the path in Quick Look on macOS', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.previewFile(__filename)
+        w.closeFilePreview()
+      }).to.not.throw()
+    })
+  })
 })
