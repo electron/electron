@@ -3328,4 +3328,209 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  ifdescribe(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('window.getNativeWindowHandle()', () => {
+    afterEach(closeAllWindows)
+    it('returns valid handle', () => {
+      const w = new BrowserWindow({show: false})
+      // The module's source code is hosted at
+      // https://github.com/electron/node-is-valid-window
+      const isValidWindow = require('is-valid-window')
+      expect(isValidWindow(w.getNativeWindowHandle())).to.be.true('is valid window')
+    })
+  })
+
+  describe('extensions and dev tools extensions', () => {
+    let showPanelTimeoutId: NodeJS.Timeout | null = null
+
+    const showLastDevToolsPanel = (w: BrowserWindow) => {
+      w.webContents.once('devtools-opened', () => {
+        const show = () => {
+          if (w == null || w.isDestroyed()) return
+          const { devToolsWebContents } = w as unknown as { devToolsWebContents: WebContents | undefined }
+          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
+            return
+          }
+
+          const showLastPanel = () => {
+            // this is executed in the devtools context, where UI is a global
+            const {UI} = (window as any)
+            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
+            UI.inspectorView.showPanel(lastPanelId)
+          }
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
+            showPanelTimeoutId = setTimeout(show, 100)
+          })
+        }
+        showPanelTimeoutId = setTimeout(show, 100)
+      })
+    }
+
+    afterEach(() => {
+      if (showPanelTimeoutId != null) {
+        clearTimeout(showPanelTimeoutId)
+        showPanelTimeoutId = null
+      }
+    })
+
+    describe('BrowserWindow.addDevToolsExtension', () => {
+      describe('for invalid extensions', () => {
+        it('throws errors for missing manifest.json files', () => {
+          const nonexistentExtensionPath = path.join(__dirname, 'does-not-exist')
+          expect(() => {
+            BrowserWindow.addDevToolsExtension(nonexistentExtensionPath)
+          }).to.throw(/ENOENT: no such file or directory/)
+        })
+
+        it('throws errors for invalid manifest.json files', () => {
+          const badManifestExtensionPath = path.join(fixtures, 'devtools-extensions', 'bad-manifest')
+          expect(() => {
+            BrowserWindow.addDevToolsExtension(badManifestExtensionPath)
+          }).to.throw(/Unexpected token }/)
+        })
+      })
+
+      describe('for a valid extension', () => {
+        const extensionName = 'foo'
+
+        before(() => {
+          const extensionPath = path.join(fixtures, 'devtools-extensions', 'foo')
+          BrowserWindow.addDevToolsExtension(extensionPath)
+          expect(BrowserWindow.getDevToolsExtensions()).to.have.property(extensionName)
+        })
+
+        after(() => {
+          BrowserWindow.removeDevToolsExtension('foo')
+          expect(BrowserWindow.getDevToolsExtensions()).to.not.have.property(extensionName)
+        })
+
+        describe('when the devtools is docked', () => {
+          let message: any
+          let w: BrowserWindow
+          before(async () => {
+            w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+            const p = new Promise(resolve => ipcMain.once('answer', (event, message) => {
+              resolve(message)
+            }))
+            showLastDevToolsPanel(w)
+            w.loadURL('about:blank')
+            w.webContents.openDevTools({ mode: 'bottom' })
+            message = await p
+          })
+          after(closeAllWindows)
+
+          describe('created extension info', function () {
+            it('has proper "runtimeId"', async function () {
+              expect(message).to.have.ownProperty('runtimeId')
+              expect(message.runtimeId).to.equal(extensionName)
+            })
+            it('has "tabId" matching webContents id', function () {
+              expect(message).to.have.ownProperty('tabId')
+              expect(message.tabId).to.equal(w.webContents.id)
+            })
+            it('has "i18nString" with proper contents', function () {
+              expect(message).to.have.ownProperty('i18nString')
+              expect(message.i18nString).to.equal('foo - bar (baz)')
+            })
+            it('has "storageItems" with proper contents', function () {
+              expect(message).to.have.ownProperty('storageItems')
+              expect(message.storageItems).to.deep.equal({
+                local: {
+                  set: { hello: 'world', world: 'hello' },
+                  remove: { world: 'hello' },
+                  clear: {}
+                },
+                sync: {
+                  set: { foo: 'bar', bar: 'foo' },
+                  remove: { foo: 'bar' },
+                  clear: {}
+                }
+              })
+            })
+          })
+        })
+
+        describe('when the devtools is undocked', () => {
+          let message: any
+          let w: BrowserWindow
+          before(async () => {
+            w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+            showLastDevToolsPanel(w)
+            w.loadURL('about:blank')
+            w.webContents.openDevTools({ mode: 'undocked' })
+            message = await new Promise(resolve => ipcMain.once('answer', (event, message) => {
+              resolve(message)
+            }))
+          })
+          after(closeAllWindows)
+
+          describe('created extension info', function () {
+            it('has proper "runtimeId"', function () {
+              expect(message).to.have.ownProperty('runtimeId')
+              expect(message.runtimeId).to.equal(extensionName)
+            })
+            it('has "tabId" matching webContents id', function () {
+              expect(message).to.have.ownProperty('tabId')
+              expect(message.tabId).to.equal(w.webContents.id)
+            })
+          })
+        })
+      })
+    })
+
+    it('works when used with partitions', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          partition: 'temp'
+        }
+      })
+
+      const extensionPath = path.join(fixtures, 'devtools-extensions', 'foo')
+      BrowserWindow.addDevToolsExtension(extensionPath)
+      try {
+        showLastDevToolsPanel(w)
+
+        const p: Promise<any> = new Promise(resolve => ipcMain.once('answer', function (event, message) {
+          resolve(message)
+        }))
+
+        w.loadURL('about:blank')
+        w.webContents.openDevTools({ mode: 'bottom' })
+        const message = await p
+        expect(message.runtimeId).to.equal('foo')
+      } finally {
+        BrowserWindow.removeDevToolsExtension('foo')
+        await closeAllWindows()
+      }
+    })
+
+    it('serializes the registered extensions on quit', () => {
+      const extensionName = 'foo'
+      const extensionPath = path.join(fixtures, 'devtools-extensions', extensionName)
+      const serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions')
+
+      BrowserWindow.addDevToolsExtension(extensionPath)
+      app.emit('will-quit')
+      expect(JSON.parse(fs.readFileSync(serializedPath, 'utf8'))).to.deep.equal([extensionPath])
+
+      BrowserWindow.removeDevToolsExtension(extensionName)
+      app.emit('will-quit')
+      expect(fs.existsSync(serializedPath)).to.be.false('file exists')
+    })
+
+    describe('BrowserWindow.addExtension', () => {
+      it('throws errors for missing manifest.json files', () => {
+        expect(() => {
+          BrowserWindow.addExtension(path.join(__dirname, 'does-not-exist'))
+        }).to.throw('ENOENT: no such file or directory')
+      })
+
+      it('throws errors for invalid manifest.json files', () => {
+        expect(() => {
+          BrowserWindow.addExtension(path.join(fixtures, 'devtools-extensions', 'bad-manifest'))
+        }).to.throw('Unexpected token }')
+      })
+    })
+  })
 })

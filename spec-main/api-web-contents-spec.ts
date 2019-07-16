@@ -3,7 +3,7 @@ import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import { BrowserWindow, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { closeWindow, closeAllWindows } from './window-helpers';
 
 const { expect } = chai
 
@@ -71,6 +71,19 @@ describe('webContents module', () => {
       w.webContents.once('will-prevent-unload', event => event.preventDefault())
       w.once('closed', () => done())
       w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
+    })
+  })
+
+  describe('webContents.send(channel, args...)', () => {
+    afterEach(closeAllWindows)
+    it('throws an error when the channel is missing', () => {
+      expect(() => {
+        (w.webContents.send as any)()
+      }).to.throw('Missing required channel argument')
+
+      expect(() => {
+        w.webContents.send(null as any)
+      }).to.throw('Missing required channel argument')
     })
   })
 })
