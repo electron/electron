@@ -248,7 +248,7 @@ describe('MenuItems', () => {
         'minimize': 'CommandOrControl+M',
         'paste': 'CommandOrControl+V',
         'pasteandmatchstyle': 'Shift+CommandOrControl+V',
-        'quit': process.platform === 'win32' ? null : 'CommandOrControl+Q',
+        'quit': process.platform === 'win32' ? undefined : 'CommandOrControl+Q',
         'redo': process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z',
         'reload': 'CmdOrCtrl+R',
         'resetzoom': 'CommandOrControl+0',
