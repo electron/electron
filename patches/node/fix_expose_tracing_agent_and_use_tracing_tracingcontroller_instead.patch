@@ -4,7 +4,6 @@ Date: Fri, 26 Oct 2018 15:35:13 +1100
 Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
-
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index eeeef7442d834ace51a6c6be11058d21e4995a99..bfc849d362a18bc7cd499584a439a1d29f0864f8 100644
 --- a/src/api/environment.cc

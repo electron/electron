@@ -4,7 +4,6 @@ Date: Wed, 22 May 2019 13:34:18 -0700
 Subject: chore: add ability to prevent / warn non context-aware native modules
  being loaded
 
-
 diff --git a/src/env.h b/src/env.h
 index b97d024a0e8396ebd21b96bd7f1a9473abfefe9b..23ad7569d31bc534247ed373819bc291a4f4bfe6 100644
 --- a/src/env.h

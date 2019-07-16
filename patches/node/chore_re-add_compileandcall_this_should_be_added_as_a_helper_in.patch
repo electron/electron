@@ -4,7 +4,6 @@ Date: Fri, 28 Jun 2019 17:13:54 -0700
 Subject: chore: re-add CompileAndCall, this should be added as a helper in
  electron
 
-
 diff --git a/src/node_native_module_env.cc b/src/node_native_module_env.cc
 index 31536000fc8d2f9ce9589ef8e31cb55439fbd28d..6cb49b3b6def15a38ce1ba51da11af2567cb84ec 100644
 --- a/src/node_native_module_env.cc
