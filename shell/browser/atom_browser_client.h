@@ -181,12 +181,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
 #endif
 
-  // content::RenderProcessHostObserver:
-  void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
-  void RenderProcessReady(content::RenderProcessHost* host) override;
-  void RenderProcessExited(
-      content::RenderProcessHost* host,
-      const content::ChildProcessTerminationInfo& info) override;
   bool HandleExternalProtocol(
       const GURL& url,
       content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
@@ -195,11 +189,14 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       bool is_main_frame,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      network::mojom::URLLoaderFactoryRequest* factory_request,
-      // clang-format off
-      network::mojom::URLLoaderFactory*& out_factory)  // NOLINT
-      // clang-format on
-      override;
+      network::mojom::URLLoaderFactoryPtr* out_factory) override;
+
+  // content::RenderProcessHostObserver:
+  void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
+  void RenderProcessReady(content::RenderProcessHost* host) override;
+  void RenderProcessExited(
+      content::RenderProcessHost* host,
+      const content::ChildProcessTerminationInfo& info) override;
 
  private:
   struct ProcessPreferences {

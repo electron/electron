@@ -849,10 +849,7 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    network::mojom::URLLoaderFactoryRequest* factory_request,
-    // clang-format off
-    network::mojom::URLLoaderFactory*& out_factory) {  // NOLINT
-  // clang-format on
+    network::mojom::URLLoaderFactoryPtr* out_factory) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
