@@ -5,5 +5,7 @@
 
   "src/electron/patches/common/ffmpeg": "src/third_party/ffmpeg",
 
-  "src/electron/patches/common/v8":  "src/v8"
+  "src/electron/patches/common/v8":  "src/v8",
+
+  "src/electron/patches/common/node":  "src/third_party/electron_node"
 }

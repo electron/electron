@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 3 Jun 2019 01:05:58 -0700
+Subject: chore: allow the node entrypoint to be a builtin module
+
+This floats two patches onto the node 12 branch that I don't think we can upstream.
+
+#### `run_main_module.js`
+
+The default behavior of node is to `path.resolve(firstArg)` to figure out what JS file to load.  Issue here is that we use that for `browser/init.js` which now doesn't exist on disk.  This adds an exception that won't affect user code to allow node to boot-up internal modules (in this case anything in the `electron/js2c` scope.
+
+#### `loader.js`
+
+Similar to the above, the loader uses `process.argv[1]` to figure out when to break for `--inspect-brk` this updates the logic to use an Electron provided `process._firstFileName`
+
+diff --git a/lib/internal/main/run_main_module.js b/lib/internal/main/run_main_module.js
+index 634abe493ea60e5e3eecb9c6125226fa0b7c36d6..84f4ced91d58dfb7b7031adf0b5ac99861b4a75e 100644
+--- a/lib/internal/main/run_main_module.js
++++ b/lib/internal/main/run_main_module.js
+@@ -5,8 +5,11 @@ const {
+ } = require('internal/bootstrap/pre_execution');
+ 
+ // Expand process.argv[1] into a full path.
++// Allow direct module name loads if it is a built-in electron module
++if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
+ const path = require('path');
+ process.argv[1] = path.resolve(process.argv[1]);
++}
+ 
+ prepareMainThreadExecution();
+ 
+diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
+index f5ee6436a63ad6bd93688a3db74986c9d20343ba..3660a4d82dd129c5e6778151a2647e840baaffc0 100644
+--- a/lib/internal/modules/cjs/loader.js
++++ b/lib/internal/modules/cjs/loader.js
+@@ -805,6 +805,13 @@ Module.prototype._compile = function(content, filename) {
+   if (process._breakFirstLine && process._eval == null) {
+     if (!resolvedArgv) {
+       // We enter the repl if we're not given a filename argument.
++      // process._firstFileName is used by Embedders to tell node what
++      // the first "real" file is when they use themselves as the entry
++      // point
++      if (process._firstFileName) {
++        resolvedArgv = process._firstFileName
++        delete process._firstFileName
++      } else
+       if (process.argv[1]) {
+         resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
+       } else {

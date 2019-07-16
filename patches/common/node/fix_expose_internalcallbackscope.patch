@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sat, 6 Jan 2018 18:28:10 +0530
+Subject: fix: expose InternalCallbackScope
+
+This commit exposes InternalCallbackScope in order to allow us access to kAllowEmptyResource for usage https://github.com/electron/electron/blob/master/atom/common/api/atom_bindings.cc\#L108. We should look to accomplish this another way so we no longer need to do this, as in verbose mode the regular CallBack Scope doesn't swallow errors and so we can otherwise use it.
+
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 012848491ea721b3f685f8dce11fff449634d3a1..1ffe78d33b19a098e9200271a8e809205d8f540b 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -198,7 +198,7 @@ v8::MaybeLocal<v8::Value> InternalMakeCallback(
+     v8::Local<v8::Value> argv[],
+     async_context asyncContext);
+ 
+-class InternalCallbackScope {
++class NODE_EXTERN InternalCallbackScope {
+  public:
+   // Tell the constructor whether its `object` parameter may be empty or not.
+   enum ResourceExpectation { kRequireResource, kAllowEmptyResource };

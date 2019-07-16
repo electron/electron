@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Thu, 4 Apr 2019 16:45:35 -0700
+Subject: src: Disable NODE_USE_V8_PLATFORM in node_options
+
+Electron does not set NODE_USE_V8_PLATFORM. If inspector is enabled when NODE_USE_V8_PLATFORM is false, then there's an error. We want to ignore that, use our own v8 platform but still use the node inspector
+
+diff --git a/src/node_options.cc b/src/node_options.cc
+index ed5192b04e3de17944c51df25b1be93eda84cc1b..d88885a77aa59a17548a9d1908c97dd491a18734 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -33,7 +33,7 @@ DebugOptions& DebugOptions::operator=(const DebugOptions&) = default;
+ DebugOptions& DebugOptions::operator=(DebugOptions&&) = default;
+ 
+ void DebugOptions::CheckOptions(std::vector<std::string>* errors) {
+-#if !NODE_USE_V8_PLATFORM
++#if 0
+   if (inspector_enabled) {
+     errors->push_back("Inspector is not available when Node is compiled "
+                       "--without-v8-platform");

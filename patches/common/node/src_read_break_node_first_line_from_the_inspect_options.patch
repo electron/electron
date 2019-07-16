@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Sun, 2 Jun 2019 12:43:59 -0700
+Subject: src: read break_node_first_line from the inspect options
+
+There are cases where the debug_options() on the env are
+different to the options that were passed into inspector::Agent.
+
+diff --git a/src/node.cc b/src/node.cc
+index 6f07d07a7bc3dc21b777d29aad0def17cd889bbc..2f2b52e13362bec6fcee5716d9a2bc9b3480b939 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -286,7 +286,7 @@ MaybeLocal<Value> RunBootstrapping(Environment* env) {
+   };
+ 
+ #if HAVE_INSPECTOR
+-  if (env->options()->debug_options().break_node_first_line) {
++  if (env->inspector_agent()->options().break_node_first_line) {
+     env->inspector_agent()->PauseOnNextJavascriptStatement(
+         "Break at bootstrap");
+   }

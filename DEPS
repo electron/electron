@@ -12,7 +12,7 @@ vars = {
   'chromium_version':
     '73.0.3683.121',
   'node_version':
-    '0a300f60bce0c8f0cb3d846fcb0e1f55f26013ee',
+    '666c67e078bddc32f25409f4a929c1e9b5f47373',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -21,6 +21,7 @@ vars = {
   'boto_git': 'https://github.com/boto',
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
+  'nodejs_git': 'https://github.com/nodejs',
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
 
@@ -64,7 +65,7 @@ deps = {
     'condition': 'checkout_chromium',
   },
   'src/third_party/electron_node': {
-    'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+    'url': (Var("nodejs_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node',
   },
   'src/electron/vendor/pyyaml': {

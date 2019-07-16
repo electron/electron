@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@atlassian.com>
+Date: Fri, 26 Oct 2018 15:35:13 +1100
+Subject: fix: expose tracing::Agent and use tracing::TracingController instead
+ of v8::TracingController
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 8aa3d1b174bcdd21602c3b695dfa97705b50daad..416851cc87b928417e08210881ef1f5d89b01730 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -267,6 +267,10 @@ MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform() {
+   return per_process::v8_platform.Platform();
+ }
+ 
++node::tracing::Agent* CreateAgent() {
++  return new node::tracing::Agent();
++}
++
+ MultiIsolatePlatform* CreatePlatform(
+     int thread_pool_size,
+     node::tracing::TracingController* tracing_controller) {
+diff --git a/src/node.h b/src/node.h
+index 070abc5be387244484d8cdbb193dc5d7709674fd..d063ccac66fa04c3c7f14f83bd1f80c68426eb0a 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -108,6 +108,7 @@ namespace node {
+ 
+ namespace tracing {
+ 
++class Agent;
+ class TracingController;
+ 
+ }
+@@ -332,6 +333,8 @@ NODE_EXTERN Environment* GetCurrentEnvironment(v8::Local<v8::Context> context);
+ // it returns nullptr.
+ NODE_EXTERN MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform();
+ 
++NODE_EXTERN node::tracing::Agent* CreateAgent();
++
+ NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
+     int thread_pool_size,
+     node::tracing::TracingController* tracing_controller);

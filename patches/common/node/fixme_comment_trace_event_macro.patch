@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Tue, 26 Mar 2019 11:28:05 -0700
+Subject: fixme: Comment trace event macro
+
+
+diff --git a/src/node_internals.h b/src/node_internals.h
+index aff9a9a99397575fd6aba4105ed70aef5c646963..ed3c2175e4e3d174d75b5b21eaec5c8c97fbb18b 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -347,10 +347,11 @@ class TraceEventScope {
+   TraceEventScope(const char* category,
+                   const char* name,
+                   void* id) : category_(category), name_(name), id_(id) {
+-    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(category_, name_, id_);
++    // TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(category_, name_, id_);
++    (void) category_; (void)name_; (void)id_;
+   }
+   ~TraceEventScope() {
+-    TRACE_EVENT_NESTABLE_ASYNC_END0(category_, name_, id_);
++    // TRACE_EVENT_NESTABLE_ASYNC_END0(category_, name_, id_);
+   }
+ 
+  private:
