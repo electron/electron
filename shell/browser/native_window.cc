@@ -513,6 +513,11 @@ void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
     observer.OnWindowSwipe(direction);
 }
 
+void NativeWindow::NotifyWindowRotate(const float rotation) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowRotate(rotation);
+}
+
 void NativeWindow::NotifyWindowSheetBegin() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSheetBegin();

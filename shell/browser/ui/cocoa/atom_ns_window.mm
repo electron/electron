@@ -72,6 +72,10 @@ bool ScopedDisableResize::disable_resize_ = false;
   }
 }
 
+- (void)rotateWithEvent:(NSEvent*)event {
+  shell_->NotifyWindowRotate(event.rotation);
+}
+
 - (NSRect)contentRectForFrameRect:(NSRect)frameRect {
   if (shell_->has_frame())
     return [super contentRectForFrameRect:frameRect];
