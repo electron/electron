@@ -347,15 +347,18 @@ void InsertText(v8::Local<v8::Value> window, const std::string& text) {
 base::string16 InsertCSS(v8::Local<v8::Value> window,
                          const std::string& css,
                          mate::Arguments* args) {
-  blink::WebDocument::CSSOrigin origin =
+  blink::WebDocument::CSSOrigin css_origin =
       blink::WebDocument::CSSOrigin::kAuthorOrigin;
-  args->GetNext(&origin);
+
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("cssOrigin", &css_origin);
 
   blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
   if (web_frame->IsWebLocalFrame()) {
     return web_frame->ToWebLocalFrame()
         ->GetDocument()
-        .InsertStyleSheet(blink::WebString::FromUTF8(css), nullptr, origin)
+        .InsertStyleSheet(blink::WebString::FromUTF8(css), nullptr, css_origin)
         .Utf16();
   }
   return base::string16();
