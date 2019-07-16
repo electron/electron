@@ -192,6 +192,12 @@ if (nodeIntegration) {
   }
 }
 
+// Don't execute preload scripts for internal <iframe> inside of <webview>
+// when nodeIntegrationInSubFrames is enabled
+if (window.frameElement && v8Util.getHiddenValue(window.frameElement, 'internal')) {
+  preloadScripts.length = 0
+}
+
 const errorUtils = require('@electron/internal/common/error-utils')
 
 // Load the preload scripts.
