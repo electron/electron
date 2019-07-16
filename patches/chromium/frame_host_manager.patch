@@ -42,7 +42,7 @@ index acbf074f6e408cdc3817580b9601ee40c036c4dd..e56456c5b6024b92dbd025a8f25d4bde
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 0e246021eae8e83df5f97e2b790071090ebb1888..32f7cb0713572547ba9732fbdfc4d0d3164862c1 100644
+index 8ca7df4cc21892d9769527df717ab5fd3945e9c7..dbaf878eaf5259697469e06d5ae15fbc463aa7c6 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2180,6 +2180,21 @@ bool RenderFrameHostManager::InitRenderView(
@@ -180,7 +180,7 @@ index 5f57cd47108b85c0e884c1855af2c74b7fd02b9b..6b755ec0f9f76fa91bec975fdcf7094b
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ceccdc530f1fad39cd9a1c5a0185b5a76be7a01f..66c32d01d12c570ecc2e2a45131769c9d0777d79 100644
+index fc279f3845f475d8524df52004d26c5e881c5194..34767fbbc96178faf3630b4f89a4ca779c409e38 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -205,7 +205,7 @@ index ceccdc530f1fad39cd9a1c5a0185b5a76be7a01f..66c32d01d12c570ecc2e2a45131769c9
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e6dc965f308a9b3ffa6ce300526a21dd2b61a366..cc347ec03d91edb1b4dff9a696c9580b80afd0c7 100644
+index 22299afd667064d9e602f895cd880737c52ff086..1d78fbbd24ed7cc381b22c9c5f44a0d3d9945e08 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -210,8 +210,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(

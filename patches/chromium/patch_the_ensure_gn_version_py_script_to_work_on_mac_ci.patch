@@ -8,11 +8,11 @@ patch it because on mac CI, we check out the source code on Linux, which
 confuses the script.
 
 diff --git a/buildtools/ensure_gn_version.py b/buildtools/ensure_gn_version.py
-index acb1c1ddf046fd7c19ef428ca4b099ee60c7ff3c..4128853c41a75351d849cea0985f764fb504eca1 100755
+index 4c40f7c6441ef54c0ba25ccd4266ba7edc55bb30..905b08a656011c9b7ce81cd395932db7c56f38ff 100755
 --- a/buildtools/ensure_gn_version.py
 +++ b/buildtools/ensure_gn_version.py
-@@ -39,6 +39,11 @@ SRC_DIR = os.path.dirname(BUILDTOOLS_DIR)
- 
+@@ -45,6 +45,11 @@ def ChmodGnFile(path_to_exe):
+            stat.S_IROTH | stat.S_IXOTH)
  
  def main():
 +  # NB. on Electron's CI we check out the macOS source on Linux. Bypass this

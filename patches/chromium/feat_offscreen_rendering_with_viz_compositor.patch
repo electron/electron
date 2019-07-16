@@ -98,7 +98,7 @@ index d9a9730a78b9aec833c64282ca868dbba5594d82..d98426e9f78931bd43061ec994559d59
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index e89818172c161822a87db7f1ad3f35cded18358b..5084638685276663de651e2d15b5b659f85acb18 100644
+index 887be86346242096f6fab5ee0df25e216b49d8d9..20a20816d0dd07097c3e14c9350138d495916c3e 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -117,6 +117,8 @@ viz_component("service") {
@@ -111,10 +111,10 @@ index e89818172c161822a87db7f1ad3f35cded18358b..5084638685276663de651e2d15b5b659
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 15e1edf3c5555ba65079b69acbaa5db70d457a3b..2de602a40c2dc333dbfc082be867bcede52d8aeb 100644
+index 136fa31726c75480aac62f778738e1a5e41c2c34..9d2a82332b1626b7d2663bf79d88209cafa66465 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -204,6 +204,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -213,6 +213,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -492,7 +492,7 @@ index 58a7e221eaabd9e21196496d220c77babe07c56d..dd141b16eace2999380ed137b4adf1f3
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 83fd231589556893a4195f11a246479782494b78..7b01f0351f931b90939dbe7dd4411d08f341aa3b 100644
+index daf24befb249423a65cfc5a15cceef716125cafe..afbefca00f9cdc4a6d6491660020b026dd073d36 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -23,6 +23,7 @@
