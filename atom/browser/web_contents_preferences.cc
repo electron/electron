@@ -147,8 +147,6 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
-  SetDefaults();
-
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
   int guest_instance_id = 0;
@@ -166,7 +164,7 @@ WebContentsPreferences::WebContentsPreferences(
     }
   }
 
-  last_preference_ = preference_.Clone();
+  SetDefaults();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -178,6 +176,8 @@ void WebContentsPreferences::SetDefaults() {
   if (IsEnabled(options::kSandbox)) {
     SetBool(options::kNativeWindowOpen, true);
   }
+
+  last_preference_ = preference_.Clone();
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
