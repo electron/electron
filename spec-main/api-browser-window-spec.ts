@@ -3185,15 +3185,16 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // fullscreen events are dispatched eagerly and twiddling things too fast can confuse poor Electron
+    const tick = () => new Promise(resolve => setTimeout(resolve))
+
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
       it('can be changed with setKiosk method', (done) => {
         const w = new BrowserWindow()
-
-        w.once('enter-full-screen', () => {
-          setTimeout(() => {
-            w.setKiosk(false)
-            expect(w.isKiosk()).to.be.false('isKiosk')
-          })
+        w.once('enter-full-screen', async () => {
+          await tick()
+          w.setKiosk(false)
+          expect(w.isKiosk()).to.be.false('isKiosk')
         })
         w.once('leave-full-screen', () => {
           done()
@@ -3206,11 +3207,10 @@ describe('BrowserWindow module', () => {
     ifdescribe(process.platform === 'darwin')('fullscreen state with resizable set', () => {
       it('resizable flag should be set to true and restored', (done) => {
         const w = new BrowserWindow({ resizable: false })
-        w.once('enter-full-screen', () => {
+        w.once('enter-full-screen', async () => {
           expect(w.resizable).to.be.true('resizable')
-          setTimeout(() => {
-            w.setFullScreen(false)
-          })
+          await tick()
+          w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
           expect(w.resizable).to.be.false('resizable')
@@ -3223,11 +3223,10 @@ describe('BrowserWindow module', () => {
     ifdescribe(process.platform === 'darwin')('fullscreen state', () => {
       it('can be changed with setFullScreen method', (done) => {
         const w = new BrowserWindow()
-        w.once('enter-full-screen', () => {
+        w.once('enter-full-screen', async () => {
           expect(w.isFullScreen()).to.be.true('isFullScreen')
-          setTimeout(() => {
-            w.setFullScreen(false)
-          })
+          await tick()
+          w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
           expect(w.isFullScreen()).to.be.false('isFullScreen')
@@ -3238,16 +3237,14 @@ describe('BrowserWindow module', () => {
 
       it('should not be changed by setKiosk method', (done) => {
         const w = new BrowserWindow()
-        w.once('enter-full-screen', () => {
+        w.once('enter-full-screen', async () => {
           expect(w.isFullScreen()).to.be.true('isFullScreen')
-          setTimeout(() => {
-            w.setKiosk(true)
-            setTimeout(() => {
-              w.setKiosk(false)
-              expect(w.isFullScreen()).to.be.true('isFullScreen')
-              w.setFullScreen(false)
-            })
-          })
+          await tick()
+          w.setKiosk(true)
+          await tick()
+          w.setKiosk(false)
+          expect(w.isFullScreen()).to.be.true('isFullScreen')
+          w.setFullScreen(false)
         })
         w.once('leave-full-screen', () => {
           expect(w.isFullScreen()).to.be.false('isFullScreen')
