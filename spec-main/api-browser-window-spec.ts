@@ -2082,6 +2082,27 @@ describe('BrowserWindow module', () => {
           expect(content).to.equal('function')
         }
       })
+      it('<webview> works in a scriptable popup', (done) => {
+        const preload = path.join(fixtures, 'api', 'new-window-webview-preload.js')
+
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegrationInSubFrames: true,
+            nativeWindowOpen: true,
+            webviewTag: true,
+            preload
+          }
+        })
+        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+          options.show = false
+        })
+
+        ipcMain.once('webview-loaded', () => {
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'))
+      })
       it('should inherit the nativeWindowOpen setting in opened windows', async () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
