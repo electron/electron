@@ -146,8 +146,6 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
   SetDefaults();
-
-  last_preference_ = preference_.Clone();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -159,6 +157,8 @@ void WebContentsPreferences::SetDefaults() {
   if (IsEnabled(options::kSandbox)) {
     SetBool(options::kNativeWindowOpen, true);
   }
+
+  last_preference_ = preference_.Clone();
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
