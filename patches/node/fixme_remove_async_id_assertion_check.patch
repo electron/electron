@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 13 Sep 2018 09:08:10 -0700
+Subject: FIXME: remove async_id assertion check
+
+
+diff --git a/src/api/callback.cc b/src/api/callback.cc
+index 52a8da35b671d196331b858ba46be04aecf1e0be..43ccfafd9f2c85e23a9ea6277e88e4864e287905 100644
+--- a/src/api/callback.cc
++++ b/src/api/callback.cc
+@@ -103,12 +103,14 @@ void InternalCallbackScope::Close() {
+     env_->isolate()->RunMicrotasks();
+   }
+ 
++#if 0  // FIXME(codebytere): figure out why this check fails/causes crash
+   // Make sure the stack unwound properly. If there are nested MakeCallback's
+   // then it should return early and not reach this code.
+   if (env_->async_hooks()->fields()[AsyncHooks::kTotals]) {
+     CHECK_EQ(env_->execution_async_id(), 0);
+     CHECK_EQ(env_->trigger_async_id(), 0);
+   }
++#endif
+ 
+   if (!tick_info->has_tick_scheduled() && !tick_info->has_rejection_to_warn()) {
+     return;

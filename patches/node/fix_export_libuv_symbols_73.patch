@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 11 Oct 2018 16:24:57 -0700
+Subject: fix: export libuv symbols (#73)
+
+Closes electron/electron#15075
+
+diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
+index b62fac6738ae74788faa6e5dcc705b81d8325ece..7370980c52ea03ca02eae3488930432f1857c6fb 100644
+--- a/deps/uv/BUILD.gn
++++ b/deps/uv/BUILD.gn
+@@ -29,6 +29,9 @@ static_library("uv") {
+ 
+   defines = []
+ 
++  # This only has an effect on Windows, where it will cause libuv's symbols to be exported in node.lib
++  defines += [ "BUILDING_UV_SHARED=1" ]
++
+   cflags_c = [
+     "-Wno-bitwise-op-parentheses",
+     "-Wno-implicit-function-declaration",
+@@ -180,9 +183,4 @@ static_library("uv") {
+       "src/unix/kqueue.c",
+     ]
+   }
+-  if (is_component_build && is_win) {
+-    defines += [
+-      "BUILDING_UV_SHARED=1",
+-    ]
+-  }
+ }

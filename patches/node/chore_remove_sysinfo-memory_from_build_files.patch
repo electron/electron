@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 15 Jul 2019 11:11:52 -0700
+Subject: chore: remove sysinfo-memory from build files
+
+Refs: https://github.com/libuv/libuv/commit/3a1be725326bfe637355c461bd77993c0fda2173
+
+diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
+index 7370980c52ea03ca02eae3488930432f1857c6fb..4674bdd48b4bfc9b7152377b8cd0984d1cf42562 100644
+--- a/deps/uv/BUILD.gn
++++ b/deps/uv/BUILD.gn
+@@ -170,7 +170,6 @@ static_library("uv") {
+       "src/unix/linux-syscalls.h",
+       "src/unix/procfs-exepath.c",
+       "src/unix/sysinfo-loadavg.c",
+-      "src/unix/sysinfo-memory.c",
+     ]
+     libs += [
+       "dl",

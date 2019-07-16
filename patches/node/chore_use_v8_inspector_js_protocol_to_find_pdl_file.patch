@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Tue, 16 Jul 2019 11:07:17 -0700
+Subject: chore: Use v8_inspector_js_protocol to find pdl file
+
+
+diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
+index ebe2c7f11a210817294e1fc1da02e2ae60244b9b..8953573f8cc9e28cf2cc3b2d86d312d8953f40f7 100644
+--- a/src/inspector/BUILD.gn
++++ b/src/inspector/BUILD.gn
+@@ -161,7 +161,7 @@ generate_protocol_json("node_protocol_json") {
+ 
+ generate_protocol_json("v8_protocol_json") {
+   sources = [
+-    "//v8/include/js_protocol.pdl",
++    v8_inspector_js_protocol,
+   ]
+   outputs = [
+     "$target_gen_dir/js_protocol.json",

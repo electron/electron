@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Wed, 3 Jul 2019 09:58:01 -0700
+Subject: fix: don't define BUILDING_V8_SHARED in component builds (#109)
+
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 77b2ed2978682c1a171346339ded5f2638c27fd9..f27c13b312a60d9b5c7ea0948b347ab0936ab3f8 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -153,9 +153,6 @@ config("node_internal_config") {
+   }
+   if (is_component_build) {
+     defines += [
+-      "BUILDING_V8_SHARED",
+-      "BUILDING_V8_PLATFORM_SHARED",
+-      "BUILDING_V8_BASE_SHARED",
+       "NODE_SHARED_MODE",
+     ]
+   }

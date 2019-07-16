@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Fri, 28 Jun 2019 17:13:38 -0700
+Subject: build: fix GN build scripts and js2c for node 12.4 and embedder use
+ cases
+
+diff --git a/BUILD.gn b/BUILD.gn
+index c722975a4bc82b46192b0e72f4995fce243fa5bf..77b2ed2978682c1a171346339ded5f2638c27fd9 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -96,9 +96,7 @@ chdir_action("node_js2c") {
+ 
+   cwd = "$target_gen_dir/js2c_inputs"
+   script = "tools/js2c.py"
+-  args = rebase_path(outputs)
+-  args += library_files
+-  args += rebase_path(macro_inputs + config_gypi)
++  args = library_files + rebase_path(macro_inputs + config_gypi) + ["--target"] + rebase_path(outputs)
+ }
+ 
+ config("node_features") {
+@@ -113,6 +111,8 @@ config("node_features") {
+   } else {
+     defines += [ "HAVE_OPENSSL=0" ]
+   }
++  # boringssl does not support SSL_trace, let's disable it
++  defines += ["OPENSSL_NO_SSL_TRACE=1"]
+   if (v8_enable_i18n_support) {
+     defines += [ "NODE_HAVE_I18N_SUPPORT=1" ]
+   } else {
+diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
+index ebf5e610d675e53ad4af40e92d5217995ed8f577..48ad85e895b6111223119fafa57c13ba75cdbeae 100644
+--- a/src/inspector/BUILD.gn
++++ b/src/inspector/BUILD.gn
+@@ -68,7 +68,7 @@ action("protocol_generated_sources") {
+ 
+   inputs = [
+     "$target_gen_dir/node_protocol_config.json",
+-    "$target_gen_dir/node_protocol.json",
++    "$target_gen_dir/src/node_protocol.json",
+     "$inspector_protocol_dir/lib/base_string_adapter_cc.template",
+     "$inspector_protocol_dir/lib/base_string_adapter_h.template",
+     "$inspector_protocol_dir/lib/Allocator_h.template",
+@@ -151,13 +151,13 @@ generate_protocol_json("node_protocol_json") {
+     "node_protocol.pdl",
+   ]
+   outputs = [
+-    "$target_gen_dir/node_protocol.json",
++    "$target_gen_dir/src/node_protocol.json",
+   ]
+ }
+ 
+ generate_protocol_json("v8_protocol_json") {
+   sources = [
+-    "//v8/src/inspector/js_protocol.pdl",
++    "//v8/include/js_protocol.pdl",
+   ]
+   outputs = [
+     "$target_gen_dir/js_protocol.json",
+@@ -171,7 +171,7 @@ action("concatenate_protocols") {
+   ]
+   inputs = [
+     "$target_gen_dir/js_protocol.json",
+-    "$target_gen_dir/node_protocol.json",
++    "$target_gen_dir/src/node_protocol.json",
+   ]
+   outputs = [
+     "$target_gen_dir/concatenated_protocol.json",
+diff --git a/tools/js2c.py b/tools/js2c.py
+index 87cca4eaf7c909e1f871287d7f019f701a05dd0f..c7a90f6eaeb9f5789ffb86c070132551f4275354 100755
+--- a/tools/js2c.py
++++ b/tools/js2c.py
+@@ -187,13 +187,15 @@ namespace native_module {{
+ 
+ {0}
+ 
+-void NativeModuleLoader::LoadJavaScriptSource() {{
++void NativeModuleLoader::Load{4}JavaScriptSource() {{
+   {1}
+ }}
+ 
++#if {2}
+ UnionBytes NativeModuleLoader::GetConfig() {{
+-  return UnionBytes(config_raw, {2});  // config.gypi
++  return UnionBytes(config_raw, {3});  // config.gypi
+ }}
++#endif
+ 
+ }}  // namespace native_module
+ 
+@@ -273,9 +275,9 @@ def NormalizeFileName(filename):
+ 
+   return os.path.splitext(filename)[0]
+ 
+-def JS2C(source_files, target):
++def JS2C(source_files, target, only_js):
+   # Process input from all *macro.py files
+-  consts, macros = ReadMacros(source_files['.py'])
++  consts, macros = ReadMacros([] if only_js else source_files['.py'])
+ 
+   # Build source code lines
+   definitions = []
+@@ -294,13 +296,15 @@ def JS2C(source_files, target):
+     elif filename == 'internal/fs/streams.js':
+       AddModule('original-fs/streams', lines.replace("require('fs')", "require('original-fs')"))
+ 
+-  config_def, config_size = handle_config_gypi(source_files['config.gypi'])
+-  definitions.append(config_def)
++  config_size = 0
++  if not only_js:
++    config_def, config_size = handle_config_gypi(source_files['config.gypi'])
++    definitions.append(config_def)
+ 
+   # Emit result
+   definitions = ''.join(definitions)
+   initializers = '\n  '.join(initializers)
+-  out = TEMPLATE.format(definitions, initializers, config_size)
++  out = TEMPLATE.format(definitions, initializers, '0' if only_js else '1', config_size, 'Embedder' if only_js else '')
+   write_if_chaged(out, target)
+ 
+ 
+@@ -353,17 +357,21 @@ def main():
+   )
+   parser.add_argument('--target', help='output file')
+   parser.add_argument('--verbose', action='store_true', help='output file')
++  parser.add_argument('--only-js', action='store_true', help='do not require or parse any config.gypi files')
+   parser.add_argument('sources', nargs='*', help='input files')
+   options = parser.parse_args()
+   global is_verbose
+   is_verbose = options.verbose
+   source_files = functools.reduce(SourceFileByExt, options.sources, {})
+   # Should have exactly 3 types: `.js`, `.py`, and `.gypi`
+-  assert len(source_files) == 3
+-  # Currently config.gypi is the only `.gypi` file allowed
+-  assert source_files['.gypi'] == ['config.gypi']
+-  source_files['config.gypi'] = source_files.pop('.gypi')[0]
+-  JS2C(source_files, options.target)
++  if options.only_js:
++    assert len(source_files) == 1
++  else:
++    assert len(source_files) == 3
++    # Currently config.gypi is the only `.gypi` file allowed
++    assert source_files['.gypi'][0].endswith('config.gypi')
++    source_files['config.gypi'] = source_files.pop('.gypi')[0]
++  JS2C(source_files, options.target, options.only_js)
+ 
+ 
+ if __name__ == "__main__":
