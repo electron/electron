@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 3 Jul 2019 09:29:26 -0700
+Subject: chore: remove unused private RuntimeAgent member env
+
+Removed in https://github.com/nodejs/node/pull/28036; this patch can
+be removed when we update to v12.5.0
+
+diff --git a/filenames.json b/filenames.json
+index edb0b215088118f567c5ad5e5969d1eb5ef661a3..873fff0fac775b2a1276d6dff493146e5cd5ea2d 100644
+--- a/filenames.json
++++ b/filenames.json
+@@ -307,6 +307,7 @@
+     "src/node_env_var.cc",
+     "src/node_errors.cc",
+     "src/node_file.cc",
++    "src/node_snapshot_stub.cc",
+     "src/node_http_parser_llhttp.cc",
+     "src/node_http_parser_traditional.cc",
+     "src/node_http2.cc",
+diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
+index 48ad85e895b6111223119fafa57c13ba75cdbeae..ebe2c7f11a210817294e1fc1da02e2ae60244b9b 100644
+--- a/src/inspector/BUILD.gn
++++ b/src/inspector/BUILD.gn
+@@ -10,6 +10,8 @@ _protocol_generated = [
+   "protocol/NodeWorker.h",
+   "protocol/NodeTracing.cpp",
+   "protocol/NodeTracing.h",
++  "protocol/NodeRuntime.cpp",
++  "protocol/NodeRuntime.h"
+ ]
+ 
+ # These are from node_protocol_config.json
+@@ -41,6 +43,8 @@ source_set("inspector") {
+     "worker_agent.h",
+     "worker_inspector.cc",
+     "worker_inspector.h",
++    "runtime_agent.cc",
++    "runtime_agent.h",
+   ]
+   sources += rebase_path(_protocol_generated,
+                          ".",
+diff --git a/src/inspector/runtime_agent.cc b/src/inspector/runtime_agent.cc
+index 4056140e70349377105ca190e54fbe61b489004f..037a77dbb9d044f2ada1191729599c72ea730687 100644
+--- a/src/inspector/runtime_agent.cc
++++ b/src/inspector/runtime_agent.cc
+@@ -7,8 +7,8 @@ namespace node {
+ namespace inspector {
+ namespace protocol {
+ 
+-RuntimeAgent::RuntimeAgent(Environment* env)
+-  : notify_when_waiting_for_disconnect_(false), env_(env) {}
++RuntimeAgent::RuntimeAgent()
++  : notify_when_waiting_for_disconnect_(false) {}
+ 
+ void RuntimeAgent::Wire(UberDispatcher* dispatcher) {
+   frontend_ = std::make_unique<NodeRuntime::Frontend>(dispatcher->channel());
+diff --git a/src/inspector/runtime_agent.h b/src/inspector/runtime_agent.h
+index 63fc2a897caf21e7bf6987fff07d0e6413fc31fa..a408f9a438a339a8df2a5f5b9b9ac7d228948975 100644
+--- a/src/inspector/runtime_agent.h
++++ b/src/inspector/runtime_agent.h
+@@ -12,7 +12,7 @@ namespace protocol {
+ 
+ class RuntimeAgent : public NodeRuntime::Backend {
+  public:
+-  explicit RuntimeAgent(Environment* env);
++  explicit RuntimeAgent();
+ 
+   void Wire(UberDispatcher* dispatcher);
+ 
+@@ -23,7 +23,6 @@ class RuntimeAgent : public NodeRuntime::Backend {
+  private:
+   std::shared_ptr<NodeRuntime::Frontend> frontend_;
+   bool notify_when_waiting_for_disconnect_;
+-  Environment* env_;
+ };
+ }  // namespace protocol
+ }  // namespace inspector
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index b208fad547fb5af9a1ff3988428e205a2a9ef39f..674ad4611a400de1e8f53fcb21214cb9f8de4442 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -239,7 +239,7 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+     tracing_agent_->Wire(node_dispatcher_.get());
+     worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
+     worker_agent_->Wire(node_dispatcher_.get());
+-    runtime_agent_ = std::make_unique<protocol::RuntimeAgent>(env);
++    runtime_agent_ = std::make_unique<protocol::RuntimeAgent>();
+     runtime_agent_->Wire(node_dispatcher_.get());
+   }
+ 

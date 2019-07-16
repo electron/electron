@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Sun, 14 Apr 2013 15:54:46 +0800
+Subject: Make Module.globalPaths a reference.
+
+We need to hack the search paths of the require function so we can
+load libraries from embedded applications without modifications of
+node's module code.
+
+(cherry picked from commit 76ba048c37588ee32636817fa7b8dffc64330cbf)
+
+diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
+index 2798032fd962398cfd267709644c890377f61b59..1fb197c6c220693b6124f44fbe4b02dd97bcfc4f 100644
+--- a/lib/internal/modules/cjs/loader.js
++++ b/lib/internal/modules/cjs/loader.js
+@@ -914,8 +914,8 @@ Module._initPaths = function() {
+ 
+   modulePaths = paths;
+ 
+-  // Clone as a shallow copy, for introspection.
+-  Module.globalPaths = modulePaths.slice(0);
++  // clone as a shallow copy, for introspection.
++  Module.globalPaths = modulePaths;
+ };
+ 
+ Module._preloadModules = function(requests) {
