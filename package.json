@@ -59,7 +59,6 @@
   "private": true,
   "scripts": {
     "asar": "asar",
-    "check-tls": "python ./script/tls.py",
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",
