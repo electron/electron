@@ -159,18 +159,6 @@ app.on('ready', function () {
     })
     event.returnValue = null
   })
-
-  ipcMain.on('executeJavaScript', function (event, code) {
-    window.webContents.executeJavaScript(code).then((result) => {
-      window.webContents.send('executeJavaScript-promise-response', result)
-    }).catch((error) => {
-      window.webContents.send('executeJavaScript-promise-error', error)
-
-      if (error && error.name) {
-        window.webContents.send('executeJavaScript-promise-error-name', error.name)
-      }
-    })
-  })
 })
 
 ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {

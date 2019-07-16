@@ -14,8 +14,6 @@ const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, web
 
 const features = process.electronBinding('features')
 const { expect } = chai
-const isCI = remote.getGlobal('isCi')
-const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
 chai.use(dirtyChai)
 
@@ -50,150 +48,9 @@ describe('BrowserWindow module', () => {
     return closeWindow(w).then(() => { w = null })
   }
 
-  before((done) => {
-    const filePath = path.join(fixtures, 'pages', 'a.html')
-    const fileStats = fs.statSync(filePath)
-    postData = [
-      {
-        type: 'rawData',
-        bytes: Buffer.from('username=test&file=')
-      },
-      {
-        type: 'file',
-        filePath: filePath,
-        offset: 0,
-        length: fileStats.size,
-        modificationTime: fileStats.mtime.getTime() / 1000
-      }
-    ]
-    server = http.createServer((req, res) => {
-      function respond () {
-        if (req.method === 'POST') {
-          let body = ''
-          req.on('data', (data) => {
-            if (data) body += data
-          })
-          req.on('end', () => {
-            const parsedData = qs.parse(body)
-            fs.readFile(filePath, (err, data) => {
-              if (err) return
-              if (parsedData.username === 'test' &&
-                  parsedData.file === data.toString()) {
-                res.end()
-              }
-            })
-          })
-        } else if (req.url === '/302') {
-          res.setHeader('Location', '/200')
-          res.statusCode = 302
-          res.end()
-        } else if (req.url === '/navigate-302') {
-          res.end(`<html><body><script>window.location='${server.url}/302'</script></body></html>`)
-        } else if (req.url === '/cross-site') {
-          res.end(`<html><body><h1>${req.url}</h1></body></html>`)
-        } else {
-          res.end()
-        }
-      }
-      setTimeout(respond, req.url.includes('slow') ? 200 : 0)
-    })
-    server.listen(0, '127.0.0.1', () => {
-      server.url = `http://127.0.0.1:${server.address().port}`
-      done()
-    })
-  })
-
-  after(() => {
-    server.close()
-    server = null
-  })
-
   beforeEach(openTheWindow)
 
   afterEach(closeTheWindow)
-
-  describe('window.webContents.executeJavaScript', () => {
-    const expected = 'hello, world!'
-    const expectedErrorMsg = 'woops!'
-    const code = `(() => "${expected}")()`
-    const asyncCode = `(() => new Promise(r => setTimeout(() => r("${expected}"), 500)))()`
-    const badAsyncCode = `(() => new Promise((r, e) => setTimeout(() => e("${expectedErrorMsg}"), 500)))()`
-    const errorTypes = new Set([
-      Error,
-      ReferenceError,
-      EvalError,
-      RangeError,
-      SyntaxError,
-      TypeError,
-      URIError
-    ])
-
-    it('resolves the returned promise with the result', (done) => {
-      ipcRenderer.send('executeJavaScript', code)
-      ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
-        expect(result).to.equal(expected)
-        done()
-      })
-    })
-    it('resolves the returned promise with the result if the code returns an asyncronous promise', (done) => {
-      ipcRenderer.send('executeJavaScript', asyncCode)
-      ipcRenderer.once('executeJavaScript-promise-response', (event, result) => {
-        expect(result).to.equal(expected)
-        done()
-      })
-    })
-    it('rejects the returned promise if an async error is thrown', (done) => {
-      ipcRenderer.send('executeJavaScript', badAsyncCode)
-      ipcRenderer.once('executeJavaScript-promise-error', (event, error) => {
-        expect(error).to.equal(expectedErrorMsg)
-        done()
-      })
-    })
-    it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
-      for (const error in errorTypes) {
-        await new Promise((resolve) => {
-          ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`)
-          ipcRenderer.once('executeJavaScript-promise-error-name', (event, name) => {
-            expect(name).to.equal(error.name)
-            resolve()
-          })
-        })
-      }
-    })
-
-    it('works after page load and during subframe load', (done) => {
-      w.webContents.once('did-finish-load', () => {
-        // initiate a sub-frame load, then try and execute script during it
-        w.webContents.executeJavaScript(`
-          var iframe = document.createElement('iframe')
-          iframe.src = '${server.url}/slow'
-          document.body.appendChild(iframe)
-        `).then(() => {
-          w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
-            done()
-          })
-        })
-      })
-      w.loadURL(server.url)
-    })
-
-    it('executes after page load', (done) => {
-      w.webContents.executeJavaScript(code).then(result => {
-        expect(result).to.equal(expected)
-        done()
-      })
-      w.loadURL(server.url)
-    })
-
-    it('works with result objects that have DOM class prototypes', (done) => {
-      w.webContents.executeJavaScript('document.location').then(result => {
-        expect(result.origin).to.equal(server.url)
-        expect(result.protocol).to.equal('http:')
-        done()
-      })
-      w.loadURL(server.url)
-    })
-  })
 
   describe('previewFile', () => {
     before(function () {
