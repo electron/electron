@@ -784,13 +784,13 @@ A `Boolean` property that determines whether the window can be manually closed b
 
 On Linux the setter is a no-op, although the getter returns `true`.
 
-### `win.movable`
+#### `win.movable`
 
 A `Boolean` property that determines Whether the window can be moved by user.
 
 On Linux the setter is a no-op, although the getter returns `true`.
 
-### `win.excludedFromShownWindowsMenu` _macOS_
+#### `win.excludedFromShownWindowsMenu` _macOS_
 
 A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
 
