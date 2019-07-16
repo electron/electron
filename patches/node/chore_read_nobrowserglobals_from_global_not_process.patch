@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 15 Jul 2019 17:45:02 -0700
+Subject: chore: read _noBrowserGlobals from global not process
+
+
+diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
+index 6f096ff3abce7d4b08a174a159217a9ac012f2b2..48c430e966e449397475887b4a65b9aea9021924 100644
+--- a/lib/internal/bootstrap/node.js
++++ b/lib/internal/bootstrap/node.js
+@@ -168,7 +168,7 @@ const {
+   queueMicrotask
+ } = require('internal/process/task_queues');
+ 
+-if (!process._noBrowserGlobals) {
++if (!global._noBrowserGlobals) {
+   // Override global console from the one provided by the VM
+   // to the one implemented by Node.js
+   // https://console.spec.whatwg.org/#console-namespace

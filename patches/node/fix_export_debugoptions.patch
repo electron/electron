@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Thu, 11 Apr 2019 11:50:49 -0700
+Subject: fix: export DebugOptions
+
+
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 35094d66323d551c1bd1ea4430441444b7210299..79e69a031dfc6331e0022b6354c909a36ae51c51 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -187,11 +187,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
+ 
+ namespace options_parser {
+ 
+-class DebugOptionsParser : public OptionsParser<DebugOptions> {
+- public:
+-  DebugOptionsParser();
+-};
+-
+ class EnvironmentOptionsParser : public OptionsParser<EnvironmentOptions> {
+  public:
+   EnvironmentOptionsParser();
+diff --git a/src/node_options.h b/src/node_options.h
+index 174f5369854a6a2bfc11d03ab4f251fe74ea9c8f..ddc18552611724e7e995862964dff616b1b9b66d 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -54,7 +54,7 @@ class Options {
+ // to keep them separate since they are a group of options applying to a very
+ // specific part of Node. It might also make more sense for them to be
+ // per-Isolate, rather than per-Environment.
+-class DebugOptions : public Options {
++class NODE_EXTERN DebugOptions : public Options {
+  public:
+   DebugOptions() = default;
+   DebugOptions(const DebugOptions&) = default;
+@@ -227,7 +227,7 @@ class PerProcessOptions : public Options {
+ 
+ namespace options_parser {
+ 
+-HostPort SplitHostPort(const std::string& arg,
++HostPort NODE_EXTERN SplitHostPort(const std::string& arg,
+     std::vector<std::string>* errors);
+ void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
+ 
+@@ -420,6 +420,11 @@ class OptionsParser {
+   friend void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
+ };
+ 
++class NODE_EXTERN DebugOptionsParser : public OptionsParser<DebugOptions> {
++ public:
++  DebugOptionsParser();
++};
++
+ using StringVector = std::vector<std::string>;
+ template <class OptionsType, class = Options>
+ void Parse(

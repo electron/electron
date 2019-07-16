@@ -317,6 +317,14 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = FILE_PATH_LITERAL("worker");
       break;
   }
+
+  mate::Dictionary global(context->GetIsolate(), context->Global());
+  // Do not set DOM globals for renderer process.
+  // We must set this before the node bootstrapper which is run inside
+  // CreateEnvironment
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    global.Set("_noBrowserGlobals", true);
+
   base::FilePath resources_path = GetResourcesPath(browser_env_ == BROWSER);
   base::FilePath script_path =
       resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
@@ -328,7 +336,12 @@ node::Environment* NodeBindings::CreateEnvironment(
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
+  DCHECK(env);
 
+  // Clean up the global _noBrowserGlobals that we unironically injected into
+  // the global scope
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    global.Delete("_noBrowserGlobals");
   if (browser_env_ == BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
     // so instead call it here to match expected node behavior
