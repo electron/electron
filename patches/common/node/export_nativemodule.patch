@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Sun, 27 Mar 2016 14:43:14 +0900
+Subject: Export NativeModule
+
+This is used by atom for doing module compile cache.
+
+(cherry picked from commit 83b45fddb9a36c1376f7a2b5c70717e37b6f0133)
+
+diff --git a/lib/internal/bootstrap/loaders.js b/lib/internal/bootstrap/loaders.js
+index ced530a4ce161dfbe130b752161d5c8866b5d3f5..0541382a0dc10ba97da7cfa4d8ef5a6b12f511c0 100644
+--- a/lib/internal/bootstrap/loaders.js
++++ b/lib/internal/bootstrap/loaders.js
+@@ -170,6 +170,8 @@ NativeModule.exposeInternals = function() {
+   }
+ };
+ 
++process.NativeModule = NativeModule;
++
+ const {
+   moduleIds,
+   compileFunction

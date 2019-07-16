@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 13 Sep 2018 08:42:22 -0700
+Subject: feat: add flags for low-level hooks and exceptions
+
+This commit adds two new exposed methods to `node.cc`, `InitGeneric` and
+`LoadEnvironmentGeneric` that allow for control of which mode Node
+should run, which i have called `standalone_mode` and
+`upstream_node_mode`. Default behavior of `Init` and `LoadEnvironment`
+remain the same.
+
+We have 3 modes when running Node in Electron:
+1. In the main process, we want to have a full Node environment, but
+with signal handlers and other low level things disabled
+2. In renderer process, we want Node to reuse the web page's context
+3. In `ELECTRON_RUN_AS_NODE`, we want Node to run as it runs officially
+by default
+
+For modes 1 and 3, we have Node create a new V8 context with a Node
+Environment on it. However, for mode 2, since the V8 context is created
+by blink for web frames and web workers we make Node create the Node
+Environment on the V8 context of blink, so no new V8 context is created.
+
+As a result, a renderer process may have multiple Node Environments in it.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 2ecf4029909c7e97444458998fa1d961676b8786..8aa3d1b174bcdd21602c3b695dfa97705b50daad 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -45,7 +45,7 @@ static bool ShouldAbortOnUncaughtException(Isolate* isolate) {
+          !env->inside_should_not_abort_on_uncaught_scope();
+ }
+ 
+-static void OnMessage(Local<Message> message, Local<Value> error) {
++void OnMessage(Local<Message> message, Local<Value> error) {
+   Isolate* isolate = message->GetIsolate();
+   switch (message->ErrorLevel()) {
+     case Isolate::MessageErrorLevel::kMessageWarning: {
+diff --git a/src/env.cc b/src/env.cc
+index 46f807a3c4fe3ce2c7509d098361b470152495e5..7160e69e02559c3c7c27af2688b6a9989e28e87a 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -231,6 +231,12 @@ Environment::Environment(IsolateData* isolate_data,
+   if (options_->no_force_async_hooks_checks) {
+     async_hooks_.no_force_checks();
+   }
++
++  // TODO(addaleax): the per-isolate state should not be controlled by
++  // a single Environment.
++  if (g_standalone_mode) {
++    isolate()->SetPromiseRejectCallback(task_queue::PromiseRejectCallback);
++  }
+ }
+ 
+ CompileFnEntry::CompileFnEntry(Environment* env, uint32_t id)
+diff --git a/src/node.cc b/src/node.cc
+index deb4246d357539459fcc3524fcddb9a8f58edfa0..6f07d07a7bc3dc21b777d29aad0def17cd889bbc 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -143,6 +143,9 @@ using v8::Undefined;
+ using v8::V8;
+ using v8::Value;
+ 
++bool g_standalone_mode = true;
++bool g_upstream_node_mode = true;
++
+ namespace per_process {
+ 
+ // node_revert.h
+@@ -236,6 +239,12 @@ static MaybeLocal<Value> ExecuteBootstrapper(
+ 
+ MaybeLocal<Value> RunBootstrapping(Environment* env) {
+   CHECK(!env->has_run_bootstrapping_code());
++  if (g_standalone_mode) {
++    env->isolate()->AddMessageListener(OnMessage);
++  }
++  if (g_upstream_node_mode) {
++    env->isolate()->SetFatalErrorHandler(OnFatalError);
++  }
+ 
+   EscapableHandleScope scope(env->isolate());
+   Isolate* isolate = env->isolate();
+@@ -641,7 +650,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   binding::RegisterBuiltinModules();
+ 
+   // Make inherited handles noninheritable.
+-  uv_disable_stdio_inheritance();
++  if (g_upstream_node_mode) {
++    uv_disable_stdio_inheritance();
++  }
+ 
+ #ifdef NODE_REPORT
+   // Cache the original command line to be
+@@ -705,6 +716,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   }
+ #endif
+ 
++  if (g_upstream_node_mode) {
++  // NOTE(jeremy): indentation is intentionally wrong here, to ease rebasing.
++
+   const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, false);
+   if (exit_code != 0) return exit_code;
+ 
+@@ -727,6 +741,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   per_process::metadata.versions.InitializeIntlVersions();
+ #endif
+ 
++  }  // g_upstream_node_mode
++
+   // We should set node_is_initialized here instead of in node::Start,
+   // otherwise embedders using node::Init to initialize everything will not be
+   // able to set it and native modules will not load for them.
+diff --git a/src/node.h b/src/node.h
+index 32fd4b288e75f37dad8660114f4eca506d61b3fa..070abc5be387244484d8cdbb193dc5d7709674fd 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -203,6 +203,9 @@ namespace node {
+ 
+ class IsolateData;
+ class Environment;
++// Whether node should open some low level hooks.
++NODE_EXTERN extern bool g_standalone_mode;
++NODE_EXTERN extern bool g_upstream_node_mode;
+ 
+ // TODO(addaleax): Officially deprecate this and replace it with something
+ // better suited for a public embedder API.
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 1ffe78d33b19a098e9200271a8e809205d8f540b..aff9a9a99397575fd6aba4105ed70aef5c646963 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -190,6 +190,8 @@ static v8::MaybeLocal<v8::Object> New(Environment* env,
+ }
+ }  // namespace Buffer
+ 
++void OnMessage(v8::Local<v8::Message> message, v8::Local<v8::Value> error);
++
+ v8::MaybeLocal<v8::Value> InternalMakeCallback(
+     Environment* env,
+     v8::Local<v8::Object> recv,

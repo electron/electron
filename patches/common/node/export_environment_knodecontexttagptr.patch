@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 2 Oct 2018 17:09:15 -0700
+Subject: export Environment::kNodeContextTagPtr
+
+
+diff --git a/src/env.h b/src/env.h
+index f22d57171d9d315e088151a7a3df825933cfd303..4fac6149a6befa32c796d7194824d48a48e07958 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1140,7 +1140,7 @@ class Environment {
+   uint64_t thread_id_;
+   std::unordered_set<worker::Worker*> sub_worker_contexts_;
+ 
+-  static void* const kNodeContextTagPtr;
++  NODE_EXTERN static void* const kNodeContextTagPtr;
+   static int const kNodeContextTag;
+ 
+ #if HAVE_INSPECTOR

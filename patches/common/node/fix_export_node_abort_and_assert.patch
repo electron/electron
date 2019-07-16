@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Wed, 27 Mar 2019 14:17:15 -0700
+Subject: fix: Export node::Abort and Assert
+
+
+diff --git a/src/node_errors.cc b/src/node_errors.cc
+index 3c04152974339ed2e0d960ebe808cd787e5f34c1..4c7160605958be3f89817c280b30e98c90393cc3 100644
+--- a/src/node_errors.cc
++++ b/src/node_errors.cc
+@@ -230,13 +230,13 @@ void AppendExceptionLine(Environment* env,
+             .FromMaybe(false));
+ }
+ 
+-[[noreturn]] void Abort() {
++[[noreturn]] void NODE_EXTERN Abort() {
+   DumpBacktrace(stderr);
+   fflush(stderr);
+   ABORT_NO_BACKTRACE();
+ }
+ 
+-[[noreturn]] void Assert(const AssertionInfo& info) {
++[[noreturn]] void NODE_EXTERN Assert(const AssertionInfo& info) {
+   char name[1024];
+   GetHumanReadableProcessName(&name);
+ 
+diff --git a/src/util.h b/src/util.h
+index a9de8f8636c11be6d9d198250a7c1dbf0480a453..de3eb36b7e768d2f7c47f45dcac441986a400086 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -24,6 +24,7 @@
+ 
+ #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
++#include "node.h"
+ #include "node_persistent.h"
+ #include "v8.h"
+ 
+@@ -93,8 +94,8 @@ struct AssertionInfo {
+   const char* message;
+   const char* function;
+ };
+-[[noreturn]] void Assert(const AssertionInfo& info);
+-[[noreturn]] void Abort();
++[[noreturn]] void NODE_EXTERN Assert(const AssertionInfo& info);
++[[noreturn]] void NODE_EXTERN Abort();
+ void DumpBacktrace(FILE* fp);
+ 
+ // Windows 8+ does not like abort() in Release mode

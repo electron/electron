@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 30 Jul 2018 10:30:35 -0700
+Subject: refactor: alter child_process.fork to use execute script with
+ Electron
+
+When forking a child script, we setup a special environment to make the Electron binary run like the upstream node. On Mac, we use the helper app as node binary.
+
+diff --git a/lib/child_process.js b/lib/child_process.js
+index 7d0b692141a86d24ed9eed842ee7ea9d90c97f1c..42fb15551faeeea6ab5ec6c3d59c1f1aea68903d 100644
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -108,6 +108,16 @@ exports.fork = function fork(modulePath /* , args, options */) {
+     throw new ERR_CHILD_PROCESS_IPC_REQUIRED('options.stdio');
+   }
+ 
++  if (!options.env) {
++    options.env = Object.create(process.env);
++  }
++
++  options.env.ELECTRON_RUN_AS_NODE = 1;
++
++  if (!options.execPath && process.type && process.platform == 'darwin') {
++    options.execPath = process.helperExecPath;
++  }
++
+   options.execPath = options.execPath || process.execPath;
+   options.shell = false;
+ 

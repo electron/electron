@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Wed, 27 Mar 2019 00:28:29 -0700
+Subject: fixme: Add back NativeModuleLoader CompileAndCall
+
+Node removed the NativeModuleLoader CompileAndCall function and exposed
+the LookupAndCompile function, with the intention of giving the ability
+to the caller to handle errors. The node PR made the changes
+https://github.com/nodejs/node/pull/25667.
+I'm adding this back for now, but this can easily be moved to electron
+as a helper or can probably be upstreamed somehow.
+
+diff --git a/src/node_native_module.cc b/src/node_native_module.cc
+index 47d3d94f1277904e3128dc03aee0f41c26ab91b0..fec7dcd940fa757fdb1c23252a3588ef46f98992 100644
+--- a/src/node_native_module.cc
++++ b/src/node_native_module.cc
+@@ -272,6 +272,24 @@ MaybeLocal<Function> NativeModuleLoader::LookupAndCompile(
+   return scope.Escape(fun);
+ }
+ 
++MaybeLocal<Value> NativeModuleLoader::CompileAndCall(
++    Local<Context> context,
++    const char* id,
++    std::vector<Local<String>>* parameters,
++    std::vector<Local<Value>>* arguments,
++    Environment* optional_env) {
++  Isolate* isolate = context->GetIsolate();
++  MaybeLocal<Function> compiled =
++      per_process::native_module_loader.LookupAndCompile(
++          context, id, parameters, nullptr);
++  if (compiled.IsEmpty()) {
++    return MaybeLocal<Value>();
++  }
++  Local<Function> fn = compiled.ToLocalChecked().As<Function>();
++  return fn->Call(
++      context, v8::Null(isolate), arguments->size(), arguments->data());
++}
++
+ void NativeModuleLoader::Initialize(Local<Object> target,
+                                     Local<Value> unused,
+                                     Local<Context> context,
+diff --git a/src/node_native_module.h b/src/node_native_module.h
+index cbf625fc4df290cf774ce394f525019e331cd79c..b873145602cc43e616d6b6bceafe15b1431b0efc 100644
+--- a/src/node_native_module.h
++++ b/src/node_native_module.h
+@@ -53,6 +53,18 @@ class NODE_EXTERN NativeModuleLoader {
+       std::vector<v8::Local<v8::String>>* parameters,
+       Environment* optional_env);
+ 
++  // Run a script with JS source bundled inside the binary as if it's wrapped
++  // in a function called with a null receiver and arguments specified in C++.
++  // The returned value is empty if an exception is encountered.
++  // JS code run with this method can assume that their top-level
++  // declarations won't affect the global scope.
++  v8::MaybeLocal<v8::Value> CompileAndCall(
++      v8::Local<v8::Context> context,
++      const char* id,
++      std::vector<v8::Local<v8::String>>* parameters,
++      std::vector<v8::Local<v8::Value>>* arguments,
++      Environment* optional_env);
++
+  private:
+   static void GetCacheUsage(const v8::FunctionCallbackInfo<v8::Value>& args);
+   // Passing ids of builtin module source code into JS land as

@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Fri, 29 Mar 2019 16:21:42 +0900
+Subject: fix: make it possible to change noBrowserGlobals at runtime
+
+This is a temporary hack in responding to Node's change:
+https://github.com/nodejs/node/pull/26228
+
+We need to figure out a better solution.
+
+diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
+index abd88afce05a0679aa6bbef0cfba0e392e5812ac..cf84468ced9e5936a1de21f885702d4cae168fdb 100644
+--- a/lib/internal/bootstrap/node.js
++++ b/lib/internal/bootstrap/node.js
+@@ -162,7 +162,7 @@ const {
+   queueMicrotask
+ } = require('internal/process/task_queues');
+ 
+-if (!config.noBrowserGlobals) {
++if (!process._noBrowserGlobals) {
+   // Override global console from the one provided by the VM
+   // to the one implemented by Node.js
+   // https://console.spec.whatwg.org/#console-namespace

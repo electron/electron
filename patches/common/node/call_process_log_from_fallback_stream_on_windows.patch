@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Sawicki <kevinsawicki@gmail.com>
+Date: Wed, 12 Oct 2016 09:43:26 -0700
+Subject: Call process.log from fallback stream on Windows
+
+(cherry picked from commit d31e629b4f2daf3500a485caab2b2990a41e3ad4)
+
+diff --git a/lib/internal/process/stdio.js b/lib/internal/process/stdio.js
+index 385225cabc402ee3d65b1295f24abb0bc0058166..b1b18196c181ad6edcba545282512f9131c99184 100644
+--- a/lib/internal/process/stdio.js
++++ b/lib/internal/process/stdio.js
+@@ -195,6 +195,11 @@ function createWritableStdioStream(fd) {
+       const { Writable } = require('stream');
+       stream = new Writable({
+         write(buf, enc, cb) {
++          if (process.platform === 'win32' &&
++              process.env.ELECTRON_RUN_AS_NODE &&
++              !process.env.ELECTRON_NO_ATTACH_CONSOLE) {
++            process.log(buf.toString());
++          }
+           cb();
+         }
+       });

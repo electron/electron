@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 30 Jul 2018 15:18:11 -0700
+Subject: fix: build and expose inspector agent
+
+Node inspector initialization happens in a different start-up function in node.cc, which we don't call in Electron. This allows for us to use the inspector agent in electron/atom/browser/node_debugger.cc
+
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index 57228ed953302f3ff75df4c245dc32d9511d6616..d0ab6a0e2bceeb3752a09b6961d801d2856aa6ec 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -205,7 +205,7 @@ const int CONTEXT_GROUP_ID = 1;
+ 
+ std::string GetWorkerLabel(node::Environment* env) {
+   std::ostringstream result;
+-  result << "Worker[" << env->thread_id() << "]";
++  result << "Electron Worker[" << env->thread_id() << "]";
+   return result.str();
+ }
+ 
+@@ -434,7 +434,7 @@ class NodeInspectorClient : public V8InspectorClient {
+     client_ = V8Inspector::create(env->isolate(), this);
+     // TODO(bnoordhuis) Make name configurable from src/node.cc.
+     std::string name =
+-        is_main_ ? GetHumanReadableProcessName() : GetWorkerLabel(env);
++        is_main_ ? "Electron Main Context" : GetWorkerLabel(env);
+     ContextInfo info(name);
+     info.is_default = true;
+     contextCreated(env->context(), info);
+diff --git a/src/inspector_agent.h b/src/inspector_agent.h
+index aa89fbba6bc0992f6e361e3ce7e61aa6933de881..1cc6e59f237b94a1c9d68879238f915f9fecf281 100644
+--- a/src/inspector_agent.h
++++ b/src/inspector_agent.h
+@@ -6,8 +6,10 @@
+ #error("This header can only be used when inspector is enabled")
+ #endif
+ 
++#include "node.h"
+ #include "node_options-inl.h"
+ #include "node_persistent.h"
++#include "node_platform.h"
+ #include "v8.h"
+ 
+ #include <cstddef>
+@@ -41,7 +43,7 @@ class InspectorSessionDelegate {
+                                      = 0;
+ };
+ 
+-class Agent {
++class NODE_EXTERN Agent {
+  public:
+   explicit Agent(node::Environment* env);
+   ~Agent();
+diff --git a/src/inspector_io.cc b/src/inspector_io.cc
+index 20785fc67787dfac502e3af03a0b3a0308dc9b58..5f042f0824d6b5e4e11c8fd488ad42ef769821ef 100644
+--- a/src/inspector_io.cc
++++ b/src/inspector_io.cc
+@@ -14,6 +14,8 @@
+ #include "util.h"
+ #include "zlib.h"
+ 
++#include "libplatform/libplatform.h"
++
+ #include <deque>
+ #include <cstring>
+ #include <vector>

@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 11 Apr 2019 17:16:13 +0900
+Subject: feat: add original-fs module
+
+
+diff --git a/tools/js2c.py b/tools/js2c.py
+index 5e8a243070fcd8767a9689bcf8e95e55c3c99941..f11604d53768d83fd3320a407245faf8390d3b72 100755
+--- a/tools/js2c.py
++++ b/tools/js2c.py
+@@ -287,6 +287,16 @@ def JS2C(source, target):
+       definitions.append(definition)
+     else:
+       AddModule(name.split('.', 1)[0], lines)
++      # Electron: Expose fs module without asar support.
++      if name == 'fs.js':
++        # Node's 'fs' and 'internal/fs/streams' have a lazy-loaded circular
++        # dependency. So to expose the unmodified Node 'fs' functionality here,
++        # we have to copy both 'fs' *and* 'internal/fs/streams' and modify the
++        # copies to depend on each other instead of on our asarified 'fs' code.
++        # See https://github.com/electron/electron/pull/16028 for more.
++        AddModule('original-fs', lines.replace("require('internal/fs/streams')", "require('original-fs/streams')"))
++      elif name == 'internal/fs/streams.js':
++        AddModule('original-fs/streams', lines.replace("require('fs')", "require('original-fs')"))
+ 
+   # Emit result
+   output = open(str(target[0]), "w")

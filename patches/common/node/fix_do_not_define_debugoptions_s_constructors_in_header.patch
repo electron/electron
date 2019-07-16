@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Fri, 29 Mar 2019 17:17:30 +0900
+Subject: fix: do not define DebugOptions's constructors in header
+
+The e3ca89ef49 changed NODE_EXTERN to always expose symbols for
+DebugOptions, and since the constructors of DebugOptions are defined in
+header, the compiler would end up generating no constructor
+implementations for DebugOptions.
+
+Which means we would encounter crash when constructors of DebugOptions
+is called.
+
+By putting the definitions of constructors into the implementation file,
+we can avoid this problem.
+
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 053be80e50577adfa67f497aa29a6fb276dd7a7a..ed5192b04e3de17944c51df25b1be93eda84cc1b 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -26,6 +26,12 @@ Mutex cli_options_mutex;
+ std::shared_ptr<PerProcessOptions> cli_options{new PerProcessOptions()};
+ }  // namespace per_process
+ 
++DebugOptions::DebugOptions() = default;
++DebugOptions::DebugOptions(const DebugOptions&) = default;
++DebugOptions::DebugOptions(DebugOptions&&) = default;
++DebugOptions& DebugOptions::operator=(const DebugOptions&) = default;
++DebugOptions& DebugOptions::operator=(DebugOptions&&) = default;
++
+ void DebugOptions::CheckOptions(std::vector<std::string>* errors) {
+ #if !NODE_USE_V8_PLATFORM
+   if (inspector_enabled) {
+diff --git a/src/node_options.h b/src/node_options.h
+index 5c70bbad76f81584f3f0b0506cf883f6395e235f..158bf8b959b36df91f47c5b04b84e9aa85e449b1 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -56,11 +56,11 @@ class Options {
+ // per-Isolate, rather than per-Environment.
+ class NODE_EXTERN DebugOptions : public Options {
+  public:
+-  DebugOptions() = default;
+-  DebugOptions(const DebugOptions&) = default;
+-  DebugOptions& operator=(const DebugOptions&) = default;
+-  DebugOptions(DebugOptions&&) = default;
+-  DebugOptions& operator=(DebugOptions&&) = default;
++  DebugOptions();
++  DebugOptions(const DebugOptions&);
++  DebugOptions& operator=(const DebugOptions&);
++  DebugOptions(DebugOptions&&);
++  DebugOptions& operator=(DebugOptions&&);
+ 
+   // --inspect
+   bool inspector_enabled = false;

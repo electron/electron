@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Wed, 10 Apr 2019 13:03:28 +0900
+Subject: fix: wrong uses_node_allocator condition
+
+Waiting for reply from upstream:
+https://github.com/nodejs/node/commit/84e02b178ad14fae0df2a514e8a39bfa50ffdc2d#r33116006
+
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 6bc9cfeed3188f8387255b6e5bf2da2797f1bb06..8d172aff7d362236c57fa493806501fdbb1b61d3 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -420,7 +420,7 @@ MaybeLocal<Object> New(Environment* env,
+   }
+ 
+   if (uses_malloc) {
+-    if (env->isolate_data()->uses_node_allocator()) {
++    if (!env->isolate_data()->uses_node_allocator()) {
+       // We don't know for sure that the allocator is malloc()-based, so we need
+       // to fall back to the FreeCallback variant.
+       auto free_callback = [](char* data, void* hint) { free(data); };

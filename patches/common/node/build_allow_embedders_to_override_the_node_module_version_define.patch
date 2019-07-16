@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Tue, 16 Apr 2019 15:12:14 -0700
+Subject: build: allow embedders to override the NODE_MODULE_VERSION define
+
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 028b0ae16ffac1fc89128f2f994680923a500a36..b5912d4d671db27761be4c6283ed5e21818c5b04 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -37,6 +37,9 @@ declare_args() {
+   # `sourceUrl` and `headersUrl`. When compiling a release build, this will
+   # default to https://nodejs.org/download/release/')
+   node_release_urlbase = ""
++
++  # Allows embedders to override the NODE_MODULE_VERSION define
++  node_module_version = ""
+ }
+ 
+ assert(!node_use_dtrace, "node_use_dtrace not supported in GN")
+@@ -145,6 +148,9 @@ config("node_internal_config") {
+     "NODE_WANT_INTERNALS=1",
+     "NODE_IMPLEMENTATION",
+   ]
++  if (node_module_version != "") {
++    defines += [ "NODE_MODULE_VERSION=" + node_module_version ]
++  }
+   if (is_component_build) {
+     defines += [
+       "BUILDING_V8_SHARED",
+@@ -200,14 +206,14 @@ config("node_internal_config") {
+ component("node_lib") {
+   deps = [
+     ":node_js2c",
+-    "//third_party/brotli:enc",
+-    "//third_party/brotli:dec",
+     "deps/cares",
+     "deps/histogram",
+     "deps/http_parser",
+     "deps/llhttp",
+     "deps/nghttp2",
+     "deps/zlib",
++    "//third_party/brotli:dec",
++    "//third_party/brotli:enc",
+     "//v8:v8_libplatform",
+   ]
+   public_deps = [
+@@ -255,8 +261,8 @@ component("node_lib") {
+       "src/inspector_agent.h",
+       "src/inspector_io.cc",
+       "src/inspector_io.h",
+-      "src/inspector_profiler.cc",
+       "src/inspector_js_api.cc",
++      "src/inspector_profiler.cc",
+       "src/inspector_socket.cc",
+       "src/inspector_socket.h",
+       "src/inspector_socket_server.cc",
+@@ -323,6 +329,20 @@ copy("node_gypi_headers") {
+   ]
+ }
+ 
++action("node_version_header") {
++  inputs = [
++    "src/node_version.h",
++  ]
++  outputs = [
++    "$node_headers_dir/include/node/node_version.h",
++  ]
++  script = "tools/generate_node_version_header.py"
++  args = [ rebase_path("src/node_version.h"), rebase_path(outputs[0]) ]
++  if (node_module_version != "") {
++    args += [ "$node_module_version" ]
++  }
++}
++
+ action("tar_headers") {
+   deps = [
+     ":copy_headers",
+@@ -341,6 +361,7 @@ group("copy_headers") {
+   public_deps = header_groups + [
+                   ":zlib_headers",
+                   ":node_gypi_headers",
++                  ":node_version_header",
+                 ]
+ }
+ 
+diff --git a/filenames.json b/filenames.json
+index 615b82d3d78d63c8441172d65f008914756fdb7e..86d89280e74d7365ab2782517fb779fc072bf0bf 100644
+--- a/filenames.json
++++ b/filenames.json
+@@ -11,8 +11,7 @@
+         "src/node_api.h",
+         "src/node_api_types.h",
+         "src/node_buffer.h",
+-        "src/node_object_wrap.h",
+-        "src/node_version.h"
++        "src/node_object_wrap.h"
+       ]
+     },
+     {
+diff --git a/src/node_version.h b/src/node_version.h
+index ac2a13fe2db8d9ee03f620fbbd0afb68c33784f2..0cfa3e471f541e9241478f32fda8bdb640929b59 100644
+--- a/src/node_version.h
++++ b/src/node_version.h
+@@ -117,7 +117,10 @@
+  *
+  * More information can be found at https://nodejs.org/en/download/releases/
+  */
++// Electron sets NODE_MODULE_VERSION in their GN configuration
++#ifndef NODE_MODULE_VERSION
+ #define NODE_MODULE_VERSION 72
++#endif
+ 
+ // the NAPI_VERSION provided by this version of the runtime
+ #define NAPI_VERSION  4
+diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
+index 28e97bcb9aed0a8c0bbfa0e00ba914aa923d4bba..41f0138dfa9f610de1f8267080fa15e8bd9e0325 100755
+--- a/tools/generate_gn_filenames_json.py
++++ b/tools/generate_gn_filenames_json.py
+@@ -49,7 +49,7 @@ if __name__ == '__main__':
+ 
+   def add_headers(files, dest_dir):
+     if 'src/node.h' in files:
+-      files = [f for f in files if f.endswith('.h')]
++      files = [f for f in files if f.endswith('.h') and f != 'src/node_version.h']
+     elif any(f.startswith('deps/v8/') for f in files):
+       files = [f.replace('deps/v8/', '//v8/', 1) for f in files]
+     hs = {'files': sorted(files), 'dest_dir': dest_dir}
+diff --git a/tools/generate_node_version_header.py b/tools/generate_node_version_header.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2eee17e941
+--- /dev/null
++++ b/tools/generate_node_version_header.py
+@@ -0,0 +1,25 @@
++#!/usr/bin/env python
++import re
++import sys
++
++node_version_file = sys.argv[1]
++out_file = sys.argv[2]
++NMV = None
++if len(sys.argv) > 3:
++  NMV = sys.argv[3]
++
++with open(node_version_file, 'r') as in_file, open(out_file, 'w') as out_file:
++  changed = False
++  contents = in_file.read()
++  new_contents = re.sub(
++    r'^#define NODE_MODULE_VERSION [0-9]+$',
++    '#define NODE_MODULE_VERSION ' + NMV,
++    contents,
++    flags=re.MULTILINE)
++
++  changed = contents != new_contents
++
++  if not changed and NMV is not None:
++    raise Exception("Did not modify the NMV from nodes value, this value MUST differ from node")
++
++  out_file.writelines(new_contents)

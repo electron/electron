@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Henningsen <anna@addaleax.net>
+Date: Sun, 26 May 2019 17:48:47 +0200
+Subject: http2: fix tracking received data for maxSessionMemory
+
+Track received data correctly. Specifically, for the buffer that
+is used for receiving data, we previously would try to increment
+the current memory usage by its length, and later decrement it
+by that, but in the meantime the buffer had been turned over to V8
+and its length reset to zero. This gave the impression that more and
+more memory was consumed by the HTTP/2 session when it was in fact not.
+
+Fixes: https://github.com/nodejs/node/issues/27416
+Refs: https://github.com/nodejs/node/pull/26207
+
+PR-URL: https://github.com/nodejs/node/pull/27914
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Rich Trott <rtrott@gmail.com>
+
+diff --git a/src/node_http2.cc b/src/node_http2.cc
+index b2666f1c8b6a4eb3c524a6af3ca90aa561565fc8..8f0254dfb15bc7003ab2b5c53024209a02d59db4 100644
+--- a/src/node_http2.cc
++++ b/src/node_http2.cc
+@@ -1789,11 +1789,13 @@ void Http2Session::OnStreamRead(ssize_t nread, const uv_buf_t& buf_) {
+   // Shrink to the actual amount of used data.
+   buf.Resize(nread);
+ 
+-  IncrementCurrentSessionMemory(buf.size());
++  IncrementCurrentSessionMemory(nread);
+   OnScopeLeave on_scope_leave([&]() {
+     // Once finished handling this write, reset the stream buffer.
+     // The memory has either been free()d or was handed over to V8.
+-    DecrementCurrentSessionMemory(buf.size());
++    // We use `nread` instead of `buf.size()` here, because the buffer is
++    // cleared as part of the `.ToArrayBuffer()` call below.
++    DecrementCurrentSessionMemory(nread);
+     stream_buf_ab_ = Local<ArrayBuffer>();
+     stream_buf_ = uv_buf_init(nullptr, 0);
+   });
+diff --git a/test/parallel/test-http2-max-session-memory-leak.js b/test/parallel/test-http2-max-session-memory-leak.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b066ca80bc5eabc089625cf643f790637ad6aeea
+--- /dev/null
++++ b/test/parallel/test-http2-max-session-memory-leak.js
+@@ -0,0 +1,46 @@
++'use strict';
++const common = require('../common');
++if (!common.hasCrypto)
++  common.skip('missing crypto');
++const http2 = require('http2');
++
++// Regression test for https://github.com/nodejs/node/issues/27416.
++// Check that received data is accounted for correctly in the maxSessionMemory
++// mechanism.
++
++const bodyLength = 8192;
++const maxSessionMemory = 1;  // 1 MB
++const requestCount = 1000;
++
++const server = http2.createServer({ maxSessionMemory });
++server.on('stream', (stream) => {
++  stream.respond();
++  stream.end();
++});
++
++server.listen(common.mustCall(() => {
++  const client = http2.connect(`http://localhost:${server.address().port}`, {
++    maxSessionMemory
++  });
++
++  function request() {
++    return new Promise((resolve, reject) => {
++      const stream = client.request({
++        ':method': 'POST',
++        'content-length': bodyLength
++      });
++      stream.on('error', reject);
++      stream.on('response', resolve);
++      stream.end('a'.repeat(bodyLength));
++    });
++  }
++
++  (async () => {
++    for (let i = 0; i < requestCount; i++) {
++      await request();
++    }
++
++    client.close();
++    server.close();
++  })().then(common.mustCall());
++}));
