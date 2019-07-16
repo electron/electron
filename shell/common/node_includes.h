@@ -59,7 +59,6 @@
 
 #undef debug_string    // This is defined in macOS SDK in AssertMacros.h.
 #undef require_string  // This is defined in macOS SDK in AssertMacros.h.
-#include "env-inl.h"
 #include "env.h"
 #include "node.h"
 #include "node_buffer.h"
