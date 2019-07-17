@@ -3,22 +3,16 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-resources:
-  containers:
-  - container: arm32v7-test-container
-    image: arm32v7/ubuntu:18.04
-    options: --shm-size 128m
+container:
+  image: arm32v7/ubuntu:18.04
+  options: --shm-size 128m
+  
 trigger: none
 
 pool:
   name: 'Arm32v7'
 
-jobs:
-- job:
-  container: arm32v7-test-container
-  displayName: Test Arm on Arm32v7 hardware
-  timeoutInMinutes: 30
-  steps:
+steps:
   - bash: |
       whoami
     displayName: 'whoami on ubuntu:18.04'
