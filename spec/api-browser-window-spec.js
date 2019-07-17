@@ -20,8 +20,8 @@ chai.use(dirtyChai)
 describe('BrowserWindow module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
-  let iw = null
-  let ws = null
+  const iw = null
+  const ws = null
   let server
   let postData
 
@@ -51,114 +51,6 @@ describe('BrowserWindow module', () => {
   beforeEach(openTheWindow)
 
   afterEach(closeTheWindow)
-
-  describe('contextIsolation option with and without sandbox option', () => {
-    const expectedContextData = {
-      preloadContext: {
-        preloadProperty: 'number',
-        pageProperty: 'undefined',
-        typeofRequire: 'function',
-        typeofProcess: 'object',
-        typeofArrayPush: 'function',
-        typeofFunctionApply: 'function',
-        typeofPreloadExecuteJavaScriptProperty: 'undefined'
-      },
-      pageContext: {
-        preloadProperty: 'undefined',
-        pageProperty: 'string',
-        typeofRequire: 'undefined',
-        typeofProcess: 'undefined',
-        typeofArrayPush: 'number',
-        typeofFunctionApply: 'boolean',
-        typeofPreloadExecuteJavaScriptProperty: 'number',
-        typeofOpenedWindow: 'object'
-      }
-    }
-
-    beforeEach(() => {
-      if (iw != null) iw.destroy()
-      iw = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
-      })
-      if (ws != null) ws.destroy()
-      ws = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true,
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
-      })
-    })
-
-    afterEach(() => {
-      if (iw != null) iw.destroy()
-      if (ws != null) ws.destroy()
-    })
-
-    it('separates the page context from the Electron/preload context', async () => {
-      const p = emittedOnce(ipcMain, 'isolated-world')
-      iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      const [, data] = await p
-      expect(data).to.deep.equal(expectedContextData)
-    })
-    it('recreates the contexts on reload', async () => {
-      await iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
-      iw.webContents.reload()
-      const [, data] = await isolatedWorld
-      expect(data).to.deep.equal(expectedContextData)
-    })
-    it('enables context isolation on child windows', async () => {
-      const browserWindowCreated = emittedOnce(app, 'browser-window-created')
-      iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
-      const [, window] = await browserWindowCreated
-      expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true()
-    })
-    it('separates the page context from the Electron/preload context with sandbox on', async () => {
-      const p = emittedOnce(ipcMain, 'isolated-world')
-      ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      const [, data] = await p
-      expect(data).to.deep.equal(expectedContextData)
-    })
-    it('recreates the contexts on reload with sandbox on', async () => {
-      await ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
-      ws.webContents.reload()
-      const [, data] = await isolatedWorld
-      expect(data).to.deep.equal(expectedContextData)
-    })
-    it('supports fetch api', async () => {
-      const fetchWindow = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
-        }
-      })
-      const p = emittedOnce(ipcMain, 'isolated-fetch-error')
-      fetchWindow.loadURL('about:blank')
-      const [, error] = await p
-      fetchWindow.destroy()
-      expect(error).to.equal('Failed to fetch')
-    })
-    it('doesn\'t break ipc serialization', async () => {
-      const p = emittedOnce(ipcMain, 'isolated-world')
-      iw.loadURL('about:blank')
-      iw.webContents.executeJavaScript(`
-        const opened = window.open()
-        openedLocation = opened.location.href
-        opened.close()
-        window.postMessage({openedLocation}, '*')
-      `)
-      const [, data] = await p
-      expect(data.pageContext.openedLocation).to.equal('')
-    })
-  })
 
   describe('offscreen rendering', () => {
     beforeEach(function () {
