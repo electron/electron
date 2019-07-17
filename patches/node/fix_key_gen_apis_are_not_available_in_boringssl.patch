@@ -6,7 +6,7 @@ Subject: fix: key gen APIs are not available in BoringSSL
 This will make Node's key pair generation APIs fail.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index f232c9571ae5452996955b7bc149da663ee7d56a..4b6eccd7fe96d185c28def27ff3d0da3e26e950f 100644
+index 300d2b92d7040c831b3178202a725df15191407d..5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -290,24 +290,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
@@ -62,7 +62,7 @@ index f232c9571ae5452996955b7bc149da663ee7d56a..4b6eccd7fe96d185c28def27ff3d0da3
    default:
      return Undefined(env()->isolate());
    }
-@@ -6196,6 +6192,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6194,6 +6190,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
      if (EVP_PKEY_paramgen_init(param_ctx.get()) <= 0)
        return nullptr;
  
@@ -71,7 +71,7 @@ index f232c9571ae5452996955b7bc149da663ee7d56a..4b6eccd7fe96d185c28def27ff3d0da3
      if (EVP_PKEY_CTX_set_dsa_paramgen_bits(param_ctx.get(), modulus_bits_) <= 0)
        return nullptr;
  
-@@ -6215,6 +6213,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6213,6 +6211,8 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
  
      EVPKeyCtxPointer key_ctx(EVP_PKEY_CTX_new(params.get(), nullptr));
      return key_ctx;
@@ -80,7 +80,7 @@ index f232c9571ae5452996955b7bc149da663ee7d56a..4b6eccd7fe96d185c28def27ff3d0da3
    }
  
   private:
-@@ -6906,9 +6906,12 @@ void Initialize(Local<Object> target,
+@@ -6904,9 +6904,12 @@ void Initialize(Local<Object> target,
    env->SetMethod(target, "generateKeyPairEC", GenerateKeyPairEC);
    env->SetMethod(target, "generateKeyPairNid", GenerateKeyPairNid);
    NODE_DEFINE_CONSTANT(target, EVP_PKEY_ED25519);

@@ -5,7 +5,7 @@ Subject: fixme: Comment trace event macro
 
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 9811c02d5438cd7008d3990f89b7161355e87cfc..3a92c530b1dd262fd12893ac35e6d229594f0792 100644
+index 2311036beadf7efaac4999ceef985566fe41c763..10fbbc1d8cf43f76248efdac9a2539a8c8287d71 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -348,10 +348,11 @@ class TraceEventScope {

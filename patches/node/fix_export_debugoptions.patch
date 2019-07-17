@@ -5,10 +5,10 @@ Subject: fix: export DebugOptions
 
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 35094d66323d551c1bd1ea4430441444b7210299..79e69a031dfc6331e0022b6354c909a36ae51c51 100644
+index 021fc5d70b250b39ac76028b5d384608d51f7248..11c910bbd17c8b8e345862e11a24aba7822c31b6 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -187,11 +187,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
+@@ -202,11 +202,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
  
  namespace options_parser {
  
@@ -21,10 +21,10 @@ index 35094d66323d551c1bd1ea4430441444b7210299..79e69a031dfc6331e0022b6354c909a3
   public:
    EnvironmentOptionsParser();
 diff --git a/src/node_options.h b/src/node_options.h
-index 174f5369854a6a2bfc11d03ab4f251fe74ea9c8f..ddc18552611724e7e995862964dff616b1b9b66d 100644
+index 34c54511e1bb8bba201994802f7fd53c4217cece..35daba3291c8358a44f9fca53df34b35c5423d15 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -54,7 +54,7 @@ class Options {
+@@ -59,7 +59,7 @@ struct InspectPublishUid {
  // to keep them separate since they are a group of options applying to a very
  // specific part of Node. It might also make more sense for them to be
  // per-Isolate, rather than per-Environment.
@@ -33,7 +33,7 @@ index 174f5369854a6a2bfc11d03ab4f251fe74ea9c8f..ddc18552611724e7e995862964dff616
   public:
    DebugOptions() = default;
    DebugOptions(const DebugOptions&) = default;
-@@ -227,7 +227,7 @@ class PerProcessOptions : public Options {
+@@ -236,7 +236,7 @@ class PerProcessOptions : public Options {
  
  namespace options_parser {
  
@@ -42,7 +42,7 @@ index 174f5369854a6a2bfc11d03ab4f251fe74ea9c8f..ddc18552611724e7e995862964dff616
      std::vector<std::string>* errors);
  void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
  
-@@ -420,6 +420,11 @@ class OptionsParser {
+@@ -429,6 +429,11 @@ class OptionsParser {
    friend void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
  };
  

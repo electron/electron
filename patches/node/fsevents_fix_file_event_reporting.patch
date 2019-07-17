@@ -192,10 +192,10 @@ index ea34bd63a70625c3e2c60d5a1bbb087c5f0bbb2e..38d722a27ef1a78717726272d54578c7
  #if defined(NO_FS_EVENTS)
    RETURN_SKIP(NO_FS_EVENTS);
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index 8886b07c8a74736208d5614257f832f59d79633a..3e758a1d2cbe104a691d362411770006d1494bae 100644
+index a48f6f3806806af6bf844558d08fa9679e268112..f9020fc6c1ec8d076c470fa5042d062b74226ae4 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
-@@ -333,6 +333,7 @@ TEST_DECLARE   (fs_event_watch_dir_short_path)
+@@ -335,6 +335,7 @@ TEST_DECLARE   (fs_event_watch_dir_short_path)
  #endif
  TEST_DECLARE   (fs_event_watch_file)
  TEST_DECLARE   (fs_event_watch_file_exact_path)
@@ -203,7 +203,7 @@ index 8886b07c8a74736208d5614257f832f59d79633a..3e758a1d2cbe104a691d362411770006
  TEST_DECLARE   (fs_event_watch_file_twice)
  TEST_DECLARE   (fs_event_watch_file_current_dir)
  #ifdef _WIN32
-@@ -920,6 +921,7 @@ TASK_LIST_START
+@@ -924,6 +925,7 @@ TASK_LIST_START
  #endif
    TEST_ENTRY  (fs_event_watch_file)
    TEST_ENTRY  (fs_event_watch_file_exact_path)

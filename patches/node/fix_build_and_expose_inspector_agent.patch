@@ -6,7 +6,7 @@ Subject: fix: build and expose inspector agent
 Node inspector initialization happens in a different start-up function in node.cc, which we don't call in Electron. This allows for us to use the inspector agent in electron/atom/browser/node_debugger.cc
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 8a12c2dddf7493a1c2a5f5deff7114d35ffa4f76..b208fad547fb5af9a1ff3988428e205a2a9ef39f 100644
+index ceba6a59a83e4d9ec6cc42305cd0715ffbe61489..a2a714e39db999f4293adf8064f7f53b546850e6 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -217,7 +217,7 @@ const int CONTEXT_GROUP_ID = 1;
@@ -28,7 +28,7 @@ index 8a12c2dddf7493a1c2a5f5deff7114d35ffa4f76..b208fad547fb5af9a1ff3988428e205a
      info.is_default = true;
      contextCreated(env->context(), info);
 diff --git a/src/inspector_agent.h b/src/inspector_agent.h
-index 1c2bde0da73e846159843a8c32879f227a8f0dd7..133e2187dcd6fed9cb3a2d13eb646ef5e9851e01 100644
+index 5447a68485c2282f0a38821bd5858824275311dd..0722a0fde38ade1d621b020bba0e2680d132fa71 100644
 --- a/src/inspector_agent.h
 +++ b/src/inspector_agent.h
 @@ -6,7 +6,9 @@
@@ -51,7 +51,7 @@ index 1c2bde0da73e846159843a8c32879f227a8f0dd7..133e2187dcd6fed9cb3a2d13eb646ef5
    explicit Agent(node::Environment* env);
    ~Agent();
 diff --git a/src/inspector_io.cc b/src/inspector_io.cc
-index 223e3592a1fc0901575153f2ec000dcaac37ea1f..d500d15b07c249f973c41967b5510f69429117b7 100644
+index 91384ca949c2f13e0264811cd76e44743e695bd4..9edefd91be0effbad162ced398558785ad655cf1 100644
 --- a/src/inspector_io.cc
 +++ b/src/inspector_io.cc
 @@ -13,6 +13,8 @@

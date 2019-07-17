@@ -15,7 +15,7 @@ By putting the definitions of constructors into the implementation file,
 we can avoid this problem.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 79e69a031dfc6331e0022b6354c909a36ae51c51..a85b650d2e75b5c7dd8018d9af76ac88d0d741aa 100644
+index 11c910bbd17c8b8e345862e11a24aba7822c31b6..9b9b9324d681d8a55418c7a43a071a6f978750e7 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -26,6 +26,12 @@ Mutex cli_options_mutex;
@@ -32,10 +32,10 @@ index 79e69a031dfc6331e0022b6354c909a36ae51c51..a85b650d2e75b5c7dd8018d9af76ac88
  #if !NODE_USE_V8_PLATFORM
    if (inspector_enabled) {
 diff --git a/src/node_options.h b/src/node_options.h
-index ddc18552611724e7e995862964dff616b1b9b66d..c79b08ad09c183ad24faf864fb8ba4692b527c70 100644
+index 35daba3291c8358a44f9fca53df34b35c5423d15..b8959745f5bd66bb19f3f1d9b1bf45e8a6ebd4f7 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -56,11 +56,11 @@ class Options {
+@@ -61,11 +61,11 @@ struct InspectPublishUid {
  // per-Isolate, rather than per-Environment.
  class NODE_EXTERN DebugOptions : public Options {
   public:

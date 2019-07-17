@@ -25,10 +25,10 @@ index a998b095fb067ab6ca35cc276ac6a9a7c38dcf30..68ca0cefa4cf663cded9155bc4f2f226
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index a643a77aec6398acfeae7f2e8e526d60c3b4453c..397cd8067849957599927bc033e3904964ac8c70 100644
+index c975804d847eea5a8d759f79121aa4da61e88dc4..506ce67d553f4e755d56d386666c19f27d1ab694 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -751,6 +751,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -753,6 +753,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.

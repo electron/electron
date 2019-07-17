@@ -24,13 +24,13 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index bc43fac963bbc334ccf5c5e3895e9dbd568bcdb4..a942a880e93b11cbc0cfb3c86d3950bd7f261e77 100644
+index df59eaaa94928fc26d8636bcbabe70c12c83fa04..a10b3db67872ebb24f10ac3bc6e43356a59c2644 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -318,6 +318,12 @@ Environment::Environment(IsolateData* isolate_data,
-   if (options_->no_force_async_hooks_checks) {
-     async_hooks_.no_force_checks();
-   }
+@@ -383,6 +383,12 @@ Environment::Environment(IsolateData* isolate_data,
+   // TODO(joyeecheung): deserialize when the snapshot covers the environment
+   // properties.
+   CreateProperties();
 +
 +  // TODO(addaleax): the per-isolate state should not be controlled by
 +  // a single Environment.
@@ -41,7 +41,7 @@ index bc43fac963bbc334ccf5c5e3895e9dbd568bcdb4..a942a880e93b11cbc0cfb3c86d3950bd
  
  CompileFnEntry::CompileFnEntry(Environment* env, uint32_t id)
 diff --git a/src/node.cc b/src/node.cc
-index f8b6fa6f33b67394ca68acabd4df0c64653083fe..eff0be6fef1274cd4210811bdc377702ca70b2a2 100644
+index c074ed0dfe1b47611fdcf40537e5e70a2d95f58b..00fb0ed1c9cfbc86a7ec7d1d0ce7789b68d6a1e3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -27,6 +27,7 @@
@@ -52,7 +52,7 @@ index f8b6fa6f33b67394ca68acabd4df0c64653083fe..eff0be6fef1274cd4210811bdc377702
  #include "node_internals.h"
  #include "node_main_instance.h"
  #include "node_metadata.h"
-@@ -131,6 +132,9 @@ using v8::Undefined;
+@@ -134,6 +135,9 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
  
@@ -62,20 +62,21 @@ index f8b6fa6f33b67394ca68acabd4df0c64653083fe..eff0be6fef1274cd4210811bdc377702
  namespace per_process {
  
  // node_revert.h
-@@ -224,6 +228,12 @@ MaybeLocal<Value> ExecuteBootstrapper(Environment* env,
+@@ -356,6 +360,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
  
- MaybeLocal<Value> RunBootstrapping(Environment* env) {
-   CHECK(!env->has_run_bootstrapping_code());
+   CHECK(!has_run_bootstrapping_code());
+ 
 +  if (g_standalone_mode) {
-+    env->isolate()->AddMessageListener(errors::PerIsolateMessageListener);
++    isolate()->AddMessageListener(errors::PerIsolateMessageListener);
 +  }
 +  if (g_upstream_node_mode) {
-+    env->isolate()->SetFatalErrorHandler(OnFatalError);
++    isolate()->SetFatalErrorHandler(OnFatalError);
 +  }
- 
-   EscapableHandleScope scope(env->isolate());
-   Isolate* isolate = env->isolate();
-@@ -618,7 +628,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
++
+   if (BootstrapInternalLoaders().IsEmpty()) {
+     return MaybeLocal<Value>();
+   }
+@@ -736,7 +747,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -86,7 +87,7 @@ index f8b6fa6f33b67394ca68acabd4df0c64653083fe..eff0be6fef1274cd4210811bdc377702
  
  #ifdef NODE_REPORT
    // Cache the original command line to be
-@@ -720,6 +732,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -838,6 +851,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
  #endif
  
@@ -96,7 +97,7 @@ index f8b6fa6f33b67394ca68acabd4df0c64653083fe..eff0be6fef1274cd4210811bdc377702
    const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, false);
    if (exit_code != 0) return exit_code;
  
-@@ -742,6 +757,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -860,6 +876,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    per_process::metadata.versions.InitializeIntlVersions();
  #endif
  

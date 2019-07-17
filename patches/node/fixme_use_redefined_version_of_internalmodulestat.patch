@@ -10,7 +10,7 @@ internalModuleStat` in the very beginning of the file holds a reference
 to a native Node.js implementation of the function.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index a8d7786d644bc4129d96c63ffe58bd4909496219..6b881d22deef7164cb5c6e0ceb1daff0b8dc5c62 100644
+index b6bef5f0fdb6f60e4baf5fbd647f191a0e290355..2f5385cea51d3456dffb43a852bd2b3cdce9998b 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -85,6 +85,8 @@ const relativeResolveCache = Object.create(null);

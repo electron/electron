@@ -9,10 +9,10 @@ can still use them in a node Environment now that primordials are
 initialized and required so early.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index bfc849d362a18bc7cd499584a439a1d29f0864f8..e313460a13ced7e7a9982db6f4a988699ec56111 100644
+index bfd279aa7e7cd4d50b6cffe75d6f8e41c0213acb..5011774be2c5fee910079790feae747fa1785b87 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -362,6 +362,13 @@ Local<Context> NewContext(Isolate* isolate,
+@@ -363,6 +363,13 @@ Local<Context> NewContext(Isolate* isolate,
                            Local<ObjectTemplate> object_template) {
    auto context = Context::New(isolate, nullptr, object_template);
    if (context.IsEmpty()) return context;

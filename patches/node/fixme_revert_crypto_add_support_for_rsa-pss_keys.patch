@@ -6,7 +6,7 @@ Subject: fixme: Revert "crypto: add support for RSA-PSS keys"
 This reverts commit 969bd1eb7b56fda3573ad3d41745a491f2b06dde.
 
 diff --git a/lib/internal/crypto/keygen.js b/lib/internal/crypto/keygen.js
-index f646f436f7678a293f4742ee8abec9646509c2a6..2c577383f9828bafa11a0cac12d350b3c6023e00 100644
+index 0a4bde77fa369b788bd7e2976441358254b13955..37835db411f7577d39e5e2af10590b6fa1b13489 100644
 --- a/lib/internal/crypto/keygen.js
 +++ b/lib/internal/crypto/keygen.js
 @@ -5,7 +5,6 @@ const { Object } = primordials;
@@ -17,7 +17,7 @@ index f646f436f7678a293f4742ee8abec9646509c2a6..2c577383f9828bafa11a0cac12d350b3
    generateKeyPairDSA,
    generateKeyPairEC,
    generateKeyPairNid,
-@@ -144,7 +143,6 @@ function check(type, options, callback) {
+@@ -143,7 +142,6 @@ function check(type, options, callback) {
    let impl;
    switch (type) {
      case 'rsa':
@@ -25,7 +25,7 @@ index f646f436f7678a293f4742ee8abec9646509c2a6..2c577383f9828bafa11a0cac12d350b3
        {
          const { modulusLength } = needOptions();
          if (!isUint32(modulusLength))
-@@ -157,27 +155,10 @@ function check(type, options, callback) {
+@@ -156,27 +154,10 @@ function check(type, options, callback) {
            throw new ERR_INVALID_OPT_VALUE('publicExponent', publicExponent);
          }
  
@@ -57,7 +57,7 @@ index f646f436f7678a293f4742ee8abec9646509c2a6..2c577383f9828bafa11a0cac12d350b3
        }
        break;
      case 'dsa':
-@@ -246,7 +227,8 @@ function check(type, options, callback) {
+@@ -245,7 +226,8 @@ function check(type, options, callback) {
        break;
      default:
        throw new ERR_INVALID_ARG_VALUE('type', type,
@@ -110,10 +110,10 @@ index b6a3376e735094f970ef61a52ef9bb6d6101647a..bb70c2305fd44cfea46a8df5e65d1af5
  
  Sign.prototype.sign = function sign(options, encoding) {
 diff --git a/src/env.h b/src/env.h
-index 23ad7569d31bc534247ed373819bc291a4f4bfe6..8047b2c98398f0344274ec824abab88007ae5c3f 100644
+index 63e71fc1fc2b0e95a85f38b58b34eeb290d8f09d..1415e32c02c4ffc6e3205ff15bef2006021bb1c2 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -165,7 +165,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
+@@ -170,7 +170,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
    V(crypto_x25519_string, "x25519")                                            \
    V(crypto_x448_string, "x448")                                                \
    V(crypto_rsa_string, "rsa")                                                  \
@@ -122,7 +122,7 @@ index 23ad7569d31bc534247ed373819bc291a4f4bfe6..8047b2c98398f0344274ec824abab880
    V(data_string, "data")                                                       \
    V(dest_string, "dest")                                                       \
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a83ab99f9c 100644
+index 5622ae8a367b017aa4d8a7e6e5892b5caa9bbec3..87b54447574c9aef094776f9bd9397aa63c7085b 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -3727,8 +3727,6 @@ Local<Value> KeyObject::GetAsymmetricKeyType() const {
@@ -134,7 +134,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
    case EVP_PKEY_DSA:
      return env()->crypto_dsa_string();
    case EVP_PKEY_EC:
-@@ -4726,14 +4724,13 @@ void SignBase::CheckThrow(SignBase::Error error) {
+@@ -4730,14 +4728,13 @@ void SignBase::CheckThrow(SignBase::Error error) {
  static bool ApplyRSAOptions(const ManagedEVPPKey& pkey,
                              EVP_PKEY_CTX* pkctx,
                              int padding,
@@ -153,7 +153,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
          return false;
      }
    }
-@@ -4784,16 +4781,11 @@ void Sign::SignUpdate(const FunctionCallbackInfo<Value>& args) {
+@@ -4788,16 +4785,11 @@ void Sign::SignUpdate(const FunctionCallbackInfo<Value>& args) {
    sign->CheckThrow(err);
  }
  
@@ -171,7 +171,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
    unsigned char m[EVP_MAX_MD_SIZE];
    unsigned int m_len;
  
-@@ -4826,7 +4818,7 @@ static AllocatedBuffer Node_SignFinal(Environment* env,
+@@ -4830,7 +4822,7 @@ static AllocatedBuffer Node_SignFinal(Environment* env,
  Sign::SignResult Sign::SignFinal(
      const ManagedEVPPKey& pkey,
      int padding,
@@ -180,7 +180,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
    if (!mdctx_)
      return SignResult(kSignNotInitialised);
  
-@@ -4877,17 +4869,11 @@ void Sign::SignFinal(const FunctionCallbackInfo<Value>& args) {
+@@ -4881,17 +4873,11 @@ void Sign::SignFinal(const FunctionCallbackInfo<Value>& args) {
    if (!key)
      return;
  
@@ -202,7 +202,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
  
    SignResult ret = sign->SignFinal(
        key,
-@@ -4948,17 +4934,11 @@ void SignOneShot(const FunctionCallbackInfo<Value>& args) {
+@@ -4952,17 +4938,11 @@ void SignOneShot(const FunctionCallbackInfo<Value>& args) {
        return CheckThrow(env, SignBase::Error::kSignUnknownDigest);
    }
  
@@ -224,7 +224,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
  
    EVP_PKEY_CTX* pkctx = nullptr;
    EVPMDPointer mdctx(EVP_MD_CTX_new());
-@@ -5036,7 +5016,7 @@ SignBase::Error Verify::VerifyFinal(const ManagedEVPPKey& pkey,
+@@ -5040,7 +5020,7 @@ SignBase::Error Verify::VerifyFinal(const ManagedEVPPKey& pkey,
                                      const char* sig,
                                      int siglen,
                                      int padding,
@@ -233,7 +233,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
                                      bool* verify_result) {
    if (!mdctx_)
      return kSignNotInitialised;
-@@ -5080,17 +5060,11 @@ void Verify::VerifyFinal(const FunctionCallbackInfo<Value>& args) {
+@@ -5084,17 +5064,11 @@ void Verify::VerifyFinal(const FunctionCallbackInfo<Value>& args) {
  
    ArrayBufferViewContents<char> hbuf(args[offset]);
  
@@ -255,7 +255,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
  
    bool verify_result;
    Error err = verify->VerifyFinal(pkey, hbuf.data(), hbuf.length(), padding,
-@@ -5123,17 +5097,11 @@ void VerifyOneShot(const FunctionCallbackInfo<Value>& args) {
+@@ -5127,17 +5101,11 @@ void VerifyOneShot(const FunctionCallbackInfo<Value>& args) {
        return CheckThrow(env, SignBase::Error::kSignUnknownDigest);
    }
  
@@ -277,7 +277,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
  
    EVP_PKEY_CTX* pkctx = nullptr;
    EVPMDPointer mdctx(EVP_MD_CTX_new());
-@@ -6137,48 +6105,6 @@ class RSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6135,48 +6103,6 @@ class RSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
    const unsigned int exponent_;
  };
  
@@ -326,7 +326,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
  class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
   public:
    DSAKeyPairGenerationConfig(unsigned int modulus_bits, int divisor_bits)
-@@ -6412,44 +6338,6 @@ void GenerateKeyPairRSA(const FunctionCallbackInfo<Value>& args) {
+@@ -6410,44 +6336,6 @@ void GenerateKeyPairRSA(const FunctionCallbackInfo<Value>& args) {
    GenerateKeyPair(args, 2, std::move(config));
  }
  
@@ -371,7 +371,7 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
  void GenerateKeyPairDSA(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    const uint32_t modulus_bits = args[0].As<Uint32>()->Value();
-@@ -6901,7 +6789,6 @@ void Initialize(Local<Object> target,
+@@ -6899,7 +6787,6 @@ void Initialize(Local<Object> target,
  
    env->SetMethod(target, "pbkdf2", PBKDF2);
    env->SetMethod(target, "generateKeyPairRSA", GenerateKeyPairRSA);
@@ -380,10 +380,10 @@ index 4b6eccd7fe96d185c28def27ff3d0da3e26e950f..70e9b2ddafc8aaa46063c5957c70d7a8
    env->SetMethod(target, "generateKeyPairEC", GenerateKeyPairEC);
    env->SetMethod(target, "generateKeyPairNid", GenerateKeyPairNid);
 diff --git a/src/node_crypto.h b/src/node_crypto.h
-index 849b80f4e06268ca442e1d78ff60225d52077ce8..b404f0fcd4d1df5da86173955df45bb0eb4923fe 100644
+index 3e337eaddbe490b98aa2f9da2e310c94e4a96bf8..e526325a60feaa345f02e021f7ba1c9e3d8ca602 100644
 --- a/src/node_crypto.h
 +++ b/src/node_crypto.h
-@@ -671,7 +671,7 @@ class Sign : public SignBase {
+@@ -657,7 +657,7 @@ class Sign : public SignBase {
    SignResult SignFinal(
        const ManagedEVPPKey& pkey,
        int padding,
@@ -392,7 +392,7 @@ index 849b80f4e06268ca442e1d78ff60225d52077ce8..b404f0fcd4d1df5da86173955df45bb0
  
   protected:
    static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-@@ -692,7 +692,7 @@ class Verify : public SignBase {
+@@ -678,7 +678,7 @@ class Verify : public SignBase {
                      const char* sig,
                      int siglen,
                      int padding,
@@ -402,10 +402,10 @@ index 849b80f4e06268ca442e1d78ff60225d52077ce8..b404f0fcd4d1df5da86173955df45bb0
  
   protected:
 diff --git a/test/fixtures/keys/Makefile b/test/fixtures/keys/Makefile
-index 81fe36a81331eb1d1d1696763c887d252ac4fef9..3be2cd6655f7e60e5b3a92c4be0fea50c64d14df 100644
+index 226dc67346ef740ae9d622c03271d2761e51e713..492a30f6e43fc8068b8b89da86cdfe6250fe1fe6 100644
 --- a/test/fixtures/keys/Makefile
 +++ b/test/fixtures/keys/Makefile
-@@ -37,12 +37,6 @@ all: \
+@@ -61,12 +61,6 @@ all: \
    rsa_public_1024.pem \
    rsa_public_2048.pem \
    rsa_public_4096.pem \
@@ -415,10 +415,10 @@ index 81fe36a81331eb1d1d1696763c887d252ac4fef9..3be2cd6655f7e60e5b3a92c4be0fea50
 -  rsa_pss_public_2048.pem \
 -  rsa_pss_public_2048_sha256_sha256_16.pem \
 -  rsa_pss_public_2048_sha512_sha256_20.pem \
- 
- #
- # Create Certificate Authority: ca1
-@@ -580,24 +574,6 @@ rsa_public_2048.pem: rsa_private_2048.pem
+   ed25519_private.pem \
+   ed25519_public.pem \
+   x25519_private.pem \
+@@ -691,24 +685,6 @@ rsa_public_2048.pem: rsa_private_2048.pem
  rsa_public_4096.pem: rsa_private_4096.pem
  	openssl rsa -in rsa_private_4096.pem -pubout -out rsa_public_4096.pem
  
@@ -440,9 +440,9 @@ index 81fe36a81331eb1d1d1696763c887d252ac4fef9..3be2cd6655f7e60e5b3a92c4be0fea50
 -rsa_pss_public_2048_sha512_sha256_20.pem: rsa_pss_private_2048_sha512_sha256_20.pem
 -	openssl pkey -in rsa_pss_private_2048_sha512_sha256_20.pem -pubout -out rsa_pss_public_2048_sha512_sha256_20.pem
 -
- clean:
- 	rm -f *.pfx *.pem *.srl ca2-database.txt ca2-serial fake-startcom-root-serial *.print *.old fake-startcom-root-issued-certs/*.pem
- 	@> fake-startcom-root-database.txt
+ ed25519_private.pem:
+ 	openssl genpkey -algorithm ED25519 -out ed25519_private.pem
+ 
 diff --git a/test/fixtures/keys/rsa_pss_private_2048.pem b/test/fixtures/keys/rsa_pss_private_2048.pem
 deleted file mode 100644
 index ffca137a71219fb6a801c7a905f6607672acb168..0000000000000000000000000000000000000000
@@ -629,7 +629,7 @@ index 0000000000000000000000000000000000000000..4e8e46f04133422128eea2b88a8f378f
 +IHc67mAAez4i8fg2wTQ=
 +-----END PRIVATE KEY-----
 diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
-index 2a3a3ec2f0bff1c581da245e00271da4d756abf5..642e1d6fa01fd8f6e86974a06bc1594aaa6d615b 100644
+index 558f7dc1f4b67331629a92cbdd8b1734fdfc5980..a47083b3ace5bb6c27b71adcf65b3769c63994e7 100644
 --- a/test/parallel/test-crypto-key-objects.js
 +++ b/test/parallel/test-crypto-key-objects.js
 @@ -8,8 +8,6 @@ const assert = require('assert');
@@ -653,8 +653,8 @@ index 2a3a3ec2f0bff1c581da245e00271da4d756abf5..642e1d6fa01fd8f6e86974a06bc1594a
 +}
 +
  [
-   { private: fixtures.readSync('test_ed25519_privkey.pem', 'ascii'),
-     public: fixtures.readSync('test_ed25519_pubkey.pem', 'ascii'),
+   { private: fixtures.readKey('ed25519_private.pem', 'ascii'),
+     public: fixtures.readKey('ed25519_public.pem', 'ascii'),
 @@ -281,146 +286,6 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
    assert.strictEqual(privateKey.type, 'private');
    assert.strictEqual(privateKey.asymmetricKeyType, 'dsa');
