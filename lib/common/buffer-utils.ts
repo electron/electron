@@ -49,6 +49,8 @@ export function bufferToMeta (value: BufferLike): BufferMeta {
   return {
     type: getType(value),
     data: getBuffer(value),
+    // NB. We only use length when decoding Int8Array and friends.
+    // For other buffer-like types this is expected to be undefined.
     length: (value as Buffer).length
   }
 }
