@@ -615,7 +615,7 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
-#### Event: 'rotate' _macOS_
+#### Event: 'rotate-gesture' _macOS_
 
 Returns:
 
