@@ -288,7 +288,8 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
-    node::MultiIsolatePlatform* platform) {
+    node::MultiIsolatePlatform* platform,
+    bool bootstrap_env) {
 #if defined(OS_WIN)
   auto& atom_args = AtomCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
@@ -327,13 +328,17 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
-      context, args.size(), c_argv.get(), 0, nullptr);
+      context, args.size(), c_argv.get(), 0, nullptr, bootstrap_env);
   DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::BROWSER) {
+    // We need to bootstrap the env in non-browser processes so that
+    // _noBrowserGlobals is read correctly before we remove it
+    DCHECK(bootstrap_env);
     global.Delete("_noBrowserGlobals");
+  }
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment

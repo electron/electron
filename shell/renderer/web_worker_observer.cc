@@ -50,7 +50,8 @@ void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> worker_context) {
   // Setup node environment for each window.
   v8::Local<v8::Context> context = node::MaybeInitializeContext(worker_context);
   DCHECK(!context.IsEmpty());
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(context, nullptr, true);
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());

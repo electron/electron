@@ -285,12 +285,43 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
-      js_env_->context(), js_env_->platform());
+      js_env_->context(), js_env_->platform(), false);
   node_env_.reset(new NodeEnvironment(env));
+
+  /**
+   * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
+   * UNSAFE ENVIRONMENT BLOCK BEGINS
+   *
+   * DO NOT USE node::Environment inside this block, bad things will happen
+   * and you won't be able to figure out why.  Just don't touch it, the only
+   * thing that can use it is NodeDebugger and that is ONLY allowed to access
+   * the inspector agent.
+   *
+   * This is unsafe because the environment is not yet bootstrapped, it's a race
+   * condition where we can't bootstrap before intializing the inspector agent.
+   *
+   * Long term we should figure out how to get node to initialize the inspector
+   * agent in the correct place without us splitting the bootstrap up, but for
+   * now this works.
+   * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
+   */
 
   // Enable support for v8 inspector
   node_debugger_.reset(new NodeDebugger(env));
   node_debugger_->Start();
+
+  // Only run the node bootstrapper after we have initialized the inspector
+  // TODO(MarshallOfSound): Figured out a better way to init the inspector
+  // before bootstrapping
+  node::BootstrapEnvironment(env);
+
+  /**
+   * ✅  ✅  ✅  ✅  ✅  ✅  ✅
+   * UNSAFE ENVIRONMENT BLOCK ENDS
+   *
+   * Do whatever you want now with that env, it's safe again
+   * ✅  ✅  ✅  ✅  ✅  ✅  ✅
+   */
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
