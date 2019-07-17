@@ -3684,6 +3684,7 @@ describe('BrowserWindow module', () => {
         }
       })
     })
+    afterEach(closeAllWindows)
 
     it('creates offscreen window with correct size', (done) => {
       w.webContents.once('paint', function (event, rect, data) {
