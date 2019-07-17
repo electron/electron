@@ -6,10 +6,10 @@ Subject: fix: use bssl BN_bn2bin_padded for ossl's BN_bn2binpad
 Also note that BN_bn2bin_padded returns 1 on success instead of size
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index a5710dc33b62b9b53174318aed62d8e7fe3a52b9..2143117ec3b782ce307bcb3c7183594bc233d5e8 100644
+index 590c6d1c374c086e128580d6160ccbd71a7ef227..4933bf7f1bd2cd5e4293e52a241fcfd5fda6b779 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5404,9 +5404,9 @@ void DiffieHellman::GenerateKeys(const FunctionCallbackInfo<Value>& args) {
+@@ -5408,9 +5408,9 @@ void DiffieHellman::GenerateKeys(const FunctionCallbackInfo<Value>& args) {
    const int size = BN_num_bytes(pub_key);
    CHECK_GE(size, 0);
    AllocatedBuffer data = env->AllocateManaged(size);
@@ -22,7 +22,7 @@ index a5710dc33b62b9b53174318aed62d8e7fe3a52b9..2143117ec3b782ce307bcb3c7183594b
    args.GetReturnValue().Set(data.ToBuffer().ToLocalChecked());
  }
  
-@@ -5426,8 +5426,8 @@ void DiffieHellman::GetField(const FunctionCallbackInfo<Value>& args,
+@@ -5430,8 +5430,8 @@ void DiffieHellman::GetField(const FunctionCallbackInfo<Value>& args,
    CHECK_GE(size, 0);
    AllocatedBuffer data = env->AllocateManaged(size);
    CHECK_EQ(
@@ -33,7 +33,7 @@ index a5710dc33b62b9b53174318aed62d8e7fe3a52b9..2143117ec3b782ce307bcb3c7183594b
    args.GetReturnValue().Set(data.ToBuffer().ToLocalChecked());
  }
  
-@@ -5750,9 +5750,9 @@ void ECDH::GetPrivateKey(const FunctionCallbackInfo<Value>& args) {
+@@ -5748,9 +5748,9 @@ void ECDH::GetPrivateKey(const FunctionCallbackInfo<Value>& args) {
  
    const int size = BN_num_bytes(b);
    AllocatedBuffer out = env->AllocateManaged(size);

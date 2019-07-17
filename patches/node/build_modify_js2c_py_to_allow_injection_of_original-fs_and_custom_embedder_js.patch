@@ -38,7 +38,7 @@ index fabaea75686161f488a03349e07049a513b98fad..5a6b01dc12fb77d5f8c26a1153ead2a1
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 68152c499ce610d759b5abd659340957efb864d6..27c9ca57c3ad6188282d43ce1efdb53efd1161bc 100755
+index 7b3e90af88b873c32f8ed51712f7dfdff3c1c706..586d0f72dcb4215ce73c23b401bce7238ed5bb0d 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -187,13 +187,15 @@ namespace native_module {{

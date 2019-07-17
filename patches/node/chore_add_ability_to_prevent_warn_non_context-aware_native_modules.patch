@@ -5,10 +5,10 @@ Subject: chore: add ability to prevent / warn non context-aware native modules
  being loaded
 
 diff --git a/src/env.h b/src/env.h
-index b97d024a0e8396ebd21b96bd7f1a9473abfefe9b..23ad7569d31bc534247ed373819bc291a4f4bfe6 100644
+index e60f76372a324b83cd054c830fc2d6f9ab2dcae8..63e71fc1fc2b0e95a85f38b58b34eeb290d8f09d 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -827,6 +827,15 @@ class Environment : public MemoryRetainer {
+@@ -849,6 +849,15 @@ class Environment : public MemoryRetainer {
                uint64_t thread_id = kNoThreadId);
    ~Environment();
  
@@ -22,9 +22,9 @@ index b97d024a0e8396ebd21b96bd7f1a9473abfefe9b..23ad7569d31bc534247ed373819bc291
 +  bool warn_non_context_aware() { return warn_non_context_aware_; }
 +
    void InitializeLibuv(bool start_profiler_idle_notifier);
-   v8::MaybeLocal<v8::Object> ProcessCliArgs(
-       const std::vector<std::string>& args,
-@@ -1177,6 +1186,9 @@ class Environment : public MemoryRetainer {
+   inline const std::vector<std::string>& exec_argv();
+   inline const std::vector<std::string>& argv();
+@@ -1197,6 +1206,9 @@ class Environment : public MemoryRetainer {
    inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                           const char* errmsg);
  

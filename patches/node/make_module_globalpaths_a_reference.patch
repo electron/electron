@@ -10,10 +10,10 @@ node's module code.
 (cherry picked from commit 76ba048c37588ee32636817fa7b8dffc64330cbf)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 2798032fd962398cfd267709644c890377f61b59..1fb197c6c220693b6124f44fbe4b02dd97bcfc4f 100644
+index 00bc575b1f7d4b271ccbb342ddbe3c53b7915c30..865e9d13e840351bcf61bec771462fc88ee0a602 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -914,8 +914,8 @@ Module._initPaths = function() {
+@@ -916,8 +916,8 @@ Module._initPaths = function() {
  
    modulePaths = paths;
  

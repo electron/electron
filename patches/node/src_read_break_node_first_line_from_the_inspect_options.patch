@@ -7,15 +7,15 @@ There are cases where the debug_options() on the env are
 different to the options that were passed into inspector::Agent.
 
 diff --git a/src/node.cc b/src/node.cc
-index eff0be6fef1274cd4210811bdc377702ca70b2a2..c0a8bdd28a403b399f2766e40b2fe90e76fca849 100644
+index 00fb0ed1c9cfbc86a7ec7d1d0ce7789b68d6a1e3..707579c8254903f5c587fa42711eb5d0184b4112 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -271,7 +271,7 @@ MaybeLocal<Value> RunBootstrapping(Environment* env) {
-   env->set_primordials(primordials.As<Object>());
+@@ -256,7 +256,7 @@ int Environment::InitializeInspector(
  
- #if HAVE_INSPECTOR
--  if (env->options()->debug_options().break_node_first_line) {
-+  if (env->inspector_agent()->options().break_node_first_line) {
-     env->inspector_agent()->PauseOnNextJavascriptStatement(
-         "Break at bootstrap");
+   profiler::StartProfilers(this);
+ 
+-  if (options_->debug_options().break_node_first_line) {
++  if (inspector_agent_->options().break_node_first_line) {
+     inspector_agent_->PauseOnNextJavascriptStatement("Break at bootstrap");
    }
+ 

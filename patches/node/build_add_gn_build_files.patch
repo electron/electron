@@ -6,10 +6,10 @@ Subject: build: add GN build files
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..f27c13b312a60d9b5c7ea0948b347ab0936ab3f8
+index 0000000000000000000000000000000000000000..5bc9ff072414a4c3bae896a08b9771984944f087
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,369 @@
+@@ -0,0 +1,370 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -255,6 +255,7 @@ index 0000000000000000000000000000000000000000..f27c13b312a60d9b5c7ea0948b347ab0
 +    "$root_gen_dir/atom_natives.cc",
 +    "$target_gen_dir/node_javascript.cc",
 +    "src/node_code_cache_stub.cc",
++    "src/node_snapshot_stub.cc",
 +  ]
 +
 +  if (is_win) {
@@ -1330,10 +1331,10 @@ index 0000000000000000000000000000000000000000..edb0b215088118f567c5ad5e5969d1eb
 +}
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..48ad85e895b6111223119fafa57c13ba75cdbeae
+index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c477aecf6
 --- /dev/null
 +++ b/src/inspector/BUILD.gn
-@@ -0,0 +1,195 @@
+@@ -0,0 +1,199 @@
 +import("//v8/gni/v8.gni")
 +
 +inspector_protocol_dir = "../../tools/inspector_protocol"
@@ -1346,6 +1347,8 @@ index 0000000000000000000000000000000000000000..48ad85e895b6111223119fafa57c13ba
 +  "protocol/NodeWorker.h",
 +  "protocol/NodeTracing.cpp",
 +  "protocol/NodeTracing.h",
++  "protocol/NodeRuntime.cpp",
++  "protocol/NodeRuntime.h",
 +]
 +
 +# These are from node_protocol_config.json
@@ -1371,6 +1374,8 @@ index 0000000000000000000000000000000000000000..48ad85e895b6111223119fafa57c13ba
 +    "main_thread_interface.h",
 +    "node_string.cc",
 +    "node_string.h",
++    "runtime_agent.cc",
++    "runtime_agent.h",
 +    "tracing_agent.cc",
 +    "tracing_agent.h",
 +    "worker_agent.cc",
@@ -1530,7 +1535,7 @@ index 0000000000000000000000000000000000000000..48ad85e895b6111223119fafa57c13ba
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 1c04b102721f891c6b657702b7f8585137647e04..a9f8a9c8cbfd3996906eb400388aaa99ef77f547 100644
+index 46f92e1b83847f6078c46c8ddd0efaae859cc06d..e484042b7b68e7bb5b2e6431bc76bdeea31decaf 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1542,8 +1547,8 @@ index 1c04b102721f891c6b657702b7f8585137647e04..a9f8a9c8cbfd3996906eb400388aaa99
  #define NODE_MODULE_VERSION 72
 +#endif
  
- // the NAPI_VERSION provided by this version of the runtime
- #define NAPI_VERSION  4
+ // The NAPI_VERSION provided by this version of the runtime. This is the version
+ // which the Node binary being built supports.
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
@@ -1662,7 +1667,7 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index c3ac53f14b739142a5da43e15b43b8642b36fa84..68152c499ce610d759b5abd659340957efb864d6 100755
+index 0189dd762919162c8a897d291bdda3cfd600eab6..7b3e90af88b873c32f8ed51712f7dfdff3c1c706 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -261,9 +261,17 @@ def NormalizeFileName(filename):

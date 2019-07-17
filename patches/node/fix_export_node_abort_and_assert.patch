@@ -5,10 +5,10 @@ Subject: fix: Export node::Abort and Assert
 
 
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 603c9e415c3f546c621793afd13ee58bcc4280be..20098777e290bfa66dc430c08eaad78e4c232266 100644
+index 298d84b4f362b3b9e9a0e604c7635ac77eaf8925..e0c5eaacffbd1ac7aaa104dd15f5e5de4ed5240b 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -241,13 +241,13 @@ void AppendExceptionLine(Environment* env,
+@@ -242,13 +242,13 @@ void AppendExceptionLine(Environment* env,
              .FromMaybe(false));
  }
  
