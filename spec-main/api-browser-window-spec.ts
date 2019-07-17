@@ -2448,15 +2448,12 @@ describe('BrowserWindow module', () => {
         throw new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`)
       })
       try {
-        console.log("c 1")
         const shown1 = emittedOnce(w, 'show')
         w.show()
         await shown1
-        console.log("c 2")
         const hidden = emittedOnce(w, 'hide')
         w.hide()
         await hidden
-        console.log("c 3")
         const shown2 = emittedOnce(w, 'show')
         w.show()
         await shown2
