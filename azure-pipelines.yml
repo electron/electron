@@ -3,13 +3,18 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-pool:
-  vmImage: 'ubuntu-16.04'
+container:	
+  image: arm32v7/ubuntu:18.04	
+  options: --shm-size 128m	
 
-container: ubuntu:16.04
+ trigger: none	
 
+ pool:	pool:
+  name: 'Arm32v7'
 steps:
   - bash: |
       whoami
     displayName: 'whoami on ubuntu:18.04'
-  - script: whoami
+  - bash: |
+      su builduser
+      whoami
