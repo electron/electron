@@ -1,7 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 11 Apr 2019 17:16:13 +0900
-Subject: build: modify js2c.py to allow injection of original-fs and custom embedder JS
+Subject: build: modify js2c.py to allow injection of original-fs and custom
+ embedder JS
 
 This patch does two things:
 * Updates js2c.py so that original-fs is automatically created with

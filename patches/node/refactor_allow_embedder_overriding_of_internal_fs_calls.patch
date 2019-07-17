@@ -5,7 +5,7 @@ Subject: refactor: allow embedder overriding of internal FS calls
 
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 1cdf79dfaa9aecc4ac3bcb05212514929b80603d..6f096ff3abce7d4b08a174a159217a9ac012f2b2 100644
+index 8dee38a0e71698258bee7642f9b91c5c8b9060c2..60c0bd845b18cd782d5b314f339e0c4e7bf88388 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -65,6 +65,10 @@ if (ownsProcessState) {
