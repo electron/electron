@@ -96,7 +96,12 @@ BrowserContext* AtomExtensionsBrowserClient::GetOffTheRecordContext(
 
 BrowserContext* AtomExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
-  return context;
+  DCHECK(context);
+  if (context->IsOffTheRecord()) {
+    return AtomBrowserContext::From("", false).get();
+  } else {
+    return context;
+  }
 }
 
 bool AtomExtensionsBrowserClient::IsGuestSession(
