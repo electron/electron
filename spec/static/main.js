@@ -212,16 +212,8 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
   event.returnValue = window.id
 })
 
-ipcMain.on('prevent-next-new-window', (event, id) => {
-  webContents.fromId(id).once('new-window', event => event.preventDefault())
-})
-
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
   event.sender.once('will-attach-webview', event => event.preventDefault())
-})
-
-ipcMain.on('prevent-next-will-prevent-unload', (event, id) => {
-  webContents.fromId(id).once('will-prevent-unload', event => event.preventDefault())
 })
 
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
