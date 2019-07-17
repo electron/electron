@@ -14,7 +14,7 @@ pool:
   name: 'Arm32v7'
 
 jobs:
-- job: Test_Arm32v7
+- job:
   container: arm32v7-test-container
   displayName: Test Arm on Arm32v7 hardware
   timeoutInMinutes: 30
