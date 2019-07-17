@@ -34,9 +34,6 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
 // eslint-disable-next-line
 process.stdout
 
-// Adding a variable for sandbox process.env test validation
-process.env.sandboxmain = ''
-
 // Access console to reproduce #3482.
 // eslint-disable-next-line
 console
@@ -229,18 +226,6 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
 
 ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
-})
-
-ipcMain.on('set-options-on-next-new-window', (event, id, key, value) => {
-  webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
-    options[key] = value
-  })
-})
-
-ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
-  webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
-    options.webPreferences[key] = value
-  })
 })
 
 ipcMain.on('prevent-next-will-attach-webview', (event) => {

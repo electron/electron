@@ -1,30 +1,20 @@
-'use strict'
-
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const path = require('path')
-const cp = require('child_process')
-const { closeWindow } = require('./window-helpers')
-const { emittedOnce } = require('./events-helpers')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const { remote } = require('electron')
-const { ipcMain, BrowserWindow } = remote
+import { expect } from 'chai'
+import * as path from 'path'
+import * as cp from 'child_process'
+import { closeAllWindows } from './window-helpers'
+import { emittedOnce } from './events-helpers'
+import { ipcMain, BrowserWindow } from 'electron'
 
 describe('ipc main module', () => {
-  const fixtures = path.join(__dirname, 'fixtures')
+  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures')
 
-  let w = null
-
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  afterEach(closeAllWindows)
 
   describe('ipc.sendSync', () => {
     afterEach(() => { ipcMain.removeAllListeners('send-sync-message') })
 
     it('does not crash when reply is not sent and browser is destroyed', (done) => {
-      w = new BrowserWindow({
+      const w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
@@ -38,7 +28,7 @@ describe('ipc main module', () => {
     })
 
     it('does not crash when reply is sent by multiple listeners', (done) => {
-      w = new BrowserWindow({
+      const w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
@@ -55,21 +45,9 @@ describe('ipc main module', () => {
     })
   })
 
-  describe('remote listeners', () => {
-    it('can be added and removed correctly', () => {
-      w = new BrowserWindow({ show: false })
-      const listener = () => {}
-
-      w.on('test', listener)
-      expect(w.listenerCount('test')).to.equal(1)
-      w.removeListener('test', listener)
-      expect(w.listenerCount('test')).to.equal(0)
-    })
-  })
-
   describe('remote objects registry', () => {
     it('does not dereference until the render view is deleted (regression)', (done) => {
-      w = new BrowserWindow({
+      const w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true
@@ -77,8 +55,7 @@ describe('ipc main module', () => {
       })
 
       ipcMain.once('error-message', (event, message) => {
-        const correctMsgStart = message.startsWith('Cannot call method \'getURL\' on missing remote object')
-        expect(correctMsgStart).to.be.true()
+        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/)
         done()
       })
 
@@ -88,8 +65,8 @@ describe('ipc main module', () => {
 
   describe('ipcMain.on', () => {
     it('is not used for internals', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'ipc-main-listeners')
-      const electronPath = remote.getGlobal('process').execPath
+      const appPath = path.join(fixtures, 'api', 'ipc-main-listeners')
+      const electronPath = process.execPath
       const appProcess = cp.spawn(electronPath, [appPath])
 
       let output = ''

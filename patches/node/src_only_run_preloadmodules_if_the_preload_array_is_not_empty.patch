@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Sun, 2 Jun 2019 00:27:17 -0700
+Subject: src: only run preloadModules if the preload array is not empty
+
+
+diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
+index 2351268eae27af7ae759dccb599c071e146ece71..a998b095fb067ab6ca35cc276ac6a9a7c38dcf30 100644
+--- a/lib/internal/bootstrap/pre_execution.js
++++ b/lib/internal/bootstrap/pre_execution.js
+@@ -386,7 +386,7 @@ function initializeFrozenIntrinsics() {
+ function loadPreloadModules() {
+   // For user code, we preload modules if `-r` is passed
+   const preloadModules = getOptionValue('--require');
+-  if (preloadModules) {
++  if (preloadModules && preloadModules.length > 0) {
+     const {
+       _preloadModules
+     } = require('internal/modules/cjs/loader');

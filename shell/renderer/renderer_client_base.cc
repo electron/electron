@@ -85,15 +85,6 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
-void SetHiddenValue(v8::Handle<v8::Context> context,
-                    const base::StringPiece& key,
-                    v8::Local<v8::Value> value) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Private> privateKey =
-      v8::Private::ForApi(isolate, mate::StringToV8(isolate, key));
-  context->Global()->SetPrivate(context, privateKey, value);
-}
-
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
@@ -122,14 +113,13 @@ void RendererClientBase::DidCreateScriptContext(
   // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
   auto context_id = base::StringPrintf(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  v8::Isolate* isolate = context->GetIsolate();
-  SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
+  mate::Dictionary global(context->GetIsolate(), context->Global());
+  global.SetHidden("contextId", context_id);
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
       !command_line->HasSwitch(switches::kDisableRemoteModule);
-  SetHiddenValue(context, "enableRemoteModule",
-                 mate::ConvertToV8(isolate, enableRemoteModule));
+  global.SetHidden("enableRemoteModule", enableRemoteModule);
 }
 
 void RendererClientBase::AddRenderBindings(

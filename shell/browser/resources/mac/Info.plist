@@ -30,5 +30,7 @@
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
   </dict>
 </plist>

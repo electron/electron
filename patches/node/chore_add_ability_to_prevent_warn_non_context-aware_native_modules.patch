@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 22 May 2019 13:34:18 -0700
+Subject: chore: add ability to prevent / warn non context-aware native modules
+ being loaded
+
+diff --git a/src/env.h b/src/env.h
+index b97d024a0e8396ebd21b96bd7f1a9473abfefe9b..23ad7569d31bc534247ed373819bc291a4f4bfe6 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -827,6 +827,15 @@ class Environment : public MemoryRetainer {
+               uint64_t thread_id = kNoThreadId);
+   ~Environment();
+ 
++  void ForceOnlyContextAwareNativeModules() {
++    force_context_aware_ = true;
++  }
++  void WarnNonContextAwareNativeModules() {
++    warn_non_context_aware_ = true;
++  }
++  bool force_context_aware() { return force_context_aware_; }
++  bool warn_non_context_aware() { return warn_non_context_aware_; }
++
+   void InitializeLibuv(bool start_profiler_idle_notifier);
+   v8::MaybeLocal<v8::Object> ProcessCliArgs(
+       const std::vector<std::string>& args,
+@@ -1177,6 +1186,9 @@ class Environment : public MemoryRetainer {
+   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
+                          const char* errmsg);
+ 
++  bool force_context_aware_ = false;
++  bool warn_non_context_aware_ = false;
++
+   std::list<binding::DLib> loaded_addons_;
+   v8::Isolate* const isolate_;
+   IsolateData* const isolate_data_;
+diff --git a/src/node_binding.cc b/src/node_binding.cc
+index 99c2406036e1874af253c61239e7736867813af8..117bc2891118e67ca7b10a33ba7e1fbebc973dbb 100644
+--- a/src/node_binding.cc
++++ b/src/node_binding.cc
+@@ -2,6 +2,7 @@
+ #include <atomic>
+ #include "env-inl.h"
+ #include "node_native_module_env.h"
++#include "node_process.h"
+ #include "util.h"
+ 
+ #if HAVE_OPENSSL
+@@ -470,6 +471,13 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+     }
+ 
+     if (mp != nullptr) {
++      if (mp->nm_context_register_func == nullptr) {
++        if (env->force_context_aware()) {
++          env->ThrowError("Loading non context-aware native modules has been disabled in this process.  This means you have loaded a non context-aware native module with app.allowRendererProcessReuse set to true. See https://github.com/electron/electron/issues/18397 for more information");
++        } else if (env->warn_non_context_aware()) {
++          ProcessEmitWarningGeneric(env, "Loading non context-aware native modules in the renderer process is deprecated and will stop working at some point in the future, please see https://github.com/electron/electron/issues/18397 for more information", "Electron");
++        }
++      }
+       mp->nm_dso_handle = dlib->handle_;
+       dlib->SaveInGlobalHandleMap(mp);
+     } else {

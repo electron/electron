@@ -10,6 +10,7 @@
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
+#include "ui/native_theme/native_theme.h"
 
 namespace electron {
 
@@ -30,7 +31,7 @@ SystemPreferences::~SystemPreferences() {
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
-  return false;
+  return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
 }
 #endif
 

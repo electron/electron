@@ -1,13 +1,8 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron'
+const { roleList, execute } = require('../lib/browser/api/menu-item-roles')
+import { expect } from 'chai'
+import { closeAllWindows } from './window-helpers';
 
-const { remote } = require('electron')
-const { BrowserWindow, app, Menu, MenuItem } = remote
-const roles = require('../lib/browser/api/menu-item-roles')
-const { closeWindow } = require('./window-helpers')
-
-const { expect } = chai
-chai.use(dirtyChai)
 
 describe('MenuItems', () => {
   describe('MenuItem.click', () => {
@@ -19,7 +14,7 @@ describe('MenuItems', () => {
           expect(item.label).to.equal('text')
           done()
         }
-      }])
+      }]);
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
     })
   })
@@ -31,9 +26,9 @@ describe('MenuItems', () => {
         type: 'checkbox'
       }])
 
-      expect(menu.items[0].checked).to.be.false()
+      expect(menu.items[0].checked).to.be.false('menu item checked')
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      expect(menu.items[0].checked).to.be.true()
+      expect(menu.items[0].checked).to.be.true('menu item checked')
     })
 
     it('clicking an radio item should always make checked property true', () => {
@@ -43,17 +38,17 @@ describe('MenuItems', () => {
       }])
 
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      expect(menu.items[0].checked).to.be.true()
+      expect(menu.items[0].checked).to.be.true('menu item checked')
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      expect(menu.items[0].checked).to.be.true()
+      expect(menu.items[0].checked).to.be.true('menu item checked')
     })
 
     describe('MenuItem group properties', () => {
-      const template = []
+      const template: MenuItemConstructorOptions[] = []
 
-      const findRadioGroups = (template) => {
+      const findRadioGroups = (template: MenuItemConstructorOptions[]) => {
         const groups = []
-        let cur = null
+        let cur: { begin?: number, end?: number } | null = null
         for (let i = 0; i <= template.length; i++) {
           if (cur && ((i === template.length) || (template[i].type !== 'radio'))) {
             cur.end = i
@@ -67,7 +62,7 @@ describe('MenuItems', () => {
       }
 
       // returns array of checked menuitems in [begin,end)
-      const findChecked = (menuItems, begin, end) => {
+      const findChecked = (menuItems: MenuItem[], begin: number, end: number) => {
         const checked = []
         for (let i = begin; i < end; i++) {
           if (menuItems[i].checked) checked.push(i)
@@ -100,7 +95,7 @@ describe('MenuItems', () => {
         const groups = findRadioGroups(template)
 
         groups.forEach(g => {
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin])
+          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([g.begin])
         })
       })
 
@@ -110,15 +105,16 @@ describe('MenuItems', () => {
         const usedGroupIds = new Set()
         const groups = findRadioGroups(template)
         groups.forEach(g => {
-          const groupId = menu.items[g.begin].groupId
+          const groupId = (menu.items[g.begin!] as any).groupId
 
           // groupId should be previously unused
-          expect(usedGroupIds.has(groupId)).to.be.false()
+          //expect(usedGroupIds.has(groupId)).to.be.false('group id present')
+          expect(usedGroupIds).not.to.contain(groupId)
           usedGroupIds.add(groupId)
 
           // everything in the group should have the same id
-          for (let i = g.begin; i < g.end; ++i) {
-            expect(menu.items[i].groupId).to.equal(groupId)
+          for (let i = g.begin!; i < g.end!; ++i) {
+            expect((menu.items[i] as any).groupId).to.equal(groupId)
           }
         })
       })
@@ -128,47 +124,42 @@ describe('MenuItems', () => {
 
         const groups = findRadioGroups(template)
         groups.forEach(g => {
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([])
+          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([])
 
-          menu.items[g.begin].checked = true
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin])
+          menu.items[g.begin!].checked = true
+          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([g.begin!])
 
-          menu.items[g.end - 1].checked = true
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.end - 1])
+          menu.items[g.end! - 1].checked = true
+          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([g.end! - 1])
         })
       })
     })
   })
 
   describe('MenuItem role execution', () => {
+    afterEach(closeAllWindows)
     it('does not try to execute roles without a valid role property', () => {
-      let win = new BrowserWindow({ show: false, width: 200, height: 200 })
-      const item = new MenuItem({ role: 'asdfghjkl' })
+      const win = new BrowserWindow({ show: false, width: 200, height: 200 })
+      const item = new MenuItem({ role: 'asdfghjkl' as any })
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
-      expect(canExecute).to.be.false()
-
-      closeWindow(win).then(() => { win = null })
+      const canExecute = execute(item.role, win, win.webContents)
+      expect(canExecute).to.be.false('can execute')
     })
 
     it('executes roles with native role functions', () => {
-      let win = new BrowserWindow({ show: false, width: 200, height: 200 })
+      const win = new BrowserWindow({ show: false, width: 200, height: 200 })
       const item = new MenuItem({ role: 'reload' })
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
-      expect(canExecute).to.be.true()
-
-      closeWindow(win).then(() => { win = null })
+      const canExecute = execute(item.role, win, win.webContents)
+      expect(canExecute).to.be.true('can execute')
     })
 
     it('execute roles with non-native role functions', () => {
-      let win = new BrowserWindow({ show: false, width: 200, height: 200 })
+      const win = new BrowserWindow({ show: false, width: 200, height: 200 })
       const item = new MenuItem({ role: 'resetzoom' })
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
-      expect(canExecute).to.be.true()
-
-      closeWindow(win).then(() => { win = null })
+      const canExecute = execute(item.role, win, win.webContents)
+      expect(canExecute).to.be.true('can execute')
     })
   })
 
@@ -177,8 +168,10 @@ describe('MenuItems', () => {
       const item = new MenuItem({ label: 'item' })
 
       const commandId = item.commandId
-      expect(commandId).to.not.be.undefined()
-      item.commandId = `${commandId}-modified`
+      expect(commandId).to.not.be.undefined('command id')
+      expect(() => {
+        item.commandId = `${commandId}-modified` as any
+      }).to.throw(/Cannot assign to read only property/)
       expect(item.commandId).to.equal(commandId)
     })
   })
@@ -188,7 +181,7 @@ describe('MenuItems', () => {
       expect(() => {
         Menu.buildFromTemplate([{
           label: 'text',
-          type: 'not-a-type'
+          type: 'not-a-type' as any
         }])
       }).to.throw(/Unknown menu item type: not-a-type/)
     })
@@ -207,41 +200,21 @@ describe('MenuItems', () => {
 
   describe('MenuItem role', () => {
     it('returns undefined for items without default accelerator', () => {
-      const roleList = [
-        'close',
-        'copy',
-        'cut',
-        'forcereload',
-        'hide',
-        'hideothers',
-        'minimize',
-        'paste',
-        'pasteandmatchstyle',
-        'quit',
-        'redo',
-        'reload',
-        'resetzoom',
-        'selectall',
-        'toggledevtools',
-        'togglefullscreen',
-        'undo',
-        'zoomin',
-        'zoomout'
-      ]
+      const list = Object.keys(roleList).filter(key => !roleList[key].accelerator)
 
-      for (const role in roleList) {
-        const item = new MenuItem({ role })
-        expect(item.getDefaultRoleAccelerator()).to.be.undefined()
+      for (const role of list) {
+        const item = new MenuItem({ role: role as any })
+        expect(item.getDefaultRoleAccelerator()).to.be.undefined('default accelerator')
       }
     })
 
     it('returns the correct default label', () => {
-      const roleList = {
+      const roles = {
         'close': process.platform === 'darwin' ? 'Close Window' : 'Close',
         'copy': 'Copy',
         'cut': 'Cut',
         'forcereload': 'Force Reload',
-        'hide': 'Hide Electron Test',
+        'hide': 'Hide Electron Test Main',
         'hideothers': 'Hide Others',
         'minimize': 'Minimize',
         'paste': 'Paste',
@@ -258,14 +231,14 @@ describe('MenuItems', () => {
         'zoomout': 'Zoom Out'
       }
 
-      for (const role in roleList) {
-        const item = new MenuItem({ role })
-        expect(item.label).to.equal(roleList[role])
+      for (const [role, label] of Object.entries(roles)) {
+        const item = new MenuItem({ role: role as any })
+        expect(item.label).to.equal(label)
       }
     })
 
     it('returns the correct default accelerator', () => {
-      const roleList = {
+      const roles = {
         'close': 'CommandOrControl+W',
         'copy': 'CommandOrControl+C',
         'cut': 'CommandOrControl+X',
@@ -275,7 +248,7 @@ describe('MenuItems', () => {
         'minimize': 'CommandOrControl+M',
         'paste': 'CommandOrControl+V',
         'pasteandmatchstyle': 'Shift+CommandOrControl+V',
-        'quit': process.platform === 'win32' ? null : 'CommandOrControl+Q',
+        'quit': process.platform === 'win32' ? undefined : 'CommandOrControl+Q',
         'redo': process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z',
         'reload': 'CmdOrCtrl+R',
         'resetzoom': 'CommandOrControl+0',
@@ -287,9 +260,9 @@ describe('MenuItems', () => {
         'zoomout': 'CommandOrControl+-'
       }
 
-      for (const role in roleList) {
-        const item = new MenuItem({ role })
-        expect(item.getDefaultRoleAccelerator()).to.equal(roleList[role])
+      for (const [role, accelerator] of Object.entries(roles)) {
+        const item = new MenuItem({ role: role as any })
+        expect(item.getDefaultRoleAccelerator()).to.equal(accelerator)
       }
     })
 
@@ -317,15 +290,15 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'appMenu' })
 
       expect(item.label).to.equal(app.name)
-      expect(item.submenu.items[0].role).to.equal('about')
-      expect(item.submenu.items[1].type).to.equal('separator')
-      expect(item.submenu.items[2].role).to.equal('services')
-      expect(item.submenu.items[3].type).to.equal('separator')
-      expect(item.submenu.items[4].role).to.equal('hide')
-      expect(item.submenu.items[5].role).to.equal('hideothers')
-      expect(item.submenu.items[6].role).to.equal('unhide')
-      expect(item.submenu.items[7].type).to.equal('separator')
-      expect(item.submenu.items[8].role).to.equal('quit')
+      expect(item.submenu!.items[0].role).to.equal('about')
+      expect(item.submenu!.items[1].type).to.equal('separator')
+      expect(item.submenu!.items[2].role).to.equal('services')
+      expect(item.submenu!.items[3].type).to.equal('separator')
+      expect(item.submenu!.items[4].role).to.equal('hide')
+      expect(item.submenu!.items[5].role).to.equal('hideothers')
+      expect(item.submenu!.items[6].role).to.equal('unhide')
+      expect(item.submenu!.items[7].type).to.equal('separator')
+      expect(item.submenu!.items[8].role).to.equal('quit')
     })
 
     it('overrides default layout when submenu is specified', () => {
@@ -336,7 +309,7 @@ describe('MenuItems', () => {
         }]
       })
       expect(item.label).to.equal(app.name)
-      expect(item.submenu.items[0].role).to.equal('close')
+      expect(item.submenu!.items[0].role).to.equal('close')
     })
   })
 
@@ -346,9 +319,9 @@ describe('MenuItems', () => {
 
       expect(item.label).to.equal('File')
       if (process.platform === 'darwin') {
-        expect(item.submenu.items[0].role).to.equal('close')
+        expect(item.submenu!.items[0].role).to.equal('close')
       } else {
-        expect(item.submenu.items[0].role).to.equal('quit')
+        expect(item.submenu!.items[0].role).to.equal('quit')
       }
     })
 
@@ -360,7 +333,7 @@ describe('MenuItems', () => {
         }]
       })
       expect(item.label).to.equal('File')
-      expect(item.submenu.items[0].role).to.equal('about')
+      expect(item.submenu!.items[0].role).to.equal('about')
     })
   })
 
@@ -369,25 +342,25 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'editMenu' })
 
       expect(item.label).to.equal('Edit')
-      expect(item.submenu.items[0].role).to.equal('undo')
-      expect(item.submenu.items[1].role).to.equal('redo')
-      expect(item.submenu.items[2].type).to.equal('separator')
-      expect(item.submenu.items[3].role).to.equal('cut')
-      expect(item.submenu.items[4].role).to.equal('copy')
-      expect(item.submenu.items[5].role).to.equal('paste')
+      expect(item.submenu!.items[0].role).to.equal('undo')
+      expect(item.submenu!.items[1].role).to.equal('redo')
+      expect(item.submenu!.items[2].type).to.equal('separator')
+      expect(item.submenu!.items[3].role).to.equal('cut')
+      expect(item.submenu!.items[4].role).to.equal('copy')
+      expect(item.submenu!.items[5].role).to.equal('paste')
 
       if (process.platform === 'darwin') {
-        expect(item.submenu.items[6].role).to.equal('pasteandmatchstyle')
-        expect(item.submenu.items[7].role).to.equal('delete')
-        expect(item.submenu.items[8].role).to.equal('selectall')
-        expect(item.submenu.items[9].type).to.equal('separator')
-        expect(item.submenu.items[10].label).to.equal('Speech')
-        expect(item.submenu.items[10].submenu.items[0].role).to.equal('startspeaking')
-        expect(item.submenu.items[10].submenu.items[1].role).to.equal('stopspeaking')
+        expect(item.submenu!.items[6].role).to.equal('pasteandmatchstyle')
+        expect(item.submenu!.items[7].role).to.equal('delete')
+        expect(item.submenu!.items[8].role).to.equal('selectall')
+        expect(item.submenu!.items[9].type).to.equal('separator')
+        expect(item.submenu!.items[10].label).to.equal('Speech')
+        expect(item.submenu!.items[10].submenu!.items[0].role).to.equal('startspeaking')
+        expect(item.submenu!.items[10].submenu!.items[1].role).to.equal('stopspeaking')
       } else {
-        expect(item.submenu.items[6].role).to.equal('delete')
-        expect(item.submenu.items[7].type).to.equal('separator')
-        expect(item.submenu.items[8].role).to.equal('selectall')
+        expect(item.submenu!.items[6].role).to.equal('delete')
+        expect(item.submenu!.items[7].type).to.equal('separator')
+        expect(item.submenu!.items[8].role).to.equal('selectall')
       }
     })
 
@@ -399,7 +372,7 @@ describe('MenuItems', () => {
         }]
       })
       expect(item.label).to.equal('Edit')
-      expect(item.submenu.items[0].role).to.equal('close')
+      expect(item.submenu!.items[0].role).to.equal('close')
     })
   })
 
@@ -408,15 +381,15 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'viewMenu' })
 
       expect(item.label).to.equal('View')
-      expect(item.submenu.items[0].role).to.equal('reload')
-      expect(item.submenu.items[1].role).to.equal('forcereload')
-      expect(item.submenu.items[2].role).to.equal('toggledevtools')
-      expect(item.submenu.items[3].type).to.equal('separator')
-      expect(item.submenu.items[4].role).to.equal('resetzoom')
-      expect(item.submenu.items[5].role).to.equal('zoomin')
-      expect(item.submenu.items[6].role).to.equal('zoomout')
-      expect(item.submenu.items[7].type).to.equal('separator')
-      expect(item.submenu.items[8].role).to.equal('togglefullscreen')
+      expect(item.submenu!.items[0].role).to.equal('reload')
+      expect(item.submenu!.items[1].role).to.equal('forcereload')
+      expect(item.submenu!.items[2].role).to.equal('toggledevtools')
+      expect(item.submenu!.items[3].type).to.equal('separator')
+      expect(item.submenu!.items[4].role).to.equal('resetzoom')
+      expect(item.submenu!.items[5].role).to.equal('zoomin')
+      expect(item.submenu!.items[6].role).to.equal('zoomout')
+      expect(item.submenu!.items[7].type).to.equal('separator')
+      expect(item.submenu!.items[8].role).to.equal('togglefullscreen')
     })
 
     it('overrides default layout when submenu is specified', () => {
@@ -427,7 +400,7 @@ describe('MenuItems', () => {
         }]
       })
       expect(item.label).to.equal('View')
-      expect(item.submenu.items[0].role).to.equal('close')
+      expect(item.submenu!.items[0].role).to.equal('close')
     })
   })
 
@@ -436,14 +409,14 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'windowMenu' })
 
       expect(item.label).to.equal('Window')
-      expect(item.submenu.items[0].role).to.equal('minimize')
-      expect(item.submenu.items[1].role).to.equal('zoom')
+      expect(item.submenu!.items[0].role).to.equal('minimize')
+      expect(item.submenu!.items[1].role).to.equal('zoom')
 
       if (process.platform === 'darwin') {
-        expect(item.submenu.items[2].type).to.equal('separator')
-        expect(item.submenu.items[3].role).to.equal('front')
+        expect(item.submenu!.items[2].type).to.equal('separator')
+        expect(item.submenu!.items[3].role).to.equal('front')
       } else {
-        expect(item.submenu.items[2].role).to.equal('close')
+        expect(item.submenu!.items[2].role).to.equal('close')
       }
     })
 
@@ -454,7 +427,7 @@ describe('MenuItems', () => {
       })
 
       expect(item.label).to.equal('Window')
-      expect(item.submenu.items[0].role).to.equal('copy')
+      expect(item.submenu!.items[0].role).to.equal('copy')
     })
   })
 
@@ -467,16 +440,16 @@ describe('MenuItems', () => {
       }]
 
       const menu = Menu.buildFromTemplate(template)
-      menu.items[0].submenu.append(new MenuItem({
+      menu.items[0].submenu!.append(new MenuItem({
         label: 'item 1',
         customProp: 'bar',
         overrideProperty: 'oops not allowed'
-      }))
+      } as any))
 
-      expect(menu.items[0].customProp).to.equal('foo')
-      expect(menu.items[0].submenu.items[0].label).to.equal('item 1')
-      expect(menu.items[0].submenu.items[0].customProp).to.equal('bar')
-      expect(menu.items[0].submenu.items[0].overrideProperty).to.be.a('function')
+      expect((menu.items[0] as any).customProp).to.equal('foo')
+      expect(menu.items[0].submenu!.items[0].label).to.equal('item 1')
+      expect((menu.items[0].submenu!.items[0] as any).customProp).to.equal('bar')
+      expect((menu.items[0].submenu!.items[0] as any).overrideProperty).to.be.a('function')
     })
   })
 

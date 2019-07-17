@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "7.0.0-nightly.20190712",
+  "version": "7.0.0-nightly.20190714",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -59,7 +59,6 @@
   "private": true,
   "scripts": {
     "asar": "asar",
-    "check-tls": "python ./script/tls.py",
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",

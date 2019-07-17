@@ -12,7 +12,7 @@ vars = {
   'chromium_version':
     '5a48e127c8cb8ae827f4fead0b527079194b9899',
   'node_version':
-    '780436005ffc7f317abfba48b236428858284e99',
+    'v12.4.0',
   'nan_version':
     '2ee313aaca52e2b478965ac50eb5082520380d1b',
 
@@ -78,7 +78,7 @@ deps = {
     'condition': 'checkout_nan and process_deps',
   },
   'src/third_party/electron_node': {
-    'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+    'url': (Var("nodejs_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node and process_deps',
   },
   'src/electron/vendor/pyyaml': {

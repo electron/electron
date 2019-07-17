@@ -177,7 +177,7 @@ action("atom_js2c") {
               "$target_gen_dir/js2c/asar_init.js",
             ]
 
-  inputs = sources
+  inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [
     "$root_gen_dir/atom_natives.cc",
   ]

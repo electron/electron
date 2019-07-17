@@ -200,7 +200,7 @@ for (const preloadScript of preloadScripts) {
     Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
-    console.error(`${error}`)
+    console.error(error)
 
     ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, errorUtils.serialize(error))
   }

@@ -43,9 +43,11 @@ Returns:
 
 ## Methods
 
-### `systemPreferences.isDarkMode()` _macOS_
+### `systemPreferences.isDarkMode()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the system is in Dark Mode.
+
+**Note:** On macOS 10.15 Catalina in order for this API to return the correct value when in the "automatic" dark mode setting you must either have `NSRequiresAquaSystemAppearance=false` in your `Info.plist` or be on Electron `>=7.0.0`.  See the [dark mode guide](../tutorial/mojave-dark-mode-guide.md) for more information.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 

@@ -40,6 +40,8 @@ declare namespace NodeJS {
 
     // Additional properties
     _firstFileName?: string;
+
+    helperExecPath: string;
   }
 }
 
