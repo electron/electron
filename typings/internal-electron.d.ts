@@ -19,6 +19,11 @@ declare namespace Electron {
     setAppPath(path: string | null): void;
   }
 
+  interface WebContents {
+    _getURL(): string;
+    getOwnerBrowserWindow(): Electron.BrowserWindow;
+  }
+
   interface SerializedError {
     message: string;
     stack?: string,
@@ -26,6 +31,11 @@ declare namespace Electron {
     from: Electron.ProcessType,
     cause: SerializedError,
     __ELECTRON_SERIALIZED_ERROR__: true
+  }
+
+  interface ErrorWithCause extends Error {
+    from?: string;
+    cause?: ErrorWithCause;
   }
 
   interface InjectionBase {

@@ -368,4 +368,28 @@ extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
 }
 #endif
 
+bool RendererClientBase::IsWebViewFrame(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) const {
+  auto* isolate = context->GetIsolate();
+
+  if (render_frame->IsMainFrame())
+    return false;
+
+  mate::Dictionary window_dict(
+      isolate, GetContext(render_frame->GetWebFrame(), isolate)->Global());
+
+  v8::Local<v8::Object> frame_element;
+  if (!window_dict.Get("frameElement", &frame_element))
+    return false;
+
+  mate::Dictionary frame_element_dict(isolate, frame_element);
+
+  v8::Local<v8::Object> internal;
+  if (!frame_element_dict.GetHidden("internal", &internal))
+    return false;
+
+  return !internal.IsEmpty();
+}
+
 }  // namespace electron

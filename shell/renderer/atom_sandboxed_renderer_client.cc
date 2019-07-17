@@ -210,7 +210,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);
   bool should_load_preload =
-      is_main_frame || is_devtools || allow_node_in_sub_frames;
+      (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
+      !IsWebViewFrame(context, render_frame);
   if (!should_load_preload)
     return;
 

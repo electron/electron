@@ -1,36 +1,20 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+import { expect } from 'chai'
+import { systemPreferences } from 'electron'
 
-const { remote } = require('electron')
-const { systemPreferences } = remote
-
-const { expect } = chai
-chai.use(dirtyChai)
+const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
 
 describe('systemPreferences module', () => {
-  describe('systemPreferences.getAccentColor', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'win32')('systemPreferences.getAccentColor', () => {
     it('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor()
-      expect(accentColor).to.be.a('string').that.is.not.empty()
+      expect(accentColor).to.be.a('string').that.is.not.empty('accent color')
     })
   })
 
-  describe('systemPreferences.getColor(id)', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'win32')('systemPreferences.getColor(id)', () => {
     it('throws an error when the id is invalid', () => {
       expect(() => {
-        systemPreferences.getColor('not-a-color')
+        systemPreferences.getColor('not-a-color' as any)
       }).to.throw('Unknown color: not-a-color')
     })
 
@@ -39,13 +23,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.registerDefaults(defaults)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'darwin')('systemPreferences.registerDefaults(defaults)', () => {
     it('registers defaults', () => {
       const defaultsMap = [
         { key: 'one', type: 'string', value: 'ONE' },
@@ -53,14 +31,14 @@ describe('systemPreferences module', () => {
         { key: 'three', value: [1, 2, 3], type: 'array' }
       ]
 
-      const defaultsDict = {}
+      const defaultsDict: Record<string, any> = {}
       defaultsMap.forEach(row => { defaultsDict[row.key] = row.value })
 
       systemPreferences.registerDefaults(defaultsDict)
 
       for (const userDefault of defaultsMap) {
         const { key, value: expectedValue, type } = userDefault
-        const actualValue = systemPreferences.getUserDefault(key, type)
+        const actualValue = systemPreferences.getUserDefault(key, type as any)
         expect(actualValue).to.deep.equal(expectedValue)
       }
     })
@@ -81,19 +59,13 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.getUserDefault(key, type)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'darwin')('systemPreferences.getUserDefault(key, type)', () => {
     it('returns values for known user defaults', () => {
       const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
-      expect(locale).to.be.a('string').that.is.not.empty()
+      expect(locale).to.be.a('string').that.is.not.empty('locale')
 
       const languages = systemPreferences.getUserDefault('AppleLanguages', 'array')
-      expect(languages).to.be.an('array').that.is.not.empty()
+      expect(languages).to.be.an('array').that.is.not.empty('languages')
     })
 
     it('returns values for unknown user defaults', () => {
@@ -103,13 +75,13 @@ describe('systemPreferences module', () => {
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double')).to.equal(0)
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string')).to.equal('')
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url')).to.equal('')
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype')).to.be.undefined()
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any)).to.be.undefined('user default')
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array')).to.deep.equal([])
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary')).to.deep.equal({})
     })
   })
 
-  describe('systemPreferences.setUserDefault(key, type, value)', () => {
+  ifdescribe(process.platform === 'darwin')('systemPreferences.setUserDefault(key, type, value)', () => {
     const KEY = 'SystemPreferencesTest'
     const TEST_CASES = [
       ['string', 'abc'],
@@ -122,16 +94,10 @@ describe('systemPreferences module', () => {
       ['dictionary', { 'a': 1, 'b': 2 }]
     ]
 
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
     it('sets values', () => {
       for (const [type, value] of TEST_CASES) {
-        systemPreferences.setUserDefault(KEY, type, value)
-        const retrievedValue = systemPreferences.getUserDefault(KEY, type)
+        systemPreferences.setUserDefault(KEY, type as any, value as any)
+        const retrievedValue = systemPreferences.getUserDefault(KEY, type as any)
         expect(retrievedValue).to.deep.equal(value)
       }
     })
@@ -139,7 +105,7 @@ describe('systemPreferences module', () => {
     it('throws when type and value conflict', () => {
       for (const [type, value] of TEST_CASES) {
         expect(() => {
-          systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : 'foo')
+          systemPreferences.setUserDefault(KEY, type as any, typeof value === 'string' ? {} : 'foo' as any)
         }).to.throw(`Unable to convert value to: ${type}`)
       }
     })
@@ -151,13 +117,9 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.appLevelAppearance', () => {
-    before(function () {
-      if (process.platform !== 'darwin') this.skip()
-    })
-
+  ifdescribe(process.platform === 'darwin')('systemPreferences.appLevelAppearance', () => {
     it('has an appLevelAppearance property', () => {
-      expect(systemPreferences).to.have.a.property('appLevelAppearance')
+      expect(systemPreferences).to.have.property('appLevelAppearance')
 
       // TODO(codebytere): remove when propertyification is complete
       expect(systemPreferences.setAppLevelAppearance).to.be.a('function')
@@ -165,13 +127,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.setUserDefault(key, type, value)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  ifdescribe(process.platform === 'darwin')('systemPreferences.setUserDefault(key, type, value)', () => {
     it('removes keys', () => {
       const KEY = 'SystemPreferencesTest'
       systemPreferences.setUserDefault(KEY, 'string', 'foo')
@@ -194,9 +150,9 @@ describe('systemPreferences module', () => {
     it('returns an object with all properties', () => {
       const settings = systemPreferences.getAnimationSettings()
       expect(settings).to.be.an('object')
-      expect(settings).to.have.a.property('shouldRenderRichAnimation').that.is.a('boolean')
-      expect(settings).to.have.a.property('scrollAnimationsEnabledBySystem').that.is.a('boolean')
-      expect(settings).to.have.a.property('prefersReducedMotion').that.is.a('boolean')
+      expect(settings).to.have.property('shouldRenderRichAnimation').that.is.a('boolean')
+      expect(settings).to.have.property('scrollAnimationsEnabledBySystem').that.is.a('boolean')
+      expect(settings).to.have.property('prefersReducedMotion').that.is.a('boolean')
     })
   })
 })

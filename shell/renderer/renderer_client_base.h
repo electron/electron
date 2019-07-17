@@ -56,6 +56,10 @@ class RendererClientBase : public content::ContentRendererClient {
   static v8::Local<v8::Value> RunScript(v8::Local<v8::Context> context,
                                         v8::Local<v8::String> source);
 
+  // v8Util.getHiddenValue(window.frameElement, 'internal')
+  bool IsWebViewFrame(v8::Handle<v8::Context> context,
+                      content::RenderFrame* render_frame) const;
+
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
                          v8::Local<v8::Object> binding_object);
