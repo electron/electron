@@ -851,7 +851,12 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
 
   NSInteger newLevel = windowLevel + relativeLevel;
   if (newLevel >= minWindowLevel && newLevel <= maxWindowLevel) {
+    was_maximizable_ = IsMaximizable();
     [window_ setLevel:newLevel];
+    // Set level will make the zoom button revert to default, probably
+    // a bug of Cocoa or macOS.
+    [[window_ standardWindowButton:NSWindowZoomButton]
+        setEnabled:was_maximizable_];
   } else {
     *error = std::string([[NSString
         stringWithFormat:@"relativeLevel must be between %d and %d",
