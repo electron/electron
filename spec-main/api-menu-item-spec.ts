@@ -5,6 +5,40 @@ import { closeAllWindows } from './window-helpers';
 
 
 describe('MenuItems', () => {
+  describe('MenuItem instance properties', () => {
+    it('should have default MenuItem properties', () => {
+      const item = new MenuItem({
+        id: '1',
+        label: 'hello',
+        role: 'close',
+        sublabel: 'goodbye',
+        accelerator: 'CmdOrControl+Q',
+        click: () => { },
+        enabled: true,
+        visible: true,
+        checked: false,
+        type: 'normal',
+        registerAccelerator: true,
+        submenu: [{ role: 'about' }]
+      })
+
+      expect(item).to.have.property('id').that.is.a('string')
+      expect(item).to.have.property('label').that.is.a('string').equal('hello')
+      expect(item).to.have.property('sublabel').that.is.a('string').equal('goodbye')
+      expect(item).to.have.property('accelerator').that.is.a('string').equal('CmdOrControl+Q')
+      expect(item).to.have.property('click').that.is.a('function')
+      expect(item).to.have.property('enabled').that.is.a('boolean').and.is.true('item is enabled')
+      expect(item).to.have.property('visible').that.is.a('boolean').and.is.true('item is visible')
+      expect(item).to.have.property('checked').that.is.a('boolean').and.is.false('item is not checked')
+      expect(item).to.have.property('registerAccelerator').that.is.a('boolean').and.is.true('item can register accelerator')
+      expect(item).to.have.property('type').that.is.a('string').equal('normal')
+      expect(item).to.have.property('commandId').that.is.a('number')
+      expect(item).to.have.property('toolTip').that.is.a('string')
+      expect(item).to.have.property('role').that.is.a('string')
+      expect(item).to.have.property('icon')
+    })
+  })
+
   describe('MenuItem.click', () => {
     it('should be called with the item object passed', done => {
       const menu = Menu.buildFromTemplate([{
@@ -209,59 +243,19 @@ describe('MenuItems', () => {
     })
 
     it('returns the correct default label', () => {
-      const roles = {
-        'close': process.platform === 'darwin' ? 'Close Window' : 'Close',
-        'copy': 'Copy',
-        'cut': 'Cut',
-        'forcereload': 'Force Reload',
-        'hide': 'Hide Electron Test Main',
-        'hideothers': 'Hide Others',
-        'minimize': 'Minimize',
-        'paste': 'Paste',
-        'pasteandmatchstyle': 'Paste and Match Style',
-        'quit': (process.platform === 'darwin') ? `Quit ${app.name}` : (process.platform === 'win32') ? 'Exit' : 'Quit',
-        'redo': 'Redo',
-        'reload': 'Reload',
-        'resetzoom': 'Actual Size',
-        'selectall': 'Select All',
-        'toggledevtools': 'Toggle Developer Tools',
-        'togglefullscreen': 'Toggle Full Screen',
-        'undo': 'Undo',
-        'zoomin': 'Zoom In',
-        'zoomout': 'Zoom Out'
-      }
-
-      for (const [role, label] of Object.entries(roles)) {
+      for (const role of Object.keys(roleList)) {
         const item = new MenuItem({ role: role as any })
+        const label: string = roleList[role].label
         expect(item.label).to.equal(label)
       }
     })
 
     it('returns the correct default accelerator', () => {
-      const roles = {
-        'close': 'CommandOrControl+W',
-        'copy': 'CommandOrControl+C',
-        'cut': 'CommandOrControl+X',
-        'forcereload': 'Shift+CmdOrCtrl+R',
-        'hide': 'Command+H',
-        'hideothers': 'Command+Alt+H',
-        'minimize': 'CommandOrControl+M',
-        'paste': 'CommandOrControl+V',
-        'pasteandmatchstyle': 'Shift+CommandOrControl+V',
-        'quit': process.platform === 'win32' ? undefined : 'CommandOrControl+Q',
-        'redo': process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z',
-        'reload': 'CmdOrCtrl+R',
-        'resetzoom': 'CommandOrControl+0',
-        'selectall': 'CommandOrControl+A',
-        'toggledevtools': process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-        'togglefullscreen': process.platform === 'darwin' ? 'Control+Command+F' : 'F11',
-        'undo': 'CommandOrControl+Z',
-        'zoomin': 'CommandOrControl+Plus',
-        'zoomout': 'CommandOrControl+-'
-      }
+      const list = Object.keys(roleList).filter(key => roleList[key].accelerator)
 
-      for (const [role, accelerator] of Object.entries(roles)) {
+      for (const role of list) {
         const item = new MenuItem({ role: role as any })
+        const accelerator: string = roleList[role].accelerator
         expect(item.getDefaultRoleAccelerator()).to.equal(accelerator)
       }
     })
