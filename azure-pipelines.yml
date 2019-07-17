@@ -3,14 +3,15 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-container:	
-  image: arm32v7/ubuntu:18.04	
-  options: --shm-size 128m	
+container:  
+  image: arm32v7/ubuntu:18.04
+  options: --shm-size 128m
 
- trigger: none	
+trigger: none
 
- pool:	pool:
+pool:
   name: 'Arm32v7'
+
 steps:
   - bash: |
       whoami
