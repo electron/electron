@@ -82,7 +82,8 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
-    renderer_client_->SetupMainWorldOverrides(context, render_frame_);
+    if (!renderer_client_->IsWebViewFrame(context, render_frame_))
+      renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
 
   if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
