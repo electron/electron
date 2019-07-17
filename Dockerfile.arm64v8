@@ -1,4 +1,4 @@
-FROM arm64v8/ubuntu:16.04
+FROM arm64v8/ubuntu:18.04
 
 RUN groupadd --gid 1000 builduser \
   && useradd --uid 1000 --gid builduser --shell /bin/bash --create-home builduser
@@ -41,7 +41,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
  nano \
  python-setuptools \
  python-pip \
- python-dbusmock \
  sudo \
  unzip \
  wget \
@@ -55,6 +54,9 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
 
 # crcmod is required by gsutil, which is used for filling the gclient git cache
 RUN pip install -U crcmod
+
+# dbusmock is needed for Electron tests
+RUN pip install python-dbusmock
 
 ADD tools/xvfb-init.sh /etc/init.d/xvfb
 RUN chmod a+x /etc/init.d/xvfb
