@@ -3672,4 +3672,132 @@ describe('BrowserWindow module', () => {
       expect(data.pageContext.openedLocation).to.equal('')
     })
   })
+
+  const features = process.electronBinding('features')
+  ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
+    let w: BrowserWindow
+    beforeEach(function () {
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        show: false,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: true
+        }
+      })
+    })
+
+    it('creates offscreen window with correct size', (done) => {
+      w.webContents.once('paint', function (event, rect, data) {
+        expect(data.constructor.name).to.equal('NativeImage')
+        expect(data.isEmpty()).to.be.false('data is empty')
+        const size = data.getSize()
+        const { scaleFactor } = screen.getPrimaryDisplay()
+        expect(size.width).to.be.closeTo(100 * scaleFactor, 2)
+        expect(size.height).to.be.closeTo(100 * scaleFactor, 2)
+        done()
+      })
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+    })
+
+    it('does not crash after navigation', () => {
+      w.webContents.loadURL('about:blank')
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+    })
+
+    describe('window.webContents.isOffscreen()', () => {
+      it('is true for offscreen type', () => {
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+        expect(w.webContents.isOffscreen()).to.be.true('isOffscreen')
+      })
+
+      it('is false for regular window', () => {
+        const c = new BrowserWindow({ show: false })
+        expect(c.webContents.isOffscreen()).to.be.false('isOffscreen')
+        c.destroy()
+      })
+    })
+
+    describe('window.webContents.isPainting()', () => {
+      it('returns whether is currently painting', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.isPainting()).to.be.true('isPainting')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.stopPainting()', () => {
+      it('stops painting', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.stopPainting()
+          expect(w.webContents.isPainting()).to.be.false('isPainting')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.startPainting()', () => {
+      it('starts painting', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.stopPainting()
+          w.webContents.startPainting()
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.isPainting()).to.be.true('isPainting')
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    // TODO(codebytere): remove in Electron v8.0.0
+    describe('window.webContents.getFrameRate()', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.getFrameRate()).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    // TODO(codebytere): remove in Electron v8.0.0
+    describe('window.webContents.setFrameRate(frameRate)', () => {
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.setFrameRate(30)
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.getFrameRate()).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.FrameRate', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.frameRate = 30
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.frameRate).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+  })
 })
