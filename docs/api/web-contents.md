@@ -987,13 +987,13 @@ Returns `String` - The user agent for this web page.
 
 **[Deprecated](modernization/property-updates.md)**
 
-#### `contents.insertCSS(css)`
+#### `contents.insertCSS(css[, options])`
 
 * `css` String
+* `options` Object (optional)
+  * `cssOrigin` String (optional) - Can be either 'user' or 'author'; Specifying 'user' enables you to prevent websites from overriding the CSS you insert. Default is 'author'.
 
-Returns `Promise<String>` - A promise that resolves with a key for the inserted
-CSS that can later be used to remove the CSS via
-`contents.removeInsertedCSS(key)`.
+Returns `Promise<String>` - A promise that resolves with a key for the inserted CSS that can later be used to remove the CSS via `contents.removeInsertedCSS(key)`.
 
 Injects CSS into the current web page and returns a unique key for the inserted
 stylesheet.
