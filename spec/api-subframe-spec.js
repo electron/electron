@@ -5,7 +5,7 @@ const path = require('path')
 const { emittedNTimes, emittedOnce } = require('./events-helpers')
 const { closeWindow } = require('./window-helpers')
 
-const { BrowserWindow } = remote
+const { BrowserWindow, ipcMain } = remote
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description, webPreferences) => {
@@ -30,7 +30,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should load preload scripts in top level iframes', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [event1, event2] = await detailsPromise
         expect(event1[0].frameId).to.not.equal(event2[0].frameId)
@@ -39,7 +39,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should load preload scripts in nested iframes', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`))
         const [event1, event2, event3] = await detailsPromise
         expect(event1[0].frameId).to.not.equal(event2[0].frameId)
@@ -51,37 +51,37 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       })
 
       it('should correctly reply to the main frame with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [event1] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event1[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event1[0].frameId)
       })
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const [, event2] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event2[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event2[0].frameId)
       })
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 3)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`))
         const [, , event3] = await detailsPromise
-        const pongPromise = emittedOnce(remote.ipcMain, 'preload-pong')
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong')
         event3[0].reply('preload-ping')
         const details = await pongPromise
         expect(details[1]).to.equal(event3[0].frameId)
       })
 
       it('should not expose globals in main world', async () => {
-        const detailsPromise = emittedNTimes(remote.ipcMain, 'preload-ran', 2)
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2)
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`))
         const details = await detailsPromise
         const senders = details.map(event => event[0].sender)
@@ -150,5 +150,38 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     }
   ).forEach(config => {
     generateTests(config.title, config.webPreferences)
+  })
+
+  describe('internal <iframe> inside of <webview>', () => {
+    let w
+
+    beforeEach(async () => {
+      await closeWindow(w)
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          preload: path.resolve(__dirname, 'fixtures/sub-frames/webview-iframe-preload.js'),
+          nodeIntegrationInSubFrames: true,
+          webviewTag: true
+        }
+      })
+    })
+
+    afterEach(() => {
+      return closeWindow(w).then(() => {
+        w = null
+      })
+    })
+
+    it('should not load preload scripts', async () => {
+      const promisePass = emittedOnce(ipcMain, 'webview-loaded')
+      const promiseFail = emittedOnce(ipcMain, 'preload-in-frame').then(() => {
+        throw new Error('preload loaded in internal frame')
+      })
+      await w.loadURL('about:blank')
+      return Promise.race([promisePass, promiseFail])
+    })
   })
 })
