@@ -27,10 +27,10 @@ describe('MenuItems', () => {
       expect(item).to.have.property('sublabel').that.is.a('string').equal('goodbye')
       expect(item).to.have.property('accelerator').that.is.a('string').equal('CmdOrControl+Q')
       expect(item).to.have.property('click').that.is.a('function')
-      expect(item).to.have.property('enabled').that.is.a('boolean').and.is.true
-      expect(item).to.have.property('visible').that.is.a('boolean').and.is.true
-      expect(item).to.have.property('checked').that.is.a('boolean').and.is.false
-      expect(item).to.have.property('registerAccelerator').that.is.a('boolean').and.is.true
+      expect(item).to.have.property('enabled').that.is.a('boolean').and.is.true()
+      expect(item).to.have.property('visible').that.is.a('boolean').and.is.true()
+      expect(item).to.have.property('checked').that.is.a('boolean').and.is.false()
+      expect(item).to.have.property('registerAccelerator').that.is.a('boolean').and.is.true()
       expect(item).to.have.property('type').that.is.a('string').equal('normal')
       expect(item).to.have.property('commandId').that.is.a('number')
       expect(item).to.have.property('toolTip').that.is.a('string')
