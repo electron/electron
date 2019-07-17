@@ -20,6 +20,7 @@
 #include "base/values.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/mac/url_conversions.h"
+#include "ui/native_theme/native_theme.h"
 
 namespace mate {
 template <>
@@ -558,8 +559,7 @@ void SystemPreferences::RemoveUserDefault(const std::string& name) {
 
 bool SystemPreferences::IsDarkMode() {
   if (@available(macOS 10.15, *)) {
-    return [[NSApplication sharedApplication].effectiveAppearance.name
-        isEqualToString:NSAppearanceNameDarkAqua];
+    return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
   }
   NSString* mode = [[NSUserDefaults standardUserDefaults]
       stringForKey:@"AppleInterfaceStyle"];
