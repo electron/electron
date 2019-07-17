@@ -17,5 +17,4 @@ steps:
       whoami
     displayName: 'whoami on ubuntu:18.04'
   - bash: |
-      su builduser
-      whoami
+      sudo -u builduser whoami
