@@ -13,6 +13,8 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
+#include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "mojo/public/cpp/system/file_data_source.h"
 #include "net/base/filename_util.h"
 #include "net/base/mime_sniffer.h"
 #include "net/base/mime_util.h"
@@ -226,10 +228,11 @@ class AsarURLLoader : public network::mojom::URLLoader {
     file.Seek(base::File::FROM_BEGIN,
               static_cast<int64_t>(first_byte_to_send) + info.offset);
 
-    data_producer_ = std::make_unique<mojo::FileDataPipeProducer>(
+    data_producer_ = std::make_unique<mojo::DataPipeProducer>(
         std::move(pipe.producer_handle), nullptr);
-    data_producer_->WriteFromFile(
-        std::move(file), total_bytes_to_send,
+    data_producer_->Write(
+        std::make_unique<mojo::FileDataSource>(std::move(file),
+                                               total_bytes_to_send),
         base::BindOnce(&AsarURLLoader::OnFileWritten, base::Unretained(this)));
   }
 
@@ -267,7 +270,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     MaybeDeleteSelf();
   }
 
-  std::unique_ptr<mojo::FileDataPipeProducer> data_producer_;
+  std::unique_ptr<mojo::DataPipeProducer> data_producer_;
   mojo::Binding<network::mojom::URLLoader> binding_;
   network::mojom::URLLoaderClientPtr client_;
 
