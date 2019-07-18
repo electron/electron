@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 5 Jun 2019 15:11:00 -0700
+Subject: chore: add debounce on the updateWebContentsVisibility method to
+ ensure quick changes in occlusion do not result in flickering
+
+diff --git a/content/browser/web_contents/web_contents_view_cocoa.h b/content/browser/web_contents/web_contents_view_cocoa.h
+index 5b44f03eba6ff1a960d56d3d8613ccc98c30bf54..6f903c195e58f9e8c9322d92281d53ab130ef82b 100644
+--- a/content/browser/web_contents/web_contents_view_cocoa.h
++++ b/content/browser/web_contents/web_contents_view_cocoa.h
+@@ -64,6 +64,8 @@ CONTENT_EXPORT
+ - (void)clearWebContentsView;
+ - (void)closeTabAfterEvent;
+ - (void)updateWebContentsVisibility;
++- (content::mojom::Visibility)currentVisibility;
++- (void)notifyWebContentsVisibilityChanged;
+ - (void)viewDidBecomeFirstResponder:(NSNotification*)notification;
+ - (content::WebContentsImpl*)webContents;
+ @end
+diff --git a/content/browser/web_contents/web_contents_view_cocoa.mm b/content/browser/web_contents/web_contents_view_cocoa.mm
+index c34664635626c42667fd8206e790ace9ef01ad54..1ca1a6e8119efcf1d9513c2a59dcac06cee6c1fc 100644
+--- a/content/browser/web_contents/web_contents_view_cocoa.mm
++++ b/content/browser/web_contents/web_contents_view_cocoa.mm
+@@ -282,9 +282,14 @@ - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
+   client_->OnBecameFirstResponder(direction);
+ }
+ 
+-- (void)updateWebContentsVisibility {
++- (void)notifyWebContentsVisibilityChanged {
+   if (!client_)
+     return;
++
++  client_->OnWindowVisibilityChanged([self currentVisibility]);
++}
++
++- (content::mojom::Visibility)currentVisibility {
+   content::mojom::Visibility visibility = content::mojom::Visibility::kVisible;
+   if ([self isHiddenOrHasHiddenAncestor] || ![self window])
+     visibility = content::mojom::Visibility::kHidden;
+@@ -292,7 +297,24 @@ - (void)updateWebContentsVisibility {
+     visibility = content::mojom::Visibility::kVisible;
+   else
+     visibility = content::mojom::Visibility::kOccluded;
+-  client_->OnWindowVisibilityChanged(visibility);
++  return visibility;
++}
++
++- (void)updateWebContentsVisibility {
++  if (!client_)
++    return;
++  // Cancel any pending notifications visibility changes, this ensures that the latest incoming change is the only
++  // change that will take affect
++  [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(notifyWebContentsVisibilityChanged) object:nil];
++
++  content::mojom::Visibility visibility = [self currentVisibility];
++
++  // If it's visible, notify immediately to render ASAP
++  if (visibility == content::mojom::Visibility::kVisible)
++    client_->OnWindowVisibilityChanged(visibility);
++  else
++    // If it's occluded queue it for 3 seconds to be sure that it isn't a double kOccluded -> kVisible
++    [self performSelector:@selector(notifyWebContentsVisibilityChanged) withObject:nil afterDelay:3.0];
+ }
+ 
+ - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
