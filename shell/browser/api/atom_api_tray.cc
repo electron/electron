@@ -199,7 +199,7 @@ void Tray::DisplayBalloon(mate::Arguments* args,
 
 #if defined(OS_WIN)
   tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXICON)),
       title, content);
 #else
   tray_icon_->DisplayBalloon(icon.IsEmpty() ? gfx::Image() : icon->image(),
