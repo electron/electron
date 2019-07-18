@@ -107,7 +107,8 @@ void AtomRendererClient::DidCreateScriptContext(
   v8::Local<v8::Context> context =
       node::MaybeInitializeContext(renderer_context);
   DCHECK(!context.IsEmpty());
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(context, nullptr, true);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
