@@ -12,7 +12,7 @@ namespace electron {
 class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
  public:
   ProxyingURLLoaderFactory(
-      const HandlersMap& handlers,
+      const HandlersMap& intercepted_handlers,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info);
   ~ProxyingURLLoaderFactory() override;
@@ -39,7 +39,7 @@ class ProxyingURLLoaderFactory : public network::mojom::URLLoaderFactory {
   // reference is guarenteed to be valid.
   //
   // In this way we can avoid using code from api namespace in this file.
-  const HandlersMap& handlers_;
+  const HandlersMap& intercepted_handlers_;
 
   mojo::BindingSet<network::mojom::URLLoaderFactory> proxy_bindings_;
   network::mojom::URLLoaderFactoryPtr target_factory_;

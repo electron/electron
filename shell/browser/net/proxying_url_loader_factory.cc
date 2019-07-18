@@ -13,10 +13,10 @@
 namespace electron {
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
-    const HandlersMap& handlers,
+    const HandlersMap& intercepted_handlers,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info)
-    : handlers_(handlers) {
+    : intercepted_handlers_(intercepted_handlers) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
@@ -36,8 +36,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     network::mojom::URLLoaderClientPtr client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   // Check if user has intercepted this scheme.
-  auto it = handlers_.find(request.url.scheme());
-  if (it != handlers_.end()) {
+  auto it = intercepted_handlers_.find(request.url.scheme());
+  if (it != intercepted_handlers_.end()) {
     // <scheme, <type, handler>>
     it->second.second.Run(
         request, base::BindOnce(&AtomURLLoaderFactory::StartLoading,
