@@ -170,6 +170,10 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
             (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
             (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
         return TRUE;
+
+      case WM_MOUSEMOVE:
+        win_icon->HandleMouseMoveEvent(GetKeyboardModifers());
+        return TRUE;
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);

@@ -161,7 +161,7 @@ Returns:
 
 Emitted when the mouse exits the tray icon.
 
-#### Event: 'mouse-move' _macOS_
+#### Event: 'mouse-move' _macOS_ _Windows_
 
 Returns:
 

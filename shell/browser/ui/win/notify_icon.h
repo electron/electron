@@ -44,6 +44,9 @@ class NotifyIcon : public TrayIcon {
                         bool left_button_click,
                         bool double_button_click);
 
+  // Handles a mouse move event from the user.
+  void HandleMouseMoveEvent(int modifiers);
+
   // Re-creates the status tray icon now after the taskbar has been created.
   void ResetIcon();
 
