@@ -91,7 +91,8 @@ void AtomRendererClient::DidCreateScriptContext(
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);
   bool should_load_node =
-      is_main_frame || is_devtools || allow_node_in_subframes;
+      (is_main_frame || is_devtools || allow_node_in_subframes) &&
+      !IsWebViewFrame(context, render_frame);
   if (!should_load_node) {
     return;
   }
