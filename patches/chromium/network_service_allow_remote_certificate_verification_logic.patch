@@ -5,7 +5,7 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 0bc1dff17b8865f92ec80e3aa0d663e9135d39e8..5dc0157a566c4408fae38107e6b5cc7d01f53582 100644
+index b3026a0c6c2ac7540459211302082e407ab91ab3..287c03abdb3d001a0ca50eb67a228fee858e8a34 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -91,6 +91,11 @@
@@ -96,7 +96,7 @@ index 0bc1dff17b8865f92ec80e3aa0d663e9135d39e8..5dc0157a566c4408fae38107e6b5cc7d
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  constexpr bool NetworkContext::enable_resource_scheduler_;
  
-@@ -679,6 +753,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
+@@ -676,6 +750,12 @@ void NetworkContext::SetClient(mojom::NetworkContextClientPtr client) {
    client_ = std::move(client);
  }
  
@@ -109,7 +109,7 @@ index 0bc1dff17b8865f92ec80e3aa0d663e9135d39e8..5dc0157a566c4408fae38107e6b5cc7d
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2148,12 +2228,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -2145,12 +2225,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                    cert_net_fetcher_, /*system_trust_store_provider=*/nullptr)));
      }
  #endif
