@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/atom_api_web_request.h"
 
+#include <set>
 #include <string>
 #include <utility>
 
@@ -19,27 +20,6 @@
 #include "shell/common/native_mate_converters/value_converter.h"
 
 using content::BrowserThread;
-
-namespace mate {
-
-template <>
-struct Converter<URLPattern> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     URLPattern* out) {
-    std::string pattern;
-    if (!ConvertFromV8(isolate, val, &pattern))
-      return false;
-    // TODO(codebytere): we should specify allowable schemes for better security
-    *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(
-               pattern,
-               URLPattern::ParseOptions::ALLOW_WILDCARD_FOR_EFFECTIVE_TLD) ==
-           URLPattern::ParseResult::kSuccess;
-  }
-};
-
-}  // namespace mate
 
 namespace electron {
 
@@ -89,8 +69,22 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
   URLPatterns patterns;
   mate::Dictionary dict;
   if (args->GetNext(&dict)) {
-    if (dict.HasKey("urls") && !dict.Get("urls", &patterns))
-      args->ThrowError("One or more invalid url patterns specified.");
+    std::set<std::string> filter_patterns;
+    if (dict.HasKey("urls") && dict.Get("urls", &filter_patterns)) {
+      for (const std::string& filter_pattern : filter_patterns) {
+        URLPattern pattern = URLPattern(URLPattern::SCHEME_ALL);
+        URLPattern::ParseResult success = pattern.Parse(
+            filter_pattern,
+            URLPattern::ParseOptions::ALLOW_WILDCARD_FOR_EFFECTIVE_TLD);
+        if (success == URLPattern::ParseResult::kSuccess) {
+          patterns.insert(pattern);
+        } else {
+          std::string error_type = URLPattern::GetParseResultString(success);
+          args->ThrowError("Invalid pattern for url " + filter_pattern + ": " +
+                           error_type);
+        }
+      }
+    }
   }
 
   // Function or null.
