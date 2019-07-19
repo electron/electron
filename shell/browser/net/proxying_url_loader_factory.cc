@@ -7,6 +7,9 @@
 #include <utility>
 
 #include "mojo/public/cpp/bindings/binding.h"
+#include "net/base/completion_repeating_callback.h"
+#include "net/http/http_util.h"
+#include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 
 namespace electron {
@@ -75,6 +78,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
         base::BindRepeating(&InProgressRequest::ContinueToBeforeSendHeaders,
                             weak_factory_.GetWeakPtr());
   }
+  redirect_url_ = GURL();
   // TODO(zcbenz): Call webRequest.onBeforeRequest.
   int result = net::OK;
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
@@ -171,7 +175,25 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveRedirect(
     const net::RedirectInfo& redirect_info,
     const network::ResourceResponseHead& head) {
-  // TODO(zcbenz): Implement me.
+  // Note: In Electron we don't check IsRedirectSafe.
+
+  if (current_request_uses_header_client_) {
+    // Use the headers we got from OnHeadersReceived as that'll contain
+    // Set-Cookie if it existed.
+    auto saved_headers = current_response_.headers;
+    current_response_ = head;
+    // If this redirect is from an HSTS upgrade, OnHeadersReceived will not be
+    // called before OnReceiveRedirect, so make sure the saved headers exist
+    // before setting them.
+    if (saved_headers)
+      current_response_.headers = saved_headers;
+    ContinueToBeforeRedirect(redirect_info, net::OK);
+  } else {
+    current_response_ = head;
+    HandleResponseOrRedirectHeaders(
+        base::BindOnce(&InProgressRequest::ContinueToBeforeRedirect,
+                       weak_factory_.GetWeakPtr(), redirect_info));
+  }
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnUploadProgress(
@@ -199,7 +221,15 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnStartLoadingResponseBody(
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
     const network::URLLoaderCompletionStatus& status) {
-  // TODO(zcbenz): Implement me.
+  if (status.error_code != net::OK) {
+    OnRequestError(status);
+    return;
+  }
+
+  target_client_->OnComplete(status);
+  // TODO(zcbenz): Call webRequest.onCompleted.
+
+  // TODO(zcbenz): Deletes |this|.
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
@@ -228,13 +258,23 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
     return;
   }
 
-  // TODO(zcbenz): Implement me.
+  on_headers_received_callback_ = std::move(callback);
+  current_response_.headers =
+      base::MakeRefCounted<net::HttpResponseHeaders>(headers);
+  HandleResponseOrRedirectHeaders(
+      base::BindOnce(&InProgressRequest::ContinueToHandleOverrideHeaders,
+                     weak_factory_.GetWeakPtr()));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
     int error_code) {
   if (error_code != net::OK) {
     OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  if (!current_request_uses_header_client_ && !redirect_url_.is_empty()) {
+    HandleBeforeRequestRedirect();
     return;
   }
 
@@ -325,6 +365,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
     return;
   }
 
+  if (current_request_uses_header_client_ && !redirect_url_.is_empty()) {
+    HandleBeforeRequestRedirect();
+    return;
+  }
+
   if (proxied_client_binding_.is_bound())
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
@@ -352,11 +397,161 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
   // |header_client_binding_|.
 }
 
+void ProxyingURLLoaderFactory::InProgressRequest::
+    ContinueToHandleOverrideHeaders(int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  DCHECK(on_headers_received_callback_);
+  base::Optional<std::string> headers;
+  if (override_headers_) {
+    headers = override_headers_->raw_headers();
+    if (current_request_uses_header_client_) {
+      // Make sure to update current_response_,  since when OnReceiveResponse
+      // is called we will not use its headers as it might be missing the
+      // Set-Cookie line (as that gets stripped over IPC).
+      current_response_.headers = override_headers_;
+    }
+  }
+  std::move(on_headers_received_callback_).Run(net::OK, headers, redirect_url_);
+  override_headers_ = nullptr;
+
+  if (proxied_client_binding_)
+    proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
+    const net::RedirectInfo& redirect_info,
+    int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  if (proxied_client_binding_.is_bound())
+    proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+
+  // TODO(zcbenz): Call WebRequest.onBeforeRedirect.
+  target_client_->OnReceiveRedirect(redirect_info, current_response_);
+  request_.url = redirect_info.new_url;
+  request_.method = redirect_info.new_method;
+  request_.site_for_cookies = redirect_info.new_site_for_cookies;
+  request_.referrer = GURL(redirect_info.new_referrer);
+  request_.referrer_policy = redirect_info.new_referrer_policy;
+
+  // The request method can be changed to "GET". In this case we need to
+  // reset the request body manually.
+  if (request_.method == net::HttpRequestHeaders::kGetMethod)
+    request_.request_body = nullptr;
+
+  request_completed_ = true;
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::
+    HandleBeforeRequestRedirect() {
+  // The extension requested a redirect. Close the connection with the current
+  // URLLoader and inform the URLLoaderClient the WebRequest API generated a
+  // redirect. To load |redirect_url_|, a new URLLoader will be recreated
+  // after receiving FollowRedirect().
+
+  // Forgetting to close the connection with the current URLLoader caused
+  // bugs. The latter doesn't know anything about the redirect. Continuing
+  // the load with it gives unexpected results. See
+  // https://crbug.com/882661#c72.
+  proxied_client_binding_.Close();
+  header_client_binding_.Close();
+  target_loader_.reset();
+
+  constexpr int kInternalRedirectStatusCode = 307;
+
+  net::RedirectInfo redirect_info;
+  redirect_info.status_code = kInternalRedirectStatusCode;
+  redirect_info.new_method = request_.method;
+  redirect_info.new_url = redirect_url_;
+  redirect_info.new_site_for_cookies = redirect_url_;
+
+  network::ResourceResponseHead head;
+  std::string headers = base::StringPrintf(
+      "HTTP/1.1 %i Internal Redirect\n"
+      "Location: %s\n"
+      "Non-Authoritative-Reason: WebRequest API\n\n",
+      kInternalRedirectStatusCode, redirect_url_.spec().c_str());
+
+  if (network::features::ShouldEnableOutOfBlinkCors()) {
+    // Cross-origin requests need to modify the Origin header to 'null'. Since
+    // CorsURLLoader sets |request_initiator| to the Origin request header in
+    // NetworkService, we need to modify |request_initiator| here to craft the
+    // Origin header indirectly.
+    // Following checks implement the step 10 of "4.4. HTTP-redirect fetch",
+    // https://fetch.spec.whatwg.org/#http-redirect-fetch
+    if (request_.request_initiator &&
+        (!url::Origin::Create(redirect_url_)
+              .IsSameOriginWith(url::Origin::Create(request_.url)) &&
+         !request_.request_initiator->IsSameOriginWith(
+             url::Origin::Create(request_.url)))) {
+      // Reset the initiator to pretend tainted origin flag of the spec is set.
+      request_.request_initiator = url::Origin();
+    }
+  } else {
+    // If this redirect is used in a cross-origin request, add CORS headers to
+    // make sure that the redirect gets through the Blink CORS. Note that the
+    // destination URL is still subject to the usual CORS policy, i.e. the
+    // resource will only be available to web pages if the server serves the
+    // response with the required CORS response headers. Matches the behavior in
+    // url_request_redirect_job.cc.
+    std::string http_origin;
+    if (request_.headers.GetHeader("Origin", &http_origin)) {
+      headers += base::StringPrintf(
+          "\n"
+          "Access-Control-Allow-Origin: %s\n"
+          "Access-Control-Allow-Credentials: true",
+          http_origin.c_str());
+    }
+  }
+  head.headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+      net::HttpUtil::AssembleRawHeaders(headers));
+  head.encoded_data_length = 0;
+
+  current_response_ = head;
+  ContinueToBeforeRedirect(redirect_info, net::OK);
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::
+    HandleResponseOrRedirectHeaders(net::CompletionOnceCallback continuation) {
+  override_headers_ = nullptr;
+  redirect_url_ = GURL();
+
+  net::CompletionRepeatingCallback copyable_callback =
+      base::AdaptCallbackForRepeating(std::move(continuation));
+  // TODO(zcbenz): Call webRequest.onHeadersReceived.
+  int result = net::OK;
+  if (result == net::ERR_BLOCKED_BY_CLIENT) {
+    OnRequestError(network::URLLoaderCompletionStatus(result));
+    return;
+  }
+
+  if (result == net::ERR_IO_PENDING) {
+    // One or more listeners is blocking, so the request must be paused until
+    // they respond. |continuation| above will be invoked asynchronously to
+    // continue or cancel the request.
+    //
+    // We pause the binding here to prevent further client message processing.
+    proxied_client_binding_.PauseIncomingMethodCallProcessing();
+    return;
+  }
+
+  DCHECK_EQ(net::OK, result);
+
+  copyable_callback.Run(net::OK);
+}
+
 void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
     const network::URLLoaderCompletionStatus& status) {
   if (!request_completed_) {
     target_client_->OnComplete(status);
-    // TODO(zcbenz): Call webRequest.onError.
+    // TODO(zcbenz): Call webRequest.onErrorOccurred.
   }
 
   // TODO(zcbenz): Deletes |this|.

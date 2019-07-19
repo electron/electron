@@ -76,6 +76,12 @@ class ProxyingURLLoaderFactory
                                const std::set<std::string>& set_headers,
                                int error_code);
     void ContinueToStartRequest(int error_code);
+    void ContinueToHandleOverrideHeaders(int error_code);
+    void ContinueToBeforeRedirect(const net::RedirectInfo& redirect_info,
+                                  int error_code);
+    void HandleBeforeRequestRedirect();
+    void HandleResponseOrRedirectHeaders(
+        net::CompletionOnceCallback continuation);
     void OnRequestError(const network::URLLoaderCompletionStatus& status);
 
     ProxyingURLLoaderFactory* factory_;
@@ -87,6 +93,10 @@ class ProxyingURLLoaderFactory
     const net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
     mojo::Binding<network::mojom::URLLoader> proxied_loader_binding_;
     network::mojom::URLLoaderClientPtr target_client_;
+
+    network::ResourceResponseHead current_response_;
+    scoped_refptr<net::HttpResponseHeaders> override_headers_;
+    GURL redirect_url_;
 
     mojo::Binding<network::mojom::URLLoaderClient> proxied_client_binding_;
     network::mojom::URLLoaderPtr target_loader_;
