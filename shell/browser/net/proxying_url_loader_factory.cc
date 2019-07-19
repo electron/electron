@@ -241,7 +241,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
   target_client_->OnComplete(status);
   // TODO(zcbenz): Call webRequest.onCompleted.
 
-  // TODO(zcbenz): Deletes |this|.
+  // TODO(zcbenz): Disassociate from factory.
+  delete this;
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
@@ -611,7 +612,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
     // TODO(zcbenz): Call webRequest.onErrorOccurred.
   }
 
-  // TODO(zcbenz): Deletes |this|.
+  // TODO(zcbenz): Disassociate from factory.
+  delete this;
 }
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
@@ -665,6 +667,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   target_factory_->CreateLoaderAndStart(std::move(loader), routing_id,
                                         request_id, options, request,
                                         std::move(client), traffic_annotation);
+
+  // TODO(zcbenz): Create InProgressRequest.
 }
 
 void ProxyingURLLoaderFactory::Clone(

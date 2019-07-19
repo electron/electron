@@ -5,6 +5,11 @@
 #ifndef SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 #define SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
 #include "base/optional.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_response.h"
@@ -14,6 +19,12 @@
 
 namespace electron {
 
+// This class is responsible for following tasks when NetworkService is enabled:
+// 1. handling intercepted protocols;
+// 2. implementing webRequest module;
+//
+// For the task #2, the code is referenced from the
+// extensions::WebRequestProxyingURLLoaderFactory class.
 class ProxyingURLLoaderFactory
     : public network::mojom::URLLoaderFactory,
       public network::mojom::TrustedURLLoaderHeaderClient {
