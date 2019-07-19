@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Wed, 26 Jun 2019 20:21:46 +0000
+Subject: MediaControls: Disconnect observers when controls are hidden
+
+Disconnect ResizeObserver from media controls when the controls are
+hidden. Otherwise, the obervsers are have pending activities (are
+observed) which makes them roots for the object graph, ultimately
+keeping elements (including e.g. HTMLVideoElement) and nodes alive.
+
+Bug: 969049
+Change-Id: I07a4470170f187631db307188f6cbe0052aa7d8c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1677053
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Tommy Steimel <steimel@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#672629}
+
+diff --git a/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.cc b/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.cc
+index e1f55e00cafbfbca376092e8e332ca68f14954b7..15ab3cbe33da36dffb1ee1cda4031a020362eef0 100644
+--- a/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.cc
++++ b/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.cc
+@@ -91,7 +91,7 @@ MediaControlSliderElement::MediaControlSliderElement(
+           new MediaControlSliderElementResizeObserverDelegate(this))) {
+   setType(InputTypeNames::range);
+   setAttribute(HTMLNames::stepAttr, "any");
+-  resize_observer_->observe(this);
++  OnControlsShown();
+ }
+ 
+ Element& MediaControlSliderElement::GetTrackElement() {
+@@ -172,4 +172,12 @@ void MediaControlSliderElement::Trace(blink::Visitor* visitor) {
+   MediaControlInputElement::Trace(visitor);
+ }
+ 
++void MediaControlSliderElement::OnControlsShown() {
++  resize_observer_->observe(this);
++}
++
++void MediaControlSliderElement::OnControlsHidden() {
++  resize_observer_->disconnect();
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.h b/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.h
+index 8f5a631fa87e5f6ce9c94f8f8eefcd4152df1c1f..228886cfb1f1bbb244350e9c52f247bf41d6dbfc 100644
+--- a/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.h
++++ b/third_party/blink/renderer/modules/media_controls/elements/media_control_slider_element.h
+@@ -33,6 +33,9 @@ class MODULES_EXPORT MediaControlSliderElement
+   // simplicity; deliberately ignores pinch zoom's pageScaleFactor).
+   int TrackWidth();
+ 
++  void OnControlsShown();
++  void OnControlsHidden();
++
+  protected:
+   class MediaControlSliderElementResizeObserverDelegate;
+ 
+diff --git a/third_party/blink/renderer/modules/media_controls/elements/media_control_timeline_element.cc b/third_party/blink/renderer/modules/media_controls/elements/media_control_timeline_element.cc
+index 62ef007e5f6d5bbe3cae8ab7760251256ce57efb..4022da87d0ad39e34f05423990a9df598955ed50 100644
+--- a/third_party/blink/renderer/modules/media_controls/elements/media_control_timeline_element.cc
++++ b/third_party/blink/renderer/modules/media_controls/elements/media_control_timeline_element.cc
+@@ -272,10 +272,12 @@ void MediaControlTimelineElement::OnControlsHidden() {
+ 
+   // End scrubbing state.
+   is_touching_ = false;
++  MediaControlSliderElement::OnControlsHidden();
+ }
+ 
+ void MediaControlTimelineElement::OnControlsShown() {
+   controls_hidden_ = false;
++  MediaControlSliderElement::OnControlsShown();
+ }
+ 
+ bool MediaControlTimelineElement::EndScrubbingEvent(Event& event) {
+diff --git a/third_party/blink/renderer/modules/media_controls/media_controls_impl.cc b/third_party/blink/renderer/modules/media_controls/media_controls_impl.cc
+index 5ca3a5f8314bc67d498b3c1d8306f550223781d3..37321c8331d80899afa632327540fd2199fc0907 100644
+--- a/third_party/blink/renderer/modules/media_controls/media_controls_impl.cc
++++ b/third_party/blink/renderer/modules/media_controls/media_controls_impl.cc
+@@ -911,6 +911,8 @@ void MediaControlsImpl::MaybeShow() {
+     loading_panel_->OnControlsShown();
+ 
+   timeline_->OnControlsShown();
++  if (volume_slider_)
++    volume_slider_->OnControlsShown();
+   UpdateCSSClassFromState();
+   UpdateActingAsAudioControls();
+ }
+@@ -936,6 +938,8 @@ void MediaControlsImpl::Hide() {
+     EndScrubbing();
+   }
+   timeline_->OnControlsHidden();
++  if (volume_slider_)
++    volume_slider_->OnControlsHidden();
+ 
+   UpdateCSSClassFromState();
+ 
+diff --git a/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc b/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc
+index 4bd7baed6c95deccfea6ac1f7c8998ad64c64e05..15a786c21b7f84d12e5ac87705b8ff0f54127765 100644
+--- a/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc
++++ b/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc
+@@ -14,10 +14,12 @@
+ #include "third_party/blink/public/platform/web_mouse_event.h"
+ #include "third_party/blink/public/platform/web_screen_info.h"
+ #include "third_party/blink/public/platform/web_size.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_gc_controller.h"
+ #include "third_party/blink/renderer/core/css/css_property_value_set.h"
+ #include "third_party/blink/renderer/core/css/document_style_environment_variables.h"
+ #include "third_party/blink/renderer/core/css/style_engine.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/document_parser.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+ #include "third_party/blink/renderer/core/dom/events/event.h"
+ #include "third_party/blink/renderer/core/dom/text.h"
+@@ -1159,6 +1161,33 @@ TEST_F(MediaControlsImplTest,
+   EXPECT_EQ(nullptr, weak_persistent_video);
+ }
+ 
++TEST_F(MediaControlsImplTest,
++       RemovingFromDocumentWhenResettingSrcAllowsReclamation) {
++  // Regression test: https://crbug.com/918064
++  //
++  // Test ensures that unified heap garbage collections are able to collect
++  // detached HTMLVideoElements. The tricky part is that ResizeObserver's are
++  // treated as roots as long as they have observations which prevent the video
++  // element from being collected.
++
++  auto page_holder = std::make_unique<DummyPageHolder>();
++  page_holder->GetDocument().write("<video controls>");
++  page_holder->GetDocument().Parser()->Finish();
++
++  HTMLVideoElement& video =
++      ToHTMLVideoElement(*page_holder->GetDocument().QuerySelector("video"));
++  WeakPersistent<HTMLMediaElement> weak_persistent_video = &video;
++  video.remove();
++
++  test::RunPendingTasks();
++
++  // Needs to call into V8's GC here to trigger a unified garbage collection.
++  V8GCController::CollectAllGarbageForTesting(
++      ThreadState::Current()->GetIsolate(),
++      v8::EmbedderHeapTracer::EmbedderStackState::kEmpty);
++  EXPECT_EQ(nullptr, weak_persistent_video);
++}
++
+ TEST_F(MediaControlsImplTest,
+        ReInsertingInDocumentRestoresListenersAndCallbacks) {
+   auto page_holder = DummyPageHolder::Create();

@@ -56,7 +56,7 @@ diff --git a/services/service_manager/sandbox/mac/sandbox_mac.mm b/services/serv
 index d69fcc0d4c5c2471163280c03a9fd9366e05031d..cdd7b7f6723162d6875c4d11379837708bdde79d 100644
 --- a/services/service_manager/sandbox/mac/sandbox_mac.mm
 +++ b/services/service_manager/sandbox/mac/sandbox_mac.mm
-@@ -81,6 +81,21 @@ static_assert(arraysize(kDefaultSandboxTypeToResourceIDMapping) ==
+@@ -81,6 +81,21 @@
                    size_t(SANDBOX_TYPE_AFTER_LAST_TYPE),
                "sandbox type to resource id mapping incorrect");
  
@@ -78,7 +78,7 @@ index d69fcc0d4c5c2471163280c03a9fd9366e05031d..cdd7b7f6723162d6875c4d1137983770
  }  // namespace
  
  // Static variable declarations.
-@@ -242,6 +257,9 @@ bool SandboxMac::Enable(SandboxType sandbox_type) {
+@@ -242,6 +257,9 @@
    if (!compiler.InsertBooleanParam(kSandboxMacOS1013, macos_1013))
      return false;
  

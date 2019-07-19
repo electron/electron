@@ -15,7 +15,7 @@ diff --git a/ui/views/cocoa/bridged_native_widget.mm b/ui/views/cocoa/bridged_na
 index 8841b59f6b70ac4687adfde61a1fba1424e57e48..cc3659319c4076043a0493798db3c7b8a4afd21e 100644
 --- a/ui/views/cocoa/bridged_native_widget.mm
 +++ b/ui/views/cocoa/bridged_native_widget.mm
-@@ -1039,6 +1039,12 @@ bool BridgedNativeWidget::ShouldRunCustomAnimationFor(
+@@ -1039,6 +1039,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  // BridgedNativeWidget, ui::CATransactionObserver
  
  bool BridgedNativeWidget::ShouldWaitInPreCommit() {
