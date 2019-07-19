@@ -24,9 +24,9 @@ class ProxyingURLLoaderFactory
    public:
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
-        // int32_t routing_id,
+        int32_t routing_id,
         int32_t network_service_request_id,
-        // uint32_t options,
+        uint32_t options,
         const network::ResourceRequest& request,
         const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
         network::mojom::URLLoaderRequest loader_request,
@@ -71,14 +71,19 @@ class ProxyingURLLoaderFactory
     void UpdateRequestInfo();
     void RestartInternal();
 
+    void ContinueToBeforeSendHeaders(int error_code);
+    void ContinueToSendHeaders(const std::set<std::string>& removed_headers,
+                               const std::set<std::string>& set_headers,
+                               int error_code);
+    void ContinueToStartRequest(int error_code);
     void OnRequestError(const network::URLLoaderCompletionStatus& status);
 
     ProxyingURLLoaderFactory* factory_;
     network::ResourceRequest request_;
     const base::Optional<url::Origin> original_initiator_;
-    // const int32_t routing_id_;
+    const int32_t routing_id_;
     const int32_t network_service_request_id_;
-    // const uint32_t options_;
+    const uint32_t options_;
     const net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
     mojo::Binding<network::mojom::URLLoader> proxied_loader_binding_;
     network::mojom::URLLoaderClientPtr target_client_;
@@ -94,10 +99,10 @@ class ProxyingURLLoaderFactory
     // network::mojom::TrustedURLLoaderHeaderClient binding on the factory. This
     // is only set to true if there is a listener that needs to view or modify
     // headers set in the network process.
-    // bool has_any_extra_headers_listeners_ = false;
+    bool has_any_extra_headers_listeners_ = false;
     bool current_request_uses_header_client_ = false;
-    // OnBeforeSendHeadersCallback on_before_send_headers_callback_;
-    // OnHeadersReceivedCallback on_headers_received_callback_;
+    OnBeforeSendHeadersCallback on_before_send_headers_callback_;
+    OnHeadersReceivedCallback on_headers_received_callback_;
     mojo::Binding<network::mojom::TrustedHeaderClient> header_client_binding_;
 
     // If |has_any_extra_headers_listeners_| is set to false and a redirect is

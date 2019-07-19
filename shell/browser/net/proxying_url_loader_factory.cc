@@ -18,9 +18,9 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
-    // int32_t routing_id,
+    int32_t routing_id,
     int32_t network_service_request_id,
-    // uint32_t options,
+    uint32_t options,
     const network::ResourceRequest& request,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     network::mojom::URLLoaderRequest loader_request,
@@ -28,16 +28,16 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     : factory_(factory),
       request_(request),
       original_initiator_(request.request_initiator),
-      // routing_id_(routing_id),
+      routing_id_(routing_id),
       network_service_request_id_(network_service_request_id),
-      // options_(options),
+      options_(options),
       traffic_annotation_(traffic_annotation),
       proxied_loader_binding_(this, std::move(loader_request)),
       target_client_(std::move(client)),
       proxied_client_binding_(this),
       // TODO(zcbenz): We should always use "extraHeaders" mode to be compatible
       // with old APIs.
-      // has_any_extra_headers_listeners_(false),
+      has_any_extra_headers_listeners_(false),
       header_client_binding_(this) {
   // If there is a client error, clean up the request.
   target_client_.set_connection_error_handler(base::BindOnce(
@@ -56,12 +56,53 @@ void ProxyingURLLoaderFactory::InProgressRequest::Restart() {
 void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_binding_ &&
-      request_.url.SchemeIsHTTPOrHTTPS() && network_service_request_id_ != 0 &&
+      network_service_request_id_ != 0 &&
       false /* HasExtraHeadersListenerForRequest */;
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
-  // TODO(zcbenz): Implement me.
+  request_completed_ = false;
+
+  // If the header client will be used, we start the request immediately, and
+  // OnBeforeSendHeaders and OnSendHeaders will be handled there. Otherwise,
+  // send these events before the request starts.
+  base::RepeatingCallback<void(int)> continuation;
+  if (current_request_uses_header_client_) {
+    continuation = base::BindRepeating(
+        &InProgressRequest::ContinueToStartRequest, weak_factory_.GetWeakPtr());
+  } else {
+    continuation =
+        base::BindRepeating(&InProgressRequest::ContinueToBeforeSendHeaders,
+                            weak_factory_.GetWeakPtr());
+  }
+  // TODO(zcbenz): Call webRequest.onBeforeRequest.
+  int result = net::OK;
+  if (result == net::ERR_BLOCKED_BY_CLIENT) {
+    // The request was cancelled synchronously. Dispatch an error notification
+    // and terminate the request.
+    network::URLLoaderCompletionStatus status(result);
+    OnRequestError(status);
+    return;
+  }
+
+  if (result == net::ERR_IO_PENDING) {
+    // One or more listeners is blocking, so the request must be paused until
+    // they respond. |continuation| above will be invoked asynchronously to
+    // continue or cancel the request.
+    //
+    // We pause the binding here to prevent further client message processing.
+    if (proxied_client_binding_.is_bound())
+      proxied_client_binding_.PauseIncomingMethodCallProcessing();
+
+    // Pause the header client, since we want to wait until OnBeforeRequest has
+    // finished before processing any future events.
+    if (header_client_binding_)
+      header_client_binding_.PauseIncomingMethodCallProcessing();
+    return;
+  }
+  DCHECK_EQ(net::OK, result);
+
+  continuation.Run(net::OK);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::FollowRedirect(
@@ -174,7 +215,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
     return;
   }
 
-  // TODO(zcbenz): Implement me.
+  request_.headers = headers;
+  on_before_send_headers_callback_ = std::move(callback);
+  ContinueToBeforeSendHeaders(net::OK);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
@@ -188,11 +231,132 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
   // TODO(zcbenz): Implement me.
 }
 
+void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
+    int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  if (proxied_client_binding_.is_bound())
+    proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+
+  auto continuation = base::BindRepeating(
+      &InProgressRequest::ContinueToSendHeaders, weak_factory_.GetWeakPtr());
+  // Note: In Electron onBeforeSendHeaders is called for all protocols.
+  // TODO(zcbenz): Call webRequest.onBeforeSendHeaders.
+  int result = net::OK;
+
+  if (result == net::ERR_BLOCKED_BY_CLIENT) {
+    // The request was cancelled synchronously. Dispatch an error notification
+    // and terminate the request.
+    OnRequestError(network::URLLoaderCompletionStatus(result));
+    return;
+  }
+
+  if (result == net::ERR_IO_PENDING) {
+    // One or more listeners is blocking, so the request must be paused until
+    // they respond. |continuation| above will be invoked asynchronously to
+    // continue or cancel the request.
+    //
+    // We pause the binding here to prevent further client message processing.
+    if (proxied_client_binding_.is_bound())
+      proxied_client_binding_.PauseIncomingMethodCallProcessing();
+    return;
+  }
+  DCHECK_EQ(net::OK, result);
+
+  ContinueToSendHeaders(std::set<std::string>(), std::set<std::string>(),
+                        net::OK);
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
+    const std::set<std::string>& removed_headers,
+    const std::set<std::string>& set_headers,
+    int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  if (current_request_uses_header_client_) {
+    DCHECK(on_before_send_headers_callback_);
+    std::move(on_before_send_headers_callback_)
+        .Run(error_code, request_.headers);
+  } else if (pending_follow_redirect_params_) {
+    pending_follow_redirect_params_->removed_headers.insert(
+        pending_follow_redirect_params_->removed_headers.end(),
+        removed_headers.begin(), removed_headers.end());
+
+    for (auto& set_header : set_headers) {
+      std::string header_value;
+      if (request_.headers.GetHeader(set_header, &header_value)) {
+        pending_follow_redirect_params_->modified_headers.SetHeader(
+            set_header, header_value);
+      } else {
+        NOTREACHED();
+      }
+    }
+
+    if (target_loader_.is_bound()) {
+      target_loader_->FollowRedirect(
+          pending_follow_redirect_params_->removed_headers,
+          pending_follow_redirect_params_->modified_headers,
+          pending_follow_redirect_params_->new_url);
+    }
+
+    pending_follow_redirect_params_.reset();
+  }
+
+  if (proxied_client_binding_.is_bound())
+    proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+
+  // Note: In Electron onSendHeaders is called for all protocols.
+  // TODO(zcbenz): Call webRequest.onSendHeaders.
+
+  if (!current_request_uses_header_client_)
+    ContinueToStartRequest(net::OK);
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
+    int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  if (proxied_client_binding_.is_bound())
+    proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+
+  if (header_client_binding_)
+    header_client_binding_.ResumeIncomingMethodCallProcessing();
+
+  if (!target_loader_.is_bound() && factory_->target_factory_.is_bound()) {
+    // No extensions have cancelled us up to this point, so it's now OK to
+    // initiate the real network request.
+    network::mojom::URLLoaderClientPtr proxied_client;
+    proxied_client_binding_.Bind(mojo::MakeRequest(&proxied_client));
+    uint32_t options = options_;
+    // Even if this request does not use the header client, future redirects
+    // might, so we need to set the option on the loader.
+    if (has_any_extra_headers_listeners_)
+      options |= network::mojom::kURLLoadOptionUseHeaderClient;
+    factory_->target_factory_->CreateLoaderAndStart(
+        mojo::MakeRequest(&target_loader_), routing_id_,
+        network_service_request_id_, options, request_,
+        std::move(proxied_client), traffic_annotation_);
+  }
+
+  // From here the lifecycle of this request is driven by subsequent events on
+  // either |proxy_loader_binding_|, |proxy_client_binding_|, or
+  // |header_client_binding_|.
+}
+
 void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
     const network::URLLoaderCompletionStatus& status) {
   if (!request_completed_) {
     target_client_->OnComplete(status);
-    // TODO(zcbenz): Report error.
+    // TODO(zcbenz): Call webRequest.onError.
   }
 
   // TODO(zcbenz): Deletes |this|.
