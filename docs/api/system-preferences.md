@@ -344,7 +344,7 @@ Returns one of several standard system colors that automatically adapt to vibran
 
 Returns `Boolean` - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is active, `false` otherwise.
 
-### `systemPreferences.isHighContrastColorScheme()` _Windows_
+### `systemPreferences.isHighContrastColorScheme()` _macOS_ _Windows_
 
 Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
 
