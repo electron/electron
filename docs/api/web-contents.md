@@ -4,8 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-`webContents` is an
-[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+`webContents` is an [EventEmitter][event-emitter].
 It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
@@ -1813,3 +1812,4 @@ when the DevTools has been closed.
 A [`Debugger`](debugger.md) instance for this webContents.
 
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

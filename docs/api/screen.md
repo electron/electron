@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
-`screen` is an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+`screen` is an [EventEmitter][event-emitter].
 
 **Note:** In the renderer / DevTools, `window.screen` is a reserved DOM
 property, so writing `let { screen } = require('electron')` will not work.
@@ -152,3 +152,5 @@ Returns [`Rectangle`](structures/rectangle.md)
 Converts a screen DIP rect to a screen physical rect.
 The DPI scale is performed relative to the display nearest to `window`.
 If `window` is null, scaling will be performed to the display nearest to `rect`.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

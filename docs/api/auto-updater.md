@@ -6,6 +6,8 @@ Process: [Main](../glossary.md#main-process)
 
 **See also: [A detailed guide about how to implement updates in your application](../tutorial/updates.md).**
 
+`autoUpdater` is an [EventEmitter][event-emitter].
+
 ## Platform Notices
 
 Currently, only macOS and Windows are supported. There is no built-in support
@@ -136,3 +138,4 @@ application starts.
 [installer-lib]: https://github.com/electron/windows-installer
 [electron-forge-lib]: https://github.com/electron-userland/electron-forge
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

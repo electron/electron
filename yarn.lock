@@ -55,10 +55,10 @@
     ora "^3.4.0"
     pretty-ms "^5.0.0"
 
-"@electron/typescript-definitions@^8.3.1":
-  version "8.3.4"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.3.4.tgz#2345e4058e66677792f1bc11662b13e6ccc9a17e"
-  integrity sha512-hh2ls04hvsW6i7B/x2cHJLyB5jQAzzr8IFsEaTqTFsi+tOmQVbeaao87ffLbZdiHI3Jh2Ll+o0zWa13dcV5Txw==
+"@electron/typescript-definitions@^8.3.5":
+  version "8.3.5"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.3.5.tgz#02bbeea578bf3ef44f57297ba9e101df57270dbd"
+  integrity sha512-kKxNdWmw+zy2ENECrDjNdzDTATezTQEHmx0OHccbb/JOuL/tLpQXlVEiieCVQ2XJ+SY3FHRuZCrBUo3VEyR2uA==
   dependencies:
     "@electron/docs-parser" "^0.2.1"
     "@types/node" "^11.13.7"

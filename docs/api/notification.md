@@ -14,8 +14,7 @@ If you want to show Notifications from a renderer process you should use the [HT
 
 Process: [Main](../glossary.md#main-process)
 
-`Notification` is an
-[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
+`Notification` is an [EventEmitter][event-emitter].
 
 It creates a new `Notification` with native properties as set by the `options`.
 
@@ -125,3 +124,5 @@ or one of the following locations:
 * `/System/Library/Sounds`
 
 See the [`NSSound`](https://developer.apple.com/documentation/appkit/nssound) docs for more information.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
