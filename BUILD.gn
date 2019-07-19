@@ -549,6 +549,7 @@ static_library("electron_lib") {
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
+      "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
     sources += [
@@ -1044,13 +1045,18 @@ if (is_mac) {
       ]
     }
 
-    extract_symbols("electron_helper_syms") {
-      binary = "$root_out_dir/$electron_helper_name.app/Contents/MacOS/$electron_helper_name"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/$electron_helper_name.dSYM/Contents/Resources/DWARF/$electron_helper_name"
-      deps = [
-        ":electron_helper_app",
-      ]
+    foreach(helper_params, content_mac_helpers) {
+      _helper_target = helper_params[0]
+      _helper_bundle_id = helper_params[1]
+      _helper_suffix = helper_params[2]
+      extract_symbols("electron_helper_syms_${_helper_target}") {
+        binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
+        symbol_dir = "$root_out_dir/breakpad_symbols"
+        dsym_file = "$root_out_dir/$electron_helper_name${_helper_suffix}.dSYM/Contents/Resources/DWARF/$electron_helper_name${_helper_suffix}"
+        deps = [
+          ":electron_helper_app_${_helper_target}",
+        ]
+      }
     }
 
     extract_symbols("electron_app_syms") {
@@ -1094,10 +1100,14 @@ if (is_mac) {
         ":crashpad_handler_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
-        ":electron_helper_syms",
         ":swiftshader_egl_syms",
         ":swiftshader_gles_syms",
       ]
+
+      foreach(helper_params, content_mac_helpers) {
+        _helper_target = helper_params[0]
+        deps += [ ":electron_helper_syms_${_helper_target}" ]
+      }
     }
   } else {
     group("electron_symbols") {
