@@ -22,7 +22,7 @@ diff --git a/third_party/crashpad/crashpad/util/net/http_transport_mac.mm b/thir
 index 8d5f78cc6efc8b8e349958f51c78921a8c163c4e..a433bb357da5865144ade7d3663b1c9b36199f8e 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
-@@ -293,7 +293,7 @@ bool HTTPTransportMac::ExecuteSynchronously(std::string* response_body) {
+@@ -293,7 +293,7 @@ static void Unschedule(CFReadStreamRef stream,
        return false;
      }
      NSInteger http_status = [http_response statusCode];
