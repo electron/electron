@@ -150,8 +150,8 @@ async function installSpecModules () {
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
   })
-  if (status !== 0) {
-    throw new Error('Failed to npm install in the spec folder')
+  if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
+    throw new Error('Failed to yarn install in the spec folder')
   }
 }
 
