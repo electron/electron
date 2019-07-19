@@ -77,6 +77,7 @@ class ProxyingURLLoaderFactory
                                int error_code);
     void ContinueToStartRequest(int error_code);
     void ContinueToHandleOverrideHeaders(int error_code);
+    void ContinueToResponseStarted(int error_code);
     void ContinueToBeforeRedirect(const net::RedirectInfo& redirect_info,
                                   int error_code);
     void HandleBeforeRequestRedirect();

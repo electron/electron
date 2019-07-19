@@ -169,7 +169,19 @@ void ProxyingURLLoaderFactory::InProgressRequest::ResumeReadingBodyFromNet() {
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
     const network::ResourceResponseHead& head) {
-  // TODO(zcbenz): Implement me.
+  if (current_request_uses_header_client_) {
+    // Use the headers we got from OnHeadersReceived as that'll contain
+    // Set-Cookie if it existed.
+    auto saved_headers = current_response_.headers;
+    current_response_ = head;
+    current_response_.headers = saved_headers;
+    ContinueToResponseStarted(net::OK);
+  } else {
+    current_response_ = head;
+    HandleResponseOrRedirectHeaders(
+        base::BindOnce(&InProgressRequest::ContinueToResponseStarted,
+                       weak_factory_.GetWeakPtr()));
+  }
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveRedirect(
@@ -420,6 +432,51 @@ void ProxyingURLLoaderFactory::InProgressRequest::
 
   if (proxied_client_binding_)
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
+    int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  DCHECK(!current_request_uses_header_client_ || !override_headers_);
+  if (override_headers_)
+    current_response_.headers = override_headers_;
+
+  std::string redirect_location;
+  if (override_headers_ && override_headers_->IsRedirect(&redirect_location)) {
+    // The response headers may have been overridden by an |onHeadersReceived|
+    // handler and may have been changed to a redirect. We handle that here
+    // instead of acting like regular request completion.
+    //
+    // Note that we can't actually change how the Network Service handles the
+    // original request at this point, so our "redirect" is really just
+    // generating an artificial |onBeforeRedirect| event and starting a new
+    // request to the Network Service. Our client shouldn't know the difference.
+    GURL new_url(redirect_location);
+
+    net::RedirectInfo redirect_info;
+    redirect_info.status_code = override_headers_->response_code();
+    redirect_info.new_method = request_.method;
+    redirect_info.new_url = new_url;
+    redirect_info.new_site_for_cookies = new_url;
+
+    // These will get re-bound if a new request is initiated by
+    // |FollowRedirect()|.
+    proxied_client_binding_.Close();
+    header_client_binding_.Close();
+    target_loader_.reset();
+
+    ContinueToBeforeRedirect(redirect_info, net::OK);
+    return;
+  }
+
+  proxied_client_binding_.ResumeIncomingMethodCallProcessing();
+
+  // TODO(zcbenz): Call webRequest.onResponseStarted.
+  target_client_->OnReceiveResponse(current_response_);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
