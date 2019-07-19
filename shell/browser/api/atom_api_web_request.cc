@@ -30,8 +30,12 @@ struct Converter<URLPattern> {
     std::string pattern;
     if (!ConvertFromV8(isolate, val, &pattern))
       return false;
+    // TODO(codebytere): we should specify allowable schemes for better security
     *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
+    return out->Parse(
+               pattern,
+               URLPattern::ParseOptions::ALLOW_WILDCARD_FOR_EFFECTIVE_TLD) ==
+           URLPattern::ParseResult::kSuccess;
   }
 };
 
@@ -84,7 +88,10 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
   // { urls }.
   URLPatterns patterns;
   mate::Dictionary dict;
-  args->GetNext(&dict) && dict.Get("urls", &patterns);
+  if (args->GetNext(&dict)) {
+    if (dict.HasKey("urls") && !dict.Get("urls", &patterns))
+      args->ThrowError("One or more invalid url patterns specified.");
+  }
 
   // Function or null.
   v8::Local<v8::Value> value;

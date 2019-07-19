@@ -40,6 +40,16 @@ class Dictionary {
 
   static Dictionary CreateEmpty(v8::Isolate* isolate);
 
+  bool HasKey(const base::StringPiece& key) const {
+    v8::Local<v8::Context> context = isolate_->GetCurrentContext();
+    v8::Local<v8::String> v8_key = StringToV8(isolate_, key);
+    if (!internal::IsTrue(GetHandle()->Has(context, v8_key)))
+      return false;
+
+    v8::Local<v8::Value> val;
+    return GetHandle()->Get(context, v8_key).ToLocal(&val);
+  }
+
   template <typename T>
   bool Get(const base::StringPiece& key, T* out) const {
     // Check for existence before getting, otherwise this method will always
