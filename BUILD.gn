@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
@@ -548,6 +549,7 @@ static_library("electron_lib") {
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
+      "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
     sources += [
@@ -881,36 +883,48 @@ if (is_mac) {
     }
   }
 
-  mac_app_bundle("electron_helper_app") {
-    output_name = electron_helper_name
-    deps = [
-      ":electron_framework+link",
-    ]
-    if (!is_mas_build) {
-      deps += [ "//sandbox/mac:seatbelt" ]
-    }
-    defines = [ "HELPER_EXECUTABLE" ]
-    sources = filenames.app_sources
-    sources += [ "atom/common/atom_constants.cc" ]
-    include_dirs = [ "." ]
-    info_plist = "atom/renderer/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
-    ldflags = [
-      "-rpath",
-      "@executable_path/../../..",
-    ]
-    if (is_component_build) {
-      ldflags += [
-        "-rpath",
-        "@executable_path/../../../../../..",
+  template("electron_helper_app") {
+    mac_app_bundle(target_name) {
+      assert(defined(invoker.helper_name_suffix))
+
+      output_name = electron_helper_name + invoker.helper_name_suffix
+      deps = [
+        ":electron_framework+link",
       ]
+      if (!is_mas_build) {
+        deps += [ "//sandbox/mac:seatbelt" ]
+      }
+      defines = [ "HELPER_EXECUTABLE" ]
+      sources = filenames.app_sources
+      sources += [ "atom/common/atom_constants.cc" ]
+      include_dirs = [ "." ]
+      info_plist = "atom/renderer/resources/mac/Info.plist"
+      extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
+      ldflags = [
+        "-rpath",
+        "@executable_path/../../..",
+      ]
+      if (is_component_build) {
+        ldflags += [
+          "-rpath",
+          "@executable_path/../../../../../..",
+        ]
+      }
+    }
+  }
+
+  foreach(helper_params, content_mac_helpers) {
+    _helper_target = helper_params[0]
+    _helper_bundle_id = helper_params[1]
+    _helper_suffix = helper_params[2]
+    electron_helper_app("electron_helper_app_${_helper_target}") {
+      helper_name_suffix = _helper_suffix
     }
   }
 
   bundle_data("electron_app_framework_bundle_data") {
     sources = [
       "$root_out_dir/$electron_framework_name.framework",
-      "$root_out_dir/$electron_helper_name.app",
     ]
     if (!is_mas_build) {
       sources += [
@@ -924,8 +938,13 @@ if (is_mac) {
     ]
     public_deps = [
       ":electron_framework+link",
-      ":electron_helper_app",
     ]
+
+    foreach(helper_params, content_mac_helpers) {
+      sources +=
+          [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
+      public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
+    }
   }
 
   mac_app_bundle("electron_login_helper") {
@@ -1026,13 +1045,18 @@ if (is_mac) {
       ]
     }
 
-    extract_symbols("electron_helper_syms") {
-      binary = "$root_out_dir/$electron_helper_name.app/Contents/MacOS/$electron_helper_name"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/$electron_helper_name.dSYM/Contents/Resources/DWARF/$electron_helper_name"
-      deps = [
-        ":electron_helper_app",
-      ]
+    foreach(helper_params, content_mac_helpers) {
+      _helper_target = helper_params[0]
+      _helper_bundle_id = helper_params[1]
+      _helper_suffix = helper_params[2]
+      extract_symbols("electron_helper_syms_${_helper_target}") {
+        binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
+        symbol_dir = "$root_out_dir/breakpad_symbols"
+        dsym_file = "$root_out_dir/$electron_helper_name${_helper_suffix}.dSYM/Contents/Resources/DWARF/$electron_helper_name${_helper_suffix}"
+        deps = [
+          ":electron_helper_app_${_helper_target}",
+        ]
+      }
     }
 
     extract_symbols("electron_app_syms") {
@@ -1076,10 +1100,14 @@ if (is_mac) {
         ":crashpad_handler_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
-        ":electron_helper_syms",
         ":swiftshader_egl_syms",
         ":swiftshader_gles_syms",
       ]
+
+      foreach(helper_params, content_mac_helpers) {
+        _helper_target = helper_params[0]
+        deps += [ ":electron_helper_syms_${_helper_target}" ]
+      }
     }
   } else {
     group("electron_symbols") {
