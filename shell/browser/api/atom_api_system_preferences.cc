@@ -39,11 +39,9 @@ bool SystemPreferences::IsInvertedColorScheme() {
   return color_utils::IsInvertedColorScheme();
 }
 
-#if !defined(OS_WIN)
 bool SystemPreferences::IsHighContrastColorScheme() {
-  return false;
+  return ui::NativeTheme::GetInstanceForNativeUi()->UsesHighContrastColors();
 }
-#endif  // !defined(OS_WIN)
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
     v8::Isolate* isolate) {
