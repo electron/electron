@@ -33,7 +33,7 @@ development.
 
 Forge comes with [ready-to-use templates](https://electronforge.io/templates) for popular
 frameworks like React, Vue, or Angular. It uses the same core modules used by the
-greater Electron community (like [`electron-packager`](https://github.com/electron-userland/electron-packager)) – 
+greater Electron community (like [`electron-packager`](https://github.com/electron/electron-packager)) – 
 changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 
 You can find more information and documentation on [electronforge.io](https://electronforge.io/).

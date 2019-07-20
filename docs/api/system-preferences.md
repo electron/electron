@@ -360,7 +360,7 @@ Please note that until Electron is built targeting the 10.14 SDK, your applicati
 the interim in order for your application to inherit the OS preference you must set the
 `NSRequiresAquaSystemAppearance` key in your apps `Info.plist` to `false`.  If you are
 using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode`
-packager option to `true`.  See the [Electron Packager API](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
+packager option to `true`.  See the [Electron Packager API](https://github.com/electron/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 for more details.
 
 ### `systemPreferences.getAppLevelAppearance()` _macOS_
