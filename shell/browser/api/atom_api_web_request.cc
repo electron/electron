@@ -80,7 +80,7 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
           patterns.insert(pattern);
         } else {
           std::string error_type = URLPattern::GetParseResultString(success);
-          args->ThrowError("Invalid pattern for url " + filter_pattern + ": " +
+          args->ThrowError("Invalid url pattern " + filter_pattern + ": " +
                            error_type);
         }
       }
