@@ -415,7 +415,7 @@ void BrowserWindow::Cleanup() {
 // static
 mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create BrowserWindow before app is ready");
+    args->ThrowError("BrowserWindow can't be created before app is ready.");
     return nullptr;
   }
 

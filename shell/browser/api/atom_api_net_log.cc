@@ -88,7 +88,7 @@ NetLog::~NetLog() = default;
 v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
                                             mate::Arguments* args) {
   if (log_path.empty()) {
-    args->ThrowError("The first parameter must be a valid string");
+    args->ThrowError("The 'path' parameter must be a valid string.");
     return v8::Local<v8::Promise>();
   }
 
@@ -116,7 +116,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   }
 
   if (net_log_exporter_) {
-    args->ThrowError("There is already a net log running");
+    args->ThrowError("There is already a net log running.");
     return v8::Local<v8::Promise>();
   }
 

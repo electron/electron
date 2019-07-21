@@ -119,7 +119,7 @@ describe('clipboard module', () => {
     it('throws an error when a non-Buffer is specified', () => {
       expect(() => {
         clipboard.writeBuffer('public.utf8-plain-text', 'hello')
-      }).to.throw(/buffer must be a node Buffer/)
+      }).to.throw(/Buffer must be a Node.js Buffer/)
     })
   })
 

@@ -125,7 +125,7 @@ void InvokeNew(const base::Callback<Sig>& factory,
                v8::Isolate* isolate,
                Arguments* args) {
   if (!args->IsConstructCall()) {
-    args->ThrowError("Requires constructor call");
+    args->ThrowError("Constructor call is required.");
     return;
   }
 

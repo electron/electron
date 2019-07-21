@@ -98,19 +98,19 @@ void Debugger::Attach(mate::Arguments* args) {
   args->GetNext(&protocol_version);
 
   if (agent_host_) {
-    args->ThrowError("Debugger is already attached to the target");
+    args->ThrowError("Debugger is already attached to the target.");
     return;
   }
 
   if (!protocol_version.empty() &&
       !DevToolsAgentHost::IsSupportedProtocolVersion(protocol_version)) {
-    args->ThrowError("Requested protocol version is not supported");
+    args->ThrowError("Requested protocol version is not supported.");
     return;
   }
 
   agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents_);
   if (!agent_host_) {
-    args->ThrowError("No target available");
+    args->ThrowError("No target available.");
     return;
   }
 

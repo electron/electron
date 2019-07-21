@@ -537,16 +537,16 @@ describe('webContents module', () => {
     it('throws errors for a missing file or a missing/empty icon', () => {
       expect(() => {
         w.webContents.startDrag({ icon: path.join(fixtures, 'assets', 'logo.png') })
-      }).to.throw(`Must specify either 'file' or 'files' option`)
+      }).to.throw(`Must specify either 'file' or 'files' parameter.`)
 
       expect(() => {
         w.webContents.startDrag({ file: __filename })
-      }).to.throw(`Must specify 'icon' option`)
+      }).to.throw(`'icon' parameter is required.`)
 
       if (process.platform === 'darwin') {
         expect(() => {
           w.webContents.startDrag({ file: __filename, icon: __filename })
-        }).to.throw(`Must specify non-empty 'icon' option`)
+        }).to.throw(`Non-empty 'icon' parameter is required.`)
       }
     })
   })

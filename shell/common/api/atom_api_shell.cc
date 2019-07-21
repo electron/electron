@@ -112,7 +112,7 @@ v8::Local<v8::Value> ReadShortcutLink(mate::Arguments* args,
   base::win::ShortcutProperties properties;
   if (!base::win::ResolveShortcutProperties(
           path, ShortcutProperties::PROPERTIES_ALL, &properties)) {
-    args->ThrowError("Failed to read shortcut link");
+    args->ThrowError("Failed to read shortcut link.");
     return v8::Null(args->isolate());
   }
   options.Set("target", properties.target);

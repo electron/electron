@@ -679,7 +679,7 @@ void TopLevelWindow::RemoveMenu() {
 void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
                                      mate::Arguments* args) {
   if (IsModal()) {
-    args->ThrowError("Can not be called for modal window");
+    args->ThrowError("SetParentWindow can't be called for modal windows.");
     return;
   }
 
@@ -694,7 +694,7 @@ void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
     window_->SetParentWindow(parent->window_.get());
     parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
   } else {
-    args->ThrowError("Must pass TopLevelWindow instance or null");
+    args->ThrowError("TopLevelWindow instance or null parameter required.");
   }
 }
 
@@ -827,7 +827,8 @@ void TopLevelWindow::AddTabbedWindow(NativeWindow* window,
 void TopLevelWindow::SetWindowButtonVisibility(bool visible,
                                                mate::Arguments* args) {
   if (!window_->SetWindowButtonVisibility(visible)) {
-    args->ThrowError("Not supported for this window");
+    args->ThrowError(
+        "SetWindowButtonVisibility is not supported for this window.");
   }
 }
 
@@ -893,8 +894,8 @@ v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
     return v8::Local<v8::Value>::New(isolate(), (*first_view).second);
   } else {
     args->ThrowError(
-        "BrowserWindow have multiple BrowserViews, "
-        "Use getBrowserViews() instead");
+        "This BrowserWindow has multiple BrowserViews, "
+        "Use getBrowserViews() instead.");
     return v8::Null(isolate());
   }
 }

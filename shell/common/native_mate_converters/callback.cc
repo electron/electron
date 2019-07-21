@@ -52,7 +52,7 @@ void CallTranslater(v8::Local<v8::External> external,
   if (one_time) {
     auto called_symbol = mate::StringToSymbol(isolate, "called");
     if (state->Has(context, called_symbol).ToChecked()) {
-      args->ThrowError("callback can only be called for once");
+      args->ThrowError("Callback can only be called once.");
       return;
     } else {
       state->Set(context, called_symbol, v8::Boolean::New(isolate, true))

@@ -93,7 +93,7 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
   Listener listener;
   if (!args->GetNext(&listener) &&
       !(args->GetNext(&value) && value->IsNull())) {
-    args->ThrowError("Must pass null or a Function");
+    args->ThrowTypeError("Must pass null or a function.");
     return;
   }
 

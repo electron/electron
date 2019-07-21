@@ -294,20 +294,20 @@ void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
   base::DictionaryValue value;
 
   if (!args->GetNext(&value)) {
-    args->ThrowError("Invalid userDefault data provided");
+    args->ThrowTypeError("Invalid userDefault data.");
   } else {
     @try {
       NSDictionary* dict = DictionaryValueToNSDictionary(value);
       for (id key in dict) {
         id value = [dict objectForKey:key];
         if ([value isKindOfClass:[NSNull class]] || value == nil) {
-          args->ThrowError("Invalid userDefault data provided");
+          args->ThrowTypeError("Invalid userDefault data.");
           return;
         }
       }
       [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
     } @catch (NSException* exception) {
-      args->ThrowError("Invalid userDefault data provided");
+      args->ThrowTypeError("Invalid userDefault data.");
     }
   }
 }
@@ -392,7 +392,7 @@ void SystemPreferences::SetUserDefault(const std::string& name,
       [defaults setObject:dict forKey:key];
     }
   } else {
-    args->ThrowError("Invalid type: " + type);
+    args->ThrowTypeError("Invalid type: " + type);
     return;
   }
 }
@@ -599,7 +599,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
       return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
     }
   } else {
-    args->ThrowError("Invalid media type");
+    args->ThrowTypeError("Invalid media type provided.");
     return std::string();
   }
 }
@@ -672,7 +672,7 @@ void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
     if (args->GetNext(&appearance)) {
       [[NSApplication sharedApplication] setAppearance:appearance];
     } else {
-      args->ThrowError("Invalid app appearance provided as first argument");
+      args->ThrowTypeError("Invalid app appearance type provided.");
     }
   }
 }

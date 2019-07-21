@@ -62,7 +62,7 @@ void Clipboard::WriteBuffer(const std::string& format,
                             const v8::Local<v8::Value> buffer,
                             mate::Arguments* args) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowError("buffer must be a node Buffer");
+    args->ThrowTypeError("Buffer must be a Node.js Buffer.");
     return;
   }
 

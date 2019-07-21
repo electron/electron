@@ -26,7 +26,7 @@ void Button::ButtonPressed(views::Button* sender, const ui::Event& event) {
 
 // static
 mate::WrappableBase* Button::New(mate::Arguments* args) {
-  args->ThrowError("Button can not be created directly");
+  args->ThrowError("Button can't be created directly.");
   return nullptr;
 }
 

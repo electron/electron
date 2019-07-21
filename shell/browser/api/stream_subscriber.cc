@@ -68,7 +68,7 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
   v8::Local<v8::Value> buf;
   args->GetNext(&buf);
   if (!node::Buffer::HasInstance(buf)) {
-    args->ThrowError("data must be Buffer");
+    args->ThrowTypeError("Buffer must be a Node.js Buffer.");
     return;
   }
 

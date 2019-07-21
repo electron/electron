@@ -228,7 +228,7 @@ describe('protocol module', () => {
         expect(() => callback({
           path: filePath,
           headers: { 'X-Great-Header': (42 as any) }
-        })).to.throw(Error, `Value of 'X-Great-Header' header has to be a string`)
+        })).to.throw(Error, `Value of 'X-Great-Header' header must be a string.`)
         done()
       }).then(() => {
         ajax(protocolName + '://fake-host')

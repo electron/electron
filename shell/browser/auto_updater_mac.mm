@@ -49,20 +49,20 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
     if (!opts.Get("url", &feed)) {
       args->ThrowError(
           "Expected options object to contain a 'url' string property in "
-          "setFeedUrl call");
+          "setFeedUrl call.");
       return;
     }
     opts.Get("headers", &requestHeaders);
     opts.Get("serverType", &serverType);
     if (serverType != "default" && serverType != "json") {
-      args->ThrowError("Expected serverType to be 'default' or 'json'");
+      args->ThrowTypeError("Invalid 'serverType' parameter provided.");
       return;
     }
   } else if (args->GetNext(&feed)) {
     args->GetNext(&requestHeaders);
   } else {
     args->ThrowError(
-        "Expected an options object with a 'url' property to be provided");
+        "Expected an options object with a 'url' property to be provided.");
     return;
   }
 

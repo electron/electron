@@ -171,11 +171,11 @@ describe('nativeImage module', () => {
     })
 
     it('throws on invalid arguments', () => {
-      expect(() => nativeImage.createFromBitmap(null, {})).to.throw('buffer must be a node Buffer')
-      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12], {})).to.throw('buffer must be a node Buffer')
-      expect(() => nativeImage.createFromBitmap(Buffer.from([]), {})).to.throw('width is required')
-      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1 })).to.throw('height is required')
-      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1, height: 1 })).to.throw('invalid buffer size')
+      expect(() => nativeImage.createFromBitmap(null, {})).to.throw('Buffer must be a Node.js Buffer.')
+      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12], {})).to.throw('Buffer must be a Node.js Buffer.')
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), {})).to.throw(`width' parameter is required.`)
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1 })).to.throw(`'height' parameter is required.`)
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1, height: 1 })).to.throw('Invalid buffer size.')
     })
   })
 
@@ -224,8 +224,8 @@ describe('nativeImage module', () => {
     })
 
     it('throws on invalid arguments', () => {
-      expect(() => nativeImage.createFromBuffer(null)).to.throw('buffer must be a node Buffer')
-      expect(() => nativeImage.createFromBuffer([12, 14, 124, 12])).to.throw('buffer must be a node Buffer')
+      expect(() => nativeImage.createFromBuffer(null)).to.throw('Buffer must be a Node.js Buffer.')
+      expect(() => nativeImage.createFromBuffer([12, 14, 124, 12])).to.throw('Buffer must be a Node.js Buffer.')
     })
   })
 

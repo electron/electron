@@ -57,7 +57,7 @@ bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
       // we only want to throw an error if a user has returned a non-boolean
       // value; this allows for client-side error handling should something in
       // the handler throw
-      args->ThrowError("Invalid conflict handler return type.");
+      args->ThrowTypeError("Invalid conflict handler return type.");
     }
   }
   return true;
@@ -103,11 +103,11 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
                            &authorizationCanceled)) {
       if (authorizationCanceled) {
         // User rejected the authorization request
-        args->ThrowError("User rejected the authorization request");
+        args->ThrowError("User rejected the authorization request.");
         return false;
       } else {
-        args->ThrowError(
-            "Failed to copy to applications directory even with authorization");
+        args->ThrowError("Failed to copy to applications directory even with "
+                         "authorization.");
         return false;
       }
     }

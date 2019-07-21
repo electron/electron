@@ -1592,12 +1592,12 @@ void WebContents::Print(mate::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("Invalid print settings specified");
+    args->ThrowError("Invalid print settings specified.");
     return;
   }
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError("Invalid optional callback provided");
+    args->ThrowTypeError("Invalid optional callback.");
     return;
   }
 
@@ -1755,7 +1755,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(
 void WebContents::AddWorkSpace(mate::Arguments* args,
                                const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("path cannot be empty");
+    args->ThrowError("'path' parameter can't be empty.");
     return;
   }
   DevToolsAddFileSystem(std::string(), path);
@@ -1764,7 +1764,7 @@ void WebContents::AddWorkSpace(mate::Arguments* args,
 void WebContents::RemoveWorkSpace(mate::Arguments* args,
                                   const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("path cannot be empty");
+    args->ThrowError("'path' parameter can't be empty.");
     return;
   }
   DevToolsRemoveFileSystem(path);
@@ -1817,7 +1817,7 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
 uint32_t WebContents::FindInPage(mate::Arguments* args) {
   base::string16 search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
-    args->ThrowError("Must provide a non-empty search content");
+    args->ThrowError("Non-empty search text parameter required.");
     return 0;
   }
 
@@ -2024,14 +2024,14 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
   // Error checking.
   if (icon.IsEmpty()) {
-    args->ThrowError("Must specify 'icon' option");
+    args->ThrowError("'icon' parameter is required.");
     return;
   }
 
 #if defined(OS_MACOSX)
   // NSWindow.dragImage requires a non-empty NSImage
   if (icon->image().IsEmpty()) {
-    args->ThrowError("Must specify non-empty 'icon' option");
+    args->ThrowError("Non-empty 'icon' parameter is required.");
     return;
   }
 #endif
@@ -2041,7 +2041,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
     base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    args->ThrowError("Must specify either 'file' or 'files' option");
+    args->ThrowError("Must specify either 'file' or 'files' parameter.");
   }
 }
 

@@ -203,7 +203,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
     mate::Arguments* args) {
   base::SystemMemoryInfoKB mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
-    args->ThrowError("Unable to retrieve system memory information");
+    args->ThrowError("Unable to retrieve system memory information.");
     return v8::Undefined(isolate);
   }
 

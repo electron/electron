@@ -237,7 +237,7 @@ v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
                             sizeof(void*))
       .ToLocalChecked();
 #else
-  args->ThrowError("Not implemented");
+  args->ThrowError("Not implemented.");
   return v8::Undefined(isolate);
 #endif
 }
@@ -404,7 +404,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
     v8::Local<v8::Value> buffer,
     const mate::Dictionary& options) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowError("buffer must be a node Buffer");
+    args->ThrowTypeError("Buffer must be a Node.js Buffer.");
     return mate::Handle<NativeImage>();
   }
 
@@ -413,12 +413,12 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
   double scale_factor = 1.;
 
   if (!options.Get("width", &width)) {
-    args->ThrowError("width is required");
+    args->ThrowError("'width' parameter is required.");
     return mate::Handle<NativeImage>();
   }
 
   if (!options.Get("height", &height)) {
-    args->ThrowError("height is required");
+    args->ThrowError("'height' parameter is required.");
     return mate::Handle<NativeImage>();
   }
 
@@ -426,7 +426,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
   auto size_bytes = info.computeMinByteSize();
 
   if (size_bytes != node::Buffer::Length(buffer)) {
-    args->ThrowError("invalid buffer size");
+    args->ThrowError("Invalid buffer size.");
     return mate::Handle<NativeImage>();
   }
 
@@ -451,7 +451,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args,
     v8::Local<v8::Value> buffer) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowError("buffer must be a node Buffer");
+    args->ThrowTypeError("Buffer must be a Node.js Buffer.");
     return mate::Handle<NativeImage>();
   }
 

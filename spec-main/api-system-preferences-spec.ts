@@ -53,7 +53,7 @@ describe('systemPreferences module', () => {
       for (const badDefault of badDefaults) {
         expect(() => {
           systemPreferences.registerDefaults(badDefault)
-        }).to.throw('Invalid userDefault data provided')
+        }).to.throw('Invalid userDefault data.')
       }
     })
   })

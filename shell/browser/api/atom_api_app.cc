@@ -471,7 +471,7 @@ void OnClientCertificateSelected(
 
   mate::Dictionary cert_data;
   if (!mate::ConvertFromV8(isolate, val, &cert_data)) {
-    args->ThrowError("Must pass valid certificate object.");
+    args->ThrowError("Valid certificate object parameter required.");
     return;
   }
 
@@ -850,7 +850,7 @@ void App::SetAppLogsPath(mate::Arguments* args) {
   base::FilePath custom_path;
   if (args->GetNext(&custom_path)) {
     if (!custom_path.IsAbsolute()) {
-      args->ThrowError("Path must be absolute");
+      args->ThrowError("Path must be absolute.");
       return;
     }
     base::PathService::Override(DIR_APP_LOGS, custom_path);
@@ -876,7 +876,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
       args->ThrowError("Failed to get '" + name +
                        "' path: setAppLogsPath() must be called first.");
     } else {
-      args->ThrowError("Failed to get '" + name + "' path");
+      args->ThrowError("Failed to get '" + name + "' path.");
     }
   }
 
@@ -887,7 +887,7 @@ void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("Path must be absolute");
+    args->ThrowError("Path must be absolute.");
     return;
   }
 
@@ -897,7 +897,7 @@ void App::SetPath(mate::Arguments* args,
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
-    args->ThrowError("Failed to set path");
+    args->ThrowError("Failed to set path.");
 }
 
 void App::SetDesktopName(const std::string& desktop_name) {
@@ -1030,7 +1030,7 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
     args->ThrowError(
         "app.disableHardwareAcceleration() can only be called "
-        "before app is ready");
+        "before app is ready.");
     return;
   }
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
@@ -1040,7 +1040,7 @@ void App::DisableDomainBlockingFor3DAPIs(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
     args->ThrowError(
         "app.disableDomainBlockingFor3DAPIs() can only be called "
-        "before app is ready");
+        "before app is ready.");
     return;
   }
   content::GpuDataManagerImpl::GetInstance()
@@ -1056,7 +1056,7 @@ void App::SetAccessibilitySupportEnabled(bool enabled, mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     args->ThrowError(
         "app.setAccessibilitySupportEnabled() can only be called "
-        "after app is ready");
+        "after app is ready.");
     return;
   }
 
@@ -1130,7 +1130,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
   bool delete_jump_list = val->IsNull();
   if (!delete_jump_list &&
       !mate::ConvertFromV8(args->isolate(), val, &categories)) {
-    args->ThrowError("Argument must be null or an array of categories");
+    args->ThrowTypeError("Argument must be null or an array of categories.");
     return JumpListResult::ARGUMENT_ERROR;
   }
 
@@ -1312,7 +1312,7 @@ void App::EnableSandbox(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
     args->ThrowError(
         "app.enableSandbox() can only be called "
-        "before app is ready");
+        "before app is ready.");
     return;
   }
 

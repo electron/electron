@@ -44,8 +44,8 @@ void BeforeStartInUI(base::WeakPtr<URLRequestAsyncAsarJob> job,
     if (headersDict) {
       for (const auto& iter : headersDict->DictItems()) {
         if (!iter.second.is_string()) {
-          args->ThrowError("Value of '" + iter.first +
-                           "' header has to be a string");
+          args->ThrowTypeError("Value of '" + iter.first +
+                               "' header must be a string.");
           return;
         }
       }

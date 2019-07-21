@@ -468,7 +468,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
   ElectronCertVerifierClient::CertVerifyProc proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
-    args->ThrowError("Must pass null or function");
+    args->ThrowTypeError("Must pass null or a function.");
     return;
   }
 
@@ -505,7 +505,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   }
   auto handler = std::make_unique<AtomPermissionManager::RequestHandler>();
   if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
-    args->ThrowError("Must pass null or function");
+    args->ThrowTypeError("Must pass null or a function.");
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
@@ -525,7 +525,7 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                         mate::Arguments* args) {
   AtomPermissionManager::CheckHandler handler;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
-    args->ThrowError("Must pass null or function");
+    args->ThrowTypeError("Must pass null or a function.");
     return;
   }
   auto* permission_manager = static_cast<AtomPermissionManager*>(
@@ -780,7 +780,7 @@ using electron::api::Session;
 v8::Local<v8::Value> FromPartition(const std::string& partition,
                                    mate::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
-    args->ThrowError("Session can only be received when app is ready");
+    args->ThrowError("Session can't be received until app is ready.");
     return v8::Null(args->isolate());
   }
   base::DictionaryValue options;

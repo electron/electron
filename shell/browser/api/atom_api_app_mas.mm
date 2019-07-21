@@ -46,7 +46,7 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
   }
 
   if (isStale) {
-    args->ThrowError("bookmarkDataIsStale - try recreating the bookmark");
+    args->ThrowError("bookmarkDataIsStale - try recreating the bookmark.");
   }
 
   if (error == nil && isStale == false) {

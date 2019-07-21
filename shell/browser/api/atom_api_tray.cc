@@ -66,7 +66,7 @@ Tray::~Tray() = default;
 mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
                                mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Cannot create Tray before app is ready");
+    args->ThrowError("Tray can't be created before app is ready.");
     return nullptr;
   }
   return new Tray(args->isolate(), args->GetThis(), image);
@@ -193,7 +193,7 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   options.Get("icon", &icon);
   base::string16 title, content;
   if (!options.Get("title", &title) || !options.Get("content", &content)) {
-    args->ThrowError("'title' and 'content' must be defined");
+    args->ThrowError("'title' and 'content' must be defined.");
     return;
   }
 

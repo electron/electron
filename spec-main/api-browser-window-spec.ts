@@ -190,7 +190,7 @@ describe('BrowserWindow module', () => {
       await new Promise(setImmediate)
       expect(() => {
         contents.getProcessId()
-      }).to.throw('Object has been destroyed')
+      }).to.throw('Object has been destroyed.')
     })
     it('should not crash when destroying windows with pending events', () => {
       const focusListener = () => {}
@@ -1136,7 +1136,7 @@ describe('BrowserWindow module', () => {
           frame: false
         })
         w.setWindowButtonVisibility(true)
-      }).to.throw('Not supported for this window')
+      }).to.throw('SetWindowButtonVisibility is not supported for this window.')
     })
   })
 

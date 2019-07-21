@@ -86,7 +86,8 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
                                  mate::Arguments* args) {
   std::vector<CustomScheme> custom_schemes;
   if (!mate::ConvertFromV8(args->isolate(), val, &custom_schemes)) {
-    args->ThrowError("Argument must be an array of custom schemes.");
+    args->ThrowTypeError(
+        "'schemes' parameter must be an array of custom schemes.");
     return;
   }
 
@@ -295,7 +296,7 @@ void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
   if (electron::Browser::Get()->is_ready()) {
     args->ThrowError(
         "protocol.registerSchemesAsPrivileged should be called before "
-        "app is ready");
+        "app is ready.");
     return;
   }
 

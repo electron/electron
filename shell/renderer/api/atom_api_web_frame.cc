@@ -312,7 +312,7 @@ void SetSpellCheckProvider(mate::Arguments* args,
   auto context = args->isolate()->GetCurrentContext();
   if (!provider->Has(context, mate::StringToV8(args->isolate(), "spellCheck"))
            .ToChecked()) {
-    args->ThrowError("\"spellCheck\" has to be defined");
+    args->ThrowError("\"spellCheck\" not defined.");
     return;
   }
 
@@ -445,7 +445,7 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
 
   if (!security_policy.empty() && origin_url.empty()) {
     args->ThrowError(
-        "If csp is specified, securityOrigin should also be specified");
+        "If csp is specified, securityOrigin should also be specified.");
     return;
   }
 
