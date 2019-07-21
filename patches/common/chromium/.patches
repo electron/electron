@@ -81,3 +81,4 @@ cross_site_document_resource_handler.patch
 frame_host_manager.patch
 crashpad_pid_check.patch
 chore_add_debounce_on_the_updatewebcontentsvisibility_method_to.patch
+fix_speculative_workaround_for_clipboard_failures.patch
