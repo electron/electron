@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Richard Townsend <Richard.Townsend@arm.com>
+Date: Sun, 21 Jul 2019 17:54:36 +0100
+Subject: fix: speculative workaround for clipboard failures
+
+
+diff --git a/remoting/host/clipboard_win.cc b/remoting/host/clipboard_win.cc
+index bcad28431bce60bae9b10f14ef890212993efd9b..95de872dfdfbf671106d8d4bc9a12dd330a8b395 100644
+--- a/remoting/host/clipboard_win.cc
++++ b/remoting/host/clipboard_win.cc
+@@ -43,7 +43,7 @@ class ScopedClipboard {
+   }
+
+   bool Init(HWND owner) {
+-    const int kMaxAttemptsToOpenClipboard = 5;
++    const int kMaxAttemptsToOpenClipboard = 30;
+     const base::TimeDelta kSleepTimeBetweenAttempts =
+         base::TimeDelta::FromMilliseconds(5);
+
