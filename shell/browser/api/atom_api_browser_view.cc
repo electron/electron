@@ -127,6 +127,10 @@ void BrowserView::SetBounds(const gfx::Rect& bounds) {
   view_->SetBounds(bounds);
 }
 
+gfx::Rect BrowserView::GetBounds() {
+  return view_->GetBounds();
+}
+
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
   view_->SetBackgroundColor(ParseHexColor(color_name));
 }
@@ -147,6 +151,7 @@ void BrowserView::BuildPrototype(v8::Isolate* isolate,
       .MakeDestroyable()
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
+      .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .SetProperty("id", &BrowserView::ID);

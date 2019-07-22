@@ -10,6 +10,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
 
 // Match view::Views behavior where the view sticks to the top-left origin.
 const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
@@ -199,6 +200,17 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   view.frame =
       NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
                  bounds.width(), bounds.height());
+}
+
+gfx::Rect NativeBrowserViewMac::GetBounds() {
+  NSView* view =
+      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  const int superview_height =
+      (view.superview) ? view.superview.frame.size.height : 0;
+  return gfx::Rect(
+      view.frame.origin.x,
+      superview_height - view.frame.origin.y - view.frame.size.height,
+      view.frame.size.width, view.frame.size.height);
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
