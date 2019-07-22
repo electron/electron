@@ -85,7 +85,7 @@ void OpenExternal(const GURL& url,
 bool MoveItemToTrash(const base::FilePath& full_path) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
-  // find the trash cmd
+  // find the trash method
   std::string trash;
   if (!env->GetVar(ELECTRON_TRASH, &trash)) {
     // Determine desktop environment and set accordingly.
