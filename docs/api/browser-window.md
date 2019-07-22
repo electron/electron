@@ -131,8 +131,7 @@ state is `hidden` in order to minimize power consumption.
 
 Process: [Main](../glossary.md#main-process)
 
-`BrowserWindow` is an
-[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
+`BrowserWindow` is an [EventEmitter][event-emitter].
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
@@ -1737,3 +1736,4 @@ removed in future Electron releases.
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

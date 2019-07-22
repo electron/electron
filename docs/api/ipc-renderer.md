@@ -4,8 +4,7 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
-The `ipcRenderer` module is an instance of the
-[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter) class. It provides a few
+The `ipcRenderer` module is an  [EventEmitter][event-emitter]. It provides a few
 methods so you can send synchronous and asynchronous messages from the render
 process (web page) to the main process. You can also receive replies from the
 main process.
@@ -128,3 +127,5 @@ the host page instead of the main process.
 
 The documentation for the `event` object passed to the `callback` can be found
 in the [`ipc-renderer-event`](structures/ipc-renderer-event.md) structure docs.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

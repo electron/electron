@@ -4,8 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The `ipcMain` module is an instance of the
-[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter) class. When used in the main
+The `ipcMain` module is an [Event Emitter][event-emitter]. When used in the main
 process, it handles asynchronous and synchronous messages sent from a renderer
 process (web page). Messages sent from a renderer will be emitted to this
 module.
@@ -146,3 +145,5 @@ in the [`ipc-main-event`](structures/ipc-main-event.md) structure docs.
 The documentation for the `event` object passed to `handle` callbacks can be
 found in the [`ipc-main-invoke-event`](structures/ipc-main-invoke-event.md)
 structure docs.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
