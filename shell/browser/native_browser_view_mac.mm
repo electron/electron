@@ -10,7 +10,6 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/mac/coordinate_conversion.h"
 
 // Match view::Views behavior where the view sticks to the top-left origin.
 const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
