@@ -998,9 +998,16 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   auto proxied_request = std::move(*factory_request);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
   *factory_request = mojo::MakeRequest(&target_factory_info);
-  new ProxyingURLLoaderFactory(protocol->intercept_handlers(),
-                               std::move(proxied_request),
-                               std::move(target_factory_info));
+
+  network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request;
+  if (header_client)
+    header_client_request = mojo::MakeRequest(header_client);
+
+  new ProxyingURLLoaderFactory(
+      protocol->intercept_handlers(), std::move(proxied_request),
+      std::move(target_factory_info), std::move(header_client_request));
+
+  *bypass_redirect_checks = true;
   return true;
 }
 
