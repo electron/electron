@@ -16,7 +16,6 @@
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"
-#define ELECTRON_DEFAULT_TRASH "gio"
 
 namespace {
 
@@ -94,43 +93,34 @@ void OpenExternal(const GURL& url,
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+
+  // find the trash cmd
   std::string trash;
-  if (getenv(ELECTRON_TRASH) != NULL) {
-    trash = getenv(ELECTRON_TRASH);
-  } else {
+  if (!env->GetVar(ELECTRON_TRASH, &trash)) {
     // Determine desktop environment and set accordingly.
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
-    base::nix::DesktopEnvironment desktop_env(
-        base::nix::GetDesktopEnvironment(env.get()));
+    const auto& desktop_env(base::nix::GetDesktopEnvironment(env.get()));
     if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
         desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
       trash = "kioclient5";
     } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
       trash = "kioclient";
-    } else {
-      trash = ELECTRON_DEFAULT_TRASH;
     }
   }
 
+  // build the invocation
   std::vector<std::string> argv;
-
-  if (trash.compare("kioclient5") == 0 || trash.compare("kioclient") == 0) {
-    argv.push_back(trash);
-    argv.push_back("move");
-    argv.push_back(full_path.value());
-    argv.push_back("trash:/");
-  } else if (trash.compare("trash-cli") == 0) {
-    argv.push_back("trash-put");
-    argv.push_back(full_path.value());
-  } else if (trash.compare("gvfs-trash") == 0) {
-    // retain support for deprecated gvfs-trash
-    argv.push_back("gvfs-trash");
-    argv.push_back(full_path.value());
+  const auto& filename = full_path.value();
+  if (trash == "kioclient5" || trash == "kioclient") {
+    argv = {trash, "move", filename, "trash:/"};
+  } else if (trash == "trash-cli") {
+    argv = {"trash-put", filename};
+  } else if (trash == "gvfs-trash") {
+    argv = {"gvfs-trash", filename};  // deprecated, but still exists
   } else {
-    argv.push_back(ELECTRON_DEFAULT_TRASH);
-    argv.push_back("trash");
-    argv.push_back(full_path.value());
+    argv = {"gio", "trash", filename};
   }
+
   return XDGUtilV(argv, true);
 }
 
