@@ -19,7 +19,7 @@
 
 namespace {
 
-bool XDGUtilV(const std::vector<std::string>& argv, const bool wait_for_exit) {
+bool XDGUtil(const std::vector<std::string>& argv, const bool wait_for_exit) {
   base::LaunchOptions options;
   options.allow_new_privs = true;
   // xdg-open can fall back on mailcap which eventually might plumb through
@@ -43,22 +43,12 @@ bool XDGUtilV(const std::vector<std::string>& argv, const bool wait_for_exit) {
   return true;
 }
 
-bool XDGUtil(const std::string& util,
-             const std::string& arg,
-             const bool wait_for_exit) {
-  std::vector<std::string> argv;
-  argv.push_back(util);
-  argv.push_back(arg);
-
-  return XDGUtilV(argv, wait_for_exit);
-}
-
 bool XDGOpen(const std::string& path, const bool wait_for_exit) {
-  return XDGUtil("xdg-open", path, wait_for_exit);
+  return XDGUtil({"xdg-open", path}, wait_for_exit);
 }
 
 bool XDGEmail(const std::string& email, const bool wait_for_exit) {
-  return XDGUtil("xdg-email", email, wait_for_exit);
+  return XDGUtil({"xdg-email", email}, wait_for_exit);
 }
 
 }  // namespace
@@ -121,7 +111,7 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
     argv = {"gio", "trash", filename};
   }
 
-  return XDGUtilV(argv, true);
+  return XDGUtil(argv, true);
 }
 
 void Beep() {
