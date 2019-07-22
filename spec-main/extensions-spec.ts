@@ -47,13 +47,27 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
   })
 
   describe('chrome.runtime', () => {
-    it('getManifest()', async () => {
+    let content: any
+    before(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
       const w = new BrowserWindow({show: false, webPreferences: { session: customSession }})
-      await w.loadURL(url)
-      const content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'))
-      expect(content).to.be.an('object').with.property('name', 'chrome-runtime')
+      try {
+        await w.loadURL(url)
+        content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'))
+        expect(content).to.be.an('object')
+      } finally {
+        w.destroy()
+      }
+    })
+    it('getManifest()', () => {
+      expect(content.manifest).to.be.an('object').with.property('name', 'chrome-runtime')
+    })
+    it('id', () => {
+      expect(content.id).to.be.a('string').with.lengthOf(32)
+    })
+    it('getURL()', () => {
+      expect(content.url).to.be.a('string').and.match(/^chrome-extension:\/\/.*main.js$/)
     })
   })
 })
