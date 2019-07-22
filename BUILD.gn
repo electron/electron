@@ -298,7 +298,6 @@ source_set("manifests") {
   deps = [
     "//electron/shell/common/api:mojo",
     "//printing/buildflags",
-    "//services/proxy_resolver/public/cpp:manifest",
     "//services/service_manager/public/cpp",
   ]
 
