@@ -111,7 +111,7 @@ index 887be86346242096f6fab5ee0df25e216b49d8d9..20a20816d0dd07097c3e14c9350138d4
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 136fa31726c75480aac62f778738e1a5e41c2c34..d3a5fbfb53ee8a4c067d2619ff84ec02ec726aae 100644
+index 7f61cb7c847bae88b50f2c32bbe9be6525a4c587..f059762b2c39c927b6bc6e40ad1c0641913082f2 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -20,6 +20,7 @@
@@ -130,7 +130,7 @@ index 136fa31726c75480aac62f778738e1a5e41c2c34..d3a5fbfb53ee8a4c067d2619ff84ec02
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -213,6 +215,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -219,6 +221,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -477,10 +477,10 @@ index 73ea1986b2140a3ffb87c5e23c7ab2174bac0a10..3ba3657ba12ec47cc3db3fec218496ff
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
 diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index cd8dd80230d199eb05c70710aa681c491ead1646..7b61f33156a4e182ee6ddffc267be798af335989 100644
+index 8898b9162a65e043e8b95237b8874e48ea71744e..a455df870ece25fc6e5e46688a1c6b5b396b841a 100644
 --- a/services/viz/privileged/interfaces/compositing/display_private.mojom
 +++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
-@@ -77,12 +77,14 @@ interface DisplayPrivate {
+@@ -79,12 +79,14 @@ interface DisplayPrivate {
  };
  
  interface DisplayClient {
@@ -508,7 +508,7 @@ index 58a7e221eaabd9e21196496d220c77babe07c56d..dd141b16eace2999380ed137b4adf1f3
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index daf24befb249423a65cfc5a15cceef716125cafe..afbefca00f9cdc4a6d6491660020b026dd073d36 100644
+index 5158731bd8512fcd2ee859b1e5eeff3a9a32ca9a..4d3592e939c45eec86cd4c7e328de247e9374419 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -23,6 +23,7 @@
@@ -519,7 +519,7 @@ index daf24befb249423a65cfc5a15cceef716125cafe..afbefca00f9cdc4a6d6491660020b026
  #include "components/viz/host/host_frame_sink_client.h"
  #include "services/viz/privileged/interfaces/compositing/vsync_parameter_observer.mojom-forward.h"
  #include "third_party/skia/include/core/SkColor.h"
-@@ -195,6 +196,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -194,6 +195,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual bool SyncTokensRequiredForDisplayCompositor() = 0;
  };
  
@@ -535,7 +535,7 @@ index daf24befb249423a65cfc5a15cceef716125cafe..afbefca00f9cdc4a6d6491660020b026
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -234,6 +244,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -233,6 +243,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -545,7 +545,7 @@ index daf24befb249423a65cfc5a15cceef716125cafe..afbefca00f9cdc4a6d6491660020b026
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -449,6 +462,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -448,6 +461,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    ui::ContextFactory* context_factory_;
    ui::ContextFactoryPrivate* context_factory_private_;
  
@@ -555,7 +555,7 @@ index daf24befb249423a65cfc5a15cceef716125cafe..afbefca00f9cdc4a6d6491660020b026
    Layer* root_layer_ = nullptr;
  
 diff --git a/ui/compositor/host/host_context_factory_private.cc b/ui/compositor/host/host_context_factory_private.cc
-index faf99a2caf21edbd82b0cb718d4f2762322f1d82..23f67579fe9e530a6d169479b8a61fd6b393a0e1 100644
+index 1c84de621781d0d7cf41866fc033b78881c5e972..112a1a6c2a0f24ee9ace05d7c38247b22fb4ed4c 100644
 --- a/ui/compositor/host/host_context_factory_private.cc
 +++ b/ui/compositor/host/host_context_factory_private.cc
 @@ -99,8 +99,12 @@ void HostContextFactoryPrivate::ConfigureCompositor(

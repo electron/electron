@@ -8,7 +8,7 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index 0d40acea7c2c69003c54cf3ae1e1d15adcb6deee..ba28c8f315b4b89a08659b45eaff485dcb65fc39 100644
+index 0726c4fbc873e40991262b2951557b7be169e624..7520514de6f56d84afee6c612584f0be1ec41227 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
 @@ -83,6 +83,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
@@ -153,7 +153,7 @@ index 8ca7df4cc21892d9769527df717ab5fd3945e9c7..dbaf878eaf5259697469e06d5ae15fbc
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index c6bc3bf3ea5fd936c8d14f07efbf2453da881342..08d0fa5c6dfe3ff46f206f7983d47e9c445c63da 100644
+index e1868a42fdec3e9f6f84d55cbd4b4c31323eeb34..971d7eab5bd5052204e5f2ec8662be3b91612ff0 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -356,6 +356,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
@@ -168,7 +168,7 @@ index c6bc3bf3ea5fd936c8d14f07efbf2453da881342..08d0fa5c6dfe3ff46f206f7983d47e9c
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index 5f57cd47108b85c0e884c1855af2c74b7fd02b9b..6b755ec0f9f76fa91bec975fdcf7094b4d43cea6 100644
+index 17b08b2749a93a3f4e8c0409fc292c76331bfbb3..bec401c170b68f416cefde4ad309b9c3aa255243 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -83,6 +83,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
@@ -180,7 +180,7 @@ index 5f57cd47108b85c0e884c1855af2c74b7fd02b9b..6b755ec0f9f76fa91bec975fdcf7094b
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a8b78c7673298d30985784ebefc293dc16d82e93..595494a3d7f55ae48055c9f1252d1bb3686504be 100644
+index 3418c997c17584f07706d8cf881485aa122f66ce..7fb86b5c8f2c29fc64f15dc4c9c88711094fe20b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
@@ -205,7 +205,7 @@ index a8b78c7673298d30985784ebefc293dc16d82e93..595494a3d7f55ae48055c9f1252d1bb3
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 9ac83c2eed23feb27442f4ad227f5103ab207a1c..f2120a5673345f6542e7d08bb213bd47373d01a7 100644
+index 05244616ff2f4c18991e23b91441e630e19322ed..fea97fa6f6ccc7becd6fd7d639d2f1db9ffc6635 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -209,8 +209,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(

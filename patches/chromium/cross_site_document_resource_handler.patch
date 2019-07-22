@@ -22,7 +22,7 @@ index 8bc3ce2071e686351f947d5a445bbf2659233abb..ec152cdaf37dc8bad2c80cf0da5679fc
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 595494a3d7f55ae48055c9f1252d1bb3686504be..b6bf5cfeb63ca9845c9ed0d7635418b367f65f79 100644
+index 7fb86b5c8f2c29fc64f15dc4c9c88711094fe20b..cf4820eb270bf33f0fffd3147e6dbe63d1d12743 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -71,6 +71,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
@@ -37,7 +37,7 @@ index 595494a3d7f55ae48055c9f1252d1bb3686504be..b6bf5cfeb63ca9845c9ed0d7635418b3
      const base::Location& from_here,
      const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f2120a5673345f6542e7d08bb213bd47373d01a7..ed5ca5e7b4e8319c002a9636426fa5f49be6c2e0 100644
+index fea97fa6f6ccc7becd6fd7d639d2f1db9ffc6635..32a19e7fbadd1e81b88e7d5cc625c8a22f4f7bf5 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -250,6 +250,9 @@ class CONTENT_EXPORT ContentBrowserClient {
