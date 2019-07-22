@@ -229,7 +229,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
               static_cast<int64_t>(first_byte_to_send) + info.offset);
 
     data_producer_ = std::make_unique<mojo::DataPipeProducer>(
-        std::move(pipe.producer_handle), nullptr);
+        std::move(pipe.producer_handle));
     data_producer_->Write(
         std::make_unique<mojo::FileDataSource>(std::move(file),
                                                total_bytes_to_send),
