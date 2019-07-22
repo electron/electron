@@ -89,7 +89,7 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
   std::string trash;
   if (!env->GetVar(ELECTRON_TRASH, &trash)) {
     // Determine desktop environment and set accordingly.
-    const auto& desktop_env(base::nix::GetDesktopEnvironment(env.get()));
+    const auto desktop_env(base::nix::GetDesktopEnvironment(env.get()));
     if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
         desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
       trash = "kioclient5";
