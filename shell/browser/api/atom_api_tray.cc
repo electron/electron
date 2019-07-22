@@ -66,7 +66,7 @@ Tray::~Tray() = default;
 mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
                                mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Tray can't be created before app is ready.");
+    args->ThrowError("Tray can only be created after app is ready.");
     return nullptr;
   }
   return new Tray(args->isolate(), args->GetThis(), image);

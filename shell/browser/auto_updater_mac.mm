@@ -61,8 +61,7 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
   } else if (args->GetNext(&feed)) {
     args->GetNext(&requestHeaders);
   } else {
-    args->ThrowError(
-        "Expected an options object with a 'url' property to be provided.");
+    args->ThrowError("Expected an options object with a 'url' property.");
     return;
   }
 

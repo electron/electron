@@ -83,7 +83,7 @@ Notification::~Notification() {
 // static
 mate::WrappableBase* Notification::New(mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("Notification can't be created before app is ready.");
+    args->ThrowError("Notification can only be created after app is ready.");
     return nullptr;
   }
   return new Notification(args->isolate(), args->GetThis(), args);

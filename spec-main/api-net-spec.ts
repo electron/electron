@@ -801,7 +801,7 @@ describe('net module', () => {
           url: 'https://test',
           redirect: 'custom'
         })
-      }).to.throw(`Redirect mode must be either 'follow', 'error' or 'manual'`)
+      }).to.throw(`Redirect mode must be either 'follow', 'error', or 'manual'.`)
     })
 
     it('should throw when calling getHeader without a name', () => {

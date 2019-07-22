@@ -780,7 +780,7 @@ using electron::api::Session;
 v8::Local<v8::Value> FromPartition(const std::string& partition,
                                    mate::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
-    args->ThrowError("Session can't be received until app is ready.");
+    args->ThrowError("Session can only be received after app is ready.");
     return v8::Null(args->isolate());
   }
   base::DictionaryValue options;

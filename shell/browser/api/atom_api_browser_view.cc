@@ -98,7 +98,7 @@ void BrowserView::WebContentsDestroyed() {
 // static
 mate::WrappableBase* BrowserView::New(mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError("BrowserView can't be created before app is ready.");
+    args->ThrowError("BrowserView can only be created after app is ready.");
     return nullptr;
   }
 
