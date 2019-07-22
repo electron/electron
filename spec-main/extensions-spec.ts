@@ -25,6 +25,10 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
 
   afterEach(closeAllWindows)
   it('loads an extension', async () => {
+    // NB. we have to use a persist: session (i.e. non-OTR) because the
+    // extension registry is redirected to the main session. so installing an
+    // extension in an in-memory session results in it being installed in the
+    // default session.
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'red-bg'))
     const w = new BrowserWindow({show: false, webPreferences: {session: customSession}})

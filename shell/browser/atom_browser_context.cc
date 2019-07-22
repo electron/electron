@@ -108,6 +108,8 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 
   content::BrowserContext::Initialize(this, path_);
 
+  BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
+
   // Initialize Pref Registry.
   InitPrefs();
 
@@ -118,8 +120,6 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   }
 
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
-
-  BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
