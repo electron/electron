@@ -73,7 +73,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnWindowScrollTouchBegin() override;
   void OnWindowScrollTouchEnd() override;
   void OnWindowSwipe(const std::string& direction) override;
-  void OnWindowRotateGesture(const float rotation) override;
+  void OnWindowRotateGesture(float rotation) override;
   void OnWindowSheetBegin() override;
   void OnWindowSheetEnd() override;
   void OnWindowEnterFullScreen() override;

@@ -513,7 +513,7 @@ void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
     observer.OnWindowSwipe(direction);
 }
 
-void NativeWindow::NotifyWindowRotateGesture(const float rotation) {
+void NativeWindow::NotifyWindowRotateGesture(float rotation) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowRotateGesture(rotation);
 }
