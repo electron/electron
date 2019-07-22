@@ -45,4 +45,15 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor')
     expect(bg).to.equal('')
   })
+
+  describe('chrome.runtime', () => {
+    it('getManifest()', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-runtime'))
+      const w = new BrowserWindow({show: false, webPreferences: { session: customSession }})
+      await w.loadURL(url)
+      const content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'))
+      expect(content).to.be.an('object').with.property('name', 'chrome-runtime')
+    })
+  })
 })
