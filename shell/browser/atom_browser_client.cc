@@ -982,7 +982,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool is_navigation,
     bool is_download,
     const url::Origin& request_initiator,
-    network::mojom::URLLoaderFactoryRequest* factory_request,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
@@ -992,16 +992,16 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   if (!protocol)
     return false;
 
-  auto proxied_request = std::move(*factory_request);
+  auto proxied_receiver = std::move(*factory_receiver);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
-  *factory_request = mojo::MakeRequest(&target_factory_info);
+  *factory_receiver = mojo::MakeRequest(&target_factory_info);
 
   network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request;
   if (header_client)
     header_client_request = mojo::MakeRequest(header_client);
 
   new ProxyingURLLoaderFactory(
-      protocol->intercept_handlers(), std::move(proxied_request),
+      protocol->intercept_handlers(), std::move(proxied_receiver),
       std::move(target_factory_info), std::move(header_client_request));
 
   *bypass_redirect_checks = true;
