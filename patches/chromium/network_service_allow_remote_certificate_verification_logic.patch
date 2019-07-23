@@ -163,7 +163,7 @@ index c0b660103389e532ca672ea40ecafa4de6111f82..36ccccbb32549c60ffcebac612a222fc
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 70229c74b2aab717d60bbfafa9877e100d8c681b..34f65ec3d6badc92dfd9b53ca088ade94662eb0a 100644
+index 75dc07c5e66c362d9e363ffc55644de84ab71411..6c021f1317df1cf3789af27adc08efe512004736 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -161,6 +161,17 @@ interface TrustedURLLoaderHeaderClient {
@@ -184,7 +184,7 @@ index 70229c74b2aab717d60bbfafa9877e100d8c681b..34f65ec3d6badc92dfd9b53ca088ade9
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -565,6 +576,9 @@ interface NetworkContext {
+@@ -576,6 +587,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(NetworkContextClient client);
  
