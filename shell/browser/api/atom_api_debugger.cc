@@ -98,7 +98,7 @@ void Debugger::Attach(mate::Arguments* args) {
   args->GetNext(&protocol_version);
 
   if (agent_host_) {
-    args->ThrowError("Debugger is already attached to the target.");
+    args->ThrowError("Debugger is already attached to the target webContents.");
     return;
   }
 

@@ -599,7 +599,8 @@ std::string SystemPreferences::GetMediaAccessStatus(
       return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
     }
   } else {
-    args->ThrowTypeError("Invalid media type provided.");
+    args->ThrowTypeError(
+        "Invalid media type provided: expected 'camera' or 'microphone'.");
     return std::string();
   }
 }
@@ -624,7 +625,8 @@ v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
       promise.Resolve(true);
     }
   } else {
-    promise.RejectWithErrorMessage("Invalid media type");
+    promise.RejectWithErrorMessage(
+        "Invalid media type: expected 'camera' or 'microphone'.");
   }
 
   return handle;
@@ -672,7 +674,8 @@ void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
     if (args->GetNext(&appearance)) {
       [[NSApplication sharedApplication] setAppearance:appearance];
     } else {
-      args->ThrowTypeError("Invalid app appearance type provided.");
+      args->ThrowTypeError(
+          "Invalid app appearance type provided: expected 'light' or 'dark'.");
     }
   }
 }

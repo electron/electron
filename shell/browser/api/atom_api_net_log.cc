@@ -116,7 +116,9 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   }
 
   if (net_log_exporter_) {
-    args->ThrowError("There is already a net log running.");
+    args->ThrowError(
+        "There is already a net log running. Only one net log may be running "
+        "at a time.");
     return v8::Local<v8::Promise>();
   }
 

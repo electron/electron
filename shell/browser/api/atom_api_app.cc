@@ -471,7 +471,9 @@ void OnClientCertificateSelected(
 
   mate::Dictionary cert_data;
   if (!mate::ConvertFromV8(isolate, val, &cert_data)) {
-    args->ThrowError("Valid certificate object parameter required.");
+    args->ThrowError(
+        "Valid certificate object parameter required in the "
+        "'select-client-certificate' event callback.");
     return;
   }
 
@@ -850,7 +852,7 @@ void App::SetAppLogsPath(mate::Arguments* args) {
   base::FilePath custom_path;
   if (args->GetNext(&custom_path)) {
     if (!custom_path.IsAbsolute()) {
-      args->ThrowError("Path must be absolute.");
+      args->ThrowError("Path provided to setAppLogsPath must be absolute.");
       return;
     }
     base::PathService::Override(DIR_APP_LOGS, custom_path);
@@ -887,7 +889,7 @@ void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("Path must be absolute.");
+    args->ThrowError("Path provided to setPath must be absolute.");
     return;
   }
 
@@ -1130,7 +1132,9 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
   bool delete_jump_list = val->IsNull();
   if (!delete_jump_list &&
       !mate::ConvertFromV8(args->isolate(), val, &categories)) {
-    args->ThrowTypeError("Argument must be null or an array of categories.");
+    args->ThrowTypeError(
+        "First argument provided to setJumpList must be null or an array of "
+        "categories.");
     return JumpListResult::ARGUMENT_ERROR;
   }
 

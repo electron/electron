@@ -17,7 +17,7 @@ void App::SetAppLogsPath(mate::Arguments* args) {
   base::FilePath custom_path;
   if (args->GetNext(&custom_path)) {
     if (!custom_path.IsAbsolute()) {
-      args->ThrowError("Path must be absolute.");
+      args->ThrowError("Path provided to setAppLogsPath must be absolute.");
       return;
     }
     base::PathService::Override(DIR_APP_LOGS, custom_path);
