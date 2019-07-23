@@ -929,7 +929,8 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('<webview>.clearHistory()', () => {
+  // FIXME: https://github.com/electron/electron/issues/19397
+  xdescribe('<webview>.clearHistory()', () => {
     it('should clear the navigation history', async () => {
       const message = waitForEvent(webview, 'ipc-message')
       await loadWebView(webview, {
