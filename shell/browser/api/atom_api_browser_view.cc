@@ -102,15 +102,8 @@ mate::WrappableBase* BrowserView::New(mate::Arguments* args) {
     return nullptr;
   }
 
-  if (args->Length() > 1) {
-    args->ThrowError("Too many arguments");
-    return nullptr;
-  }
-
-  mate::Dictionary options;
-  if (!(args->Length() == 1 && args->GetNext(&options))) {
-    options = mate::Dictionary::CreateEmpty(args->isolate());
-  }
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&options);
 
   return new BrowserView(args->isolate(), args->GetThis(), options);
 }
