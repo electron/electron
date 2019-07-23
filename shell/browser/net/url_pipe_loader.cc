@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "mojo/public/cpp/system/string_data_source.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
 namespace electron {
@@ -67,8 +68,7 @@ void URLPipeLoader::OnResponseStarted(
     return;
   }
 
-  producer_ =
-      std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+  producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
   client_->OnReceiveResponse(response_head);
   client_->OnStartLoadingResponseBody(std::move(consumer));
@@ -84,9 +84,9 @@ void URLPipeLoader::OnWrite(base::OnceClosure resume, MojoResult result) {
 void URLPipeLoader::OnDataReceived(base::StringPiece string_piece,
                                    base::OnceClosure resume) {
   producer_->Write(
-      string_piece,
-      mojo::StringDataPipeProducer::AsyncWritingMode::
-          STRING_STAYS_VALID_UNTIL_COMPLETION,
+      std::make_unique<mojo::StringDataSource>(
+          string_piece, mojo::StringDataSource::AsyncWritingMode::
+                            STRING_STAYS_VALID_UNTIL_COMPLETION),
       base::BindOnce(&URLPipeLoader::OnWrite, weak_factory_.GetWeakPtr(),
                      std::move(resume)));
 }

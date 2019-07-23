@@ -11,7 +11,8 @@
 #include "base/guid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/system/string_data_pipe_producer.h"
+#include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
@@ -141,7 +142,7 @@ network::ResourceResponseHead ToResponseHead(const mate::Dictionary& dict) {
 struct WriteData {
   network::mojom::URLLoaderClientPtr client;
   std::string data;
-  std::unique_ptr<mojo::StringDataPipeProducer> producer;
+  std::unique_ptr<mojo::DataPipeProducer> producer;
 };
 
 void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
@@ -469,13 +470,14 @@ void AtomURLLoaderFactory::SendContents(
   write_data->client = std::move(client);
   write_data->data = std::move(data);
   write_data->producer =
-      std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+      std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
   base::StringPiece string_piece(write_data->data);
-  write_data->producer->Write(string_piece,
-                              mojo::StringDataPipeProducer::AsyncWritingMode::
-                                  STRING_STAYS_VALID_UNTIL_COMPLETION,
-                              base::BindOnce(OnWrite, std::move(write_data)));
+  write_data->producer->Write(
+      std::make_unique<mojo::StringDataSource>(
+          string_piece, mojo::StringDataSource::AsyncWritingMode::
+                            STRING_STAYS_VALID_UNTIL_COMPLETION),
+      base::BindOnce(OnWrite, std::move(write_data)));
 }
 
 }  // namespace electron
