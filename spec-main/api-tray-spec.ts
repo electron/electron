@@ -12,17 +12,30 @@ describe('tray module', () => {
     tray = null as any
   })
 
-  describe('tray.setContextMenu', () => {
-    afterEach(() => {
+  describe('tray get/set ignoreDoubleClickEvents', () => {
+    before(function () {
+      if (process.platform !== 'darwin') this.skip()
+    })
+
+    it('returns false by default', () => {
+      const ignored = tray.getIgnoreDoubleClickEvents()
+      expect(ignored).to.be.false
+    })
+
+    it('can be set to true', () => {
+      tray.setIgnoreDoubleClickEvents(true)
+
+      const ignored = tray.getIgnoreDoubleClickEvents()
+      expect(ignored).to.be.true
+    })
+  })
+
+  describe('tray.setContextMenu(menu)', () => {
+    it ('accepts both null and Menu as parameters', () => {
+      expect(() => { tray.setContextMenu(new Menu()) }).to.not.throw()
+      expect(() => { tray.setContextMenu(null) }).to.not.throw()
+
       tray.destroy()
-    })
-
-    it('accepts menu instance', () => {
-      tray.setContextMenu(new Menu())
-    })
-
-    it('accepts null', () => {
-      tray.setContextMenu(null)
     })
   })
 
@@ -35,26 +48,33 @@ describe('tray module', () => {
     })
   })
 
-  describe('tray.popUpContextMenu', () => {
-    afterEach(() => {
-      tray.destroy()
-    })
-
-    before(function () {
+  describe('tray.popUpContextMenu()', () => {
+    it('can be called when menu is showing', function (done) {
       if (process.platform !== 'win32') this.skip()
-    })
 
-    it('can be called when menu is showing', (done) => {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
       setTimeout(() => {
         tray.popUpContextMenu()
         done()
       })
       tray.popUpContextMenu()
+
+      tray.destroy()
     })
   })
 
-  describe('tray.setImage', () => {
+  describe('tray.getBounds()', () => {
+    afterEach(() => { tray.destroy() })
+
+    it ('returns a bounds object', function () {
+      if (process.platform === 'linux') this.skip()
+
+      const bounds = tray.getBounds()
+      expect(bounds).to.be.an('object').and.to.have.all.keys('x', 'y', 'width', 'height');
+    })
+  })
+
+  describe('tray.setImage(image)', () => {
     it('accepts empty image', () => {
       tray.setImage(nativeImage.createEmpty())
 
@@ -62,7 +82,7 @@ describe('tray module', () => {
     })
   })
 
-  describe('tray.setPressedImage', () => {
+  describe('tray.setPressedImage(image)', () => {
     it('accepts empty image', () => {
       tray.setPressedImage(nativeImage.createEmpty())
 
@@ -70,14 +90,12 @@ describe('tray module', () => {
     })
   })
 
-  describe('tray title get/set', () => {
+  describe('tray get/set title', () => {
     before(function () {
       if (process.platform !== 'darwin') this.skip()
     })
 
-    afterEach(() => {
-      tray.destroy()
-    })
+    afterEach(() => { tray.destroy() })
 
     it('sets/gets non-empty title', () => {
       const title = 'Hello World!'
