@@ -137,6 +137,12 @@ Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper
 Electron.app/Contents/Frameworks/Electron Helper.app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/MacOS/Electron Helper (GPU)
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/PkgInfo
 Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/
 Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/
 Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/Info.plist
