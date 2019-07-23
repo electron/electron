@@ -113,12 +113,15 @@ int NodeMain(int argc, char* argv[]) {
 
     node_debugger.Stop();
     exit_code = node::EmitExit(env);
+    env->set_can_call_into_js(false);
     node::RunAtExit(env);
-    gin_env.platform()->DrainTasks(env->isolate());
-    gin_env.platform()->CancelPendingDelayedTasks(env->isolate());
-    gin_env.platform()->UnregisterIsolate(env->isolate());
 
+    v8::Isolate* isolate = env->isolate();
     node::FreeEnvironment(env);
+
+    gin_env.platform()->DrainTasks(isolate);
+    gin_env.platform()->CancelPendingDelayedTasks(isolate);
+    gin_env.platform()->UnregisterIsolate(isolate);
   }
 
   // According to "src/gin/shell/gin_main.cc":
