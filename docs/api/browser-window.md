@@ -209,8 +209,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
-  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md).
-    Default is `false`.
+  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md##transparent-window).
+    Default is `false`. On Windows, does not work unless the window is frameless.
   * `type` String (optional) - The type of window, default is normal window. See more about
     this below.
   * `titleBarStyle` String (optional) - The style of window title bar.
