@@ -1,26 +1,19 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+import { expect } from 'chai'
+import { BrowserWindow, globalShortcut, Menu, MenuItem } from 'electron'
+import { sortMenuItems } from '../lib/browser/api/menu-utils'
+import { closeWindow } from './window-helpers'
 
-const { ipcRenderer, remote } = require('electron')
-const { BrowserWindow, globalShortcut, Menu, MenuItem } = remote
-const { sortMenuItems } = require('../lib/browser/api/menu-utils')
-const { closeWindow } = require('./window-helpers')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const isCi = remote.getGlobal('isCi')
-
-describe('Menu module', () => {
+describe('Menu module', function () {
+  this.timeout(5000)
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'text',
           extra: 'field'
-        }
+        } as MenuItem | Record<string, any>
       ])
-      expect(menu.items[0].extra).to.equal('field')
+      expect((menu.items[0] as any).extra).to.equal('field')
     })
 
     it('should be able to accept only MenuItems', () => {
@@ -37,12 +30,12 @@ describe('Menu module', () => {
         {
           label: 'one',
           submenu: [
-            new MenuItem({ label: 'two' })
+            new MenuItem({ label: 'two' }) as any
           ]
         }
       ])
       expect(menu.items[0].label).to.equal('one')
-      expect(menu.items[0].submenu.items[0].label).to.equal('two')
+      expect(menu.items[0].submenu!.items[0].label).to.equal('two')
     })
 
     it('should be able to accept MenuItems and plain objects', () => {
@@ -56,8 +49,9 @@ describe('Menu module', () => {
 
     it('does not modify the specified template', () => {
       const template = [{ label: 'text', submenu: [{ label: 'sub' }] }]
-      const result = ipcRenderer.sendSync('eval', `const template = [{label: 'text', submenu: [{label: 'sub'}]}]\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
-      expect(result).to.deep.equal(template)
+      const templateCopy = JSON.parse(JSON.stringify(template))
+      Menu.buildFromTemplate(template)
+      expect(template).to.deep.equal(templateCopy)
     })
 
     it('does not throw exceptions for undefined/null values', () => {
@@ -69,7 +63,7 @@ describe('Menu module', () => {
           },
           {
             label: 'text again',
-            accelerator: null
+            accelerator: null as any
           }
         ])
       }).to.not.throw()
@@ -77,7 +71,7 @@ describe('Menu module', () => {
 
     it('does throw exceptions for empty objects and null values', () => {
       expect(() => {
-        Menu.buildFromTemplate([{}, null])
+        Menu.buildFromTemplate([{}, null as any])
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
     })
 
@@ -88,7 +82,7 @@ describe('Menu module', () => {
     })
     it('does throw exception for undefined', () => {
       expect(() => {
-        Menu.buildFromTemplate([undefined])
+        Menu.buildFromTemplate([undefined as any])
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
     })
 
@@ -665,7 +659,7 @@ describe('Menu module', () => {
         }
       ])
       const fsc = menu.getMenuItemById('fullScreen')
-      expect(menu.items[0].submenu.items[0]).to.equal(fsc)
+      expect(menu.items[0].submenu!.items[0]).to.equal(fsc)
     })
 
     it('should return the separator with the given id', () => {
@@ -744,8 +738,8 @@ describe('Menu module', () => {
   })
 
   describe('Menu.popup', () => {
-    let w = null
-    let menu
+    let w: BrowserWindow
+    let menu: Menu
 
     beforeEach(() => {
       w = new BrowserWindow({ show: false, width: 200, height: 200 })
@@ -756,15 +750,16 @@ describe('Menu module', () => {
       ])
     })
 
-    afterEach(() => {
+    afterEach(async () => {
       menu.closePopup()
       menu.closePopup(w)
-      return closeWindow(w).then(() => { w = null })
+      await closeWindow(w)
+      w = null as unknown as BrowserWindow
     })
 
     it('throws an error if options is not an object', () => {
       expect(() => {
-        menu.popup('this is a string, not an object')
+        menu.popup('this is a string, not an object' as any)
       }).to.throw(/Options must be an object/)
     })
 
@@ -782,19 +777,22 @@ describe('Menu module', () => {
     it('should emit menu-will-close event', (done) => {
       menu.on('menu-will-close', () => { done() })
       menu.popup({ window: w })
-      menu.closePopup()
+      // https://github.com/electron/electron/issues/19411
+      setTimeout(() => {
+        menu.closePopup()
+      })
     })
 
     it('returns immediately', () => {
       const input = { window: w, x: 100, y: 101 }
-      const output = menu.popup(input)
+      const output = menu.popup(input) as unknown as {x: number, y: number, browserWindow: BrowserWindow}
       expect(output.x).to.equal(input.x)
       expect(output.y).to.equal(input.y)
       expect(output.browserWindow).to.equal(input.window)
     })
 
     it('works without a given BrowserWindow and options', () => {
-      const { browserWindow, x, y } = menu.popup({ x: 100, y: 101 })
+      const { browserWindow, x, y } = menu.popup({ x: 100, y: 101 }) as unknown as {x: number, y: number, browserWindow: BrowserWindow}
 
       expect(browserWindow.constructor.name).to.equal('BrowserWindow')
       expect(x).to.equal(100)
@@ -807,16 +805,22 @@ describe('Menu module', () => {
         x: 100,
         y: 101,
         callback: () => done()
-      })
+      }) as unknown as {x: number, y: number}
 
       expect(x).to.equal(100)
       expect(y).to.equal(101)
-      menu.closePopup()
+      // https://github.com/electron/electron/issues/19411
+      setTimeout(() => {
+        menu.closePopup()
+      })
     })
 
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
       menu.popup({ window: w, callback: () => done() })
-      menu.closePopup()
+      // https://github.com/electron/electron/issues/19411
+      setTimeout(() => {
+        menu.closePopup()
+      })
     })
   })
 
@@ -828,17 +832,17 @@ describe('Menu module', () => {
       ])
 
       Menu.setApplicationMenu(menu)
-      expect(Menu.getApplicationMenu()).to.not.be.null()
+      expect(Menu.getApplicationMenu()).to.not.be.null('application menu')
     })
 
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null)
-      expect(Menu.getApplicationMenu()).to.be.null()
+      expect(Menu.getApplicationMenu()).to.be.null('application menu')
     })
   })
 
   describe('menu accelerators', async () => {
-    const sendRobotjsKey = (key, modifiers = [], delay = 500) => {
+    const sendRobotjsKey = (key: string, modifiers: string | string[] = [], delay = 500) => {
       return new Promise((resolve, reject) => {
         try {
           require('robotjs').keyTap(key, modifiers)
@@ -853,7 +857,7 @@ describe('Menu module', () => {
 
     before(async function () {
       // --ci flag breaks accelerator and robotjs interaction
-      if (isCi) {
+      if (isCI) {
         this.skip()
       }
 
@@ -901,7 +905,7 @@ describe('Menu module', () => {
         }
       ])
       Menu.setApplicationMenu(menu)
-      expect(Menu.getApplicationMenu()).to.not.be.null()
+      expect(Menu.getApplicationMenu()).to.not.be.null('application menu')
       await sendRobotjsKey('t')
       expect(hasBeenClicked).to.equal(true)
     })
@@ -924,7 +928,7 @@ describe('Menu module', () => {
         }
       ])
       Menu.setApplicationMenu(menu)
-      expect(Menu.getApplicationMenu()).to.not.be.null()
+      expect(Menu.getApplicationMenu()).to.not.be.null('application menu')
       await sendRobotjsKey('t', 'shift')
       expect(hasBeenClicked).to.equal(false)
     })
