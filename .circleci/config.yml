@@ -936,7 +936,9 @@ steps-test-node: &steps-test-node
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          node electron/script/node-spec-runner.js
+          node electron/script/node-spec-runner.js junit
+    - store_test_results:
+        path: src/junit
 
 chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
