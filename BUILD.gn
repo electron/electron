@@ -337,7 +337,7 @@ templated_file("electron_version_header") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
-static_library("electron_lib") {
+source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
