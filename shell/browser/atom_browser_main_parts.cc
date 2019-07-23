@@ -207,35 +207,6 @@ int X11EmptyIOErrorHandler(Display* d) {
 
 }  // namespace
 
-void AtomBrowserMainParts::InitializeFeatureList() {
-  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  auto enable_features =
-      cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
-  auto disable_features =
-      cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
-  // Disable creation of spare renderer process with site-per-process mode,
-  // it interferes with our process preference tracking for non sandboxed mode.
-  // Can be reenabled when our site instance policy is aligned with chromium
-  // when node integration is enabled.
-  disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name +
-      std::string(",") + network::features::kNetworkService.name;
-  auto feature_list = std::make_unique<base::FeatureList>();
-  feature_list->InitializeFromCommandLine(enable_features, disable_features);
-  base::FeatureList::SetInstance(std::move(feature_list));
-}
-
-#if !defined(OS_MACOSX)
-void AtomBrowserMainParts::OverrideAppLogsPath() {
-  base::FilePath path;
-  if (base::PathService::Get(DIR_APP_DATA, &path)) {
-    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    base::PathService::Override(DIR_APP_LOGS, path);
-  }
-}
-#endif
-
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
