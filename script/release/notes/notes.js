@@ -329,7 +329,7 @@ const getPullRequest = async (number, owner, repo) => {
 }
 
 const getComments = async (number, owner, repo) => {
-  const name = `${owner}-${repo}-pull-${number}-comments`
+  const name = `${owner}-${repo}-issue-${number}-comments`
   return checkCache(name, async () => {
     return runRetryable(octokit.issues.listComments({
       number,
