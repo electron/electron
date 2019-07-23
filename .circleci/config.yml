@@ -553,8 +553,8 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          npm install
-          npm run lint
+          npx yarn@1.15.2 install --frozen-lockfile
+          npx yarn@1.15.2 lint
 
 steps-checkout: &steps-checkout
   steps:
