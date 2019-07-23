@@ -511,12 +511,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
         program != plugin_child_path) {
       child_path = content::ChildProcessHost::GetChildPath(
           content::ChildProcessHost::CHILD_NORMAL);
-      CHECK(program == child_path)
+      CHECK_EQ(program, child_path)
           << "Aborted from launching unexpected helper executable";
     }
 #else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
-    CHECK(program == child_path);
+    CHECK_EQ(program, child_path);
 #endif
   }
 
