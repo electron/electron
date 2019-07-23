@@ -238,6 +238,7 @@
   "async-hooks/test-signalwrap",
   "async-hooks/test-statwatcher",
   "async-hooks/test-timers.setInterval",
+  "async-hooks/test-late-hook-enable",
   "es-module/test-esm-cjs-main",
   "es-module/test-esm-json-cache",
   "es-module/test-esm-snapshot",
@@ -326,5 +327,9 @@
   "pseudo-tty/test-set-raw-mode-reset-signal",
   "pseudo-tty/test-tty-color-support",
   "pseudo-tty/test-tty-window-size",
-  "pseudo-tty/test-tty-wrap"
+  "pseudo-tty/test-tty-wrap",
+  "parallel/test-cluster-master-kill",
+  "parallel/test-cluster-master-error",
+  "sequential/test-timers-block-eventloop",
+  "sequential/test-timers-set-interval-excludes-callback-duration"
 ]
