@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { dialog, BrowserWindow } from 'electron'
-import { closeAllWindows } from './window-helpers';
+import { closeAllWindows } from './window-helpers'
+import { ifit } from './spec-helpers'
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
     afterEach(closeAllWindows)
-    it('should not throw for valid cases', () => {
+    ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         dialog.showOpenDialog({ title: 'i am title' })
       }).to.not.throw()
@@ -41,7 +42,7 @@ describe('dialog module', () => {
 
   describe('showSaveDialog', () => {
     afterEach(closeAllWindows)
-    it('should not throw for valid cases', () => {
+    ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         dialog.showSaveDialog({ title: 'i am title' })
       }).to.not.throw()
@@ -79,13 +80,13 @@ describe('dialog module', () => {
     afterEach(closeAllWindows);
 
     // parentless message boxes are synchronous on macOS
-    (process.platform === 'darwin' ? it.skip : it)('should not throw for a parentless message box', () => {
+    ifit(process.platform !== 'darwin')('should not throw for a parentless message box', () => {
       expect(() => {
         dialog.showMessageBox({ message: 'i am message' })
       }).to.not.throw()
     })
 
-    it('should not throw for valid cases', () => {
+    ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         const w = new BrowserWindow()
         dialog.showMessageBox(w, { message: 'i am message' })
