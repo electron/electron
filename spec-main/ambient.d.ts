@@ -12,4 +12,8 @@ declare namespace Electron {
   interface MenuItem {
     getDefaultRoleAccelerator(): Accelerator | undefined;
   }
+
+  interface WebContents {
+    getOwnerBrowserWindow(): BrowserWindow;
+  }
 }
