@@ -614,6 +614,19 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
+#### Event: 'rotate-gesture' _macOS_
+
+Returns:
+
+* `event` Event
+* `rotation` Float
+
+Emitted on trackpad rotation gesture. Continually emitted until rotation gesture is
+ended. The `rotation` value on each emission is the angle in degrees rotated since
+the last emission. The last emitted event upon a rotation gesture will always be of
+value `0`. Counter-clockwise rotation values are positive, while clockwise ones are
+negative.
+
 #### Event: 'sheet-begin' _macOS_
 
 Emitted when the window opens a sheet.

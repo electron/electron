@@ -246,6 +246,10 @@ void TopLevelWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
 
+void TopLevelWindow::OnWindowRotateGesture(float rotation) {
+  Emit("rotate-gesture", rotation);
+}
+
 void TopLevelWindow::OnWindowSheetBegin() {
   Emit("sheet-begin");
 }
