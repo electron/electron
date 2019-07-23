@@ -352,8 +352,8 @@ void AtomBrowserContext::SetCorsOriginAccessListForOrigin(
     std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
     std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
     base::OnceClosure closure) {
-  // This method is called for Extension supports, but tests do not need to
-  // support exceptional CORS handling.
+  // TODO(nornagon): actually set the CORS access lists. This is called from
+  // extensions/browser/renderer_startup_helper.cc.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(closure));
 }
 

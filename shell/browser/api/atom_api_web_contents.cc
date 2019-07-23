@@ -41,6 +41,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/converter.h"
@@ -57,7 +58,6 @@
 #include "shell/browser/atom_navigation_throttle.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
-#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #include "shell/browser/lib/bluetooth_chooser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/atom_network_delegate.h"
@@ -111,6 +111,10 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #endif
 
 namespace mate {
@@ -460,8 +464,10 @@ void WebContents::InitWithSessionAndOptions(
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
   SecurityStateTabHelper::CreateForWebContents(web_contents());
   InitZoomController(web_contents(), options);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
       web_contents());
+#endif
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
