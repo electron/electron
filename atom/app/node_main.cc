@@ -47,15 +47,6 @@ int NodeMain(int argc, char* argv[]) {
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    gin::V8Initializer::LoadV8Snapshot(
-        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
-    gin::V8Initializer::LoadV8Natives();
-
-    // V8 requires a task scheduler apparently
-    base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
-
-    // Initialize gin::IsolateHolder.
-    JavascriptEnvironment gin_env(loop);
 #if defined(_WIN64)
     crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
 #endif
@@ -66,6 +57,16 @@ int NodeMain(int argc, char* argv[]) {
     int exec_argc;
     const char** exec_argv;
     node::Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
+
+    gin::V8Initializer::LoadV8Snapshot(
+        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
+    gin::V8Initializer::LoadV8Natives();
+
+    // V8 requires a task scheduler apparently
+    base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
+
+    // Initialize gin::IsolateHolder.
+    JavascriptEnvironment gin_env(loop);
 
     node::Environment* env = node::CreateEnvironment(
         node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform()),
@@ -112,12 +113,15 @@ int NodeMain(int argc, char* argv[]) {
 
     node_debugger.Stop();
     exit_code = node::EmitExit(env);
+    env->set_can_call_into_js(false);
     node::RunAtExit(env);
-    gin_env.platform()->DrainTasks(env->isolate());
-    gin_env.platform()->CancelPendingDelayedTasks(env->isolate());
-    gin_env.platform()->UnregisterIsolate(env->isolate());
 
+    v8::Isolate* isolate = env->isolate();
     node::FreeEnvironment(env);
+
+    gin_env.platform()->DrainTasks(isolate);
+    gin_env.platform()->CancelPendingDelayedTasks(isolate);
+    gin_env.platform()->UnregisterIsolate(isolate);
   }
 
   // According to "src/gin/shell/gin_main.cc":

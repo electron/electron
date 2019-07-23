@@ -390,6 +390,7 @@ describe('node feature', () => {
             const connection = new WebSocket(socketMatch[0])
             connection.onopen = () => {
               child.send('plz-quit')
+              connection.close()
               done()
             }
           }
