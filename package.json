@@ -48,6 +48,7 @@
     "shx": "^0.3.2",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
+    "tap-xunit": "^2.4.1",
     "temp": "^0.8.3",
     "timers-browserify": "1.4.2",
     "ts-loader": "^6.0.2",
