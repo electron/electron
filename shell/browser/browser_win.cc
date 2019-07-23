@@ -22,6 +22,7 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "electron/electron_version.h"
+#include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
@@ -367,6 +368,20 @@ void Browser::ShowEmojiPanel() {
   input[3].ki.wVk = ui::WindowsKeyCodeForKeyboardCode(ui::VKEY_OEM_PERIOD);
   input[3].ki.dwFlags |= KEYEVENTF_KEYUP;
   ::SendInput(4, input, sizeof(INPUT));
+}
+
+void Browser::ShowAboutPanel() {
+  electron::MessageBoxSettings settings = {};
+  settings.title = "About";
+  settings.message = "Testing 123";
+  settings.detail = "Detail?";
+  settings.checkbox_label = "checkbox label";
+  electron::ShowMessageBoxSync(settings);
+  // const auto& opts = about_panel_options_;
+}
+
+void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+  options.Clone();
 }
 
 }  // namespace electron
