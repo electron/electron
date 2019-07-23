@@ -625,28 +625,17 @@ const getNotes = async (fromRef, toRef, newVersion) => {
 }
 
 const removeSupercededChromiumUpdates = (commits) => {
-  const chromiumRegex = /^Updated Chromium to (\d+)\.(\d+)\.(\d+)\.(\d+)/
-
-  // separate update commits from the rest.
-  const filteredCommits = []
-  const updateCommits = []
-  for (const commit of commits) {
-    const note = commit.note || commit.subject
-    const match = note.match(chromiumRegex)
-    if (!match) {
-      filteredCommits.push(commit)
-    } else {
-      updateCommits.push(commit)
-    }
-  }
+  const chromiumRegex = /^Updated Chromium to \d+\.\d+\.\d+\.\d+/
+  const updates = commits.filter(commit => (commit.note || commit.subject).match(chromiumRegex))
+  const keepers = commits.filter(commit => !updates.includes(commit))
 
   // keep the newest update.
-  if (updateCommits.length) {
-    updateCommits.sort((a, b) => a.originalPr.number - b.originalPr.number)
-    filteredCommits.push(updateCommits.pop())
+  if (updates.length) {
+    updates.sort((a, b) => a.originalPr.number - b.originalPr.number)
+    keepers.push(updates.pop())
   }
 
-  return filteredCommits
+  return keepers
 }
 
 /***
