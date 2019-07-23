@@ -1,10 +1,11 @@
 import { expect } from 'chai'
-import { session, BrowserWindow } from 'electron'
+import { session, BrowserWindow, ipcMain } from 'electron'
 import { closeAllWindows } from './window-helpers'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import * as path from 'path'
 import { ifdescribe } from './spec-helpers'
+import { emittedOnce } from './events-helpers'
 
 const fixtures = path.join(__dirname, 'fixtures')
 
@@ -68,6 +69,22 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     })
     it('getURL()', () => {
       expect(content.url).to.be.a('string').and.match(/^chrome-extension:\/\/.*main.js$/)
+    })
+  })
+
+  describe('chrome.storage', () => {
+    it('stores and retrieves a key', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      (customSession as any).loadChromeExtension(path.join(fixtures, 'extensions', 'chrome-storage'))
+      const w = new BrowserWindow({show: false, webPreferences: { session: customSession, nodeIntegration: true }})
+      try {
+        const p = emittedOnce(ipcMain, 'storage-success')
+        await w.loadURL(url)
+        const [, v] = await p
+        expect(v).to.equal('value')
+      } finally {
+        w.destroy()
+      }
     })
   })
 })

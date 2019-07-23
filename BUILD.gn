@@ -635,7 +635,9 @@ static_library("electron_lib") {
       "//components/pref_registry",
       "//components/user_prefs",
       "//extensions/browser",
+      "//extensions/browser:core_api_provider",
       "//extensions/common",
+      "//extensions/common:core_api_provider",
       "//extensions/renderer",
     ]
     sources += filenames.lib_sources_extensions

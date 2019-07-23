@@ -19,6 +19,13 @@
 #include "content/public/common/user_agent.h"
 #include "extensions/browser/api/extensions_api_client.h"
 #include "extensions/browser/component_extension_resource_manager.h"
+#include "extensions/browser/core_extensions_browser_api_provider.h"
+#include "extensions/browser/event_router.h"
+#include "extensions/browser/mojo/interface_registration.h"
+#include "extensions/browser/null_app_sorting.h"
+#include "extensions/browser/updater/null_extension_cache.h"
+#include "extensions/browser/url_request_util.h"
+#include "extensions/common/features/feature_channel.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/browser.h"
@@ -26,13 +33,6 @@
 #include "shell/browser/extensions/atom_extension_host_delegate.h"
 #include "shell/browser/extensions/atom_extension_system_factory.h"
 #include "shell/browser/extensions/atom_extension_web_contents_observer.h"
-// #include "extensions/browser/core_extensions_browser_api_provider.h"
-#include "extensions/browser/event_router.h"
-#include "extensions/browser/mojo/interface_registration.h"
-#include "extensions/browser/null_app_sorting.h"
-#include "extensions/browser/updater/null_extension_cache.h"
-#include "extensions/browser/url_request_util.h"
-#include "extensions/common/features/feature_channel.h"
 // #include "shell/browser/extensions/atom_extensions_api_client.h"
 // #include "shell/browser/extensions/atom_extensions_browser_api_provider.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
@@ -51,9 +51,8 @@ AtomExtensionsBrowserClient::AtomExtensionsBrowserClient()
   // enable all channel-dependent extension APIs.
   extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
 
-  // TODO(samuelmaddock): undefined symbol for
-  // extensions::CoreExtensionsBrowserAPIProvider AddAPIProvider(
-  //     std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
+  AddAPIProvider(
+      std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
   // AddAPIProvider(std::make_unique<AtomExtensionsBrowserAPIProvider>());
 }
 

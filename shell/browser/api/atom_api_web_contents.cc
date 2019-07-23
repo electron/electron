@@ -57,6 +57,7 @@
 #include "shell/browser/atom_navigation_throttle.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
+#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #include "shell/browser/lib/bluetooth_chooser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/atom_network_delegate.h"
@@ -456,12 +457,11 @@ void WebContents::InitWithSessionAndOptions(
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
 
-  // Initialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
-  // Initialize security state client.
   SecurityStateTabHelper::CreateForWebContents(web_contents());
-  // Initialize zoom controller.
   InitZoomController(web_contents(), options);
+  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+      web_contents());
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
