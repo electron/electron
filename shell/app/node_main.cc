@@ -70,11 +70,13 @@ int NodeMain(int argc, char* argv[]) {
 
     node::Environment* env = node::CreateEnvironment(
         node::CreateIsolateData(gin_env.isolate(), loop, gin_env.platform()),
-        gin_env.context(), argc, argv, exec_argc, exec_argv);
+        gin_env.context(), argc, argv, exec_argc, exec_argv, false);
 
     // Enable support for v8 inspector.
     NodeDebugger node_debugger(env);
     node_debugger.Start();
+
+    node::BootstrapEnvironment(env);
 
     mate::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
