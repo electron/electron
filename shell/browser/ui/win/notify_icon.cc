@@ -166,6 +166,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
       views::Widget::InitParams::Ownership::WIDGET_OWNS_NATIVE_WIDGET;
   params.bounds = gfx::Rect(0, 0, 0, 0);
   params.force_software_compositing = true;
+  params.z_order = ui::ZOrderLevel::kFloatingUIElement;
 
   widget_->Init(params);
 

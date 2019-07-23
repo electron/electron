@@ -822,7 +822,7 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSWindowStyleMaskClosable;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top,
+void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                      const std::string& level,
                                      int relativeLevel,
                                      std::string* error) {
@@ -830,7 +830,7 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
   CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
   CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
 
-  if (top) {
+  if (z_order != ui::ZOrderLevel::kNormal) {
     if (level == "floating") {
       windowLevel = NSFloatingWindowLevel;
     } else if (level == "torn-off-menu") {
@@ -866,8 +866,8 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
   }
 }
 
-bool NativeWindowMac::IsAlwaysOnTop() {
-  return [window_ level] != NSNormalWindowLevel;
+ui::ZOrderLevel NativeWindowMac::GetZOrderLevel() {
+  return widget()->GetZOrderLevel();
 }
 
 void NativeWindowMac::Center() {
