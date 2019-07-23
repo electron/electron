@@ -40,6 +40,7 @@ bool AtomRuntimeAPIDelegate::CheckForUpdates(
 void AtomRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
 
 bool AtomRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
+  // TODO(nornagon): put useful information here.
 #if defined(OS_LINUX)
   info->os = api::runtime::PLATFORM_OS_LINUX;
 #endif
