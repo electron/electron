@@ -137,6 +137,7 @@ describe('webContents module', () => {
       beforeEach(() => {
         w = new BrowserWindow({show: false})
       })
+      afterEach(closeAllWindows)
 
       let server: http.Server = null as unknown as http.Server
       let serverUrl: string = null as unknown as string
