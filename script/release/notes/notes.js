@@ -320,13 +320,13 @@ async function runRetryable (fn, maxRetries) {
 const getPullRequest = async (number, owner, repo) => {
   const name = `${owner}-${repo}-pull-${number}`
   const retryableFunc = () => octokit.pulls.get({ pull_number: number, owner, repo })
-  return checkCache(name, async () => runRetryable(retryableFunc, MAX_FAIL_COUNT))
+  return checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT))
 }
 
 const getComments = async (number, owner, repo) => {
   const name = `${owner}-${repo}-issue-${number}-comments`
   const retryableFunc = () => octokit.issues.listComments({ issue_number: number, owner, repo, per_page: 100 })
-  return checkCache(name, async () => runRetryable(retryableFunc, MAX_FAIL_COUNT))
+  return checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT))
 }
 
 const addRepoToPool = async (pool, repo, from, to) => {
