@@ -34,6 +34,8 @@ base::FilePath MainApplicationBundlePath() {
       (base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE) ||
        base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
                       base::CompareCase::SENSITIVE) ||
+       base::EndsWith(path.value(), content::kMacHelperSuffix_gpu,
+                      base::CompareCase::SENSITIVE) ||
        base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
                       base::CompareCase::SENSITIVE))) {
     // The running executable is the helper. Go up five steps:

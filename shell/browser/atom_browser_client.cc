@@ -496,21 +496,28 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     int process_id) {
   // Make sure we're about to launch a known executable
   {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
     base::FilePath child_path;
+    base::FilePath program =
+        base::MakeAbsoluteFilePath(command_line->GetProgram());
 #if defined(OS_MACOSX)
-    int flags = content::ChildProcessHost::CHILD_NORMAL;
-    if (base::EndsWith(command_line->GetProgram().value(),
-                       content::kMacHelperSuffix_renderer,
-                       base::CompareCase::SENSITIVE)) {
-      flags = content::ChildProcessHost::CHILD_RENDERER;
+    auto renderer_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_RENDERER);
+    auto gpu_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_GPU);
+    auto plugin_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_PLUGIN);
+    if (program != renderer_child_path && program != gpu_child_path &&
+        program != plugin_child_path) {
+      child_path = content::ChildProcessHost::GetChildPath(
+          content::ChildProcessHost::CHILD_NORMAL);
+      CHECK(program == child_path)
+          << "Aborted from launching unexpected helper executable";
     }
-    child_path = content::ChildProcessHost::GetChildPath(flags);
 #else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+    CHECK(program == child_path);
 #endif
-
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
   }
 
   std::string process_type =
