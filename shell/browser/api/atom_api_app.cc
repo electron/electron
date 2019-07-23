@@ -1218,6 +1218,25 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("creationTime",
                  process_metric.second->process.CreationTime().ToJsTime());
 
+#if !defined(OS_LINUX)
+    auto memory_info = process_metric.second->GetMemoryInfo();
+
+    mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
+    memory_dict.SetHidden("simple", true);
+    memory_dict.Set("workingSetSize",
+                    static_cast<double>(memory_info.working_set_size >> 10));
+    memory_dict.Set(
+        "peakWorkingSetSize",
+        static_cast<double>(memory_info.peak_working_set_size >> 10));
+
+#if defined(OS_WIN)
+    memory_dict.Set("privateBytes",
+                    static_cast<double>(memory_info.private_bytes >> 10));
+#endif
+
+    pid_dict.Set("memory", memory_dict);
+#endif
+
 #if defined(OS_MACOSX)
     pid_dict.Set("sandboxed", process_metric.second->IsSandboxed());
 #elif defined(OS_WIN)
