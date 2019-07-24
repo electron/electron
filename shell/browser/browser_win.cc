@@ -386,8 +386,8 @@ void Browser::ShowAboutPanel() {
   electron::MessageBoxSettings settings = {};
   settings.title = "About";
   settings.message = aboutMessage;
-  // TODO: make asynchronous to avoid blocking js code
-  // TODO: add icon (?)
+  // TODO(erickzhao): make asynchronous to avoid blocking js code
+  // TODO(erickzhao): add icon (?)
   electron::ShowMessageBoxSync(settings);
 }
 
