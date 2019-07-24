@@ -379,7 +379,7 @@ void Browser::ShowAboutPanel() {
 
   for (std::string opt : panelOptions) {
     if ((str = opts.FindStringKey(opt))) {
-      aboutMessage.append(*str);
+      aboutMessage.append(*str).append("\r\n");
     }
   }
 
