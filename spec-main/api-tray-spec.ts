@@ -5,11 +5,10 @@ import { ifdescribe, ifit } from './spec-helpers'
 describe('tray module', () => {
   let tray: Tray;
 
-  beforeEach(() => {
-    tray = new Tray(nativeImage.createEmpty())
-  })
+  beforeEach(() => { tray = new Tray(nativeImage.createEmpty()) })
 
   afterEach(() => {
+    tray.destroy()
     tray = null as any
   })
 
@@ -31,8 +30,6 @@ describe('tray module', () => {
     it('accepts both null and Menu as parameters', () => {
       expect(() => { tray.setContextMenu(new Menu()) }).to.not.throw()
       expect(() => { tray.setContextMenu(null) }).to.not.throw()
-
-      tray.destroy()
     })
   })
 
@@ -50,7 +47,6 @@ describe('tray module', () => {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
       setTimeout(() => {
         tray.popUpContextMenu()
-        tray.destroy()
         done()
       })
       tray.popUpContextMenu()
@@ -69,22 +65,16 @@ describe('tray module', () => {
   describe('tray.setImage(image)', () => {
     it('accepts empty image', () => {
       tray.setImage(nativeImage.createEmpty())
-
-      tray.destroy()
     })
   })
 
   describe('tray.setPressedImage(image)', () => {
     it('accepts empty image', () => {
       tray.setPressedImage(nativeImage.createEmpty())
-
-      tray.destroy()
     })
   })
 
   ifdescribe(process.platform === 'darwin')('tray get/set title', () => {
-    afterEach(() => { tray.destroy() })
-
     it('sets/gets non-empty title', () => {
       const title = 'Hello World!'
       tray.setTitle(title)
