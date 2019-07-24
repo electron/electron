@@ -371,20 +371,28 @@ void Browser::ShowEmojiPanel() {
 }
 
 void Browser::ShowAboutPanel() {
+  const auto& opts = about_panel_options_;
+  std::string aboutMessage = "";
+  const std::string* str;
+  std::vector<std::string> panelOptions = {
+      "applicationName", "applicationVersion", "copyright", "credits"};
+
+  for (std::string opt : panelOptions) {
+    if ((str = opts.FindStringKey(opt))) {
+      aboutMessage.append(*str);
+    }
+  }
+
   electron::MessageBoxSettings settings = {};
   settings.title = "About";
-  settings.message =
-      "Windows Live Messenger\r\nVersion 8.1 (Build "
-      "6.4.23.1.3.12.00)\r\nCopyright (C) 1997-2006 Microsoft Corporation. All "
-      "rights reserved.";
+  settings.message = aboutMessage;
   // TODO: make asynchronous to avoid blocking js code
-  electron::ShowMessageBox(settings);
-  // TODO: customize options
-  // const auto& opts = about_panel_options_;
+  // TODO: add icon (?)
+  electron::ShowMessageBoxSync(settings);
 }
 
 void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
-  options.Clone();
+  about_panel_options_ = options.Clone();
 }
 
 }  // namespace electron
