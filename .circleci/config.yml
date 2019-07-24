@@ -1387,7 +1387,7 @@ jobs:
     <<: *steps-test-nan
 
   linux-x64-testing-node:
-    <<: *machine-linux-medium
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -1437,7 +1437,7 @@ jobs:
     <<: *steps-test-nan
 
   linux-ia32-testing-node:
-    <<: *machine-linux-medium
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-ia32
