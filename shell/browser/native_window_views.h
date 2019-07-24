@@ -80,11 +80,11 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top,
+  void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
                       int relativeLevel,
                       std::string* error) override;
-  bool IsAlwaysOnTop() override;
+  ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
   void SetTitle(const std::string& title) override;

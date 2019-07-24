@@ -61,7 +61,7 @@ index 83cedb4c9e1323259afd041e571240cd971e1241..3686ae2fab5f400cf119a54aea547a72
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 016007f0edad06739a8ad1f9874d5dd5d49e0780..c4ae6ae33d552952e2277255015396cd758344aa 100644
+index 9d28e920676edd065f735b8939854468321e99ca..6c086a792e343cf537e46f2c97c21b6257d7268e 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 @@ -8,9 +8,11 @@
@@ -99,10 +99,10 @@ index 016007f0edad06739a8ad1f9874d5dd5d49e0780..c4ae6ae33d552952e2277255015396cd
 +#if 0
        host_(host),
 +#endif
-       delay_timer_(FROM_HERE, base::TimeDelta::FromSeconds(45), this,
-                    &PepperFlashBrowserHost::OnDelayTimerFired),
-       weak_factory_(this) {
-@@ -122,6 +128,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
+       delay_timer_(FROM_HERE,
+                    base::TimeDelta::FromSeconds(45),
+                    this,
+@@ -123,6 +129,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
  
  int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
      ppapi::host::HostMessageContext* context) {
@@ -110,7 +110,7 @@ index 016007f0edad06739a8ad1f9874d5dd5d49e0780..c4ae6ae33d552952e2277255015396cd
    // Getting the Flash LSO settings requires using the CookieSettings which
    // belong to the profile which lives on the UI thread. We lazily initialize
    // |cookie_settings_| by grabbing the reference from the UI thread and then
-@@ -142,9 +149,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
+@@ -143,9 +150,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
                     context->MakeReplyMessageContext(), document_url,
                     plugin_url));
    }
@@ -123,7 +123,7 @@ index 016007f0edad06739a8ad1f9874d5dd5d49e0780..c4ae6ae33d552952e2277255015396cd
  void PepperFlashBrowserHost::GetLocalDataRestrictions(
      ppapi::host::ReplyMessageContext reply_context,
      const GURL& document_url,
-@@ -173,6 +182,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
+@@ -174,6 +183,7 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
              PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
                  static_cast<int32_t>(restrictions)));
  }
@@ -132,7 +132,7 @@ index 016007f0edad06739a8ad1f9874d5dd5d49e0780..c4ae6ae33d552952e2277255015396cd
  device::mojom::WakeLock* PepperFlashBrowserHost::GetWakeLock() {
    // Here is a lazy binding, and will not reconnect after connection error.
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
-index 154120ce5156d77dd302b85cb17e2f14fb69cc2d..5152fd847c012fc2f40017687db426fab955a905 100644
+index f2f40b636a41649199a38c663f03e6182df82520..41d11d1f1f9921d4b4deaaf4b2d8ab4be910e8fe 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
 @@ -23,9 +23,11 @@ namespace content {
@@ -175,11 +175,11 @@ index 154120ce5156d77dd302b85cb17e2f14fb69cc2d..5152fd847c012fc2f40017687db426fa
    // For fetching the Flash LSO settings.
    scoped_refptr<content_settings::CookieSettings> cookie_settings_;
 +#endif
-   base::WeakPtrFactory<PepperFlashBrowserHost> weak_factory_;
+   base::WeakPtrFactory<PepperFlashBrowserHost> weak_factory_{this};
  
    DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0363853e1 100644
+index 0a727e8c438462a293db629da07d5aef2b25a9ee..b49303e2c19329715f72d8926cb765289224d000 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 @@ -20,6 +20,7 @@
@@ -190,7 +190,7 @@ index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0
  #include "ppapi/c/pp_errors.h"
  #include "ppapi/host/dispatch_host_message.h"
  #include "ppapi/host/host_message_context.h"
-@@ -128,7 +129,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
+@@ -127,7 +128,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
    content::ChildProcessSecurityPolicy::GetInstance()->GrantReadFile(
        render_process_id, voucher_file);
  
@@ -200,7 +200,7 @@ index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0
    monitor_finder_ = new MonitorFinder(render_process_id, render_frame_id);
    monitor_finder_->GetMonitor();
  }
-@@ -151,12 +154,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
+@@ -150,12 +153,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
  
  int32_t PepperFlashDRMHost::OnHostMsgGetDeviceID(
      ppapi::host::HostMessageContext* context) {
@@ -220,7 +220,7 @@ index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0
  }
  
  int32_t PepperFlashDRMHost::OnHostMsgGetHmonitor(
-@@ -185,6 +194,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
+@@ -184,6 +193,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
    return PP_OK;
  }
  
@@ -228,13 +228,13 @@ index b007195efb9202f2cc8aeeb20821afbf5e8af74d..50b50a5eb48cc4efb71ffa0719bcd1f0
  void PepperFlashDRMHost::GotDeviceID(
      ppapi::host::ReplyMessageContext reply_context,
      const std::string& id,
-@@ -197,3 +207,4 @@ void PepperFlashDRMHost::GotDeviceID(
+@@ -196,3 +206,4 @@ void PepperFlashDRMHost::GotDeviceID(
    host()->SendReply(reply_context,
                      PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id));
  }
 +#endif
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
-index aa4433cccff4bc637ce5e71039de3c4352e7cd6b..d9630fdf6b87e11fb9657814895dff36b04ccea8 100644
+index b9d2ce7f7f6837ee7b304daac82d21a3147c6faf..4d4b023d62d12b4d119acbfdee64f4157494ccb3 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
 @@ -11,7 +11,9 @@
@@ -256,7 +256,7 @@ index aa4433cccff4bc637ce5e71039de3c4352e7cd6b..d9630fdf6b87e11fb9657814895dff36
 +#endif
    scoped_refptr<MonitorFinder> monitor_finder_;
  
-   base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;
+   base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_{this};
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 index 0d083bb09ff17a691c6399d2a5746b44e3196873..2023dc0240220362a1b503da07aa9fab4cb4b434 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
@@ -436,7 +436,7 @@ index d63e90b6c5079ab3237c4bad3d5e63ce2f99c657..c98a7bd07ddd9527fc67b05b24463ed4
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_flash_renderer_host.cc b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
-index 36edbfd997d0dfaa998a4e288caf29af418a28f5..7f4012a4a5b8194a1e44f35f458612099e09fbe4 100644
+index fc3ef9c9888d84c993fe7682afef0a188da12894..fb5782894ed8aa9fd7ccff09cff8d7f5520af8dd 100644
 --- a/chrome/renderer/pepper/pepper_flash_renderer_host.cc
 +++ b/chrome/renderer/pepper/pepper_flash_renderer_host.cc
 @@ -13,7 +13,9 @@
@@ -461,7 +461,7 @@ index 36edbfd997d0dfaa998a4e288caf29af418a28f5..7f4012a4a5b8194a1e44f35f45861209
  }
  
  }  // namespace
-@@ -376,6 +380,8 @@ int32_t PepperFlashRendererHost::OnIsRectTopmost(
+@@ -374,6 +378,8 @@ int32_t PepperFlashRendererHost::OnIsRectTopmost(
  
  int32_t PepperFlashRendererHost::OnInvokePrinting(
      ppapi::host::HostMessageContext* host_context) {

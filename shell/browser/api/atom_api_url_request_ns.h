@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "mojo/public/cpp/system/string_data_pipe_producer.h"
+#include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "native_mate/dictionary.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -109,7 +109,7 @@ class URLRequestNS : public mate::EventEmitter<URLRequestNS>,
 
   // Passed from DataPipeGetter for streaming data.
   network::mojom::DataPipeGetter::ReadCallback size_callback_;
-  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
+  std::unique_ptr<mojo::DataPipeProducer> producer_;
 
   // Whether request.end() has been called.
   bool last_chunk_written_ = false;

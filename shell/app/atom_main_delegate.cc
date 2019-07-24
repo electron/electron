@@ -320,10 +320,6 @@ int AtomMainDelegate::RunProcess(
 }
 
 #if defined(OS_MACOSX)
-bool AtomMainDelegate::ShouldSendMachPort(const std::string& process_type) {
-  return process_type != kRelauncherProcess;
-}
-
 bool AtomMainDelegate::DelaySandboxInitialization(
     const std::string& process_type) {
   return process_type == kRelauncherProcess;

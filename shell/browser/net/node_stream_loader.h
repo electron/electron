@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "mojo/public/cpp/bindings/strong_binding.h"
-#include "mojo/public/cpp/system/string_data_pipe_producer.h"
+#include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "v8/include/v8.h"
 
@@ -64,7 +64,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   v8::Global<v8::Value> buffer_;
 
   // Mojo data pipe where the data that is being read is written to.
-  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
+  std::unique_ptr<mojo::DataPipeProducer> producer_;
 
   // Whether we are in the middle of write.
   bool is_writing_ = false;

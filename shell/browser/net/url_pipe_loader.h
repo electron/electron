@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "mojo/public/cpp/bindings/strong_binding.h"
-#include "mojo/public/cpp/system/string_data_pipe_producer.h"
+#include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
@@ -69,7 +69,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   mojo::Binding<network::mojom::URLLoader> binding_;
   network::mojom::URLLoaderClientPtr client_;
 
-  std::unique_ptr<mojo::StringDataPipeProducer> producer_;
+  std::unique_ptr<mojo::DataPipeProducer> producer_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
   base::WeakPtrFactory<URLPipeLoader> weak_factory_;

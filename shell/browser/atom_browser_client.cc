@@ -93,7 +93,6 @@
 #elif defined(OS_MACOSX)
 #include "net/ssl/client_cert_store_mac.h"
 #include "services/audio/public/mojom/constants.mojom.h"
-#include "services/video_capture/public/mojom/constants.mojom.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
 #endif
@@ -496,21 +495,28 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     int process_id) {
   // Make sure we're about to launch a known executable
   {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
     base::FilePath child_path;
+    base::FilePath program =
+        base::MakeAbsoluteFilePath(command_line->GetProgram());
 #if defined(OS_MACOSX)
-    int flags = content::ChildProcessHost::CHILD_NORMAL;
-    if (base::EndsWith(command_line->GetProgram().value(),
-                       content::kMacHelperSuffix_renderer,
-                       base::CompareCase::SENSITIVE)) {
-      flags = content::ChildProcessHost::CHILD_RENDERER;
+    auto renderer_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_RENDERER);
+    auto gpu_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_GPU);
+    auto plugin_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_PLUGIN);
+    if (program != renderer_child_path && program != gpu_child_path &&
+        program != plugin_child_path) {
+      child_path = content::ChildProcessHost::GetChildPath(
+          content::ChildProcessHost::CHILD_NORMAL);
+      CHECK_EQ(program, child_path)
+          << "Aborted from launching unexpected helper executable";
     }
-    child_path = content::ChildProcessHost::GetChildPath(flags);
 #else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+    CHECK_EQ(program, child_path);
 #endif
-
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
   }
 
   std::string process_type =
@@ -568,8 +574,7 @@ void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
     const service_manager::Identity& identity,
     base::CommandLine* command_line) {
 #if defined(OS_MACOSX)
-  if (identity.name() == video_capture::mojom::kServiceName ||
-      identity.name() == audio::mojom::kServiceName)
+  if (identity.name() == audio::mojom::kServiceName)
     command_line->AppendSwitch(::switches::kMessageLoopTypeUi);
 #endif
 }
@@ -849,10 +854,7 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    network::mojom::URLLoaderFactoryRequest* factory_request,
-    // clang-format off
-    network::mojom::URLLoaderFactory*& out_factory) {  // NOLINT
-  // clang-format on
+    network::mojom::URLLoaderFactoryPtr* out_factory) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
@@ -985,7 +987,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool is_navigation,
     bool is_download,
     const url::Origin& request_initiator,
-    network::mojom::URLLoaderFactoryRequest* factory_request,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
@@ -995,16 +997,16 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   if (!protocol)
     return false;
 
-  auto proxied_request = std::move(*factory_request);
+  auto proxied_receiver = std::move(*factory_receiver);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
-  *factory_request = mojo::MakeRequest(&target_factory_info);
+  *factory_receiver = mojo::MakeRequest(&target_factory_info);
 
   network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request;
   if (header_client)
     header_client_request = mojo::MakeRequest(header_client);
 
   new ProxyingURLLoaderFactory(
-      protocol->intercept_handlers(), std::move(proxied_request),
+      protocol->intercept_handlers(), std::move(proxied_receiver),
       std::move(target_factory_info), std::move(header_client_request));
 
   *bypass_redirect_checks = true;

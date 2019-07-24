@@ -74,6 +74,7 @@ void AutofillPopupView::Show() {
     views::Widget::InitParams params(views::Widget::InitParams::TYPE_POPUP);
     params.delegate = this;
     params.parent = parent_widget_->GetNativeView();
+    params.z_order = ui::ZOrderLevel::kFloatingUIElement;
     widget->Init(params);
 
     // No animation for popup appearance (too distracting).

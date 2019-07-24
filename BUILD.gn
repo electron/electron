@@ -298,7 +298,6 @@ source_set("manifests") {
   deps = [
     "//electron/shell/common/api:mojo",
     "//printing/buildflags",
-    "//services/proxy_resolver/public/cpp:manifest",
     "//services/service_manager/public/cpp",
   ]
 
@@ -369,6 +368,7 @@ source_set("electron_lib") {
     "//content/public/renderer",
     "//content/public/utility",
     "//device/bluetooth",
+    "//device/bluetooth/public/cpp",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",

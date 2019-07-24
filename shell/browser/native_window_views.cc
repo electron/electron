@@ -752,19 +752,19 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top,
+void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                        const std::string& level,
                                        int relativeLevel,
                                        std::string* error) {
-  if (top != widget()->IsAlwaysOnTop())
+  if (z_order != widget()->GetZOrderLevel())
     NativeWindow::NotifyWindowAlwaysOnTopChanged();
 
-  widget()->SetAlwaysOnTop(top);
+  widget()->SetZOrderLevel(z_order);
 
 #if defined(OS_WIN)
   // Reset the placement flag.
   behind_task_bar_ = false;
-  if (top) {
+  if (z_order != ui::ZOrderLevel::kNormal) {
     // On macOS the window is placed behind the Dock for the following levels.
     // Re-use the same names on Windows to make it easier for the user.
     static const std::vector<std::string> levels = {
@@ -775,8 +775,8 @@ void NativeWindowViews::SetAlwaysOnTop(bool top,
   MoveBehindTaskBarIfNeeded();
 }
 
-bool NativeWindowViews::IsAlwaysOnTop() {
-  return widget()->IsAlwaysOnTop();
+ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() {
+  return widget()->GetZOrderLevel();
 }
 
 void NativeWindowViews::Center() {

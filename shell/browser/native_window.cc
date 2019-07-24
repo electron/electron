@@ -128,7 +128,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
-    SetAlwaysOnTop(true);
+    SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
   }
   bool fullscreenable = true;
   bool fullscreen = false;
