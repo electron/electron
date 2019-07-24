@@ -68,7 +68,7 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags --reset --break_repo_locks
+  - gclient sync --with_branch_heads --with_tags --reset
   - cd src
   - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
