@@ -357,8 +357,11 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSButton* button = (NSButton*)item.view;
 
   std::string backgroundColor;
-  if (settings.Get("backgroundColor", &backgroundColor)) {
+  if (settings.Get("backgroundColor", &backgroundColor) &&
+      !backgroundColor.empty()) {
     button.bezelColor = [self colorFromHexColorString:backgroundColor];
+  } else {
+    button.bezelColor = nil;
   }
 
   std::string label;
@@ -366,18 +369,17 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   button.title = base::SysUTF8ToNSString(label);
 
   gfx::Image image;
-  if (settings.Get("icon", &image)) {
-    button.image = image.AsNSImage();
+  settings.Get("icon", &image);
+  button.image = image.AsNSImage();
 
-    std::string iconPosition;
-    settings.Get("iconPosition", &iconPosition);
-    if (iconPosition == "left") {
-      button.imagePosition = NSImageLeft;
-    } else if (iconPosition == "right") {
-      button.imagePosition = NSImageRight;
-    } else {
-      button.imagePosition = NSImageOverlaps;
-    }
+  std::string iconPosition;
+  settings.Get("iconPosition", &iconPosition);
+  if (iconPosition == "left") {
+    button.imagePosition = NSImageLeft;
+  } else if (iconPosition == "right") {
+    button.imagePosition = NSImageRight;
+  } else {
+    button.imagePosition = NSImageOverlaps;
   }
 }
 
@@ -499,9 +501,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
 
   gfx::Image image;
-  if (settings.Get("icon", &image)) {
-    item.collapsedRepresentationImage = image.AsNSImage();
-  }
+  settings.Get("icon", &image);
+  item.collapsedRepresentationImage = image.AsNSImage();
 
   bool showCloseButton = true;
   settings.Get("showCloseButton", &showCloseButton);
