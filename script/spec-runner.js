@@ -22,12 +22,11 @@ for (const flag of unknownFlags) {
 }
 
 const utils = require('./lib/utils')
+const { YARN_VERSION } = require('./yarn')
 
 const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-// KEEP IN SYNC WITH DEPS FILE
-const YARN_VERSION = '1.15.2'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
