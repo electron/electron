@@ -1465,7 +1465,7 @@ Opens the developer tools for the shared worker context.
 
 * `workerId` String
 
-Inspects the shared worker based on it's id.
+Inspects the shared worker based on it's ID.
 
 #### `contents.getAllSharedWorkers()`
 
