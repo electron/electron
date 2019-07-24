@@ -10,6 +10,7 @@
 
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/atom_blob_reader.h"
@@ -85,6 +86,10 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  void LoadChromeExtension(const base::FilePath extension_path);
+#endif
 
  protected:
   Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);

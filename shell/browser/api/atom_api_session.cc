@@ -67,6 +67,10 @@
 #include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "shell/browser/extensions/atom_extension_system.h"
+#endif
+
 using content::BrowserThread;
 using content::StoragePartition;
 
@@ -638,6 +642,14 @@ std::vector<base::FilePath::StringType> Session::GetPreloads() const {
   return prefs->preloads();
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void Session::LoadChromeExtension(const base::FilePath extension_path) {
+  auto* extension_system = static_cast<extensions::AtomExtensionSystem*>(
+      extensions::ExtensionSystem::Get(browser_context()));
+  extension_system->LoadExtension(extension_path);
+}
+#endif
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = Cookies::Create(isolate, browser_context());
@@ -745,6 +757,9 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::CreateInterruptedDownload)
       .SetMethod("setPreloads", &Session::SetPreloads)
       .SetMethod("getPreloads", &Session::GetPreloads)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+      .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
+#endif
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)

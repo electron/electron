@@ -13,7 +13,7 @@ const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 const { expect } = chai
 chai.use(dirtyChai)
 const isCI = global.isCI
-const netLog = session.fromPartition('net-log').netLog
+const testNetLog = () => session.fromPartition('net-log').netLog
 
 describe('netLog module', () => {
   let server
@@ -47,7 +47,7 @@ describe('netLog module', () => {
   })
 
   beforeEach(() => {
-    expect(netLog.currentlyLogging).to.be.false()
+    expect(testNetLog().currentlyLogging).to.be.false()
   })
   afterEach(() => {
     try {
@@ -60,29 +60,29 @@ describe('netLog module', () => {
     } catch (e) {
       // Ignore error
     }
-    expect(netLog.currentlyLogging).to.be.false()
+    expect(testNetLog().currentlyLogging).to.be.false()
   })
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
-    await netLog.startLogging(dumpFileDynamic)
+    await testNetLog().startLogging(dumpFileDynamic)
 
-    expect(netLog.currentlyLogging).to.be.true()
+    expect(testNetLog().currentlyLogging).to.be.true()
 
-    expect(netLog.currentlyLoggingPath).to.equal(dumpFileDynamic)
+    expect(testNetLog().currentlyLoggingPath).to.equal(dumpFileDynamic)
 
-    await netLog.stopLogging()
+    await testNetLog().stopLogging()
 
     expect(fs.existsSync(dumpFileDynamic)).to.be.true()
   })
 
   it('should throw an error when .stopLogging() is called without calling .startLogging()', async () => {
-    await expect(netLog.stopLogging()).to.be.rejectedWith('No net log in progress')
+    await expect(testNetLog().stopLogging()).to.be.rejectedWith('No net log in progress')
   })
 
   it('should throw an error when .startLogging() is called with an invalid argument', () => {
-    expect(() => netLog.startLogging('')).to.throw()
-    expect(() => netLog.startLogging(null)).to.throw()
-    expect(() => netLog.startLogging([])).to.throw()
+    expect(() => testNetLog().startLogging('')).to.throw()
+    expect(() => testNetLog().startLogging(null)).to.throw()
+    expect(() => testNetLog().startLogging([])).to.throw()
   })
 
   it('should begin and end logging automatically when --log-net-log is passed', done => {

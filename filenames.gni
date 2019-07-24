@@ -604,6 +604,35 @@ filenames = {
     "chromium_src/chrome/browser/certificate_manager_model.h",
   ]
 
+  lib_sources_extensions = [
+    "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.cc",
+    "shell/browser/extensions/api/runtime/atom_runtime_api_delegate.h",
+    "shell/browser/extensions/atom_extensions_browser_client.cc",
+    "shell/browser/extensions/atom_extensions_browser_client.h",
+    "shell/browser/extensions/atom_browser_context_keyed_service_factories.cc",
+    "shell/browser/extensions/atom_browser_context_keyed_service_factories.h",
+    "shell/browser/extensions/atom_display_info_provider.cc",
+    "shell/browser/extensions/atom_display_info_provider.h",
+    "shell/browser/extensions/atom_extension_host_delegate.cc",
+    "shell/browser/extensions/atom_extension_host_delegate.h",
+    "shell/browser/extensions/atom_extension_loader.cc",
+    "shell/browser/extensions/atom_extension_loader.h",
+    "shell/browser/extensions/atom_extension_system.cc",
+    "shell/browser/extensions/atom_extension_system.h",
+    "shell/browser/extensions/atom_extension_system_factory.cc",
+    "shell/browser/extensions/atom_extension_system_factory.h",
+    "shell/browser/extensions/atom_extension_web_contents_observer.cc",
+    "shell/browser/extensions/atom_extension_web_contents_observer.h",
+    "shell/browser/extensions/atom_navigation_ui_data.cc",
+    "shell/browser/extensions/atom_navigation_ui_data.h",
+    "shell/common/extensions/atom_extensions_api_provider.cc",
+    "shell/common/extensions/atom_extensions_api_provider.h",
+    "shell/common/extensions/atom_extensions_client.cc",
+    "shell/common/extensions/atom_extensions_client.h",
+    "shell/renderer/extensions/atom_extensions_renderer_client.cc",
+    "shell/renderer/extensions/atom_extensions_renderer_client.h",
+  ]
+
   app_sources = [
     "shell/app/atom_main.cc",
     "shell/app/atom_main.h",

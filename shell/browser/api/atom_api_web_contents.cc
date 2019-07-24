@@ -41,6 +41,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/converter.h"
@@ -110,6 +111,10 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #endif
 
 namespace mate {
@@ -456,12 +461,13 @@ void WebContents::InitWithSessionAndOptions(
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
 
-  // Initialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
-  // Initialize security state client.
   SecurityStateTabHelper::CreateForWebContents(web_contents());
-  // Initialize zoom controller.
   InitZoomController(web_contents(), options);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+      web_contents());
+#endif
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));

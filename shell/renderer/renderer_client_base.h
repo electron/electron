@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
+#include "electron/buildflags/buildflags.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include)
@@ -18,7 +19,17 @@
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+namespace extensions {
+class ExtensionsClient;
+}
+#endif
+
 namespace electron {
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+class AtomExtensionsRendererClient;
+#endif
 
 class RendererClientBase : public content::ContentRendererClient {
  public:
@@ -67,7 +78,22 @@ class RendererClientBase : public content::ContentRendererClient {
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
 
+  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
+
+ protected:
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // app_shell embedders may need custom extensions client interfaces.
+  // This class takes ownership of the returned object.
+  virtual extensions::ExtensionsClient* CreateExtensionsClient();
+#endif
+
  private:
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
+  std::unique_ptr<AtomExtensionsRendererClient> extensions_renderer_client_;
+#endif
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif

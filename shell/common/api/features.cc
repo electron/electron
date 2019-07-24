@@ -41,6 +41,10 @@ bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
+bool IsExtensionsEnabled() {
+  return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
+}
+
 bool IsComponentBuild() {
 #if defined(COMPONENT_BUILD)
   return true;
@@ -64,6 +68,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
+  dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
 }
 
 }  // namespace

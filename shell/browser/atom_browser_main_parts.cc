@@ -92,6 +92,15 @@
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
+#include "extensions/common/extension_api.h"
+#include "shell/browser/extensions/atom_browser_context_keyed_service_factories.h"
+#include "shell/browser/extensions/atom_extensions_browser_client.h"
+#include "shell/common/extensions/atom_extensions_client.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
 namespace electron {
 
 namespace {
@@ -375,6 +384,10 @@ int AtomBrowserMainParts::PreCreateThreads() {
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_browser_client_.reset();
+  extensions::ExtensionsBrowserClient::Set(nullptr);
+#endif
 #if defined(OS_LINUX)
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
@@ -414,6 +427,18 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_client_ = std::make_unique<AtomExtensionsClient>();
+  extensions::ExtensionsClient::Set(extensions_client_.get());
+
+  // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
+  extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
+  extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
+
+  extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+  extensions::electron::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+#endif
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();

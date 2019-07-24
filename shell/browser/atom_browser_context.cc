@@ -10,6 +10,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
+#include "base/task/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_paths.h"
@@ -42,6 +43,22 @@
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/user_prefs/user_prefs.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
+#include "extensions/browser/extension_pref_store.h"
+#include "extensions/browser/extension_pref_value_map_factory.h"
+#include "extensions/browser/extension_prefs.h"
+#include "extensions/browser/pref_names.h"
+#include "extensions/common/extension_api.h"
+#include "shell/browser/extensions/atom_browser_context_keyed_service_factories.h"
+#include "shell/browser/extensions/atom_extension_system.h"
+#include "shell/browser/extensions/atom_extension_system_factory.h"
+#include "shell/browser/extensions/atom_extensions_browser_client.h"
+#include "shell/common/extensions/atom_extensions_client.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 using content::BrowserThread;
 
@@ -91,6 +108,8 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 
   content::BrowserContext::Initialize(this, path_);
 
+  BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
+
   // Initialize Pref Registry.
   InitPrefs();
 
@@ -102,7 +121,15 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
-  BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
+      this);
+
+  extension_system_ = static_cast<extensions::AtomExtensionSystem*>(
+      extensions::ExtensionSystem::Get(this));
+  extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+  extension_system_->FinishInitialization();
+#endif
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -131,7 +158,16 @@ void AtomBrowserContext::InitPrefs() {
   pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* ext_pref_store = new ExtensionPrefStore(
+      ExtensionPrefValueMapFactory::GetForBrowserContext(this),
+      IsOffTheRecord());
+  prefs_factory.set_extension_prefs(ext_pref_store);
+
+  auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
+#else
   auto registry = WrapRefCounted(new PrefRegistrySimple);
+#endif
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
                                  base::FilePath());
@@ -144,11 +180,17 @@ void AtomBrowserContext::InitPrefs() {
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
+#endif
 
   prefs_ = prefs_factory.Create(
       registry.get(),
       std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
   prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  user_prefs::UserPrefs::Set(this, prefs_.get());
+#endif
 }
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
@@ -303,6 +345,16 @@ AtomBrowserContext::GetBrowsingDataRemoverDelegate() {
 content::ClientHintsControllerDelegate*
 AtomBrowserContext::GetClientHintsControllerDelegate() {
   return nullptr;
+}
+
+void AtomBrowserContext::SetCorsOriginAccessListForOrigin(
+    const url::Origin& source_origin,
+    std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
+    std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
+    base::OnceClosure closure) {
+  // TODO(nornagon): actually set the CORS access lists. This is called from
+  // extensions/browser/renderer_startup_helper.cc.
+  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(closure));
 }
 
 ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
