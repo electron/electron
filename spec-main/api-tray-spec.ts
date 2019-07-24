@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import { Menu, Tray, nativeImage } from 'electron'
+import { ifdescribe, ifit } from './spec-helpers'
 
 describe('tray module', () => {
   let tray: Tray;
@@ -12,26 +13,22 @@ describe('tray module', () => {
     tray = null as any
   })
 
-  describe('tray get/set ignoreDoubleClickEvents', () => {
-    before(function () {
-      if (process.platform !== 'darwin') this.skip()
-    })
-
+  ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
     it('returns false by default', () => {
       const ignored = tray.getIgnoreDoubleClickEvents()
-      expect(ignored).to.be.false
+      expect(ignored).to.be.false('ignored')
     })
 
     it('can be set to true', () => {
       tray.setIgnoreDoubleClickEvents(true)
 
       const ignored = tray.getIgnoreDoubleClickEvents()
-      expect(ignored).to.be.true
+      expect(ignored).to.be.true('not ignored')
     })
   })
 
   describe('tray.setContextMenu(menu)', () => {
-    it ('accepts both null and Menu as parameters', () => {
+    it('accepts both null and Menu as parameters', () => {
       expect(() => { tray.setContextMenu(new Menu()) }).to.not.throw()
       expect(() => { tray.setContextMenu(null) }).to.not.throw()
 
@@ -49,26 +46,21 @@ describe('tray module', () => {
   })
 
   describe('tray.popUpContextMenu()', () => {
-    it('can be called when menu is showing', function (done) {
-      if (process.platform !== 'win32') this.skip()
-
+    ifit(process.platform === 'win32')('can be called when menu is showing', function (done) {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]))
       setTimeout(() => {
         tray.popUpContextMenu()
+        tray.destroy()
         done()
       })
       tray.popUpContextMenu()
-
-      tray.destroy()
     })
   })
 
   describe('tray.getBounds()', () => {
     afterEach(() => { tray.destroy() })
 
-    it ('returns a bounds object', function () {
-      if (process.platform === 'linux') this.skip()
-
+    ifit(process.platform !== 'linux') ('returns a bounds object', function () {
       const bounds = tray.getBounds()
       expect(bounds).to.be.an('object').and.to.have.all.keys('x', 'y', 'width', 'height');
     })
@@ -90,11 +82,7 @@ describe('tray module', () => {
     })
   })
 
-  describe('tray get/set title', () => {
-    before(function () {
-      if (process.platform !== 'darwin') this.skip()
-    })
-
+  ifdescribe(process.platform === 'darwin')('tray get/set title', () => {
     afterEach(() => { tray.destroy() })
 
     it('sets/gets non-empty title', () => {
