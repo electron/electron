@@ -5,7 +5,7 @@ import * as path from 'path'
 import * as http from 'http'
 import { BrowserWindow, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
-import { closeWindow, closeAllWindows } from './window-helpers';
+import { closeAllWindows } from './window-helpers';
 
 const { expect } = chai
 
@@ -14,28 +14,13 @@ chai.use(chaiAsPromised)
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 describe('webContents module', () => {
-  let w: BrowserWindow = (null as unknown as BrowserWindow)
-
-  beforeEach(() => {
-    w = new BrowserWindow({
-      show: false,
-      width: 400,
-      height: 400,
-      webPreferences: {
-        backgroundThrottling: false,
-        nodeIntegration: true,
-        webviewTag: true
-      }
-    })
-  })
-
-  afterEach(async () => {
-    await closeWindow(w)
-    w = (null as unknown as BrowserWindow)
-  })
-
   describe('getAllWebContents() API', () => {
+    afterEach(closeAllWindows)
     it('returns an array of web contents', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { webviewTag: true }
+      })
       w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'))
 
       await emittedOnce(w.webContents, 'did-attach-webview')
@@ -56,7 +41,9 @@ describe('webContents module', () => {
   })
 
   describe('will-prevent-unload event', () => {
+    afterEach(closeAllWindows)
     it('does not emit if beforeunload returns undefined', (done) => {
+      const w = new BrowserWindow({show: false})
       w.once('closed', () => done())
       w.webContents.once('will-prevent-unload', (e) => {
         expect.fail('should not have fired')
@@ -65,11 +52,13 @@ describe('webContents module', () => {
     })
 
     it('emits if beforeunload returns false', (done) => {
+      const w = new BrowserWindow({show: false})
       w.webContents.once('will-prevent-unload', () => done())
       w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
     })
 
     it('supports calling preventDefault on will-prevent-unload events', (done) => {
+      const w = new BrowserWindow({show: false})
       w.webContents.once('will-prevent-unload', event => event.preventDefault())
       w.once('closed', () => done())
       w.loadFile(path.join(fixturesPath, 'api', 'close-beforeunload-false.html'))
@@ -79,6 +68,7 @@ describe('webContents module', () => {
   describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows)
     it('throws an error when the channel is missing', () => {
+      const w = new BrowserWindow({show: false})
       expect(() => {
         (w.webContents.send as any)()
       }).to.throw('Missing required channel argument')
