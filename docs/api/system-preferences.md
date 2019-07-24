@@ -338,6 +338,8 @@ See the [Windows docs][windows-colors] and the [MacOS docs][macos-colors] for mo
   * `red`
   * `yellow`
 
+Returns `String` - The standard system color formatted as `#RRGGBBAA`.
+
 Returns one of several standard system colors that automatically adapt to vibrancy and changes in accessibility settings like 'Increase contrast' and 'Reduce transparency'. See [Apple Documentation](https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#system-colors) for  more details.
 
 ### `systemPreferences.isInvertedColorScheme()` _Windows_
@@ -370,6 +372,8 @@ Returns `String` | `null` - Can be `dark`, `light` or `unknown`.
 Gets the macOS appearance setting that you have declared you want for
 your application, maps to [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc).
 You can use the `setAppLevelAppearance` API to set this value.
+
+**[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_
 
@@ -451,3 +455,5 @@ your application. This maps to values in: [NSApplication.appearance](https://dev
 system default as well as the value of `getEffectiveAppearance`.
 
 Possible values that can be set are `dark` and `light`, and possible return values are `dark`, `light`, and `unknown`.
+
+This property is only available on macOS 10.14 Mojave or newer.
