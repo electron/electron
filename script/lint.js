@@ -22,7 +22,6 @@ const BLACKLIST = new Set([
   ['shell', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
   ['shell', 'common', 'node_includes.h'],

@@ -152,23 +152,6 @@
 
 @end
 
-#if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
-
-enum { NSWindowTabbingModeDisallowed = 2 };
-
-@interface NSWindow (SierraSDK)
-- (void)setTabbingMode:(NSInteger)mode;
-- (void)setTabbingIdentifier:(NSString*)identifier;
-- (void)addTabbedWindow:(NSWindow*)window ordered:(NSWindowOrderingMode)ordered;
-- (IBAction)selectPreviousTab:(id)sender;
-- (IBAction)selectNextTab:(id)sender;
-- (IBAction)mergeAllWindows:(id)sender;
-- (IBAction)moveTabToNewWindow:(id)sender;
-- (IBAction)toggleTabBar:(id)sender;
-@end
-
-#endif
-
 @interface AtomProgressBar : NSProgressIndicator
 @end
 
