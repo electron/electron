@@ -1461,6 +1461,16 @@ Starts inspecting element at position (`x`, `y`).
 
 Opens the developer tools for the shared worker context.
 
+#### `contents.inspectSharedWorker()`
+
+Opens the developer tools for the shared worker context.
+
+#### `contents.inspectSharedWorkerById(workerId)`
+
+* `workerId` String
+
+Inspects the shared worker based on it's id
+
 #### `contents.inspectServiceWorker()`
 
 Opens the developer tools for the service worker context.

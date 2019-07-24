@@ -1273,4 +1273,24 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
   })
+
+  describe('Shared Workers', () => {
+    it('can get multiple shared workers', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'shared-worker', 'shared-worker.html'))
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      const contents = webContents.getAllWebContents()
+      const vectorOfWorkers = contents[0].getAllSharedWorkers()
+
+      expect(vectorOfWorkers.length).to.equal(2)
+      expect(vectorOfWorkers[0].url).to.contain('shared-worker')
+      expect(vectorOfWorkers[1].url).to.contain('shared-worker')
+
+      contents[0].inspectSharedWorkerById(vectorOfWorkers[0].id)
+
+      const focusedContents = webContents.getAllWebContents()
+      expect(focusedContents[0].getURL()).to.contain('shared-worker')
+      await new Promise(resolve => setTimeout(resolve, 200))
+      w.webContents.closeDevTools()
+    })
+  })
 })

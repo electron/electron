@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
@@ -289,6 +290,17 @@ struct Converter<electron::api::WebContents::Type> {
       return false;
     }
     return true;
+  }
+};
+template <>
+struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const scoped_refptr<content::DevToolsAgentHost>& val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("id", val->GetId());
+    dict.Set("url", val->GetURL().spec());
+    return dict.GetHandle();
   }
 };
 
@@ -1531,7 +1543,43 @@ void WebContents::InspectElement(int x, int y) {
     OpenDevTools(nullptr);
   managed_web_contents()->InspectElement(x, y);
 }
+void WebContents::InspectSharedWorkerById(std::string workerId) {
+  if (type_ == Type::REMOTE)
+    return;
 
+  if (!enable_devtools_)
+    return;
+
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::kTypeSharedWorker) {
+      if (agent_host->GetId() == workerId) {
+        OpenDevTools(nullptr);
+        managed_web_contents()->AttachTo(agent_host);
+        break;
+      }
+    }
+  }
+}
+
+std::vector<scoped_refptr<content::DevToolsAgentHost>>
+WebContents::GetAllSharedWorkers() {
+  std::vector<scoped_refptr<content::DevToolsAgentHost>> shared_workers;
+
+  if (type_ == Type::REMOTE)
+    return shared_workers;
+
+  if (!enable_devtools_)
+    return shared_workers;
+
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::kTypeSharedWorker) {
+      shared_workers.push_back(agent_host);
+    }
+  }
+  return shared_workers;
+}
 void WebContents::InspectSharedWorker() {
   if (type_ == Type::REMOTE)
     return;
@@ -2476,6 +2524,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("inspectSharedWorker", &WebContents::InspectSharedWorker)
+      .SetMethod("inspectSharedWorkerById",
+                 &WebContents::InspectSharedWorkerById)
+      .SetMethod("getAllSharedWorkers", &WebContents::GetAllSharedWorkers)
 #if BUILDFLAG(ENABLE_PRINTING)
       .SetMethod("_print", &WebContents::Print)
       .SetMethod("_getPrinters", &WebContents::GetPrinterList)
