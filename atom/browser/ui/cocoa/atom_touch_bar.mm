@@ -353,8 +353,11 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSButton* button = (NSButton*)item.view;
 
   std::string backgroundColor;
-  if (settings.Get("backgroundColor", &backgroundColor)) {
+  if (settings.Get("backgroundColor", &backgroundColor) &&
+      !backgroundColor.empty()) {
     button.bezelColor = [self colorFromHexColorString:backgroundColor];
+  } else {
+    button.bezelColor = nil;
   }
 
   std::string label;
