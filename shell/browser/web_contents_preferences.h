@@ -40,8 +40,7 @@ class WebContentsPreferences
   void SetDefaults();
 
   // A simple way to know whether a Boolean property is enabled.
-  bool IsEnabled(const base::StringPiece& name,
-                 bool default_value = false) const;
+  bool IsEnabled(base::StringPiece name, bool default_value = false) const;
 
   // $.extend(|web_preferences|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
@@ -57,7 +56,7 @@ class WebContentsPreferences
   void Clear();
 
   // Return true if the particular preference value exists.
-  bool GetPreference(const base::StringPiece& name, std::string* value) const;
+  bool GetPreference(base::StringPiece name, std::string* value) const;
 
   // Whether to enable the remote module
   bool IsRemoteModuleEnabled() const;
@@ -77,10 +76,10 @@ class WebContentsPreferences
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   // Set preference value to given bool if user did not provide value
-  bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
+  bool SetDefaultBoolIfUndefined(base::StringPiece key, bool val);
 
   // Set preference value to given bool
-  void SetBool(const base::StringPiece& key, bool value);
+  void SetBool(base::StringPiece key, bool value);
 
   static std::vector<WebContentsPreferences*> instances_;
 

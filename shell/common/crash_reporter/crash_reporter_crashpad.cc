@@ -34,8 +34,8 @@ void CrashReporterCrashpad::SetUploadToServer(const bool upload_to_server) {
   }
 }
 
-void CrashReporterCrashpad::SetCrashKeyValue(const base::StringPiece& key,
-                                             const base::StringPiece& value) {
+void CrashReporterCrashpad::SetCrashKeyValue(base::StringPiece key,
+                                             base::StringPiece value) {
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 

@@ -72,7 +72,7 @@ class ObjectTemplateBuilder {
   // poetic license here in order that all calls to Set() can be via the '.'
   // operator and line up nicely.
   template <typename T>
-  ObjectTemplateBuilder& SetValue(const base::StringPiece& name, T val) {
+  ObjectTemplateBuilder& SetValue(base::StringPiece name, T val) {
     return SetImpl(name, ConvertToV8(isolate_, val));
   }
 
@@ -81,17 +81,17 @@ class ObjectTemplateBuilder {
   // use one of the first two options. Also see mate::CreateFunctionTemplate()
   // for creating raw function templates.
   template <typename T>
-  ObjectTemplateBuilder& SetMethod(const base::StringPiece& name, T callback) {
+  ObjectTemplateBuilder& SetMethod(base::StringPiece name, T callback) {
     return SetImpl(name, CallbackTraits<T>::CreateTemplate(isolate_, callback));
   }
   template <typename T>
-  ObjectTemplateBuilder& SetProperty(const base::StringPiece& name, T getter) {
+  ObjectTemplateBuilder& SetProperty(base::StringPiece name, T getter) {
     return SetPropertyImpl(name,
                            CallbackTraits<T>::CreateTemplate(isolate_, getter),
                            v8::Local<v8::FunctionTemplate>());
   }
   template <typename T, typename U>
-  ObjectTemplateBuilder& SetProperty(const base::StringPiece& name,
+  ObjectTemplateBuilder& SetProperty(base::StringPiece name,
                                      T getter,
                                      U setter) {
     return SetPropertyImpl(name,
@@ -105,10 +105,10 @@ class ObjectTemplateBuilder {
   v8::Local<v8::ObjectTemplate> Build();
 
  private:
-  ObjectTemplateBuilder& SetImpl(const base::StringPiece& name,
+  ObjectTemplateBuilder& SetImpl(base::StringPiece name,
                                  v8::Local<v8::Data> val);
   ObjectTemplateBuilder& SetPropertyImpl(
-      const base::StringPiece& name,
+      base::StringPiece name,
       v8::Local<v8::FunctionTemplate> getter,
       v8::Local<v8::FunctionTemplate> setter);
 
