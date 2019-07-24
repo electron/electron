@@ -56,9 +56,9 @@
     pretty-ms "^5.0.0"
 
 "@electron/typescript-definitions@^8.3.5":
-  version "8.3.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.3.5.tgz#02bbeea578bf3ef44f57297ba9e101df57270dbd"
-  integrity sha512-kKxNdWmw+zy2ENECrDjNdzDTATezTQEHmx0OHccbb/JOuL/tLpQXlVEiieCVQ2XJ+SY3FHRuZCrBUo3VEyR2uA==
+  version "8.4.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.4.0.tgz#934b8b0b4433245794686f416398fc2503742f35"
+  integrity sha512-P+j99jjv7KD54p/nbrG3esPJzTq1fkK+MAuK+AnaU395Z6+5IRiXutLPFaO9i1idXg2Y3aknad0HKke4jQJB1Q==
   dependencies:
     "@electron/docs-parser" "^0.2.1"
     "@types/node" "^11.13.7"
