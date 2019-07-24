@@ -38,7 +38,7 @@ index 743d1364bcd13e24ecbe5ced730161d15b8c3e93..a7e81072194c00baa0aa3159a6bfe374
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 237b07caa5ed7626c3b5b538cbb77f582f884203..cc4cb1ce9308ba8aecd6cc138954a1b5e04e6d29 100644
+index 444bb384d8453c19f0eec31dc3411b8684f502ca..9d0fbb5d5faf900810b4f85cc8c9bb3a279af78c 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -141,6 +141,7 @@
@@ -181,7 +181,7 @@ index 237b07caa5ed7626c3b5b538cbb77f582f884203..cc4cb1ce9308ba8aecd6cc138954a1b5
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index e02f5f922ea0eeca39fdf0acc265e1ef9dc254a6..764cac3182c3611e2c1fc4a0aa73b13ac81a9a72 100644
+index 0c9de0ce2504dca9e9e628885b3dcfbfc37f9675..d6b4139c4bf486182883a45ba7ccc70d42681998 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -491,6 +491,7 @@ void PostAnnouncementNotification(NSString* announcement) {

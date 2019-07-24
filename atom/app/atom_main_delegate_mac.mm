@@ -27,14 +27,17 @@ base::FilePath GetFrameworksPath() {
 
 base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
                                 const std::string& name) {
-    // Figure out what helper we are running
+  // Figure out what helper we are running
   base::FilePath path;
   base::PathService::Get(base::FILE_EXE, &path);
 
-   std::string helper_name = "Helper";
+  std::string helper_name = "Helper";
   if (base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
                      base::CompareCase::SENSITIVE)) {
     helper_name += content::kMacHelperSuffix_renderer;
+  } else if (base::EndsWith(path.value(), content::kMacHelperSuffix_gpu,
+                            base::CompareCase::SENSITIVE)) {
+    helper_name += content::kMacHelperSuffix_gpu;
   } else if (base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
                             base::CompareCase::SENSITIVE)) {
     helper_name += content::kMacHelperSuffix_plugin;
