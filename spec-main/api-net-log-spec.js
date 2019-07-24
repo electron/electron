@@ -88,7 +88,7 @@ describe('netLog module', () => {
   })
 
   it('should include cookies when requested', async () => {
-    await testNetLog().startLogging(dumpFileDynamic, {captureMode: "includePrivacyInfo"})
+    await testNetLog().startLogging(dumpFileDynamic, {captureMode: "includeSensitive"})
     const unique = require('uuid').v4()
     await new Promise((resolve) => {
       const req = net.request(server.url)

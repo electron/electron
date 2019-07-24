@@ -28,9 +28,9 @@ of the `app` module gets emitted.
 * `options` Object (optional)
   * `captureMode` String (optional) - What kinds of data should be captured. By
     default, only metadata about requests will be captured. Setting this to
-    `includePrivacyInfo` will include cookies and authentication data. Setting
+    `includeSensitive` will include cookies and authentication data. Setting
     it to `everything` will include all bytes transferred on sockets. Can be
-    `default`, `includePrivacyInfo` or `everything`.
+    `default`, `includeSensitive` or `everything`.
   * `maxFileSize` Number (optional) - When the log grows beyond this size,
     logging will automatically stop. Defaults to unlimited.
 

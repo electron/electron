@@ -32,11 +32,11 @@ struct Converter<net::NetLogCaptureMode> {
     if (!ConvertFromV8(isolate, val, &type))
       return false;
     if (type == "default")
-      *out = net::NetLogCaptureMode::Default();
-    else if (type == "includePrivacyInfo")
-      *out = net::NetLogCaptureMode::IncludeCookiesAndCredentials();
+      *out = net::NetLogCaptureMode::kDefault;
+    else if (type == "includeSensitive")
+      *out = net::NetLogCaptureMode::kIncludeSensitive;
     else if (type == "everything")
-      *out = net::NetLogCaptureMode::IncludeSocketBytes();
+      *out = net::NetLogCaptureMode::kEverything;
     else
       return false;
     return true;
