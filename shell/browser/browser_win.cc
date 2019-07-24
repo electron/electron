@@ -373,10 +373,13 @@ void Browser::ShowEmojiPanel() {
 void Browser::ShowAboutPanel() {
   electron::MessageBoxSettings settings = {};
   settings.title = "About";
-  settings.message = "Testing 123";
-  settings.detail = "Detail?";
-  settings.checkbox_label = "checkbox label";
-  electron::ShowMessageBoxSync(settings);
+  settings.message =
+      "Windows Live Messenger\r\nVersion 8.1 (Build "
+      "6.4.23.1.3.12.00)\r\nCopyright (C) 1997-2006 Microsoft Corporation. All "
+      "rights reserved.";
+  // TODO: make asynchronous to avoid blocking js code
+  electron::ShowMessageBox(settings);
+  // TODO: customize options
   // const auto& opts = about_panel_options_;
 }
 
