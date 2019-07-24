@@ -22,7 +22,9 @@ describeFn('autoUpdater behavior', function () {
   beforeEach(function () {
     const result = cp.spawnSync(path.resolve(__dirname, '../script/codesign/get-trusted-identity.sh'))
     if (result.status !== 0 || result.stdout.toString().trim().length === 0)  {
-      if (isCI) {
+      // Per https://circleci.com/docs/2.0/env-vars:
+      // CIRCLE_PR_NUMBER is only present on forked PRs
+      if (isCI && !process.env.CIRCLE_PR_NUMBER) {
         throw new Error('No valid signing identity available to run autoUpdater specs')
       }
       this.skip()
