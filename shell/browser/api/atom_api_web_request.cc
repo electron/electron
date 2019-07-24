@@ -68,22 +68,23 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
   // { urls }.
   URLPatterns patterns;
   mate::Dictionary dict;
-  if (args->GetNext(&dict)) {
-    std::set<std::string> filter_patterns;
-    if (dict.HasKey("urls") && dict.Get("urls", &filter_patterns)) {
-      for (const std::string& filter_pattern : filter_patterns) {
-        URLPattern pattern = URLPattern(URLPattern::SCHEME_ALL);
-        URLPattern::ParseResult success = pattern.Parse(
-            filter_pattern,
-            URLPattern::ParseOptions::ALLOW_WILDCARD_FOR_EFFECTIVE_TLD);
-        if (success == URLPattern::ParseResult::kSuccess) {
-          patterns.insert(pattern);
-        } else {
-          std::string error_type = URLPattern::GetParseResultString(success);
-          args->ThrowError("Invalid url pattern " + filter_pattern + ": " +
-                           error_type);
-        }
-      }
+  std::set<std::string> filter_patterns;
+
+  if (args->GetNext(&dict) && !dict.Get("urls", &filter_patterns)) {
+    args->ThrowError(
+        "onBeforeRequest parameter 'filter' must have property 'urls'.");
+    return;
+  }
+
+  URLPattern pattern(URLPattern::SCHEME_ALL);
+  for (const std::string& filter_pattern : filter_patterns) {
+    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
+    if (result == URLPattern::ParseResult::kSuccess) {
+      patterns.insert(pattern);
+    } else {
+      const char* error_type = URLPattern::GetParseResultString(result);
+      args->ThrowError("Invalid url pattern " + filter_pattern + ": " +
+                       error_type);
     }
   }
 
