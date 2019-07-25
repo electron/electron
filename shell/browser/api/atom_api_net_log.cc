@@ -92,7 +92,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
     return v8::Local<v8::Promise>();
   }
 
-  net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
+  net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::kDefault;
   uint64_t max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
 
   mate::Dictionary dict;
