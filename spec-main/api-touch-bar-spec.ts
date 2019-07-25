@@ -1,53 +1,53 @@
-const path = require('path')
-const { BrowserWindow, TouchBar } = require('electron').remote
-const { closeWindow } = require('./window-helpers')
-const { expect } = require('chai')
+import * as path from 'path'
+import { BrowserWindow, TouchBar } from 'electron'
+import { closeWindow } from './window-helpers'
+import { expect } from 'chai'
 
-const { TouchBarButton, TouchBarColorPicker, TouchBarGroup } = TouchBar
-const { TouchBarLabel, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer } = TouchBar
+const { TouchBarButton, TouchBarColorPicker, TouchBarGroup, TouchBarLabel, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer } = TouchBar
 
 describe('TouchBar module', () => {
   it('throws an error when created without an options object', () => {
     expect(() => {
-      const touchBar = new TouchBar()
+      const touchBar = new (TouchBar as any)()
       touchBar.toString()
     }).to.throw('Must specify options object as first argument')
   })
 
   it('throws an error when created with invalid items', () => {
     expect(() => {
-      const touchBar = new TouchBar({ items: [1, true, {}, []] })
+      const touchBar = new TouchBar({ items: [1, true, {}, []] as any })
       touchBar.toString()
     }).to.throw('Each item must be an instance of TouchBarItem')
   })
 
   it('throws an error when an invalid escape item is set', () => {
     expect(() => {
-      const touchBar = new TouchBar({ items: [], escapeItem: 'esc' })
+      const touchBar = new TouchBar({ items: [], escapeItem: 'esc' as any })
       touchBar.toString()
     }).to.throw('Escape item must be an instance of TouchBarItem')
 
     expect(() => {
       const touchBar = new TouchBar({ items: [] })
-      touchBar.escapeItem = 'esc'
+      touchBar.escapeItem = 'esc' as any
     }).to.throw('Escape item must be an instance of TouchBarItem')
   })
 
   describe('BrowserWindow behavior', () => {
-    let window
+    let window: BrowserWindow
 
     beforeEach(() => {
-      window = new BrowserWindow()
+      window = new BrowserWindow({show: false})
     })
 
-    afterEach(() => {
+    afterEach(async () => {
       window.setTouchBar(null)
-      return closeWindow(window).then(() => { window = null })
+      await closeWindow(window)
+      window = null as unknown as BrowserWindow
     })
 
     it('can be added to and removed from a window', () => {
       const label = new TouchBarLabel({ label: 'bar' })
-      const touchBar = new TouchBar([
+      const touchBar = new TouchBar({ items: [
         new TouchBarButton({ label: 'foo', backgroundColor: '#F00', click: () => {} }),
         new TouchBarButton({
           icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png'),
@@ -55,9 +55,9 @@ describe('TouchBar module', () => {
           click: () => {}
         }),
         new TouchBarColorPicker({ selectedColor: '#F00', change: () => {} }),
-        new TouchBarGroup({ items: new TouchBar([new TouchBarLabel({ label: 'hello' })]) }),
+        new TouchBarGroup({ items: new TouchBar({ items: [new TouchBarLabel({ label: 'hello' })] }) }),
         label,
-        new TouchBarPopover({ items: new TouchBar([new TouchBarButton({ label: 'pop' })]) }),
+        new TouchBarPopover({ items: new TouchBar({ items: [new TouchBarButton({ label: 'pop' })] }) }),
         new TouchBarSlider({ label: 'slide', value: 5, minValue: 2, maxValue: 75, change: () => {} }),
         new TouchBarSpacer({ size: 'large' }),
         new TouchBarSegmentedControl({
@@ -72,14 +72,14 @@ describe('TouchBar module', () => {
           mode: 'fixed',
           showArrowButtons: true
         })
-      ])
+      ]})
       const escapeButton = new TouchBarButton({ label: 'foo' })
       window.setTouchBar(touchBar)
       touchBar.escapeItem = escapeButton
       label.label = 'baz'
       escapeButton.label = 'hello'
-      window.setTouchBar()
-      window.setTouchBar(new TouchBar([new TouchBarLabel({ label: 'two' })]))
+      window.setTouchBar(null)
+      window.setTouchBar(new TouchBar({items: [new TouchBarLabel({ label: 'two' })]}))
       touchBar.escapeItem = null
     })
 
@@ -92,7 +92,7 @@ describe('TouchBar module', () => {
       })
       const touchBar = new TouchBar({ items: [button] })
       window.setTouchBar(touchBar)
-      window.emit('-touch-bar-interaction', {}, button.id)
+      window.emit('-touch-bar-interaction', {}, (button as any).id)
     })
 
     it('calls the callback on the escape item when a window interaction event fires', (done) => {
@@ -104,7 +104,7 @@ describe('TouchBar module', () => {
       })
       const touchBar = new TouchBar({ escapeItem: button })
       window.setTouchBar(touchBar)
-      window.emit('-touch-bar-interaction', {}, button.id)
+      window.emit('-touch-bar-interaction', {}, (button as any).id)
     })
   })
 })

@@ -1705,7 +1705,7 @@ deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 
-* `touchBar` TouchBar
+* `touchBar` TouchBar | null
 
 Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
