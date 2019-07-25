@@ -295,7 +295,7 @@ Returns `NativeImage` - The cropped image.
   * `width` Integer (optional) - Defaults to the image's width.
   * `height` Integer (optional) - Defaults to the image's height.
   * `quality` String (optional) - The desired quality of the resize image.
-    Possible values are `good`, `better` or `best`. The default is `best`.
+    Can be `good`, `better` or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated
     into an algorithm-specific method that depends on the capabilities
     (CPU, GPU) of the underlying platform. It is possible for all three methods
