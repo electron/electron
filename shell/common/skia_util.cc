@@ -8,21 +8,13 @@
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
-#include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/gfx_converter.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
-#include "ui/base/layout.h"
-#include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size.h"
@@ -155,6 +147,17 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
   return succeed;
 }
 
+#if defined(OS_WIN)
+bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
+  // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
+  SkBitmap bitmap = IconUtil::CreateSkBitmapFromHICON(icon);
+  if (bitmap.isNull())
+    return false;
+
+  image->AddRepresentation(gfx::ImageSkiaRep(bitmap, 1.0f));
+  return true;
+#endif
+
 }  // namespace util
 
-}  // namespace electron
+}  // namespace util

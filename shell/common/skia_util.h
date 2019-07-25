@@ -33,6 +33,10 @@ bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
                             size_t size,
                             double scale_factor);
 
+#if defined(OS_WIN)
+bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon);
+#endif
+
 }  // namespace util
 
 }  // namespace electron
