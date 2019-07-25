@@ -34,5 +34,8 @@
   "optionalDependencies": {
     "abstract-socket": "github:nornagon/node-abstractsocket#v8-compat",
     "robotjs": "github:octalmage/robotjs#d870ddb486e893361e10d23d32c95c9d2b4710c9"
+  },
+  "dependencies": {
+    "mocha-appveyor-reporter": "^0.4.2"
   }
 }
