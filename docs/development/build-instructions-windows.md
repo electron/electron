@@ -113,3 +113,15 @@ This can happen during build, when Debugging Tools for Windows has been installe
 ### ImportError: No module named win32file
 
 Make sure you have installed `pywin32` with `pip install pywin32`.
+
+### ninja stuck in endless loop of regenerating files
+
+For unknown reasons, running `ninja` after changing code 
+sometimes results in an endless loop:
+```sh
+[1/1] Regenerating ninja files
+[1/1] Regenerating ninja files
+[1/1] Regenerating ninja files
+...
+```
+To fix this issue, run `gclient sync -D` followed by `gclient sync -f` from the `src/electron` folder.
