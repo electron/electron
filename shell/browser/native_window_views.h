@@ -80,11 +80,11 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top,
+  void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
                       int relativeLevel,
                       std::string* error) override;
-  bool IsAlwaysOnTop() override;
+  ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
   void SetTitle(const std::string& title) override;
@@ -214,6 +214,9 @@ class NativeWindowViews : public NativeWindow,
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
 
+  // Maintain window placement.
+  void MoveBehindTaskBarIfNeeded();
+
   std::unique_ptr<RootView> root_view_;
 
   // The view should be focused by default.
@@ -280,6 +283,9 @@ class NativeWindowViews : public NativeWindow,
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = NULL;
   bool layered_ = false;
+
+  // Set to true if the window is always on top and behind the task bar.
+  bool behind_task_bar_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

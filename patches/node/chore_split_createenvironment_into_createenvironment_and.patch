@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 17 Jul 2019 14:45:59 -0700
+Subject: chore: split CreateEnvironment into CreateEnvironment and
+ BootstrapEnvironment
+
+This allows us to run operations on a created but not yet bootstrapped
+environment such as setting up an InspectorAgent
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 5011774be2c5fee910079790feae747fa1785b87..d5cb74025959ad32a6d2e6a914bf99a2b3d7946f 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -269,7 +269,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+                                int argc,
+                                const char* const* argv,
+                                int exec_argc,
+-                               const char* const* exec_argv) {
++                               const char* const* exec_argv,
++                               bool bootstrap) {
+   Isolate* isolate = context->GetIsolate();
+   HandleScope handle_scope(isolate);
+   Context::Scope context_scope(context);
+@@ -287,9 +288,16 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+                                       Environment::kOwnsProcessState |
+                                       Environment::kOwnsInspector));
+   env->InitializeLibuv(per_process::v8_is_profiling);
+-  if (env->RunBootstrapping().IsEmpty()) {
++  if (bootstrap && !BootstrapEnvironment(env)) {
+     return nullptr;
+   }
++  return env;
++}
++
++bool BootstrapEnvironment(Environment* env) {
++  if (env->RunBootstrapping().IsEmpty()) {
++    return false;
++  }
+ 
+   std::vector<Local<String>> parameters = {
+       env->require_string(),
+@@ -302,9 +310,10 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+   if (ExecuteBootstrapper(
+           env, "internal/bootstrap/environment", &parameters, &arguments)
+           .IsEmpty()) {
+-    return nullptr;
++    return false;
+   }
+-  return env;
++
++  return true;
+ }
+ 
+ void FreeEnvironment(Environment* env) {
+diff --git a/src/node.h b/src/node.h
+index de007ed97a52c17cff8b8917d25f2383d5bbae6a..cdf96c283dbfb4c763d0b0e21497fc289e28741a 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -330,7 +330,9 @@ NODE_EXTERN Environment* CreateEnvironment(IsolateData* isolate_data,
+                                            int argc,
+                                            const char* const* argv,
+                                            int exec_argc,
+-                                           const char* const* exec_argv);
++                                           const char* const* exec_argv,
++                                           bool bootstrap = true);
++NODE_EXTERN bool BootstrapEnvironment(Environment* env);
+ 
+ NODE_EXTERN void LoadEnvironment(Environment* env);
+ NODE_EXTERN void FreeEnvironment(Environment* env);

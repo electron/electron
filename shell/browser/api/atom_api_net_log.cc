@@ -92,7 +92,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(mate::Arguments* args) {
 
   // TODO(deepak1556): Provide more flexibility to this module
   // by allowing customizations on the capturing options.
-  auto capture_mode = net::NetLogCaptureMode::Default();
+  auto capture_mode = net::NetLogCaptureMode::kDefault;
   auto max_file_size = network::mojom::NetLogExporter::kUnlimitedFileSize;
 
   base::PostTaskAndReplyWithResult(

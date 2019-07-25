@@ -20,6 +20,7 @@ See [`Menu`](menu.md) for examples.
     `radio`.
   * `label` String (optional)
   * `sublabel` String (optional)
+  * `toolTip` String (optional) _macOS_ - Hover text for this menu item.
   * `accelerator` [Accelerator](accelerator.md) (optional)
   * `icon` ([NativeImage](native-image.md) | String) (optional)
   * `enabled` Boolean (optional) - If false, the menu item will be greyed out and
@@ -165,6 +166,10 @@ item's icon, if set.
 #### `menuItem.sublabel`
 
 A `String` indicating the item's sublabel, this property can be dynamically changed.
+
+#### `menuItem.toolTip` _macOS_
+
+A `String` indicating the item's hover text.
 
 #### `menuItem.enabled`
 

@@ -41,19 +41,13 @@ Returns:
 * `event` Event
 * `highContrastColorScheme` Boolean - `true` if a high contrast theme is being used, `false` otherwise.
 
-### Event: 'appearance-changed' _macOS_
-
-Returns:
-
-* `newAppearance` String - Can be `dark` or `light`
-
-**NOTE:** This event is only emitted after you have called `startAppLevelAppearanceTrackingOS`
-
 ## Methods
 
-### `systemPreferences.isDarkMode()` _macOS_
+### `systemPreferences.isDarkMode()` _macOS_ _Windows_
 
 Returns `Boolean` - Whether the system is in Dark Mode.
+
+**Note:** On macOS 10.15 Catalina in order for this API to return the correct value when in the "automatic" dark mode setting you must either have `NSRequiresAquaSystemAppearance=false` in your `Info.plist` or be on Electron `>=7.0.0`.  See the [dark mode guide](../tutorial/mojave-dark-mode-guide.md) for more information.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
@@ -90,13 +84,15 @@ that contains the user information dictionary sent along with the notification.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Returns `Number` - The ID of this subscription
 
 Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
 `userInfo` is an Object that contains the user information dictionary sent
-along with the notification.
+along with the notification. The `object` is the sender of the notification,
+and only supports `NSString` values for now.
 
 The `id` of the subscriber is returned, which can be used to unsubscribe the
 `event`.
@@ -115,6 +111,7 @@ example values of `event` are:
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Returns `Number` - The ID of this subscription
 
@@ -127,6 +124,7 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
@@ -340,13 +338,15 @@ See the [Windows docs][windows-colors] and the [MacOS docs][macos-colors] for mo
   * `red`
   * `yellow`
 
+Returns `String` - The standard system color formatted as `#RRGGBBAA`.
+
 Returns one of several standard system colors that automatically adapt to vibrancy and changes in accessibility settings like 'Increase contrast' and 'Reduce transparency'. See [Apple Documentation](https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#system-colors) for  more details.
 
 ### `systemPreferences.isInvertedColorScheme()` _Windows_
 
 Returns `Boolean` - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is active, `false` otherwise.
 
-### `systemPreferences.isHighContrastColorScheme()` _Windows_
+### `systemPreferences.isHighContrastColorScheme()` _macOS_ _Windows_
 
 Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
 
@@ -362,7 +362,7 @@ Please note that until Electron is built targeting the 10.14 SDK, your applicati
 the interim in order for your application to inherit the OS preference you must set the
 `NSRequiresAquaSystemAppearance` key in your apps `Info.plist` to `false`.  If you are
 using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode`
-packager option to `true`.  See the [Electron Packager API](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
+packager option to `true`.  See the [Electron Packager API](https://github.com/electron/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 for more details.
 
 ### `systemPreferences.getAppLevelAppearance()` _macOS_
@@ -372,6 +372,8 @@ Returns `String` | `null` - Can be `dark`, `light` or `unknown`.
 Gets the macOS appearance setting that you have declared you want for
 your application, maps to [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc).
 You can use the `setAppLevelAppearance` API to set this value.
+
+**[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_
 
@@ -453,3 +455,5 @@ your application. This maps to values in: [NSApplication.appearance](https://dev
 system default as well as the value of `getEffectiveAppearance`.
 
 Possible values that can be set are `dark` and `light`, and possible return values are `dark`, `light`, and `unknown`.
+
+This property is only available on macOS 10.14 Mojave or newer.

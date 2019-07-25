@@ -222,13 +222,14 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   return settings;
 }
 
-// copied from GetLoginItemForApp in base/mac/mac_util.mm
-LSSharedFileListItemRef GetLoginItemForApp() {
+void RemoveFromLoginItems() {
+  // logic to find the login item copied from GetLoginItemForApp in
+  // base/mac/mac_util.mm
   base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
       LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
   if (!login_items.get()) {
     LOG(ERROR) << "Couldn't get a Login Items list.";
-    return NULL;
+    return;
   }
   base::scoped_nsobject<NSArray> login_items_array(
       base::mac::CFToNSCast(LSSharedFileListCopySnapshot(login_items, NULL)));
@@ -242,42 +243,8 @@ LSSharedFileListItemRef GetLoginItemForApp() {
     if (!error && item_url_ref) {
       base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
       if (CFEqual(item_url, url)) {
-        CFRetain(item);
-        return item;
-      }
-    }
-  }
-  return NULL;
-}
-
-void RemoveFromLoginItems() {
-  base::ScopedCFTypeRef<LSSharedFileListRef> list(
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
-  if (!list) {
-    LOG(ERROR) << "Unable to access shared file list";
-    return;
-  }
-
-  if (GetLoginItemForApp() != NULL) {
-    base::scoped_nsobject<NSArray> login_items_array(
-        base::mac::CFToNSCast(LSSharedFileListCopySnapshot(list, NULL)));
-
-    if (!login_items_array) {
-      LOG(ERROR) << "No items in list of auto-loaded apps";
-      return;
-    }
-
-    for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
-      LSSharedFileListItemRef item =
-          reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-      base::ScopedCFTypeRef<CFErrorRef> error;
-      CFURLRef url_ref =
-          LSSharedFileListItemCopyResolvedURL(item, 0, error.InitializeInto());
-      if (!error && url_ref) {
-        base::ScopedCFTypeRef<CFURLRef> url(url_ref);
-        if ([[base::mac::CFToNSCast(url.get()) path]
-                hasPrefix:[[NSBundle mainBundle] bundlePath]])
-          LSSharedFileListItemRemove(list, item);
+        LSSharedFileListItemRemove(login_items, item);
+        return;
       }
     }
   }

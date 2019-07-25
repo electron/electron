@@ -149,6 +149,39 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   ).forEach(config => {
     generateTests(config.title, config.webPreferences)
   })
+
+  describe('internal <iframe> inside of <webview>', () => {
+    let w
+
+    beforeEach(async () => {
+      await closeWindow(w)
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          preload: path.resolve(__dirname, 'fixtures/sub-frames/webview-iframe-preload.js'),
+          nodeIntegrationInSubFrames: true,
+          webviewTag: true
+        }
+      })
+    })
+
+    afterEach(() => {
+      return closeWindow(w).then(() => {
+        w = null
+      })
+    })
+
+    it('should not load preload scripts', async () => {
+      const promisePass = emittedOnce(ipcMain, 'webview-loaded')
+      const promiseFail = emittedOnce(ipcMain, 'preload-in-frame').then(() => {
+        throw new Error('preload loaded in internal frame')
+      })
+      await w.loadURL('about:blank')
+      return Promise.race([promisePass, promiseFail])
+    })
+  })
 })
 
 describe('cross-site frame sandboxing', () => {

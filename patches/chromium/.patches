@@ -41,7 +41,6 @@ enable_widevine.patch
 chrome_key_systems.patch
 allow_nested_error_trackers.patch
 blink_initialization_order.patch
-disable_detach_webview_frame.patch
 ssl_security_state_tab_helper.patch
 exclude-a-few-test-files-from-build.patch
 expose-net-observer-api.patch
@@ -57,7 +56,6 @@ tts.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
 support_mixed_sandbox_with_zygote.patch
-disable_color_correct_rendering.patch
 autofill_size_calculation.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_mas.patch
@@ -66,7 +64,6 @@ disable_network_services_by_default.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
 build_add_electron_tracing_category.patch
-add_contentgpuclient_precreatemessageloop_callback.patch
 disable_custom_libcxx_on_windows.patch
 feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
@@ -78,4 +75,6 @@ chore_add_debounce_on_the_updatewebcontentsvisibility_method_to.patch
 preconnect_feature.patch
 network_service_allow_remote_certificate_verification_logic.patch
 put_back_deleted_colors_for_autofill.patch
-fix_re-add_endauxattributes_to_fix_gpu_info_enumeration.patch
+build_win_disable_zc_twophase.patch
+disable_color_correct_rendering.patch
+add_contentgpuclient_precreatemessageloop_callback.patch

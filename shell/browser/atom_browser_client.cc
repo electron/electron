@@ -82,6 +82,7 @@
 #include "shell/common/platform_util.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
 #if defined(OS_WIN)
@@ -95,7 +96,6 @@
 #elif defined(OS_MACOSX)
 #include "net/ssl/client_cert_store_mac.h"
 #include "services/audio/public/mojom/constants.mojom.h"
-#include "services/video_capture/public/mojom/constants.mojom.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
 #endif
@@ -153,6 +153,12 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   g_io_thread_application_locale.Get() = locale;
 }
+
+#if defined(OS_WIN)
+const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
+#else
+const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
+#endif
 
 }  // namespace
 
@@ -413,6 +419,11 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
 
+  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+                                      ? blink::PreferredColorScheme::kDark
+                                      : blink::PreferredColorScheme::kLight;
+
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
@@ -495,21 +506,28 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     int process_id) {
   // Make sure we're about to launch a known executable
   {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
     base::FilePath child_path;
+    base::FilePath program =
+        base::MakeAbsoluteFilePath(command_line->GetProgram());
 #if defined(OS_MACOSX)
-    int flags = content::ChildProcessHost::CHILD_NORMAL;
-    if (base::EndsWith(command_line->GetProgram().value(),
-                       content::kMacHelperSuffix_renderer,
-                       base::CompareCase::SENSITIVE)) {
-      flags = content::ChildProcessHost::CHILD_RENDERER;
+    auto renderer_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_RENDERER);
+    auto gpu_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_GPU);
+    auto plugin_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_PLUGIN);
+    if (program != renderer_child_path && program != gpu_child_path &&
+        program != plugin_child_path) {
+      child_path = content::ChildProcessHost::GetChildPath(
+          content::ChildProcessHost::CHILD_NORMAL);
+      CHECK_EQ(program, child_path)
+          << "Aborted from launching unexpected helper executable";
     }
-    child_path = content::ChildProcessHost::GetChildPath(flags);
 #else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+    CHECK_EQ(program, child_path);
 #endif
-
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
   }
 
   std::string process_type =
@@ -550,8 +568,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(
           command_line, IsRendererSubFrame(process_id));
-    SessionPreferences::AppendExtraCommandLineSwitches(
-        web_contents->GetBrowserContext(), command_line);
+    auto preloads =
+        SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
+    if (!preloads.empty())
+      command_line->AppendSwitchNative(
+          switches::kPreloadScripts,
+          base::JoinString(preloads, kPathDelimiter));
     if (CanUseCustomSiteInstance()) {
       command_line->AppendSwitch(
           switches::kDisableElectronSiteInstanceOverrides);
@@ -563,8 +585,7 @@ void AtomBrowserClient::AdjustUtilityServiceProcessCommandLine(
     const service_manager::Identity& identity,
     base::CommandLine* command_line) {
 #if defined(OS_MACOSX)
-  if (identity.name() == video_capture::mojom::kServiceName ||
-      identity.name() == audio::mojom::kServiceName)
+  if (identity.name() == audio::mojom::kServiceName)
     command_line->AppendSwitch(::switches::kMessageLoopTypeUi);
 #endif
 }
@@ -844,10 +865,7 @@ bool AtomBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    network::mojom::URLLoaderFactoryRequest* factory_request,
-    // clang-format off
-    network::mojom::URLLoaderFactory*& out_factory) {  // NOLINT
-  // clang-format on
+    network::mojom::URLLoaderFactoryPtr* out_factory) {
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
@@ -980,7 +998,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool is_navigation,
     bool is_download,
     const url::Origin& request_initiator,
-    network::mojom::URLLoaderFactoryRequest* factory_request,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
@@ -990,12 +1008,19 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   if (!protocol)
     return false;
 
-  auto proxied_request = std::move(*factory_request);
+  auto proxied_receiver = std::move(*factory_receiver);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
-  *factory_request = mojo::MakeRequest(&target_factory_info);
-  new ProxyingURLLoaderFactory(protocol->intercept_handlers(),
-                               std::move(proxied_request),
-                               std::move(target_factory_info));
+  *factory_receiver = mojo::MakeRequest(&target_factory_info);
+
+  network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request;
+  if (header_client)
+    header_client_request = mojo::MakeRequest(header_client);
+
+  new ProxyingURLLoaderFactory(
+      protocol->intercept_handlers(), std::move(proxied_receiver),
+      std::move(target_factory_info), std::move(header_client_request));
+
+  *bypass_redirect_checks = true;
   return true;
 }
 

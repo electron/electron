@@ -34,6 +34,8 @@ environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
+  MOCHA_REPORTER: mocha-multi-reporters
+  MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
 notifications:
   - provider: Webhook
     url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook
@@ -89,9 +91,10 @@ build_script:
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
-        ninja -C out/Default third_party/breakpad:dump_syms
+        # Needed for msdia140.dll on 64-bit windows
+        $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
+        ninja -C out/Default electron:electron_symbols
       }
-  - if "%GN_CONFIG%"=="release" ( python electron\script\dump-symbols.py -d %cd%\out\Default\breakpad_symbols -v)
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         python electron\script\zip-symbols.py

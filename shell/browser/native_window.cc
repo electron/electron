@@ -128,7 +128,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
-    SetAlwaysOnTop(true);
+    SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
   }
   bool fullscreenable = true;
   bool fullscreen = false;
@@ -511,6 +511,11 @@ void NativeWindow::NotifyWindowScrollTouchEnd() {
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);
+}
+
+void NativeWindow::NotifyWindowRotateGesture(float rotation) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowRotateGesture(rotation);
 }
 
 void NativeWindow::NotifyWindowSheetBegin() {

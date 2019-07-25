@@ -14,12 +14,54 @@
 #import <sys/param.h>
 
 #import "shell/browser/browser.h"
+#include "shell/common/native_mate_converters/once_callback.h"
+
+namespace mate {
+
+template <>
+struct Converter<electron::BundlerMoverConflictType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   electron::BundlerMoverConflictType value) {
+    switch (value) {
+      case electron::BundlerMoverConflictType::EXISTS:
+        return mate::StringToV8(isolate, "exists");
+      case electron::BundlerMoverConflictType::EXISTS_AND_RUNNING:
+        return mate::StringToV8(isolate, "existsAndRunning");
+      default:
+        return mate::StringToV8(isolate, "");
+    }
+  }
+};
+
+}  // namespace mate
 
 namespace electron {
 
 namespace ui {
 
 namespace cocoa {
+
+bool AtomBundleMover::ShouldContinueMove(BundlerMoverConflictType type,
+                                         mate::Arguments* args) {
+  mate::Dictionary options;
+  bool hasOptions = args->GetNext(&options);
+  base::OnceCallback<v8::Local<v8::Value>(BundlerMoverConflictType)>
+      conflict_cb;
+
+  if (hasOptions && options.Get("conflictHandler", &conflict_cb)) {
+    v8::Local<v8::Value> value = std::move(conflict_cb).Run(type);
+    if (value->IsBoolean()) {
+      if (!value.As<v8::Boolean>()->Value())
+        return false;
+    } else if (!value->IsUndefined()) {
+      // we only want to throw an error if a user has returned a non-boolean
+      // value; this allows for client-side error handling should something in
+      // the handler throw
+      args->ThrowError("Invalid conflict handler return type.");
+    }
+  }
+  return true;
+}
 
 bool AtomBundleMover::Move(mate::Arguments* args) {
   // Path of the current bundle
@@ -74,7 +116,12 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
     if ([fileManager fileExistsAtPath:destinationPath]) {
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
-        // Give the running app focus and terminate myself
+        // Check for callback handler and get user choice for open/quit
+        if (!ShouldContinueMove(BundlerMoverConflictType::EXISTS_AND_RUNNING,
+                                args))
+          return false;
+
+        // Unless explicitly denied, give running app focus and terminate self
         [[NSTask
             launchedTaskWithLaunchPath:@"/usr/bin/open"
                              arguments:[NSArray
@@ -83,6 +130,11 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         electron::Browser::Get()->Quit();
         return true;
       } else {
+        // Check callback handler and get user choice for app trashing
+        if (!ShouldContinueMove(BundlerMoverConflictType::EXISTS, args))
+          return false;
+
+        // Unless explicitly denied, attempt to trash old app
         if (!Trash([applicationsDirectory
                 stringByAppendingPathComponent:bundleName])) {
           args->ThrowError("Failed to delete existing application");
@@ -313,11 +365,7 @@ bool AtomBundleMover::CopyBundle(NSString* srcPath, NSString* dstPath) {
   NSFileManager* fileManager = [NSFileManager defaultManager];
   NSError* error = nil;
 
-  if ([fileManager copyItemAtPath:srcPath toPath:dstPath error:&error]) {
-    return true;
-  } else {
-    return false;
-  }
+  return [fileManager copyItemAtPath:srcPath toPath:dstPath error:&error];
 }
 
 NSString* AtomBundleMover::ShellQuotedString(NSString* string) {

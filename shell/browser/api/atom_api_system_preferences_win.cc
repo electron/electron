@@ -20,30 +20,12 @@ namespace {
 const wchar_t kSystemPreferencesWindowClass[] =
     L"Electron_SystemPreferencesHostWindow";
 
-bool g_is_high_contract_color_scheme = false;
-bool g_is_high_contract_color_scheme_initialized = false;
-
-void UpdateHighContrastColorScheme() {
-  HIGHCONTRAST high_contrast = {0};
-  high_contrast.cbSize = sizeof(HIGHCONTRAST);
-  g_is_high_contract_color_scheme =
-      SystemParametersInfo(SPI_GETHIGHCONTRAST, 0, &high_contrast, 0) &&
-      ((high_contrast.dwFlags & HCF_HIGHCONTRASTON) != 0);
-  g_is_high_contract_color_scheme_initialized = true;
-}
-
 }  // namespace
 
 namespace api {
 
 bool SystemPreferences::IsAeroGlassEnabled() {
   return ui::win::IsAeroGlassEnabled();
-}
-
-bool SystemPreferences::IsHighContrastColorScheme() {
-  if (!g_is_high_contract_color_scheme_initialized)
-    UpdateHighContrastColorScheme();
-  return g_is_high_contract_color_scheme;
 }
 
 std::string hexColorDWORDToRGBA(DWORD color) {
@@ -188,9 +170,6 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
       Emit("accent-color-changed", hexColorDWORDToRGBA(new_color));
       current_color_ = new_color_string;
     }
-  } else if (message == WM_SYSCOLORCHANGE ||
-             (message == WM_SETTINGCHANGE && wparam == SPI_SETHIGHCONTRAST)) {
-    UpdateHighContrastColorScheme();
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
 }

@@ -65,6 +65,13 @@ void NotifyIcon::HandleClickEvent(int modifiers,
   }
 }
 
+void NotifyIcon::HandleMouseMoveEvent(int modifiers) {
+  gfx::Point cursorPos = display::Screen::GetScreen()->GetCursorScreenPoint();
+  // Omit event fired when tray icon is created but cursor is outside of it.
+  if (GetBounds().Contains(cursorPos))
+    NotifyMouseMoved(cursorPos, modifiers);
+}
+
 void NotifyIcon::ResetIcon() {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
@@ -159,6 +166,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
       views::Widget::InitParams::Ownership::WIDGET_OWNS_NATIVE_WIDGET;
   params.bounds = gfx::Rect(0, 0, 0, 0);
   params.force_software_compositing = true;
+  params.z_order = ui::ZOrderLevel::kFloatingUIElement;
 
   widget_->Init(params);
 

@@ -33,7 +33,7 @@ you can use the [Frameless Window](frameless-window.md) API.
 When loading a page in the window directly, users may see the page load incrementally, which is not a good experience for a native app. To make the window display
 without visual flash, there are two solutions for different situations.
 
-### Using `ready-to-show` event
+## Using `ready-to-show` event
 
 While loading the page, the `ready-to-show` event will be emitted when the renderer
 process has rendered the page for the first time if the window has not been shown yet. Showing
@@ -51,7 +51,7 @@ This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
-### Setting `backgroundColor`
+## Setting `backgroundColor`
 
 For a complex app, the `ready-to-show` event could be emitted too late, making
 the app feel slow. In this case, it is recommended to show the window
@@ -82,7 +82,7 @@ top.show()
 
 The `child` window will always show on top of the `top` window.
 
-### Modal windows
+## Modal windows
 
 A modal window is a child window that disables parent window, to create a modal
 window, you have to set both `parent` and `modal` options:
@@ -97,7 +97,7 @@ child.once('ready-to-show', () => {
 })
 ```
 
-### Page visibility
+## Page visibility
 
 The [Page Visibility API][page-visibility-api] works as follows:
 
@@ -116,7 +116,7 @@ The [Page Visibility API][page-visibility-api] works as follows:
 It is recommended that you pause expensive operations when the visibility
 state is `hidden` in order to minimize power consumption.
 
-### Platform notices
+## Platform notices
 
 * On macOS modal windows will be displayed as sheets attached to the parent window.
 * On macOS the child windows will keep the relative position to parent window
@@ -131,8 +131,7 @@ state is `hidden` in order to minimize power consumption.
 
 Process: [Main](../glossary.md#main-process)
 
-`BrowserWindow` is an
-[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
+`BrowserWindow` is an [EventEmitter][event-emitter].
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
@@ -198,7 +197,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
-    than screen. Default is `false`.
+    than screen. Only relevant for macOS, as other OSes allow
+    larger-than-screen windows by default. Default is `false`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
     `transparent` is set to `true`). Default is `#FFF` (white).
@@ -234,9 +234,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     window shadow and window animations. Default is `true`.
   * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
-    `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.  Please note that
-    using `frame: false` in combination with a vibrancy value requires that you use a
-    non-default `titleBarStyle` as well.
+    `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`.  Please note that using `frame: false` in combination with a vibrancy value requires that you use a non-default `titleBarStyle` as well. Also note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been deprecated and will be removed in an upcoming version of macOS.
   * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
     option-clicking the green stoplight button on the toolbar or by clicking the
     Window > Zoom menu item. If `true`, the window will grow to the preferred
@@ -616,6 +614,19 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
+#### Event: 'rotate-gesture' _macOS_
+
+Returns:
+
+* `event` Event
+* `rotation` Float
+
+Emitted on trackpad rotation gesture. Continually emitted until rotation gesture is
+ended. The `rotation` value on each emission is the angle in degrees rotated since
+the last emission. The last emitted event upon a rotation gesture will always be of
+value `0`. Counter-clockwise rotation values are positive, while clockwise ones are
+negative.
+
 #### Event: 'sheet-begin' _macOS_
 
 Emitted when the window opens a sheet.
@@ -749,7 +760,66 @@ events.
 
 #### `win.id`
 
-A `Integer` representing the unique ID of the window.
+A `Integer` property representing the unique ID of the window.
+
+#### `win.autoHideMenuBar`
+
+A `Boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
+
+If the menu bar is already visible, setting this property to `true` won't
+hide it immediately.
+
+#### `win.minimizable`
+
+A `Boolean` property that determines whether the window can be manually minimized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.maximizable`
+
+A `Boolean` property that determines whether the window can be manually maximized by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.fullScreenable`
+
+A `Boolean` property that determines whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window.
+
+#### `win.resizable`
+
+A `Boolean` property that determines whether the window can be manually resized by user.
+
+#### `win.closable`
+
+A `Boolean` property that determines whether the window can be manually closed by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.movable`
+
+A `Boolean` property that determines Whether the window can be moved by user.
+
+On Linux the setter is a no-op, although the getter returns `true`.
+
+#### `win.excludedFromShownWindowsMenu` _macOS_
+
+A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
+
+```js
+const win = new BrowserWindow({ height: 600, width: 600 })
+
+const template = [
+  {
+    role: 'windowmenu'
+  }
+]
+
+win.excludedFromShownWindowsMenu = true
+
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```
 
 ### Instance Methods
 
@@ -908,7 +978,7 @@ Closes the currently open [Quick Look][quick-look] panel.
 
 #### `win.setBounds(bounds[, animate])`
 
-* `bounds` [Rectangle](structures/rectangle.md)
+* `bounds` Partial<[Rectangle](structures/rectangle.md)>
 * `animate` Boolean (optional) _macOS_
 
 Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
@@ -954,6 +1024,10 @@ Returns [`Rectangle`](structures/rectangle.md) - Contains the window bounds of t
 * `enable` Boolean
 
 Disable or enable the window.
+
+#### `win.isEnabled()`
+
+Returns Boolean - whether the window is enabled.
 
 #### `win.setSize(width, height[, animate])`
 
@@ -1100,10 +1174,15 @@ On Linux always returns `true`.
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` Boolean
-* `level` String (optional) _macOS_ - Values include `normal`, `floating`,
-  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
-  `screen-saver`, and ~~`dock`~~ (Deprecated). The default is `floating`. See the
-  [macOS docs][window-levels] for more details.
+* `level` String (optional) _macOS_ _Windows_ - Values include `normal`,
+  `floating`, `torn-off-menu`, `modal-panel`, `main-menu`, `status`,
+  `pop-up-menu`, `screen-saver`, and ~~`dock`~~ (Deprecated). The default is
+  `floating` when `flag` is true. The `level` is reset to `normal` when the
+  flag is false. Note that from `floating` to `status` included, the window is
+  placed below the Dock on macOS and below the taskbar on Windows. From
+  `pop-up-menu` to a higher it is shown above the Dock on macOS and above the
+  taskbar on Windows. See the [macOS docs][window-levels] for more details.
+
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
   discourages setting levels higher than 1 above `screen-saver`.
@@ -1552,15 +1631,17 @@ Prevents the window contents from being captured by other apps.
 On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
-#### `win.setFocusable(focusable)` _Windows_
+#### `win.setFocusable(focusable)` _macOS_ _Windows_
 
 * `focusable` Boolean
 
 Changes whether the window can be focused.
 
+On macOS it does not remove the focus from the window.
+
 #### `win.setParentWindow(parent)`
 
-* `parent` BrowserWindow
+* `parent` BrowserWindow | null
 
 Sets `parent` as current window's parent window, passing `null` will turn
 current window into a top-level window.
@@ -1612,16 +1693,19 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`. See
+* `type` String | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
+Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
+deprecated and will be removed in an upcoming version of macOS.
+
 #### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 
-* `touchBar` TouchBar
+* `touchBar` TouchBar | null
 
 Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
@@ -1632,7 +1716,7 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md) - Attach browserView to win.
+* `browserView` [BrowserView](browser-view.md) | null - Attach browserView to win.
 If there is some other browserViews was attached they will be removed from
 this window.
 
@@ -1653,8 +1737,8 @@ Replacement API for setBrowserView supporting work with multi browser views.
 
 #### `win.getBrowserViews()` _Experimental_
 
-Returns array of `BrowserView` what was an attached with addBrowserView
-or setBrowserView.
+Returns `BrowserView[]` - an array of all BrowserViews that have been attached
+with `addBrowserView` or `setBrowserView`.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
@@ -1665,64 +1749,4 @@ removed in future Electron releases.
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
-
-### Properties
-
-#### `win.autoHideMenuBar`
-
-A `Boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
-
-If the menu bar is already visible, setting this property to `true` won't
-hide it immediately.
-
-#### `win.minimizable`
-
-A `Boolean` property that determines whether the window can be manually minimized by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.maximizable`
-
-A `Boolean` property that determines whether the window can be manually maximized by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.fullScreenable`
-
-A `Boolean` property that determines whether the maximize/zoom window button toggles fullscreen mode or
-maximizes the window.
-
-#### `win.resizable`
-
-A `Boolean` property that determines whether the window can be manually resized by user.
-
-#### `win.closable`
-
-A `Boolean` property that determines whether the window can be manually closed by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.movable`
-
-A `Boolean` property that determines Whether the window can be moved by user.
-
-On Linux the setter is a no-op, although the getter returns `true`.
-
-#### `win.excludedFromShownWindowsMenu` _macOS_
-
-A `Boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
-
-```js
-const win = new BrowserWindow({ height: 600, width: 600 })
-
-const template = [
-  {
-    role: 'windowmenu'
-  }
-]
-
-win.excludedFromShownWindowsMenu = true
-
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
-```
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

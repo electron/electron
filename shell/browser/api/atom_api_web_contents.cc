@@ -41,6 +41,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "native_mate/converter.h"
@@ -61,6 +62,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/atom_network_delegate.h"
 #include "shell/browser/net/preconnect_manager_helper.h"
+#include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -110,6 +112,10 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "shell/browser/extensions/atom_extension_web_contents_observer.h"
 #endif
 
 namespace mate {
@@ -453,12 +459,16 @@ void WebContents::InitWithSessionAndOptions(
   prefs->subpixel_rendering = params->subpixel_rendering;
 #endif
 
-  // Initialize permission helper.
+  // Save the preferences in C++.
+  new WebContentsPreferences(web_contents(), options);
+
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
-  // Initialize security state client.
   SecurityStateTabHelper::CreateForWebContents(web_contents());
-  // Initialize zoom controller.
   InitZoomController(web_contents(), options);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::AtomExtensionWebContentsObserver::CreateForWebContents(
+      web_contents());
+#endif
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
@@ -499,12 +509,7 @@ WebContents::~WebContents() {
 
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
-    if (type_ == Type::WEB_VIEW) {
-      DCHECK(!web_contents()->GetOuterWebContents())
-          << "Should never manually destroy an attached webview";
-      // For webview simply destroy the WebContents immediately.
-      DestroyWebContents(false /* async */);
-    } else if (type_ == Type::BROWSER_WINDOW && owner_window()) {
+    if (type_ == Type::BROWSER_WINDOW && owner_window()) {
       // For BrowserWindow we should close the window and clean up everything
       // before WebContents is destroyed.
       for (ExtendedWebContentsObserver& observer : observers_)
@@ -518,7 +523,7 @@ WebContents::~WebContents() {
     } else {
       // Destroy WebContents asynchronously unless app is shutting down,
       // because destroy() might be called inside WebContents's event handler.
-      DestroyWebContents(true /* async */);
+      DestroyWebContents(!IsGuest() /* async */);
       // The WebContentsDestroyed will not be called automatically because we
       // destroy the webContents in the next tick. So we have to manually
       // call it here to make sure "destroyed" event is emitted.
@@ -1194,7 +1199,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // 2. garbage collection;
 // 3. user closes the window of webContents;
 // 4. the embedder detaches the frame.
-// For webview both #1 and #4 may happen, for BrowserWindow both #1 and #3 may
+// For webview only #4 will happen, for BrowserWindow both #1 and #3 may
 // happen. The #2 should never happen for webContents, because webview is
 // managed by GuestViewManager, and BrowserWindow's webContents is managed
 // by api::BrowserWindow.
@@ -1359,7 +1364,7 @@ void WebContents::DownloadURL(const GURL& url) {
       content::BrowserContext::GetDownloadManager(browser_context);
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
-          web_contents(), url, NO_TRAFFIC_ANNOTATION_YET));
+          web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -2211,14 +2216,17 @@ void WebContents::HideAutofillPopup() {
   CommonWebContentsDelegate::HideAutofillPopup();
 }
 
-v8::Local<v8::Value> WebContents::GetPreloadPath(v8::Isolate* isolate) const {
+std::vector<base::FilePath::StringType> WebContents::GetPreloadPaths() const {
+  auto result = SessionPreferences::GetValidPreloads(GetBrowserContext());
+
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
     base::FilePath::StringType preload;
     if (web_preferences->GetPreloadPath(&preload)) {
-      return mate::ConvertToV8(isolate, preload);
+      result.emplace_back(preload);
     }
   }
-  return v8::Null(isolate);
+
+  return result;
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(
@@ -2389,8 +2397,10 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_goForward", &WebContents::GoForward)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("setUserAgent", &WebContents::SetUserAgent)
-      .SetMethod("getUserAgent", &WebContents::GetUserAgent)
+      .SetMethod("_setUserAgent", &WebContents::SetUserAgent)
+      .SetMethod("_getUserAgent", &WebContents::GetUserAgent)
+      .SetProperty("userAgent", &WebContents::GetUserAgent,
+                   &WebContents::SetUserAgent)
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
@@ -2401,8 +2411,10 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
       .SetMethod("inspectElement", &WebContents::InspectElement)
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
-      .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
-      .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
+      .SetMethod("_setAudioMuted", &WebContents::SetAudioMuted)
+      .SetMethod("_isAudioMuted", &WebContents::IsAudioMuted)
+      .SetProperty("audioMuted", &WebContents::IsAudioMuted,
+                   &WebContents::SetAudioMuted)
       .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
@@ -2433,16 +2445,22 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
       .SetMethod("isPainting", &WebContents::IsPainting)
-      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
-      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
+      .SetMethod("_setFrameRate", &WebContents::SetFrameRate)
+      .SetMethod("_getFrameRate", &WebContents::GetFrameRate)
+      .SetProperty("frameRate", &WebContents::GetFrameRate,
+                   &WebContents::SetFrameRate)
 #endif
       .SetMethod("invalidate", &WebContents::Invalidate)
-      .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
-      .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
-      .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
-      .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
+      .SetMethod("_setZoomLevel", &WebContents::SetZoomLevel)
+      .SetMethod("_getZoomLevel", &WebContents::GetZoomLevel)
+      .SetProperty("zoomLevel", &WebContents::GetZoomLevel,
+                   &WebContents::SetZoomLevel)
+      .SetMethod("_setZoomFactor", &WebContents::SetZoomFactor)
+      .SetMethod("_getZoomFactor", &WebContents::GetZoomFactor)
+      .SetProperty("zoomFactor", &WebContents::GetZoomFactor,
+                   &WebContents::SetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
-      .SetMethod("_getPreloadPath", &WebContents::GetPreloadPath)
+      .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("_isRemoteModuleEnabled", &WebContents::IsRemoteModuleEnabled)

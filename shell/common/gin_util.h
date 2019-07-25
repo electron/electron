@@ -12,7 +12,7 @@ namespace gin_util {
 
 template <typename T>
 bool SetMethod(v8::Local<v8::Object> recv,
-               const base::StringPiece& key,
+               base::StringPiece key,
                const T& callback) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto context = isolate->GetCurrentContext();

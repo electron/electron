@@ -26,6 +26,7 @@
 #include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/api/locker.h"
 #include "shell/common/atom_command_line.h"
+#include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -98,13 +99,14 @@ namespace {
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   // Close any active handles
   uv_stop(loop);
-  uv_walk(loop,
-          [](uv_handle_t* handle, void*) {
-            if (!uv_is_closing(handle)) {
-              uv_close(handle, nullptr);
-            }
-          },
-          nullptr);
+  uv_walk(
+      loop,
+      [](uv_handle_t* handle, void*) {
+        if (!uv_is_closing(handle)) {
+          uv_close(handle, nullptr);
+        }
+      },
+      nullptr);
 
   // Run the loop to let it finish all the closing handles
   // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
@@ -136,21 +138,16 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
   return array;
 }
 
-base::FilePath GetResourcesPath(bool is_browser) {
+base::FilePath GetResourcesPath() {
+#if defined(OS_MACOSX)
+  return MainApplicationBundlePath().Append("Contents").Append("Resources");
+#else
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
   base::PathService::Get(base::FILE_EXE, &exec_path);
 
-  base::FilePath resources_path =
-#if defined(OS_MACOSX)
-      is_browser
-          ? exec_path.DirName().DirName().Append("Resources")
-          : exec_path.DirName().DirName().DirName().DirName().DirName().Append(
-                "Resources");
-#else
-      exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
-  return resources_path;
 }
 
 }  // namespace
@@ -197,10 +194,6 @@ void NodeBindings::RegisterBuiltinModules() {
 
 bool NodeBindings::IsInitialized() {
   return g_is_initialized;
-}
-
-base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
-  return GetResourcesPath(false).value();
 }
 
 void NodeBindings::Initialize() {
@@ -295,7 +288,8 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
-    node::MultiIsolatePlatform* platform) {
+    node::MultiIsolatePlatform* platform,
+    bool bootstrap_env) {
 #if defined(OS_WIN)
   auto& atom_args = AtomCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
@@ -318,8 +312,15 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = "worker";
       break;
   }
-  base::FilePath resources_path =
-      GetResourcesPath(browser_env_ == BrowserEnvironment::BROWSER);
+
+  mate::Dictionary global(context->GetIsolate(), context->Global());
+  // Do not set DOM globals for renderer process.
+  // We must set this before the node bootstrapper which is run inside
+  // CreateEnvironment
+  if (browser_env_ != BrowserEnvironment::BROWSER)
+    global.Set("_noBrowserGlobals", true);
+
+  base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
@@ -327,7 +328,17 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
-      context, args.size(), c_argv.get(), 0, nullptr);
+      context, args.size(), c_argv.get(), 0, nullptr, bootstrap_env);
+  DCHECK(env);
+
+  // Clean up the global _noBrowserGlobals that we unironically injected into
+  // the global scope
+  if (browser_env_ != BrowserEnvironment::BROWSER) {
+    // We need to bootstrap the env in non-browser processes so that
+    // _noBrowserGlobals is read correctly before we remove it
+    DCHECK(bootstrap_env);
+    global.Delete("_noBrowserGlobals");
+  }
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
@@ -342,9 +353,6 @@ node::Environment* NodeBindings::CreateEnvironment(
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
-  // Do not set DOM globals for renderer process.
-  if (browser_env_ != BrowserEnvironment::BROWSER)
-    process.Set("_noBrowserGlobals", true);
   // The path to helper app.
   base::FilePath helper_exec_path;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);

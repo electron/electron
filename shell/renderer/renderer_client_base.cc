@@ -16,6 +16,7 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
@@ -63,6 +64,17 @@
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/common/extensions_client.h"
+#include "extensions/renderer/dispatcher.h"
+#include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container.h"
+#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
+#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
+#include "shell/common/extensions/atom_extensions_client.h"
+#include "shell/renderer/extensions/atom_extensions_renderer_client.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
 namespace electron {
 
 namespace {
@@ -72,15 +84,6 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
-}
-
-void SetHiddenValue(v8::Handle<v8::Context> context,
-                    const base::StringPiece& key,
-                    v8::Local<v8::Value> value) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Private> privateKey =
-      v8::Private::ForApi(isolate, mate::StringToV8(isolate, key));
-  context->Global()->SetPrivate(context, privateKey, value);
 }
 
 }  // namespace
@@ -111,14 +114,13 @@ void RendererClientBase::DidCreateScriptContext(
   // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
   auto context_id = base::StringPrintf(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  v8::Isolate* isolate = context->GetIsolate();
-  SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
+  mate::Dictionary global(context->GetIsolate(), context->Global());
+  global.SetHidden("contextId", context_id);
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
       !command_line->HasSwitch(switches::kDisableRemoteModule);
-  SetHiddenValue(context, "enableRemoteModule",
-                 mate::ConvertToV8(isolate, enableRemoteModule));
+  global.SetHidden("enableRemoteModule", enableRemoteModule);
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -137,6 +139,18 @@ void RendererClientBase::RenderThreadStarted() {
   if (command_line->HasSwitch(options::kOffscreen)) {
     blink::WebView::SetUseExternalPopupMenus(false);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* thread = content::RenderThread::Get();
+
+  extensions_client_.reset(CreateExtensionsClient());
+  extensions::ExtensionsClient::Set(extensions_client_.get());
+
+  extensions_renderer_client_.reset(new AtomExtensionsRendererClient);
+  extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
+
+  thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
@@ -250,6 +264,14 @@ void RendererClientBase::RenderFrameCreated(
       }
     }
   }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* dispatcher = extensions_renderer_client_->GetDispatcher();
+  // ExtensionFrameHelper destroys itself when the RenderFrame is destroyed.
+  new extensions::ExtensionFrameHelper(render_frame, dispatcher);
+
+  dispatcher->OnRenderFrameCreated(render_frame);
+#endif
 }
 
 void RendererClientBase::DidClearWindowObject(
@@ -309,6 +331,27 @@ blink::WebPrescientNetworking* RendererClientBase::GetPrescientNetworking() {
   return prescient_networking_dispatcher_.get();
 }
 
+void RendererClientBase::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_.get()->RunScriptsAtDocumentStart(render_frame);
+#endif
+}
+
+void RendererClientBase::RunScriptsAtDocumentIdle(
+    content::RenderFrame* render_frame) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_.get()->RunScriptsAtDocumentIdle(render_frame);
+#endif
+}
+
+void RendererClientBase::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
+#endif
+}
+
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
@@ -326,6 +369,36 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
   if (!maybe_script.ToLocal(&script))
     return v8::Local<v8::Value>();
   return script->Run(context).ToLocalChecked();
+}
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
+  return new AtomExtensionsClient;
+}
+#endif
+
+bool RendererClientBase::IsWebViewFrame(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) const {
+  auto* isolate = context->GetIsolate();
+
+  if (render_frame->IsMainFrame())
+    return false;
+
+  mate::Dictionary window_dict(
+      isolate, GetContext(render_frame->GetWebFrame(), isolate)->Global());
+
+  v8::Local<v8::Object> frame_element;
+  if (!window_dict.Get("frameElement", &frame_element))
+    return false;
+
+  mate::Dictionary frame_element_dict(isolate, frame_element);
+
+  v8::Local<v8::Object> internal;
+  if (!frame_element_dict.GetHidden("internal", &internal))
+    return false;
+
+  return !internal.IsEmpty();
 }
 
 }  // namespace electron

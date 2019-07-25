@@ -656,24 +656,6 @@ void OffScreenRenderWidgetHostView::DidNavigate() {
     delegated_frame_host_->DidNavigate();
 }
 
-bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpaceLegacy(
-    const gfx::PointF& point,
-    const viz::SurfaceId& original_surface,
-    gfx::PointF* transformed_point) {
-  // Transformations use physical pixels rather than DIP, so conversion
-  // is necessary.
-  gfx::PointF point_in_pixels =
-      gfx::ConvertPointToPixel(current_device_scale_factor_, point);
-  if (!GetDelegatedFrameHost()->TransformPointToLocalCoordSpaceLegacy(
-          point_in_pixels, original_surface, transformed_point)) {
-    return false;
-  }
-
-  *transformed_point =
-      gfx::ConvertPointToDIP(current_device_scale_factor_, *transformed_point);
-  return true;
-}
-
 bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
     const gfx::PointF& point,
     RenderWidgetHostViewBase* target_view,

@@ -133,8 +133,8 @@ class PdfViewerUI::ResourceRequester
 
     const net::URLRequestContext* request_context =
         resource_context->GetRequestContext();
-    std::unique_ptr<net::URLRequest> request(
-        request_context->CreateRequest(url, net::DEFAULT_PRIORITY, nullptr));
+    std::unique_ptr<net::URLRequest> request(request_context->CreateRequest(
+        url, net::DEFAULT_PRIORITY, nullptr, MISSING_TRAFFIC_ANNOTATION));
     request->set_method("GET");
 
     content::ResourceDispatcherHostImpl::Get()->InitializeURLRequest(

@@ -23,7 +23,7 @@
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"
-#include "third_party/electron_node/src/node_native_module.h"
+#include "third_party/electron_node/src/node_native_module_env.h"
 
 namespace electron {
 
@@ -165,6 +165,7 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -180,6 +181,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -208,7 +210,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);
   bool should_load_preload =
-      is_main_frame || is_devtools || allow_node_in_sub_frames;
+      (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
+      !IsWebViewFrame(context, render_frame);
   if (!should_load_preload)
     return;
 
@@ -226,7 +229,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
 
   std::vector<v8::Local<v8::Value>> sandbox_preload_bundle_args = {binding};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
       &sandbox_preload_bundle_params, &sandbox_preload_bundle_args, nullptr);
 
@@ -254,7 +257,7 @@ void AtomSandboxedRendererClient::SetupMainWorldOverrides(
       process.GetHandle(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
@@ -278,7 +281,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }

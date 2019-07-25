@@ -20,7 +20,7 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   dict.Get("window", &out->parent_window);
-  dict.Get("type", &type);
+  dict.Get("messageBoxType", &type);
   out->type = static_cast<electron::MessageBoxType>(type);
   dict.Get("buttons", &out->buttons);
   dict.Get("defaultId", &out->default_id);

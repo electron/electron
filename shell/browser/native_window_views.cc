@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
@@ -69,6 +70,8 @@ namespace electron {
 namespace {
 
 #if defined(OS_WIN)
+const LPCWSTR kUniqueTaskBarClassName = L"Shell_TrayWnd";
+
 void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   DWORD style = ::GetWindowLong(handle, GWL_STYLE);
   if (on)
@@ -749,18 +752,31 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top,
+void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                        const std::string& level,
                                        int relativeLevel,
                                        std::string* error) {
-  if (top != widget()->IsAlwaysOnTop())
+  if (z_order != widget()->GetZOrderLevel())
     NativeWindow::NotifyWindowAlwaysOnTopChanged();
 
-  widget()->SetAlwaysOnTop(top);
+  widget()->SetZOrderLevel(z_order);
+
+#if defined(OS_WIN)
+  // Reset the placement flag.
+  behind_task_bar_ = false;
+  if (z_order != ui::ZOrderLevel::kNormal) {
+    // On macOS the window is placed behind the Dock for the following levels.
+    // Re-use the same names on Windows to make it easier for the user.
+    static const std::vector<std::string> levels = {
+        "floating", "torn-off-menu", "modal-panel", "main-menu", "status"};
+    behind_task_bar_ = base::Contains(levels, level);
+  }
+#endif
+  MoveBehindTaskBarIfNeeded();
 }
 
-bool NativeWindowViews::IsAlwaysOnTop() {
-  return widget()->IsAlwaysOnTop();
+ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() {
+  return widget()->GetZOrderLevel();
 }
 
 void NativeWindowViews::Center() {
@@ -1184,10 +1200,12 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   if (changed_widget != widget())
     return;
 
-  if (active)
+  if (active) {
+    MoveBehindTaskBarIfNeeded();
     NativeWindow::NotifyWindowFocus();
-  else
+  } else {
     NativeWindow::NotifyWindowBlur();
+  }
 
   // Hide menu bar when window is blured.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
@@ -1344,6 +1362,17 @@ ui::WindowShowState NativeWindowViews::GetRestoredState() {
     return ui::SHOW_STATE_FULLSCREEN;
 
   return ui::SHOW_STATE_NORMAL;
+}
+
+void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
+#if defined(OS_WIN)
+  if (behind_task_bar_) {
+    const HWND task_bar_hwnd = ::FindWindow(kUniqueTaskBarClassName, nullptr);
+    ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+  }
+#endif
+  // TODO(julien.isorce): Implement X11 case.
 }
 
 // static

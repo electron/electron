@@ -38,16 +38,16 @@ net::NetLogCaptureMode GetNetCaptureModeFromCommandLine(
     std::string value = command_line.GetSwitchValueASCII(switch_name);
 
     if (value == "Default")
-      return net::NetLogCaptureMode::Default();
+      return net::NetLogCaptureMode::kDefault;
     if (value == "IncludeCookiesAndCredentials")
-      return net::NetLogCaptureMode::IncludeCookiesAndCredentials();
+      return net::NetLogCaptureMode::kIncludeSensitive;
     if (value == "IncludeSocketBytes")
-      return net::NetLogCaptureMode::IncludeSocketBytes();
+      return net::NetLogCaptureMode::kEverything;
 
     LOG(ERROR) << "Unrecognized value for --" << switch_name;
   }
 
-  return net::NetLogCaptureMode::Default();
+  return net::NetLogCaptureMode::kDefault;
 }
 
 }  // namespace

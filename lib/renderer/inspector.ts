@@ -22,7 +22,7 @@ function completeURL (project: string, path: string) {
   return invokeSync('ELECTRON_INSPECTOR_CONFIRM', message, title) as boolean
 }
 
-const useEditMenuItems = function (x: number, y: number, items: any[]) {
+const useEditMenuItems = function (x: number, y: number, items: ContextMenuItem[]) {
   return items.length === 0 && document.elementsFromPoint(x, y).some(function (element) {
     return element.nodeName === 'INPUT' ||
       element.nodeName === 'TEXTAREA' ||
@@ -30,7 +30,7 @@ const useEditMenuItems = function (x: number, y: number, items: any[]) {
   })
 }
 
-const createMenu = function (x: number, y: number, items: any[]) {
+const createMenu = function (x: number, y: number, items: ContextMenuItem[]) {
   const isEditMenu = useEditMenuItems(x, y, items)
   invoke<number>('ELECTRON_INSPECTOR_CONTEXT_MENU', items, isEditMenu).then(id => {
     if (typeof id === 'number') {

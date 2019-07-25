@@ -459,25 +459,13 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-maybe-build-dump-syms: &step-maybe-build-dump-syms
-  run:
-    name: Build dump_syms binary
-    command: |
-      if [ "$GENERATE_SYMBOLS" == "true" ]; then
-        cd src
-        # Build needed dump_syms executable
-        ninja -C out/Default third_party/breakpad:dump_syms
-      fi
-
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
     command: |
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
-        export BUILD_PATH="$PWD/out/Default"
-        export DEST_PATH="$BUILD_PATH/breakpad_symbols"
-        electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
+        ninja -C out/Default electron:electron_symbols
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -565,11 +553,20 @@ steps-lint: &steps-lint
 
           cipd ensure -ensure-file - -root . <<-CIPD
           \$ServiceURL https://chrome-infra-packages.appspot.com/
-          @Subdir buildtools/linux64
+          @Subdir src/buildtools/linux64
           gn/gn/linux-amd64 $gn_version
           CIPD
 
-          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+    - run:
+        name: Download clang-format Binary
+        command: |
+          chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+
+          sha1_path='buildtools/linux64/clang-format.sha1'
+          curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/${sha1_path}?format=TEXT" | base64 -d > "src/${sha1_path}"
+
+          download_from_google_storage.py --no_resume --no_auth --bucket chromium-clang-format -s "src/${sha1_path}"
     - run:
         name: Run Lint
         command: |
@@ -741,7 +738,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
-    - *step-maybe-build-dump-syms
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
@@ -767,7 +763,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-build-dump-syms
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
@@ -880,7 +875,7 @@ steps-tests: &steps-tests
         name: Run Electron tests
         environment:
           MOCHA_REPORTER: mocha-multi-reporters
-          MOCHA_FILE: junit/test-results.xml
+          ELECTRON_TEST_RESULTS_DIR: junit
           MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
@@ -890,15 +885,13 @@ steps-tests: &steps-tests
     - run:
         name: Check test results existence
         command: |
-          MOCHA_FILE='src/junit/test-results-remote.xml'
-          # Check if it exists and not empty.
-          if [ ! -s "$MOCHA_FILE" ]; then
+          cd src
+
+          # Check if test results exist and are not empty.
+          if [ ! -s "junit/test-results-remote.xml" ]; then
             exit 1
           fi
-
-          MOCHA_FILE='src/junit/test-results-main.xml'
-          # Check if it exists and not empty.
-          if [ ! -s "$MOCHA_FILE" ]; then
+          if [ ! -s "junit/test-results-main.xml" ]; then
             exit 1
           fi
     - store_test_results:
@@ -922,6 +915,23 @@ steps-test-nan: &steps-test-nan
           cd src
           export ELECTRON_OUT_DIR=Default
           node electron/script/nan-spec-runner.js
+
+steps-test-node: &steps-test-node
+  steps:
+    - attach_workspace:
+          at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-linux-for-headless-testing
+    - *step-fix-known-hosts-linux
+    - run:
+        name: Run Node Tests
+        command: |
+          cd src
+          export ELECTRON_OUT_DIR=Default
+          node electron/script/node-spec-runner.js junit
+    - store_test_results:
+        path: src/junit
 
 chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
@@ -1362,6 +1372,14 @@ jobs:
       <<: *env-stack-dumping
     <<: *steps-test-nan
 
+  linux-x64-testing-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-node
+
   linux-x64-release-tests:
     <<: *machine-linux-medium
     environment:
@@ -1403,6 +1421,15 @@ jobs:
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-nan
+
+  linux-ia32-testing-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-node
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
@@ -1571,6 +1598,9 @@ workflows:
       - linux-x64-testing-nan:
           requires:
             - linux-x64-testing
+      - linux-x64-testing-node:
+          requires:
+            - linux-x64-testing
 
       - linux-ia32-debug:
           requires:
@@ -1582,6 +1612,9 @@ workflows:
           requires:
             - linux-ia32-testing
       - linux-ia32-testing-nan:
+          requires:
+            - linux-ia32-testing
+      - linux-ia32-testing-node:
           requires:
             - linux-ia32-testing
 

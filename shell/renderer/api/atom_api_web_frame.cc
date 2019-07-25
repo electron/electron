@@ -61,6 +61,25 @@ struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
   }
 };
 
+template <>
+struct Converter<blink::WebDocument::CSSOrigin> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::WebDocument::CSSOrigin* out) {
+    std::string css_origin;
+    if (!ConvertFromV8(isolate, val, &css_origin))
+      return false;
+    if (css_origin == "user") {
+      *out = blink::WebDocument::CSSOrigin::kUserOrigin;
+    } else if (css_origin == "author") {
+      *out = blink::WebDocument::CSSOrigin::kAuthorOrigin;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 
 namespace electron {
@@ -325,12 +344,21 @@ void InsertText(v8::Local<v8::Value> window, const std::string& text) {
   }
 }
 
-base::string16 InsertCSS(v8::Local<v8::Value> window, const std::string& css) {
+base::string16 InsertCSS(v8::Local<v8::Value> window,
+                         const std::string& css,
+                         mate::Arguments* args) {
+  blink::WebDocument::CSSOrigin css_origin =
+      blink::WebDocument::CSSOrigin::kAuthorOrigin;
+
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("cssOrigin", &css_origin);
+
   blink::WebFrame* web_frame = GetRenderFrame(window)->GetWebFrame();
   if (web_frame->IsWebLocalFrame()) {
     return web_frame->ToWebLocalFrame()
         ->GetDocument()
-        .InsertStyleSheet(blink::WebString::FromUTF8(css))
+        .InsertStyleSheet(blink::WebString::FromUTF8(css), nullptr, css_origin)
         .Utf16();
   }
   return base::string16();

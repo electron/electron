@@ -41,14 +41,17 @@ WebWorkerObserver::~WebWorkerObserver() {
   asar::ClearArchives();
 }
 
-void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> context) {
-  v8::Context::Scope context_scope(context);
+void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> worker_context) {
+  v8::Context::Scope context_scope(worker_context);
 
   // Start the embed thread.
   node_bindings_->PrepareMessageLoop();
 
   // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  v8::Local<v8::Context> context = node::MaybeInitializeContext(worker_context);
+  DCHECK(!context.IsEmpty());
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(context, nullptr, true);
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());

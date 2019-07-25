@@ -10,6 +10,7 @@
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
+#include "ui/native_theme/native_theme.h"
 
 namespace electron {
 
@@ -30,7 +31,7 @@ SystemPreferences::~SystemPreferences() {
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
-  return false;
+  return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
 }
 #endif
 
@@ -38,11 +39,9 @@ bool SystemPreferences::IsInvertedColorScheme() {
   return color_utils::IsInvertedColorScheme();
 }
 
-#if !defined(OS_WIN)
 bool SystemPreferences::IsHighContrastColorScheme() {
-  return false;
+  return ui::NativeTheme::GetInstanceForNativeUi()->UsesHighContrastColors();
 }
-#endif  // !defined(OS_WIN)
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
     v8::Isolate* isolate) {

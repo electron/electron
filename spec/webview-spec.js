@@ -170,6 +170,20 @@ describe('<webview> tag', function () {
         expect(webview.src).to.equal('')
       }
     })
+
+    it('does not wait until loadURL is resolved', async () => {
+      await loadWebView(webview, { src: 'about:blank' })
+
+      const before = Date.now()
+      webview.src = 'https://github.com'
+      const now = Date.now()
+
+      // Setting src is essentially sending a sync IPC message, which should
+      // not exceed more than a few ms.
+      //
+      // This is for testing #18638.
+      expect(now - before).to.be.below(100)
+    })
   })
 
   describe('nodeintegration attribute', () => {
@@ -915,7 +929,8 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('<webview>.clearHistory()', () => {
+  // FIXME: https://github.com/electron/electron/issues/19397
+  xdescribe('<webview>.clearHistory()', () => {
     it('should clear the navigation history', async () => {
       const message = waitForEvent(webview, 'ipc-message')
       await loadWebView(webview, {

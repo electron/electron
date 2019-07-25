@@ -3,7 +3,7 @@
     "module": "commonjs",
     "target": "es2017",
     "lib": [
-      "es2017",
+      "es2019",
       "dom",
       "dom.iterable"
     ],

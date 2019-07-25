@@ -76,11 +76,11 @@ class NativeWindowMac : public NativeWindow {
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top,
+  void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
                       int relativeLevel,
                       std::string* error) override;
-  bool IsAlwaysOnTop() override;
+  ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
   void SetTitle(const std::string& title) override;
@@ -104,6 +104,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
+  void SetFocusable(bool focusable) override;
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;

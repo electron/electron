@@ -20,6 +20,7 @@
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
+#include "ui/native_theme/native_theme.h"
 
 namespace {
 
@@ -153,8 +154,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (BOOL)isDarkMode {
   if (@available(macOS 10.14, *)) {
-    return [[NSApplication sharedApplication].effectiveAppearance.name
-        isEqualToString:NSAppearanceNameDarkAqua];
+    return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
   }
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* mode = [defaults stringForKey:@"AppleInterfaceStyle"];

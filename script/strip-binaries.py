@@ -12,7 +12,8 @@ LINUX_BINARIES_TO_STRIP = [
   'libGLESv2.so',
   'libEGL.so',
   'swiftshader/libGLESv2.so',
-  'swiftshader/libEGL.so'
+  'swiftshader/libEGL.so',
+  'swiftshader/libvulkan.so'
 ]
 
 def strip_binaries(directory, target_cpu):

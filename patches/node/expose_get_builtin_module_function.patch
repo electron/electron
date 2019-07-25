@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thiago de Arruda <tpadilha84@gmail.com>
+Date: Mon, 6 Mar 2017 10:42:34 -0300
+Subject: Expose `get_builtin_module` function
+
+This is a requirement for electron/electron#8815, which exposes some builtin
+modules to sandboxed renderers.
+
+(cherry picked from commit 4c058a6cb5331eef1c7f51c042dd074a2d4f9234)
+
+diff --git a/src/node_binding.h b/src/node_binding.h
+index dd94fab36a0e8fcb453ba82091f6284e8193c00d..b2aa45b7e85127f645f43d5fce0050fd488f2668 100644
+--- a/src/node_binding.h
++++ b/src/node_binding.h
+@@ -93,6 +93,8 @@ void GetInternalBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
+ void GetLinkedBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
+ void DLOpen(const v8::FunctionCallbackInfo<v8::Value>& args);
+ 
++NODE_EXTERN node_module* get_linked_module(const char *name);
++
+ }  // namespace binding
+ 
+ }  // namespace node

@@ -92,6 +92,15 @@
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "extensions/browser/browser_context_keyed_service_factories.h"
+#include "extensions/common/extension_api.h"
+#include "shell/browser/extensions/atom_browser_context_keyed_service_factories.h"
+#include "shell/browser/extensions/atom_extensions_browser_client.h"
+#include "shell/common/extensions/atom_extensions_client.h"
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
 namespace electron {
 
 namespace {
@@ -285,12 +294,43 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
-      js_env_->context(), js_env_->platform());
+      js_env_->context(), js_env_->platform(), false);
   node_env_.reset(new NodeEnvironment(env));
+
+  /**
+   * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
+   * UNSAFE ENVIRONMENT BLOCK BEGINS
+   *
+   * DO NOT USE node::Environment inside this block, bad things will happen
+   * and you won't be able to figure out why.  Just don't touch it, the only
+   * thing that can use it is NodeDebugger and that is ONLY allowed to access
+   * the inspector agent.
+   *
+   * This is unsafe because the environment is not yet bootstrapped, it's a race
+   * condition where we can't bootstrap before intializing the inspector agent.
+   *
+   * Long term we should figure out how to get node to initialize the inspector
+   * agent in the correct place without us splitting the bootstrap up, but for
+   * now this works.
+   * 🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨  🚨
+   */
 
   // Enable support for v8 inspector
   node_debugger_.reset(new NodeDebugger(env));
   node_debugger_->Start();
+
+  // Only run the node bootstrapper after we have initialized the inspector
+  // TODO(MarshallOfSound): Figured out a better way to init the inspector
+  // before bootstrapping
+  node::BootstrapEnvironment(env);
+
+  /**
+   * ✅  ✅  ✅  ✅  ✅  ✅  ✅
+   * UNSAFE ENVIRONMENT BLOCK ENDS
+   *
+   * Do whatever you want now with that env, it's safe again
+   * ✅  ✅  ✅  ✅  ✅  ✅  ✅
+   */
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -344,6 +384,10 @@ int AtomBrowserMainParts::PreCreateThreads() {
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_browser_client_.reset();
+  extensions::ExtensionsBrowserClient::Set(nullptr);
+#endif
 #if defined(OS_LINUX)
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
@@ -383,6 +427,18 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_client_ = std::make_unique<AtomExtensionsClient>();
+  extensions::ExtensionsClient::Set(extensions_client_.get());
+
+  // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
+  extensions_browser_client_ = std::make_unique<AtomExtensionsBrowserClient>();
+  extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
+
+  extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+  extensions::electron::EnsureBrowserContextKeyedServiceFactoriesBuilt();
+#endif
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();

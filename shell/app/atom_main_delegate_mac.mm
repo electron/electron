@@ -37,6 +37,9 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
   if (base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
                      base::CompareCase::SENSITIVE)) {
     helper_name += content::kMacHelperSuffix_renderer;
+  } else if (base::EndsWith(path.value(), content::kMacHelperSuffix_gpu,
+                            base::CompareCase::SENSITIVE)) {
+    helper_name += content::kMacHelperSuffix_gpu;
   } else if (base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
                             base::CompareCase::SENSITIVE)) {
     helper_name += content::kMacHelperSuffix_plugin;

@@ -19,6 +19,11 @@ declare namespace Electron {
     setAppPath(path: string | null): void;
   }
 
+  interface WebContents {
+    _getURL(): string;
+    getOwnerBrowserWindow(): Electron.BrowserWindow;
+  }
+
   interface SerializedError {
     message: string;
     stack?: string,
@@ -26,6 +31,11 @@ declare namespace Electron {
     from: Electron.ProcessType,
     cause: SerializedError,
     __ELECTRON_SERIALIZED_ERROR__: true
+  }
+
+  interface ErrorWithCause extends Error {
+    from?: string;
+    cause?: ErrorWithCause;
   }
 
   interface InjectionBase {
@@ -76,7 +86,8 @@ declare namespace ElectronInternal {
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;
     log(message: string): void;
-    function(fn: Function, newName: string): Function;
+    removeFunction(fn: Function, removedName: string): Function;
+    renameFunction(fn: Function, newName: string): Function;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
     fnToProperty(module: any, prop: string, getter: string, setter: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K): T;

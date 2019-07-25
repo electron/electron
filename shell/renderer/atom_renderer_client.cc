@@ -20,7 +20,7 @@
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-#include "third_party/electron_node/src/node_native_module.h"
+#include "third_party/electron_node/src/node_native_module_env.h"
 
 namespace electron {
 
@@ -50,6 +50,7 @@ void AtomRendererClient::RenderFrameCreated(
 
 void AtomRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   // Inform the document start pharse.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
@@ -59,6 +60,7 @@ void AtomRendererClient::RunScriptsAtDocumentStart(
 
 void AtomRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   // Inform the document end pharse.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
@@ -67,9 +69,9 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
+    v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(context, render_frame);
+  RendererClientBase::DidCreateScriptContext(renderer_context, render_frame);
 
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
@@ -83,7 +85,8 @@ void AtomRendererClient::DidCreateScriptContext(
       base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInSubFrames);
   bool should_load_node =
-      is_main_frame || is_devtools || allow_node_in_subframes;
+      (is_main_frame || is_devtools || allow_node_in_subframes) &&
+      !IsWebViewFrame(renderer_context, render_frame);
   if (!should_load_node) {
     return;
   }
@@ -103,7 +106,11 @@ void AtomRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  v8::Local<v8::Context> context =
+      node::MaybeInitializeContext(renderer_context);
+  DCHECK(!context.IsEmpty());
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(context, nullptr, true);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
@@ -202,11 +209,14 @@ void AtomRendererClient::SetupMainWorldOverrides(
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
       node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
 
+  auto* env = GetEnvironment(render_frame);
+  DCHECK(env);
+
   std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      GetEnvironment(render_frame)->process_object(),
+      env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global()};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
@@ -222,12 +232,16 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
       node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
       node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
 
+  auto* env = GetEnvironment(render_frame);
+  if (!env)
+    return;
+
   std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      GetEnvironment(render_frame)->process_object(),
+      env->process_object(),
       GetContext(render_frame->GetWebFrame(), isolate)->Global(),
       v8::Integer::New(isolate, world_id)};
 
-  node::per_process::native_module_loader.CompileAndCall(
+  node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
 }
