@@ -990,7 +990,9 @@ Returns `String` - The user agent for this web page.
 
 * `css` String
 * `options` Object (optional)
-  * `cssOrigin` String (optional) - Can be either 'user' or 'author'; Specifying 'user' enables you to prevent websites from overriding the CSS you insert. Default is 'author'.
+  * `cssOrigin` String (optional)
+    * `user` - enables you to prevent websites from overriding the CSS you insert.
+    * `author` - default value.
 
 Returns `Promise<String>` - A promise that resolves with a key for the inserted CSS that can later be used to remove the CSS via `contents.removeInsertedCSS(key)`.
 
