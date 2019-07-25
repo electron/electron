@@ -810,6 +810,7 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                      int relativeLevel,
                                      std::string* error) {
   int windowLevel = NSNormalWindowLevel;
+  bool level_changed = z_order != widget()->GetZOrderLevel();
   CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
   CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
 
@@ -847,6 +848,11 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
         stringWithFormat:@"relativeLevel must be between %d and %d",
                          minWindowLevel, maxWindowLevel] UTF8String]);
   }
+
+  // This must be notified at the very end or IsAlwaysOnTop
+  // will not yet have been updated to reflect the new status
+  if (level_changed)
+    NativeWindow::NotifyWindowAlwaysOnTopChanged();
 }
 
 ui::ZOrderLevel NativeWindowMac::GetZOrderLevel() {

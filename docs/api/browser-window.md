@@ -553,7 +553,7 @@ Emitted when the window enters a full-screen state triggered by HTML API.
 
 Emitted when the window leaves a full-screen state triggered by HTML API.
 
-#### Event: 'always-on-top-changed' _macOS_
+#### Event: 'always-on-top-changed'
 
 Returns:
 
@@ -1182,7 +1182,6 @@ On Linux always returns `true`.
   placed below the Dock on macOS and below the taskbar on Windows. From
   `pop-up-menu` to a higher it is shown above the Dock on macOS and above the
   taskbar on Windows. See the [macOS docs][window-levels] for more details.
-
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
   discourages setting levels higher than 1 above `screen-saver`.
