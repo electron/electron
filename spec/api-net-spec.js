@@ -889,6 +889,22 @@ describe('net module', () => {
       urlRequest.end()
     })
 
+    it('Should throw when invalid filters are passed to a request', () => {
+      expect(() => {
+        session.defaultSession.webRequest.onBeforeRequest(
+          { urls: ['*://www.googleapis.com'] },
+          (details, callback) => { callback({ cancel: false }) }
+        )
+      }).to.throw('Invalid url pattern *://www.googleapis.com: Empty path.')
+
+      expect(() => {
+        session.defaultSession.webRequest.onBeforeRequest(
+          { urls: [ '*://www.googleapis.com/', '*://blahblah.dev' ] },
+          (details, callback) => { callback({ cancel: false }) }
+        )
+      }).to.throw('Invalid url pattern *://blahblah.dev: Empty path.')
+    })
+
     it('should to able to create and intercept a request using a custom session object', (done) => {
       const requestUrl = '/requestUrl'
       const redirectUrl = '/redirectUrl'

@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_web_request.h"
 
+#include <set>
 #include <string>
 #include <utility>
 
@@ -19,23 +20,6 @@
 #include "native_mate/object_template_builder.h"
 
 using content::BrowserThread;
-
-namespace mate {
-
-template <>
-struct Converter<URLPattern> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     URLPattern* out) {
-    std::string pattern;
-    if (!ConvertFromV8(isolate, val, &pattern))
-      return false;
-    *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
-  }
-};
-
-}  // namespace mate
 
 namespace atom {
 
@@ -84,7 +68,25 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
   // { urls }.
   URLPatterns patterns;
   mate::Dictionary dict;
-  args->GetNext(&dict) && dict.Get("urls", &patterns);
+  std::set<std::string> filter_patterns;
+
+  if (args->GetNext(&dict) && !dict.Get("urls", &filter_patterns)) {
+    args->ThrowError(
+        "onBeforeRequest parameter 'filter' must have property 'urls'.");
+    return;
+  }
+
+  URLPattern pattern(URLPattern::SCHEME_ALL);
+  for (const std::string& filter_pattern : filter_patterns) {
+    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
+    if (result == URLPattern::ParseResult::kSuccess) {
+      patterns.insert(pattern);
+    } else {
+      const char* error_type = URLPattern::GetParseResultString(result);
+      args->ThrowError("Invalid url pattern " + filter_pattern + ": " +
+                       error_type);
+    }
+  }
 
   // Function or null.
   v8::Local<v8::Value> value;
