@@ -411,8 +411,6 @@ void Browser::ShowAboutPanel() {
   settings.message = aboutMessage;
   settings.icon = image;
   settings.type = electron::MessageBoxType::kInformation;
-  // TODO(erickzhao): make asynchronous to avoid blocking js code
-  // TODO(erickzhao): add icon (?)
   electron::ShowMessageBoxSync(settings);
 }
 
