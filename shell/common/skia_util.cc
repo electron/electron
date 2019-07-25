@@ -146,7 +146,6 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
         image, path.InsertBeforeExtensionASCII(pair.name), pair.scale);
   return succeed;
 }
-
 #if defined(OS_WIN)
 bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
   // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
@@ -156,8 +155,9 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, 1.0f));
   return true;
+}
 #endif
 
 }  // namespace util
 
-}  // namespace util
+}  // namespace electron
