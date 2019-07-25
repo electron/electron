@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/atom_api_session.h"
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -54,6 +55,8 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/atom_cert_verifier.h"
+#include "shell/browser/net/preconnect_manager_factory.h"
+#include "shell/browser/net/preconnect_manager_helper.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/native_mate_converters/callback.h"
@@ -673,6 +676,45 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, net_log_);
 }
 
+void Session::Preconnect(const mate::Dictionary& options) {
+  int num_sockets_to_preconnect = 1;
+  std::string urlStr;
+  options.Get("url", &urlStr);
+  GURL url(urlStr);
+  if (!url.is_valid()) {
+    isolate()->ThrowException(v8::Exception::Error(
+        mate::StringToV8(isolate(), "Must pass non-empty valid url.")));
+    return;
+  }
+  if (options.Get("numSockets", &num_sockets_to_preconnect)) {
+    const int kMinSocketsToPreconnect = 1;
+    const int kMaxSocketsToPreconnect = 6;
+    bool isInsideRange = num_sockets_to_preconnect >= kMinSocketsToPreconnect &&
+                         num_sockets_to_preconnect <= kMaxSocketsToPreconnect;
+    num_sockets_to_preconnect =
+        std::max(num_sockets_to_preconnect, kMinSocketsToPreconnect);
+    num_sockets_to_preconnect =
+        std::min(num_sockets_to_preconnect, kMaxSocketsToPreconnect);
+    if (!isInsideRange) {
+      LOG(WARNING) << "numSocketsToPreconnect is specified outside ["
+                   << kMinSocketsToPreconnect << ", " << kMaxSocketsToPreconnect
+                   << "], capping to " << num_sockets_to_preconnect;
+    }
+  }
+
+  predictors::PreconnectManager* preconnect_manager =
+      electron::PreconnectManagerFactory::GetForContext(browser_context());
+  if (preconnect_manager && num_sockets_to_preconnect > 0) {
+    std::vector<predictors::PreconnectRequest> requests;
+    requests.emplace_back(url.GetOrigin(), num_sockets_to_preconnect);
+
+    base::PostTaskWithTraits(
+        FROM_HERE, {content::BrowserThread::UI},
+        base::BindOnce(&predictors::PreconnectManager::Start,
+                       base::Unretained(preconnect_manager), url, requests));
+  }
+}
+
 // static
 mate::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
                                           AtomBrowserContext* browser_context) {
@@ -743,7 +785,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
-      .SetProperty("webRequest", &Session::WebRequest);
+      .SetProperty("webRequest", &Session::WebRequest)
+      .SetMethod("preconnect", &Session::Preconnect);
 }
 
 }  // namespace api

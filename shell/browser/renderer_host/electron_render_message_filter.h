@@ -13,6 +13,12 @@
 
 class GURL;
 
+namespace electron {
+namespace api {
+class Session;
+}
+}  // namespace electron
+
 namespace predictors {
 class PreconnectManager;
 }
@@ -21,9 +27,7 @@ class PreconnectManager;
 // process on the IPC thread.
 class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
  public:
-  ElectronRenderMessageFilter(int render_process_id,
-                              content::BrowserContext* context,
-                              int number_of_sockets_to_preconnect);
+  explicit ElectronRenderMessageFilter(electron::api::Session* session);
 
   // content::BrowserMessageFilter methods:
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -33,11 +37,7 @@ class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
 
   void OnPreconnect(const GURL& url, bool allow_credentials, int count);
 
-  // The PreconnectManager for the associated context. This must only be
-  // accessed on the UI thread.
-  predictors::PreconnectManager* preconnect_manager_;
-
-  int number_of_sockets_to_preconnect_;
+  electron::api::Session* session_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronRenderMessageFilter);
 };

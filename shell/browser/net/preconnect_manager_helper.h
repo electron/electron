@@ -17,6 +17,10 @@ namespace electron {
 
 class WebContentsPreferences;
 
+namespace api {
+class Session;
+}
+
 class PreconnectManagerHelper
     : public content::WebContentsObserver,
       public content::WebContentsUserData<PreconnectManagerHelper> {
@@ -27,18 +31,13 @@ class PreconnectManagerHelper
   void DidStartNavigation(
       content::NavigationHandle* navigation_handle) override;
 
-  // -1 - in case of number of preconnect sockets option is not set
-  static int GetNumberOfSocketsToPreconnect(WebContentsPreferences* prefs);
-
-  void SetNumberOfSocketsToPreconnect(int numSockets);
+  void SetSession(api::Session* session);
 
  private:
   explicit PreconnectManagerHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PreconnectManagerHelper>;
 
-  predictors::PreconnectManager* preconnect_manager_;
-
-  int number_of_sockets_to_preconnect_;
+  api::Session* session_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

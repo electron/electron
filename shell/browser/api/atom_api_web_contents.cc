@@ -453,10 +453,6 @@ void WebContents::InitWithSessionAndOptions(
   prefs->subpixel_rendering = params->subpixel_rendering;
 #endif
 
-  // Save the preferences in C++.
-  WebContentsPreferences* web_prefs =
-      new WebContentsPreferences(web_contents(), options);
-
   // Initialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
   // Initialize security state client.
@@ -472,11 +468,12 @@ void WebContents::InitWithSessionAndOptions(
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
 
+  new WebContentsPreferences(web_contents(), options);
+
   PreconnectManagerHelper::CreateForWebContents(web_contents());
 
   PreconnectManagerHelper::FromWebContents(web_contents())
-      ->SetNumberOfSocketsToPreconnect(
-          PreconnectManagerHelper::GetNumberOfSocketsToPreconnect(web_prefs));
+      ->SetSession(session.get());
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;

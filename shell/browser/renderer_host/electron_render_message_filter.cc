@@ -23,6 +23,7 @@
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/net/preconnect_manager_factory.h"
 
 using content::BrowserThread;
@@ -36,16 +37,10 @@ const uint32_t kRenderFilteredMessageClasses[] = {
 }  // namespace
 
 ElectronRenderMessageFilter::ElectronRenderMessageFilter(
-    int render_process_id,
-    content::BrowserContext* context,
-    int number_of_sockets_to_preconnect)
+    electron::api::Session* session)
     : BrowserMessageFilter(kRenderFilteredMessageClasses,
                            base::size(kRenderFilteredMessageClasses)),
-      preconnect_manager_(nullptr),
-      number_of_sockets_to_preconnect_(number_of_sockets_to_preconnect) {
-  preconnect_manager_ =
-      electron::PreconnectManagerFactory::GetForContext(context);
-}
+      session_(session) {}
 
 ElectronRenderMessageFilter::~ElectronRenderMessageFilter() {}
 
@@ -74,18 +69,8 @@ void ElectronRenderMessageFilter::OnPreconnect(const GURL& url,
     return;
   }
 
-  if (!preconnect_manager_) {
-    return;
-  }
-
-  if (number_of_sockets_to_preconnect_ > 0) {
-    std::vector<predictors::PreconnectRequest> requests;
-    requests.emplace_back(url.GetOrigin(), number_of_sockets_to_preconnect_);
-
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(&predictors::PreconnectManager::Start,
-                       base::Unretained(preconnect_manager_), url, requests));
+  if (session_) {
+    session_->Emit("preconnect", url.spec());
   }
 }
 

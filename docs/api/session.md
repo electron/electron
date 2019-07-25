@@ -91,6 +91,15 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 })
 ```
 
+#### Event: 'preconnect'
+
+Returns:
+
+* `event` Event
+* `preconnectUrl` string
+
+Emitted when Electron is about to preconnect `preconnectUrl`.
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -237,6 +246,14 @@ window.webContents.session.enableNetworkEmulation({
 // To emulate a network outage.
 window.webContents.session.enableNetworkEmulation({ offline: true })
 ```
+
+#### `ses.preconnect(options)`
+
+* `options` Object
+  * `url` String - url for preconnect
+  * `numSockets` Number (optional) - number of sockets to preconnect. Defaults to 1
+
+Preconnects number of sockets to url origin
 
 #### `ses.disableNetworkEmulation()`
 

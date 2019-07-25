@@ -1101,27 +1101,18 @@ describe('BrowserWindow module', () => {
       server.close()
       await closeWindow(w)
       w = null as unknown as BrowserWindow
+      server  = null as unknown as http.Server
     })
-    it(`preconnect number of sockets specified in constructor`, (done) => {
-      w = new BrowserWindow({ numSocketsToPreconnect: 5 })
-      w.webContents.on('did-finish-load', () => {
-        expect(connections).to.equal(5)
-        done()
-      })
-      w.loadURL(url)
-    })
-    it(`should be turned off if numSocketsToPreconnect is not specified in constructor`, (done) => {
+    it(`preconnect with number of sockets`, (done) => {
       w = new BrowserWindow({})
-      w.webContents.on('did-finish-load', () => {
-        expect(connections).to.equal(1)
-        done()
+      w.webContents.session.on('preconnect', (event, preconnectUrl) => {
+        w.webContents.session.preconnect({
+          url: preconnectUrl,
+          numSockets: 4
+        })
       })
-      w.loadURL(url)
-    })
-    it(`preconnect number of sockets specified in constructor should be capped to 6`, (done) => {
-      w = new BrowserWindow({ numSocketsToPreconnect: 7 })
       w.webContents.on('did-finish-load', () => {
-        expect(connections).to.equal(6)
+        expect(connections).to.equal(4)
         done()
       })
       w.loadURL(url)

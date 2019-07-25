@@ -85,6 +85,7 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+  void Preconnect(const mate::Dictionary& options);
 
  protected:
   Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);

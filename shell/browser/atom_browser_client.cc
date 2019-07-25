@@ -52,6 +52,7 @@
 #include "shell/browser/api/atom_api_app.h"
 #include "shell/browser/api/atom_api_protocol.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
+#include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
@@ -355,7 +356,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
-  int number_of_sockets_to_preconnect = -1;
   ProcessPreferences prefs;
   auto* web_preferences =
       WebContentsPreferences::From(GetWebContentsFromProcessID(process_id));
@@ -366,13 +366,14 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
     prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
                                                     true /* default value */);
-    number_of_sockets_to_preconnect =
-        PreconnectManagerHelper::GetNumberOfSocketsToPreconnect(
-            web_preferences);
   }
 
-  host->AddFilter(new ElectronRenderMessageFilter(
-      process_id, host->GetBrowserContext(), number_of_sockets_to_preconnect));
+  auto session = api::Session::CreateFrom(
+      v8::Isolate::GetCurrent(),
+      static_cast<AtomBrowserContext*>(
+          GetWebContentsFromProcessID(process_id)->GetBrowserContext()));
+
+  host->AddFilter(new ElectronRenderMessageFilter(session.get()));
 
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
