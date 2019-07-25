@@ -1166,21 +1166,21 @@ This API must be called after the `ready` event is emitted.
 
 **[Deprecated](modernization/property-updates.md)**
 
-### `app.showAboutPanel()` _macOS_ _Linux_
+### `app.showAboutPanel()`
 
 Show the app's about panel options. These options can be overridden with `app.setAboutPanelOptions(options)`.
 
-### `app.setAboutPanelOptions(options)` _macOS_ _Linux_
+### `app.setAboutPanelOptions(options)`
 
 * `options` Object
   * `applicationName` String (optional) - The app's name.
   * `applicationVersion` String (optional) - The app's version.
   * `copyright` String (optional) - Copyright information.
   * `version` String (optional) _macOS_ - The app's build version number.
-  * `credits` String (optional) _macOS_ - Credit information.
+  * `credits` String (optional) _macOS_ _Windows_ - Credit information.
   * `authors` String[] (optional) _Linux_ - List of app authors.
   * `website` String (optional) _Linux_ - The app's website.
-  * `iconPath` String (optional) _Linux_ - Path to the app's icon. Will be shown as 64x64 pixels while retaining aspect ratio.
+  * `iconPath` String (optional) _Linux_ _Windows_ - Path to the app's icon. On Linux, will be shown as 64x64 pixels while retaining aspect ratio.
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file on MacOS. See the [Apple docs][about-panel-options] for more details. On Linux, values must be set in order to be shown; there are no defaults.
