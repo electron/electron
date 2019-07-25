@@ -53,7 +53,7 @@ class EventEmitter : public Wrappable<T> {
 
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitCustomEvent(const base::StringPiece& name,
+  bool EmitCustomEvent(base::StringPiece name,
                        v8::Local<v8::Object> event,
                        Args&&... args) {
     return EmitWithEvent(
@@ -63,7 +63,7 @@ class EventEmitter : public Wrappable<T> {
 
   // this.emit(name, new Event(flags), args...);
   template <typename... Args>
-  bool EmitWithFlags(const base::StringPiece& name, int flags, Args&&... args) {
+  bool EmitWithFlags(base::StringPiece name, int flags, Args&&... args) {
     return EmitCustomEvent(name,
                            internal::CreateEventFromFlags(isolate(), flags),
                            std::forward<Args>(args)...);
@@ -71,7 +71,7 @@ class EventEmitter : public Wrappable<T> {
 
   // this.emit(name, new Event(), args...);
   template <typename... Args>
-  bool Emit(const base::StringPiece& name, Args&&... args) {
+  bool Emit(base::StringPiece name, Args&&... args) {
     return EmitWithSender(name, nullptr, base::nullopt,
                           std::forward<Args>(args)...);
   }
@@ -79,7 +79,7 @@ class EventEmitter : public Wrappable<T> {
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
   bool EmitWithSender(
-      const base::StringPiece& name,
+      base::StringPiece name,
       content::RenderFrameHost* sender,
       base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
           callback,
@@ -101,7 +101,7 @@ class EventEmitter : public Wrappable<T> {
  private:
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitWithEvent(const base::StringPiece& name,
+  bool EmitWithEvent(base::StringPiece name,
                      v8::Local<v8::Object> event,
                      Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);

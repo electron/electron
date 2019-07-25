@@ -123,8 +123,7 @@ struct Converter<const char*> {
 
 template <>
 struct Converter<base::StringPiece> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::StringPiece& val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, base::StringPiece val);
   // No conversion out is possible because StringPiece does not contain storage.
 };
 
@@ -138,7 +137,7 @@ struct Converter<std::string> {
 };
 
 v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
-                                     const base::StringPiece& input);
+                                     base::StringPiece input);
 
 template <>
 struct Converter<v8::Local<v8::Function>> {
@@ -343,7 +342,7 @@ bool ConvertFromV8(v8::Isolate* isolate,
 }
 
 inline v8::Local<v8::String> StringToV8(v8::Isolate* isolate,
-                                        const base::StringPiece& input) {
+                                        base::StringPiece input) {
   return ConvertToV8(isolate, input).As<v8::String>();
 }
 
