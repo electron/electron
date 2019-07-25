@@ -1058,7 +1058,7 @@ describe('app module', () => {
     it('fails for invalid info_type', () => {
       const invalidType = 'invalid'
       const expectedErrorMessage = "Invalid info type. Use 'basic' or 'complete'"
-      return expect(app.getGPUInfo(invalidType)).to.eventually.be.rejectedWith(expectedErrorMessage)
+      return expect(app.getGPUInfo(invalidType as any)).to.eventually.be.rejectedWith(expectedErrorMessage)
     })
   })
 
