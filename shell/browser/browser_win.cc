@@ -369,12 +369,4 @@ void Browser::ShowEmojiPanel() {
   ::SendInput(4, input, sizeof(INPUT));
 }
 
-void Browser::ShowAboutPanel() {
-  const auto& opts = about_panel_options_;
-}
-
-void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
-  about_panel_options_ = options.Clone();
-}
-
 }  // namespace electron
