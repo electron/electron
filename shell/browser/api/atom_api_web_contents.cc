@@ -478,8 +478,6 @@ void WebContents::InitWithSessionAndOptions(
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
 
-  new WebContentsPreferences(web_contents(), options);
-
   PreconnectManagerHelper::CreateForWebContents(web_contents());
 
   PreconnectManagerHelper::FromWebContents(web_contents())
