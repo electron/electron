@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "shell/common/api/atom_api_native_image.h"
-#include "base/files/file_util.h"
 
 #include <memory>
 #include <string>
