@@ -22,8 +22,9 @@ which the request is associated.
   with which the request is associated. Defaults to the empty string. The
 `session` option prevails on `partition`. Thus if a `session` is explicitly
 specified, `partition` is ignored.
-  * `protocol` String (optional) - The protocol scheme in the form 'scheme:'.
-Currently supported values are 'http:' or 'https:'. Defaults to 'http:'.
+  * `protocol` String (optional) - The protocol scheme in the form `scheme:`.
+    * `http:`
+    * `https:` - The default value.
   * `host` String (optional) - The server host provided as a concatenation of
 the hostname and the port number 'hostname:port'.
   * `hostname` String (optional) - The server host name.
