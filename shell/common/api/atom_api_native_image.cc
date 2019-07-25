@@ -114,7 +114,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
     : hicon_path_(hicon_path) {
   // Use the 256x256 icon as fallback icon.
   gfx::ImageSkia image_skia;
-  ReadImageSkiaFromICO(&image_skia, GetHICON(256));
+  electron::util::ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
   Init(isolate);
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
