@@ -30,10 +30,10 @@ the hostname and the port number 'hostname:port'.
   * `hostname` String (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
   * `path` String (optional) - The path part of the request URL.
-  * `redirect` String (optional) - The redirect mode for this request. Should be
-one of `follow`, `error` or `manual`. Defaults to `follow`. When mode is `error`,
-any redirection will be aborted. When mode is `manual` the redirection will be
-deferred until [`request.followRedirect`](#requestfollowredirect) is invoked. Listen for the [`redirect`](#event-redirect) event in
+  * `redirect` String (optional) - The redirect mode for this request.
+    * `follow` - The default value.
+    * `error` - Redirection will be aborted.
+    * `manual` - Redirection will be deferred until [`request.followRedirect`](#requestfollowredirect) is invoked. Listen for the [`redirect`](#event-redirect) event in
 this mode to get more details about the redirect request.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
