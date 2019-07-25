@@ -551,11 +551,11 @@ steps-lint: &steps-lint
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
           gn_version="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
 
-          echo \$ServiceURL https://chrome-infra-packages.appspot.com/ > c
-          echo @Subdir src/buildtools/linux64 >> c
-          echo gn/gn/linux-amd64 $gn_version >> c
-          cipd ensure -ensure-file - -root . < c
-          rm -f c
+          cipd ensure -ensure-file - -root . <<-CIPD
+          \$ServiceURL https://chrome-infra-packages.appspot.com/
+          @Subdir src/buildtools/linux64
+          gn/gn/linux-amd64 $gn_version
+          CIPD
 
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
     - run:
@@ -734,13 +734,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
     - *step-ffmpeg-store
-
-    # chromedriver
-    - *step-electron-chromedriver-build
-    - *step-electron-chromedriver-store
-
-    # typescript defs
-    - *step-maybe-generate-typescript-defs
 
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
@@ -944,14 +937,7 @@ chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
 # List of all jobs.
-version: 2.1
-parameters:
-  run_release_builds:
-    type: boolean
-    default: false
-  run_ci:
-    type: boolean
-    default: true
+version: 2
 jobs:
   # Layer 0: Lint. Standalone.
   lint:
@@ -1584,37 +1570,10 @@ jobs:
 workflows:
   version: 2
   lint:
-    when: << pipeline.parameters.run_ci >>
     jobs:
       - lint
 
-  # Runs builds in release mode, does not actually release anything
-  release-builds:
-    when: << pipeline.parameters.run_release_builds >>
-    jobs:
-      - linux-checkout
-      - mac-checkout
-      - linux-ia32-release:
-          requires:
-            - linux-checkout
-      - linux-x64-release:
-          requires:
-            - linux-checkout
-      - linux-arm-release:
-          requires:
-            - linux-checkout
-      - linux-arm64-release:
-          requires:
-            - linux-checkout
-      - osx-release:
-          requires:
-            - mac-checkout
-      - mas-release:
-          requires:
-            - mac-checkout
-
   build-linux:
-    when: << pipeline.parameters.run_ci >>
     jobs:
       - linux-checkout
 
@@ -1680,7 +1639,6 @@ workflows:
             - linux-checkout
 
   build-mac:
-    when: << pipeline.parameters.run_ci >>
     jobs:
       - mac-checkout
       - osx-testing:
