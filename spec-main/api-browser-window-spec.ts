@@ -1040,22 +1040,24 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
     let w = null as unknown as BrowserWindow
+
     beforeEach(() => {
       w = new BrowserWindow({show: false})
     })
+
     afterEach(async () => {
       await closeWindow(w)
       w = null as unknown as BrowserWindow
     })
 
     it('sets the window as always on top', () => {
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true, 'screen-saver')
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
       w.setAlwaysOnTop(false)
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true)
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
     })
 
     ifit(process.platform === 'darwin')('raises an error when relativeLevel is out of bounds', () => {
@@ -1069,13 +1071,23 @@ describe('BrowserWindow module', () => {
     })
 
     ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true, 'screen-saver')
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
       w.minimize()
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.restore()
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
+    })
+
+    ifit(process.platform !== 'darwin')('causes the right value to be emitted on `always-on-top-changed`', (done) => {
+      w.on('always-on-top-changed', (e, alwaysOnTop) => {
+        expect(alwaysOnTop).to.be.true('is not alwaysOnTop')
+        done()
+      })
+
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
+      w.setAlwaysOnTop(true)
     })
   })
 

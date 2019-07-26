@@ -756,9 +756,7 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                        const std::string& level,
                                        int relativeLevel,
                                        std::string* error) {
-  if (z_order != widget()->GetZOrderLevel())
-    NativeWindow::NotifyWindowAlwaysOnTopChanged();
-
+  bool level_changed = z_order != widget()->GetZOrderLevel();
   widget()->SetZOrderLevel(z_order);
 
 #if defined(OS_WIN)
@@ -773,6 +771,11 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
   }
 #endif
   MoveBehindTaskBarIfNeeded();
+
+  // This must be notified at the very end or IsAlwaysOnTop
+  // will not yet have been updated to reflect the new status
+  if (level_changed)
+    NativeWindow::NotifyWindowAlwaysOnTopChanged();
 }
 
 ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() {
