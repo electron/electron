@@ -508,6 +508,7 @@ filenames = {
     "shell/common/crash_reporter/linux/crash_dump_handler.h",
     "shell/common/crash_reporter/win/crash_service_main.cc",
     "shell/common/crash_reporter/win/crash_service_main.h",
+    "shell/common/gin_converters/file_dialog_converter_gin_adapter.h",
     "shell/common/gin_converters/image_converter_gin_adapter.h",
     "shell/common/gin_converters/message_box_converter.cc",
     "shell/common/gin_converters/message_box_converter.h",
