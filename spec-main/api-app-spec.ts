@@ -683,7 +683,7 @@ describe('app module', () => {
 
     it('throws an error when the name is invalid', () => {
       expect(() => {
-        app.getPath('does-not-exist')
+        app.getPath('does-not-exist' as any)
       }).to.throw(/Failed to get 'does-not-exist' path/)
     })
 
@@ -701,7 +701,7 @@ describe('app module', () => {
       app.setPath('music', badPath)
       expect(fs.existsSync(badPath)).to.be.false
 
-      expect(() => { app.getPath(badPath) }).to.throw()
+      expect(() => { app.getPath(badPath as any) }).to.throw()
     })
   })
 

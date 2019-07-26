@@ -590,31 +590,29 @@ Returns `String` - The current application directory.
 
 ### `app.getPath(name)`
 
-* `name` String
+* `name` String - You can request the following paths by the name:
+  * `home` User's home directory.
+  * `appData` Per-user application data directory, which by default points to:
+    * `%APPDATA%` on Windows
+    * `$XDG_CONFIG_HOME` or `~/.config` on Linux
+    * `~/Library/Application Support` on macOS
+  * `userData` The directory for storing your app's configuration files, which by
+    default it is the `appData` directory appended with your app's name.
+  * `cache`
+  * `temp` Temporary directory.
+  * `exe` The current executable file.
+  * `module` The `libchromiumcontent` library.
+  * `desktop` The current user's Desktop directory.
+  * `documents` Directory for a user's "My Documents".
+  * `downloads` Directory for a user's downloads.
+  * `music` Directory for a user's music.
+  * `pictures` Directory for a user's pictures.
+  * `videos` Directory for a user's videos.
+  * `logs` Directory for your app's log folder.
+  * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
 Returns `String` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
-
-You can request the following paths by the name:
-
-* `home` User's home directory.
-* `appData` Per-user application data directory, which by default points to:
-  * `%APPDATA%` on Windows
-  * `$XDG_CONFIG_HOME` or `~/.config` on Linux
-  * `~/Library/Application Support` on macOS
-* `userData` The directory for storing your app's configuration files, which by
-  default it is the `appData` directory appended with your app's name.
-* `temp` Temporary directory.
-* `exe` The current executable file.
-* `module` The `libchromiumcontent` library.
-* `desktop` The current user's Desktop directory.
-* `documents` Directory for a user's "My Documents".
-* `downloads` Directory for a user's downloads.
-* `music` Directory for a user's music.
-* `pictures` Directory for a user's pictures.
-* `videos` Directory for a user's videos.
-* `logs` Directory for your app's log folder.
-* `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
 ### `app.getFileIcon(path[, options])`
 
