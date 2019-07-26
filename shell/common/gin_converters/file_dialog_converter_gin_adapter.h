@@ -16,19 +16,6 @@
 namespace gin {
 
 template <>
-struct Converter<file_dialog::Filter> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const file_dialog::Filter& in) {
-    return mate::ConvertToV8(isolate, in);
-  }
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     file_dialog::Filter* out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-};
-
-template <>
 struct Converter<file_dialog::DialogSettings> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const file_dialog::DialogSettings& in) {

@@ -16,14 +16,6 @@
 namespace gin {
 
 template <>
-struct Converter<net::AuthChallengeInfo> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::AuthChallengeInfo& val) {
-    return mate::ConvertToV8(isolate, val);
-  }
-};
-
-template <>
 struct Converter<scoped_refptr<net::X509Certificate>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
@@ -34,36 +26,6 @@ struct Converter<scoped_refptr<net::X509Certificate>> {
                      v8::Local<v8::Value> val,
                      scoped_refptr<net::X509Certificate>* out) {
     return mate::ConvertFromV8(isolate, val, out);
-  }
-};
-
-template <>
-struct Converter<net::CertPrincipal> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::CertPrincipal& val) {
-    return mate::ConvertToV8(isolate, val);
-  }
-};
-
-template <>
-struct Converter<net::HttpResponseHeaders*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   net::HttpResponseHeaders* headers) {
-    return mate::ConvertToV8(isolate, headers);
-  }
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     net::HttpResponseHeaders* out) {
-    return mate::Converter<net::HttpResponseHeaders*>::FromV8(isolate, val,
-                                                              out);
-  }
-};
-
-template <>
-struct Converter<network::ResourceRequest> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const network::ResourceRequest& val) {
-    return mate::ConvertToV8(isolate, val);
   }
 };
 

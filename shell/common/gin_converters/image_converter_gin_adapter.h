@@ -24,19 +24,6 @@ struct Converter<gfx::ImageSkia> {
   }
 };
 
-template <>
-struct Converter<gfx::Image> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     gfx::Image* out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const gfx::Image& val) {
-    return mate::ConvertToV8(isolate, val);
-  }
-};
-
 }  // namespace gin
 
 #endif  // SHELL_COMMON_GIN_CONVERTERS_IMAGE_CONVERTER_GIN_ADAPTER_H_

@@ -7,18 +7,13 @@
 #include <vector>
 
 #include "gin/dictionary.h"
-#include "gin/function_template.h"
-#include "shell/browser/api/atom_api_browser_window.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_dialog_converter_gin_adapter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
-// #include "shell/common/native_mate_converters/callback.h"
-// #include "shell/common/native_mate_converters/file_path_converter.h"
-// #include "shell/common/native_mate_converters/image_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
@@ -90,49 +85,17 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
-
-  auto showMessageBoxSyncT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&ShowMessageBoxSync));
-  dict.Set("showMessageBoxSync",
-           showMessageBoxSyncT->GetFunction(context).ToLocalChecked());
-
-  auto showMessageBoxT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&ShowMessageBox));
-  dict.Set("showMessageBox",
-           showMessageBoxT->GetFunction(context).ToLocalChecked());
-
-  auto showErrorBoxT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&electron::ShowErrorBox));
-  dict.Set("showErrorBox",
-           showErrorBoxT->GetFunction(context).ToLocalChecked());
-
-  auto showOpenDialogSyncT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&ShowOpenDialogSync));
-  dict.Set("showOpenDialogSync",
-           showOpenDialogSyncT->GetFunction(context).ToLocalChecked());
-
-  auto showOpenDialogT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&ShowOpenDialog));
-  dict.Set("showOpenDialog",
-           showOpenDialogT->GetFunction(context).ToLocalChecked());
-
-  auto showSaveDialogSyncT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&ShowSaveDialogSync));
-  dict.Set("showSaveDialogSync",
-           showSaveDialogSyncT->GetFunction(context).ToLocalChecked());
-
-  auto showSaveDialogT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&ShowSaveDialog));
-  dict.Set("showSaveDialog",
-           showSaveDialogT->GetFunction(context).ToLocalChecked());
-
+  gin::Dictionary dict(context->GetIsolate(), exports);
+  dict.Set("showMessageBoxSync", base::BindRepeating(&ShowMessageBoxSync));
+  dict.Set("showMessageBox", base::BindRepeating(&ShowMessageBox));
+  dict.Set("showErrorBox", base::BindRepeating(&electron::ShowErrorBox));
+  dict.Set("showOpenDialogSync", base::BindRepeating(&ShowOpenDialogSync));
+  dict.Set("showOpenDialog", base::BindRepeating(&ShowOpenDialog));
+  dict.Set("showSaveDialogSync", base::BindRepeating(&ShowSaveDialogSync));
+  dict.Set("showSaveDialog", base::BindRepeating(&ShowSaveDialog));
 #if defined(OS_MACOSX) || defined(OS_WIN)
-  auto showCertificateTrustDialogT = gin::CreateFunctionTemplate(
-      isolate, base::BindRepeating(&certificate_trust::ShowCertificateTrust));
   dict.Set("showCertificateTrustDialog",
-           showCertificateTrustDialogT->GetFunction(context).ToLocalChecked());
+           base::BindRepeating(&certificate_trust::ShowCertificateTrust));
 #endif
 }
 
