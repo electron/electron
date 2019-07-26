@@ -3,11 +3,7 @@ import { remote, webFrame } from 'electron'
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
-import {
-  syncMethods,
-  asyncCallbackMethods,
-  asyncPromiseMethods
-} from '@electron/internal/common/web-view-methods'
+import { syncMethods, asyncMethods } from '@electron/internal/common/web-view-methods'
 
 const v8Util = process.electronBinding('v8_util')
 
@@ -73,7 +69,6 @@ export class WebViewImpl {
     // heard back from createGuest yet. We will not reset the flag in this case so
     // that we don't end up allocating a second guest.
     if (this.guestInstanceId) {
-      guestViewInternal.destroyGuest(this.guestInstanceId)
       this.guestInstanceId = void 0
     }
 
@@ -258,22 +253,12 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
 
   const createNonBlockHandler = function (method: string) {
     return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args)
-    }
-  }
-
-  for (const method of asyncCallbackMethods) {
-    (WebViewElement.prototype as Record<string, any>)[method] = createNonBlockHandler(method)
-  }
-
-  const createPromiseHandler = function (method: string) {
-    return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
       return ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args)
     }
   }
 
-  for (const method of asyncPromiseMethods) {
-    (WebViewElement.prototype as Record<string, any>)[method] = createPromiseHandler(method)
+  for (const method of asyncMethods) {
+    (WebViewElement.prototype as Record<string, any>)[method] = createNonBlockHandler(method)
   }
 }
 

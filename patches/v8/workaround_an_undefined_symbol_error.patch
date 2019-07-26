@@ -12,10 +12,10 @@ By moving some functions out of the the arm64-assembler header file,
 this error no longer seems to happen.
 
 diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
-index 1806f82b461a5f7368281bcd3741fd8195a20f11..53da75760ba31bed3e3cf19397474b353bc83fdf 100644
+index 159e763ba2602639b4499af7b7869ead58b267d4..ac529e78a8a6ae8cffb0fef26e4bce9f258517ee 100644
 --- a/src/codegen/arm64/assembler-arm64.cc
 +++ b/src/codegen/arm64/assembler-arm64.cc
-@@ -3786,6 +3786,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
+@@ -3564,6 +3564,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
         ImmMoveWide(static_cast<int>(imm)) | ShiftMoveWide(shift));
  }
  
@@ -39,10 +39,10 @@ index 1806f82b461a5f7368281bcd3741fd8195a20f11..53da75760ba31bed3e3cf19397474b35
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
-index 04cd4222417f5ac88f3c5f3278c45f1d128c7c8c..fb5feb23074ac888e85a3676c1cbbb63126e72d5 100644
+index 6a6bf633c13ec6d94bbc145eae6daa9ce0d9b2ce..42a77d305b17ffaac6fd3f07c5290c1d61f31065 100644
 --- a/src/codegen/arm64/assembler-arm64.h
 +++ b/src/codegen/arm64/assembler-arm64.h
-@@ -2148,11 +2148,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+@@ -2079,11 +2079,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
      return rm.code() << Rm_offset;
    }
  
@@ -55,7 +55,7 @@ index 04cd4222417f5ac88f3c5f3278c45f1d128c7c8c..fb5feb23074ac888e85a3676c1cbbb63
  
    static Instr Ra(CPURegister ra) {
      DCHECK_NE(ra.code(), kSPRegInternalCode);
-@@ -2176,15 +2172,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+@@ -2107,15 +2103,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
  
    // These encoding functions allow the stack pointer to be encoded, and
    // disallow the zero register.

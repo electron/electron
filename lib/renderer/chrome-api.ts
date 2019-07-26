@@ -2,8 +2,7 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as url from 'url'
 
-// Todo: Import once extensions have been turned into TypeScript
-const Event = require('@electron/internal/renderer/extensions/event')
+import { Event } from '@electron/internal/renderer/extensions/event'
 
 class Tab {
   public id: number
@@ -41,10 +40,10 @@ class Port {
     })
 
     ipcRendererInternal.on(`CHROME_PORT_POSTMESSAGE_${portId}`, (
-      _event: Electron.Event, message: string
+      _event: Electron.Event, message: any
     ) => {
       const sendResponse = function () { console.error('sendResponse is not implemented') }
-      this.onMessage.emit(message, this.sender, sendResponse)
+      this.onMessage.emit(JSON.parse(message), this.sender, sendResponse)
     })
   }
 
@@ -55,8 +54,8 @@ class Port {
     this._onDisconnect()
   }
 
-  postMessage (message: string) {
-    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_POSTMESSAGE_${this.portId}`, message)
+  postMessage (message: any) {
+    ipcRendererInternal.sendToAll(this.tabId, `CHROME_PORT_POSTMESSAGE_${this.portId}`, JSON.stringify(message))
   }
 
   _onDisconnect () {

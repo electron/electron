@@ -69,7 +69,7 @@ See the [Windows Store Guide].
 [`electron-builder`]: https://github.com/electron-userland/electron-builder
 [`electron-forge`]: https://github.com/electron-userland/electron-forge
 [`electron-osx-sign`]: https://github.com/electron-userland/electron-osx-sign
-[`electron-packager`]: https://github.com/electron-userland/electron-packager
+[`electron-packager`]: https://github.com/electron/electron-packager
 [`electron-winstaller`]: https://github.com/electron/windows-installer
 [Xcode]: https://developer.apple.com/xcode
 [signing certificates]: https://github.com/electron-userland/electron-osx-sign/wiki/1.-Getting-Started#certificates

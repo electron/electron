@@ -61,10 +61,10 @@ index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06
  
  // In the browser process we allow some overage to
 diff --git a/third_party/blink/renderer/modules/storage/cached_storage_area.cc b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
-index 6a3a3718443aebf24fd60e00f8f01ba76575ebfa..fb8250553164ebaf1a5ccae4a1c8e2f660ea6e14 100644
+index 4b976b74490234cd9ad5ac7a0a63708b6edbbae3..183ed46369dc0f0026c53521d19209011d2d0eea 100644
 --- a/third_party/blink/renderer/modules/storage/cached_storage_area.cc
 +++ b/third_party/blink/renderer/modules/storage/cached_storage_area.cc
-@@ -106,11 +106,13 @@ bool CachedStorageArea::SetItem(const String& key,
+@@ -107,11 +107,13 @@ bool CachedStorageArea::SetItem(const String& key,
                                  Source* source) {
    DCHECK(areas_->Contains(source));
  

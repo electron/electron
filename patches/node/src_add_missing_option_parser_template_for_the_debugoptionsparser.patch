@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Thu, 4 Jul 2019 15:28:22 -0700
+Subject: src: add missing option parser template for the DebugOptionsParser
+
+This allows embedders to run `node::options_parser::Parse` for a
+`node::DebugOptions`.
+
+This can be removed once https://github.com/nodejs/node/pull/28543 is
+merged and available in our node fork.
+
+diff --git a/src/node_options.cc b/src/node_options.cc
+index e2f20d1b7b5ad4407b5630b163ee1c29a18027ce..01ecbd2c7318f90ec79af7450119d6368ed30d6a 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -232,6 +232,16 @@ class PerProcessOptionsParser : public OptionsParser<PerProcessOptions> {
+ #if HAVE_INSPECTOR
+ const DebugOptionsParser _dop_instance{};
+ const EnvironmentOptionsParser _eop_instance{_dop_instance};
++
++template <>
++void Parse(
++  StringVector* const args, StringVector* const exec_args,
++  StringVector* const v8_args,
++  DebugOptions* const options,
++  OptionEnvvarSettings required_env_settings, StringVector* const errors) {
++  _dop_instance.Parse(
++    args, exec_args, v8_args, options, required_env_settings, errors);
++}
+ #else
+ const EnvironmentOptionsParser _eop_instance{};
+ #endif  // HAVE_INSPECTOR

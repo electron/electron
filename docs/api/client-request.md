@@ -5,7 +5,7 @@
 Process: [Main](../glossary.md#main-process)
 
 `ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
-interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+interface and is therefore an [EventEmitter][event-emitter].
 
 ### `new ClientRequest(options)`
 
@@ -160,7 +160,7 @@ internally buffered inside Electron process memory.
 * `name` String - An extra HTTP header name.
 * `value` Object - An extra HTTP header value.
 
-Adds an extra HTTP header. The header name will issued as it is without
+Adds an extra HTTP header. The header name will be issued as-is without
 lowercasing. It can be called only before first write. Calling this method after
 the first write will throw an error. If the passed value is not a `String`, its
 `toString()` method will be called to obtain the final value.
@@ -229,3 +229,5 @@ no other properties will be set
 
 You can use this method in conjunction with `POST` requests to get the progress
 of a file upload or other data transfer.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

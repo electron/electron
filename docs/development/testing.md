@@ -42,3 +42,9 @@ you would like to run. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
 
 [standard-addons]: https://standardjs.com/#are-there-text-editor-plugins
+
+### Testing on Windows 10 devices
+[Some Windows 10 devices](https://docs.microsoft.com/en-us/typography/fonts/windows_10_font_list) do not ship with the Meiryo font installed, which may cause a font fallback test to fail. To install Meiryo:
+1. Push the Windows key and search for _Manage optional features_.
+1. Click _Add a feature_.
+1. Select _Japanese Supplemental Fonts_ and click _Install_.

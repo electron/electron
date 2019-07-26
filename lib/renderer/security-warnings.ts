@@ -1,5 +1,5 @@
 import { webFrame } from 'electron'
-import { invokeSync } from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { invoke } from '@electron/internal/renderer/ipc-renderer-internal-utils'
 
 let shouldLog: boolean | null = null
 
@@ -59,6 +59,19 @@ const getIsRemoteProtocol = function () {
 }
 
 /**
+ * Checks if the current window is from localhost.
+ *
+ * @returns {boolean} - Is current window from localhost?
+ */
+const isLocalhost = function () {
+  if (!window || !window.location) {
+    return false
+  }
+
+  return window.location.hostname === 'localhost'
+}
+
+/**
  * Tries to determine whether a CSP without `unsafe-eval` is set.
  *
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
@@ -75,7 +88,7 @@ const isUnsafeEvalEnabled = function () {
 }
 
 const moreInformation = `\nFor more information and help, consult
-https://electronjs.org/docs/tutorial/security.\n This warning will not show up
+https://electronjs.org/docs/tutorial/security.\nThis warning will not show up
 once the app is packaged.`
 
 /**
@@ -92,6 +105,7 @@ const warnAboutInsecureResources = function () {
   const resources = window.performance
     .getEntriesByType('resource')
     .filter(({ name }) => /^(http|ftp):/gi.test(name || ''))
+    .filter(({ name }) => new URL(name).hostname !== 'localhost')
     .map(({ name }) => `- ${name}`)
     .join('\n')
 
@@ -100,9 +114,9 @@ const warnAboutInsecureResources = function () {
   }
 
   const warning = `This renderer process loads resources using insecure
-  protocols.This exposes users of this app to unnecessary security risks.
-  Consider loading the following resources over HTTPS or FTPS. \n ${resources}
-  \n ${moreInformation}`
+  protocols. This exposes users of this app to unnecessary security risks.
+  Consider loading the following resources over HTTPS or FTPS. \n${resources}
+  \n${moreInformation}`
 
   console.warn('%cElectron Security Warning (Insecure Resources)',
     'font-weight: bold;', warning)
@@ -115,12 +129,12 @@ const warnAboutInsecureResources = function () {
  * Logs a warning message about Node integration.
  */
 const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
-  if (!nodeIntegration) return
+  if (!nodeIntegration || isLocalhost()) return
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has Node.js integration enabled
     and attempted to load remote content from '${window.location}'. This
-    exposes users of this app to severe security risks.\n ${moreInformation}`
+    exposes users of this app to severe security risks.\n${moreInformation}`
 
     console.warn('%cElectron Security Warning (Node.js Integration with Remote Content)',
       'font-weight: bold;', warning)
@@ -142,7 +156,7 @@ const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPref
   if (!webPreferences || webPreferences.webSecurity !== false) return
 
   const warning = `This renderer process has "webSecurity" disabled. This
-  exposes users of this app to severe security risks.\n ${moreInformation}`
+  exposes users of this app to severe security risks.\n${moreInformation}`
 
   console.warn('%cElectron Security Warning (Disabled webSecurity)',
     'font-weight: bold;', warning)
@@ -152,8 +166,6 @@ const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPref
  * #6 on the checklist: Define a Content-Security-Policy and use restrictive
  * rules (i.e. script-src 'self')
  *
- * #7 on the checklist: Disable eval
- *
  * Logs a warning message about unset or insecure CSP
  */
 const warnAboutInsecureCSP = function () {
@@ -162,7 +174,7 @@ const warnAboutInsecureCSP = function () {
 
     const warning = `This renderer process has either no Content Security
     Policy set or a policy with "unsafe-eval" enabled. This exposes users of
-    this app to unnecessary security risks.\n ${moreInformation}`
+    this app to unnecessary security risks.\n${moreInformation}`
 
     console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
       'font-weight: bold;', warning)
@@ -170,7 +182,7 @@ const warnAboutInsecureCSP = function () {
 }
 
 /**
- * #8 on the checklist: Do not set allowRunningInsecureContent to true
+ * #7 on the checklist: Do not set allowRunningInsecureContent to true
  *
  * Logs a warning message about disabled webSecurity.
  */
@@ -186,7 +198,7 @@ const warnAboutInsecureContentAllowed = function (webPreferences?: Electron.WebP
 }
 
 /**
- * #9 on the checklist: Do not enable experimental features
+ * #8 on the checklist: Do not enable experimental features
  *
  * Logs a warning message about experimental features.
  */
@@ -197,14 +209,14 @@ const warnAboutExperimentalFeatures = function (webPreferences?: Electron.WebPre
 
   const warning = `This renderer process has "experimentalFeatures" enabled.
   This exposes users of this app to some security risk. If you do not need
-  this feature, you should disable it.\n ${moreInformation}`
+  this feature, you should disable it.\n${moreInformation}`
 
   console.warn('%cElectron Security Warning (experimentalFeatures)',
     'font-weight: bold;', warning)
 }
 
 /**
- * #10 on the checklist: Do not use enableBlinkFeatures
+ * #9 on the checklist: Do not use enableBlinkFeatures
  *
  * Logs a warning message about enableBlinkFeatures
  */
@@ -217,14 +229,14 @@ const warnAboutEnableBlinkFeatures = function (webPreferences?: Electron.WebPref
 
   const warning = `This renderer process has additional "enableBlinkFeatures"
   enabled. This exposes users of this app to some security risk. If you do not
-  need this feature, you should disable it.\n ${moreInformation}`
+  need this feature, you should disable it.\n${moreInformation}`
 
   console.warn('%cElectron Security Warning (enableBlinkFeatures)',
     'font-weight: bold;', warning)
 }
 
 /**
- * #11 on the checklist: Do Not Use allowpopups
+ * #10 on the checklist: Do Not Use allowpopups
  *
  * Logs a warning message about allowed popups
  */
@@ -247,7 +259,29 @@ const warnAboutAllowedPopups = function () {
 }
 
 // Currently missing since we can't easily programmatically check for it:
-//   #12WebViews: Verify the options and params of all `<webview>` tags
+//   #11 Verify WebView Options Before Creation
+//   #12 Disable or limit navigation
+//   #13 Disable or limit creation of new windows
+//   #14 Do not use `openExternal` with untrusted content
+
+// #15 on the checklist: Disable the `remote` module
+// Logs a warning message about the remote module
+
+const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
+  if (!webPreferences || !webPreferences.enableRemoteModule || isLocalhost()) return
+
+  if (getIsRemoteProtocol()) {
+    const warning = `This renderer process has "enableRemoteModule" enabled
+    and attempted to load remote content from '${window.location}'. This
+    exposes users of this app to unnecessary security risks.\n${moreInformation}`
+
+    console.warn('%cElectron Security Warning (enableRemoteModule)',
+      'font-weight: bold;', warning)
+  }
+}
+
+// Currently missing since we can't easily programmatically check for it:
+//   #16 Filter the `remote` module
 
 const logSecurityWarnings = function (
   webPreferences: Electron.WebPreferences | undefined, nodeIntegration: boolean
@@ -260,20 +294,21 @@ const logSecurityWarnings = function (
   warnAboutEnableBlinkFeatures(webPreferences)
   warnAboutInsecureCSP()
   warnAboutAllowedPopups()
+  warnAboutRemoteModuleWithRemoteContent(webPreferences)
 }
 
-const getWebPreferences = function () {
+const getWebPreferences = async function () {
   try {
-    return invokeSync('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
+    return invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES')
   } catch (error) {
     console.warn(`getLastWebPreferences() failed: ${error}`)
   }
 }
 
 export function securityWarnings (nodeIntegration: boolean) {
-  const loadHandler = function () {
+  const loadHandler = async function () {
     if (shouldLogSecurityWarnings()) {
-      const webPreferences = getWebPreferences()
+      const webPreferences = await getWebPreferences()
       logSecurityWarnings(webPreferences, nodeIntegration)
     }
   }

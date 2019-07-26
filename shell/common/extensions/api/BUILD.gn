@@ -1,0 +1,35 @@
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//extensions/buildflags/buildflags.gni")
+import("//tools/json_schema_compiler/json_features.gni")
+import("//tools/json_schema_compiler/json_schema_api.gni")
+
+assert(enable_extensions)
+
+################################################################################
+# Public Targets
+
+group("extensions_features") {
+  public_deps = [
+    ":manifest_features",
+
+    # TODO(devlin): It would be nicer to have this dependency hoisted up to
+    # //extensions/common (since that's where it's consumed), but there's some
+    # cycles to be resolved first.
+    "//extensions/common/api:extensions_features",
+  ]
+}
+
+################################################################################
+# Private Targets
+
+json_features("manifest_features") {
+  feature_type = "ManifestFeature"
+  method_name = "AddAtomManifestFeatures"
+  sources = [
+    "_manifest_features.json",
+  ]
+  visibility = [ ":extensions_features" ]
+}

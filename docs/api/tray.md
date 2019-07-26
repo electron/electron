@@ -161,7 +161,7 @@ Returns:
 
 Emitted when the mouse exits the tray icon.
 
-#### Event: 'mouse-move' _macOS_
+#### Event: 'mouse-move' _macOS_ _Windows_
 
 Returns:
 
@@ -215,6 +215,8 @@ Returns `String` - the title displayed next to the tray icon in the status bar
   * `never` - Never highlight the tray icon.
 
 Sets when the tray's icon background becomes highlighted (in blue).
+
+**[Deprecated](breaking-changes.md#tray)**
 
 **Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md)
 by toggling between `'never'` and `'always'` modes when the window visibility

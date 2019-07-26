@@ -6,8 +6,8 @@ steps:
 
 - bash: |
     cd src/electron
-    npm install --verbose
-  displayName: 'NPM install'
+    node script/yarn.js install --frozen-lockfile
+  displayName: 'Yarn install'
 
 - bash: |
     export ZIP_DEST=$PWD/src/out/Default
@@ -53,14 +53,6 @@ steps:
   env:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
-
-- bash: |
-    cd src
-    export npm_config_nodedir=$PWD/out/Default/gen/node_headers
-    cd electron/spec
-    npm install --verbose
-  displayName: Install test modules
-
 - bash: |
     sh -e /etc/init.d/xvfb start
   displayName: Setup for headless testing
@@ -68,20 +60,21 @@ steps:
     DISPLAY: ":99.0"
 
 - bash: |
-   cd src
-   ./out/Default/electron electron/spec --ci --enable-logging
+    cd src
+    export ELECTRON_OUT_DIR=Default
+    (cd electron && node script/yarn test -- --ci --enable-logging)
   displayName: 'Run Electron tests'
-  timeoutInMinutes: 10
+  timeoutInMinutes: 20
   env:
-    ELECTRON_DISABLE_SANDBOX: 1
+    ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+    IGNORE_YARN_INSTALL_ERROR: 1
+    ELECTRON_TEST_RESULTS_DIR: junit
 
 - bash: |
     cd src
     python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
   displayName: Verify non proprietary ffmpeg
   timeoutInMinutes: 5
-  env:
-    ELECTRON_DISABLE_SANDBOX: 1
 
 - bash: |
     cd src
@@ -89,9 +82,6 @@ steps:
     python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/out/Default/cross-arch-snapshots
   displayName: Verify cross arch snapshot
   timeoutInMinutes: 5
-  env:
-    ELECTRON_DISABLE_SANDBOX: 1
-  condition: and(succeeded(), eq(variables['RUN_NATIVE_MKSNAPSHOT'], 'true'))
 
 - task: PublishTestResults@2
   displayName: 'Publish Test Results'

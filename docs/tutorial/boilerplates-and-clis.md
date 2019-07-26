@@ -1,6 +1,6 @@
 # Boilerplates and CLIs
 
-Electron development is un-opinionated - there is no "one true way" to develop,
+Electron development is unopinionated - there is no "one true way" to develop,
 build, package, or release an Electron application. Additional features for
 Electron, both for build- and run-time, can usually be found on
 [npm](https://www.npmjs.com/search?q=electron) in individual packages, allowing developers to build both
@@ -33,7 +33,7 @@ development.
 
 Forge comes with [ready-to-use templates](https://electronforge.io/templates) for popular
 frameworks like React, Vue, or Angular. It uses the same core modules used by the
-greater Electron community (like [`electron-packager`](https://github.com/electron-userland/electron-packager)) – 
+greater Electron community (like [`electron-packager`](https://github.com/electron/electron-packager)) – 
 changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 
 You can find more information and documentation on [electronforge.io](https://electronforge.io/).

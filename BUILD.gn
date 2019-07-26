@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//content/public/app/mac_helpers.gni")
 import("//pdf/features.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
@@ -10,7 +11,9 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
+import("build/extract_symbols.gni")
 import("build/npm.gni")
+import("build/templated_file.gni")
 import("build/tsc.gni")
 import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
@@ -21,6 +24,7 @@ import("filenames.gni")
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
+  import("//ui/gl/features.gni")
   import("//v8/gni/v8.gni")
 }
 
@@ -39,7 +43,7 @@ if (is_linux) {
   }
 }
 
-branding = read_file("atom/app/BRANDING.json", "json")
+branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
@@ -51,8 +55,8 @@ if (is_mas_build) {
 
 config("branding") {
   defines = [
-    "ATOM_PRODUCT_NAME=\"$electron_product_name\"",
-    "ATOM_PROJECT_NAME=\"$electron_project_name\"",
+    "ELECTRON_PRODUCT_NAME=\"$electron_product_name\"",
+    "ELECTRON_PROJECT_NAME=\"$electron_project_name\"",
   ]
 }
 
@@ -172,7 +176,7 @@ action("atom_js2c") {
               "$target_gen_dir/js2c/asar_init.js",
             ]
 
-  inputs = sources
+  inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [
     "$root_gen_dir/atom_natives.cc",
   ]
@@ -285,16 +289,15 @@ if (is_linux) {
 
 source_set("manifests") {
   sources = [
-    "//electron/atom/app/manifests.cc",
-    "//electron/atom/app/manifests.h",
+    "//electron/shell/app/manifests.cc",
+    "//electron/shell/app/manifests.h",
   ]
 
   include_dirs = [ "//electron" ]
 
   deps = [
-    "//electron/atom/common/api:mojo",
+    "//electron/shell/common/api:mojo",
     "//printing/buildflags",
-    "//services/proxy_resolver/public/cpp:manifest",
     "//services/service_manager/public/cpp",
   ]
 
@@ -307,7 +310,33 @@ source_set("manifests") {
   }
 }
 
-static_library("electron_lib") {
+npm_action("electron_version_args") {
+  script = "generate-version-json"
+
+  outputs = [
+    "$target_gen_dir/electron_version.args",
+  ]
+
+  args = rebase_path(outputs)
+
+  inputs = [
+    "ELECTRON_VERSION",
+    "script/generate-version-json.js",
+  ]
+}
+
+templated_file("electron_version_header") {
+  deps = [
+    ":electron_version_args",
+  ]
+
+  template = "build/templates/electron_version.tmpl"
+  output = "$target_gen_dir/electron_version.h"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
+source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
@@ -315,12 +344,13 @@ static_library("electron_lib") {
 
   deps = [
     ":atom_js2c",
+    ":electron_version_header",
     ":manifests",
     ":resources",
-    "atom/common/api:mojo",
     "buildflags",
     "chromium_src:chrome",
     "native_mate",
+    "shell/common/api:mojo",
     "//base:base_static",
     "//base/allocator:buildflags",
     "//chrome/app/resources:platform_locale_settings",
@@ -338,6 +368,7 @@ static_library("electron_lib") {
     "//content/public/renderer",
     "//content/public/utility",
     "//device/bluetooth",
+    "//device/bluetooth/public/cpp",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",
@@ -437,34 +468,27 @@ static_library("electron_lib") {
 
   if (enable_fake_location_provider) {
     sources += [
-      "atom/browser/fake_location_provider.cc",
-      "atom/browser/fake_location_provider.h",
+      "shell/browser/fake_location_provider.cc",
+      "shell/browser/fake_location_provider.h",
     ]
   }
 
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
-      "//third_party/crashpad/crashpad/client",
+      "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
     sources += [
-      "atom/browser/ui/views/autofill_popup_view.cc",
-      "atom/browser/ui/views/autofill_popup_view.h",
-    ]
-    include_dirs += [
-      # NOTE(nornagon): other chromium files use the full path to include
-      # crashpad; this is just here for compatibility between GN and GYP, so that
-      # the #includes can be agnostic about where crashpad is vendored.
-      "//third_party/crashpad",
+      "shell/browser/ui/views/autofill_popup_view.cc",
+      "shell/browser/ui/views/autofill_popup_view.h",
     ]
     if (is_mas_build) {
-      deps -= [ "//third_party/crashpad/crashpad/client" ]
-      sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
+      sources += [ "shell/browser/api/atom_api_app_mas.mm" ]
       sources -= [
-        "atom/browser/auto_updater_mac.mm",
-        "atom/common/crash_reporter/crash_reporter_mac.h",
-        "atom/common/crash_reporter/crash_reporter_mac.mm",
+        "shell/browser/auto_updater_mac.mm",
+        "shell/common/crash_reporter/crash_reporter_mac.h",
+        "shell/common/crash_reporter/crash_reporter_mac.mm",
       ]
       defines += [ "MAS_BUILD" ]
     } else {
@@ -489,10 +513,15 @@ static_library("electron_lib") {
       "//chrome/browser/ui/libgtkui",
       "//dbus",
       "//device/bluetooth",
+      "//third_party/breakpad:client",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
+      "//ui/views/controls/webview",
+      "//ui/wm",
     ]
     configs += [ ":gio_unix" ]
+    include_dirs += [ "//third_party/breakpad" ]
+    configs += [ "//build/config/linux:x11" ]
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
@@ -503,20 +532,23 @@ static_library("electron_lib") {
   if (is_win) {
     libs += [ "dwmapi.lib" ]
     deps += [
-      "//third_party/breakpad:breakpad_handler",
-      "//third_party/breakpad:breakpad_sender",
       "//ui/native_theme:native_theme_browser",
-      "//ui/wm/public",
-    ]
-    public_deps += [ "//sandbox/win:sandbox" ]
-  }
-  if (is_linux || is_win) {
-    deps += [
-      "//third_party/breakpad:client",
       "//ui/views/controls/webview",
       "//ui/wm",
+      "//ui/wm/public",
     ]
-    include_dirs += [ "//third_party/breakpad" ]
+    public_deps += [
+      "//sandbox/win:sandbox",
+      "//third_party/crashpad/crashpad/handler",
+    ]
+  }
+
+  if ((is_mac && !is_mas_build) || is_win) {
+    sources += [
+      "shell/common/crash_reporter/crash_reporter_crashpad.cc",
+      "shell/common/crash_reporter/crash_reporter_crashpad.h",
+    ]
+    deps += [ "//third_party/crashpad/crashpad/client" ]
   }
 
   if (enable_pdf) {
@@ -525,25 +557,25 @@ static_library("electron_lib") {
 
   if (enable_run_as_node) {
     sources += [
-      "atom/app/node_main.cc",
-      "atom/app/node_main.h",
+      "shell/app/node_main.cc",
+      "shell/app/node_main.h",
     ]
   }
 
   if (enable_osr) {
     sources += [
-      "atom/browser/osr/osr_host_display_client.cc",
-      "atom/browser/osr/osr_host_display_client.h",
-      "atom/browser/osr/osr_host_display_client_mac.mm",
-      "atom/browser/osr/osr_render_widget_host_view.cc",
-      "atom/browser/osr/osr_render_widget_host_view.h",
-      "atom/browser/osr/osr_video_consumer.cc",
-      "atom/browser/osr/osr_video_consumer.h",
-      "atom/browser/osr/osr_view_proxy.cc",
-      "atom/browser/osr/osr_view_proxy.h",
-      "atom/browser/osr/osr_web_contents_view.cc",
-      "atom/browser/osr/osr_web_contents_view.h",
-      "atom/browser/osr/osr_web_contents_view_mac.mm",
+      "shell/browser/osr/osr_host_display_client.cc",
+      "shell/browser/osr/osr_host_display_client.h",
+      "shell/browser/osr/osr_host_display_client_mac.mm",
+      "shell/browser/osr/osr_render_widget_host_view.cc",
+      "shell/browser/osr/osr_render_widget_host_view.h",
+      "shell/browser/osr/osr_video_consumer.cc",
+      "shell/browser/osr/osr_video_consumer.h",
+      "shell/browser/osr/osr_view_proxy.cc",
+      "shell/browser/osr/osr_view_proxy.h",
+      "shell/browser/osr/osr_web_contents_view.cc",
+      "shell/browser/osr/osr_web_contents_view.h",
+      "shell/browser/osr/osr_web_contents_view_mac.mm",
     ]
     deps += [
       "//components/viz/service",
@@ -559,41 +591,55 @@ static_library("electron_lib") {
       deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     }
     sources += [
-      "atom/browser/api/atom_api_desktop_capturer.cc",
-      "atom/browser/api/atom_api_desktop_capturer.h",
+      "shell/browser/api/atom_api_desktop_capturer.cc",
+      "shell/browser/api/atom_api_desktop_capturer.h",
     ]
   }
 
   if (enable_view_api) {
     sources += [
-      "atom/browser/api/views/atom_api_box_layout.cc",
-      "atom/browser/api/views/atom_api_box_layout.h",
-      "atom/browser/api/views/atom_api_button.cc",
-      "atom/browser/api/views/atom_api_button.h",
-      "atom/browser/api/views/atom_api_label_button.cc",
-      "atom/browser/api/views/atom_api_label_button.h",
-      "atom/browser/api/views/atom_api_layout_manager.cc",
-      "atom/browser/api/views/atom_api_layout_manager.h",
-      "atom/browser/api/views/atom_api_md_text_button.cc",
-      "atom/browser/api/views/atom_api_md_text_button.h",
-      "atom/browser/api/views/atom_api_resize_area.cc",
-      "atom/browser/api/views/atom_api_resize_area.h",
-      "atom/browser/api/views/atom_api_text_field.cc",
-      "atom/browser/api/views/atom_api_text_field.h",
+      "shell/browser/api/views/atom_api_box_layout.cc",
+      "shell/browser/api/views/atom_api_box_layout.h",
+      "shell/browser/api/views/atom_api_button.cc",
+      "shell/browser/api/views/atom_api_button.h",
+      "shell/browser/api/views/atom_api_label_button.cc",
+      "shell/browser/api/views/atom_api_label_button.h",
+      "shell/browser/api/views/atom_api_layout_manager.cc",
+      "shell/browser/api/views/atom_api_layout_manager.h",
+      "shell/browser/api/views/atom_api_md_text_button.cc",
+      "shell/browser/api/views/atom_api_md_text_button.h",
+      "shell/browser/api/views/atom_api_resize_area.cc",
+      "shell/browser/api/views/atom_api_resize_area.h",
+      "shell/browser/api/views/atom_api_text_field.cc",
+      "shell/browser/api/views/atom_api_text_field.h",
     ]
   }
 
   if (enable_basic_printing) {
     sources += [
-      "atom/browser/printing/print_preview_message_handler.cc",
-      "atom/browser/printing/print_preview_message_handler.h",
-      "atom/renderer/printing/print_render_frame_helper_delegate.cc",
-      "atom/renderer/printing/print_render_frame_helper_delegate.h",
+      "shell/browser/printing/print_preview_message_handler.cc",
+      "shell/browser/printing/print_preview_message_handler.h",
+      "shell/renderer/printing/print_render_frame_helper_delegate.cc",
+      "shell/renderer/printing/print_render_frame_helper_delegate.h",
     ]
   }
 
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]
+  }
+
+  public_deps += [ "shell/common/extensions/api:extensions_features" ]
+  deps += [
+    "//components/pref_registry",
+    "//components/user_prefs",
+    "//extensions/browser",
+    "//extensions/browser:core_api_provider",
+    "//extensions/common",
+    "//extensions/common:core_api_provider",
+    "//extensions/renderer",
+  ]
+  if (enable_electron_extensions) {
+    sources += filenames.lib_sources_extensions
   }
 }
 
@@ -611,6 +657,7 @@ if (is_mac) {
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
+  electron_version = read_file("ELECTRON_VERSION", "trim string")
 
   bundle_data("electron_framework_resources") {
     public_deps = [
@@ -652,6 +699,50 @@ if (is_mac) {
     group("electron_framework_libraries") {
     }
   }
+  if (use_egl) {
+    # Add the ANGLE .dylibs in the Libraries directory of the Framework.
+    bundle_data("electron_angle_binaries") {
+      sources = [
+        "$root_out_dir/egl_intermediates/libEGL.dylib",
+        "$root_out_dir/egl_intermediates/libGLESv2.dylib",
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
+      ]
+      public_deps = [
+        "//ui/gl:angle_library_copy",
+      ]
+    }
+
+    # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
+    bundle_data("electron_swiftshader_binaries") {
+      sources = [
+        "$root_out_dir/egl_intermediates/libswiftshader_libEGL.dylib",
+        "$root_out_dir/egl_intermediates/libswiftshader_libGLESv2.dylib",
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
+      ]
+      public_deps = [
+        "//ui/gl:swiftshader_library_copy",
+      ]
+    }
+  }
+  group("electron_angle_library") {
+    if (use_egl) {
+      deps = [
+        ":electron_angle_binaries",
+      ]
+    }
+  }
+
+  group("electron_swiftshader_library") {
+    if (use_egl) {
+      deps = [
+        ":electron_swiftshader_binaries",
+      ]
+    }
+  }
 
   bundle_data("electron_crashpad_helper") {
     sources = [
@@ -678,17 +769,18 @@ if (is_mac) {
       ":electron_lib",
     ]
     deps = [
+      ":electron_angle_library",
       ":electron_framework_libraries",
       ":electron_framework_resources",
+      ":electron_swiftshader_library",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
     }
-    info_plist = "atom/common/resources/mac/Info.plist"
+    info_plist = "shell/common/resources/mac/Info.plist"
 
-    electron_version = read_file("ELECTRON_VERSION", "trim string")
     extra_substitutions = [
-      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
+      "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
     ]
 
@@ -726,35 +818,49 @@ if (is_mac) {
     }
   }
 
-  mac_app_bundle("electron_helper_app") {
-    output_name = electron_helper_name
-    deps = [
-      ":electron_framework+link",
-    ]
-    if (!is_mas_build) {
-      deps += [ "//sandbox/mac:seatbelt" ]
-    }
-    defines = [ "HELPER_EXECUTABLE" ]
-    sources = filenames.app_sources
-    include_dirs = [ "." ]
-    info_plist = "atom/renderer/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
-    ldflags = [
-      "-rpath",
-      "@executable_path/../../..",
-    ]
-    if (is_component_build) {
-      ldflags += [
-        "-rpath",
-        "@executable_path/../../../../../..",
+  template("electron_helper_app") {
+    mac_app_bundle(target_name) {
+      assert(defined(invoker.helper_name_suffix))
+
+      output_name = electron_helper_name + invoker.helper_name_suffix
+      deps = [
+        ":electron_framework+link",
       ]
+      if (!is_mas_build) {
+        deps += [ "//sandbox/mac:seatbelt" ]
+      }
+      defines = [ "HELPER_EXECUTABLE" ]
+      sources = filenames.app_sources
+      sources += [ "shell/common/atom_constants.cc" ]
+      include_dirs = [ "." ]
+      info_plist = "shell/renderer/resources/mac/Info.plist"
+      extra_substitutions =
+          [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
+      ldflags = [
+        "-rpath",
+        "@executable_path/../../..",
+      ]
+      if (is_component_build) {
+        ldflags += [
+          "-rpath",
+          "@executable_path/../../../../../..",
+        ]
+      }
+    }
+  }
+
+  foreach(helper_params, content_mac_helpers) {
+    _helper_target = helper_params[0]
+    _helper_bundle_id = helper_params[1]
+    _helper_suffix = helper_params[2]
+    electron_helper_app("electron_helper_app_${_helper_target}") {
+      helper_name_suffix = _helper_suffix
     }
   }
 
   bundle_data("electron_app_framework_bundle_data") {
     sources = [
       "$root_out_dir/$electron_framework_name.framework",
-      "$root_out_dir/$electron_helper_name.app",
     ]
     if (!is_mas_build) {
       sources += [
@@ -768,8 +874,13 @@ if (is_mac) {
     ]
     public_deps = [
       ":electron_framework+link",
-      ":electron_helper_app",
     ]
+
+    foreach(helper_params, content_mac_helpers) {
+      sources +=
+          [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
+      public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
+    }
   }
 
   mac_app_bundle("electron_login_helper") {
@@ -777,9 +888,9 @@ if (is_mac) {
     sources = filenames.login_helper_sources
     include_dirs = [ "." ]
     libs = [ "AppKit.framework" ]
-    info_plist = "atom/app/resources/mac/loginhelper-Info.plist"
+    info_plist = "shell/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
-        [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
+        [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
   }
 
   bundle_data("electron_login_helper_app") {
@@ -831,7 +942,7 @@ if (is_mac) {
     ]
     sources = [
       "$root_out_dir/resources/default_app.asar",
-      "atom/browser/resources/mac/electron.icns",
+      "shell/browser/resources/mac/electron.icns",
     ]
     outputs = [
       "{{bundle_resources_dir}}/{{source_file_part}}",
@@ -841,6 +952,7 @@ if (is_mac) {
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
     sources = filenames.app_sources
+    sources += [ "shell/common/atom_constants.cc" ]
     include_dirs = [ "." ]
     deps = [
       ":electron_app_framework_bundle_data",
@@ -849,18 +961,100 @@ if (is_mac) {
     if (is_mas_build) {
       deps += [ ":electron_login_helper_app" ]
     }
-    info_plist = "atom/browser/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id" ]
+    info_plist = "shell/browser/resources/mac/Info.plist"
+    extra_substitutions = [
+      "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id",
+      "ELECTRON_VERSION=$electron_version",
+    ]
     ldflags = [
       "-rpath",
       "@executable_path/../Frameworks",
     ]
   }
+
+  if (enable_dsyms) {
+    extract_symbols("electron_framework_syms") {
+      binary = "$root_out_dir/$electron_framework_name.framework/Versions/$electron_framework_version/$electron_framework_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+      deps = [
+        ":electron_framework",
+      ]
+    }
+
+    foreach(helper_params, content_mac_helpers) {
+      _helper_target = helper_params[0]
+      _helper_bundle_id = helper_params[1]
+      _helper_suffix = helper_params[2]
+      extract_symbols("electron_helper_syms_${_helper_target}") {
+        binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
+        symbol_dir = "$root_out_dir/breakpad_symbols"
+        dsym_file = "$root_out_dir/$electron_helper_name${_helper_suffix}.dSYM/Contents/Resources/DWARF/$electron_helper_name${_helper_suffix}"
+        deps = [
+          ":electron_helper_app_${_helper_target}",
+        ]
+      }
+    }
+
+    extract_symbols("electron_app_syms") {
+      binary = "$root_out_dir/$electron_product_name.app/Contents/MacOS/$electron_product_name"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/$electron_product_name.dSYM/Contents/Resources/DWARF/$electron_product_name"
+      deps = [
+        ":electron_app",
+      ]
+    }
+
+    extract_symbols("swiftshader_egl_syms") {
+      binary = "$root_out_dir/libswiftshader_libEGL.dylib"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/libswiftshader_libEGL.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libEGL.dylib"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+      ]
+    }
+
+    extract_symbols("swiftshader_gles_syms") {
+      binary = "$root_out_dir/libswiftshader_libGLESv2.dylib"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libGLESv2.dylib"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
+
+    extract_symbols("crashpad_handler_syms") {
+      binary = "$root_out_dir/crashpad_handler"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      dsym_file = "$root_out_dir/crashpad_handler.dSYM/Contents/Resources/DWARF/crashpad_handler"
+      deps = [
+        "//third_party/crashpad/crashpad/handler:crashpad_handler",
+      ]
+    }
+
+    group("electron_symbols") {
+      deps = [
+        ":crashpad_handler_syms",
+        ":electron_app_syms",
+        ":electron_framework_syms",
+        ":swiftshader_egl_syms",
+        ":swiftshader_gles_syms",
+      ]
+
+      foreach(helper_params, content_mac_helpers) {
+        _helper_target = helper_params[0]
+        deps += [ ":electron_helper_syms_${_helper_target}" ]
+      }
+    }
+  } else {
+    group("electron_symbols") {
+    }
+  }
 } else {
   windows_manifest("electron_app_manifest") {
     sources = [
-      "atom/browser/resources/win/disable_window_filtering.manifest",
-      "atom/browser/resources/win/dpi_aware.manifest",
+      "shell/browser/resources/win/disable_window_filtering.manifest",
+      "shell/browser/resources/win/dpi_aware.manifest",
       as_invoker_manifest,
       common_controls_manifest,
       default_compatibility_manifest,
@@ -903,9 +1097,8 @@ if (is_mac) {
     if (is_win) {
       sources += [
         # TODO: we should be generating our .rc files more like how chrome does
-        "atom/browser/resources/win/atom.ico",
-        "atom/browser/resources/win/atom.rc",
-        "atom/browser/resources/win/resource.h",
+        "shell/browser/resources/win/atom.rc",
+        "shell/browser/resources/win/resource.h",
       ]
 
       libs = [
@@ -931,6 +1124,7 @@ if (is_mac) {
       # See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
       ldflags += [ "/DEF:" + rebase_path("build/electron.def", root_build_dir) ]
       inputs = [
+        "shell/browser/resources/win/atom.ico",
         "build/electron.def",
       ]
     }
@@ -940,6 +1134,49 @@ if (is_mac) {
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
+    }
+  }
+
+  if (is_official_build) {
+    if (is_linux) {
+      _target_executable_suffix = ""
+      _target_shared_library_suffix = ".so"
+    } else if (is_win) {
+      _target_executable_suffix = ".exe"
+      _target_shared_library_suffix = ".dll"
+    }
+
+    extract_symbols("electron_app_symbols") {
+      binary = "$root_out_dir/$electron_project_name$_target_executable_suffix"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        ":electron_app",
+      ]
+    }
+
+    extract_symbols("swiftshader_egl_symbols") {
+      binary = "$root_out_dir/swiftshader/libEGL$_target_shared_library_suffix"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
+      ]
+    }
+
+    extract_symbols("swiftshader_gles_symbols") {
+      binary =
+          "$root_out_dir/swiftshader/libGLESv2$_target_shared_library_suffix"
+      symbol_dir = "$root_out_dir/breakpad_symbols"
+      deps = [
+        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
+      ]
+    }
+
+    group("electron_symbols") {
+      deps = [
+        ":electron_app_symbols",
+        ":swiftshader_egl_symbols",
+        ":swiftshader_gles_symbols",
+      ]
     }
   }
 }

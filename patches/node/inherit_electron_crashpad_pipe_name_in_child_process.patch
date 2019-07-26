@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Tue, 4 Jun 2019 17:42:11 +0900
+Subject: Inherit ELECTRON_CRASHPAD_PIPE_NAME in child process
+
+This is required for crashReporter to work correctly in node process.
+
+diff --git a/lib/child_process.js b/lib/child_process.js
+index 2a2e68aaf23116203d756431cafd81c106ed9044..724ac30c5cfc79a01d4fc8c0e5b0a044a7143cd5 100644
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -108,6 +108,10 @@ function fork(modulePath /* , args, options */) {
+ 
+   options.env.ELECTRON_RUN_AS_NODE = 1;
+ 
++  if (process.platform === 'win32') {
++    options.env.ELECTRON_CRASHPAD_PIPE_NAME = process.env.ELECTRON_CRASHPAD_PIPE_NAME;
++  }
++
+   if (!options.execPath && process.type && process.platform == 'darwin') {
+     options.execPath = process.helperExecPath;
+   }

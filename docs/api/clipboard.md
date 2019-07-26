@@ -172,7 +172,7 @@ Writes the `buffer` into the clipboard as `format`.
   * `html` String (optional)
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` String (optional)
-  * `bookmark` String (optional) - The title of the url at `text`.
+  * `bookmark` String (optional) - The title of the URL at `text`.
 * `type` String (optional) - Can be `selection` or `clipboard`. `selection` is only available on Linux.
 
 ```javascript

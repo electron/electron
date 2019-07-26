@@ -79,25 +79,25 @@ function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
 
 async function runElectronTests () {
   const errors = []
-  const runners = [
-    ['Main process specs', 'main', runMainProcessElectronTests],
-    ['Remote based specs', 'remote', runRemoteBasedElectronTests]
-  ]
+  const runners = new Map([
+    ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
+    ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }]
+  ])
 
-  const mochaFile = process.env.MOCHA_FILE
-  for (const runner of runners) {
-    if (runnersToRun && !runnersToRun.includes(runner[1])) {
-      console.info('\nSkipping:', runner[0])
+  const testResultsDir = process.env.ELECTRON_TEST_RESULTS_DIR
+  for (const [runnerId, { description, run }] of runners) {
+    if (runnersToRun && !runnersToRun.includes(runnerId)) {
+      console.info('\nSkipping:', description)
       continue
     }
     try {
-      console.info('\nRunning:', runner[0])
-      if (mochaFile) {
-        process.env.MOCHA_FILE = mochaFile.replace('.xml', `-${runner[1]}.xml`)
+      console.info('\nRunning:', description)
+      if (testResultsDir) {
+        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`)
       }
-      await runner[2]()
+      await run()
     } catch (err) {
-      errors.push([runner[0], err])
+      errors.push([runnerId, err])
     }
   }
 
@@ -150,8 +150,8 @@ async function installSpecModules () {
     cwd: path.resolve(__dirname, '../spec'),
     stdio: 'inherit'
   })
-  if (status !== 0) {
-    throw new Error('Failed to npm install in the spec folder')
+  if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
+    throw new Error('Failed to yarn install in the spec folder')
   }
 }
 

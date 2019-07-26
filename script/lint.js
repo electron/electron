@@ -11,24 +11,20 @@ const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools')
 
 const BLACKLIST = new Set([
-  ['atom', 'browser', 'mac', 'atom_application.h'],
-  ['atom', 'browser', 'mac', 'atom_application_delegate.h'],
-  ['atom', 'browser', 'resources', 'win', 'resource.h'],
-  ['atom', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
-  ['atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
-  ['atom', 'common', 'api', 'api_messages.h'],
-  ['atom', 'common', 'common_message_generator.cc'],
-  ['atom', 'common', 'common_message_generator.h'],
-  ['atom', 'common', 'node_includes.h'],
+  ['shell', 'browser', 'mac', 'atom_application.h'],
+  ['shell', 'browser', 'mac', 'atom_application_delegate.h'],
+  ['shell', 'browser', 'resources', 'win', 'resource.h'],
+  ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
+  ['shell', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
+  ['shell', 'common', 'node_includes.h'],
   ['spec', 'static', 'jquery-2.0.3.min.js'],
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
   ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
@@ -58,7 +54,7 @@ function cpplint (args) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['atom', 'native_mate'],
+  roots: ['shell', 'native_mate'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {
@@ -70,7 +66,7 @@ const LINTERS = [ {
   }
 }, {
   key: 'objc',
-  roots: ['atom'],
+  roots: ['shell'],
   test: filename => filename.endsWith('.mm'),
   run: (opts, filenames) => {
     if (opts.fix) {
@@ -136,12 +132,60 @@ const LINTERS = [ {
       process.exit(1)
     }
   }
+}, {
+  key: 'patches',
+  roots: ['patches'],
+  test: () => true,
+  run: () => {
+    const patchesDir = path.resolve(__dirname, '../patches')
+    for (const patchTarget of fs.readdirSync(patchesDir)) {
+      const targetDir = path.resolve(patchesDir, patchTarget)
+      // If the config does not exist that is OK, we just skip this dir
+      const targetConfig = path.resolve(targetDir, 'config.json')
+      if (!fs.existsSync(targetConfig)) continue
+
+      const config = JSON.parse(fs.readFileSync(targetConfig, 'utf8'))
+      for (const key of Object.keys(config)) {
+        // The directory the config points to should exist
+        const targetPatchesDir = path.resolve(__dirname, '../../..', key)
+        if (!fs.existsSync(targetPatchesDir)) throw new Error(`target patch directory: "${targetPatchesDir}" does not exist`)
+        // We need a .patches file
+        const dotPatchesPath = path.resolve(targetPatchesDir, '.patches')
+        if (!fs.existsSync(dotPatchesPath)) throw new Error(`.patches file: "${dotPatchesPath}" does not exist`)
+
+        // Read the patch list
+        const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n')
+        const patchFileSet = new Set(patchFileList)
+        patchFileList.reduce((seen, file) => {
+          if (seen.has(file)) {
+            throw new Error(`'${file}' is listed in ${dotPatchesPath} more than once`)
+          }
+          return seen.add(file)
+        }, new Set())
+        if (patchFileList.length !== patchFileSet.size) throw new Error('each patch file should only be in the .patches file once')
+        for (const file of fs.readdirSync(targetPatchesDir)) {
+          // Ignore the .patches file and READMEs
+          if (file === '.patches' || file === 'README.md') continue
+
+          if (!patchFileSet.has(file)) {
+            throw new Error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`)
+          }
+          patchFileSet.delete(file)
+        }
+
+        // If anything is left in this set, it means it did not exist on disk
+        if (patchFileSet.size > 0) {
+          throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`)
+        }
+      }
+    }
+  }
 }]
 
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'c++', 'objc', 'javascript', 'python', 'gn', 'help', 'changed', 'fix', 'verbose', 'only' ],
+    boolean: [ 'c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only' ],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
     unknown: arg => { help = true }
   })
@@ -224,8 +268,8 @@ async function main () {
   const opts = parseCommandLine()
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.python && !opts.gn) {
-    opts['c++'] = opts.javascript = opts.python = opts.gn = true
+  if (!opts['c++'] && !opts.javascript && !opts.python && !opts.gn && !opts.patches) {
+    opts['c++'] = opts.javascript = opts.python = opts.gn = opts.patches = true
   }
 
   const linters = LINTERS.filter(x => opts[x.key])

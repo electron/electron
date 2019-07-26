@@ -14,13 +14,13 @@ It's a virtual framebuffer, implementing the X11 display server protocol -
 it performs all graphical operations in memory without showing any screen output,
 which is exactly what we need.
 
-Then, create a virtual xvfb screen and export an environment variable
+Then, create a virtual Xvfb screen and export an environment variable
 called DISPLAY that points to it. Chromium in Electron will automatically look
 for `$DISPLAY`, so no further configuration of your app is required.
-This step can be automated with Paul Betts's
-[xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe): Prepend your test
+This step can be automated with Anaïs Betts'
+[xvfb-maybe](https://github.com/anaisbetts/xvfb-maybe): Prepend your test
 commands with `xvfb-maybe` and the little tool will automatically configure
-xvfb, if required by the current system. On Windows or macOS, it will
+Xvfb, if required by the current system. On Windows or macOS, it will
 do nothing.
 
 ```sh
@@ -51,8 +51,8 @@ For Jenkins, a [Xvfb plugin is available](https://wiki.jenkins-ci.org/display/JE
 
 ### Circle CI
 
-Circle CI is awesome and has xvfb and `$DISPLAY`
-[already setup, so no further configuration is required](https://circleci.com/docs/environment#browsers).
+Circle CI is awesome and has Xvfb and `$DISPLAY`
+[already set up, so no further configuration is required](https://circleci.com/docs/environment#browsers).
 
 ### AppVeyor
 

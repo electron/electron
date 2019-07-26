@@ -11,6 +11,11 @@ PYYAML_LIB_DIR = os.path.join(VENDOR_DIR, 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)
 import yaml  #pylint: disable=wrong-import-position,wrong-import-order
 
+try:
+  basestring        # Python 2
+except NameError:   # Python 3
+  basestring = str  # pylint: disable=redefined-builtin
+
 
 class Verbosity:
   CHATTY = 'chatty'  # stdout and stderr

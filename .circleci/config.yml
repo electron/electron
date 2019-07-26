@@ -10,7 +10,7 @@
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronbuilds/electron:0.0.9
+    - image: electronbuilds/electron:0.0.10
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -101,6 +101,12 @@ env-mac-large: &env-mac-large
 
 env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
+
+env-ninja-status: &env-ninja-status
+  NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
+
+env-disable-run-as-node: &env-disable-run-as-node
+  GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
@@ -248,7 +254,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
 
 step-gn-check: &step-gn-check
   run:
@@ -258,7 +264,7 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron:electron_lib
       gn check out/Default //electron:electron_app
       gn check out/Default //electron:manifests
-      gn check out/Default //electron/atom/common/api:mojo
+      gn check out/Default //electron/shell/common/api:mojo
 
 step-electron-build: &step-electron-build
   run:
@@ -303,7 +309,7 @@ step-electron-dist-build: &step-electron-dist-build
           echo "Unknown system: `uname`"
           exit 1
         fi
-        electron/script/check-zip-manifest.py out/Default/dist.zip electron/script/dist_zip.$target_os.$target_cpu.manifest
+        electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
       fi
 
 step-electron-dist-store: &step-electron-dist-store
@@ -344,10 +350,10 @@ step-electron-publish: &step-electron-publish
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
-        script/upload.py --upload_to_s3
+        script/release/uploaders/upload.py --upload_to_s3
       else
         echo 'Uploading Electron release distribution to Github releases'
-        script/upload.py
+        script/release/uploaders/upload.py
       fi
 
 step-persist-data-for-tests: &step-persist-data-for-tests
@@ -453,25 +459,13 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-maybe-build-dump-syms: &step-maybe-build-dump-syms
-  run:
-    name: Build dump_syms binary
-    command: |
-      if [ "$GENERATE_SYMBOLS" == "true" ]; then
-        cd src
-        # Build needed dump_syms executable
-        ninja -C out/Default third_party/breakpad:dump_syms
-      fi
-
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
     command: |
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
-        export BUILD_PATH="$PWD/out/Default"
-        export DEST_PATH="$BUILD_PATH/breakpad_symbols"
-        electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
+        ninja -C out/Default electron:electron_symbols
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -515,7 +509,7 @@ step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
       if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         #Trigger VSTS job, passing along CircleCI job number and branch to build
         echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"
-        node electron/script/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
       fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
@@ -535,6 +529,12 @@ step-fix-known-hosts-linux: &step-fix-known-hosts-linux
         ./src/electron/.circleci/fix-known-hosts.sh
       fi
 
+step-ninja-summary: &step-ninja-summary
+  run:
+    name: Print ninja summary
+    command: |
+      python depot_tools/post_build_ninja_summary.py -C src/out/Default
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -553,11 +553,20 @@ steps-lint: &steps-lint
 
           cipd ensure -ensure-file - -root . <<-CIPD
           \$ServiceURL https://chrome-infra-packages.appspot.com/
-          @Subdir buildtools/linux64
+          @Subdir src/buildtools/linux64
           gn/gn/linux-amd64 $gn_version
           CIPD
 
-          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+    - run:
+        name: Download clang-format Binary
+        command: |
+          chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+
+          sha1_path='buildtools/linux64/clang-format.sha1'
+          curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/${sha1_path}?format=TEXT" | base64 -d > "src/${sha1_path}"
+
+          download_from_google_storage.py --no_resume --no_auth --bucket chromium-clang-format -s "src/${sha1_path}"
     - run:
         name: Run Lint
         command: |
@@ -568,7 +577,7 @@ steps-lint: &steps-lint
           # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
           cd src/electron
-          node script/yarn install
+          node script/yarn install --frozen-lockfile
           node script/yarn lint
 
 steps-checkout: &steps-checkout
@@ -683,6 +692,7 @@ steps-electron-build: &steps-electron-build
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-ninja-summary
 
     # Node.js headers
     - *step-nodejs-headers-build
@@ -706,6 +716,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-ninja-summary
 
     # Node.js headers
     - *step-nodejs-headers-build
@@ -727,7 +738,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
-    - *step-maybe-build-dump-syms
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
@@ -753,7 +763,6 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-build-dump-syms
     - *step-maybe-generate-breakpad-symbols
     - *step-maybe-zip-symbols
 
@@ -866,7 +875,7 @@ steps-tests: &steps-tests
         name: Run Electron tests
         environment:
           MOCHA_REPORTER: mocha-multi-reporters
-          MOCHA_FILE: junit/test-results.xml
+          ELECTRON_TEST_RESULTS_DIR: junit
           MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
@@ -876,15 +885,13 @@ steps-tests: &steps-tests
     - run:
         name: Check test results existence
         command: |
-          MOCHA_FILE='src/junit/test-results-remote.xml'
-          # Check if it exists and not empty.
-          if [ ! -s "$MOCHA_FILE" ]; then
+          cd src
+
+          # Check if test results exist and are not empty.
+          if [ ! -s "junit/test-results-remote.xml" ]; then
             exit 1
           fi
-
-          MOCHA_FILE='src/junit/test-results-main.xml'
-          # Check if it exists and not empty.
-          if [ ! -s "$MOCHA_FILE" ]; then
+          if [ ! -s "junit/test-results-main.xml" ]; then
             exit 1
           fi
     - store_test_results:
@@ -908,6 +915,23 @@ steps-test-nan: &steps-test-nan
           cd src
           export ELECTRON_OUT_DIR=Default
           node electron/script/nan-spec-runner.js
+
+steps-test-node: &steps-test-node
+  steps:
+    - attach_workspace:
+          at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-linux-for-headless-testing
+    - *step-fix-known-hosts-linux
+    - run:
+        name: Run Node Tests
+        command: |
+          cd src
+          export ELECTRON_OUT_DIR=Default
+          node electron/script/node-spec-runner.js junit
+    - store_test_results:
+        path: src/junit
 
 chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
@@ -958,6 +982,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-x64-debug-gn-check:
@@ -973,6 +998,17 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests
+
+  linux-x64-testing-no-run-as-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+      <<: *env-disable-run-as-node
     <<: *steps-electron-build-for-tests
 
   linux-x64-testing-gn-check:
@@ -998,6 +1034,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-x64-publish:
@@ -1015,6 +1052,7 @@ jobs:
       <<: *env-ia32
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-ia32-testing:
@@ -1024,6 +1062,7 @@ jobs:
       <<: *env-ia32
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-ia32-chromedriver:
@@ -1044,6 +1083,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-ia32-publish:
@@ -1062,6 +1102,7 @@ jobs:
       <<: *env-arm
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-arm-testing:
@@ -1071,6 +1112,7 @@ jobs:
       <<: *env-arm
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
@@ -1092,6 +1134,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-arm-publish:
@@ -1110,6 +1153,7 @@ jobs:
       <<: *env-arm64
       <<: *env-debug-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build
 
   linux-arm64-debug-gn-check:
@@ -1127,6 +1171,7 @@ jobs:
       <<: *env-arm64
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
@@ -1156,6 +1201,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   linux-arm64-publish:
@@ -1173,6 +1219,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   osx-debug-gn-check:
@@ -1204,6 +1251,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   osx-publish:
@@ -1221,6 +1269,7 @@ jobs:
       <<: *env-mas
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
   mas-debug-gn-check:
@@ -1255,6 +1304,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-ninja-status      
     <<: *steps-electron-build-for-tests
 
   mas-publish:
@@ -1322,6 +1372,14 @@ jobs:
       <<: *env-stack-dumping
     <<: *steps-test-nan
 
+  linux-x64-testing-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-node
+
   linux-x64-release-tests:
     <<: *machine-linux-medium
     environment:
@@ -1363,6 +1421,15 @@ jobs:
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-nan
+
+  linux-ia32-testing-node:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-node
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
@@ -1519,6 +1586,9 @@ workflows:
       - linux-x64-testing:
           requires:
             - linux-checkout
+      - linux-x64-testing-no-run-as-node:
+          requires:
+            - linux-checkout
       - linux-x64-testing-gn-check:
           requires:
             - linux-checkout
@@ -1526,6 +1596,9 @@ workflows:
           requires:
             - linux-x64-testing
       - linux-x64-testing-nan:
+          requires:
+            - linux-x64-testing
+      - linux-x64-testing-node:
           requires:
             - linux-x64-testing
 
@@ -1539,6 +1612,9 @@ workflows:
           requires:
             - linux-ia32-testing
       - linux-ia32-testing-nan:
+          requires:
+            - linux-ia32-testing
+      - linux-ia32-testing-node:
           requires:
             - linux-ia32-testing
 

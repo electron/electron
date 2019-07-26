@@ -18,12 +18,8 @@ crashReporter.start({
   }
 })
 
-if (process.platform === 'win32') {
-  ipcRenderer.sendSync('crash-service-pid', crashReporter.crashServicePid)
-}
-
 setImmediate(() => {
-  if (process.platform === 'darwin') {
+  if (process.platform !== 'linux') {
     crashReporter.addExtraParameter('extra2', 'extra2')
     crashReporter.removeExtraParameter('extra3')
   } else {

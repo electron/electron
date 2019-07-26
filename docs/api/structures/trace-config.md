@@ -1,6 +1,6 @@
 # TraceConfig Object
 
-* `recording_mode` String (optional) - one of "record-until-full" | "record-continuously" | "record-as-much-as-possible" | "trace-to-console". Defaults to "record-until-full".
+* `recording_mode` String (optional) - Can be `record-until-full`, `record-continuously`, `record-as-much-as-possible` or `trace-to-console`. Defaults to `record-until-full`.
 * `trace_buffer_size_in_kb` number (optional) - maximum size of the trace
   recording buffer in kilobytes. Defaults to 100MB.
 * `trace_buffer_size_in_events` number (optional) - maximum size of the trace
@@ -21,7 +21,7 @@
   with the trace.
 * `memory_dump_config` Object (optional) - if the
   `disabled-by-default-memory-infra` category is enabled, this contains
-  optional additional configuration for data callection. See the [Chromium
+  optional additional configuration for data collection. See the [Chromium
   memory-infra docs][memory-infra docs] for more information.
 
 An example TraceConfig that roughly matches what Chrome DevTools records:

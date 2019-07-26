@@ -10,11 +10,11 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    'f200986dfaabd6aad6a4b37dad7aae42fec349e9',
+    'b781cb24dc079eae5b7b2d9dac441ac0182ee160',
   'node_version':
-    'b823596192bb790f9ea2a61022b55bf50e6daa83',
+    'v12.6.0',
   'nan_version':
-    '960dd6c70fc9eb136efdf37b4bef18fadbc3436f',
+    '2ee313aaca52e2b478965ac50eb5082520380d1b',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -23,8 +23,7 @@ vars = {
   'boto_git': 'https://github.com/boto',
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
-  # FIXME: Once https://github.com/nodejs/nan/pull/857 lands this should point at nodejs/nan
-  'nodejs_git': 'https://github.com/marshallofsound',
+  'nodejs_git': 'https://github.com/nodejs',
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
 
@@ -79,7 +78,7 @@ deps = {
     'condition': 'checkout_nan and process_deps',
   },
   'src/third_party/electron_node': {
-    'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+    'url': (Var("nodejs_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node and process_deps',
   },
   'src/electron/vendor/pyyaml': {

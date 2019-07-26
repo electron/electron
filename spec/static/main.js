@@ -19,7 +19,6 @@ let window = null
 
 // will be used by crash-reporter spec.
 process.port = 0
-process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -34,9 +33,6 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
 // sure we can reproduce it in renderer process.
 // eslint-disable-next-line
 process.stdout
-
-// Adding a variable for sandbox process.env test validation
-process.env.sandboxmain = ''
 
 // Access console to reproduce #3482.
 // eslint-disable-next-line
@@ -53,16 +49,15 @@ if (process.platform !== 'darwin') {
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
-const print = function (_, args) {
+const print = function (_, method, args) {
   const output = util.format.apply(null, args)
   if (outputToFile) {
     fs.appendFileSync(outputToFile, output + '\n')
   } else {
-    console.error(output)
+    console[method](output)
   }
 }
-ipcMain.on('console.log', print)
-ipcMain.on('console.error', print)
+ipcMain.on('console-call', print)
 
 ipcMain.on('process.exit', function (event, code) {
   process.exit(code)
@@ -233,12 +228,6 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
-ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
-  webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
-    options.webPreferences[key] = value
-  })
-})
-
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
   event.sender.once('will-attach-webview', event => event.preventDefault())
 })
@@ -297,11 +286,6 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   fs.readFile(__filename, () => {
     Promise.reject(new Error(message))
   })
-})
-
-ipcMain.on('crash-service-pid', (event, pid) => {
-  process.crashServicePid = pid
-  event.returnValue = null
 })
 
 // Suspend listeners until the next event and then restore them

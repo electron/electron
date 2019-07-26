@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import argparse
 import os
 import sys
@@ -11,7 +12,8 @@ LINUX_BINARIES_TO_STRIP = [
   'libGLESv2.so',
   'libEGL.so',
   'swiftshader/libGLESv2.so',
-  'swiftshader/libEGL.so'
+  'swiftshader/libEGL.so',
+  'swiftshader/libvulkan.so'
 ]
 
 def strip_binaries(directory, target_cpu):
@@ -33,7 +35,7 @@ def strip_binary(binary_path, target_cpu):
 
 def main():
   args = parse_args()
-  print args
+  print(args)
   if args.file:
     strip_binary(args.file, args.target_cpu)
   else:

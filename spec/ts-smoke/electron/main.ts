@@ -324,8 +324,10 @@ window.setRepresentedFilename('/etc/passwd')
 window.setDocumentEdited(true)
 window.previewFile('/path/to/file')
 window.previewFile('/path/to/file', 'Displayed Name')
-window.setVibrancy('light')
+window.setVibrancy('menu')
 window.setVibrancy('titlebar')
+window.setVibrancy('selection')
+window.setVibrancy('popover')
 
 // Online/Offline Event Detection
 // https://github.com/atom/electron/blob/master/docs/tutorial/online-offline-events.md
@@ -679,7 +681,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         accelerator: 'CmdOrCtrl+0',
         click: (item, focusedWindow) => {
           if (focusedWindow) {
-            focusedWindow.webContents.setZoomLevel(0)
+            focusedWindow.webContents.zoomLevel = 0
           }
         }
       },
@@ -689,8 +691,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         click: (item, focusedWindow) => {
           if (focusedWindow) {
             const { webContents } = focusedWindow
-            const zoomLevel = webContents.getZoomLevel()
-            webContents.setZoomLevel(zoomLevel + 0.5)
+            webContents.zoomLevel += 0.5
           }
         }
       },
@@ -700,8 +701,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         click: (item, focusedWindow) => {
           if (focusedWindow) {
             const { webContents } = focusedWindow
-            const zoomLevel = webContents.getZoomLevel()
-            webContents.setZoomLevel(zoomLevel - 0.5)
+            webContents.zoomLevel -= 0.5
           }
         }
       }

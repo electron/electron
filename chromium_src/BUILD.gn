@@ -102,6 +102,10 @@ static_library("chrome") {
         "//chrome/browser/ui/cocoa/color_chooser_mac.h",
         "//chrome/browser/ui/cocoa/color_chooser_mac.mm",
       ]
+      deps += [
+        "//components/remote_cocoa/app_shim",
+        "//components/remote_cocoa/browser",
+      ]
     }
 
     if (is_win) {
@@ -161,7 +165,7 @@ static_library("chrome") {
       "//components/printing/browser",
       "//components/printing/renderer",
       "//components/services/pdf_compositor/public/cpp:factory",
-      "//components/services/pdf_compositor/public/interfaces",
+      "//components/services/pdf_compositor/public/mojom",
     ]
     deps += [
       "//components/printing/common",

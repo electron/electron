@@ -12,6 +12,7 @@ process.on('uncaughtException', (err) => {
 
 // Tell ts-node which tsconfig to use
 process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json')
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
 const { app, protocol } = require('electron')
 
@@ -27,6 +28,9 @@ global.standardScheme = 'app'
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
+  { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-fetch', privileges: { corsEnabled: true } }
 ])
 
 app.whenReady().then(() => {

@@ -8,15 +8,15 @@ Process: [Main](../tutorial/application-architecture.md#main-and-renderer-proces
 
 * `options` Object
   * `items` [ScrubberItem[]](structures/scrubber-item.md) - An array of items to place in this scrubber.
-  * `select` Function - Called when the user taps an item that was not the last tapped item.
+  * `select` Function (optional) - Called when the user taps an item that was not the last tapped item.
     * `selectedIndex` Integer - The index of the item the user selected.
-  * `highlight` Function - Called when the user taps any item.
+  * `highlight` Function (optional) - Called when the user taps any item.
     * `highlightedIndex` Integer - The index of the item the user touched.
-  * `selectedStyle` String - Selected item style. Defaults to `null`.
-  * `overlayStyle` String - Selected overlay item style. Defaults to `null`.
-  * `showArrowButtons` Boolean - Defaults to `false`.
-  * `mode` String - Defaults to `free`.
-  * `continuous` Boolean - Defaults to `true`.
+  * `selectedStyle` String (optional) - Selected item style. Defaults to `null`.
+  * `overlayStyle` String (optional) - Selected overlay item style. Defaults to `null`.
+  * `showArrowButtons` Boolean (optional) - Defaults to `false`.
+  * `mode` String (optional) - Defaults to `free`.
+  * `continuous` Boolean (optional) - Defaults to `true`.
 
 ### Instance Properties
 
