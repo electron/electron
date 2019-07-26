@@ -720,9 +720,8 @@ void Session::Preconnect(const mate::Dictionary& options) {
   predictors::PreconnectManager* preconnect_manager =
       electron::PreconnectManagerFactory::GetForContext(browser_context());
   if (preconnect_manager && num_sockets_to_preconnect > 0) {
-    std::vector<predictors::PreconnectRequest> requests= {
-        { url.GetOrigin(), num_sockets_to_preconnect }
-    };
+    std::vector<predictors::PreconnectRequest> requests = {
+        {url.GetOrigin(), num_sockets_to_preconnect}};
 
     base::PostTaskWithTraits(
         FROM_HERE, {content::BrowserThread::UI},

@@ -17,6 +17,7 @@
 #include "shell/browser/net/preconnect_manager_factory.h"
 #include "shell/browser/net/preconnect_manager_helper.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/options_switches.h"
 
 namespace electron {

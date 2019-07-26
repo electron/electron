@@ -1105,7 +1105,7 @@ describe('BrowserWindow module', () => {
     })
     it(`preconnect with number of sockets`, (done) => {
       w = new BrowserWindow({})
-      w.webContents.session.on('preconnect', (event, preconnectUrl) => {
+      w.webContents.session.on('preconnect', (event, preconnectUrl, allowCredentials) => {
         w.webContents.session.preconnect({
           url: preconnectUrl,
           numSockets: 4

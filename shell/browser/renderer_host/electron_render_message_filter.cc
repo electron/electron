@@ -25,6 +25,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/net/preconnect_manager_factory.h"
+#include "shell/common/native_mate_converters/gurl_converter.h"
 
 using content::BrowserThread;
 
@@ -76,7 +77,10 @@ void ElectronRenderMessageFilter::OnPreconnect(const GURL& url,
 
 namespace predictors {
 
-PreconnectRequest::PreconnectRequest(const GURL& origin, int num_sockets)
+PreconnectRequest::PreconnectRequest(
+    const GURL& origin,
+    int num_sockets,
+    net::NetworkIsolationKey network_isolation_key)
     : origin(origin), num_sockets(num_sockets) {
   DCHECK_GE(num_sockets, 0);
 }
