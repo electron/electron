@@ -185,25 +185,7 @@ ipcMain.on('handle-next-ipc-message-sync', function (event, returnValue) {
 })
 
 for (const eventName of [
-  'remote-require',
-  'remote-get-global',
-  'remote-get-builtin'
-]) {
-  ipcMain.on(`handle-next-${eventName}`, function (event, valuesMap = {}) {
-    event.sender.once(eventName, (event, name) => {
-      if (valuesMap.hasOwnProperty(name)) {
-        event.returnValue = valuesMap[name]
-      } else {
-        event.preventDefault()
-      }
-    })
-  })
-}
-
-for (const eventName of [
   'desktop-capturer-get-sources',
-  'remote-get-current-window',
-  'remote-get-current-web-contents',
   'remote-get-guest-web-contents'
 ]) {
   ipcMain.on(`handle-next-${eventName}`, function (event, returnValue) {

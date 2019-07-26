@@ -1,10 +1,13 @@
 # Electron Release Timelines
-### Notes:
+
+### Notes
+
 * The `-beta.1` and `stable` dates are our *concrete* release dates.
 * We strive for weekly beta releases, however we often release more betas than scheduled.
 * All dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
 
 ## 5.0.0 Release Schedule
+
 *Includes: Chromium M73 and Node v12.0*
 
 Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5-0-timeline) for info about publicizing our release dates.
@@ -47,4 +50,5 @@ Take a look at 5.0.0 Timeline [blog post](https://electronjs.org/blog/electron-5
 | Tue, 2019-Jul-30 | 6.0.0 | ✨ stable ✨ |
 
 ## 7.0.0 Release Schedule
+
 TBD

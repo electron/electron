@@ -236,7 +236,7 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     // this is guaranteed in the sync mode by the order of declaration,
     // in the async version we maintain a reference until the WebContents
     // is destroyed.
-    // //electron/patches/common/chromium/content_browser_main_loop.patch
+    // //electron/patches/chromium/content_browser_main_loop.patch
     // is required to get the right quit closure for the main message loop.
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,

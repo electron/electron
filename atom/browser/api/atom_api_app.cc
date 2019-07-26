@@ -1417,6 +1417,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "invalidateCurrentActivity",
           base::BindRepeating(&Browser::InvalidateCurrentActivity, browser))
+      .SetMethod("resignCurrentActivity",
+                 base::BindRepeating(&Browser::ResignCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
                  base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings

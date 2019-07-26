@@ -132,6 +132,7 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL;
 - (void)invalidateCurrentActivity;
+- (void)resignCurrentActivity;
 - (void)updateCurrentActivity:(NSString*)type
                  withUserInfo:(NSDictionary*)userInfo;
 
