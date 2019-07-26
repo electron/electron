@@ -15,10 +15,10 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/common/gin_converters/file_dialog_converter_gin_adapter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
+#include "shell/common/gin_converters/net_converter_gin_adapter.h"
 // #include "shell/common/native_mate_converters/callback.h"
 // #include "shell/common/native_mate_converters/file_path_converter.h"
 // #include "shell/common/native_mate_converters/image_converter.h"
-// #include "shell/common/native_mate_converters/net_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 
@@ -129,8 +129,10 @@ void Initialize(v8::Local<v8::Object> exports,
            showSaveDialogT->GetFunction(context).ToLocalChecked());
 
 #if defined(OS_MACOSX) || defined(OS_WIN)
-  // dict.SetMethod("showCertificateTrustDialog",
-  //                &certificate_trust::ShowCertificateTrust);
+  auto showCertificateTrustDialogT = gin::CreateFunctionTemplate(
+      isolate, base::BindRepeating(&certificate_trust::ShowCertificateTrust));
+  dict.Set("showCertificateTrustDialog",
+           showCertificateTrustDialogT->GetFunction(context).ToLocalChecked());
 #endif
 }
 

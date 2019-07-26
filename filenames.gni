@@ -512,6 +512,7 @@ filenames = {
     "shell/common/gin_converters/image_converter_gin_adapter.h",
     "shell/common/gin_converters/message_box_converter.cc",
     "shell/common/gin_converters/message_box_converter.h",
+    "shell/common/gin_converters/net_converter_gin_adapter.h",
     "shell/common/gin_util.h",
     "shell/common/heap_snapshot.cc",
     "shell/common/heap_snapshot.h",

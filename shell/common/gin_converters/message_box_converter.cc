@@ -5,21 +5,9 @@
 #include "shell/common/gin_converters/message_box_converter.h"
 
 #include "gin/dictionary.h"
-#include "shell/browser/api/atom_api_browser_window.h"
-// #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter_gin_adapter.h"
 
 namespace gin {
-
-// TODO(deermichel): remove adapter after removing mate
-template <>
-struct Converter<electron::NativeWindow*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::NativeWindow** out) {
-    return mate::ConvertFromV8(isolate, val, out);
-  }
-};
 
 bool Converter<electron::MessageBoxSettings>::FromV8(
     v8::Isolate* isolate,
