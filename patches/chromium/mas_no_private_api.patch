@@ -306,7 +306,7 @@ index 7ec6dab821b542cb0096e7f8875ba21703463087..3e26c9dd0a296b8d9c99ca1ee9d9faba
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index c1b8d1aeb6340821d66ddd8bc9416a86e7a35384..0250e16cbe24d184c04331473be192f93ee05e8b 100644
+index ee2d5721425c86124de6396b77a564d55e89a212..954812b9dda506b16483c37e9ed938716aa560d1 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -244,6 +244,7 @@ class DnsConfigServicePosix::Watcher {

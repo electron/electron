@@ -65,7 +65,7 @@ index cf3b10af046e7ac0607b1935369e963d969c0b82..6a6c3520fe11511ee3855944091deeb8
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4366de0c7 100644
+index 2fb123aa60201bfa912d0ec1e797a734f351b608..bf2bad3fce525df6e565e0387ffbefb59dd15052 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -81,6 +81,9 @@
@@ -139,10 +139,10 @@ index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4
    gfx::ColorSpace dst_color_space =
 -      current_frame()->current_render_pass->color_space;
 +      PATCH_CS(current_frame()->current_render_pass->color_space);
+ 
+ #if defined(OS_WIN)
    // Force sRGB output on Windows for overlay candidate video quads to match
-   // DirectComposition behavior in case these switch between overlays and
-   // compositing. See https://crbug.com/811118 for details.
-@@ -2390,8 +2395,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
+@@ -2393,8 +2398,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
  
    SetUseProgram(ProgramKey::VideoStream(tex_coord_precision,
                                          ShouldApplyRoundedCorner(quad)),
@@ -153,7 +153,7 @@ index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
-@@ -2448,8 +2453,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
+@@ -2451,8 +2456,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
        draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
  
    // Bind the program to the GL state.
@@ -164,7 +164,7 @@ index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -3142,7 +3147,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
+@@ -3153,7 +3158,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
  void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space) {
@@ -175,7 +175,7 @@ index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4
  
    gfx::ColorSpace adjusted_color_space = src_color_space;
    float sdr_white_level = current_frame()->sdr_white_level;
-@@ -3511,7 +3518,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3540,7 +3547,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -184,7 +184,7 @@ index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3729,8 +3736,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3759,8 +3766,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -195,7 +195,7 @@ index e2c5be9ed5bad3649770c1f0049e01de6494b4eb..303c41757bcc80d3fb21feae6a5a71a4
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -3890,3 +3897,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -3920,3 +3927,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
@@ -214,7 +214,7 @@ index a22390afced20c3a898aa5e84c403f90b1eb0fe2..d15b9978f6e9a2e0b51d1cf4c57a7fc5
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 9d2dde7a83502e660498f466ad9c042990ece783..e3627db9d67228a3880a36399e21c4952c8d0e2f 100644
+index 6f0671a753879d7b327681979090508e610cc129..f1beaf3433d67014cff527a686fd3239862eb537 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -219,6 +219,7 @@
@@ -225,7 +225,7 @@ index 9d2dde7a83502e660498f466ad9c042990ece783..e3627db9d67228a3880a36399e21c495
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2932,6 +2933,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2933,6 +2934,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
