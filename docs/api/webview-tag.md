@@ -599,7 +599,7 @@ Returns `Promise<void>`
 
 Sends an input `event` to the page.
 
-See [webContents.sendInputEvent](web-contents.md#contentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md#contentssendinputeventinputevent)
 for detailed description of `event` object.
 
 ### `<webview>.setZoomFactor(factor)`
