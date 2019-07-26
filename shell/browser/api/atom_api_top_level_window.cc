@@ -1030,9 +1030,9 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 
 // static
 mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
-  mate::Dictionary options;
-  if (!(args->Length() == 1 && args->GetNext(&options)))
-    options = mate::Dictionary::CreateEmpty(args->isolate());
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&options);
+
   return new TopLevelWindow(args->isolate(), args->GetThis(), options);
 }
 
