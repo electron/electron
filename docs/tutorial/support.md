@@ -34,7 +34,7 @@ tools and resources.
 ## Supported Versions
 
 The latest three *stable* major versions are supported by the Electron team.
-For example, if the latest release is 6.x.y, then the 5.x.y as well 
+For example, if the latest release is 6.x.y, then the 5.x.y as well
 as the 4.x.y series are supported.
 
 The latest stable release unilaterally receives all fixes from `master`,
