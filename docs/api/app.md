@@ -985,7 +985,7 @@ Updates the current activity if its type matches `type`, merging the entries fro
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
-### `app.importCertificate(options, callback)` _LINUX_
+### `app.importCertificate(options, callback)` _Linux_
 
 * `options` Object
   * `certificate` String - Path for the pkcs12 file.
@@ -1195,7 +1195,7 @@ Returns `Boolean` - whether or not the current OS version allows for native emoj
 
 Show the platform's native emoji picker.
 
-### `app.startAccessingSecurityScopedResource(bookmarkData)` _macOS (mas)_
+### `app.startAccessingSecurityScopedResource(bookmarkData)` _mas_
 
 * `bookmarkData` String - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
 
@@ -1289,17 +1289,17 @@ On macOS, setting this with any nonzero integer shows on the dock icon. On Linux
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
-### `app.commandLine`
+### `app.commandLine` _Readonly_
 
 A [`CommandLine`](./command-line.md) object that allows you to read and manipulate the
 command line arguments that Chromium uses.
 
-### `app.dock` _macOS_
+### `app.dock` _macOS_ _Readonly_
 
 A [`Dock`](./dock.md) object that allows you to perform actions on your app icon in the user's
 dock on macOS.
 
-### `app.isPackaged`
+### `app.isPackaged` _Readonly_
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 

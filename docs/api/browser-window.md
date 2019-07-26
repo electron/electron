@@ -750,7 +750,7 @@ let win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('https://github.com')
 ```
 
-#### `win.webContents`
+#### `win.webContents` _Readonly_
 
 A `WebContents` object this window owns. All web page related events and
 operations will be done via it.
@@ -758,7 +758,7 @@ operations will be done via it.
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
 
-#### `win.id`
+#### `win.id` _Readonly_
 
 A `Integer` property representing the unique ID of the window.
 

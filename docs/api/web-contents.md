@@ -1788,26 +1788,26 @@ Only values between 1 and 60 are accepted.
 
 Only applicable if *offscreen rendering* is enabled.
 
-#### `contents.id`
+#### `contents.id` _Readonly_
 
 A `Integer` representing the unique ID of this WebContents.
 
-#### `contents.session`
+#### `contents.session` _Readonly_
 
 A [`Session`](session.md) used by this webContents.
 
-#### `contents.hostWebContents`
+#### `contents.hostWebContents` _Readonly_
 
 A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
 
-#### `contents.devToolsWebContents`
+#### `contents.devToolsWebContents` _Readonly_
 
 A `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
 
-#### `contents.debugger`
+#### `contents.debugger` _Readonly_
 
 A [`Debugger`](debugger.md) instance for this webContents.
 

@@ -56,17 +56,17 @@ process.once('loaded', () => {
 
 ## Properties
 
-### `process.defaultApp`
+### `process.defaultApp` _Readonly_
 
 A `Boolean`. When app is started by being passed as parameter to the default app, this
 property is `true` in the main process, otherwise it is `undefined`.
 
-### `process.isMainFrame`
+### `process.isMainFrame` _Readonly_
 
 A `Boolean`, `true` when the current renderer context is the "main" renderer
 frame. If you want the ID of the current frame you should use `webFrame.routingId`.
 
-### `process.mas`
+### `process.mas` _Readonly_
 
 A `Boolean`. For Mac App Store build, this property is `true`, for other builds it is
 `undefined`.
@@ -88,11 +88,11 @@ A `Boolean` that controls whether or not deprecation warnings are printed to `st
 formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true`
 will enable deprecation warnings.
 
-### `process.resourcesPath`
+### `process.resourcesPath` _Readonly_
 
 A `String` representing the path to the resources directory.
 
-### `process.sandboxed`
+### `process.sandboxed` _Readonly_
 
 A `Boolean`. When the renderer process is sandboxed, this property is `true`,
 otherwise it is `undefined`.
@@ -115,19 +115,19 @@ A `Boolean` that controls whether or not process warnings printed to `stderr` in
  (including deprecations). This property is instead of the `--trace-warnings` command
  line flag.
 
-### `process.type`
+### `process.type` _Readonly_
 
 A `String` representing the current process's type, can be `"browser"` (i.e. main process), `"renderer"`, or `"worker"` (i.e. web worker).
 
-### `process.versions.chrome`
+### `process.versions.chrome` _Readonly_
 
 A `String` representing Chrome's version string.
 
-### `process.versions.electron`
+### `process.versions.electron` _Readonly_
 
 A `String` representing Electron's version string.
 
-### `process.windowsStore`
+### `process.windowsStore` _Readonly_
 
 A `Boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
 for otherwise it is `undefined`.
