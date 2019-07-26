@@ -4,7 +4,7 @@ import { ifit, ifdescribe } from './spec-helpers'
 
 ifdescribe(!process.mas)('autoUpdater module', function () {
   describe('checkForUpdates', function () {
-    ifit(process.platform === 'win32')('emits an error on Windows when called the feed URL is not set', function (done) {
+    ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', function (done) {
       autoUpdater.once('error', function (error) {
         expect(error.message).to.equal('Update URL is not set')
         done()
