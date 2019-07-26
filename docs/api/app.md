@@ -1021,7 +1021,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 
 ### `app.getGPUInfo(infoType)`
 
-* `infoType` String - Values can be either `basic` for basic info or `complete` for complete info.
+* `infoType` String - Can be `basic` or `complete`.
 
 Returns `Promise<unknown>`
 
@@ -1225,7 +1225,7 @@ systems Application folder. Use in combination with `app.moveToApplicationsFolde
 
 * `options` Object (optional)
   * `conflictHandler` Function<Boolean> (optional) - A handler for potential conflict in move failure.
-    * `conflictType` String - the type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
+    * `conflictType` String - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
 Returns `Boolean` - Whether the move was successful. Please note that if
 the move is successful, your application will quit and relaunch.
