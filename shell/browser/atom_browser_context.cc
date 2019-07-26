@@ -60,15 +60,6 @@
 #include "shell/common/extensions/atom_extensions_client.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "components/pref_registry/pref_registry_syncable.h"      // nogncheck
-#include "components/user_prefs/user_prefs.h"                     // nogncheck
-#include "extensions/browser/extension_pref_store.h"              // nogncheck
-#include "extensions/browser/extension_pref_value_map_factory.h"  // nogncheck
-#include "extensions/browser/extension_prefs.h"                   // nogncheck
-#include "extensions/browser/pref_names.h"                        // nogncheck
-#endif
-
 using content::BrowserThread;
 
 namespace electron {

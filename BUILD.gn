@@ -547,7 +547,8 @@ source_set("electron_lib") {
     sources += [
       "shell/common/crash_reporter/crash_reporter_crashpad.cc",
       "shell/common/crash_reporter/crash_reporter_crashpad.h",
-       deps += [ "//third_party/crashpad/crashpad/client" ]
+    ]
+    deps += [ "//third_party/crashpad/crashpad/client" ]
   }
 
   if (enable_pdf_viewer) {
@@ -562,7 +563,7 @@ source_set("electron_lib") {
       "//services/service_manager/public/cpp",
     ]
   }
-  
+
   if (enable_run_as_node) {
     sources += [
       "shell/app/node_main.cc",

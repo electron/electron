@@ -30,11 +30,10 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "shell/common/atom_constants.h"
 #include "content/public/browser/plugin_service.h"
 #include "pdf/pdf.h"
-#include "shell/common/atom_constants.h"
 #include "pdf/pdf_ppapi.h"
+#include "shell/common/atom_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 namespace electron {
