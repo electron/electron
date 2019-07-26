@@ -25,10 +25,10 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
-"@electron/docs-parser@^0.2.1":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.2.2.tgz#7c9acd6cc10559c86a27bb0653ec13df10955f02"
-  integrity sha512-FKXktu5i6cHL+AkvWv34j2lpBXNpqfHN7YwhswcBqRFXsj24phpih/sY2NKx6OrFP9R3ReJeg681/luAf/3k8Q==
+"@electron/docs-parser@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.4.1.tgz#e6557a6a3899ca1168b9f2d70ad24d9ba924e4a9"
+  integrity sha512-mn4ofEvH8HNdzRMb++cUbiTkO88BAKwM0yjED3KrQ07yEl7CU1lK13qSMVSRhDzNkbg4kFTqBDjaJ57fdHlkxQ==
   dependencies:
     "@types/markdown-it" "^0.0.7"
     chai "^4.2.0"
@@ -40,27 +40,12 @@
     ora "^3.4.0"
     pretty-ms "^5.0.0"
 
-"@electron/docs-parser@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.3.0.tgz#cf8c33ed9cebffe7f3463a1e2d60ccf457b52ec6"
-  integrity sha512-/q2et0q6eMDItzv1ZCAH5ZJZY8AFGFkK1+wfAJfdarMDJOVs29pH8b0HjTXo2k+kLGlbC2TROZfuCHRgx+l/EQ==
+"@electron/typescript-definitions@^8.5.0":
+  version "8.5.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.5.0.tgz#8be8d90e2245478368180795b3632db02e90ccdc"
+  integrity sha512-sq7tTIyQyGMxrSbmCsbpyfV5Yc68Pb74rp5cbpaS3Kopi5sAL2nIi4TdTakVE7Pp4cye75i8HqDUBhsMpt+TvA==
   dependencies:
-    "@types/markdown-it" "^0.0.7"
-    chai "^4.2.0"
-    chalk "^2.4.2"
-    fs-extra "^7.0.1"
-    lodash.camelcase "^4.3.0"
-    markdown-it "^8.4.2"
-    minimist "^1.2.0"
-    ora "^3.4.0"
-    pretty-ms "^5.0.0"
-
-"@electron/typescript-definitions@^8.3.5":
-  version "8.4.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.4.0.tgz#934b8b0b4433245794686f416398fc2503742f35"
-  integrity sha512-P+j99jjv7KD54p/nbrG3esPJzTq1fkK+MAuK+AnaU395Z6+5IRiXutLPFaO9i1idXg2Y3aknad0HKke4jQJB1Q==
-  dependencies:
-    "@electron/docs-parser" "^0.2.1"
+    "@electron/docs-parser" "^0.4.1"
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
     colors "^1.1.2"
