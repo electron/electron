@@ -1,136 +1,122 @@
-const { expect } = require('chai')
-const { closeWindow } = require('./window-helpers')
-const { remote } = require('electron')
-const { BrowserWindow, dialog } = remote
-const isCI = remote.getGlobal('isCi')
+import { expect } from 'chai'
+import { dialog, BrowserWindow } from 'electron'
+import { closeAllWindows } from './window-helpers'
+import { ifit } from './spec-helpers'
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
-    it('should not throw for valid cases', () => {
-      // Blocks the main process and can't be run in CI
-      if (isCI) return
-
-      let w
-
+    afterEach(closeAllWindows)
+    ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         dialog.showOpenDialog({ title: 'i am title' })
       }).to.not.throw()
 
       expect(() => {
-        w = new BrowserWindow()
+        const w = new BrowserWindow()
         dialog.showOpenDialog(w, { title: 'i am title' })
       }).to.not.throw()
-
-      closeWindow(w).then(() => { w = null })
     })
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showOpenDialog({ properties: false })
+        dialog.showOpenDialog({ properties: false as any })
       }).to.throw(/Properties must be an array/)
 
       expect(() => {
-        dialog.showOpenDialog({ title: 300 })
+        dialog.showOpenDialog({ title: 300 as any })
       }).to.throw(/Title must be a string/)
 
       expect(() => {
-        dialog.showOpenDialog({ buttonLabel: [] })
+        dialog.showOpenDialog({ buttonLabel: [] as any })
       }).to.throw(/Button label must be a string/)
 
       expect(() => {
-        dialog.showOpenDialog({ defaultPath: {} })
+        dialog.showOpenDialog({ defaultPath: {} as any })
       }).to.throw(/Default path must be a string/)
 
       expect(() => {
-        dialog.showOpenDialog({ message: {} })
+        dialog.showOpenDialog({ message: {} as any })
       }).to.throw(/Message must be a string/)
     })
   })
 
   describe('showSaveDialog', () => {
-    it('should not throw for valid cases', () => {
-      // Blocks the main process and can't be run in CI
-      if (isCI) return
-
-      let w
-
+    afterEach(closeAllWindows)
+    ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         dialog.showSaveDialog({ title: 'i am title' })
       }).to.not.throw()
 
       expect(() => {
-        w = new BrowserWindow()
+        const w = new BrowserWindow()
         dialog.showSaveDialog(w, { title: 'i am title' })
       }).to.not.throw()
-
-      closeWindow(w).then(() => { w = null })
     })
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showSaveDialog({ title: 300 })
+        dialog.showSaveDialog({ title: 300 as any })
       }).to.throw(/Title must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({ buttonLabel: [] })
+        dialog.showSaveDialog({ buttonLabel: [] as any })
       }).to.throw(/Button label must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({ defaultPath: {} })
+        dialog.showSaveDialog({ defaultPath: {} as any })
       }).to.throw(/Default path must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({ message: {} })
+        dialog.showSaveDialog({ message: {} as any })
       }).to.throw(/Message must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({ nameFieldLabel: {} })
+        dialog.showSaveDialog({ nameFieldLabel: {} as any })
       }).to.throw(/Name field label must be a string/)
     })
   })
 
   describe('showMessageBox', () => {
-    it('should not throw for valid cases', () => {
-      // Blocks the main process and can't be run in CI
-      if (isCI) return
+    afterEach(closeAllWindows);
 
-      let w
-
+    // parentless message boxes are synchronous on macOS
+    // dangling message boxes on windows cause a DCHECK: https://cs.chromium.org/chromium/src/base/win/message_window.cc?l=68&rcl=7faa4bf236a866d007dc5672c9ce42660e67a6a6
+    ifit(process.platform !== 'darwin' && process.platform !== 'win32')('should not throw for a parentless message box', () => {
       expect(() => {
-        dialog.showMessageBox({ title: 'i am title' })
+        dialog.showMessageBox({ message: 'i am message' })
       }).to.not.throw()
+    })
 
+    ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
-        w = new BrowserWindow()
-        dialog.showMessageBox(w, { title: 'i am title' })
+        const w = new BrowserWindow()
+        dialog.showMessageBox(w, { message: 'i am message' })
       }).to.not.throw()
-
-      closeWindow(w).then(() => { w = null })
     })
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showMessageBox(undefined, { type: 'not-a-valid-type' })
+        dialog.showMessageBox(undefined as any, { type: 'not-a-valid-type', message: '' })
       }).to.throw(/Invalid message box type/)
 
       expect(() => {
-        dialog.showMessageBox(null, { buttons: false })
+        dialog.showMessageBox(null as any, { buttons: false as any, message: '' })
       }).to.throw(/Buttons must be an array/)
 
       expect(() => {
-        dialog.showMessageBox({ title: 300 })
+        dialog.showMessageBox({ title: 300 as any, message: '' })
       }).to.throw(/Title must be a string/)
 
       expect(() => {
-        dialog.showMessageBox({ message: [] })
+        dialog.showMessageBox({ message: [] as any })
       }).to.throw(/Message must be a string/)
 
       expect(() => {
-        dialog.showMessageBox({ detail: 3.14 })
+        dialog.showMessageBox({ detail: 3.14 as any, message: '' })
       }).to.throw(/Detail must be a string/)
 
       expect(() => {
-        dialog.showMessageBox({ checkboxLabel: false })
+        dialog.showMessageBox({ checkboxLabel: false as any, message: '' })
       }).to.throw(/checkboxLabel must be a string/)
     })
   })
@@ -138,15 +124,15 @@ describe('dialog module', () => {
   describe('showErrorBox', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showErrorBox()
+        (dialog.showErrorBox as any)()
       }).to.throw(/Insufficient number of arguments/)
 
       expect(() => {
-        dialog.showErrorBox(3, 'four')
+        dialog.showErrorBox(3 as any, 'four')
       }).to.throw(/Error processing argument at index 0/)
 
       expect(() => {
-        dialog.showErrorBox('three', 4)
+        dialog.showErrorBox('three', 4 as any)
       }).to.throw(/Error processing argument at index 1/)
     })
   })
@@ -154,15 +140,15 @@ describe('dialog module', () => {
   describe('showCertificateTrustDialog', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showCertificateTrustDialog()
+        (dialog.showCertificateTrustDialog as any)()
       }).to.throw(/options must be an object/)
 
       expect(() => {
-        dialog.showCertificateTrustDialog({})
+        dialog.showCertificateTrustDialog({} as any)
       }).to.throw(/certificate must be an object/)
 
       expect(() => {
-        dialog.showCertificateTrustDialog({ certificate: {}, message: false })
+        dialog.showCertificateTrustDialog({ certificate: {} as any, message: false as any })
       }).to.throw(/message must be a string/)
     })
   })
