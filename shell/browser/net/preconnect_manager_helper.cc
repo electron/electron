@@ -37,7 +37,7 @@ void PreconnectManagerHelper::DidStartNavigation(
       !navigation_handle->GetURL().SchemeIsHTTPOrHTTPS())
     return;
 
-  session_->Emit("preconnect", navigation_handle->GetURL().spec());
+  session_->Emit("preconnect", navigation_handle->GetURL(), true);
 }
 
 void PreconnectManagerHelper::SetSession(api::Session* session) {

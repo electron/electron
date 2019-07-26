@@ -1101,7 +1101,7 @@ describe('BrowserWindow module', () => {
       server.close()
       await closeWindow(w)
       w = null as unknown as BrowserWindow
-      server  = null as unknown as http.Server
+      server = null as unknown as http.Server
     })
     it(`preconnect with number of sockets`, (done) => {
       w = new BrowserWindow({})

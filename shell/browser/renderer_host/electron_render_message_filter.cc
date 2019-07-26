@@ -70,7 +70,7 @@ void ElectronRenderMessageFilter::OnPreconnect(const GURL& url,
   }
 
   if (session_) {
-    session_->Emit("preconnect", url.spec());
+    session_->Emit("preconnect", url, allow_credentials);
   }
 }
 

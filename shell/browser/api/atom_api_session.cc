@@ -694,15 +694,13 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
 }
 
 void Session::Preconnect(const mate::Dictionary& options) {
-  int num_sockets_to_preconnect = 1;
-  std::string urlStr;
-  options.Get("url", &urlStr);
-  GURL url(urlStr);
-  if (!url.is_valid()) {
+  GURL url;
+  if (!options.Get("url", &url) || !url.is_valid()) {
     isolate()->ThrowException(v8::Exception::Error(
         mate::StringToV8(isolate(), "Must pass non-empty valid url.")));
     return;
   }
+  int num_sockets_to_preconnect = 1;
   if (options.Get("numSockets", &num_sockets_to_preconnect)) {
     const int kMinSocketsToPreconnect = 1;
     const int kMaxSocketsToPreconnect = 6;
@@ -722,8 +720,9 @@ void Session::Preconnect(const mate::Dictionary& options) {
   predictors::PreconnectManager* preconnect_manager =
       electron::PreconnectManagerFactory::GetForContext(browser_context());
   if (preconnect_manager && num_sockets_to_preconnect > 0) {
-    std::vector<predictors::PreconnectRequest> requests;
-    requests.emplace_back(url.GetOrigin(), num_sockets_to_preconnect);
+    std::vector<predictors::PreconnectRequest> requests= {
+        { url.GetOrigin(), num_sockets_to_preconnect }
+    };
 
     base::PostTaskWithTraits(
         FROM_HERE, {content::BrowserThread::UI},

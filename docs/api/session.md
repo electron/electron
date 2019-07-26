@@ -97,8 +97,9 @@ Returns:
 
 * `event` Event
 * `preconnectUrl` string
+* `allow_credentials` Boolean
 
-Emitted when Electron is about to preconnect `preconnectUrl`.
+Emitted when a render process requests preconnection to a URL.
 
 ### Instance Methods
 
@@ -250,10 +251,10 @@ window.webContents.session.enableNetworkEmulation({ offline: true })
 #### `ses.preconnect(options)`
 
 * `options` Object
-  * `url` String - url for preconnect
-  * `numSockets` Number (optional) - number of sockets to preconnect. Defaults to 1
+  * `url` String - URL for preconnect. Only the origin is relevant for opening the socket.
+  * `numSockets` Number (optional) - number of sockets to preconnect. Must be between 1 and 6. Defaults to 1.
 
-Preconnects number of sockets to url origin
+Preconnects the given number of sockets to an origin.
 
 #### `ses.disableNetworkEmulation()`
 
