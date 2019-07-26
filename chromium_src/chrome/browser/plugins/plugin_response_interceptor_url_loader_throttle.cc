@@ -4,21 +4,19 @@
 
 #include "chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h"
 
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
-#include "atom/common/atom_constants.h"
 #include "base/feature_list.h"
 #include "base/guid.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_utils.h"
-#include "content/public/browser/stream_info.h"
 #include "content/public/common/resource_type.h"
 #include "content/public/common/transferrable_url_loader.mojom.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_attach_helper.h"
 #include "extensions/common/extension.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "services/network/public/cpp/features.h"
+#include "shell/common/atom_constants.h"
 
 PluginResponseInterceptorURLLoaderThrottle::
     PluginResponseInterceptorURLLoaderThrottle(
@@ -88,10 +86,11 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
   auto deep_copied_response = resource_response->DeepCopy();
 
   auto transferrable_loader = content::mojom::TransferrableURLLoader::New();
-  transferrable_loader->url = GURL(
-      extensions::Extension::GetBaseURLFromExtensionId(atom::kPdfExtensionId)
-          .spec() +
-      base::GenerateGUID());
+  transferrable_loader->url =
+      GURL(extensions::Extension::GetBaseURLFromExtensionId(
+               electron::kPdfExtensionId)
+               .spec() +
+           base::GenerateGUID());
   transferrable_loader->url_loader = original_loader.PassInterface();
   transferrable_loader->url_loader_client = std::move(original_client);
   transferrable_loader->head = std::move(deep_copied_response->head);
@@ -102,7 +101,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
       FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(
           &atom::AtomResourceDispatcherHostDelegate::OnPdfResourceIntercepted,
-          atom::kPdfExtensionId, view_id, embedded, frame_tree_node_id_,
+          electron::kPdfExtensionId, view_id, embedded, frame_tree_node_id_,
           -1 /* render_process_id */, -1 /* render_frame_id */,
           nullptr /* stream */, std::move(transferrable_loader), response_url));
 }

@@ -52,7 +52,7 @@ AtomWebUIControllerFactory::~AtomWebUIControllerFactory() {}
 
 content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
-    const GURL& url) const {
+    const GURL& url) {
   if (url.host() == kChromeUIDevToolsBundledHost) {
     return const_cast<AtomWebUIControllerFactory*>(this);
   }
@@ -81,7 +81,7 @@ bool AtomWebUIControllerFactory::UseWebUIBindingsForURL(
 
 std::unique_ptr<content::WebUIController>
 AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
-                                                        const GURL& url) const {
+                                                        const GURL& url) {
   if (url.host() == kChromeUIDevToolsBundledHost) {
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return std::make_unique<DevToolsUI>(browser_context, web_ui);

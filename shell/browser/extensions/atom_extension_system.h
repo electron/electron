@@ -62,7 +62,6 @@ class AtomExtensionSystem : public ExtensionSystem {
 
   // ExtensionSystem implementation:
   void InitForRegularProfile(bool extensions_enabled) override;
-  void InitForIncognitoProfile() override;
   ExtensionService* extension_service() override;
   RuntimeData* runtime_data() override;
   ManagementPolicy* management_policy() override;

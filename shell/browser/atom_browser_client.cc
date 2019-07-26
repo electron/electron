@@ -1051,7 +1051,7 @@ bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
 std::vector<std::unique_ptr<content::URLLoaderThrottle>>
 AtomBrowserClient::CreateURLLoaderThrottles(
     const network::ResourceRequest& request,
-    content::ResourceContext* resource_context,
+    content::BrowserContext* browser_context,
     const base::RepeatingCallback<content::WebContents*()>& wc_getter,
     content::NavigationUIData* navigation_ui_data,
     int frame_tree_node_id) {

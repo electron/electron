@@ -87,10 +87,6 @@ void AtomExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   extension_loader_ = std::make_unique<AtomExtensionLoader>(browser_context_);
 }
 
-void AtomExtensionSystem::InitForIncognitoProfile() {
-  NOTREACHED();
-}
-
 ExtensionService* AtomExtensionSystem::extension_service() {
   return nullptr;
 }
