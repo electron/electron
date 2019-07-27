@@ -1080,7 +1080,7 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
     })
 
-    ifit(process.platform !== 'darwin')('causes the right value to be emitted on `always-on-top-changed`', (done) => {
+    it('causes the right value to be emitted on `always-on-top-changed`', (done) => {
       w.on('always-on-top-changed', (e, alwaysOnTop) => {
         expect(alwaysOnTop).to.be.true('is not alwaysOnTop')
         done()
