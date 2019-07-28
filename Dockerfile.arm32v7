@@ -19,8 +19,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
  libcap-dev \
  libcups2-dev \
  libdbus-1-dev \
- libgconf-2-4 \
- libgconf2-dev \
  libgnome-keyring-dev \
  libgtk2.0-0 \
  libgtk2.0-dev \
