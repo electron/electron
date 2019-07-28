@@ -520,6 +520,22 @@ describe('chromium feature', () => {
       b = window.open('about:blank')
     })
 
+    it('defines a window.location.href setter', (done) => {
+      let b = null
+      app.once('browser-window-created', (event, { webContents }) => {
+        webContents.once('did-finish-load', () => {
+          // When it loads, redirect
+          b.location.href = `file://${fixtures}/pages/base-page.html`
+          webContents.once('did-finish-load', () => {
+            // After our second redirect, cleanup and callback
+            b.close()
+            done()
+          })
+        })
+      })
+      b = window.open('about:blank')
+    })
+
     it('open a blank page when no URL is specified', async () => {
       const browserWindowCreated = emittedOnce(app, 'browser-window-created')
       const w = window.open()
