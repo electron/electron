@@ -28,6 +28,7 @@ v8::Local<v8::Object> CreateJSEvent(
     content::RenderFrameHost* sender,
     base::Optional<electron::mojom::ElectronBrowser::MessageSyncCallback>
         callback);
+v8::Local<v8::Object> CreateEmptyJSEvent(v8::Isolate* isolate);
 v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
                                         v8::Local<v8::Object> object,
                                         v8::Local<v8::Object> event);
