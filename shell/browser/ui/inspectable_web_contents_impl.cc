@@ -26,19 +26,25 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/user_agent.h"
+#include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_url_handlers.h"
+#include "extensions/common/permissions/permissions_data.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "shell/browser/atom_browser_context.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -47,6 +53,10 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/extension_registry.h"
+#endif
 
 namespace electron {
 
@@ -571,9 +581,50 @@ void InspectableWebContentsImpl::LoadCompleted() {
         javascript, base::NullCallback());
   }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  AddDevToolsExtensionsToClient();
+#endif
+
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsOpened();
 }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void InspectableWebContentsImpl::AddDevToolsExtensionsToClient() {
+  // get main browser context
+  auto main_browser_context = AtomBrowserContext::From("", false);
+  const extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(main_browser_context.get());
+  if (!registry)
+    return;
+
+  base::ListValue results;
+  for (auto& extension : registry->enabled_extensions()) {
+    auto devtools_page_url = extensions::ManifestURL::Get(
+        extension.get(), extensions::manifest_keys::kDevToolsPage);
+    if (devtools_page_url.is_empty())
+      continue;
+
+    // Each devtools extension will need to be able to run in the devtools
+    // process. Grant the devtools process the ability to request URLs from the
+    // extension.
+    content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
+        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        url::Origin::Create(extension->url()));
+
+    std::unique_ptr<base::DictionaryValue> extension_info(
+        new base::DictionaryValue());
+    extension_info->SetString("startPage", devtools_page_url.spec());
+    extension_info->SetString("name", extension->name());
+    extension_info->SetBoolean("exposeExperimentalAPIs",
+                               extension->permissions_data()->HasAPIPermission(
+                                   extensions::APIPermission::kExperimental));
+    results.Append(std::move(extension_info));
+  }
+
+  CallClientFunction("DevToolsAPI.addExtensions", &results, NULL, NULL);
+}
+#endif
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
   DevToolsContentsResizingStrategy strategy(rect);
