@@ -126,7 +126,7 @@ index 7f61cb7c847bae88b50f2c32bbe9be6525a4c587..f059762b2c39c927b6bc6e40ad1c0641
  #include "gpu/ipc/common/surface_handle.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
-+#include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
++#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
@@ -200,7 +200,7 @@ index 0000000000000000000000000000000000000000..f5fc4f37c10bdc8aca8c1618985d46d1
 +#include "components/viz/common/resources/resource_sizes.h"
 +#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
-+#include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
++#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +#include "skia/ext/platform_canvas.h"
 +#include "third_party/skia/include/core/SkCanvas.h"
 +#include "ui/gfx/skia_util.h"
@@ -367,8 +367,8 @@ index 0000000000000000000000000000000000000000..ff3c0217812a8370a20aa528f117e928
 +#include "components/viz/host/host_display_client.h"
 +#include "components/viz/service/display/software_output_device.h"
 +#include "components/viz/service/viz_service_export.h"
-+#include "services/viz/privileged/interfaces/compositing/display_private.mojom.h"
-+#include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
++#include "services/viz/privileged/mojom/compositing/display_private.mojom.h"
++#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +
 +namespace viz {
 +
