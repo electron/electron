@@ -67,6 +67,13 @@ v8::Local<v8::Object> CreateJSEvent(
   return event;
 }
 
+v8::Local<v8::Object> CreateEmptyJSEvent(v8::Isolate* isolate) {
+  mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
+  v8::Local<v8::Object> event =
+      v8::Local<v8::Object>::Cast(native_event.ToV8());
+  return event;
+}
+
 v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
                                         v8::Local<v8::Object> object,
                                         v8::Local<v8::Object> custom_event) {
