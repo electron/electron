@@ -37,7 +37,7 @@ index 39d3c28ca33fa1eeab14b67ec31a6ae09f25c354..1fc64dd493536f1aefafd6a683c19289
      const base::Location& from_here,
      const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3d518759a3bc190970a2d45ec178c97096fa250d..b2c12759d2cd94d7971f20bc289c7fa70f1fe863 100644
+index 3bae7c11a8daedc3a129f6be50992ac1468de0de..f5728855f22d9ee590aa766b446553d637648b90 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -249,6 +249,9 @@ class CONTENT_EXPORT ContentBrowserClient {

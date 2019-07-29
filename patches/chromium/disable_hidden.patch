@@ -19,7 +19,7 @@ index 8278ff4f07e5a18941521c92c819d099636b96b4..8606461c0422460e5d2d6adab0fea4ad
  
    TRACE_EVENT0("renderer_host", "RenderWidgetHostImpl::WasHidden");
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 350770092301beffa86a658a5c42276b238d0800..9296c0ad7f83cd4a5dce041de2fb97a537e44858 100644
+index 9583543b4a8e75c652caf462d5ce0385c07832cb..29a8482863808a73c768c214e0fb9cd60181a54c 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -156,6 +156,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl

@@ -205,7 +205,7 @@ index 44a574d3c621695d7d1304c7b8db08db8cf753d1..39d3c28ca33fa1eeab14b67ec31a6ae0
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7d83d9e0d0c57511955921d85f15a27a88c3ac37..3d518759a3bc190970a2d45ec178c97096fa250d 100644
+index 14396f5f9f929c98362a15447905a20d13a187e4..3bae7c11a8daedc3a129f6be50992ac1468de0de 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -208,8 +208,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
