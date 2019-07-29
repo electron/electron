@@ -101,7 +101,9 @@ switch (window.location.protocol) {
   }
   case 'chrome-extension:': {
     // Inject the chrome.* APIs that chrome extensions require
-    require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window)
+    if (!process.electronBinding('features').isExtensionsEnabled()) {
+      require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window)
+    }
     break
   }
   case 'chrome:':
@@ -112,8 +114,10 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen)
 
     // Inject content scripts.
-    const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
-    require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
+    if (!process.electronBinding('features').isExtensionsEnabled()) {
+      const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[]
+      require('@electron/internal/renderer/content-scripts-injector')(contentScripts)
+    }
   }
 }
 
