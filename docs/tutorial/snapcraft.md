@@ -49,7 +49,7 @@ your application's size.
 
 The output should look roughly like this:
 
-```text
+```plaintext
 .
 └── dist
     └── app-linux-x64

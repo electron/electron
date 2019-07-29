@@ -20,7 +20,7 @@ below.
 
 On macOS:
 
-```text
+```plaintext
 electron/Electron.app/Contents/Resources/app/
 ├── package.json
 ├── main.js
@@ -29,7 +29,7 @@ electron/Electron.app/Contents/Resources/app/
 
 On Windows and Linux:
 
-```text
+```plaintext
 electron/resources/app
 ├── package.json
 ├── main.js
@@ -52,14 +52,14 @@ below, and Electron will then try to read the archive and start from it.
 
 On macOS:
 
-```text
+```plaintext
 electron/Electron.app/Contents/Resources/
 └── app.asar
 ```
 
 On Windows and Linux:
 
-```text
+```plaintext
 electron/resources/
 └── app.asar
 ```
@@ -91,7 +91,7 @@ file's name.
 
 The structure of a renamed app would be like:
 
-```text
+```plaintext
 MyApp.app/Contents
 ├── Info.plist
 ├── MacOS/
