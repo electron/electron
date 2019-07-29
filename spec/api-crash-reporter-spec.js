@@ -15,7 +15,7 @@ const { app, BrowserWindow, crashReporter } = remote
 const { expect } = chai
 chai.use(dirtyChai)
 
-describe('crashReporter module', () => {
+describe.skip('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   // TODO(alexeykuzmin): [Ch66] Fails. Fix it and enable back.

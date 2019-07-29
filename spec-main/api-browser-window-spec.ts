@@ -360,7 +360,7 @@ describe('BrowserWindow module', () => {
       await expect(p).to.eventually.be.fulfilled
     })
 
-    describe('POST navigations', () => {
+    describe.skip('POST navigations', () => {
       afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
 
       it('supports specifying POST data', async () => {

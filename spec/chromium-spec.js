@@ -194,7 +194,7 @@ describe('chromium feature', () => {
     })
   })
 
-  describe('navigator.serviceWorker', () => {
+  describe.skip('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
       w = new BrowserWindow({
         show: false,
