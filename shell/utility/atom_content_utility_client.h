@@ -29,7 +29,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   bool HandleServiceRequest(
       const std::string& service_name,
       service_manager::mojom::ServiceRequest request) override;
-  void RunIOThreadService(mojo::GenericPendingReceiver* receiver) override;
+  mojo::ServiceFactory* GetIOThreadServiceFactory() override;
 
  private:
   std::unique_ptr<service_manager::Service> MaybeCreateMainThreadService(
