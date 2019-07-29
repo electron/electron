@@ -35,11 +35,6 @@ namespace electron {
 
 namespace {
 
-// Dummy class type that used for crashing the program.
-struct DummyClass {
-  bool crash;
-};
-
 // Called when there is a fatal error in V8, we just crash the process here so
 // we can get the stack trace.
 void FatalErrorCallback(const char* location, const char* message) {
@@ -152,7 +147,8 @@ void ElectronBindings::Log(const base::string16& message) {
 
 // static
 void ElectronBindings::Crash() {
-  static_cast<DummyClass*>(nullptr)->crash = true;
+  volatile int* zero = nullptr;
+  *zero = 0;
 }
 
 // static
