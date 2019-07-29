@@ -563,7 +563,7 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   auto auth_params = CreateHttpAuthDynamicParams();
-  auth_params->server_whitelist = domains;
+  auth_params->server_allowlist = domains;
   content::GetNetworkService()->ConfigureHttpAuthPrefs(std::move(auth_params));
 }
 
