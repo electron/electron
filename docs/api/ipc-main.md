@@ -92,3 +92,5 @@ Removes listeners of the specified `channel`.
 
 The documentation for the `event` object passed to the `callback` can be found
 in the [`ipc-main-event`](structures/ipc-main-event.md) structure docs.
+
+[web-contents-send]: web-contents.md#contentssendchannel-arg1-arg2-
