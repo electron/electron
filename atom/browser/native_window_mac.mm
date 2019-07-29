@@ -825,6 +825,7 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
                                      int relativeLevel,
                                      std::string* error) {
   int windowLevel = NSNormalWindowLevel;
+  bool level_changed = top != widget()->IsAlwaysOnTop();
   CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
   CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
 
@@ -857,6 +858,11 @@ void NativeWindowMac::SetAlwaysOnTop(bool top,
         stringWithFormat:@"relativeLevel must be between %d and %d",
                          minWindowLevel, maxWindowLevel] UTF8String]);
   }
+
+  // This must be notified at the very end or IsAlwaysOnTop
+  // will not yet have been updated to reflect the new status
+  if (level_changed)
+    NativeWindow::NotifyWindowAlwaysOnTopChanged();
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {

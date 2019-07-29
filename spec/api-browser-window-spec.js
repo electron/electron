@@ -916,6 +916,16 @@ describe('BrowserWindow module', () => {
         w.setAlwaysOnTop(true, '', 2147483632)
       })
     })
+
+    it('causes the right value to be emitted on `always-on-top-changed`', (done) => {
+      w.on('always-on-top-changed', (e, alwaysOnTop) => {
+        assert.strictEqual(alwaysOnTop, true)
+        done()
+      })
+
+      assert.strictEqual(w.isAlwaysOnTop(), false)
+      w.setAlwaysOnTop(true)
+    })
   })
 
   describe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
