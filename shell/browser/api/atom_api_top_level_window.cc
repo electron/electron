@@ -679,7 +679,7 @@ void TopLevelWindow::RemoveMenu() {
 void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
                                      mate::Arguments* args) {
   if (IsModal()) {
-    args->ThrowError("setParentWindow is not supported for modal windows.");
+    args->ThrowError("setParentWindow() is not supported for modal windows.");
     return;
   }
 

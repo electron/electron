@@ -1592,12 +1592,13 @@ void WebContents::Print(mate::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("Invalid print settings specified.");
+    args->ThrowError("webContents.print() parameter 'settings' is invalid.");
     return;
   }
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowTypeError("Invalid optional callback.");
+    args->ThrowTypeError(
+        "webContents.print() optional parameter 'callback' is invalid.");
     return;
   }
 
@@ -1755,7 +1756,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(
 void WebContents::AddWorkSpace(mate::Arguments* args,
                                const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("'path' parameter can't be empty.");
+    args->ThrowError("addWorkSpace() parameter 'path' cannot be empty.");
     return;
   }
   DevToolsAddFileSystem(std::string(), path);
@@ -1764,7 +1765,7 @@ void WebContents::AddWorkSpace(mate::Arguments* args,
 void WebContents::RemoveWorkSpace(mate::Arguments* args,
                                   const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("'path' parameter can't be empty.");
+    args->ThrowError("removeWorkSpace() parameter 'path' cannot be empty.");
     return;
   }
   DevToolsRemoveFileSystem(path);
@@ -1817,7 +1818,7 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
 uint32_t WebContents::FindInPage(mate::Arguments* args) {
   base::string16 search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
-    args->ThrowError("Non-empty search text parameter required.");
+    args->ThrowError("findInPage() parameter 'text' cannot be empty.");
     return 0;
   }
 
@@ -2022,16 +2023,17 @@ void WebContents::StartDrag(const mate::Dictionary& item,
     // TODO(zcbenz): Set default icon from file.
   }
 
-  // Error checking.
   if (icon.IsEmpty()) {
-    args->ThrowError("'icon' parameter is required.");
+    args->ThrowError(
+        "startDrag() parameter 'item' must have a nonempty property 'icon'.");
     return;
   }
 
 #if defined(OS_MACOSX)
   // NSWindow.dragImage requires a non-empty NSImage
   if (icon->image().IsEmpty()) {
-    args->ThrowError("Non-empty 'icon' parameter is required.");
+    args->ThrowError(
+        "startDrag() parameter 'item' must have a nonempty property 'icon'.");
     return;
   }
 #endif
@@ -2041,7 +2043,8 @@ void WebContents::StartDrag(const mate::Dictionary& item,
     base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    args->ThrowError("Must specify either 'file' or 'files' parameter.");
+    args->ThrowError(
+        "startDrag() parameter 'item' must have a nonempty property 'file'.");
   }
 }
 

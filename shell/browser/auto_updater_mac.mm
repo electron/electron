@@ -47,21 +47,22 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
   std::string serverType = "default";
   if (args->GetNext(&opts)) {
     if (!opts.Get("url", &feed)) {
-      args->ThrowError(
-          "Expected options object to contain a 'url' string property in "
-          "setFeedUrl call.");
+      args->ThrowError("setFeedURL() parameter 'options' must have a nonempty "
+                       "property 'url'.");
       return;
     }
     opts.Get("headers", &requestHeaders);
     opts.Get("serverType", &serverType);
     if (serverType != "default" && serverType != "json") {
-      args->ThrowTypeError("Invalid 'serverType' parameter provided.");
+      args->ThrowTypeError("setFeedURL() property 'serverType' in 'options' is "
+                           "invalid: must be default' or 'json'.");
       return;
     }
   } else if (args->GetNext(&feed)) {
     args->GetNext(&requestHeaders);
   } else {
-    args->ThrowError("Expected an options object with a 'url' property.");
+    args->ThrowError("setFeedURL() parameter 'options' must have a nonempty "
+                     "property 'url'.");
     return;
   }
 

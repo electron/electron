@@ -294,20 +294,22 @@ void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
   base::DictionaryValue value;
 
   if (!args->GetNext(&value)) {
-    args->ThrowTypeError("Invalid userDefault data.");
+    args->ThrowTypeError("registerDefaults() parameter 'defaults' is invalid.");
   } else {
     @try {
       NSDictionary* dict = DictionaryValueToNSDictionary(value);
       for (id key in dict) {
         id value = [dict objectForKey:key];
         if ([value isKindOfClass:[NSNull class]] || value == nil) {
-          args->ThrowTypeError("Invalid userDefault data.");
+          args->ThrowTypeError(
+              "registerDefaults() parameter 'defaults' is invalid.");
           return;
         }
       }
       [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
     } @catch (NSException* exception) {
-      args->ThrowTypeError("Invalid userDefault data.");
+      args->ThrowTypeError(
+          "registerDefaults() parameter 'defaults' is invalid.");
     }
   }
 }
@@ -392,7 +394,8 @@ void SystemPreferences::SetUserDefault(const std::string& name,
       [defaults setObject:dict forKey:key];
     }
   } else {
-    args->ThrowTypeError("Invalid type: " + type);
+    args->ThrowTypeError("setUserDefault() parameter 'type' is invalid: '" +
+                         type + "'.");
     return;
   }
 }
@@ -599,8 +602,8 @@ std::string SystemPreferences::GetMediaAccessStatus(
       return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
     }
   } else {
-    args->ThrowTypeError(
-        "Invalid media type provided: expected 'camera' or 'microphone'.");
+    args->ThrowTypeError("getMediaAccessStatus() parameter 'mediaType' is "
+                         "invalid: expected 'camera' or 'microphone'.");
     return std::string();
   }
 }
@@ -674,8 +677,8 @@ void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
     if (args->GetNext(&appearance)) {
       [[NSApplication sharedApplication] setAppearance:appearance];
     } else {
-      args->ThrowTypeError(
-          "Invalid app appearance type provided: expected 'light' or 'dark'.");
+      args->ThrowTypeError("setAppLevelAppearance() parameter 'appearance' is "
+                           "invalid: expected 'light' or 'dark'.");
     }
   }
 }

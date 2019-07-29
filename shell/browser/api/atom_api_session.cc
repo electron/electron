@@ -468,7 +468,8 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
   ElectronCertVerifierClient::CertVerifyProc proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
-    args->ThrowTypeError("Must pass null or a function.");
+    args->ThrowTypeError(
+        "setCertVerifyProc() parameter must be a function or null.");
     return;
   }
 
@@ -505,7 +506,8 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   }
   auto handler = std::make_unique<AtomPermissionManager::RequestHandler>();
   if (!mate::ConvertFromV8(args->isolate(), val, handler.get())) {
-    args->ThrowTypeError("Must pass null or a function.");
+    args->ThrowTypeError(
+        "setPermissionRequestHandler() parameter must be a function or null.");
     return;
   }
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
@@ -525,7 +527,8 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                         mate::Arguments* args) {
   AtomPermissionManager::CheckHandler handler;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
-    args->ThrowTypeError("Must pass null or a function.");
+    args->ThrowTypeError(
+        "setPermissionCheckHandler() parameter must be a function or null.");
     return;
   }
   auto* permission_manager = static_cast<AtomPermissionManager*>(

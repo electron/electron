@@ -404,7 +404,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
     v8::Local<v8::Value> buffer,
     const mate::Dictionary& options) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowTypeError("Buffer must be a Node.js Buffer.");
+    args->ThrowTypeError(
+        "createFromBitmap() parameter 'buffer' must be a Node.js Buffer.");
     return mate::Handle<NativeImage>();
   }
 
@@ -413,12 +414,15 @@ mate::Handle<NativeImage> NativeImage::CreateFromBitmap(
   double scale_factor = 1.;
 
   if (!options.Get("width", &width)) {
-    args->ThrowError("'width' parameter is required.");
+    args->ThrowError(
+        "createFromBitmap() parameter 'options' must have a property 'width'.");
     return mate::Handle<NativeImage>();
   }
 
   if (!options.Get("height", &height)) {
-    args->ThrowError("'height' parameter is required.");
+    args->ThrowError(
+        "createFromBitmap() parameter 'options' must have a property "
+        "'height'.");
     return mate::Handle<NativeImage>();
   }
 
@@ -451,7 +455,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args,
     v8::Local<v8::Value> buffer) {
   if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowTypeError("Buffer must be a Node.js Buffer.");
+    args->ThrowTypeError(
+        "createFromBuffer() parameter 'buffer' must be a Node.js Buffer.");
     return mate::Handle<NativeImage>();
   }
 

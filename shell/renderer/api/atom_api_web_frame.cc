@@ -312,7 +312,9 @@ void SetSpellCheckProvider(mate::Arguments* args,
   auto context = args->isolate()->GetCurrentContext();
   if (!provider->Has(context, mate::StringToV8(args->isolate(), "spellCheck"))
            .ToChecked()) {
-    args->ThrowError("\"spellCheck\" not defined.");
+    args->ThrowError(
+        "setSpellCheckProvider() parameter 'provider' must have a property "
+        "'spellCheck'.");
     return;
   }
 
