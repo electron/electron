@@ -92,6 +92,15 @@ describe('BrowserView module', () => {
     })
   })
 
+  describe('BrowserView.getBounds()', () => {
+    it('returns the current bounds', () => {
+      view = new BrowserView()
+      const bounds = { x: 10, y: 20, width: 30, height: 40 }
+      view.setBounds(bounds)
+      expect(view.getBounds()).to.deep.equal(bounds)
+    })
+  })
+
   describe('BrowserWindow.setBrowserView()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView()
