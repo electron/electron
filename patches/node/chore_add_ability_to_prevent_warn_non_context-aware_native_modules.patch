@@ -5,10 +5,10 @@ Subject: chore: add ability to prevent / warn non context-aware native modules
  being loaded
 
 diff --git a/src/env.h b/src/env.h
-index e60f76372a324b83cd054c830fc2d6f9ab2dcae8..63e71fc1fc2b0e95a85f38b58b34eeb290d8f09d 100644
+index 8eed574f52410ddb772f4e075b9cf9a8259a7a4c..72e16a7f324eb01a596682c793f143300dc4c8d8 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -849,6 +849,15 @@ class Environment : public MemoryRetainer {
+@@ -885,6 +885,15 @@ class Environment : public MemoryRetainer {
                uint64_t thread_id = kNoThreadId);
    ~Environment();
  
@@ -24,7 +24,7 @@ index e60f76372a324b83cd054c830fc2d6f9ab2dcae8..63e71fc1fc2b0e95a85f38b58b34eeb2
    void InitializeLibuv(bool start_profiler_idle_notifier);
    inline const std::vector<std::string>& exec_argv();
    inline const std::vector<std::string>& argv();
-@@ -1197,6 +1206,9 @@ class Environment : public MemoryRetainer {
+@@ -1232,6 +1241,9 @@ class Environment : public MemoryRetainer {
    inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                           const char* errmsg);
  
@@ -35,7 +35,7 @@ index e60f76372a324b83cd054c830fc2d6f9ab2dcae8..63e71fc1fc2b0e95a85f38b58b34eeb2
    v8::Isolate* const isolate_;
    IsolateData* const isolate_data_;
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 99c2406036e1874af253c61239e7736867813af8..117bc2891118e67ca7b10a33ba7e1fbebc973dbb 100644
+index c51a892e1bcd3df6ea8af952c8200975c7f4ac7e..9a4a7780f4ac1bcc0855cc9e3eed904d5a0b4254 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -2,6 +2,7 @@
@@ -46,7 +46,7 @@ index 99c2406036e1874af253c61239e7736867813af8..117bc2891118e67ca7b10a33ba7e1fbe
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -470,6 +471,13 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -463,6 +464,13 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
      }
  
      if (mp != nullptr) {

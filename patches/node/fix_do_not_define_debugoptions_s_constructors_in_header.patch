@@ -15,7 +15,7 @@ By putting the definitions of constructors into the implementation file,
 we can avoid this problem.
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 11c910bbd17c8b8e345862e11a24aba7822c31b6..9b9b9324d681d8a55418c7a43a071a6f978750e7 100644
+index 7d71b52d627ef6750282ff4ec16fa469f81d4b2a..fa62f2ba876150be8963fd569ac59028fd0170a1 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -26,6 +26,12 @@ Mutex cli_options_mutex;
@@ -32,7 +32,7 @@ index 11c910bbd17c8b8e345862e11a24aba7822c31b6..9b9b9324d681d8a55418c7a43a071a6f
  #if !NODE_USE_V8_PLATFORM
    if (inspector_enabled) {
 diff --git a/src/node_options.h b/src/node_options.h
-index 35daba3291c8358a44f9fca53df34b35c5423d15..b8959745f5bd66bb19f3f1d9b1bf45e8a6ebd4f7 100644
+index 5fb23cfda7aebca507174555b78c9a73e837dda0..ce86827024126c6b0d8462c811360057c298ec5b 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -61,11 +61,11 @@ struct InspectPublishUid {

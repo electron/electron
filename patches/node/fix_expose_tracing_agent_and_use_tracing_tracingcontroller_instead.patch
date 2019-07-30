@@ -5,10 +5,10 @@ Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 8c1f5aaff2a5e4bbe7b534e0b130b1b50cad1c15..bfd279aa7e7cd4d50b6cffe75d6f8e41c0213acb 100644
+index ac1e513967310aefa50100843c643c788ab5157c..35e8666ef771c56a1bcd441c99d4483a0d3e90bf 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -320,6 +320,10 @@ MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform() {
+@@ -314,6 +314,10 @@ MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform() {
    return per_process::v8_platform.Platform();
  }
  
@@ -20,7 +20,7 @@ index 8c1f5aaff2a5e4bbe7b534e0b130b1b50cad1c15..bfd279aa7e7cd4d50b6cffe75d6f8e41
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 9df33dfb47e591728c9502fea8152e4344b2b275..dca89e212c89df19d0b97d748e3649392fec000c 100644
+index 42ad1a5aba3fb57e27a07689768fd0dc8dd37d6d..a2b47d1cf984ec36994b477b371cdf262191ab9c 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -108,6 +108,7 @@ namespace node {

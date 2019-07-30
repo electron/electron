@@ -7,10 +7,10 @@ There are cases where the debug_options() on the env are
 different to the options that were passed into inspector::Agent.
 
 diff --git a/src/node.cc b/src/node.cc
-index 00fb0ed1c9cfbc86a7ec7d1d0ce7789b68d6a1e3..707579c8254903f5c587fa42711eb5d0184b4112 100644
+index 1ced93b572f383f0b941ab6cd7f47678dc0491e3..f911e44a47656f9e3349b7c7badc96ffaa42dc81 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -256,7 +256,7 @@ int Environment::InitializeInspector(
+@@ -252,7 +252,7 @@ int Environment::InitializeInspector(
  
    profiler::StartProfilers(this);
  

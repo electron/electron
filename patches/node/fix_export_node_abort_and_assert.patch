@@ -5,7 +5,7 @@ Subject: fix: Export node::Abort and Assert
 
 
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 298d84b4f362b3b9e9a0e604c7635ac77eaf8925..e0c5eaacffbd1ac7aaa104dd15f5e5de4ed5240b 100644
+index 0214521144c607c084cabc941f006780bcd3cfa2..ea4113aa3b2b431c6d9bbfbf4b20f8ff59cd9182 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -242,13 +242,13 @@ void AppendExceptionLine(Environment* env,
