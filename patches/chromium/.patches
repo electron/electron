@@ -35,7 +35,6 @@ mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
 mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
-allow_webview_file_url.patch
 ignore_rc_check.patch
 enable_widevine.patch
 chrome_key_systems.patch
@@ -68,7 +67,6 @@ feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
 frame_host_manager.patch
-cross_site_document_resource_handler.patch
 crashpad_pid_check.patch
 chore_add_debounce_on_the_updatewebcontentsvisibility_method_to.patch
 network_service_allow_remote_certificate_verification_logic.patch
