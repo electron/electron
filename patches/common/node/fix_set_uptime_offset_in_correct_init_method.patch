@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micha Hanselmann <deermichel@github.com>
+Date: Thu, 1 Aug 2019 09:34:18 -0700
+Subject: fix: set uptime offset in correct init method
+
+This patch can be removed after 'https://github.com/nodejs/node/pull/28849' landed here.
+
+diff --git a/src/node.cc b/src/node.cc
+index 2f2b52e13362bec6fcee5716d9a2bc9b3480b939..09388ade842eb35eb09581ed6e65e984eac63e78 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -646,6 +646,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   // Make sure InitializeNodeWithArgs() is called only once.
+   CHECK(!init_called.exchange(true));
+ 
++  // Initialize node_start_time to get relative uptime.
++  per_process::node_start_time = uv_hrtime();
++
+   // Register built-in modules
+   binding::RegisterBuiltinModules();
+ 
+@@ -925,7 +928,6 @@ inline int StartNodeWithLoopAndArgs(uv_loop_t* event_loop,
+ int Start(int argc, char** argv) {
+   atexit([] () { uv_tty_reset_mode(); });
+   PlatformInit();
+-  per_process::node_start_time = uv_hrtime();
+ 
+   CHECK_GT(argc, 0);
+ 
