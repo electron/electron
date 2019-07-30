@@ -10,7 +10,7 @@
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
-#include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/api/gin_utils.h"
 #include "shell/common/gin_converters/file_dialog_converter_gin_adapter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
@@ -85,17 +85,34 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin::Dictionary dict(context->GetIsolate(), exports);
-  dict.Set("showMessageBoxSync", base::BindRepeating(&ShowMessageBoxSync));
-  dict.Set("showMessageBox", base::BindRepeating(&ShowMessageBox));
-  dict.Set("showErrorBox", base::BindRepeating(&electron::ShowErrorBox));
-  dict.Set("showOpenDialogSync", base::BindRepeating(&ShowOpenDialogSync));
-  dict.Set("showOpenDialog", base::BindRepeating(&ShowOpenDialog));
-  dict.Set("showSaveDialogSync", base::BindRepeating(&ShowSaveDialogSync));
-  dict.Set("showSaveDialog", base::BindRepeating(&ShowSaveDialog));
+  v8::Isolate* isolate = context->GetIsolate();
+  gin::Dictionary dict(isolate, exports);
+  dict.Set("showMessageBoxSync",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&ShowMessageBoxSync)));
+  dict.Set("showMessageBox",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&ShowMessageBox)));
+  dict.Set("showErrorBox",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&electron::ShowErrorBox)));
+  dict.Set("showOpenDialogSync",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&ShowOpenDialogSync)));
+  dict.Set("showOpenDialog",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&ShowOpenDialog)));
+  dict.Set("showSaveDialogSync",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&ShowSaveDialogSync)));
+  dict.Set("showSaveDialog",
+           gin::ConvertCallbackToV8Leaked(
+               isolate, base::BindRepeating(&ShowSaveDialog)));
 #if defined(OS_MACOSX) || defined(OS_WIN)
   dict.Set("showCertificateTrustDialog",
-           base::BindRepeating(&certificate_trust::ShowCertificateTrust));
+           gin::ConvertCallbackToV8Leaked(
+               isolate,
+               base::BindRepeating(&certificate_trust::ShowCertificateTrust)));
 #endif
 }
 
