@@ -880,6 +880,13 @@ bool NativeWindowViews::HasShadow() {
 
 void NativeWindowViews::SetOpacity(const double opacity) {
 #if defined(OS_WIN)
+  double boundedOpacity = opacity;
+  if (opacity > 1) {
+    boundedOpacity = 1;
+  } else if (opacity < 0) {
+    boundedOpacity = 0;
+  }
+
   HWND hwnd = GetAcceleratedWidget();
   if (!layered_) {
     LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -887,9 +894,9 @@ void NativeWindowViews::SetOpacity(const double opacity) {
     ::SetWindowLong(hwnd, GWL_EXSTYLE, ex_style);
     layered_ = true;
   }
-  ::SetLayeredWindowAttributes(hwnd, 0, opacity * 255, LWA_ALPHA);
+  ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
 #endif
-  opacity_ = opacity;
+  opacity_ = boundedOpacity;
 }
 
 double NativeWindowViews::GetOpacity() {
