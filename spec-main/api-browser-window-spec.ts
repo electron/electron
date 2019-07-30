@@ -7,12 +7,10 @@ import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedOnce } from './events-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
+import { closeWindow } from './window-helpers'
 const { expect } = chai
-
-const ifit = (condition: boolean) => (condition ? it : it.skip)
-const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
 
 chai.use(chaiAsPromised)
 
@@ -1240,13 +1238,8 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.setOpacity(opacity)', () => {
-    before(function () {
-      // setOpacity() unsupported on Linux
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
+
+  ifdescribe(process.platform !== 'linux')('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows)
     it('make window with initial opacity', () => {
       const w = new BrowserWindow({ show: false, opacity: 0.5 })
