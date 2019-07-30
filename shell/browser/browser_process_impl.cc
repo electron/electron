@@ -249,11 +249,6 @@ BrowserProcessImpl::component_updater() {
   return nullptr;
 }
 
-component_updater::SupervisedUserWhitelistInstaller*
-BrowserProcessImpl::supervised_user_whitelist_installer() {
-  return nullptr;
-}
-
 MediaFileSystemRegistry* BrowserProcessImpl::media_file_system_registry() {
   return nullptr;
 }
