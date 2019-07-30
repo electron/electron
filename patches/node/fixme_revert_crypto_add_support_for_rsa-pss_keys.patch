@@ -110,10 +110,10 @@ index b6a3376e735094f970ef61a52ef9bb6d6101647a..bb70c2305fd44cfea46a8df5e65d1af5
  
  Sign.prototype.sign = function sign(options, encoding) {
 diff --git a/src/env.h b/src/env.h
-index 63e71fc1fc2b0e95a85f38b58b34eeb290d8f09d..1415e32c02c4ffc6e3205ff15bef2006021bb1c2 100644
+index 72e16a7f324eb01a596682c793f143300dc4c8d8..c6cd4c258349833eff84a7d0a6824bb8ece7d21d 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -170,7 +170,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
+@@ -174,7 +174,6 @@ constexpr size_t kFsStatsBufferLength = kFsStatsFieldsNumber * 2;
    V(crypto_x25519_string, "x25519")                                            \
    V(crypto_x448_string, "x448")                                                \
    V(crypto_rsa_string, "rsa")                                                  \
@@ -402,7 +402,7 @@ index 3e337eaddbe490b98aa2f9da2e310c94e4a96bf8..e526325a60feaa345f02e021f7ba1c9e
  
   protected:
 diff --git a/test/fixtures/keys/Makefile b/test/fixtures/keys/Makefile
-index 226dc67346ef740ae9d622c03271d2761e51e713..492a30f6e43fc8068b8b89da86cdfe6250fe1fe6 100644
+index 824704c7241b0ae58f5b4f2768b429f465aafb9b..28afa6685955b1ad57901c776c268cd3aef7d508 100644
 --- a/test/fixtures/keys/Makefile
 +++ b/test/fixtures/keys/Makefile
 @@ -61,12 +61,6 @@ all: \
