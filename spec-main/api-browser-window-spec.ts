@@ -1241,6 +1241,12 @@ describe('BrowserWindow module', () => {
   })
 
   describe('BrowserWindow.setOpacity(opacity)', () => {
+    before(function () {
+      // setOpacity() unsupported on Linux
+      if (process.platform === 'linux') {
+        this.skip()
+      }
+    })
     afterEach(closeAllWindows)
     it('make window with initial opacity', () => {
       const w = new BrowserWindow({ show: false, opacity: 0.5 })
