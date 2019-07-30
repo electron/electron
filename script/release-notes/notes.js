@@ -581,6 +581,8 @@ const getNotes = async (fromRef, toRef, newVersion) => {
       })
   }
 
+  pool.commits = removeSupercededChromiumUpdates(pool.commits)
+
   const notes = {
     breaking: [],
     docs: [],
@@ -611,6 +613,20 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   })
 
   return notes
+}
+
+const removeSupercededChromiumUpdates = (commits) => {
+  const chromiumRegex = /^Updated Chromium to \d+\.\d+\.\d+\.\d+/
+  const updates = commits.filter(commit => (commit.note || commit.subject).match(chromiumRegex))
+  const keepers = commits.filter(commit => !updates.includes(commit))
+
+  // keep the newest update.
+  if (updates.length) {
+    updates.sort((a, b) => a.originalPr.number - b.originalPr.number)
+    keepers.push(updates.pop())
+  }
+
+  return keepers
 }
 
 /***
