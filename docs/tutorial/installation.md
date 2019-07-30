@@ -55,13 +55,13 @@ You can use environment variables to override the base URL, the path at which to
 look for Electron binaries, and the binary filename. The url used by `electron-download`
 is composed as follows:
 
-```txt
+```plaintext
 url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 ```
 
 For instance, to use the China mirror:
 
-```txt
+```plaintext
 ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
 ```
 
