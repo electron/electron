@@ -930,13 +930,6 @@ AtomBrowserClient::GetNetworkContextsParentDirectory() {
   return {user_data_dir};
 }
 
-bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
-  // This is called on the network thread.
-  base::AutoLock auto_lock(process_preferences_lock_);
-  auto it = process_preferences_.find(render_process_id);
-  return it != process_preferences_.end() && !it->second.web_security;
-}
-
 std::string AtomBrowserClient::GetProduct() {
   return "Chrome/" CHROME_VERSION_STRING;
 }
