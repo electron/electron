@@ -1257,12 +1257,13 @@ describe('BrowserWindow module', () => {
         expect(w.getOpacity()).to.equal(1.0)
       }).to.not.throw()
     })
-    it.only('does not change opacity if given number out of bounds', () => {
+
+    it('does not change opacity if given number out of bounds', () => {
       const w = new BrowserWindow({ show: false, opacity: 0.5 })
       w.setOpacity(100)
-      expect(w.getOpacity()).to.equal(1)
+      expect(w.getOpacity()).to.equal(1.0)
       w.setOpacity(-100)
-      expect(w.getOpacity()).to.equal(0)
+      expect(w.getOpacity()).to.equal(0.0)
     })
   })
 

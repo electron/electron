@@ -1032,7 +1032,14 @@ bool NativeWindowMac::HasShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  [window_ setAlphaValue:opacity];
+  double boundedOpacity = opacity;
+  if (opacity < 0) {
+    boundedOpacity = 0;
+  } else if (opacity > 1) {
+    boundedOpacity = 1;
+  }
+
+  [window_ setAlphaValue:boundedOpacity];
 }
 
 double NativeWindowMac::GetOpacity() {
