@@ -8,7 +8,7 @@ This allows us to run operations on a created but not yet bootstrapped
 environment such as setting up an InspectorAgent
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index e313460a13ced7e7a9982db6f4a988699ec56111..faeba6d4e687261df1a58ad3c1e14d53b0e6d832 100644
+index e313460a13ced7e7a9982db6f4a988699ec56111..51353924cb0aef2a61f4aa799b6a90326c7a65ad 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -269,7 +269,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
