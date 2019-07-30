@@ -895,8 +895,9 @@ void NativeWindowViews::SetOpacity(const double opacity) {
     layered_ = true;
   }
   ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
+#else
+  opacity_ = opacity;
 #endif
-  opacity_ = boundedOpacity;
 }
 
 double NativeWindowViews::GetOpacity() {
