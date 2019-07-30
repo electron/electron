@@ -134,23 +134,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
     base::RouteStdioToConsole(false);
 
-#ifndef DEBUG
-  // Chromium has its own TLS subsystem which supports automatic destruction
-  // of thread-local data, and also depends on memory allocation routines
-  // provided by the CRT. The problem is that the auto-destruction mechanism
-  // uses a hidden feature of the OS loader which calls a callback on thread
-  // exit, but only after all loaded DLLs have been detached. Since the CRT is
-  // also a DLL, it happens that by the time Chromium's `OnThreadExit` function
-  // is called, the heap functions, though still in memory, no longer perform
-  // their duties, and when Chromium calls `free` on its buffer, it triggers
-  // an access violation error.
-  // We work around this problem by invoking Chromium's `OnThreadExit` in time
-  // from within the CRT's atexit facility, ensuring the heap functions are
-  // still active. The second invocation from the OS loader will be a no-op.
-  extern void NTAPI OnThreadExit(PVOID module, DWORD reason, PVOID reserved);
-  atexit([]() { OnThreadExit(nullptr, DLL_THREAD_DETACH, nullptr); });
-#endif
-
   std::vector<char*> argv(arguments.argc);
   std::transform(arguments.argv, arguments.argv + arguments.argc, argv.begin(),
                  [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
