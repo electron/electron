@@ -567,6 +567,8 @@ filenames = {
     "shell/common/platform_util_win.cc",
     "shell/common/promise_util.h",
     "shell/common/promise_util.cc",
+    "shell/common/skia_util.h",
+    "shell/common/skia_util.cc",
     "shell/renderer/api/atom_api_renderer_ipc.cc",
     "shell/renderer/api/atom_api_spell_check_client.cc",
     "shell/renderer/api/atom_api_spell_check_client.h",
