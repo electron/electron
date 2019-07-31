@@ -359,9 +359,23 @@ v8::Local<v8::Value> RendererClientBase::RunScript(
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
+  LOG(INFO) << "CREATED AtomExtensionsClient";
   return new AtomExtensionsClient;
 }
 #endif
+
+content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
+    content::RenderFrame* render_frame,
+    const content::WebPluginInfo& info,
+    const std::string& mime_type,
+    const GURL& original_url) {
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  return AtomExtensionsRendererClient::CreateBrowserPluginDelegate(
+      render_frame, info, mime_type, original_url);
+#else
+  return nullptr;
+#endif
+}
 
 bool RendererClientBase::IsWebViewFrame(
     v8::Handle<v8::Context> context,

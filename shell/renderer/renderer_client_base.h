@@ -47,6 +47,12 @@ class RendererClientBase : public content::ContentRendererClient {
                                             content::RenderFrame* render_frame,
                                             int world_id) = 0;
 
+  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
+      content::RenderFrame* render_frame,
+      const content::WebPluginInfo& info,
+      const std::string& mime_type,
+      const GURL& original_url) override;
+
   bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.

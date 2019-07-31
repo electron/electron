@@ -62,4 +62,17 @@ void AtomExtensionsRendererClient::RunScriptsAtDocumentIdle(
   dispatcher_->RunScriptsAtDocumentIdle(render_frame);
 }
 
+// static
+content::BrowserPluginDelegate*
+AtomExtensionsRendererClient::CreateBrowserPluginDelegate(
+    content::RenderFrame* render_frame,
+    const content::WebPluginInfo& info,
+    const std::string& mime_type,
+    const GURL& original_url) {
+  if (mime_type == content::kBrowserPluginMimeType)
+    return new extensions::ExtensionsGuestViewContainer(render_frame);
+  return new extensions::MimeHandlerViewContainer(render_frame, info, mime_type,
+                                                  original_url);
+}
+
 }  // namespace electron
