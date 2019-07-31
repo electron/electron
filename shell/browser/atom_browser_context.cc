@@ -197,29 +197,6 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-net::URLRequestContextGetter* AtomBrowserContext::CreateRequestContext(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector protocol_interceptors) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_
-        ->CreateMainRequestContextGetter(protocol_handlers,
-                                         std::move(protocol_interceptors))
-        .get();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-net::URLRequestContextGetter* AtomBrowserContext::CreateMediaRequestContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetMainRequestContextGetter().get();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
 net::URLRequestContextGetter* AtomBrowserContext::GetRequestContext() {
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
     return GetDefaultStoragePartition(this)->GetURLRequestContext();

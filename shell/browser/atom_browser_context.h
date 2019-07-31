@@ -109,10 +109,6 @@ class AtomBrowserContext
   content::PermissionControllerDelegate* GetPermissionControllerDelegate()
       override;
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
-  net::URLRequestContextGetter* CreateRequestContext(
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector request_interceptors) override;
-  net::URLRequestContextGetter* CreateMediaRequestContext() override;
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
 
