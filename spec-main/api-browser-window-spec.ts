@@ -1257,7 +1257,7 @@ describe('BrowserWindow module', () => {
       }).to.not.throw()
     })
 
-    it('does not change opacity if given number out of bounds', () => {
+    it('clamps opacity to [0.0...1.0]', () => {
       const w = new BrowserWindow({ show: false, opacity: 0.5 })
       w.setOpacity(100)
       expect(w.getOpacity()).to.equal(1.0)
