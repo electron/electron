@@ -9,6 +9,7 @@
 
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/api/event_emitter_caller.h"
@@ -225,6 +226,9 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  NOTREACHED();
+#else
   auto* isolate = context->GetIsolate();
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
@@ -244,6 +248,7 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
   node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
+#endif
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

@@ -67,6 +67,10 @@ class Port {
 
 // Inject chrome API to the |context|
 export function injectTo (extensionId: string, context: any) {
+  if (process.electronBinding('features').isExtensionsEnabled()) {
+    throw new Error('Attempted to load JS chrome-extension polyfill with //extensions support enabled')
+  }
+
   const chrome = context.chrome = context.chrome || {}
 
   ipcRendererInternal.on(`CHROME_RUNTIME_ONCONNECT_${extensionId}`, (
