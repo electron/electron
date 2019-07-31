@@ -179,6 +179,10 @@ void Tray::RemoveBalloon() {
   tray_icon_->RemoveBalloon();
 }
 
+void Tray::Focus() {
+  tray_icon_->Focus();
+}
+
 void Tray::PopUpContextMenu(mate::Arguments* args) {
   mate::Handle<Menu> menu;
   args->GetNext(&menu);
@@ -213,6 +217,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
                  &Tray::GetIgnoreDoubleClickEvents)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("removeBalloon", &Tray::RemoveBalloon)
+      .SetMethod("focus", &Tray::Focus)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds);
