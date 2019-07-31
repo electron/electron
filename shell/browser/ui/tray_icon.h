@@ -49,11 +49,27 @@ class TrayIcon {
   virtual std::string GetTitle() = 0;
 #endif
 
+  enum class IconType { None, Info, Warning, Error, Custom };
+
+  struct BalloonOptions {
+    IconType icon_type = IconType::Custom;
+#if defined(OS_WIN)
+    HICON icon = nullptr;
+#else
+    gfx::Image icon;
+#endif
+    base::string16 title;
+    base::string16 content;
+    bool large_icon = true;
+    bool no_sound = false;
+    bool respect_quiet_time = false;
+
+    BalloonOptions();
+  };
+
   // Displays a notification balloon with the specified contents.
   // Depending on the platform it might not appear by the icon tray.
-  virtual void DisplayBalloon(ImageType icon,
-                              const base::string16& title,
-                              const base::string16& contents);
+  virtual void DisplayBalloon(const BalloonOptions& options);
 
   // Removes the notification balloon.
   virtual void RemoveBalloon();

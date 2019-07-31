@@ -18,6 +18,39 @@
 #include "shell/common/node_includes.h"
 #include "ui/gfx/image/image.h"
 
+namespace mate {
+
+template <>
+struct Converter<electron::TrayIcon::IconType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::TrayIcon::IconType* out) {
+    using IconType = electron::TrayIcon::IconType;
+    std::string mode;
+    if (ConvertFromV8(isolate, val, &mode)) {
+      if (mode == "none") {
+        *out = IconType::None;
+        return true;
+      } else if (mode == "info") {
+        *out = IconType::Info;
+        return true;
+      } else if (mode == "warning") {
+        *out = IconType::Warning;
+        return true;
+      } else if (mode == "error") {
+        *out = IconType::Error;
+        return true;
+      } else if (mode == "custom") {
+        *out = IconType::Custom;
+        return true;
+      }
+    }
+    return false;
+  }
+};
+
+}  // namespace mate
+
 namespace electron {
 
 namespace api {
@@ -157,22 +190,31 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
-  mate::Handle<NativeImage> icon;
-  options.Get("icon", &icon);
-  base::string16 title, content;
-  if (!options.Get("title", &title) || !options.Get("content", &content)) {
+  TrayIcon::BalloonOptions balloon_options;
+
+  if (!options.Get("title", &balloon_options.title) ||
+      !options.Get("content", &balloon_options.content)) {
     args->ThrowError("'title' and 'content' must be defined");
     return;
   }
 
+  mate::Handle<NativeImage> icon;
+  options.Get("icon", &icon);
+  options.Get("iconType", &balloon_options.icon_type);
+  options.Get("largeIcon", &balloon_options.large_icon);
+  options.Get("noSound", &balloon_options.no_sound);
+  options.Get("respectQuietTime", &balloon_options.respect_quiet_time);
+
+  if (!icon.IsEmpty()) {
 #if defined(OS_WIN)
-  tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXICON)),
-      title, content);
+    balloon_options.icon = icon->GetHICON(
+        GetSystemMetrics(balloon_options.large_icon ? SM_CXICON : SM_CXSMICON));
 #else
-  tray_icon_->DisplayBalloon(icon.IsEmpty() ? gfx::Image() : icon->image(),
-                             title, content);
+    balloon_options.icon = icon->image();
 #endif
+  }
+
+  tray_icon_->DisplayBalloon(balloon_options);
 }
 
 void Tray::RemoveBalloon() {
