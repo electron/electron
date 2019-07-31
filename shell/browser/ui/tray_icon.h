@@ -63,6 +63,9 @@ class TrayIcon {
                               const base::string16& title,
                               const base::string16& contents);
 
+  // Removes the notification balloon.
+  virtual void RemoveBalloon();
+
   // Popups the menu.
   virtual void PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model);
