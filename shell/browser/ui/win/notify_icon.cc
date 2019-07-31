@@ -120,17 +120,15 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
 }
 
-void NotifyIcon::DisplayBalloon(HICON icon,
-                                const base::string16& title,
-                                const base::string16& contents) {
+void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_INFO;
   icon_data.dwInfoFlags = NIIF_INFO;
-  wcsncpy_s(icon_data.szInfoTitle, title.c_str(), _TRUNCATE);
-  wcsncpy_s(icon_data.szInfo, contents.c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfoTitle, options.title.c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfo, options.contents.c_str(), _TRUNCATE);
   icon_data.uTimeout = 0;
-  icon_data.hBalloonIcon = icon;
+  icon_data.hBalloonIcon = options.icon;
   icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);

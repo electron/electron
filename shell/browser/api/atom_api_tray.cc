@@ -189,22 +189,26 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
-  mate::Handle<NativeImage> icon;
-  options.Get("icon", &icon);
-  base::string16 title, content;
-  if (!options.Get("title", &title) || !options.Get("content", &content)) {
+  TrayIcon::BalloonOptions balloon_options;
+
+  if (!options.Get("title", &balloon_options.title) ||
+      !options.Get("content", &balloon_options.content)) {
     args->ThrowError("'title' and 'content' must be defined");
     return;
   }
 
+  mate::Handle<NativeImage> icon;
+  options.Get("icon", &icon);
+
+  if (!icon.IsEmpty()) {
 #if defined(OS_WIN)
-  tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXICON)),
-      title, content);
+    balloon_options.icon = icon->GetHICON(GetSystemMetrics(SM_CXICON));
 #else
-  tray_icon_->DisplayBalloon(icon.IsEmpty() ? gfx::Image() : icon->image(),
-                             title, content);
+    balloon_options.icon = icon->image();
 #endif
+  }
+
+  tray_icon_->DisplayBalloon(balloon_options);
 }
 
 void Tray::PopUpContextMenu(mate::Arguments* args) {

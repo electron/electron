@@ -57,11 +57,19 @@ class TrayIcon {
   virtual std::string GetTitle() = 0;
 #endif
 
+  struct BalloonOptions {
+#if defined(OS_WIN)
+    HICON icon = nullptr;
+#else
+    gfx::Image icon;
+#endif
+    base::string16 title;
+    base::string16 content;
+  };
+
   // Displays a notification balloon with the specified contents.
   // Depending on the platform it might not appear by the icon tray.
-  virtual void DisplayBalloon(ImageType icon,
-                              const base::string16& title,
-                              const base::string16& contents);
+  virtual void DisplayBalloon(const BalloonOptions& options);
 
   // Popups the menu.
   virtual void PopUpContextMenu(const gfx::Point& pos,
