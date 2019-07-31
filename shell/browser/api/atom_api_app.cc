@@ -1345,8 +1345,11 @@ bool App::IsInApplicationsFolder() {
   return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
-int DockBounce(const std::string& type) {
+int DockBounce(mate::Arguments* args) {
   int request_id = -1;
+  std::string type = "informational";
+  args->GetNext(&type);
+
   if (type == "critical")
     request_id = Browser::Get()->DockBounce(Browser::BounceType::CRITICAL);
   else if (type == "informational")
