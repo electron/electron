@@ -1168,6 +1168,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
       .SetProperty("autoHideMenuBar", &TopLevelWindow::IsMenuBarAutoHide,
                    &TopLevelWindow::SetAutoHideMenuBar)
+      .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &TopLevelWindow::IsMenuBarVisible)
       .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
       .SetMethod("previewFile", &TopLevelWindow::PreviewFile)
