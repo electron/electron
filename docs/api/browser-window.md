@@ -1458,7 +1458,7 @@ On Windows and Linux always returns
 Sets the opacity of the window. On Linux, does nothing. Out of bound number
 values are clamped to the [0, 1] range.
 
-#### `win.getOpacity()` _Windows_ _macOS_
+#### `win.getOpacity()`
 
 Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque). On
 Linux, always returns 1.

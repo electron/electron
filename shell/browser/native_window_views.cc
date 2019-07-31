@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/numerics/ranges.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
@@ -880,13 +881,7 @@ bool NativeWindowViews::HasShadow() {
 
 void NativeWindowViews::SetOpacity(const double opacity) {
 #if defined(OS_WIN)
-  double boundedOpacity = opacity;
-  if (opacity > 1) {
-    boundedOpacity = 1;
-  } else if (opacity < 0) {
-    boundedOpacity = 0;
-  }
-
+  double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   if (!layered_) {
     LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -897,7 +892,7 @@ void NativeWindowViews::SetOpacity(const double opacity) {
   ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
   opacity_ = boundedOpacity;
 #else
-  opacity_ = 1;  // setOpacity unsupported on Linux
+  opacity_ = 1.0;  // setOpacity unsupported on Linux
 #endif
 }
 

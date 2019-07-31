@@ -12,6 +12,7 @@
 
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
+#include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -1032,13 +1033,7 @@ bool NativeWindowMac::HasShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  double boundedOpacity = opacity;
-  if (opacity < 0) {
-    boundedOpacity = 0;
-  } else if (opacity > 1) {
-    boundedOpacity = 1;
-  }
-
+  double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
   [window_ setAlphaValue:boundedOpacity];
 }
 
