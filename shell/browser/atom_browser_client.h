@@ -76,7 +76,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const network::ResourceRequest& request,
       content::BrowserContext* browser_context,
       const base::RepeatingCallback<content::WebContents*()>& wc_getter,
-      NavigationUIData* navigation_ui_data,
+      content::NavigationUIData* navigation_ui_data,
       int frame_tree_node_id) override;
 #endif
 

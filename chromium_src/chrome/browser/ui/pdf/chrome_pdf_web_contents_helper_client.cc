@@ -6,9 +6,9 @@
 
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 
-ChromePDFWebContentsHelperClient::ChromePDFWebContentsHelperClient() {}
+ChromePDFWebContentsHelperClient::ChromePDFWebContentsHelperClient() = default;
 
-ChromePDFWebContentsHelperClient::~ChromePDFWebContentsHelperClient() {}
+ChromePDFWebContentsHelperClient::~ChromePDFWebContentsHelperClient() = default;
 
 void ChromePDFWebContentsHelperClient::UpdateContentRestrictions(
     content::WebContents* contents,
@@ -19,3 +19,12 @@ void ChromePDFWebContentsHelperClient::OnPDFHasUnsupportedFeature(
 
 void ChromePDFWebContentsHelperClient::OnSaveURL(
     content::WebContents* contents) {}
+
+void ChromePDFWebContentsHelperClient::SetPluginCanSave(
+    content::WebContents* contents,
+    bool can_save) {
+  auto* guest_view =
+      extensions::MimeHandlerViewGuest::FromWebContents(contents);
+  if (guest_view)
+    guest_view->SetPluginCanSave(can_save);
+}

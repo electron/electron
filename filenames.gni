@@ -596,8 +596,6 @@ filenames = {
     "chromium_src/chrome/browser/process_singleton.h",
     "chromium_src/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
     "chromium_src/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
-    "chromium_src/chrome/browser/ui/pdf/chrome_pdf_web_contents_helper_client.cc",
-    "chromium_src/chrome/browser/ui/webui/extensions/extensions_ui.cc",
     "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
     "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
   ]

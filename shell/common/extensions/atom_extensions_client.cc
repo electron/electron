@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 
+#include <base/debug/stack_trace.h>
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/macros.h"
@@ -116,6 +117,7 @@ AtomExtensionsClient::GetScriptingWhitelist() const {
 extensions::URLPatternSet AtomExtensionsClient::GetPermittedChromeSchemeHosts(
     const extensions::Extension* extension,
     const extensions::APIPermissionSet& api_permissions) const {
+  base::debug::StackTrace().Print();
   NOTIMPLEMENTED();
   return extensions::URLPatternSet();
 }

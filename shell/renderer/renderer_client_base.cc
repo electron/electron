@@ -131,9 +131,6 @@ void RendererClientBase::AddRenderBindings(
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* thread = content::RenderThread::Get();
-
 #if BUILDFLAG(USE_EXTERNAL_POPUP_MENU)
   // On macOS, popup menus are rendered by the main process by default.
   // This causes problems in OSR, since when the popup is rendered separately,
@@ -141,14 +138,6 @@ void RendererClientBase::RenderThreadStarted() {
   if (command_line->HasSwitch(options::kOffscreen)) {
     blink::WebView::SetUseExternalPopupMenus(false);
   }
-#endif
-  extensions_client_.reset(CreateExtensionsClient());
-  extensions::ExtensionsClient::Set(extensions_client_.get());
-
-  extensions_renderer_client_.reset(new AtomExtensionsRendererClient);
-  extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
-
-  thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -249,13 +238,6 @@ void RendererClientBase::RenderFrameCreated(
   render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
       base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
                           render_frame, this));
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // Allow access to file scheme from pdf viewer.
-  blink::WebSecurityPolicy::AddOriginAccessAllowListEntry(
-      GURL(kPdfViewerUIOrigin), "file", "", true,
-      network::mojom::CorsOriginAccessMatchPriority::kDefaultPriority);
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {
