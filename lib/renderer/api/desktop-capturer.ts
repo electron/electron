@@ -1,5 +1,5 @@
 import { nativeImage } from 'electron'
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 
 // |options.types| can't be empty and must be an array
 function isValid (options: Electron.SourcesOptions) {
@@ -16,7 +16,7 @@ export async function getSources (options: Electron.SourcesOptions) {
   const { thumbnailSize = { width: 150, height: 150 } } = options
   const { fetchWindowIcons = false } = options
 
-  const sources = await ipcRendererUtils.invoke<ElectronInternal.GetSourcesResult[]>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', {
+  const sources = await ipcRendererInternal.invoke<ElectronInternal.GetSourcesResult[]>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', {
     captureWindow,
     captureScreen,
     thumbnailSize,

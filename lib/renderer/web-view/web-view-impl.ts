@@ -1,5 +1,6 @@
 import { remote, webFrame } from 'electron'
 
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
@@ -253,7 +254,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
 
   const createNonBlockHandler = function (method: string) {
     return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      return ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args)
+      return ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args)
     }
   }
 

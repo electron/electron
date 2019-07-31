@@ -106,7 +106,7 @@ class LocationProxy {
   }
 
   private _invokeWebContentsMethod (method: string, ...args: any[]) {
-    return ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 
   private _invokeWebContentsMethodSync (method: string, ...args: any[]) {
@@ -158,7 +158,7 @@ class BrowserWindowProxy {
   }
 
   public postMessage (message: any, targetOrigin: string) {
-    ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
+    ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', this.guestId, message, toString(targetOrigin), window.location.origin)
   }
 
   public eval (code: string) {
@@ -166,11 +166,11 @@ class BrowserWindowProxy {
   }
 
   private _invokeWindowMethod (method: string, ...args: any[]) {
-    return ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', this.guestId, method, ...args)
   }
 
   private _invokeWebContentsMethod (method: string, ...args: any[]) {
-    return ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
+    return ipcRendererInternal.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 }
 

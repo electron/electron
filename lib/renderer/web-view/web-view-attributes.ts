@@ -1,4 +1,4 @@
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants'
 
@@ -196,7 +196,7 @@ class SrcAttribute extends WebViewAttribute {
     const method = 'loadURL'
     const args = [this.getValue(), opts]
 
-    ipcRendererUtils.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', guestInstanceId, method, args)
+    ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', guestInstanceId, method, args)
   }
 }
 

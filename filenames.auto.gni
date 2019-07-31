@@ -254,6 +254,7 @@ auto_filenames = {
     "lib/browser/guest-view-manager.js",
     "lib/browser/guest-window-manager.js",
     "lib/browser/init.ts",
+    "lib/browser/ipc-main-impl.ts",
     "lib/browser/ipc-main-internal-utils.ts",
     "lib/browser/ipc-main-internal.ts",
     "lib/browser/navigation-controller.js",

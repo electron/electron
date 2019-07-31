@@ -1,26 +1,16 @@
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal'
 import * as errorUtils from '@electron/internal/common/error-utils'
 
-type IPCHandler = (event: ElectronInternal.IpcMainInternalEvent, ...args: any[]) => any
-
-const callHandler = async function (handler: IPCHandler, event: ElectronInternal.IpcMainInternalEvent, args: any[], reply: (args: any[]) => void) {
-  try {
-    const result = await handler(event, ...args)
-    reply([null, result])
-  } catch (error) {
-    reply([errorUtils.serialize(error)])
-  }
-}
+type IPCHandler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
 
 export const handle = function <T extends IPCHandler> (channel: string, handler: T) {
-  ipcMainInternal.on(channel, (event, requestId, ...args) => {
-    callHandler(handler, event, args, responseArgs => {
-      if (requestId) {
-        event._replyInternal(`${channel}_RESPONSE_${requestId}`, ...responseArgs)
-      } else {
-        event.returnValue = responseArgs
-      }
-    })
+  ipcMainInternal.handle(channel, handler)
+  ipcMainInternal.on(channel, async (event, ...args) => {
+    try {
+      event.returnValue = [null, await handler(event, ...args)]
+    } catch (error) {
+      event.returnValue = [errorUtils.serialize(error)]
+    }
   })
 }
 

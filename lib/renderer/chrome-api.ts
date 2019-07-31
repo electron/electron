@@ -157,7 +157,7 @@ export function injectTo (extensionId: string, context: any) {
         console.error('options are not supported')
       }
 
-      ipcRendererUtils.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback)
+      ipcRendererInternal.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback)
     },
 
     onConnect: new Event(),
@@ -172,7 +172,7 @@ export function injectTo (extensionId: string, context: any) {
       details: Chrome.Tabs.ExecuteScriptDetails,
       resultCallback: Chrome.Tabs.ExecuteScriptCallback = () => {}
     ) {
-      ipcRendererUtils.invoke('CHROME_TABS_EXECUTE_SCRIPT', tabId, extensionId, details)
+      ipcRendererInternal.invoke('CHROME_TABS_EXECUTE_SCRIPT', tabId, extensionId, details)
         .then((result: any) => resultCallback([result]))
     },
 
@@ -183,7 +183,7 @@ export function injectTo (extensionId: string, context: any) {
       _options: Chrome.Tabs.SendMessageDetails,
       responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
     ) {
-      ipcRendererUtils.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
+      ipcRendererInternal.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
     },
 
     onUpdated: new Event(),
