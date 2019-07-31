@@ -6,7 +6,7 @@ Subject: pass RenderProcessHost through to PlatformNotificationService
 this is so Electron can identify which renderer a notification came from
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index ceb4bc6248a961bd907e35e9f758cebdbd0ae62b..c85acbb33b7b467716b717159816a00e67d46119 100644
+index a717d9f3539dc0fe86b743c6e29e4311b8b5cec3..1351217319c57be414e6c66f8a01f71fe46d2c04 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -88,9 +88,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
