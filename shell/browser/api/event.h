@@ -25,7 +25,7 @@ class Event : public Wrappable<Event> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  // Pass the callback to be invokes
+  // Set the callback to be invoked when replying to the message.
   void SetCallback(base::Optional<MessageSyncCallback> callback);
 
   // event.PreventDefault().
