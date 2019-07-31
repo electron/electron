@@ -50,7 +50,6 @@
 #include "services/network/public/cpp/resource_request_body.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/atom_api_app.h"
-#include "shell/browser/api/atom_api_protocol.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/atom_browser_context.h"
@@ -684,10 +683,13 @@ bool AtomBrowserClient::CanCreateWindow(
 
 void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
+  // TODO
+  /*
   auto schemes_list = api::GetStandardSchemes();
   if (!schemes_list.empty())
     additional_schemes->insert(additional_schemes->end(), schemes_list.begin(),
                                schemes_list.end());
+                               */
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
@@ -739,13 +741,8 @@ network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
   if (!browser_context)
     return nullptr;
 
-  if (base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return NetworkContextServiceFactory::GetForContext(browser_context)
-        ->CreateNetworkContext();
-  } else {
-    return static_cast<AtomBrowserContext*>(browser_context)
-        ->GetNetworkContext();
-  }
+  return NetworkContextServiceFactory::GetForContext(browser_context)
+      ->CreateNetworkContext();
 }
 
 network::mojom::NetworkContext* AtomBrowserClient::GetSystemNetworkContext() {
@@ -913,8 +910,7 @@ AtomBrowserClient::GetSystemSharedURLLoaderFactory() {
 
 void AtomBrowserClient::OnNetworkServiceCreated(
     network::mojom::NetworkService* network_service) {
-  if (!g_browser_process ||
-      !base::FeatureList::IsEnabled(network::features::kNetworkService))
+  if (!g_browser_process)
     return;
 
   g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
@@ -960,9 +956,6 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_frame_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   // Chromium may call this even when NetworkService is not enabled.
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
-    return;
-
   content::RenderFrameHost* frame_host =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   content::WebContents* web_contents =
