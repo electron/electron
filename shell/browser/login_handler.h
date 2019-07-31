@@ -62,7 +62,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   std::unique_ptr<const net::AuthChallengeInfo> auth_info_;
 
   // WebContents associated with the login request.
-  content::ResourceRequestInfo::WebContentsGetter web_contents_getter_;
+  content::WebContents::Getter web_contents_getter_;
 
   // Called with preferred value of net::NetworkDelegate::AuthRequiredResponse.
   net::NetworkDelegate::AuthCallback auth_callback_;
