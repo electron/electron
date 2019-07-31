@@ -185,8 +185,6 @@ filenames = {
     "shell/browser/lib/power_observer.h",
     "shell/browser/lib/power_observer_linux.h",
     "shell/browser/lib/power_observer_linux.cc",
-    "shell/browser/loader/layered_resource_handler.cc",
-    "shell/browser/loader/layered_resource_handler.h",
     "shell/browser/login_handler.cc",
     "shell/browser/login_handler.h",
     "shell/browser/mac/atom_application.h",
