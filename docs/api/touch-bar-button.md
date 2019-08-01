@@ -11,7 +11,7 @@ Process: [Main](../tutorial/application-architecture.md#main-and-renderer-proces
   * `backgroundColor` String (optional) - Button background color in hex format,
     i.e `#ABCDEF`.
   * `icon` [NativeImage](native-image.md) | String (optional) - Button icon.
-  * `iconPosition` String (optional) - Can be `left`, `right` or `overlay`.
+  * `iconPosition` String (optional) - Can be `left`, `right` or `overlay`. Defaults to `overlay`.
   * `click` Function (optional) - Function to call when the button is clicked.
 
 ### Instance Properties
