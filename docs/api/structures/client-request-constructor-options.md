@@ -4,7 +4,7 @@
 method.
 * `url` String (optional) - The request URL. Must be provided in the absolute
 form with the protocol scheme specified as http or https.
-* `session` Object (optional) - The [`Session`](session.md) instance with
+* `session` Session (optional) - The [`Session`](session.md) instance with
 which the request is associated.
 * `partition` String (optional) - The name of the [`partition`](session.md)
   with which the request is associated. Defaults to the empty string. The
