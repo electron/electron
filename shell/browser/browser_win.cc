@@ -27,6 +27,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
+#include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image_skia.h"
@@ -376,34 +377,22 @@ void Browser::ShowEmojiPanel() {
 void Browser::ShowAboutPanel() {
   const auto& opts = about_panel_options_;
   std::string aboutMessage = "";
+  gfx::ImageSkia image;
   const std::string* str;
   std::vector<std::string> stringOptions = {
       "applicationName", "applicationVersion", "copyright", "credits"};
 
-  for (std::string opt : stringOptions) {
-    if ((str = opts.FindStringKey(opt))) {
-      aboutMessage.append(*str).append("\r\n");
+  if (opts.is_dict()) {
+    for (std::string opt : stringOptions) {
+      if ((str = opts.FindStringKey(opt))) {
+        aboutMessage.append(*str).append("\r\n");
+      }
     }
-  }
 
-  gfx::ImageSkia image;
-  if ((str = opts.FindStringKey("iconPath"))) {
-    base::FilePath path = base::FilePath::FromUTF8Unsafe(*str);
-    std::string file_contents;
-    double scale_factor = 1.0;
-    {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      if (!asar::ReadFileToString(path, &file_contents))
-        return;
+    if ((str = opts.FindStringKey("iconPath"))) {
+      base::FilePath path = base::FilePath::FromUTF8Unsafe(*str);
+      electron::util::PopulateImageSkiaRepsFromPath(&image, path);
     }
-    const unsigned char* data =
-        reinterpret_cast<const unsigned char*>(file_contents.data());
-    size_t size = file_contents.size();
-    SkBitmap bitmap;
-    if (!gfx::PNGCodec::Decode(data, size, &bitmap))
-      return;
-    gfx::ImageSkiaRep rep(bitmap, scale_factor);
-    image.AddRepresentation(rep);
   }
 
   electron::MessageBoxSettings settings = {};
