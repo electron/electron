@@ -6,4 +6,3 @@ dcheck.patch
 export_symbols_needed_for_windows_build.patch
 workaround_an_undefined_symbol_error.patch
 do_not_export_private_v8_symbols_on_windows.patch
-unwind_v8_frames_correctly_on_windows_arm64.patch
