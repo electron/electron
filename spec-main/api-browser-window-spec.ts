@@ -1239,30 +1239,43 @@ describe('BrowserWindow module', () => {
   })
 
 
-  ifdescribe(process.platform !== 'linux')('BrowserWindow.setOpacity(opacity)', () => {
+  describe('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows)
-    it('make window with initial opacity', () => {
-      const w = new BrowserWindow({ show: false, opacity: 0.5 })
-      expect(w.getOpacity()).to.equal(0.5)
-    })
-    it('allows setting the opacity', () => {
-      const w = new BrowserWindow({ show: false })
-      expect(() => {
-        w.setOpacity(0.0)
-        expect(w.getOpacity()).to.equal(0.0)
-        w.setOpacity(0.5)
+
+    ifdescribe(process.platform !== 'linux')(('Windows and Mac'), () => {
+      it('make window with initial opacity', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
         expect(w.getOpacity()).to.equal(0.5)
-        w.setOpacity(1.0)
+      })
+      it('allows setting the opacity', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(() => {
+          w.setOpacity(0.0)
+          expect(w.getOpacity()).to.equal(0.0)
+          w.setOpacity(0.5)
+          expect(w.getOpacity()).to.equal(0.5)
+          w.setOpacity(1.0)
+          expect(w.getOpacity()).to.equal(1.0)
+        }).to.not.throw()
+      })
+
+      it('clamps opacity to [0.0...1.0]', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
+        w.setOpacity(100)
         expect(w.getOpacity()).to.equal(1.0)
-      }).to.not.throw()
+        w.setOpacity(-100)
+        expect(w.getOpacity()).to.equal(0.0)
+      })
     })
 
-    it('clamps opacity to [0.0...1.0]', () => {
-      const w = new BrowserWindow({ show: false, opacity: 0.5 })
-      w.setOpacity(100)
-      expect(w.getOpacity()).to.equal(1.0)
-      w.setOpacity(-100)
-      expect(w.getOpacity()).to.equal(0.0)
+    ifdescribe(process.platform === 'linux')(('Linux'), () => {
+      it('sets 1 regardless of parameter', () => {
+        const w = new BrowserWindow({ show: false })
+        w.setOpacity(0)
+        expect(w.getOpacity()).to.equal(1.0)
+        w.setOpacity(0.5)
+        expect(w.getOpacity()).to.equal(1.0)
+      })
     })
   })
 
