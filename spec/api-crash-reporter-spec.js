@@ -151,11 +151,6 @@ ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module',
       })
 
       it('should send minidump with updated extra parameters when node processes crash', function (done) {
-        if (process.platform === 'linux') {
-          // FIXME(alexeykuzmin): Skip the test.
-          // this.skip()
-          return
-        }
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
         this.timeout(specTimeout)
@@ -183,7 +178,7 @@ ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module',
           done: done,
           preAssert: fields => {
             expect(String(fields.newExtra)).to.equal('newExtra')
-            expect(String(fields.removeExtra)).to.equal(undefined)
+            expect(fields.removeExtra).to.be.undefined()
           }
         })
       })
