@@ -1,10 +1,5 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const { Notification } = require('electron').remote
+import { expect } from 'chai'
+import { Notification } from 'electron'
 
 describe('Notification module', () => {
   it('inits, gets and sets basic string properties correctly', () => {
@@ -44,21 +39,25 @@ describe('Notification module', () => {
 
   it('inits, gets and sets basic boolean properties correctly', () => {
     const n = new Notification({
+      title: 'title',
+      body: 'body',
       silent: true,
       hasReply: true
     })
 
-    expect(n.silent).to.be.true()
+    expect(n.silent).to.be.true('silent')
     n.silent = false
-    expect(n.silent).to.be.false()
+    expect(n.silent).to.be.false('silent')
 
-    expect(n.hasReply).to.be.true()
+    expect(n.hasReply).to.be.true('has reply')
     n.hasReply = false
-    expect(n.hasReply).to.be.false()
+    expect(n.hasReply).to.be.false('has reply')
   })
 
   it('inits, gets and sets actions correctly', () => {
     const n = new Notification({
+      title: 'title',
+      body: 'body',
       actions: [
         {
           type: 'button',

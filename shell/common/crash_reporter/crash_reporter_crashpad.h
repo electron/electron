@@ -32,8 +32,7 @@ class CrashReporterCrashpad : public CrashReporter {
   ~CrashReporterCrashpad() override;
 
   void SetUploadsEnabled(bool enable_uploads);
-  void SetCrashKeyValue(const base::StringPiece& key,
-                        const base::StringPiece& value);
+  void SetCrashKeyValue(base::StringPiece key, base::StringPiece value);
   void SetInitialCrashKeyValues();
 
   std::vector<UploadReportResult> GetUploadedReports(

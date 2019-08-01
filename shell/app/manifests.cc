@@ -7,7 +7,6 @@
 #include "base/no_destructor.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "printing/buildflags/buildflags.h"
-#include "services/proxy_resolver/public/cpp/manifest.h"
 #include "services/service_manager/public/cpp/manifest_builder.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -39,7 +38,6 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
       service_manager::ManifestBuilder()
           .WithDisplayName("Electron (browser process)")
           .RequireCapability("device", "device:geolocation_control")
-          .RequireCapability("proxy_resolver", "factory")
           .RequireCapability("chrome_printing", "converter")
           .RequireCapability("pdf_compositor", "compositor")
           .ExposeInterfaceFilterCapability_Deprecated(
@@ -53,7 +51,6 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
 const std::vector<service_manager::Manifest>&
 GetElectronBuiltinServiceManifests() {
   static base::NoDestructor<std::vector<service_manager::Manifest>> manifests{{
-      MakeOutOfProcess(proxy_resolver::GetManifest()),
 #if BUILDFLAG(ENABLE_PRINTING)
       MakeOutOfProcess(printing::GetPdfCompositorManifest()),
 #endif

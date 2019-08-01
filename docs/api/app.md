@@ -582,7 +582,7 @@ them.
 
 Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(pathName, newPath)`.
 
-On _macOS_, this directory will be set by default to `/Library/Logs/YourAppName`, and on _Linux_ and _Windows_ it will be placed inside your `userData` directory.
+Calling `app.setAppLogsPath()` without a `path` parameter will result in this directory being set to `/Library/Logs/YourAppName` on _macOS_, and inside the `userData` directory on _Linux_ and _Windows_.
 
 ### `app.getAppPath()`
 
@@ -590,31 +590,29 @@ Returns `String` - The current application directory.
 
 ### `app.getPath(name)`
 
-* `name` String
+* `name` String - You can request the following paths by the name:
+  * `home` User's home directory.
+  * `appData` Per-user application data directory, which by default points to:
+    * `%APPDATA%` on Windows
+    * `$XDG_CONFIG_HOME` or `~/.config` on Linux
+    * `~/Library/Application Support` on macOS
+  * `userData` The directory for storing your app's configuration files, which by
+    default it is the `appData` directory appended with your app's name.
+  * `cache`
+  * `temp` Temporary directory.
+  * `exe` The current executable file.
+  * `module` The `libchromiumcontent` library.
+  * `desktop` The current user's Desktop directory.
+  * `documents` Directory for a user's "My Documents".
+  * `downloads` Directory for a user's downloads.
+  * `music` Directory for a user's music.
+  * `pictures` Directory for a user's pictures.
+  * `videos` Directory for a user's videos.
+  * `logs` Directory for your app's log folder.
+  * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
 Returns `String` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
-
-You can request the following paths by the name:
-
-* `home` User's home directory.
-* `appData` Per-user application data directory, which by default points to:
-  * `%APPDATA%` on Windows
-  * `$XDG_CONFIG_HOME` or `~/.config` on Linux
-  * `~/Library/Application Support` on macOS
-* `userData` The directory for storing your app's configuration files, which by
-  default it is the `appData` directory appended with your app's name.
-* `temp` Temporary directory.
-* `exe` The current executable file.
-* `module` The `libchromiumcontent` library.
-* `desktop` The current user's Desktop directory.
-* `documents` Directory for a user's "My Documents".
-* `downloads` Directory for a user's downloads.
-* `music` Directory for a user's music.
-* `pictures` Directory for a user's pictures.
-* `videos` Directory for a user's videos.
-* `logs` Directory for your app's log folder.
-* `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
 ### `app.getFileIcon(path[, options])`
 
@@ -985,7 +983,7 @@ Updates the current activity if its type matches `type`, merging the entries fro
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
-### `app.importCertificate(options, callback)` _LINUX_
+### `app.importCertificate(options, callback)` _Linux_
 
 * `options` Object
   * `certificate` String - Path for the pkcs12 file.
@@ -1023,7 +1021,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 
 ### `app.getGPUInfo(infoType)`
 
-* `infoType` String - Values can be either `basic` for basic info or `complete` for complete info.
+* `infoType` String - Can be `basic` or `complete`.
 
 Returns `Promise<unknown>`
 
@@ -1178,7 +1176,7 @@ Show the app's about panel options. These options can be overridden with `app.se
   * `applicationName` String (optional) - The app's name.
   * `applicationVersion` String (optional) - The app's version.
   * `copyright` String (optional) - Copyright information.
-  * `version` String (optional) - The app's build version number.
+  * `version` String (optional) _macOS_ - The app's build version number.
   * `credits` String (optional) _macOS_ - Credit information.
   * `authors` String[] (optional) _Linux_ - List of app authors.
   * `website` String (optional) _Linux_ - The app's website.
@@ -1195,7 +1193,7 @@ Returns `Boolean` - whether or not the current OS version allows for native emoj
 
 Show the platform's native emoji picker.
 
-### `app.startAccessingSecurityScopedResource(bookmarkData)` _macOS (mas)_
+### `app.startAccessingSecurityScopedResource(bookmarkData)` _mas_
 
 * `bookmarkData` String - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
 
@@ -1227,7 +1225,7 @@ systems Application folder. Use in combination with `app.moveToApplicationsFolde
 
 * `options` Object (optional)
   * `conflictHandler` Function<Boolean> (optional) - A handler for potential conflict in move failure.
-    * `conflictType` String - the type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
+    * `conflictType` String - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
 Returns `Boolean` - Whether the move was successful. Please note that if
 the move is successful, your application will quit and relaunch.
@@ -1289,17 +1287,17 @@ On macOS, setting this with any nonzero integer shows on the dock icon. On Linux
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
 
-### `app.commandLine`
+### `app.commandLine` _Readonly_
 
 A [`CommandLine`](./command-line.md) object that allows you to read and manipulate the
 command line arguments that Chromium uses.
 
-### `app.dock` _macOS_
+### `app.dock` _macOS_ _Readonly_
 
 A [`Dock`](./dock.md) object that allows you to perform actions on your app icon in the user's
 dock on macOS.
 
-### `app.isPackaged`
+### `app.isPackaged` _Readonly_
 
 A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 

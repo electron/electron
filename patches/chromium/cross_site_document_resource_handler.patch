@@ -8,10 +8,10 @@ this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index 8bbfacaa267dd0fac51593c0f8d6ba6b6ccfe5ee..caf8357a86182996bffbd3ee394c026189709e18 100644
+index b74bbef56038e29ca35403affd284a7a8868c201..d6887e576ac197f80a7e5261bd251cd761d1d814 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
-@@ -578,6 +578,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+@@ -582,6 +582,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
        request()->initiator()->scheme() == url::kFileScheme)
      return false;
  
@@ -22,7 +22,7 @@ index 8bbfacaa267dd0fac51593c0f8d6ba6b6ccfe5ee..caf8357a86182996bffbd3ee394c0261
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 090eaa070e56d84255f570af3d9f0ea56d02cb69..682b2156f40326ebad00231c0e8bb472fdaf1bbb 100644
+index 39d3c28ca33fa1eeab14b67ec31a6ae09f25c354..1fc64dd493536f1aefafd6a683c19289920000b7 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -71,6 +71,10 @@ std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
@@ -37,10 +37,10 @@ index 090eaa070e56d84255f570af3d9f0ea56d02cb69..682b2156f40326ebad00231c0e8bb472
      const base::Location& from_here,
      const scoped_refptr<base::TaskRunner>& task_runner,
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e67ab701d608f87cfaf259d44b17605467181fea..0127e41aaadf18effcc66e1743ef1ab6223b1d10 100644
+index 3d518759a3bc190970a2d45ec178c97096fa250d..b2c12759d2cd94d7971f20bc289c7fa70f1fe863 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -252,6 +252,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -249,6 +249,9 @@ class CONTENT_EXPORT ContentBrowserClient {
    virtual std::unique_ptr<BrowserMainParts> CreateBrowserMainParts(
        const MainFunctionParams& parameters);
  

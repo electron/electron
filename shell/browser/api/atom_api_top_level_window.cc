@@ -523,14 +523,16 @@ void TopLevelWindow::SetAlwaysOnTop(bool top, mate::Arguments* args) {
   args->GetNext(&relative_level);
 
   std::string error;
-  window_->SetAlwaysOnTop(top, level, relative_level, &error);
+  ui::ZOrderLevel z_order =
+      top ? ui::ZOrderLevel::kFloatingWindow : ui::ZOrderLevel::kNormal;
+  window_->SetAlwaysOnTop(z_order, level, relative_level, &error);
 
   if (!error.empty())
     args->ThrowError(error);
 }
 
 bool TopLevelWindow::IsAlwaysOnTop() {
-  return window_->IsAlwaysOnTop();
+  return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
 }
 
 void TopLevelWindow::Center() {
@@ -1028,9 +1030,9 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 
 // static
 mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
-  mate::Dictionary options;
-  if (!(args->Length() == 1 && args->GetNext(&options)))
-    options = mate::Dictionary::CreateEmpty(args->isolate());
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&options);
+
   return new TopLevelWindow(args->isolate(), args->GetThis(), options);
 }
 

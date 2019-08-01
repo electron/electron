@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a9657c2dbf0d 100644
+index 6a3cca0f846c944f23afe91ca149a0aa28bc18aa..20b3f2ef31d2f036fb0a08d5d7678bb9e67532e6 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1206,8 +1206,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1211,8 +1211,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a965
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1452,7 +1454,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1464,7 +1466,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -46,15 +46,15 @@ index 818e8e456c4767987bbe0dbb3ee16669ec09620d..cdce8646f2c6c574aa1258917b77a965
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 7ed451db1a95409492f231d6cdde0da4fe2d6123..51dd41bd85bdbbf125747d514ff52ca5debe3638 100644
+index 82bdc4eccf06b7c636dd48cfffebe2606c2cff38..c4385984ebc23bc0a89e7e6ae7d42715a707177d 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
 @@ -729,9 +729,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
  }
  
  void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {
--  DCHECK(clipboard_owner_->hwnd() != NULL);
-+  // DCHECK(clipboard_owner_->hwnd() != NULL);
+-  DCHECK(clipboard_owner_->hwnd() != nullptr);
++  // DCHECK(clipboard_owner_->hwnd() != nullptr);
    if (handle && !::SetClipboardData(format, handle)) {
 -    DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());
 +    // DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());

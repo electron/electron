@@ -871,8 +871,15 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   int key = GetPathConstant(name);
   if (key >= 0)
     succeed = base::PathService::Get(key, &path);
-  if (!succeed)
-    args->ThrowError("Failed to get '" + name + "' path");
+  if (!succeed) {
+    if (name == "logs") {
+      args->ThrowError("Failed to get '" + name +
+                       "' path: setAppLogsPath() must be called first.");
+    } else {
+      args->ThrowError("Failed to get '" + name + "' path");
+    }
+  }
+
   return path;
 }
 
@@ -1338,8 +1345,11 @@ bool App::IsInApplicationsFolder() {
   return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
-int DockBounce(const std::string& type) {
+int DockBounce(mate::Arguments* args) {
   int request_id = -1;
+  std::string type = "informational";
+  args->GetNext(&type);
+
   if (type == "critical")
     request_id = Browser::Get()->DockBounce(Browser::BounceType::CRITICAL);
   else if (type == "informational")

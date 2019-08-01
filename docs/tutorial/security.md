@@ -391,7 +391,7 @@ easy way to improve your application's security.
 The following CSP will allow Electron to execute scripts from the current
 website and from `apis.example.com`.
 
-```txt
+```plaintext
 // Bad
 Content-Security-Policy: '*'
 

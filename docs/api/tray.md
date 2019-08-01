@@ -206,39 +206,6 @@ Sets the title displayed next to the tray icon in the status bar (Support ANSI c
 
 Returns `String` - the title displayed next to the tray icon in the status bar
 
-#### `tray.setHighlightMode(mode)` _macOS_
-
-* `mode` String - Highlight mode with one of the following values:
-  * `selection` - Highlight the tray icon when it is clicked and also when
-    its context menu is open. This is the default.
-  * `always` - Always highlight the tray icon.
-  * `never` - Never highlight the tray icon.
-
-Sets when the tray's icon background becomes highlighted (in blue).
-
-**[Deprecated](breaking-changes.md#tray)**
-
-**Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md)
-by toggling between `'never'` and `'always'` modes when the window visibility
-changes.
-
-```javascript
-const { BrowserWindow, Tray } = require('electron')
-
-const win = new BrowserWindow({ width: 800, height: 600 })
-const tray = new Tray('/path/to/my/icon')
-
-tray.on('click', () => {
-  win.isVisible() ? win.hide() : win.show()
-})
-win.on('show', () => {
-  tray.setHighlightMode('always')
-})
-win.on('hide', () => {
-  tray.setHighlightMode('never')
-})
-```
-
 #### `tray.setIgnoreDoubleClickEvents(ignore)` _macOS_
 
 * `ignore` Boolean

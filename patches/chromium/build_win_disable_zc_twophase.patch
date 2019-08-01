@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 16 Jul 2019 14:38:52 -0700
+Subject: build: Temporarily disable /Zc:twoPhase when libcxx is not used on
+ windows.
+
+This is to workaround the bug in crbug.com/969698#c10
+until fixes have landed in upstream.
+
+diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
+index a6c0aeaf98f7a860c131dc52161f52f308432a91..7b490d07d0f8383db5cea2703d7451db0108d252 100644
+--- a/build/config/win/BUILD.gn
++++ b/build/config/win/BUILD.gn
+@@ -2,6 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
++import("//build/config/c++/c++.gni")
+ import("//build/config/chrome_build.gni")
+ import("//build/config/clang/clang.gni")
+ import("//build/config/compiler/compiler.gni")
+@@ -67,9 +68,13 @@ config("compiler") {
+     "/FS",  # Preserve previous PDB behavior.
+     "/bigobj",  # Some of our files are bigger than the regular limits.
+     "/utf-8",  # Assume UTF-8 by default to avoid code page dependencies.
+-    "/Zc:twoPhase",
+   ]
+ 
++  if (use_custom_libcxx) {
++    # Work around crbug.com/969698#c6, bug in MSSTL <xxatomic>.
++    cflags += [ "/Zc:twoPhase" ]
++  }
++
+   # Force C/C++ mode for the given GN detected file type. This is necessary
+   # for precompiled headers where the same source file is compiled in both
+   # modes.

@@ -102,15 +102,8 @@ mate::WrappableBase* BrowserView::New(mate::Arguments* args) {
     return nullptr;
   }
 
-  if (args->Length() > 1) {
-    args->ThrowError("Too many arguments");
-    return nullptr;
-  }
-
-  mate::Dictionary options;
-  if (!(args->Length() == 1 && args->GetNext(&options))) {
-    options = mate::Dictionary::CreateEmpty(args->isolate());
-  }
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&options);
 
   return new BrowserView(args->isolate(), args->GetThis(), options);
 }
@@ -125,6 +118,10 @@ void BrowserView::SetAutoResize(AutoResizeFlags flags) {
 
 void BrowserView::SetBounds(const gfx::Rect& bounds) {
   view_->SetBounds(bounds);
+}
+
+gfx::Rect BrowserView::GetBounds() {
+  return view_->GetBounds();
 }
 
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
@@ -147,6 +144,7 @@ void BrowserView::BuildPrototype(v8::Isolate* isolate,
       .MakeDestroyable()
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
+      .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .SetProperty("id", &BrowserView::ID);

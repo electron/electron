@@ -201,6 +201,17 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
                  bounds.width(), bounds.height());
 }
 
+gfx::Rect NativeBrowserViewMac::GetBounds() {
+  NSView* view =
+      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  const int superview_height =
+      (view.superview) ? view.superview.frame.size.height : 0;
+  return gfx::Rect(
+      view.frame.origin.x,
+      superview_height - view.frame.origin.y - view.frame.size.height,
+      view.frame.size.width, view.frame.size.height);
+}
+
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
   auto* view =
       GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();

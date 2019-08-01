@@ -24,6 +24,7 @@ class NativeBrowserViewViews : public NativeBrowserView {
   // NativeBrowserView:
   void SetAutoResizeFlags(uint8_t flags) override;
   void SetBounds(const gfx::Rect& bounds) override;
+  gfx::Rect GetBounds() override;
   void SetBackgroundColor(SkColor color) override;
 
  private:

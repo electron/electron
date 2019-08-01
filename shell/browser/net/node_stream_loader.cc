@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "mojo/public/cpp/system/string_data_source.h"
 #include "shell/common/api/event_emitter_caller.h"
 #include "shell/common/native_mate_converters/callback.h"
 
@@ -60,8 +61,7 @@ void NodeStreamLoader::Start(network::ResourceResponseHead head) {
     return;
   }
 
-  producer_ =
-      std::make_unique<mojo::StringDataPipeProducer>(std::move(producer));
+  producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
   client_->OnReceiveResponse(head);
   client_->OnStartLoadingResponseBody(std::move(consumer));
@@ -102,10 +102,11 @@ void NodeStreamLoader::ReadMore() {
   // Write buffer to mojo pipe asyncronously.
   is_writing_ = true;
   producer_->Write(
-      base::StringPiece(node::Buffer::Data(buffer),
-                        node::Buffer::Length(buffer)),
-      mojo::StringDataPipeProducer::AsyncWritingMode::
-          STRING_STAYS_VALID_UNTIL_COMPLETION,
+      std::make_unique<mojo::StringDataSource>(
+          base::StringPiece(node::Buffer::Data(buffer),
+                            node::Buffer::Length(buffer)),
+          mojo::StringDataSource::AsyncWritingMode::
+              STRING_STAYS_VALID_UNTIL_COMPLETION),
       base::BindOnce(&NodeStreamLoader::DidWrite, weak_factory_.GetWeakPtr()));
 }
 

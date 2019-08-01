@@ -59,6 +59,7 @@ class BrowserView : public mate::TrackableObject<BrowserView>,
 
   void SetAutoResize(AutoResizeFlags flags);
   void SetBounds(const gfx::Rect& bounds);
+  gfx::Rect GetBounds();
   void SetBackgroundColor(const std::string& color_name);
 
   v8::Local<v8::Value> GetWebContents();

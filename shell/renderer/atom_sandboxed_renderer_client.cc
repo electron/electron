@@ -10,6 +10,7 @@
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
 #include "content/public/renderer/render_frame.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/converter.h"
 #include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
@@ -165,6 +166,7 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentStart(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -180,6 +182,7 @@ void AtomSandboxedRendererClient::RunScriptsAtDocumentStart(
 
 void AtomSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
 
@@ -264,6 +267,9 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  NOTREACHED();
+#else
   auto* isolate = context->GetIsolate();
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
@@ -282,6 +288,7 @@ void AtomSandboxedRendererClient::SetupExtensionWorldOverrides(
   node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
+#endif
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(

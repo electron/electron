@@ -97,6 +97,10 @@ void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   ResetAutoResizeProportions();
 }
 
+gfx::Rect NativeBrowserViewViews::GetBounds() {
+  return GetInspectableWebContentsView()->GetView()->bounds();
+}
+
 void NativeBrowserViewViews::SetBackgroundColor(SkColor color) {
   auto* view = GetInspectableWebContentsView()->GetView();
   view->SetBackground(views::CreateSolidBackground(color));

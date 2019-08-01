@@ -39,14 +39,6 @@ class TrayIcon {
   // status icon (e.g. Ubuntu Unity).
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
-  // Sets the status icon highlight mode. This only works on macOS.
-  enum class HighlightMode {
-    ALWAYS,    // Always highlight the tray icon
-    NEVER,     // Never highlight the tray icon
-    SELECTION  // Highlight the tray icon when clicked or the menu is opened
-  };
-  virtual void SetHighlightMode(HighlightMode mode);
-
 #if defined(OS_MACOSX)
   // Set/Get flag determining whether to ignore double click events.
   virtual void SetIgnoreDoubleClickEvents(bool ignore) = 0;

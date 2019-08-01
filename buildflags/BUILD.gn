@@ -17,6 +17,7 @@ buildflag_header("buildflags") {
     "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
     "ENABLE_TTS=$enable_tts",
     "ENABLE_COLOR_CHOOSER=$enable_color_chooser",
+    "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
 }

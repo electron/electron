@@ -1,0 +1,14 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This features file defines manifest keys implemented under src/chrome.
+// See chrome/common/extensions/api/_features.md to understand this file, as
+// well as feature.h, simple_feature.h, and feature_provider.h.
+
+{
+  "content_scripts": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  }
+}

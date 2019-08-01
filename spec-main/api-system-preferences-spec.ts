@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { systemPreferences } from 'electron'
-
-const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
+import { ifdescribe } from './spec-helpers'
 
 describe('systemPreferences module', () => {
   ifdescribe(process.platform === 'win32')('systemPreferences.getAccentColor', () => {
@@ -117,6 +116,17 @@ describe('systemPreferences module', () => {
     })
   })
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.getSystemColor(color)', () => {
+    it('returns a valid system color', () => {
+      const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow']
+      
+      colors.forEach(color => {
+        const sysColor = systemPreferences.getSystemColor(color as any)
+        expect(sysColor).to.be.a('string')
+      })
+    })
+  })
+
   ifdescribe(process.platform === 'darwin')('systemPreferences.appLevelAppearance', () => {
     it('has an appLevelAppearance property', () => {
       expect(systemPreferences).to.have.property('appLevelAppearance')
@@ -143,6 +153,39 @@ describe('systemPreferences module', () => {
   describe('systemPreferences.isInvertedColorScheme()', () => {
     it('returns a boolean', () => {
       expect(systemPreferences.isInvertedColorScheme()).to.be.a('boolean')
+    })
+  })
+
+  describe('systemPreferences.isHighContrastColorScheme()', () => {
+    it('returns a boolean', () => {
+      expect(systemPreferences.isHighContrastColorScheme()).to.be.a('boolean')
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.canPromptTouchID()', () => {
+    it('returns a boolean', () => {
+      expect(systemPreferences.canPromptTouchID()).to.be.a('boolean')
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.isTrustedAccessibilityClient(prompt)', () => {
+    it('returns a boolean', () => {
+      const trusted = systemPreferences.isTrustedAccessibilityClient(false)
+      expect(trusted).to.be.a('boolean')
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.getMediaAccessStatus(mediaType)', () => {
+    const statuses = ['not-determined', 'granted', 'denied', 'restricted', 'unknown']
+    
+    it('returns an access status for a camera access request', () => {
+      const cameraStatus = systemPreferences.getMediaAccessStatus('camera')
+      expect(statuses).to.include(cameraStatus)
+    })
+
+    it('returns an access status for a microphone access request', () => {
+      const microphoneStatus = systemPreferences.getMediaAccessStatus('microphone')
+      expect(statuses).to.include(microphoneStatus)
     })
   })
 

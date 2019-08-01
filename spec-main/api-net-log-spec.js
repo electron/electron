@@ -5,7 +5,7 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const ChildProcess = require('child_process')
-const {session} = require('electron')
+const {session, net} = require('electron')
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
@@ -13,7 +13,7 @@ const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 const { expect } = chai
 chai.use(dirtyChai)
 const isCI = global.isCI
-const netLog = session.fromPartition('net-log').netLog
+const testNetLog = () => session.fromPartition('net-log').netLog
 
 describe('netLog module', () => {
   let server
@@ -47,7 +47,7 @@ describe('netLog module', () => {
   })
 
   beforeEach(() => {
-    expect(netLog.currentlyLogging).to.be.false()
+    expect(testNetLog().currentlyLogging).to.be.false()
   })
   afterEach(() => {
     try {
@@ -60,29 +60,66 @@ describe('netLog module', () => {
     } catch (e) {
       // Ignore error
     }
-    expect(netLog.currentlyLogging).to.be.false()
+    expect(testNetLog().currentlyLogging).to.be.false()
   })
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
-    await netLog.startLogging(dumpFileDynamic)
+    await testNetLog().startLogging(dumpFileDynamic)
 
-    expect(netLog.currentlyLogging).to.be.true()
+    expect(testNetLog().currentlyLogging).to.be.true()
 
-    expect(netLog.currentlyLoggingPath).to.equal(dumpFileDynamic)
+    expect(testNetLog().currentlyLoggingPath).to.equal(dumpFileDynamic)
 
-    await netLog.stopLogging()
+    await testNetLog().stopLogging()
 
     expect(fs.existsSync(dumpFileDynamic)).to.be.true()
   })
 
   it('should throw an error when .stopLogging() is called without calling .startLogging()', async () => {
-    await expect(netLog.stopLogging()).to.be.rejectedWith('No net log in progress')
+    await expect(testNetLog().stopLogging()).to.be.rejectedWith('No net log in progress')
   })
 
   it('should throw an error when .startLogging() is called with an invalid argument', () => {
-    expect(() => netLog.startLogging('')).to.throw()
-    expect(() => netLog.startLogging(null)).to.throw()
-    expect(() => netLog.startLogging([])).to.throw()
+    expect(() => testNetLog().startLogging('')).to.throw()
+    expect(() => testNetLog().startLogging(null)).to.throw()
+    expect(() => testNetLog().startLogging([])).to.throw()
+    expect(() => testNetLog().startLogging('aoeu', {captureMode: 'aoeu'})).to.throw()
+    expect(() => testNetLog().startLogging('aoeu', {maxFileSize: null})).to.throw()
+  })
+
+  it('should include cookies when requested', async () => {
+    await testNetLog().startLogging(dumpFileDynamic, {captureMode: "includeSensitive"})
+    const unique = require('uuid').v4()
+    await new Promise((resolve) => {
+      const req = net.request(server.url)
+      req.setHeader('Cookie', `foo=${unique}`)
+      req.on('response', (response) => {
+        response.on('data', () => {})  // https://github.com/electron/electron/issues/19214
+        response.on('end', () => resolve())
+      })
+      req.end()
+    })
+    await testNetLog().stopLogging()
+    expect(fs.existsSync(dumpFileDynamic)).to.be.true('dump file exists')
+    const dump = fs.readFileSync(dumpFileDynamic, 'utf8')
+    expect(dump).to.contain(`foo=${unique}`)
+  })
+
+  it('should include socket bytes when requested', async () => {
+    await testNetLog().startLogging(dumpFileDynamic, {captureMode: "everything"})
+    const unique = require('uuid').v4()
+    await new Promise((resolve) => {
+      const req = net.request({method: 'POST', url: server.url})
+      req.on('response', (response) => {
+        response.on('data', () => {})  // https://github.com/electron/electron/issues/19214
+        response.on('end', () => resolve())
+      })
+      req.end(Buffer.from(unique))
+    })
+    await testNetLog().stopLogging()
+    expect(fs.existsSync(dumpFileDynamic)).to.be.true('dump file exists')
+    const dump = fs.readFileSync(dumpFileDynamic, 'utf8')
+    expect(JSON.parse(dump).events.some(x => x.params && x.params.bytes && Buffer.from(x.params.bytes, 'base64').includes(unique))).to.be.true('uuid present in dump')
   })
 
   it('should begin and end logging automatically when --log-net-log is passed', done => {

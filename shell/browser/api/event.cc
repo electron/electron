@@ -6,10 +6,7 @@
 
 #include <utility>
 
-#include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/web_contents.h"
 #include "native_mate/object_template_builder.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
 
 namespace mate {
@@ -20,34 +17,9 @@ Event::Event(v8::Isolate* isolate) {
 
 Event::~Event() {}
 
-void Event::SetSenderAndMessage(content::RenderFrameHost* sender,
-                                base::Optional<MessageSyncCallback> callback) {
-  DCHECK(!sender_);
+void Event::SetCallback(base::Optional<MessageSyncCallback> callback) {
   DCHECK(!callback_);
-  sender_ = sender;
   callback_ = std::move(callback);
-
-  Observe(content::WebContents::FromRenderFrameHost(sender));
-}
-
-void Event::RenderFrameDeleted(content::RenderFrameHost* rfh) {
-  if (sender_ != rfh)
-    return;
-  sender_ = nullptr;
-  callback_.reset();
-}
-
-void Event::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
-                                   content::RenderFrameHost* new_rfh) {
-  if (sender_ && sender_ == old_rfh)
-    sender_ = new_rfh;
-}
-
-void Event::FrameDeleted(content::RenderFrameHost* rfh) {
-  if (sender_ != rfh)
-    return;
-  sender_ = nullptr;
-  callback_.reset();
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
@@ -58,7 +30,7 @@ void Event::PreventDefault(v8::Isolate* isolate) {
 }
 
 bool Event::SendReply(const base::Value& result) {
-  if (!callback_ || sender_ == nullptr)
+  if (!callback_)
     return false;
 
   std::move(*callback_).Run(result.Clone());

@@ -60,8 +60,10 @@ void NodeDebugger::Start() {
 
 void NodeDebugger::Stop() {
   auto* inspector = env_->inspector_agent();
-  if (inspector && inspector->IsListening())
+  if (inspector && inspector->IsListening()) {
+    inspector->WaitForDisconnect();
     inspector->Stop();
+  }
 }
 
 }  // namespace electron

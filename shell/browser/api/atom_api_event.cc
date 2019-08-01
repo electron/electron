@@ -13,12 +13,17 @@ v8::Local<v8::Object> CreateWithSender(v8::Isolate* isolate,
   return mate::internal::CreateJSEvent(isolate, sender, nullptr, base::nullopt);
 }
 
+v8::Local<v8::Object> CreateEmpty(v8::Isolate* isolate) {
+  return mate::internal::CreateEmptyJSEvent(isolate);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createWithSender", &CreateWithSender);
+  dict.SetMethod("createEmpty", &CreateEmpty);
 }
 
 }  // namespace

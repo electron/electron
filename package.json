@@ -1,11 +1,11 @@
 {
   "name": "electron",
-  "version": "7.0.0-nightly.20190723",
+  "version": "7.0.0-nightly.20190731",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
-    "@electron/docs-parser": "^0.3.0",
-    "@electron/typescript-definitions": "^8.3.5",
+    "@electron/docs-parser": "^0.4.1",
+    "@electron/typescript-definitions": "^8.5.0",
     "@octokit/rest": "^16.3.2",
     "@primer/octicons": "^9.1.1",
     "@types/chai": "^4.1.7",
@@ -48,6 +48,7 @@
     "shx": "^0.3.2",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
+    "tap-xunit": "^2.4.1",
     "temp": "^0.8.3",
     "timers-browserify": "1.4.2",
     "ts-loader": "^6.0.2",

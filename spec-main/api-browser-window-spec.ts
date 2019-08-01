@@ -1040,22 +1040,24 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
     let w = null as unknown as BrowserWindow
+
     beforeEach(() => {
       w = new BrowserWindow({show: false})
     })
+
     afterEach(async () => {
       await closeWindow(w)
       w = null as unknown as BrowserWindow
     })
 
     it('sets the window as always on top', () => {
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true, 'screen-saver')
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
       w.setAlwaysOnTop(false)
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true)
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
     })
 
     ifit(process.platform === 'darwin')('raises an error when relativeLevel is out of bounds', () => {
@@ -1069,13 +1071,23 @@ describe('BrowserWindow module', () => {
     })
 
     ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.setAlwaysOnTop(true, 'screen-saver')
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
       w.minimize()
-      expect(w.isAlwaysOnTop()).to.equal(false)
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
       w.restore()
-      expect(w.isAlwaysOnTop()).to.equal(true)
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop')
+    })
+
+    it('causes the right value to be emitted on `always-on-top-changed`', (done) => {
+      w.on('always-on-top-changed', (e, alwaysOnTop) => {
+        expect(alwaysOnTop).to.be.true('is not alwaysOnTop')
+        done()
+      })
+
+      expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop')
+      w.setAlwaysOnTop(true)
     })
   })
 
@@ -2448,15 +2460,12 @@ describe('BrowserWindow module', () => {
         throw new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`)
       })
       try {
-        console.log("c 1")
         const shown1 = emittedOnce(w, 'show')
         w.show()
         await shown1
-        console.log("c 2")
         const hidden = emittedOnce(w, 'hide')
         w.hide()
         await hidden
-        console.log("c 3")
         const shown2 = emittedOnce(w, 'show')
         w.show()
         await shown2
@@ -2682,31 +2691,24 @@ describe('BrowserWindow module', () => {
     ifdescribe(process.platform === 'win32')('on windows', () => {
       it('should restore a normal visible window from a fullscreen startup state', async () => {
         const w = new BrowserWindow({show: false})
-        console.log("a 1")
         await w.loadURL('about:blank')
-        console.log("a 2")
         const shown = emittedOnce(w, 'show')
         // start fullscreen and hidden
         w.setFullScreen(true)
         w.show()
         await shown
-        console.log("a 3")
         const leftFullScreen = emittedOnce(w, 'leave-full-screen')
         w.setFullScreen(false)
         await leftFullScreen
-        console.log("a 4")
         expect(w.isVisible()).to.be.true('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
       })
       it('should keep window hidden if already in hidden state', async () => {
         const w = new BrowserWindow({show: false})
-        console.log("b 1")
         await w.loadURL('about:blank')
-        console.log("b 2")
         const leftFullScreen = emittedOnce(w, 'leave-full-screen')
         w.setFullScreen(false)
         await leftFullScreen
-        console.log("b 3")
         expect(w.isVisible()).to.be.false('visible')
         expect(w.isFullScreen()).to.be.false('fullscreen')
       })
@@ -3328,4 +3330,477 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  ifdescribe(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('window.getNativeWindowHandle()', () => {
+    afterEach(closeAllWindows)
+    it('returns valid handle', () => {
+      const w = new BrowserWindow({show: false})
+      // The module's source code is hosted at
+      // https://github.com/electron/node-is-valid-window
+      const isValidWindow = require('is-valid-window')
+      expect(isValidWindow(w.getNativeWindowHandle())).to.be.true('is valid window')
+    })
+  })
+
+  describe('extensions and dev tools extensions', () => {
+    let showPanelTimeoutId: NodeJS.Timeout | null = null
+
+    const showLastDevToolsPanel = (w: BrowserWindow) => {
+      w.webContents.once('devtools-opened', () => {
+        const show = () => {
+          if (w == null || w.isDestroyed()) return
+          const { devToolsWebContents } = w as unknown as { devToolsWebContents: WebContents | undefined }
+          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
+            return
+          }
+
+          const showLastPanel = () => {
+            // this is executed in the devtools context, where UI is a global
+            const {UI} = (window as any)
+            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
+            UI.inspectorView.showPanel(lastPanelId)
+          }
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
+            showPanelTimeoutId = setTimeout(show, 100)
+          })
+        }
+        showPanelTimeoutId = setTimeout(show, 100)
+      })
+    }
+
+    afterEach(() => {
+      if (showPanelTimeoutId != null) {
+        clearTimeout(showPanelTimeoutId)
+        showPanelTimeoutId = null
+      }
+    })
+
+    describe('BrowserWindow.addDevToolsExtension', () => {
+      describe('for invalid extensions', () => {
+        it('throws errors for missing manifest.json files', () => {
+          const nonexistentExtensionPath = path.join(__dirname, 'does-not-exist')
+          expect(() => {
+            BrowserWindow.addDevToolsExtension(nonexistentExtensionPath)
+          }).to.throw(/ENOENT: no such file or directory/)
+        })
+
+        it('throws errors for invalid manifest.json files', () => {
+          const badManifestExtensionPath = path.join(fixtures, 'devtools-extensions', 'bad-manifest')
+          expect(() => {
+            BrowserWindow.addDevToolsExtension(badManifestExtensionPath)
+          }).to.throw(/Unexpected token }/)
+        })
+      })
+
+      describe('for a valid extension', () => {
+        const extensionName = 'foo'
+
+        before(() => {
+          const extensionPath = path.join(fixtures, 'devtools-extensions', 'foo')
+          BrowserWindow.addDevToolsExtension(extensionPath)
+          expect(BrowserWindow.getDevToolsExtensions()).to.have.property(extensionName)
+        })
+
+        after(() => {
+          BrowserWindow.removeDevToolsExtension('foo')
+          expect(BrowserWindow.getDevToolsExtensions()).to.not.have.property(extensionName)
+        })
+
+        describe('when the devtools is docked', () => {
+          let message: any
+          let w: BrowserWindow
+          before(async () => {
+            w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+            const p = new Promise(resolve => ipcMain.once('answer', (event, message) => {
+              resolve(message)
+            }))
+            showLastDevToolsPanel(w)
+            w.loadURL('about:blank')
+            w.webContents.openDevTools({ mode: 'bottom' })
+            message = await p
+          })
+          after(closeAllWindows)
+
+          describe('created extension info', function () {
+            it('has proper "runtimeId"', async function () {
+              expect(message).to.have.ownProperty('runtimeId')
+              expect(message.runtimeId).to.equal(extensionName)
+            })
+            it('has "tabId" matching webContents id', function () {
+              expect(message).to.have.ownProperty('tabId')
+              expect(message.tabId).to.equal(w.webContents.id)
+            })
+            it('has "i18nString" with proper contents', function () {
+              expect(message).to.have.ownProperty('i18nString')
+              expect(message.i18nString).to.equal('foo - bar (baz)')
+            })
+            it('has "storageItems" with proper contents', function () {
+              expect(message).to.have.ownProperty('storageItems')
+              expect(message.storageItems).to.deep.equal({
+                local: {
+                  set: { hello: 'world', world: 'hello' },
+                  remove: { world: 'hello' },
+                  clear: {}
+                },
+                sync: {
+                  set: { foo: 'bar', bar: 'foo' },
+                  remove: { foo: 'bar' },
+                  clear: {}
+                }
+              })
+            })
+          })
+        })
+
+        describe('when the devtools is undocked', () => {
+          let message: any
+          let w: BrowserWindow
+          before(async () => {
+            w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+            showLastDevToolsPanel(w)
+            w.loadURL('about:blank')
+            w.webContents.openDevTools({ mode: 'undocked' })
+            message = await new Promise(resolve => ipcMain.once('answer', (event, message) => {
+              resolve(message)
+            }))
+          })
+          after(closeAllWindows)
+
+          describe('created extension info', function () {
+            it('has proper "runtimeId"', function () {
+              expect(message).to.have.ownProperty('runtimeId')
+              expect(message.runtimeId).to.equal(extensionName)
+            })
+            it('has "tabId" matching webContents id', function () {
+              expect(message).to.have.ownProperty('tabId')
+              expect(message.tabId).to.equal(w.webContents.id)
+            })
+          })
+        })
+      })
+    })
+
+    it('works when used with partitions', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          partition: 'temp'
+        }
+      })
+
+      const extensionPath = path.join(fixtures, 'devtools-extensions', 'foo')
+      BrowserWindow.addDevToolsExtension(extensionPath)
+      try {
+        showLastDevToolsPanel(w)
+
+        const p: Promise<any> = new Promise(resolve => ipcMain.once('answer', function (event, message) {
+          resolve(message)
+        }))
+
+        w.loadURL('about:blank')
+        w.webContents.openDevTools({ mode: 'bottom' })
+        const message = await p
+        expect(message.runtimeId).to.equal('foo')
+      } finally {
+        BrowserWindow.removeDevToolsExtension('foo')
+        await closeAllWindows()
+      }
+    })
+
+    it('serializes the registered extensions on quit', () => {
+      const extensionName = 'foo'
+      const extensionPath = path.join(fixtures, 'devtools-extensions', extensionName)
+      const serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions')
+
+      BrowserWindow.addDevToolsExtension(extensionPath)
+      app.emit('will-quit')
+      expect(JSON.parse(fs.readFileSync(serializedPath, 'utf8'))).to.deep.equal([extensionPath])
+
+      BrowserWindow.removeDevToolsExtension(extensionName)
+      app.emit('will-quit')
+      expect(fs.existsSync(serializedPath)).to.be.false('file exists')
+    })
+
+    describe('BrowserWindow.addExtension', () => {
+      it('throws errors for missing manifest.json files', () => {
+        expect(() => {
+          BrowserWindow.addExtension(path.join(__dirname, 'does-not-exist'))
+        }).to.throw('ENOENT: no such file or directory')
+      })
+
+      it('throws errors for invalid manifest.json files', () => {
+        expect(() => {
+          BrowserWindow.addExtension(path.join(fixtures, 'devtools-extensions', 'bad-manifest'))
+        }).to.throw('Unexpected token }')
+      })
+    })
+  })
+
+  ifdescribe(process.platform === 'darwin')('previewFile', () => {
+    afterEach(closeAllWindows)
+    it('opens the path in Quick Look on macOS', () => {
+      const w = new BrowserWindow({show: false})
+      expect(() => {
+        w.previewFile(__filename)
+        w.closeFilePreview()
+      }).to.not.throw()
+    })
+  })
+
+  describe('contextIsolation option with and without sandbox option', () => {
+    const expectedContextData = {
+      preloadContext: {
+        preloadProperty: 'number',
+        pageProperty: 'undefined',
+        typeofRequire: 'function',
+        typeofProcess: 'object',
+        typeofArrayPush: 'function',
+        typeofFunctionApply: 'function',
+        typeofPreloadExecuteJavaScriptProperty: 'undefined'
+      },
+      pageContext: {
+        preloadProperty: 'undefined',
+        pageProperty: 'string',
+        typeofRequire: 'undefined',
+        typeofProcess: 'undefined',
+        typeofArrayPush: 'number',
+        typeofFunctionApply: 'boolean',
+        typeofPreloadExecuteJavaScriptProperty: 'number',
+        typeofOpenedWindow: 'object'
+      }
+    }
+
+    afterEach(closeAllWindows)
+
+    it('separates the page context from the Electron/preload context', async () => {
+      const iw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      const p = emittedOnce(ipcMain, 'isolated-world')
+      iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
+      const [, data] = await p
+      expect(data).to.deep.equal(expectedContextData)
+    })
+    it('recreates the contexts on reload', async () => {
+      const iw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      await iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
+      const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
+      iw.webContents.reload()
+      const [, data] = await isolatedWorld
+      expect(data).to.deep.equal(expectedContextData)
+    })
+    it('enables context isolation on child windows', async () => {
+      const iw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      const browserWindowCreated = emittedOnce(app, 'browser-window-created')
+      iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
+      const [, window] = await browserWindowCreated
+      expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true('contextIsolation')
+    })
+    it('separates the page context from the Electron/preload context with sandbox on', async () => {
+      const ws = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      const p = emittedOnce(ipcMain, 'isolated-world')
+      ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
+      const [, data] = await p
+      expect(data).to.deep.equal(expectedContextData)
+    })
+    it('recreates the contexts on reload with sandbox on', async () => {
+      const ws = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      await ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
+      const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
+      ws.webContents.reload()
+      const [, data] = await isolatedWorld
+      expect(data).to.deep.equal(expectedContextData)
+    })
+    it('supports fetch api', async () => {
+      const fetchWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
+        }
+      })
+      const p = emittedOnce(ipcMain, 'isolated-fetch-error')
+      fetchWindow.loadURL('about:blank')
+      const [, error] = await p
+      expect(error).to.equal('Failed to fetch')
+    })
+    it('doesn\'t break ipc serialization', async () => {
+      const iw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      const p = emittedOnce(ipcMain, 'isolated-world')
+      iw.loadURL('about:blank')
+      iw.webContents.executeJavaScript(`
+        const opened = window.open()
+        openedLocation = opened.location.href
+        opened.close()
+        window.postMessage({openedLocation}, '*')
+      `)
+      const [, data] = await p
+      expect(data.pageContext.openedLocation).to.equal('')
+    })
+  })
+
+  const features = process.electronBinding('features')
+  ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
+    let w: BrowserWindow
+    beforeEach(function () {
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        show: false,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: true
+        }
+      })
+    })
+    afterEach(closeAllWindows)
+
+    it('creates offscreen window with correct size', (done) => {
+      w.webContents.once('paint', function (event, rect, data) {
+        expect(data.constructor.name).to.equal('NativeImage')
+        expect(data.isEmpty()).to.be.false('data is empty')
+        const size = data.getSize()
+        const { scaleFactor } = screen.getPrimaryDisplay()
+        expect(size.width).to.be.closeTo(100 * scaleFactor, 2)
+        expect(size.height).to.be.closeTo(100 * scaleFactor, 2)
+        done()
+      })
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+    })
+
+    it('does not crash after navigation', () => {
+      w.webContents.loadURL('about:blank')
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+    })
+
+    describe('window.webContents.isOffscreen()', () => {
+      it('is true for offscreen type', () => {
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+        expect(w.webContents.isOffscreen()).to.be.true('isOffscreen')
+      })
+
+      it('is false for regular window', () => {
+        const c = new BrowserWindow({ show: false })
+        expect(c.webContents.isOffscreen()).to.be.false('isOffscreen')
+        c.destroy()
+      })
+    })
+
+    describe('window.webContents.isPainting()', () => {
+      it('returns whether is currently painting', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.isPainting()).to.be.true('isPainting')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.stopPainting()', () => {
+      it('stops painting', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.stopPainting()
+          expect(w.webContents.isPainting()).to.be.false('isPainting')
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.startPainting()', () => {
+      it('starts painting', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.stopPainting()
+          w.webContents.startPainting()
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.isPainting()).to.be.true('isPainting')
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    // TODO(codebytere): remove in Electron v8.0.0
+    describe('window.webContents.getFrameRate()', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.getFrameRate()).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    // TODO(codebytere): remove in Electron v8.0.0
+    describe('window.webContents.setFrameRate(frameRate)', () => {
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.setFrameRate(30)
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.getFrameRate()).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.FrameRate', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.frameRate = 30
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.frameRate).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+  })
 })

@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/system/string_data_source.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "shell/browser/api/atom_api_session.h"
@@ -91,7 +92,7 @@ class UploadDataPipeGetter {
 
   void SetPipe(mojo::ScopedDataPipeProducerHandle pipe) {
     request_->producer_ =
-        std::make_unique<mojo::StringDataPipeProducer>(std::move(pipe));
+        std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
     request_->StartWriting();
   }
 
@@ -467,9 +468,9 @@ void URLRequestNS::DoWrite() {
   DCHECK(producer_);
   DCHECK(!pending_writes_.empty());
   producer_->Write(
-      pending_writes_.front(),
-      mojo::StringDataPipeProducer::AsyncWritingMode::
-          STRING_STAYS_VALID_UNTIL_COMPLETION,
+      std::make_unique<mojo::StringDataSource>(
+          pending_writes_.front(), mojo::StringDataSource::AsyncWritingMode::
+                                       STRING_STAYS_VALID_UNTIL_COMPLETION),
       base::BindOnce(&URLRequestNS::OnWrite, weak_factory_.GetWeakPtr()));
 }
 

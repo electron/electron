@@ -13,6 +13,7 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
@@ -85,11 +86,13 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
       renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
 
+#if !BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
       world_id <= World::ISOLATED_WORLD_EXTENSIONS_END) {
     renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
                                                    world_id);
   }
+#endif
 }
 
 void AtomRenderFrameObserver::DraggableRegionsChanged() {

@@ -52,13 +52,13 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
 }
 
 void DelayEmit(Screen* screen,
-               const base::StringPiece& name,
+               base::StringPiece name,
                const display::Display& display) {
   screen->Emit(name, display);
 }
 
 void DelayEmitWithMetrics(Screen* screen,
-                          const base::StringPiece& name,
+                          base::StringPiece name,
                           const display::Display& display,
                           const std::vector<std::string>& metrics) {
   screen->Emit(name, display, metrics);

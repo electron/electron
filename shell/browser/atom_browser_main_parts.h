@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "content/public/common/main_function_params.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -29,13 +30,19 @@ class WMState;
 
 namespace electron {
 
-class ElectronBindings;
+class AtomBrowserContext;
 class Browser;
+class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
 class NodeEnvironment;
 class BridgeTaskRunner;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+class AtomExtensionsClient;
+class AtomExtensionsBrowserClient;
+#endif
 
 #if defined(TOOLKIT_VIEWS)
 class ViewsDelegate;
@@ -127,6 +134,11 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<NodeDebugger> node_debugger_;
   std::unique_ptr<IconManager> icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  std::unique_ptr<AtomExtensionsClient> extensions_client_;
+  std::unique_ptr<AtomExtensionsBrowserClient> extensions_browser_client_;
+#endif
 
   base::RepeatingTimer gc_timer_;
 

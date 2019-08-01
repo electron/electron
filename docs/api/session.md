@@ -427,15 +427,15 @@ registered.
 
 The following properties are available on instances of `Session`:
 
-#### `ses.cookies`
+#### `ses.cookies` _Readonly_
 
 A [`Cookies`](cookies.md) object for this session.
 
-#### `ses.webRequest`
+#### `ses.webRequest` _Readonly_
 
 A [`WebRequest`](web-request.md) object for this session.
 
-#### `ses.protocol`
+#### `ses.protocol` _Readonly_
 
 A [`Protocol`](protocol.md) object for this session.
 
@@ -454,7 +454,7 @@ app.on('ready', function () {
 })
 ```
 
-#### `ses.netLog`
+#### `ses.netLog` _Readonly_
 
 A [`NetLog`](net-log.md) object for this session.
 

@@ -298,7 +298,6 @@ source_set("manifests") {
   deps = [
     "//electron/shell/common/api:mojo",
     "//printing/buildflags",
-    "//services/proxy_resolver/public/cpp:manifest",
     "//services/service_manager/public/cpp",
   ]
 
@@ -369,6 +368,7 @@ source_set("electron_lib") {
     "//content/public/renderer",
     "//content/public/utility",
     "//device/bluetooth",
+    "//device/bluetooth/public/cpp",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",
@@ -626,6 +626,20 @@ source_set("electron_lib") {
 
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]
+  }
+
+  public_deps += [ "shell/common/extensions/api:extensions_features" ]
+  deps += [
+    "//components/pref_registry",
+    "//components/user_prefs",
+    "//extensions/browser",
+    "//extensions/browser:core_api_provider",
+    "//extensions/common",
+    "//extensions/common:core_api_provider",
+    "//extensions/renderer",
+  ]
+  if (enable_electron_extensions) {
+    sources += filenames.lib_sources_extensions
   }
 }
 
