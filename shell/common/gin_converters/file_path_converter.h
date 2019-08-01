@@ -5,11 +5,8 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_FILE_PATH_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_FILE_PATH_CONVERTER_H_
 
-// #include <string>
-
 #include "base/files/file_path.h"
-// #include "shell/common/gin_converters/string16_converter.h" //
-// TODO(deermichel): check windows
+#include "shell/common/gin_converters/string16_converter.h"
 
 namespace gin {
 
