@@ -995,7 +995,8 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
       protocol->intercept_handlers(), std::move(proxied_receiver),
       std::move(target_factory_info), std::move(header_client_request));
 
-  *bypass_redirect_checks = true;
+  if (bypass_redirect_checks)
+    *bypass_redirect_checks = true;
   return true;
 }
 
