@@ -593,7 +593,7 @@ examples.
 
 ### `<webview>.sendInputEvent(event)`
 
-* `event` Object
+* `event`  [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
 
 Returns `Promise<void>`
 
@@ -872,7 +872,7 @@ webview.addEventListener('close', () => {
 Returns:
 
 * `channel` String
-* `args` Array
+* `args` any[]
 
 Fired when the guest page has sent an asynchronous message to embedder page.
 

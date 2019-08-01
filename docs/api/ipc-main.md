@@ -90,7 +90,7 @@ Removes listeners of the specified `channel`.
 ### `ipcMain.handle(channel, listener)`
 
 * `channel` String
-* `listener` Function<Promise> | Function<any>
+* `listener` Function<Promise<void> | any>
   * `event` IpcMainInvokeEvent
   * `...args` any[]
 
@@ -122,7 +122,7 @@ WebContents is the source of the invoke request.
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` String
-* `listener` Function<Promise> | Function<any>
+* `listener` Function<Promise<void> | any>
   * `event` IpcMainInvokeEvent
   * `...args` any[]
 
