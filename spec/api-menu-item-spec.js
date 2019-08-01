@@ -163,7 +163,7 @@ describe('MenuItems', () => {
 
     it('execute roles with non-native role functions', () => {
       let win = new BrowserWindow({ show: false, width: 200, height: 200 })
-      const item = new MenuItem({ role: 'resetzoom' })
+      const item = new MenuItem({ role: 'resetZoom' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true()
