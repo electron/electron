@@ -5,36 +5,7 @@
 #ifndef SHELL_COMMON_NATIVE_MATE_CONVERTERS_FILE_PATH_CONVERTER_H_
 #define SHELL_COMMON_NATIVE_MATE_CONVERTERS_FILE_PATH_CONVERTER_H_
 
-#include <string>
-
-#include "base/files/file_path.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-
-namespace gin {
-
-template <>
-struct Converter<base::FilePath> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::FilePath& val) {
-    return Converter<base::FilePath::StringType>::ToV8(isolate, val.value());
-  }
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     base::FilePath* out) {
-    if (val->IsNull())
-      return true;
-
-    base::FilePath::StringType path;
-    if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {
-      *out = base::FilePath(path);
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-}  // namespace gin
+#include "shell/common/gin_converters/file_path_converter.h"
 
 namespace mate {
 
