@@ -247,7 +247,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   Delegate* delegate_ = nullptr;
 
-  mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";
