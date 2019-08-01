@@ -75,7 +75,7 @@ void AtomRendererClient::DidCreateScriptContext(
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
-   // Only load node if we are a main frame or a devtools extension
+  // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
   bool reuse_renderer_processes_enabled =
       command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
