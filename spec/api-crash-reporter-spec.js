@@ -23,7 +23,7 @@ const ifdescribe = (condition) => {
 ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module', () => {
   let originalTempDirectory = null
   let tempDirectory = null
-  const specTimeout = 180000
+  const specTimeout = 10000
 
   before(() => {
     tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
