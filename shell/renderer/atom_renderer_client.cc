@@ -78,11 +78,11 @@ void AtomRendererClient::DidCreateScriptContext(
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
-  // Do not load node if we're aren't a main frame or a devtools extension
+   // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
   bool reuse_renderer_processes_enabled =
       command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
-  // Considered the window not "opened" if it does not have an Opener, or if a
+  // Consider the window not "opened" if it does not have an Opener, or if a
   // user has manually opted in to leaking node in the renderer
   bool is_not_opened =
       !render_frame->GetWebFrame()->Opener() ||
