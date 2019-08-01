@@ -99,9 +99,6 @@ env-machine-mac: &env-machine-mac
 env-mac-large: &env-mac-large
   NUMBER_OF_NINJA_PROCESSES: 18
 
-env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
-  DISABLE_CRASH_REPORTER_TESTS: true
-
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
 
@@ -1561,7 +1558,6 @@ jobs:
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
-      <<: *env-disable-crash-reporter-tests
     <<: *steps-tests
 
   osx-release-tests:
@@ -1570,7 +1566,6 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-send-slack-notifications
-      <<: *env-disable-crash-reporter-tests
     <<: *steps-tests
 
   osx-verify-ffmpeg:

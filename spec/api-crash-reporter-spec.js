@@ -15,12 +15,12 @@ const { app, BrowserWindow, crashReporter } = remote
 const { expect } = chai
 chai.use(dirtyChai)
 
-describe('crashReporter module', () => {
-  if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
+const ifdescribe = (condition) => {
+  return condition ? describe : describe.skip
+}
 
-  // TODO(alexeykuzmin): [Ch66] Fails. Fix it and enable back.
-  if (process.platform === 'linux') return
-
+// TODO(alexeykuzmin): [Ch66] Fails on linux. Fix it and enable back.
+ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module', () => {
   let originalTempDirectory = null
   let tempDirectory = null
   const specTimeout = 180000
@@ -305,12 +305,6 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.getUploadToServer()).to.throw()
     })
     it('returns true when uploadToServer is set to true', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -319,12 +313,6 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.true()
     })
     it('returns false when uploadToServer is set to false', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -340,12 +328,6 @@ describe('crashReporter module', () => {
       expect(() => require('electron').crashReporter.setUploadToServer('arg')).to.throw()
     })
     it('sets uploadToServer false when called with false', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -355,12 +337,6 @@ describe('crashReporter module', () => {
       expect(crashReporter.getUploadToServer()).to.be.false()
     })
     it('sets uploadToServer true when called with true', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
@@ -382,12 +358,6 @@ describe('crashReporter module', () => {
       expect(parameters).to.be.an('object')
     })
     it('adds a parameter to current parameters', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes'
@@ -397,12 +367,6 @@ describe('crashReporter module', () => {
       expect(crashReporter.getParameters()).to.have.a.property('hello')
     })
     it('removes a parameter from current parameters', function () {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes'
