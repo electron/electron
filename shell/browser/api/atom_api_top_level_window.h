@@ -261,7 +261,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
 }  // namespace electron
 
-namespace mate {
+namespace gin {
 
 template <>
 struct Converter<electron::NativeWindow*> {
@@ -275,11 +275,26 @@ struct Converter<electron::NativeWindow*> {
     }
 
     electron::api::TopLevelWindow* window;
-    if (!Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
-                                                           &window))
+    // TODO(deermichel): remove mate:: after dropping mate
+    if (!mate::Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
+                                                                 &window))
       return false;
     *out = window->window();
     return true;
+  }
+};
+
+}  // namespace gin
+
+// TODO(deermichel): remove after dropping mate
+namespace mate {
+
+template <>
+struct Converter<electron::NativeWindow*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::NativeWindow** out) {
+    return gin::ConvertFromV8(isolate, val, out);
   }
 };
 

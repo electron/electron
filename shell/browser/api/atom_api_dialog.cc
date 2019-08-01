@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "gin/dictionary.h"
+#include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
