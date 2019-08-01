@@ -1,21 +1,19 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2019 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/message_box_converter.h"
+#include "shell/common/gin_converters/message_box_converter.h"
 
-#include "native_mate/dictionary.h"
-#include "shell/browser/api/atom_api_browser_window.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
-#include "shell/common/native_mate_converters/image_converter.h"
+#include "gin/dictionary.h"
+#include "shell/common/gin_converters/image_converter_gin_adapter.h"
 
-namespace mate {
+namespace gin {
 
 bool Converter<electron::MessageBoxSettings>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     electron::MessageBoxSettings* out) {
-  mate::Dictionary dict;
+  gin::Dictionary dict(nullptr);
   int type = 0;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -35,4 +33,4 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
   return true;
 }
 
-}  // namespace mate
+}  // namespace gin
