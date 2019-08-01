@@ -12,7 +12,7 @@ chai.use(dirtyChai)
 /* The whole webRequest API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
 
-describe('webRequest module', () => {
+describe.skip('webRequest module', () => {
   const ses = session.defaultSession
   const server = http.createServer((req, res) => {
     if (req.url === '/serverRedirect') {

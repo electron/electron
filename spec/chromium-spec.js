@@ -195,7 +195,7 @@ describe('chromium feature', () => {
   })
 
   // FIXME(robo/nornagon): re-enable these once service workers work
-  xdescribe('navigator.serviceWorker', () => {
+  describe.skip('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
       w = new BrowserWindow({
         show: false,

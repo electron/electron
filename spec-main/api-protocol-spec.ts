@@ -155,7 +155,7 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text)
     })
 
-    it('fails when sending object other than string', async () => {
+    it.skip('fails when sending object other than string', async () => {
       const notAString = () => {}
       await registerStringProtocol(protocolName, (request, callback) => callback(notAString as any))
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
@@ -223,7 +223,7 @@ describe('protocol module', () => {
       expect(r.headers).to.include('x-great-header: sogreat')
     })
 
-    it('throws an error when custom headers are invalid', (done) => {
+    it.skip('throws an error when custom headers are invalid', (done) => {
       registerFileProtocol(protocolName, (request, callback) => {
         expect(() => callback({
           path: filePath,
@@ -532,7 +532,7 @@ describe('protocol module', () => {
       expect({ ...qs.parse(r.data) }).to.deep.equal(postData)
     })
 
-    it('can use custom session', async () => {
+    it.skip('can use custom session', async () => {
       const customSession = session.fromPartition('custom-ses', { cache: false })
       customSession.webRequest.onBeforeRequest((details, callback) => {
         expect(details.url).to.equal('http://fake-host/')
@@ -654,7 +654,7 @@ describe('protocol module', () => {
       await w.loadURL(origin)
     })
 
-    it('can have fetch working in it', async () => {
+    it.skip('can have fetch working in it', async () => {
       const requestReceived = defer()
       const server = http.createServer((req, res) => {
         res.end()
@@ -707,7 +707,7 @@ describe('protocol module', () => {
       )
     })
 
-    it('supports fetch api by default', async () => {
+    it.skip('supports fetch api by default', async () => {
       const url = `file://${fixturesPath}/assets/logo.png`
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`)
       const ok = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.ok)`)
@@ -725,7 +725,7 @@ describe('protocol module', () => {
       })
     })
 
-    it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
+    it.skip('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
         const {ipcRenderer} = require('electron')
         Promise.all([
