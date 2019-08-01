@@ -81,5 +81,4 @@ cross_site_document_resource_handler.patch
 frame_host_manager.patch
 crashpad_pid_check.patch
 fix_use_weakptr_to_detect_deletion.patch
-backport_crashpad_cpu_context_capture.patch
 fix_disabling_compositor_recycling.patch
