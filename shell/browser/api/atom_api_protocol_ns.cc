@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "base/stl_util.h"
 #include "content/public/browser/child_process_security_policy.h"

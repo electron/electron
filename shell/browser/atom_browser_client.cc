@@ -683,7 +683,7 @@ bool AtomBrowserClient::CanCreateWindow(
 
 void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
-  // TODO
+  // TODO(somebody)
   /*
   auto schemes_list = api::GetStandardSchemes();
   if (!schemes_list.empty())
