@@ -1,6 +1,7 @@
 # THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
+    "docs/api/.menu-item.md.swp",
     "docs/api/accelerator.md",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
@@ -69,6 +70,7 @@ auto_filenames = {
     "docs/api/structures/bluetooth-device.md",
     "docs/api/structures/certificate-principal.md",
     "docs/api/structures/certificate.md",
+    "docs/api/structures/client-request-constructor-options.md",
     "docs/api/structures/cookie.md",
     "docs/api/structures/cpu-usage.md",
     "docs/api/structures/crash-report.md",
