@@ -25,12 +25,9 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
-#include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/image/image_skia.h"
 
 namespace electron {
 
