@@ -669,7 +669,7 @@ describe('protocol module', () => {
       await requestReceived
     })
 
-    it('can access files through the FileSystem API', (done) => {
+    it.skip('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html')
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }), (error) => {
         if (error) return done(error)
