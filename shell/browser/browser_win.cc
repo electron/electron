@@ -393,7 +393,6 @@ void Browser::ShowAboutPanel() {
   }
 
   electron::MessageBoxSettings settings = {};
-  settings.title = "About";
   settings.message = aboutMessage;
   settings.icon = image;
   settings.type = electron::MessageBoxType::kInformation;
