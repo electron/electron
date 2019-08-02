@@ -101,7 +101,7 @@ hooks = [
   },
   {
     'name': 'patch_chromium',
-    'condition': 'checkout_chromium and apply_patches and apply_win_arm64_patches',
+    'condition': '(checkout_chromium and apply_patches) and apply_win_arm64_patches',
     'pattern': 'src/electron',
     'action': [
       'python',
