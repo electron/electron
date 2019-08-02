@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index a9d30fa2e6b9b2f5fd96be4ecf90dafa9e7ea57a..b352615567a2719828626d9ad4b79ea8c494975f 100644
+index d731d6d9e2626157520ddcaf231781e723d8d2ce..583065369a21acd86b017d716f6670ff67d2e108 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3831,6 +3831,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3848,6 +3848,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -17,10 +17,10 @@ index a9d30fa2e6b9b2f5fd96be4ecf90dafa9e7ea57a..b352615567a2719828626d9ad4b79ea8
            &no_javascript_access);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index a2fe2dbd0d1c91a0bf5047b5c93f30758a0db277..d9f44fecaae883d861eea94c6cc16727967f0baa 100644
+index b3eb08bcfd338f0085d7576a78e158a874033f3a..819dd480af5937aaa63b63e38f4d32e4ff7ba8c6 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -305,6 +305,10 @@ struct CreateNewWindowParams {
+@@ -311,6 +311,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -32,7 +32,7 @@ index a2fe2dbd0d1c91a0bf5047b5c93f30758a0db277..d9f44fecaae883d861eea94c6cc16727
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 21da9c9c43a94411787d7cab8513b88302383e97..44a574d3c621695d7d1304c7b8db08db8cf753d1 100644
+index e2b0dcdb14075754a4a1e8a90b3cd9a14a08796b..1f469e9c1001ba63e371456d3cbbbfbddffeabb8 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -494,6 +494,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -45,7 +45,7 @@ index 21da9c9c43a94411787d7cab8513b88302383e97..44a574d3c621695d7d1304c7b8db08db
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b0709c05aec437c36498587e7a3bd79bf311c525..7d83d9e0d0c57511955921d85f15a27a88c3ac37 100644
+index a14b357dca0133d25e06b53c19926a7598258382..46399a321845e04f67d8424acddec2636b2d9cc6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -175,6 +175,7 @@ class RenderFrameHost;
@@ -66,7 +66,7 @@ index b0709c05aec437c36498587e7a3bd79bf311c525..7d83d9e0d0c57511955921d85f15a27a
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index d0ca81590d2b5688022ca6045869dcae0ecd778e..7752c1e49dbee49c64a552ec249cabdb4d073109 100644
+index 561f409be27c004629455fc3392463fa43313a73..222db08480b15a18d50f0ef8d02ea6afb1681961 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -75,6 +75,7 @@
@@ -77,7 +77,7 @@ index d0ca81590d2b5688022ca6045869dcae0ecd778e..7752c1e49dbee49c64a552ec249cabdb
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/stream/media_stream_device_observer.h"
  #include "content/renderer/media/video_capture/video_capture_impl_manager.h"
-@@ -1366,6 +1367,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1368,6 +1369,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

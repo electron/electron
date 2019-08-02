@@ -98,7 +98,7 @@ index d9a9730a78b9aec833c64282ca868dbba5594d82..d98426e9f78931bd43061ec994559d59
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index a43cee43701fc3c139c726d14b128de3ae71c2c2..32ce9f5634ddefd5cd0feaa551f04697b53da68d 100644
+index fdd358f741e6bfc1eb0cd67c3bb113e64250400c..fe0e53fd43fc762e2d6c096fbccc5676bc14bfde 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -113,6 +113,8 @@ viz_component("service") {
@@ -477,7 +477,7 @@ index 73ea1986b2140a3ffb87c5e23c7ab2174bac0a10..3ba3657ba12ec47cc3db3fec218496ff
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
 diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index 8898b9162a65e043e8b95237b8874e48ea71744e..a455df870ece25fc6e5e46688a1c6b5b396b841a 100644
+index d5d0f0eaab04ccfedf6c01ae565c1ddc3f518cd0..b186708c6a3443806236a565496c5e55019ae9fb 100644
 --- a/services/viz/privileged/interfaces/compositing/display_private.mojom
 +++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
 @@ -79,12 +79,14 @@ interface DisplayPrivate {
@@ -497,7 +497,7 @@ index 8898b9162a65e043e8b95237b8874e48ea71744e..a455df870ece25fc6e5e46688a1c6b5b
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom b/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
-index 58a7e221eaabd9e21196496d220c77babe07c56d..dd141b16eace2999380ed137b4adf1f3538a8a70 100644
+index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a285498c3f8e72 100644
 --- a/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
 +++ b/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
 @@ -26,5 +26,5 @@ interface LayeredWindowUpdater {
@@ -595,7 +595,7 @@ index 4014e64a75da88cf66c02e8adb71171c2666cab7..25e57784e1a1ffc546b003daa4cd0059
    gfx::Size pixel_size;
    float scale_factor = 1.f;
 diff --git a/ui/gfx/mojo/ca_layer_params.mojom b/ui/gfx/mojo/ca_layer_params.mojom
-index 7bf735643541b18bafffe645d3ff37e96caa4dea..f7eaf10ffd665789f10a587142fac0c0c79b9798 100644
+index a73b2e678ffe0a682d0aa5409724fb441768bec5..6c36626d204c77ef51278b9e8f6fc6ee24a7a9ab 100644
 --- a/ui/gfx/mojo/ca_layer_params.mojom
 +++ b/ui/gfx/mojo/ca_layer_params.mojom
 @@ -18,5 +18,6 @@ struct CALayerParams {
@@ -606,7 +606,7 @@ index 7bf735643541b18bafffe645d3ff37e96caa4dea..f7eaf10ffd665789f10a587142fac0c0
    float scale_factor;
  };
 diff --git a/ui/gfx/mojo/ca_layer_params_struct_traits.cc b/ui/gfx/mojo/ca_layer_params_struct_traits.cc
-index dd553996b5c6ff5ec0c210a020a18a6a843b8aae..26d1e0bda2640052d42ea4e691c3df73074dea08 100644
+index 5be5a3547f8eb826faaa4a18455b18ee22ec0bf9..beb94400a0d7a30c2aae0b3821f011853c8b6c58 100644
 --- a/ui/gfx/mojo/ca_layer_params_struct_traits.cc
 +++ b/ui/gfx/mojo/ca_layer_params_struct_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(
