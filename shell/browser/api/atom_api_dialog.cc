@@ -7,13 +7,13 @@
 #include <vector>
 
 #include "gin/dictionary.h"
-#include "shell/browser/api/atom_api_top_level_window.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/common/api/gin_utils.h"
 #include "shell/common/gin_converters/file_dialog_converter_gin_adapter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
+#include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
