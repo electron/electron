@@ -111,13 +111,10 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 }
 
 void Browser::ClearRecentDocuments() {
-  CComPtr<IApplicationDestinations> destinations;
-  if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations, NULL,
-                                           CLSCTX_INPROC_SERVER)))
+  if (base::win::GetVersion() < base::win::Version::WIN7)
     return;
-  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
-    return;
-  destinations->RemoveAllDestinations();
+
+  SHAddToRecentDocs(SHARD_APPIDINFO, nullptr);
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
