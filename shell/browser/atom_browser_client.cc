@@ -954,10 +954,12 @@ void AtomBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
-  api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
-      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-  if (protocol)
-    protocol->RegisterURLLoaderFactories(factories);
+  if (web_contents) {
+    api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
+        v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
+    if (protocol)
+      protocol->RegisterURLLoaderFactories(factories);
+  }
 }
 
 bool AtomBrowserClient::WillCreateURLLoaderFactory(
@@ -972,6 +974,9 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
+  if (!web_contents) {
+    return false;
+  }
   api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
       v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
   if (!protocol)
