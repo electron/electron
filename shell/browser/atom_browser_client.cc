@@ -994,6 +994,33 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
   return true;
 }
 
+network::mojom::URLLoaderFactoryPtrInfo
+AtomBrowserClient::CreateURLLoaderFactoryForNetworkRequests(
+    content::RenderProcessHost* process,
+    network::mojom::NetworkContext* network_context,
+    network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+    const url::Origin& request_initiator) {
+  auto render_process_id = process->GetID();
+  auto it = process_preferences_.find(render_process_id);
+  if (it != process_preferences_.end() && !it->second.web_security) {
+    // bypass CORB
+    network::mojom::URLLoaderFactoryParamsPtr params =
+        network::mojom::URLLoaderFactoryParams::New();
+
+    if (header_client)
+      params->header_client = std::move(*header_client);
+    params->process_id = render_process_id;
+    params->is_corb_enabled = false;
+
+    // Create the URLLoaderFactory.
+    network::mojom::URLLoaderFactoryPtrInfo factory_info;
+    network_context->CreateURLLoaderFactory(mojo::MakeRequest(&factory_info),
+                                            std::move(params));
+    return factory_info;
+  }
+  return network::mojom::URLLoaderFactoryPtrInfo();
+}
+
 #if defined(OS_WIN)
 bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
   // Allow crashpad to communicate via named pipe.
