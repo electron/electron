@@ -155,7 +155,7 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text)
     })
 
-    it.skip('fails when sending object other than string', async () => {
+    it('fails when sending object other than string', async () => {
       const notAString = () => {}
       await registerStringProtocol(protocolName, (request, callback) => callback(notAString as any))
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
@@ -606,7 +606,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged standard', () => {
+  describe.skip('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = (global as any).standardScheme
     const origin = `${standardScheme}://fake-host`
     const imageURL = `${origin}/test.png`
@@ -654,7 +654,7 @@ describe('protocol module', () => {
       await w.loadURL(origin)
     })
 
-    it.skip('can have fetch working in it', async () => {
+    it('can have fetch working in it', async () => {
       const requestReceived = defer()
       const server = http.createServer((req, res) => {
         res.end()
@@ -690,7 +690,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe.skip('protocol.registerSchemesAsPrivileged cors-fetch', function () {
     const standardScheme = (global as any).standardScheme
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(async () => {
@@ -707,7 +707,7 @@ describe('protocol module', () => {
       )
     })
 
-    it.skip('supports fetch api by default', async () => {
+    it('supports fetch api by default', async () => {
       const url = `file://${fixturesPath}/assets/logo.png`
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`)
       const ok = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.ok)`)
@@ -725,7 +725,7 @@ describe('protocol module', () => {
       })
     })
 
-    it.skip('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
+    it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
         const {ipcRenderer} = require('electron')
         Promise.all([
