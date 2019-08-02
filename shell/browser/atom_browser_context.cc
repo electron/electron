@@ -114,12 +114,6 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   // Initialize Pref Registry.
   InitPrefs();
 
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    proxy_config_monitor_ = std::make_unique<ProxyConfigMonitor>(prefs_.get());
-    io_handle_ =
-        new URLRequestContextGetter::Handle(weak_factory_.GetWeakPtr());
-  }
-
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -138,12 +132,8 @@ AtomBrowserContext::~AtomBrowserContext() {
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
 
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    io_handle_->ShutdownOnUIThread();
-  } else {
-    BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                              std::move(resource_context_));
-  }
+  BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
+                            std::move(resource_context_));
 
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
@@ -198,47 +188,6 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-net::URLRequestContextGetter* AtomBrowserContext::CreateRequestContext(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector protocol_interceptors) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_
-        ->CreateMainRequestContextGetter(protocol_handlers,
-                                         std::move(protocol_interceptors))
-        .get();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-net::URLRequestContextGetter* AtomBrowserContext::CreateMediaRequestContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetMainRequestContextGetter().get();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-net::URLRequestContextGetter* AtomBrowserContext::GetRequestContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return GetDefaultStoragePartition(this)->GetURLRequestContext();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-network::mojom::NetworkContextPtr AtomBrowserContext::GetNetworkContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetNetworkContext();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
 base::FilePath AtomBrowserContext::GetPath() {
   return path_;
 }
@@ -256,13 +205,9 @@ int AtomBrowserContext::GetMaxCacheSize() const {
 }
 
 content::ResourceContext* AtomBrowserContext::GetResourceContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetResourceContext();
-  } else {
-    if (!resource_context_)
-      resource_context_.reset(new content::ResourceContext);
-    return resource_context_.get();
-  }
+  if (!resource_context_)
+    resource_context_.reset(new content::ResourceContext);
+  return resource_context_.get();
 }
 
 std::string AtomBrowserContext::GetMediaDeviceIDSalt() {

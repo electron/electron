@@ -35,7 +35,6 @@ mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
 mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
-allow_webview_file_url.patch
 ignore_rc_check.patch
 enable_widevine.patch
 chrome_key_systems.patch
@@ -60,7 +59,6 @@ autofill_size_calculation.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_mas.patch
 fix_disable_usage_of_setapplicationisdaemon_and.patch
-disable_network_services_by_default.patch
 unsandboxed_ppapi_processes_skip_zygote.patch
 patch_the_ensure_gn_version_py_script_to_work_on_mac_ci.patch
 build_add_electron_tracing_category.patch
@@ -69,7 +67,6 @@ feat_offscreen_rendering_with_viz_compositor.patch
 worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
 frame_host_manager.patch
-cross_site_document_resource_handler.patch
 crashpad_pid_check.patch
 preconnect_feature.patch
 network_service_allow_remote_certificate_verification_logic.patch

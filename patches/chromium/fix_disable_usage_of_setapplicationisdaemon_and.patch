@@ -5,10 +5,10 @@ Subject: fix: disable usage of SetApplicationIsDaemon and
  _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
 
 diff --git a/content/utility/utility_service_factory.cc b/content/utility/utility_service_factory.cc
-index e4c8405fb17e37fd843eb9a962e0c5360524a693..1d5ee0a13a837efd0befe2ec02b38fbf4dcbc572 100644
+index a16d93d6d9508776819b0912f45b86753b6a187b..3ce36a6ec4cfd4bbec79c2c9e8e29f2a1aa49ef3 100644
 --- a/content/utility/utility_service_factory.cc
 +++ b/content/utility/utility_service_factory.cc
-@@ -198,7 +198,7 @@ void UtilityServiceFactory::RunService(
+@@ -196,7 +196,7 @@ void UtilityServiceFactory::RunService(
  std::unique_ptr<service_manager::Service>
  UtilityServiceFactory::CreateAudioService(
      mojo::PendingReceiver<service_manager::mojom::Service> receiver) {

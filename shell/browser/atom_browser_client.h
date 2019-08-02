@@ -164,7 +164,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
   std::vector<base::FilePath> GetNetworkContextsParentDirectory() override;
-  bool ShouldBypassCORB(int render_process_id) const override;
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
@@ -183,13 +182,19 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
       bool* bypass_redirect_checks) override;
+  network::mojom::URLLoaderFactoryPtrInfo
+  CreateURLLoaderFactoryForNetworkRequests(
+      content::RenderProcessHost* process,
+      network::mojom::NetworkContext* network_context,
+      network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
+      const url::Origin& request_initiator) override;
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
 #endif
 
   bool HandleExternalProtocol(
       const GURL& url,
-      content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+      content::WebContents::Getter web_contents_getter,
       int child_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
@@ -254,7 +259,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   Delegate* delegate_ = nullptr;
 
-  mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";

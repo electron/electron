@@ -19,7 +19,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
-#include "shell/browser/net/url_request_context_getter.h"
 
 class PrefRegistrySimple;
 class PrefService;
@@ -92,9 +91,6 @@ class AtomBrowserContext
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
   AtomBlobReader* GetBlobReader();
-  network::mojom::NetworkContextPtr GetNetworkContext();
-  // Get the request context, if there is none, create it.
-  net::URLRequestContextGetter* GetRequestContext();
   ResolveProxyHelper* GetResolveProxyHelper();
   predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
@@ -117,10 +113,6 @@ class AtomBrowserContext
   content::PermissionControllerDelegate* GetPermissionControllerDelegate()
       override;
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
-  net::URLRequestContextGetter* CreateRequestContext(
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector request_interceptors) override;
-  net::URLRequestContextGetter* CreateMediaRequestContext() override;
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
 
@@ -163,9 +155,6 @@ class AtomBrowserContext
 
   static BrowserContextMap browser_context_map_;
 
-  // Self-destructing class responsible for creating URLRequestContextGetter
-  // on the UI thread and deletes itself on the IO thread.
-  URLRequestContextGetter::Handle* io_handle_;
   ValueMapPrefStore* in_memory_pref_store_;
 
   std::unique_ptr<content::ResourceContext> resource_context_;

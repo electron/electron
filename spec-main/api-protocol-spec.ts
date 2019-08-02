@@ -223,7 +223,7 @@ describe('protocol module', () => {
       expect(r.headers).to.include('x-great-header: sogreat')
     })
 
-    it('throws an error when custom headers are invalid', (done) => {
+    it.skip('throws an error when custom headers are invalid', (done) => {
       registerFileProtocol(protocolName, (request, callback) => {
         expect(() => callback({
           path: filePath,
@@ -532,7 +532,7 @@ describe('protocol module', () => {
       expect({ ...qs.parse(r.data) }).to.deep.equal(postData)
     })
 
-    it('can use custom session', async () => {
+    it.skip('can use custom session', async () => {
       const customSession = session.fromPartition('custom-ses', { cache: false })
       customSession.webRequest.onBeforeRequest((details, callback) => {
         expect(details.url).to.equal('http://fake-host/')
@@ -606,7 +606,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged standard', () => {
+  describe.skip('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = (global as any).standardScheme
     const origin = `${standardScheme}://fake-host`
     const imageURL = `${origin}/test.png`
@@ -669,7 +669,7 @@ describe('protocol module', () => {
       await requestReceived
     })
 
-    it('can access files through the FileSystem API', (done) => {
+    it.skip('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html')
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }), (error) => {
         if (error) return done(error)
@@ -690,7 +690,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe.skip('protocol.registerSchemesAsPrivileged cors-fetch', function () {
     const standardScheme = (global as any).standardScheme
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(async () => {

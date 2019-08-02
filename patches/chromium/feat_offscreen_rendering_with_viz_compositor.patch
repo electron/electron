@@ -45,7 +45,7 @@ index f5e18df4e06e24d3bdd51308abde48e217444848..41017d9d53b1c0d563ea0901f5cae407
  #if defined(USE_X11)
  void HostDisplayClient::DidCompleteSwapWithNewSize(const gfx::Size& size) {
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 5e5c5da4a3cfc927df3fb120fcab647e927271c1..8c6ec95f309660fb83012a13c7b9bb64b782e7d9 100644
+index b8177277ebca471fc147f2d5b53521cbadd8fa2d..72a807e138f80b4ab37cb1d368bc968e299d903f 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -30,17 +30,17 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -85,7 +85,7 @@ index 65c26e2f7ae813e50f6740f73a4d145467da4366..39c04c4d6b644a4ad7b13b4e932b085f
  
    if (!canvas_) {
 diff --git a/components/viz/host/layered_window_updater_impl.h b/components/viz/host/layered_window_updater_impl.h
-index d9a9730a78b9aec833c64282ca868dbba5594d82..d98426e9f78931bd43061ec994559d594c96151c 100644
+index ced30727ab67e557265c3a61f7c213763da973ce..f422786fe6cd9cab47494fe6028f3c3be8bc763e 100644
 --- a/components/viz/host/layered_window_updater_impl.h
 +++ b/components/viz/host/layered_window_updater_impl.h
 @@ -33,7 +33,7 @@ class VIZ_HOST_EXPORT LayeredWindowUpdaterImpl
@@ -98,10 +98,10 @@ index d9a9730a78b9aec833c64282ca868dbba5594d82..d98426e9f78931bd43061ec994559d59
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index fdd358f741e6bfc1eb0cd67c3bb113e64250400c..fe0e53fd43fc762e2d6c096fbccc5676bc14bfde 100644
+index 892e89b990297f663fbf142c5d4b8c9b59cbc9ae..c83135ace35448876e130d949533dc600f201901 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -113,6 +113,8 @@ viz_component("service") {
+@@ -119,6 +119,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -111,7 +111,7 @@ index fdd358f741e6bfc1eb0cd67c3bb113e64250400c..fe0e53fd43fc762e2d6c096fbccc5676
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 7f61cb7c847bae88b50f2c32bbe9be6525a4c587..f059762b2c39c927b6bc6e40ad1c0641913082f2 100644
+index e3c8e9dbca69f2665e8dbbd798d45c3b7199e04c..d9fa2d536e977ac966065a9058661f887e995320 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -20,6 +20,7 @@
@@ -122,15 +122,15 @@ index 7f61cb7c847bae88b50f2c32bbe9be6525a4c587..f059762b2c39c927b6bc6e40ad1c0641
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -32,6 +33,7 @@
- #include "gpu/ipc/common/surface_handle.h"
+@@ -33,6 +34,7 @@
+ #include "gpu/ipc/scheduler_sequence.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
-+#include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
++#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -219,6 +221,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -223,6 +225,19 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -185,7 +185,7 @@ index f3867356e3d641416e00e6d115ae9ae2a0be90ab..b1d192d2b20ccb63fba07093101d745e
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..f5fc4f37c10bdc8aca8c1618985d46d10c830437
+index 0000000000000000000000000000000000000000..c17b03e00089bfd301c63910426bb16afb8cdae7
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,156 @@
@@ -200,7 +200,7 @@ index 0000000000000000000000000000000000000000..f5fc4f37c10bdc8aca8c1618985d46d1
 +#include "components/viz/common/resources/resource_sizes.h"
 +#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
-+#include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
++#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +#include "skia/ext/platform_canvas.h"
 +#include "third_party/skia/include/core/SkCanvas.h"
 +#include "ui/gfx/skia_util.h"
@@ -347,7 +347,7 @@ index 0000000000000000000000000000000000000000..f5fc4f37c10bdc8aca8c1618985d46d1
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..ff3c0217812a8370a20aa528f117e928fd1b95f4
+index 0000000000000000000000000000000000000000..3865939d0445a23a468770f57207ba5ef23277ed
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
 @@ -0,0 +1,88 @@
@@ -367,8 +367,8 @@ index 0000000000000000000000000000000000000000..ff3c0217812a8370a20aa528f117e928
 +#include "components/viz/host/host_display_client.h"
 +#include "components/viz/service/display/software_output_device.h"
 +#include "components/viz/service/viz_service_export.h"
-+#include "services/viz/privileged/interfaces/compositing/display_private.mojom.h"
-+#include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
++#include "services/viz/privileged/mojom/compositing/display_private.mojom.h"
++#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +
 +namespace viz {
 +
@@ -440,7 +440,7 @@ index 0000000000000000000000000000000000000000..ff3c0217812a8370a20aa528f117e928
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index 73ea1986b2140a3ffb87c5e23c7ab2174bac0a10..3ba3657ba12ec47cc3db3fec218496ffe817d35b 100644
+index 74316edc0e0bd28b1772e9d7cf34327d113462c4..9cbe5400458ce6e0b8ea9edfa3f0969fb936ee1e 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
 @@ -11,6 +11,7 @@
@@ -449,7 +449,7 @@ index 73ea1986b2140a3ffb87c5e23c7ab2174bac0a10..3ba3657ba12ec47cc3db3fec218496ff
  #include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
  #include "mojo/public/cpp/system/platform_handle.h"
- #include "services/viz/privileged/interfaces/compositing/layered_window_updater.mojom.h"
+ #include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "skia/ext/platform_canvas.h"
 @@ -265,7 +266,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
    if (!canvas_)
@@ -476,10 +476,10 @@ index 73ea1986b2140a3ffb87c5e23c7ab2174bac0a10..3ba3657ba12ec47cc3db3fec218496ff
    } else {
      return std::make_unique<SoftwareOutputDeviceWinDirect>(hwnd, backing);
    }
-diff --git a/services/viz/privileged/interfaces/compositing/display_private.mojom b/services/viz/privileged/interfaces/compositing/display_private.mojom
-index d5d0f0eaab04ccfedf6c01ae565c1ddc3f518cd0..b186708c6a3443806236a565496c5e55019ae9fb 100644
---- a/services/viz/privileged/interfaces/compositing/display_private.mojom
-+++ b/services/viz/privileged/interfaces/compositing/display_private.mojom
+diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
+index 5c6292cfb3b8b46802c772d202d19c78e4782488..ed27af3ab0b383553b4d9492d29cec2b91bee807 100644
+--- a/services/viz/privileged/mojom/compositing/display_private.mojom
++++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -79,12 +79,14 @@ interface DisplayPrivate {
  };
  
@@ -496,10 +496,10 @@ index d5d0f0eaab04ccfedf6c01ae565c1ddc3f518cd0..b186708c6a3443806236a565496c5e55
    CreateLayeredWindowUpdater(LayeredWindowUpdater& layered_window_updater);
  
    // Notifies that a swap has occurred and provides information about the pixel
-diff --git a/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom b/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
+diff --git a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom b/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
 index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a285498c3f8e72 100644
---- a/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
-+++ b/services/viz/privileged/interfaces/compositing/layered_window_updater.mojom
+--- a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
++++ b/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
 @@ -26,5 +26,5 @@ interface LayeredWindowUpdater {
    // Draws to the HWND by copying pixels from shared memory. Callback must be
    // called after draw operation is complete to signal shared memory can be
@@ -508,7 +508,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 5158731bd8512fcd2ee859b1e5eeff3a9a32ca9a..4d3592e939c45eec86cd4c7e328de247e9374419 100644
+index 359e7d21a4a5e7acaed9bd7f42f40019e650a182..cd90aab9d3a7b5335c829d964d92e3fa62401408 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -23,6 +23,7 @@
@@ -517,7 +517,7 @@ index 5158731bd8512fcd2ee859b1e5eeff3a9a32ca9a..4d3592e939c45eec86cd4c7e328de247
  #include "components/viz/common/surfaces/frame_sink_id.h"
 +#include "components/viz/host/host_display_client.h"
  #include "components/viz/host/host_frame_sink_client.h"
- #include "services/viz/privileged/interfaces/compositing/vsync_parameter_observer.mojom-forward.h"
+ #include "services/viz/privileged/mojom/compositing/vsync_parameter_observer.mojom-forward.h"
  #include "third_party/skia/include/core/SkColor.h"
 @@ -194,6 +195,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual bool SyncTokensRequiredForDisplayCompositor() = 0;
@@ -555,7 +555,7 @@ index 5158731bd8512fcd2ee859b1e5eeff3a9a32ca9a..4d3592e939c45eec86cd4c7e328de247
    Layer* root_layer_ = nullptr;
  
 diff --git a/ui/compositor/host/host_context_factory_private.cc b/ui/compositor/host/host_context_factory_private.cc
-index 1c84de621781d0d7cf41866fc033b78881c5e972..112a1a6c2a0f24ee9ace05d7c38247b22fb4ed4c 100644
+index 84b2623bd3dd8a7fdfa8e453eda3574e3b71ef99..974eb17c1d1f50c45b4d3a539a8d1a67b687642d 100644
 --- a/ui/compositor/host/host_context_factory_private.cc
 +++ b/ui/compositor/host/host_context_factory_private.cc
 @@ -99,8 +99,12 @@ void HostContextFactoryPrivate::ConfigureCompositor(
@@ -594,10 +594,10 @@ index 4014e64a75da88cf66c02e8adb71171c2666cab7..25e57784e1a1ffc546b003daa4cd0059
    // The geometry of the frame.
    gfx::Size pixel_size;
    float scale_factor = 1.f;
-diff --git a/ui/gfx/mojo/ca_layer_params.mojom b/ui/gfx/mojo/ca_layer_params.mojom
+diff --git a/ui/gfx/mojom/ca_layer_params.mojom b/ui/gfx/mojom/ca_layer_params.mojom
 index a73b2e678ffe0a682d0aa5409724fb441768bec5..6c36626d204c77ef51278b9e8f6fc6ee24a7a9ab 100644
---- a/ui/gfx/mojo/ca_layer_params.mojom
-+++ b/ui/gfx/mojo/ca_layer_params.mojom
+--- a/ui/gfx/mojom/ca_layer_params.mojom
++++ b/ui/gfx/mojom/ca_layer_params.mojom
 @@ -18,5 +18,6 @@ struct CALayerParams {
    bool is_empty;
    CALayerContent content;
@@ -605,10 +605,10 @@ index a73b2e678ffe0a682d0aa5409724fb441768bec5..6c36626d204c77ef51278b9e8f6fc6ee
 +  gfx.mojom.Rect damage;
    float scale_factor;
  };
-diff --git a/ui/gfx/mojo/ca_layer_params_struct_traits.cc b/ui/gfx/mojo/ca_layer_params_struct_traits.cc
-index 5be5a3547f8eb826faaa4a18455b18ee22ec0bf9..beb94400a0d7a30c2aae0b3821f011853c8b6c58 100644
---- a/ui/gfx/mojo/ca_layer_params_struct_traits.cc
-+++ b/ui/gfx/mojo/ca_layer_params_struct_traits.cc
+diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
+index 843d5c24ec33de07c12d4417eb111f91dbcd42fe..0ea594950fcd2686f1b07248dbc8ceb257d89dca 100644
+--- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
++++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(
    if (!data.ReadPixelSize(&out->pixel_size))
      return false;
@@ -619,10 +619,10 @@ index 5be5a3547f8eb826faaa4a18455b18ee22ec0bf9..beb94400a0d7a30c2aae0b3821f01185
    out->scale_factor = data.scale_factor();
    return true;
  }
-diff --git a/ui/gfx/mojo/ca_layer_params_struct_traits.h b/ui/gfx/mojo/ca_layer_params_struct_traits.h
-index 94127a0d5b50b052318e9e5a360755fe771f87e9..348fa26c5c95a13d1ddd0ff2545aca3a35841a77 100644
---- a/ui/gfx/mojo/ca_layer_params_struct_traits.h
-+++ b/ui/gfx/mojo/ca_layer_params_struct_traits.h
+diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.h b/ui/gfx/mojom/ca_layer_params_mojom_traits.h
+index 4cac766eae3161baedac4202f694129cd90c80de..0821495ad22944d8856bb750cac8912a2f8328c3 100644
+--- a/ui/gfx/mojom/ca_layer_params_mojom_traits.h
++++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.h
 @@ -20,6 +20,10 @@ struct StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams> {
      return ca_layer_params.pixel_size;
    }
