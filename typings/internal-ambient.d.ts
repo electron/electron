@@ -19,7 +19,7 @@ declare namespace NodeJS {
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
     sendTo(internal: boolean, sendToAll: boolean, webContentsId: number, channel: string, args: any[]): void;
-    invoke(channel: string, args: any[]): Promise<{ error: string, result: any }>;
+    invoke<T>(channel: string, args: any[]): Promise<{ error: string, result: T }>;
   }
 
   interface V8UtilBinding {
