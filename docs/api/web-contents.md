@@ -1246,24 +1246,25 @@ Returns [`PrinterInfo[]`](structures/printer-info.md).
   * `silent` Boolean (optional) - Don't ask user for print settings. Default is `false`.
   * `printBackground` Boolean (optional) - Prints the background color and image of
     the web page. Default is `false`.
-  * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
-  * `color` Boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
-  * `margins` Object (optional)
-    * `marginType` String (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
-    * `top` Number (optional) - The top margin of the printed web page, in pixels.
-    * `bottom` Number (optional) - The bottom margin of the printed web page, in pixels.
-    * `left` Number (optional) - The left margin of the printed web page, in pixels.
-    * `right` Number (optional) - The right margin of the printed web page, in pixels.
-  * `landscape` Boolean (optional) - Whether the web page should be printed in landscape mode. Default is `false`.
-  * `scaleFactor` Number (optional) - The scale factor of the web page.
-  * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
-  * `collate` Boolean (optional) - Whether the web page should be collated.
-  * `copies` Number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Record<string, number> (optional) - The page range to print. Should have two keys: `from` and `to`.
-  * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
-  * `dpi` Object (optional)
-    * `horizontal` Number (optional) - The horizontal dpi.
-    * `vertical` Number (optional) - The vertical dpi.
+  * `printSettings` Object (optional) - Only applicable when printing with `silent: true`.
+    * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
+    * `color` Boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
+    * `margins` Object (optional)
+      * `marginType` String (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
+      * `top` Number (optional) - The top margin of the printed web page, in pixels.
+      * `bottom` Number (optional) - The bottom margin of the printed web page, in pixels.
+      * `left` Number (optional) - The left margin of the printed web page, in pixels.
+      * `right` Number (optional) - The right margin of the printed web page, in pixels.
+    * `landscape` Boolean (optional) - Whether the web page should be printed in landscape mode. Default is `false`.
+    * `scaleFactor` Number (optional) - The scale factor of the web page.
+    * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
+    * `collate` Boolean (optional) - Whether the web page should be collated.
+    * `copies` Number (optional) - The number of copies of the web page to print.
+    * `pageRanges` Record<string, number> (optional) - The page range to print. Should have two keys: `from` and `to`.
+    * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
+    * `dpi` Object (optional)
+      * `horizontal` Number (optional) - The horizontal dpi.
+      * `vertical` Number (optional) - The vertical dpi.
 * `callback` Function (optional)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.

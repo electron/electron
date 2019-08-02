@@ -1591,13 +1591,16 @@ bool WebContents::IsCurrentlyAudible() {
 void WebContents::Print(mate::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
+
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("Invalid print settings specified");
+    args->ThrowError("webContents.print(): Invalid print settings specified.");
     return;
   }
+
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError("Invalid optional callback provided");
+    args->ThrowError(
+        "webContents.print(): Invalid optional callback provided.");
     return;
   }
 
@@ -1605,8 +1608,11 @@ void WebContents::Print(mate::Arguments* args) {
   bool silent = false;
   options.Get("silent", &silent);
 
+  bool print_background = false;
+  options.Get("printBackground", &print_background);
+
   // Set custom margin settings
-  mate::Dictionary margins;
+  mate::Dictionary margins = mate::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
     printing::MarginType margin_type = printing::DEFAULT_MARGINS;
     margins.Get("marginType", &margin_type);
@@ -1643,6 +1649,8 @@ void WebContents::Print(mate::Arguments* args) {
   options.Get("landscape", &landscape);
   settings.SetBoolean(printing::kSettingLandscape, landscape);
 
+  // We set the default to empty string here and only update
+  // if at the Chromium level if it's non-empty
   base::string16 device_name;
   options.Get("deviceName", &device_name);
   settings.SetString(printing::kSettingDeviceName, device_name);
@@ -1663,8 +1671,6 @@ void WebContents::Print(mate::Arguments* args) {
   options.Get("copies", &copies);
   settings.SetInteger(printing::kSettingCopies, copies);
 
-  bool print_background = false;
-  options.Get("printBackground", &print_background);
   settings.SetBoolean(printing::kSettingShouldPrintBackgrounds,
                       print_background);
 

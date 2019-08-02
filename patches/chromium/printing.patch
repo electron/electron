@@ -28,7 +28,7 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..7b39523e0b8b840191ea517d5f5e8eda
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -224,7 +224,15 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -224,7 +224,14 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -39,9 +39,8 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..7b39523e0b8b840191ea517d5f5e8eda
 +      base::BindOnce(&NotificationCallback, base::RetainedRef(print_job_),
 +                    JobEventDetails::USER_INIT_CANCELED, 0,
 +                    base::RetainedRef(document_)));
-+  } else {
-+    std::move(callback).Run(printing_context_->settings(), result);
 +  }
++  std::move(callback).Run(printing_context_->settings(), result);
  }
  
  void PrintJobWorker::GetSettingsWithUI(int document_page_count,
