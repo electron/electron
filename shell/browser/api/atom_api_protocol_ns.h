@@ -19,6 +19,11 @@ class AtomBrowserContext;
 
 namespace api {
 
+std::vector<std::string> GetStandardSchemes();
+
+void RegisterSchemesAsPrivileged(v8::Local<v8::Value> val,
+                                 mate::Arguments* args);
+
 // Possible errors.
 enum class ProtocolError {
   OK,  // no error

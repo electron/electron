@@ -120,17 +120,6 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-/*
-void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                      const std::string& accept_lang,
-                      const std::string& user_agent) {
-  getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(
-          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-          user_agent));
-}
-*/
-
 }  // namespace
 
 namespace mate {
@@ -552,19 +541,8 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
 
 void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
-  CHECK(false) << "TODO";
-  /*
-  browser_context_->SetUserAgent(user_agent);
-
-  std::string accept_lang = g_browser_process->GetApplicationLocale();
-  args->GetNext(&accept_lang);
-
-  scoped_refptr<net::URLRequestContextGetter> getter(
-      browser_context_->GetRequestContext());
-  getter->GetNetworkTaskRunner()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&SetUserAgentInIO, getter, accept_lang, user_agent));
-  */
+  CHECK(false)
+      << "TODO: This was disabled when the network service was turned on";
 }
 
 std::string Session::GetUserAgent() {
