@@ -73,7 +73,7 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..2ec7f04c71824b47de1ddbf1f0e8625d
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/paint/theme_painter_mac.mm b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-index e965faf9fd8d5ec3572d769421f149907d66c67f..b2d0bbd80994fdf9607009d9e27bf4c3629fe402 100644
+index e94235acb17335fbc78c606ff26036871117bd09..7c4bd19215c67f649636ae69b9a21b5c1ba21ecc 100644
 --- a/third_party/blink/renderer/core/paint/theme_painter_mac.mm
 +++ b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
 @@ -41,6 +41,7 @@
