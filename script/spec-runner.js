@@ -123,7 +123,8 @@ async function runRemoteBasedElectronTests () {
     stdio: 'inherit'
   })
   if (status !== 0) {
-    throw new Error(`Electron tests failed with code ${status}.`)
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    throw new Error(`Electron tests failed with code ${textStatus}.`)
   }
 }
 
@@ -135,7 +136,8 @@ async function runMainProcessElectronTests () {
     stdio: 'inherit'
   })
   if (status !== 0) {
-    throw new Error(`Electron tests failed with code ${status}.`)
+    const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString()
+    throw new Error(`Electron tests failed with code ${textStatus}.`)
   }
 }
 
