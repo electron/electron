@@ -13,6 +13,7 @@
 #include "content/public/common/service_manager_connection.h"
 #include "content/public/common/simple_connection_filter.h"
 #include "content/public/utility/utility_thread.h"
+#include "mojo/public/cpp/bindings/service_factory.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/public/cpp/service.h"
@@ -40,6 +41,13 @@ void RunServiceAsyncThenTerminateProcess(
   service_manager::Service::RunAsyncUntilTermination(
       std::move(service),
       base::BindOnce([] { content::UtilityThread::Get()->ReleaseProcess(); }));
+}
+
+auto RunProxyResolver(
+    mojo::PendingReceiver<proxy_resolver::mojom::ProxyResolverFactory>
+        receiver) {
+  return std::make_unique<proxy_resolver::ProxyResolverFactoryImpl>(
+      std::move(receiver));
 }
 
 }  // namespace
@@ -111,14 +119,9 @@ bool AtomContentUtilityClient::HandleServiceRequest(
   return false;
 }
 
-void AtomContentUtilityClient::RunIOThreadService(
-    mojo::GenericPendingReceiver* receiver) {
-  if (auto factory_receiver =
-          receiver->As<proxy_resolver::mojom::ProxyResolverFactory>()) {
-    static base::NoDestructor<proxy_resolver::ProxyResolverFactoryImpl> factory(
-        std::move(factory_receiver));
-    return;
-  }
+mojo::ServiceFactory* AtomContentUtilityClient::GetIOThreadServiceFactory() {
+  static base::NoDestructor<mojo::ServiceFactory> factory{RunProxyResolver};
+  return factory.get();
 }
 
 std::unique_ptr<service_manager::Service>

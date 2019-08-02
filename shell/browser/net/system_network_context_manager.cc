@@ -50,9 +50,9 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
       network::mojom::HttpAuthDynamicParams::New();
 
-  auth_dynamic_params->server_whitelist = command_line->GetSwitchValueASCII(
+  auth_dynamic_params->server_allowlist = command_line->GetSwitchValueASCII(
       electron::switches::kAuthServerWhitelist);
-  auth_dynamic_params->delegate_whitelist = command_line->GetSwitchValueASCII(
+  auth_dynamic_params->delegate_allowlist = command_line->GetSwitchValueASCII(
       electron::switches::kAuthNegotiateDelegateWhitelist);
   auth_dynamic_params->enable_negotiate_port =
       command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);

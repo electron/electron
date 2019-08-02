@@ -628,7 +628,7 @@ describe('net module', () => {
       })
     })
 
-    describe('webRequest', () => {
+    describe.skip('webRequest', () => {
       afterEach(() => {
         session.defaultSession.webRequest.onBeforeRequest(null)
       })
