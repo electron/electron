@@ -147,60 +147,62 @@ bool Browser::IsEmojiPanelSupported() {
 }
 
 void Browser::ShowAboutPanel() {
+  const auto& opts = about_panel_options_;
+
+  if (!opts.is_dict()) {
+    LOG(WARNING) << "Called showAboutPanel(), but didn't use "
+                    "setAboutPanelSettings() first";
+    return;
+  }
+
   GtkWidget* dialogWidget = gtk_about_dialog_new();
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
 
-  const auto& opts = about_panel_options_;
   const std::string* str;
   const base::Value* val;
 
-  if ((opts.is_dict())) {
-    if ((str = opts.FindStringKey("applicationName"))) {
-      gtk_about_dialog_set_program_name(dialog, str->c_str());
-    }
-    if ((str = opts.FindStringKey("applicationVersion"))) {
-      gtk_about_dialog_set_version(dialog, str->c_str());
-    }
-    if ((str = opts.FindStringKey("copyright"))) {
-      gtk_about_dialog_set_copyright(dialog, str->c_str());
-    }
-    if ((str = opts.FindStringKey("website"))) {
-      gtk_about_dialog_set_website(dialog, str->c_str());
-    }
-    if ((str = opts.FindStringKey("iconPath"))) {
-      GError* error = nullptr;
-      constexpr int width = 64;   // width of about panel icon in pixels
-      constexpr int height = 64;  // height of about panel icon in pixels
+  if ((str = opts.FindStringKey("applicationName"))) {
+    gtk_about_dialog_set_program_name(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("applicationVersion"))) {
+    gtk_about_dialog_set_version(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("copyright"))) {
+    gtk_about_dialog_set_copyright(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("website"))) {
+    gtk_about_dialog_set_website(dialog, str->c_str());
+  }
+  if ((str = opts.FindStringKey("iconPath"))) {
+    GError* error = nullptr;
+    constexpr int width = 64;   // width of about panel icon in pixels
+    constexpr int height = 64;  // height of about panel icon in pixels
 
-      // set preserve_aspect_ratio to true
-      GdkPixbuf* icon =
-          gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
-      if (error != nullptr) {
-        g_warning("%s", error->message);
-        g_clear_error(&error);
-      } else {
-        gtk_about_dialog_set_logo(dialog, icon);
-        g_clear_object(&icon);
-      }
+    // set preserve_aspect_ratio to true
+    GdkPixbuf* icon =
+        gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
+    if (error != nullptr) {
+      g_warning("%s", error->message);
+      g_clear_error(&error);
+    } else {
+      gtk_about_dialog_set_logo(dialog, icon);
+      g_clear_object(&icon);
     }
+  }
 
-    if ((val = opts.FindListKey("authors"))) {
-      std::vector<const char*> cstrs;
-      for (const auto& authorVal : val->GetList()) {
-        if (authorVal.is_string()) {
-          cstrs.push_back(authorVal.GetString().c_str());
-        }
-      }
-      if (cstrs.empty()) {
-        LOG(WARNING) << "No author strings found in 'authors' array";
-      } else {
-        cstrs.push_back(nullptr);  // null-terminated char* array
-        gtk_about_dialog_set_authors(dialog, cstrs.data());
+  if ((val = opts.FindListKey("authors"))) {
+    std::vector<const char*> cstrs;
+    for (const auto& authorVal : val->GetList()) {
+      if (authorVal.is_string()) {
+        cstrs.push_back(authorVal.GetString().c_str());
       }
     }
-  } else {
-    LOG(WARNING) << "Called showAboutPanel(), but didn't use "
-                    "setAboutPanelSettings() first";
+    if (cstrs.empty()) {
+      LOG(WARNING) << "No author strings found in 'authors' array";
+    } else {
+      cstrs.push_back(nullptr);  // null-terminated char* array
+      gtk_about_dialog_set_authors(dialog, cstrs.data());
+    }
   }
 
   gtk_dialog_run(GTK_DIALOG(dialog));
