@@ -139,9 +139,9 @@ Writes any unwritten DOMStorage data to disk.
 #### `ses.setProxy(config)`
 
 * `config` Object
-  * `pacScript` String - The URL associated with the PAC file.
-  * `proxyRules` String - Rules indicating which proxies to use.
-  * `proxyBypassRules` String - Rules indicating which URLs should
+  * `pacScript` String (optional) - The URL associated with the PAC file.
+  * `proxyRules` String (optional) - Rules indicating which proxies to use.
+  * `proxyBypassRules` String (optional) - Rules indicating which URLs should
     bypass the proxy settings.
 
 Returns `Promise<void>` - Resolves when the proxy setting process is complete.
@@ -267,7 +267,7 @@ the original network configuration.
 
 #### `ses.setCertificateVerifyProc(proc)`
 
-* `proc` Function
+* `proc` Function | null
   * `request` Object
     * `hostname` String
     * `certificate` [Certificate](structures/certificate.md)
@@ -416,8 +416,8 @@ Returns `Promise<Buffer>` - resolves with blob data.
   * `mimeType` String (optional)
   * `offset` Integer - Start range for the download.
   * `length` Integer - Total length of the download.
-  * `lastModified` String - Last-Modified header value.
-  * `eTag` String - ETag header value.
+  * `lastModified` String (optional) - Last-Modified header value.
+  * `eTag` String (optional) - ETag header value.
   * `startTime` Double (optional) - Time when download was started in
     number of seconds since UNIX epoch.
 
