@@ -363,12 +363,13 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   // Obtain the session.
   std::string partition;
   mate::Handle<api::Session> session;
-  if (options.Get("session", &session) && !session.IsEmpty()) {
-  } else if (options.Get("partition", &partition)) {
-    session = Session::FromPartition(isolate, partition);
-  } else {
-    // Use the default session if not specified.
-    session = Session::FromPartition(isolate, "");
+  if (!options.Get("session", &session) || session.IsEmpty()) {
+    if (options.Get("partition", &partition)) {
+      session = Session::FromPartition(isolate, partition);
+    } else {
+      // Use the default session if not specified.
+      session = Session::FromPartition(isolate, "");
+    }
   }
   session_.Reset(isolate, session.ToV8());
 
@@ -1889,13 +1890,13 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            const base::ListValue& args,
                                            int32_t sender_id) {
   std::vector<content::RenderFrameHost*> target_hosts;
-  if (!send_to_all) {
+  if (send_to_all) {
+    target_hosts = web_contents()->GetAllFrames();
+  } else {
     auto* frame_host = web_contents()->GetMainFrame();
     if (frame_host) {
       target_hosts.push_back(frame_host);
     }
-  } else {
-    target_hosts = web_contents()->GetAllFrames();
   }
 
   for (auto* frame_host : target_hosts) {
