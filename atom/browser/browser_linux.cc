@@ -157,7 +157,12 @@ void Browser::ShowAboutPanel() {
     gtk_about_dialog_set_website(dialog, website.c_str());
   if (about_panel_options_.GetString("iconPath", &icon_path)) {
     GError* error = nullptr;
-    GdkPixbuf* icon = gdk_pixbuf_new_from_file(icon_path.c_str(), &error);
+    constexpr int width = 64;   // width of about panel icon in pixels
+    constexpr int height = 64;  // height of about panel icon in pixels
+
+    // set preserve_aspect_ratio to true
+    GdkPixbuf* icon = gdk_pixbuf_new_from_file_at_size(icon_path.c_str(), width,
+                                                       height, &error);
     if (error != nullptr) {
       g_warning("%s", error->message);
       g_clear_error(&error);
