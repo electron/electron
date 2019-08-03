@@ -21,7 +21,8 @@ async function main () {
   const testChild = cp.spawn('python', ['tools/test.py', '--verbose', '-p', 'tap', '--logfile', TAP_FILE_NAME, '--mode=debug', 'default', `--skip-tests=${DISABLED_TESTS.join(',')}`, '--shell', utils.getAbsoluteElectronExec(), '-J'], {
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: 'true'
+      ELECTRON_RUN_AS_NODE: 'true',
+      ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING: 'true'
     },
     cwd: NODE_DIR,
     stdio: 'inherit'

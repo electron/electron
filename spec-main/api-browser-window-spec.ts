@@ -44,7 +44,7 @@ const expectBoundsEqual = (actual: any, expected: any) => {
 
 const closeAllWindows = async () => {
   for (const w of BrowserWindow.getAllWindows()) {
-    await closeWindow(w, {assertNotWindows: false})
+    await closeWindow(w, { assertNotWindows: false })
   }
 }
 
@@ -66,7 +66,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.close()', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -136,7 +136,7 @@ describe('BrowserWindow module', () => {
         { name: 'did-fail-load', path: '/net-error' }
       ]
 
-      for (const {name, path} of events) {
+      for (const { name, path } of events) {
         it(`should not crash when closed during ${name}`, async () => {
           const w = new BrowserWindow({ show: false })
           w.webContents.once((name as any), () => {
@@ -153,7 +153,7 @@ describe('BrowserWindow module', () => {
   describe('window.close()', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -177,7 +177,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.destroy()', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -193,7 +193,7 @@ describe('BrowserWindow module', () => {
       }).to.throw('Object has been destroyed')
     })
     it('should not crash when destroying windows with pending events', () => {
-      const focusListener = () => {}
+      const focusListener = () => { }
       app.on('browser-window-focus', focusListener)
       const windowCount = 3
       const windowOptions = {
@@ -227,7 +227,7 @@ describe('BrowserWindow module', () => {
     })
 
     beforeEach(() => {
-      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -253,7 +253,7 @@ describe('BrowserWindow module', () => {
         }
       ]
       server = http.createServer((req, res) => {
-        function respond () {
+        function respond() {
           if (req.method === 'POST') {
             let body = ''
             req.on('data', (data) => {
@@ -264,7 +264,7 @@ describe('BrowserWindow module', () => {
               fs.readFile(filePath, (err, data) => {
                 if (err) return
                 if (parsedData.username === 'test' &&
-                    parsedData.file === data.toString()) {
+                  parsedData.file === data.toString()) {
                   res.end()
                 }
               })
@@ -418,7 +418,7 @@ describe('BrowserWindow module', () => {
   describe('navigation events', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -523,7 +523,7 @@ describe('BrowserWindow module', () => {
   describe('focus and visibility', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -656,7 +656,7 @@ describe('BrowserWindow module', () => {
   describe('sizing', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false, width: 400, height: 400})
+      w = new BrowserWindow({ show: false, width: 400, height: 400 })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -890,7 +890,7 @@ describe('BrowserWindow module', () => {
   ifdescribe(process.platform === 'darwin')('tabbed windows', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -961,7 +961,7 @@ describe('BrowserWindow module', () => {
   describe('autoHideMenuBar property', () => {
     afterEach(closeAllWindows)
     it('exists', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(w).to.have.property('autoHideMenuBar')
 
       // TODO(codebytere): remove when propertyification is complete
@@ -974,7 +974,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('returns a Promise with a Buffer', async () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       const image = await w.capturePage({
         x: 0,
         y: 0,
@@ -986,7 +986,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('preserves transparency', async () => {
-      const w = new BrowserWindow({show: false, transparent: true})
+      const w = new BrowserWindow({ show: false, transparent: true })
       w.loadURL('about:blank')
       await emittedOnce(w, 'ready-to-show')
       w.show()
@@ -1003,7 +1003,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.setProgressBar(progress)', () => {
     let w = null as unknown as BrowserWindow
     before(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
     after(async () => {
       await closeWindow(w)
@@ -1043,7 +1043,7 @@ describe('BrowserWindow module', () => {
     let w = null as unknown as BrowserWindow
 
     beforeEach(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
 
     afterEach(async () => {
@@ -1095,7 +1095,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
     let w = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({ show: false })
     })
     afterEach(async () => {
       await closeWindow(w)
@@ -1122,7 +1122,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('does not throw', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.setWindowButtonVisibility(true)
         w.setWindowButtonVisibility(false)
@@ -1145,7 +1145,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('allows setting, changing, and removing the vibrancy', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.setVibrancy('light')
         w.setVibrancy('dark')
@@ -1160,7 +1160,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('supports setting the app details', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       const iconPath = path.join(fixtures, 'assets', 'icon.ico')
 
       expect(() => {
@@ -1189,7 +1189,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.fromId(id)', () => {
     afterEach(closeAllWindows)
     it('returns the window with id', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(BrowserWindow.fromId(w.id).id).to.equal(w.id)
     })
   })
@@ -1198,7 +1198,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('returns the window with the webContents', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       const found = BrowserWindow.fromWebContents(w.webContents)
       expect(found.id).to.equal(w.id)
     })
@@ -1399,7 +1399,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     describe('"preload" option', () => {
-      const doesNotLeakSpec = (name: string, webPrefs: {nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean}) => {
+      const doesNotLeakSpec = (name: string, webPrefs: { nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean }) => {
         it(name, async () => {
           const w = new BrowserWindow({
             webPreferences: {
@@ -1616,7 +1616,7 @@ describe('BrowserWindow module', () => {
     })
 
     describe('"sandbox" option', () => {
-      function waitForEvents<T>(emitter: {once: Function}, events: string[], callback: () => void) {
+      function waitForEvents<T>(emitter: { once: Function }, events: string[], callback: () => void) {
         let count = events.length
         for (const event of events) {
           emitter.once(event, () => {
@@ -1859,7 +1859,7 @@ describe('BrowserWindow module', () => {
       describe('event handling', () => {
         let w: BrowserWindow = null as unknown as BrowserWindow
         beforeEach(() => {
-          w = new BrowserWindow({show: false, webPreferences: {sandbox: true}})
+          w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
         })
         it('works for window events', (done) => {
           waitForEvents(w, [
@@ -2257,7 +2257,7 @@ describe('BrowserWindow module', () => {
   describe('beforeunload handler', () => {
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(() => {
-      w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
     })
     afterEach(closeAllWindows)
     it('returning undefined would not prevent close', (done) => {
@@ -2480,7 +2480,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('emits when window.open is called', (done) => {
-      const w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
         e.preventDefault()
         expect(url).to.equal('http://host/')
@@ -2504,7 +2504,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('emits when link with target is called', (done) => {
-      const w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
       w.webContents.once('new-window', (e, url, frameName) => {
         e.preventDefault()
         expect(url).to.equal('http://host/')
@@ -2518,14 +2518,14 @@ describe('BrowserWindow module', () => {
   ifdescribe(process.platform !== 'linux')('max/minimize events', () => {
     afterEach(closeAllWindows)
     it('emits an event when window is maximized', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.once('maximize', () => { done() })
       w.show()
       w.maximize()
     })
 
     it('emits an event when window is unmaximized', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.once('unmaximize', () => { done() })
       w.show()
       w.maximize()
@@ -2533,7 +2533,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('emits an event when window is minimized', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.once('minimize', () => { done() })
       w.show()
       w.minimize()
@@ -2542,7 +2542,7 @@ describe('BrowserWindow module', () => {
 
   describe('beginFrameSubscription method', () => {
     it('does not crash when callback returns nothing', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
       w.webContents.on('dom-ready', () => {
         w.webContents.beginFrameSubscription(function (data) {
@@ -2557,7 +2557,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('subscribes to frame updates', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       let called = false
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
       w.webContents.on('dom-ready', () => {
@@ -2576,7 +2576,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('subscribes to frame updates (only dirty rectangle)', (done) => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       let called = false
       let gotInitialFullSizeFrame = false
       const [contentWidth, contentHeight] = w.getContentSize()
@@ -2588,7 +2588,7 @@ describe('BrowserWindow module', () => {
             return
           }
           if (rect.height === contentHeight && rect.width === contentWidth &&
-              !gotInitialFullSizeFrame) {
+            !gotInitialFullSizeFrame) {
             // The initial frame is full-size, but we're looking for a call
             // with just the dirty-rect. The next frame should be a smaller
             // rect.
@@ -2613,7 +2613,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('throws error when subscriber is not well defined', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.webContents.beginFrameSubscription(true, true as any)
       }).to.throw('Error processing argument at index 1, conversion failure from true')
@@ -2640,7 +2640,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows)
 
     it('should save page to disk', async () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'))
       await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete')
 
@@ -2691,7 +2691,7 @@ describe('BrowserWindow module', () => {
     // only applicable to windows: https://github.com/electron/electron/issues/6036
     ifdescribe(process.platform === 'win32')('on windows', () => {
       it('should restore a normal visible window from a fullscreen startup state', async () => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         await w.loadURL('about:blank')
         const shown = emittedOnce(w, 'show')
         // start fullscreen and hidden
@@ -2705,7 +2705,7 @@ describe('BrowserWindow module', () => {
         expect(w.isFullScreen()).to.be.false('fullscreen')
       })
       it('should keep window hidden if already in hidden state', async () => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         await w.loadURL('about:blank')
         const leftFullScreen = emittedOnce(w, 'leave-full-screen')
         w.setFullScreen(false)
@@ -2755,18 +2755,18 @@ describe('BrowserWindow module', () => {
 
     describe('parent option', () => {
       it('sets parent window', () => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false, parent: w})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false, parent: w })
         expect(c.getParentWindow()).to.equal(w)
       })
       it('adds window to child windows of parent', () => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false, parent: w})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false, parent: w })
         expect(w.getChildWindows()).to.deep.equal([c])
       })
       it('removes from child windows of parent when window is closed', (done) => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false, parent: w})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false, parent: w })
         c.once('closed', () => {
           // The child window list is not immediately cleared, so wait a tick until it's ready.
           setTimeout(() => {
@@ -2778,8 +2778,8 @@ describe('BrowserWindow module', () => {
       })
 
       it('should not affect the show option', () => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false, parent: w})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false, parent: w })
         expect(c.isVisible()).to.be.false('child is visible')
         expect(c.getParentWindow().isVisible()).to.be.false('parent is visible')
       })
@@ -2787,8 +2787,8 @@ describe('BrowserWindow module', () => {
 
     describe('win.setParentWindow(parent)', () => {
       it('sets parent window', () => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false })
         expect(w.getParentWindow()).to.be.null('w.parent')
         expect(c.getParentWindow()).to.be.null('c.parent')
         c.setParentWindow(w)
@@ -2797,8 +2797,8 @@ describe('BrowserWindow module', () => {
         expect(c.getParentWindow()).to.be.null('c.parent')
       })
       it('adds window to child windows of parent', () => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false })
         expect(w.getChildWindows()).to.deep.equal([])
         c.setParentWindow(w)
         expect(w.getChildWindows()).to.deep.equal([c])
@@ -2806,8 +2806,8 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows()).to.deep.equal([])
       })
       it('removes from child windows of parent when window is closed', (done) => {
-        const w = new BrowserWindow({show: false})
-        const c = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false })
         c.once('closed', () => {
           // The child window list is not immediately cleared, so wait a tick until it's ready.
           setTimeout(() => {
@@ -2823,14 +2823,14 @@ describe('BrowserWindow module', () => {
     // The isEnabled API is not reliable on macOS.
     ifdescribe(process.platform !== 'darwin')('modal option', () => {
       it('disables parent window', () => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         expect(w.isEnabled()).to.be.true('w.isEnabled')
         c.show()
         expect(w.isEnabled()).to.be.false('w.isEnabled')
       })
       it('re-enables an enabled parent window when closed', (done) => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         c.once('closed', () => {
           expect(w.isEnabled()).to.be.true('w.isEnabled')
@@ -2840,7 +2840,7 @@ describe('BrowserWindow module', () => {
         c.close()
       })
       it('does not re-enable a disabled parent window when closed', (done) => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         c.once('closed', () => {
           expect(w.isEnabled()).to.be.false('w.isEnabled')
@@ -2851,7 +2851,7 @@ describe('BrowserWindow module', () => {
         c.close()
       })
       it('disables parent window recursively', () => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         const c = new BrowserWindow({ show: false, parent: w, modal: true })
         const c2 = new BrowserWindow({ show: false, parent: w, modal: true })
         c.show()
@@ -2970,7 +2970,7 @@ describe('BrowserWindow module', () => {
       })
 
       it('is true when the main frame is loading', (done) => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         w.webContents.on('did-start-loading', () => {
           expect(w.webContents.isLoadingMainFrame()).to.be.true('isLoadingMainFrame')
           done()
@@ -2978,7 +2978,7 @@ describe('BrowserWindow module', () => {
         w.webContents.loadURL(serverUrl)
       })
       it('is false when only a subframe is loading', (done) => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         w.webContents.once('did-stop-loading', () => {
           expect(w.webContents.isLoadingMainFrame()).to.be.false('isLoadingMainFrame')
           w.webContents.on('did-start-loading', () => {
@@ -2994,7 +2994,7 @@ describe('BrowserWindow module', () => {
         w.webContents.loadURL(serverUrl)
       })
       it('is true when navigating to pages from the same origin', (done) => {
-        const w = new BrowserWindow({show: false})
+        const w = new BrowserWindow({ show: false })
         w.webContents.once('did-stop-loading', () => {
           expect(w.webContents.isLoadingMainFrame()).to.be.false('isLoadingMainFrame')
           w.webContents.on('did-start-loading', () => {
@@ -3334,7 +3334,7 @@ describe('BrowserWindow module', () => {
   ifdescribe(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('window.getNativeWindowHandle()', () => {
     afterEach(closeAllWindows)
     it('returns valid handle', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       // The module's source code is hosted at
       // https://github.com/electron/node-is-valid-window
       const isValidWindow = require('is-valid-window')
@@ -3356,7 +3356,7 @@ describe('BrowserWindow module', () => {
 
           const showLastPanel = () => {
             // this is executed in the devtools context, where UI is a global
-            const {UI} = (window as any)
+            const { UI } = (window as any)
             const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
             UI.inspectorView.showPanel(lastPanelId)
           }
@@ -3410,7 +3410,7 @@ describe('BrowserWindow module', () => {
           let message: any
           let w: BrowserWindow
           before(async () => {
-            w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+            w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
             const p = new Promise(resolve => ipcMain.once('answer', (event, message) => {
               resolve(message)
             }))
@@ -3456,7 +3456,7 @@ describe('BrowserWindow module', () => {
           let message: any
           let w: BrowserWindow
           before(async () => {
-            w = new BrowserWindow({show: false, webPreferences: {nodeIntegration: true}})
+            w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
             showLastDevToolsPanel(w)
             w.loadURL('about:blank')
             w.webContents.openDevTools({ mode: 'undocked' })
@@ -3540,7 +3540,7 @@ describe('BrowserWindow module', () => {
   ifdescribe(process.platform === 'darwin')('previewFile', () => {
     afterEach(closeAllWindows)
     it('opens the path in Quick Look on macOS', () => {
-      const w = new BrowserWindow({show: false})
+      const w = new BrowserWindow({ show: false })
       expect(() => {
         w.previewFile(__filename)
         w.closeFilePreview()
