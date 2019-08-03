@@ -18,7 +18,7 @@ let win = new BrowserWindow({ icon: '/Users/somebody/images/window.png' })
 console.log(appIcon, win)
 ```
 
-Or read the image from the clipboard which returns a `NativeImage`:
+Or read the image from the clipboard, which returns a `NativeImage`:
 
 ```javascript
 const { clipboard, Tray } = require('electron')
@@ -33,7 +33,7 @@ Currently `PNG` and `JPEG` image formats are supported. `PNG` is recommended
 because of its support for transparency and lossless compression.
 
 On Windows, you can also load `ICO` icons from file paths. For best visual
-quality it is recommended to include at least the following sizes in the:
+quality, it is recommended to include at least the following sizes in the:
 
 * Small icon
  * 16x16 (100% DPI scale)
@@ -56,7 +56,7 @@ Check the *Size requirements* section in [this article][icons].
 On platforms that have high-DPI support such as Apple Retina displays, you can
 append `@2x` after image's base filename to mark it as a high resolution image.
 
-For example if `icon.png` is a normal image that has standard resolution, then
+For example, if `icon.png` is a normal image that has standard resolution, then
 `icon@2x.png` will be treated as a high resolution image that has double DPI
 density.
 
@@ -94,10 +94,10 @@ Following suffixes for DPI are also supported:
 ## Template Image
 
 Template images consist of black and an alpha channel.
-Template images are not intended to be used as standalone images and are usually
+Template images are not intended to be used as standalone images, and are usually
 mixed with other content to create the desired final appearance.
 
-The most common case is to use template images for a menu bar icon so it can
+The most common case is to use template images for a menu bar icon, so it can
 adapt to both light and dark menu bars.
 
 **Note:** Template image is only supported on macOS.
@@ -295,7 +295,7 @@ Returns `NativeImage` - The cropped image.
   * `width` Integer (optional) - Defaults to the image's width.
   * `height` Integer (optional) - Defaults to the image's height.
   * `quality` String (optional) - The desired quality of the resize image.
-    Possible values are `good`, `better` or `best`. The default is `best`.
+    Possible values are `good`, `better`, or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated
     into an algorithm-specific method that depends on the capabilities
     (CPU, GPU) of the underlying platform. It is possible for all three methods
