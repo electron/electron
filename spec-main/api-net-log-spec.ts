@@ -1,28 +1,27 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const http = require('http')
-const fs = require('fs')
-const os = require('os')
-const path = require('path')
-const ChildProcess = require('child_process')
-const {session, net} = require('electron')
+import { expect } from 'chai'
+import * as http from 'http'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+import * as ChildProcess from 'child_process'
+import { session, net } from 'electron'
+import { Socket, AddressInfo } from 'net';
+
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 
-const { expect } = chai
-chai.use(dirtyChai)
-const isCI = global.isCI
 const testNetLog = () => session.fromPartition('net-log').netLog
 
 describe('netLog module', () => {
-  let server
-  const connections = new Set()
+  let server: http.Server
+  let serverUrl: string
+  const connections: Set<Socket> = new Set()
 
   before(done => {
     server = http.createServer()
     server.listen(0, '127.0.0.1', () => {
-      server.url = `http://127.0.0.1:${server.address().port}`
+      serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
       done()
     })
     server.on('connection', (connection) => {
@@ -41,13 +40,13 @@ describe('netLog module', () => {
       connection.destroy()
     }
     server.close(() => {
-      server = null
+      server = null as any
       done()
     })
   })
 
   beforeEach(() => {
-    expect(testNetLog().currentlyLogging).to.be.false()
+    expect(testNetLog().currentlyLogging).to.be.false('currently logging')
   })
   afterEach(() => {
     try {
@@ -60,19 +59,19 @@ describe('netLog module', () => {
     } catch (e) {
       // Ignore error
     }
-    expect(testNetLog().currentlyLogging).to.be.false()
+    expect(testNetLog().currentlyLogging).to.be.false('currently logging')
   })
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
     await testNetLog().startLogging(dumpFileDynamic)
 
-    expect(testNetLog().currentlyLogging).to.be.true()
+    expect(testNetLog().currentlyLogging).to.be.true('currently logging')
 
     expect(testNetLog().currentlyLoggingPath).to.equal(dumpFileDynamic)
 
     await testNetLog().stopLogging()
 
-    expect(fs.existsSync(dumpFileDynamic)).to.be.true()
+    expect(fs.existsSync(dumpFileDynamic)).to.be.true('currently logging')
   })
 
   it('should throw an error when .stopLogging() is called without calling .startLogging()', async () => {
@@ -81,17 +80,17 @@ describe('netLog module', () => {
 
   it('should throw an error when .startLogging() is called with an invalid argument', () => {
     expect(() => testNetLog().startLogging('')).to.throw()
-    expect(() => testNetLog().startLogging(null)).to.throw()
-    expect(() => testNetLog().startLogging([])).to.throw()
-    expect(() => testNetLog().startLogging('aoeu', {captureMode: 'aoeu'})).to.throw()
-    expect(() => testNetLog().startLogging('aoeu', {maxFileSize: null})).to.throw()
+    expect(() => testNetLog().startLogging(null as any)).to.throw()
+    expect(() => testNetLog().startLogging([] as any)).to.throw()
+    expect(() => testNetLog().startLogging('aoeu', {captureMode: 'aoeu' as any})).to.throw()
+    expect(() => testNetLog().startLogging('aoeu', {maxFileSize: null as any})).to.throw()
   })
 
   it('should include cookies when requested', async () => {
     await testNetLog().startLogging(dumpFileDynamic, {captureMode: "includeSensitive"})
     const unique = require('uuid').v4()
     await new Promise((resolve) => {
-      const req = net.request(server.url)
+      const req = net.request(serverUrl)
       req.setHeader('Cookie', `foo=${unique}`)
       req.on('response', (response) => {
         response.on('data', () => {})  // https://github.com/electron/electron/issues/19214
@@ -109,7 +108,7 @@ describe('netLog module', () => {
     await testNetLog().startLogging(dumpFileDynamic, {captureMode: "everything"})
     const unique = require('uuid').v4()
     await new Promise((resolve) => {
-      const req = net.request({method: 'POST', url: server.url})
+      const req = net.request({method: 'POST', url: serverUrl})
       req.on('response', (response) => {
         response.on('data', () => {})  // https://github.com/electron/electron/issues/19214
         response.on('end', () => resolve())
@@ -119,7 +118,7 @@ describe('netLog module', () => {
     await testNetLog().stopLogging()
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dump file exists')
     const dump = fs.readFileSync(dumpFileDynamic, 'utf8')
-    expect(JSON.parse(dump).events.some(x => x.params && x.params.bytes && Buffer.from(x.params.bytes, 'base64').includes(unique))).to.be.true('uuid present in dump')
+    expect(JSON.parse(dump).events.some((x: any) => x.params && x.params.bytes && Buffer.from(x.params.bytes, 'base64').includes(unique))).to.be.true('uuid present in dump')
   })
 
   it('should begin and end logging automatically when --log-net-log is passed', done => {
@@ -131,13 +130,13 @@ describe('netLog module', () => {
     const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
-          TEST_REQUEST_URL: server.url,
+          TEST_REQUEST_URL: serverUrl,
           TEST_DUMP_FILE: dumpFile
         }
       })
 
     appProcess.once('exit', () => {
-      expect(fs.existsSync(dumpFile)).to.be.true()
+      expect(fs.existsSync(dumpFile)).to.be.true('dump file exists')
       done()
     })
   })
@@ -151,16 +150,16 @@ describe('netLog module', () => {
     const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
-          TEST_REQUEST_URL: server.url,
+          TEST_REQUEST_URL: serverUrl,
           TEST_DUMP_FILE: dumpFile,
           TEST_DUMP_FILE_DYNAMIC: dumpFileDynamic,
-          TEST_MANUAL_STOP: true
+          TEST_MANUAL_STOP: 'true'
         }
       })
 
     appProcess.once('exit', () => {
-      expect(fs.existsSync(dumpFile)).to.be.true()
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true()
+      expect(fs.existsSync(dumpFile)).to.be.true('dump file exists')
+      expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
       done()
     })
   })
@@ -174,13 +173,13 @@ describe('netLog module', () => {
     const appProcess = ChildProcess.spawn(process.execPath,
       [appPath], {
         env: {
-          TEST_REQUEST_URL: server.url,
+          TEST_REQUEST_URL: serverUrl,
           TEST_DUMP_FILE_DYNAMIC: dumpFileDynamic
         }
       })
 
     appProcess.once('close', () => {
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true()
+      expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists')
       done()
     })
   })
