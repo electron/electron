@@ -38,7 +38,7 @@ downloadArtifact({
 }).then((zipPath) => extractFile(zipPath)).catch((err) => onerror(err))
 
 // unzips and makes path.txt point at the correct executable
-function extractFile(zipPath) {
+function extractFile (zipPath) {
   extract(zipPath, { dir: path.join(__dirname, 'dist') }, function (err) {
     if (err) return onerror(err)
     fs.writeFile(path.join(__dirname, 'path.txt'), platformPath, function (err) {
@@ -47,11 +47,11 @@ function extractFile(zipPath) {
   })
 }
 
-function onerror(err) {
+function onerror (err) {
   throw err
 }
 
-function getPlatformPath() {
+function getPlatformPath () {
   const platform = process.env.npm_config_platform || os.platform()
 
   switch (platform) {
