@@ -97,7 +97,7 @@ Template images consist of black and an alpha channel.
 Template images are not intended to be used as standalone images and are usually
 mixed with other content to create the desired final appearance.
 
-The most common case is to use template images for a menu bar icon, so it can
+The most common case is to use template images for a menu bar icon so it can
 adapt to both light and dark menu bars.
 
 **Note:** Template image is only supported on macOS.
