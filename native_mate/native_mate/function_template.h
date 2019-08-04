@@ -156,7 +156,7 @@ struct ArgumentHolder {
   ArgumentHolder(Arguments* args, int create_flags) : ok(false) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
         Destroyable::IsDestroyed(args)) {
-      args->ThrowError("Attempted to perform an action on a destroyed Electron Object.");
+      args->ThrowError("Object has been destroyed");
       return;
     }
     ok = GetNextArgument(args, create_flags, index == 0, &value);
