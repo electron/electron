@@ -277,7 +277,7 @@ index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..92b46562ef36bbfe874d39d706ab589d
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
-@@ -89,17 +90,19 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
+@@ -89,20 +90,23 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
    g_test_delegate = delegate;
  }
  
@@ -300,7 +300,11 @@ index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..92b46562ef36bbfe874d39d706ab589d
    is_printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
    is_printing_enabled_.MoveToSequence(
        base::CreateSingleThreadTaskRunner({BrowserThread::IO}));
-@@ -137,11 +140,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
++  #endif
+ }
+ 
+ PrintingMessageFilter::~PrintingMessageFilter() {
+@@ -137,11 +141,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -314,7 +318,7 @@ index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..92b46562ef36bbfe874d39d706ab589d
    std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query) {
      printer_query =
-@@ -227,11 +232,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -227,11 +233,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
