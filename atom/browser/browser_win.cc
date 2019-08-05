@@ -96,9 +96,6 @@ void Browser::Focus() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  if (base::win::GetVersion() < base::win::Version::WIN7)
-    return;
-
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
                                            IID_PPV_ARGS(&item));
@@ -111,9 +108,6 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 }
 
 void Browser::ClearRecentDocuments() {
-  if (base::win::GetVersion() < base::win::Version::WIN7)
-    return;
-
   SHAddToRecentDocs(SHARD_APPIDINFO, nullptr);
 }
 
