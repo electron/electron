@@ -618,13 +618,12 @@ void AtomBrowserClient::AllowCertificateError(
     const GURL& request_url,
     bool is_main_frame_request,
     bool strict_enforcement,
-    bool expired_previous_decision,
     const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
-    delegate_->AllowCertificateError(
-        web_contents, cert_error, ssl_info, request_url, is_main_frame_request,
-        strict_enforcement, expired_previous_decision, callback);
+    delegate_->AllowCertificateError(web_contents, cert_error, ssl_info,
+                                     request_url, is_main_frame_request,
+                                     strict_enforcement, callback);
   }
 }
 
