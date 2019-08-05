@@ -7,6 +7,8 @@
     "postinstall": "node ../tools/run-if-exists.js node_modules/robotjs node-gyp rebuild"
   },
   "devDependencies": {
+    "@types/basic-auth": "^1.1.2",
+    "@types/send": "^0.14.4",
     "basic-auth": "^2.0.1",
     "bluebird": "^3.5.3",
     "chai": "^4.2.0",

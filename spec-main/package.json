@@ -2,9 +2,5 @@
   "name": "electron-test-main",
   "productName": "Electron Test Main",
   "main": "index.js",
-  "version": "0.1.0",
-  "devDependencies": {
-    "@types/basic-auth": "^1.1.2",
-    "@types/send": "^0.14.4"
-  }
+  "version": "0.1.0"
 }
