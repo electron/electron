@@ -228,6 +228,10 @@ Returns `Boolean` - Whether double click events will be ignored.
 
 Displays a tray balloon.
 
+#### `tray.removeBalloon()` _Windows_
+
+Removes a tray balloon.
+
 #### `tray.popUpContextMenu([menu, position])` _macOS_ _Windows_
 
 * `menu` Menu (optional)
