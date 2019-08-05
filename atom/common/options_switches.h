@@ -119,6 +119,7 @@ extern const char kWebviewTag[];
 extern const char kNodeIntegrationInSubFrames[];
 extern const char kDisableHtmlFullscreenWindowResize[];
 extern const char kDisableElectronSiteInstanceOverrides[];
+extern const char kEnableNodeLeakageInRenderers[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
