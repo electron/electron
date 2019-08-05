@@ -94,10 +94,10 @@ index 66d67f8bf62ce05717bf6aa74f39be29ec232395..e9d6b91edd8ed46215bcad36bf621dd0
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 7f662b0baf976bc6b37722f55986fb5c0e8260e8..61a1411931903827b0ef303e6c5a63c8ddb08fc7 100644
+index 9159b2b06ac674e99cc20e3befc1f92b41b39f92..6a508ecccf3e0d9f1481d3d197540ffc59dff413 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -558,6 +558,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
+@@ -530,6 +530,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
      case kColorId_TableGroupingIndicatorColor:
        return system_colors_[COLOR_GRAYTEXT];
  

@@ -45,7 +45,7 @@ diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/b
 index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..2702cab24f86d850829709bbc664695432bb9c0e 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2180,6 +2180,21 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2172,6 +2172,21 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
