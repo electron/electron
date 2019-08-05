@@ -890,19 +890,19 @@ describe('net module', () => {
     })
 
     it('Should throw when invalid filters are passed to a request', () => {
-      expect(() => {
+      assert.throws(() => {
         session.defaultSession.webRequest.onBeforeRequest(
           { urls: ['*://www.googleapis.com'] },
           (details, callback) => { callback({ cancel: false }) }
         )
-      }).to.throw('Invalid url pattern *://www.googleapis.com: Empty path.')
+      }, 'Invalid url pattern *://www.googleapis.com: Empty path.')
 
-      expect(() => {
+      assert.throws(() => {
         session.defaultSession.webRequest.onBeforeRequest(
           { urls: [ '*://www.googleapis.com/', '*://blahblah.dev' ] },
           (details, callback) => { callback({ cancel: false }) }
         )
-      }).to.throw('Invalid url pattern *://blahblah.dev: Empty path.')
+      }, 'Invalid url pattern *://blahblah.dev: Empty path.')
     })
 
     it('should to able to create and intercept a request using a custom session object', (done) => {
