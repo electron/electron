@@ -20,13 +20,12 @@ AtomDesktopNativeWidgetAura::AtomDesktopNativeWidgetAura(
 }
 
 void AtomDesktopNativeWidgetAura::InitNativeWidget(
-    const views::Widget::InitParams& params) {
-  views::Widget::InitParams modified_params = params;
+    views::Widget::InitParams params) {
   desktop_window_tree_host_ = new AtomDesktopWindowTreeHostWin(
       native_window_view_,
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
-  modified_params.desktop_window_tree_host = desktop_window_tree_host_;
-  views::DesktopNativeWidgetAura::InitNativeWidget(modified_params);
+  params.desktop_window_tree_host = desktop_window_tree_host_;
+  views::DesktopNativeWidgetAura::InitNativeWidget(std::move(params));
 }
 
 void AtomDesktopNativeWidgetAura::Activate() {

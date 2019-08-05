@@ -191,7 +191,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
                                               &params.wm_class_class);
 #endif
 
-    devtools_window_->Init(params);
+    devtools_window_->Init(std::move(params));
     devtools_window_->UpdateWindowIcon();
   }
 

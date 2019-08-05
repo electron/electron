@@ -215,7 +215,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   params.force_software_compositing = true;
   params.z_order = ui::ZOrderLevel::kFloatingUIElement;
 
-  widget_->Init(params);
+  widget_->Init(std::move(params));
 
   widget_->Show();
   widget_->Activate();

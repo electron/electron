@@ -333,7 +333,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
-  widget()->Init(params);
+  widget()->Init(std::move(params));
   window_ = static_cast<AtomNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
