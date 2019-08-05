@@ -307,7 +307,7 @@ describe('net module', () => {
             done()
           })
         })
-        urlRequest.setHeader(customHeaderName, customHeaderValue)
+        urlRequest.setHeader(customHeaderName, customHeaderValue as any)
         expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue)
         expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue)
         urlRequest.write('')
@@ -975,7 +975,7 @@ describe('net module', () => {
       expect(() => {
         net.request({
           url: 'https://foo',
-          session: 1
+          session: 1 as any
         })
       }).to.throw("`session` should be an instance of the Session class")
     })
@@ -984,7 +984,7 @@ describe('net module', () => {
       expect(() => {
         net.request({
           url: 'https://foo',
-          partition: 1
+          partition: 1 as any
         })
       }).to.throw("`partition` should be a string")
     })
@@ -1001,7 +1001,7 @@ describe('net module', () => {
       }).then(serverUrlUnparsed => {
         const serverUrl = url.parse(serverUrlUnparsed)
         const options = {
-          port: serverUrl.port,
+          port: serverUrl.port ? parseInt(serverUrl.port, 10) : undefined,
           hostname: '127.0.0.1',
           headers: { [customHeaderName]: customHeaderValue }
         }

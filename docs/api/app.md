@@ -32,7 +32,7 @@ In most cases, you should do everything in the `ready` event handler.
 
 Returns:
 
-* `launchInfo` Object _macOS_
+* `launchInfo` unknown _macOS_
 
 Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
 the `userInfo` of the `NSUserNotification` that was used to open the application,
@@ -146,7 +146,7 @@ Returns:
 * `event` Event
 * `type` String - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - Contains app-specific state stored by the activity on
+* `userInfo` unknown - Contains app-specific state stored by the activity on
   another device.
 
 Emitted during [Handoff][handoff] when an activity from a different device wants
@@ -189,7 +189,7 @@ Returns:
 * `event` Event
 * `type` String - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - Contains app-specific state stored by the activity.
+* `userInfo` unknown - Contains app-specific state stored by the activity.
 
 Emitted during [Handoff][handoff] after an activity from this device was successfully
 resumed on another one.
@@ -201,7 +201,7 @@ Returns:
 * `event` Event
 * `type` String - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - Contains app-specific state stored by the activity.
+* `userInfo` unknown - Contains app-specific state stored by the activity.
 
 Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediately, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise, the operation will fail and `continue-activity-error` will be called.
 
@@ -949,7 +949,7 @@ allow multiple instances of the application to once again run side by side.
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - App-specific state to store for use by another device.
+* `userInfo` any - App-specific state to store for use by another device.
 * `webpageURL` String (optional) - The webpage to load in a browser if no suitable app is
   installed on the resuming device. The scheme must be `http` or `https`.
 
@@ -972,7 +972,7 @@ Marks the current [Handoff][handoff] user activity as inactive without invalidat
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - App-specific state to store for use by another device.
+* `userInfo` any - App-specific state to store for use by another device.
 
 Updates the current activity if its type matches `type`, merging the entries from
 `userInfo` into its current `userInfo` dictionary.
