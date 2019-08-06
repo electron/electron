@@ -402,7 +402,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->navigate_on_drag_drop = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
                                       ? blink::PreferredColorScheme::kDark
                                       : blink::PreferredColorScheme::kLight;
 
