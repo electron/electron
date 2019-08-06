@@ -33,9 +33,9 @@ tools and resources.
 
 ## Supported Versions
 
-The latest three major versions are supported by the Electron team.
-For example, if the latest release is 5.0.x, then the 4.x.y series
-is supported, as are the two previous release series 3.x.y and 2.x.y.
+The latest three *stable* major versions are supported by the Electron team.
+For example, if the latest release is 6.x.y, then the 5.x.y as well
+as the 4.x.y series are supported.
 
 The latest stable release unilaterally receives all fixes from `master`,
 and the version prior to that receives the vast majority of those fixes
@@ -48,9 +48,9 @@ basis for some older supported lines. All contested decisions around release
 line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/master/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
 
 ### Currently supported versions
-- 5.x
-- 4.x
-- 3.x
+- 6.x.y
+- 5.x.y
+- 4.x.y
 
 ### End-of-life
 

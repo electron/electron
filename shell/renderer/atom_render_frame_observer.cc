@@ -13,6 +13,7 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
@@ -68,16 +69,25 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
   bool use_context_isolation = renderer_client_->isolated_world();
+  // This logic matches the EXPLAINED logic in atom_renderer_client.cc
+  // to avoid explaining it twice go check that implementation in
+  // DidCreateScriptContext();
   bool is_main_world = IsMainWorld(world_id);
   bool is_main_frame = render_frame_->IsMainFrame();
-  bool is_not_opened = !render_frame_->GetWebFrame()->Opener();
+  bool reuse_renderer_processes_enabled =
+      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
+  bool is_not_opened =
+      !render_frame_->GetWebFrame()->Opener() ||
+      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
   bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
-      (is_main_frame || allow_node_in_sub_frames) && is_not_opened;
+      (is_main_frame || allow_node_in_sub_frames) &&
+      (is_not_opened || reuse_renderer_processes_enabled);
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
@@ -85,11 +95,13 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
       renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
 
+#if !BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (world_id >= World::ISOLATED_WORLD_EXTENSIONS &&
       world_id <= World::ISOLATED_WORLD_EXTENSIONS_END) {
     renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
                                                    world_id);
   }
+#endif
 }
 
 void AtomRenderFrameObserver::DraggableRegionsChanged() {

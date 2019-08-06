@@ -37,7 +37,7 @@ Object.defineProperty(app, 'applicationMenu', {
   }
 })
 
-app.isPackaged = (() => {
+App.prototype.isPackaged = (() => {
   const execFile = path.basename(process.execPath).toLowerCase()
   if (process.platform === 'win32') {
     return execFile !== 'electron.exe'

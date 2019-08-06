@@ -208,8 +208,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
-  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md).
-    Default is `false`.
+  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md#transparent-window).
+    Default is `false`. On Windows, does not work unless the window is frameless.
   * `type` String (optional) - The type of window, default is normal window. See more about
     this below.
   * `titleBarStyle` String (optional) - The style of window title bar.
@@ -553,7 +553,7 @@ Emitted when the window enters a full-screen state triggered by HTML API.
 
 Emitted when the window leaves a full-screen state triggered by HTML API.
 
-#### Event: 'always-on-top-changed' _macOS_
+#### Event: 'always-on-top-changed'
 
 Returns:
 
@@ -691,7 +691,7 @@ is emitted.
 
 #### `BrowserWindow.getExtensions()`
 
-Returns `Object` - The keys are the extension names and each value is
+Returns `Record<String, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
@@ -724,7 +724,7 @@ is emitted.
 
 #### `BrowserWindow.getDevToolsExtensions()`
 
-Returns `Object` - The keys are the extension names and each value is
+Returns `Record<string, ExtensionInfo>` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
 
 To check if a DevTools extension is installed you can run the following:
@@ -750,7 +750,7 @@ let win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('https://github.com')
 ```
 
-#### `win.webContents`
+#### `win.webContents` _Readonly_
 
 A `WebContents` object this window owns. All web page related events and
 operations will be done via it.
@@ -758,7 +758,7 @@ operations will be done via it.
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
 
-#### `win.id`
+#### `win.id` _Readonly_
 
 A `Integer` property representing the unique ID of the window.
 
@@ -999,7 +999,7 @@ console.log(win.getBounds())
 
 #### `win.getBounds()`
 
-Returns [`Rectangle`](structures/rectangle.md)
+Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
 
 #### `win.setContentBounds(bounds[, animate])`
 
@@ -1011,7 +1011,7 @@ the supplied bounds.
 
 #### `win.getContentBounds()`
 
-Returns [`Rectangle`](structures/rectangle.md)
+Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window's client area as `Object`.
 
 #### `win.getNormalBounds()`
 
@@ -1182,7 +1182,6 @@ On Linux always returns `true`.
   placed below the Dock on macOS and below the taskbar on Windows. From
   `pop-up-menu` to a higher it is shown above the Dock on macOS and above the
   taskbar on Windows. See the [macOS docs][window-levels] for more details.
-
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
   discourages setting levels higher than 1 above `screen-saver`.
@@ -1382,7 +1381,7 @@ win.loadURL('http://localhost:8000/post', {
 
 * `filePath` String
 * `options` Object (optional)
-  * `query` Object (optional) - Passed to `url.format()`.
+  * `query` Record<String, String> (optional) - Passed to `url.format()`.
   * `search` String (optional) - Passed to `url.format()`.
   * `hash` String (optional) - Passed to `url.format()`.
 

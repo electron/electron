@@ -64,12 +64,12 @@ class LocationProxy {
    */
   private static ProxyProperty<T> (target: LocationProxy, propertyKey: LocationProperties) {
     Object.defineProperty(target, propertyKey, {
-      get: function (): T | string {
+      get: function (this: LocationProxy): T | string {
         const guestURL = this.getGuestURL()
         const value = guestURL ? guestURL[propertyKey] : ''
         return value === undefined ? '' : value
       },
-      set: function (newVal: T) {
+      set: function (this: LocationProxy, newVal: T) {
         const guestURL = this.getGuestURL()
         if (guestURL) {
           // TypeScript doesn't want us to assign to read-only variables.
@@ -103,6 +103,10 @@ class LocationProxy {
     }
 
     return null
+  }
+
+  private _invokeWebContentsMethod (method: string, ...args: any[]) {
+    return ipcRendererUtils.invoke('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', this.guestId, method, ...args)
   }
 
   private _invokeWebContentsMethodSync (method: string, ...args: any[]) {

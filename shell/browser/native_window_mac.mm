@@ -152,23 +152,6 @@
 
 @end
 
-#if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
-
-enum { NSWindowTabbingModeDisallowed = 2 };
-
-@interface NSWindow (SierraSDK)
-- (void)setTabbingMode:(NSInteger)mode;
-- (void)setTabbingIdentifier:(NSString*)identifier;
-- (void)addTabbedWindow:(NSWindow*)window ordered:(NSWindowOrderingMode)ordered;
-- (IBAction)selectPreviousTab:(id)sender;
-- (IBAction)selectNextTab:(id)sender;
-- (IBAction)mergeAllWindows:(id)sender;
-- (IBAction)moveTabToNewWindow:(id)sender;
-- (IBAction)toggleTabBar:(id)sender;
-@end
-
-#endif
-
 @interface AtomProgressBar : NSProgressIndicator
 @end
 
@@ -827,6 +810,7 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
                                      int relativeLevel,
                                      std::string* error) {
   int windowLevel = NSNormalWindowLevel;
+  bool level_changed = z_order != widget()->GetZOrderLevel();
   CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
   CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
 
@@ -864,6 +848,11 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
         stringWithFormat:@"relativeLevel must be between %d and %d",
                          minWindowLevel, maxWindowLevel] UTF8String]);
   }
+
+  // This must be notified at the very end or IsAlwaysOnTop
+  // will not yet have been updated to reflect the new status
+  if (level_changed)
+    NativeWindow::NotifyWindowAlwaysOnTopChanged();
 }
 
 ui::ZOrderLevel NativeWindowMac::GetZOrderLevel() {

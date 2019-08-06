@@ -84,8 +84,6 @@ class BrowserProcessImpl : public BrowserProcess {
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
   component_updater::ComponentUpdateService* component_updater() override;
-  component_updater::SupervisedUserWhitelistInstaller*
-  supervised_user_whitelist_installer() override;
   MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;

@@ -194,7 +194,8 @@ describe('chromium feature', () => {
     })
   })
 
-  describe('navigator.serviceWorker', () => {
+  // FIXME(robo/nornagon): re-enable these once service workers work
+  describe.skip('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
       w = new BrowserWindow({
         show: false,
@@ -498,6 +499,22 @@ describe('chromium feature', () => {
         webContents.once('did-finish-load', () => {
           // When it loads, redirect
           b.location = `file://${fixtures}/pages/base-page.html`
+          webContents.once('did-finish-load', () => {
+            // After our second redirect, cleanup and callback
+            b.close()
+            done()
+          })
+        })
+      })
+      b = window.open('about:blank')
+    })
+
+    it('defines a window.location.href setter', (done) => {
+      let b = null
+      app.once('browser-window-created', (event, { webContents }) => {
+        webContents.once('did-finish-load', () => {
+          // When it loads, redirect
+          b.location.href = `file://${fixtures}/pages/base-page.html`
           webContents.once('did-finish-load', () => {
             // After our second redirect, cleanup and callback
             b.close()

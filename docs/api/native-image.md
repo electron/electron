@@ -64,7 +64,7 @@ If you want to support displays with different DPI densities at the same time,
 you can put images with different sizes in the same folder and use the filename
 without DPI suffixes. For example:
 
-```text
+```plaintext
 images/
 ├── icon.png
 ├── icon@2x.png

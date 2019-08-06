@@ -55,7 +55,7 @@ v8::Local<v8::Object> CreateJSEvent(
 
   if (use_native_event) {
     mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
-    native_event->SetSenderAndMessage(sender, std::move(callback));
+    native_event->SetCallback(std::move(callback));
     event = v8::Local<v8::Object>::Cast(native_event.ToV8());
   } else {
     event = CreateEventObject(isolate);
@@ -64,6 +64,13 @@ v8::Local<v8::Object> CreateJSEvent(
   dict.Set("sender", object);
   if (sender)
     dict.Set("frameId", sender->GetRoutingID());
+  return event;
+}
+
+v8::Local<v8::Object> CreateEmptyJSEvent(v8::Isolate* isolate) {
+  mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
+  v8::Local<v8::Object> event =
+      v8::Local<v8::Object>::Cast(native_event.ToV8());
   return event;
 }
 

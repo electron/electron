@@ -143,7 +143,7 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk` and `other`.
-* `options` Object - The options which will be used for creating the new
+* `options` BrowserWindowConstructorOptions - The options which will be used for creating the new
   [`BrowserWindow`](browser-window.md).
 * `additionalFeatures` String[] - The non-standard features (features not handled
   by Chromium or Electron) given to `window.open()`.
@@ -481,7 +481,7 @@ Returns:
   * `requestId` Integer
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
-  * `selectionArea` Object - Coordinates of first match region.
+  * `selectionArea` Rectangle - Coordinates of first match region.
   * `finalUpdate` Boolean
 
 Emitted when a result is available for
@@ -669,10 +669,10 @@ Emitted when the devtools window instructs the webContents to reload
 Returns:
 
 * `event` Event
-* `webPreferences` Object - The web preferences that will be used by the guest
+* `webPreferences` WebPreferences - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
-* `params` Object - The other `<webview>` parameters such as the `src` URL.
+* `params` Record<string, string> - The other `<webview>` parameters such as the `src` URL.
   This object can be modified to adjust the parameters of the guest page.
 
 Emitted when a `<webview>`'s web contents is being attached to this web
@@ -842,7 +842,7 @@ webContents.loadURL('https://github.com', options)
 
 * `filePath` String
 * `options` Object (optional)
-  * `query` Object (optional) - Passed to `url.format()`.
+  * `query` Record<String, String> (optional) - Passed to `url.format()`.
   * `search` String (optional) - Passed to `url.format()`.
   * `hash` String (optional) - Passed to `url.format()`.
 
@@ -1560,48 +1560,13 @@ Enable device emulation with the given parameters.
 
 Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 
-#### `contents.sendInputEvent(event)`
+#### `contents.sendInputEvent(inputEvent)`
 
-* `event` Object
-  * `type` String (**required**) - The type of the event, can be `mouseDown`,
-    `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `mouseMove`, `keyDown`, `keyUp` or `char`.
-  * `modifiers` String[] - An array of modifiers of the event, can
-    include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
-    `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
-    `numLock`, `left`, `right`.
+* `inputEvent` [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
 
 Sends an input `event` to the page.
 **Note:** The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
 `sendInputEvent()` to work.
-
-For keyboard events, the `event` object also have following properties:
-
-* `keyCode` String (**required**) - The character that will be sent
-  as the keyboard event. Should only use the valid key codes in
-  [Accelerator](accelerator.md).
-
-For mouse events, the `event` object also have following properties:
-
-* `x` Integer (**required**)
-* `y` Integer (**required**)
-* `button` String - The button pressed, can be `left`, `middle`, `right`.
-* `globalX` Integer
-* `globalY` Integer
-* `movementX` Integer
-* `movementY` Integer
-* `clickCount` Integer
-
-For the `mouseWheel` event, the `event` object also have following properties:
-
-* `deltaX` Integer
-* `deltaY` Integer
-* `wheelTicksX` Integer
-* `wheelTicksY` Integer
-* `accelerationRatioX` Integer
-* `accelerationRatioY` Integer
-* `hasPreciseScrollingDeltas` Boolean
-* `canScroll` Boolean
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
@@ -1788,26 +1753,26 @@ Only values between 1 and 60 are accepted.
 
 Only applicable if *offscreen rendering* is enabled.
 
-#### `contents.id`
+#### `contents.id` _Readonly_
 
 A `Integer` representing the unique ID of this WebContents.
 
-#### `contents.session`
+#### `contents.session` _Readonly_
 
 A [`Session`](session.md) used by this webContents.
 
-#### `contents.hostWebContents`
+#### `contents.hostWebContents` _Readonly_
 
 A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
 
-#### `contents.devToolsWebContents`
+#### `contents.devToolsWebContents` _Readonly_
 
 A `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
 
-#### `contents.debugger`
+#### `contents.debugger` _Readonly_
 
 A [`Debugger`](debugger.md) instance for this webContents.
 

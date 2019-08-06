@@ -386,7 +386,7 @@ source_set("electron_lib") {
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
     "//services/video_capture/public/mojom:constants",
-    "//services/viz/privileged/interfaces/compositing",
+    "//services/viz/privileged/mojom/compositing",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/boringssl",
@@ -581,7 +581,7 @@ source_set("electron_lib") {
     ]
     deps += [
       "//components/viz/service",
-      "//services/viz/public/interfaces",
+      "//services/viz/public/mojom",
       "//ui/compositor",
     ]
   }

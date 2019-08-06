@@ -49,7 +49,7 @@ your application's size.
 
 The output should look roughly like this:
 
-```text
+```plaintext
 .
 └── dist
     └── app-linux-x64
@@ -128,7 +128,6 @@ parts:
       - desktop-gtk3
     stage-packages:
       - libasound2
-      - libgconf2-4
       - libnotify4
       - libnspr4
       - libnss3

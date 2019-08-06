@@ -8,7 +8,7 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index 0726c4fbc873e40991262b2951557b7be169e624..7520514de6f56d84afee6c612584f0be1ec41227 100644
+index 1e6b4b91485ae9a528beed77b12f6532e5968c07..c4a9db033bb56d097c4ce84ecd195e7bf4d7afd4 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
 @@ -83,6 +83,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
@@ -26,7 +26,7 @@ index 0726c4fbc873e40991262b2951557b7be169e624..7520514de6f56d84afee6c612584f0be
                                              bool allow_default_instance,
                                              GURL* site_url,
 diff --git a/content/browser/browsing_instance.h b/content/browser/browsing_instance.h
-index acbf074f6e408cdc3817580b9601ee40c036c4dd..e56456c5b6024b92dbd025a8f25d4bde5f8afe27 100644
+index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c24798e204 100644
 --- a/content/browser/browsing_instance.h
 +++ b/content/browser/browsing_instance.h
 @@ -136,6 +136,11 @@ class CONTENT_EXPORT BrowsingInstance final
@@ -42,7 +42,7 @@ index acbf074f6e408cdc3817580b9601ee40c036c4dd..e56456c5b6024b92dbd025a8f25d4bde
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 8ca7df4cc21892d9769527df717ab5fd3945e9c7..dbaf878eaf5259697469e06d5ae15fbc463aa7c6 100644
+index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..fab42c861fbc5f5344851b0bcb19e592678be8e6 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2180,6 +2180,21 @@ bool RenderFrameHostManager::InitRenderView(
@@ -153,10 +153,10 @@ index 8ca7df4cc21892d9769527df717ab5fd3945e9c7..dbaf878eaf5259697469e06d5ae15fbc
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index b29e2479caed43a3ace1f0e5ce923fd6c7fb760e..4999c89b3a8e54ab6030b85fbf172af3fedd0836 100644
+index a805b110c378d0584a361f3a499be57c7826a63a..00c1f807033a76390c12335e5a647a6f951372c2 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -356,6 +356,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
+@@ -367,6 +367,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
    return browsing_instance_->HasSiteInstance(url);
  }
  
@@ -168,7 +168,7 @@ index b29e2479caed43a3ace1f0e5ce923fd6c7fb760e..4999c89b3a8e54ab6030b85fbf172af3
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index 17b08b2749a93a3f4e8c0409fc292c76331bfbb3..bec401c170b68f416cefde4ad309b9c3aa255243 100644
+index 1edb9fd6b0c383f291735dd1a952fcb7b17cc87f..23967f040eb346be265faa2a92562e1fed190b8d 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -83,6 +83,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
@@ -180,10 +180,10 @@ index 17b08b2749a93a3f4e8c0409fc292c76331bfbb3..bec401c170b68f416cefde4ad309b9c3
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 06984e1da1512c3d8577716432920a1755524cf8..87140030f883a0149e5c373f2c6391020974dcfc 100644
+index 746f5893f95b940ac68610d9655aa46a3b85430a..bb7e5bcd4b665ef30aa228b79faa856f9569d157 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -52,6 +52,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+@@ -51,6 +51,20 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
@@ -205,10 +205,10 @@ index 06984e1da1512c3d8577716432920a1755524cf8..87140030f883a0149e5c373f2c639102
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 52cf099889768bbc14acc3f32fcfba5ab7640a1d..b62c08de3ee8efc3090876531a80ea43e4ac6a07 100644
+index 3946cdec768f9f26a6710967f664b411012ef260..64afc1de2b5e4824dfbdc14ac64fcfd63852f48c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -209,8 +209,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -208,8 +208,41 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:

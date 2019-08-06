@@ -47,7 +47,7 @@ async function nextBeta (v) {
   tags.sort((t1, t2) => semver.gt(t1, t2))
 
   // increment the latest existing beta tag or start at beta.1 if it's a new beta line
-  return tags.length === 0 ? semver.inc(next, 'beta', 'prerelease') : semver.inc(tags.pop(), 'prerelease')
+  return tags.length === 0 ? `${next}-beta.1` : semver.inc(tags.pop(), 'prerelease')
 }
 
 async function getElectronVersion () {

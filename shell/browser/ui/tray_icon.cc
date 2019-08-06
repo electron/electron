@@ -12,11 +12,11 @@ TrayIcon::~TrayIcon() {}
 
 void TrayIcon::SetPressedImage(ImageType image) {}
 
-void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {}
-
 void TrayIcon::DisplayBalloon(ImageType icon,
                               const base::string16& title,
                               const base::string16& contents) {}
+
+void TrayIcon::RemoveBalloon() {}
 
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model) {}

@@ -48,7 +48,7 @@ any module you don't actually need will increase your application's size.
 
 The output should look roughly like this:
 
-```text
+```plaintext
 ├── Ghost.exe
 ├── LICENSE
 ├── content_resources_200_percent.pak

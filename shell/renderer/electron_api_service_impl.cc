@@ -39,7 +39,10 @@ v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
   auto global_object = context->Global();
   auto value =
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
-  DCHECK(!value.IsEmpty() && value->IsObject());
+  if (value.IsEmpty() || !value->IsObject()) {
+    LOG(ERROR) << "Attempted to get the 'ipcNative' object but it was missing";
+    return v8::Local<v8::Object>();
+  }
   return value->ToObject(context).ToLocalChecked();
 }
 
@@ -50,6 +53,8 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
   auto* isolate = context->GetIsolate();
 
   auto ipcNative = GetIpcObject(context);
+  if (ipcNative.IsEmpty())
+    return;
 
   // Only set up the node::CallbackScope if there's a node environment.
   // Sandboxed renderers don't have a node environment.

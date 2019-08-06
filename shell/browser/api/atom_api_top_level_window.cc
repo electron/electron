@@ -1030,9 +1030,9 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 
 // static
 mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
-  mate::Dictionary options;
-  if (!(args->Length() == 1 && args->GetNext(&options)))
-    options = mate::Dictionary::CreateEmpty(args->isolate());
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&options);
+
   return new TopLevelWindow(args->isolate(), args->GetThis(), options);
 }
 
@@ -1168,6 +1168,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
       .SetProperty("autoHideMenuBar", &TopLevelWindow::IsMenuBarAutoHide,
                    &TopLevelWindow::SetAutoHideMenuBar)
+      .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &TopLevelWindow::IsMenuBarVisible)
       .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
       .SetMethod("previewFile", &TopLevelWindow::PreviewFile)

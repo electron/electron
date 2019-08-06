@@ -255,16 +255,10 @@ backwards_compatible_list="\
   libappindicator-dev
   libappindicator1
   libappindicator3-1:i386
-  libdconf-dev
-  libdconf-dev:i386
-  libdconf1
-  libdconf1:i386
   libexif-dev
   libexif12
   libexif12:i386
   libgbm-dev
-  libgconf-2-4:i386
-  libgconf2-dev
   libgl1-mesa-dev
   libgl1-mesa-glx:i386
   libgles2-mesa-dev

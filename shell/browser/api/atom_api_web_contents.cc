@@ -349,8 +349,8 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   // Get type
   options.Get("type", &type_);
 
-  bool b = false;
 #if BUILDFLAG(ENABLE_OSR)
+  bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::OFF_SCREEN;
 #endif

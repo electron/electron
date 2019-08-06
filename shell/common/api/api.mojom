@@ -2,7 +2,7 @@ module electron.mojom;
 
 import "mojo/public/mojom/base/values.mojom";
 import "mojo/public/mojom/base/string16.mojom";
-import "ui/gfx/geometry/mojo/geometry.mojom";
+import "ui/gfx/geometry/mojom/geometry.mojom";
 
 interface ElectronRenderer {
   Message(
