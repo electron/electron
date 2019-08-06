@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 63f432b58371cfa0f8079fa78a51c8865a00c183..7b39523e0b8b840191ea517d5f5e8eda701995bc 100644
+index 63f432b58371cfa0f8079fa78a51c8865a00c183..d20d803f55ca67fb6993facc69c3431767786053 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -28,11 +28,28 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..7b39523e0b8b840191ea517d5f5e8eda
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -224,7 +224,14 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -206,9 +206,14 @@ void PrintJobWorker::SetSettingsFromPOD(
+ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+                                          SettingsCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  PrintingContext::Result result =
+-      printing_context_->UpdatePrintSettings(std::move(new_settings));
+-  GetSettingsDone(std::move(callback), result);
++  // Reset settings from previous print job
++  printing_context_->ResetSettings();
++  PrintingContext::Result get_default_result = printing_context_->UseDefaultSettings();
++  if (get_default_result == PrintingContext::Result::OK) {
++    PrintingContext::Result update_result =
++            printing_context_->UpdatePrintSettings(std::move(new_settings));
++    GetSettingsDone(std::move(callback), update_result);
++  }
+ }
+ 
+ #if defined(OS_CHROMEOS)
+@@ -224,6 +229,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
--  std::move(callback).Run(printing_context_->settings(), result);
 +  if (result == PrintingContext::CANCEL) {
 +    print_job_->PostTask(
 +      FROM_HERE,
@@ -40,10 +57,9 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..7b39523e0b8b840191ea517d5f5e8eda
 +                    JobEventDetails::USER_INIT_CANCELED, 0,
 +                    base::RetainedRef(document_)));
 +  }
-+  std::move(callback).Run(printing_context_->settings(), result);
+   std::move(callback).Run(printing_context_->settings(), result);
  }
  
- void PrintJobWorker::GetSettingsWithUI(int document_page_count,
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
 index c4e0992f6265b34659514ef5f15eb8d78645161c..1aca2f88da5d8e96a0f16a667a8a86a7873dfdf9 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
@@ -250,7 +266,7 @@ index 925736d379c34ac7ddc07032305d24e1ae65e4b3..a8b2b31ec8bcb04d83df368b12d124dc
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..6e3c3743e5da782e227e1ec3dba83ed7b401f3de 100644
+index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..92b46562ef36bbfe874d39d706ab589d98f37cda 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -316,7 +332,18 @@ index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..6e3c3743e5da782e227e1ec3dba83ed7
    std::unique_ptr<PrinterQuery> printer_query =
        queue_->PopPrinterQuery(document_cookie);
    if (!printer_query) {
-@@ -295,7 +303,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -257,7 +265,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+     std::unique_ptr<PrinterQuery> printer_query,
+     IPC::Message* reply_msg) {
+   PrintMsg_PrintPages_Params params;
+-  if (!printer_query || printer_query->last_status() != PrintingContext::OK) {
++  // We call update without first printing from defaults,
++  // so the last printer status will still be defaulted to PrintingContext::FAILED
++  if (!printer_query) {
+     params.Reset();
+   } else {
+     RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
+@@ -295,7 +305,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
@@ -367,7 +394,7 @@ index 1802034a6e15a6ad8b0d9591cfb79ba5873dc982..a827091facdb4f6b1d74ce826c3492ce
  // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
  IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index ef580254bd8feba84ac02924b77b9b4feaf14d96..57a8264a7174b440ed1d6bfe9c2c3e21552d950b 100644
+index ef580254bd8feba84ac02924b77b9b4feaf14d96..572c196732c25d14b8f181f424ec4032c8be77c2 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -37,6 +37,7 @@
@@ -484,7 +511,7 @@ index ef580254bd8feba84ac02924b77b9b4feaf14d96..57a8264a7174b440ed1d6bfe9c2c3e21
      if (print_settings.params.dpi.IsEmpty() ||
          !print_settings.params.document_cookie) {
        DidFinishPrinting(OK);  // Release resources and fail silently on failure.
-@@ -1867,10 +1886,24 @@ std::vector<int> PrintRenderFrameHelper::GetPrintedPages(
+@@ -1867,10 +1886,17 @@ std::vector<int> PrintRenderFrameHelper::GetPrintedPages(
    return printed_pages;
  }
  
@@ -495,24 +522,17 @@ index ef580254bd8feba84ac02924b77b9b4feaf14d96..57a8264a7174b440ed1d6bfe9c2c3e21
    PrintMsg_PrintPages_Params settings;
 -  Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
 -                                                &settings.params));
-+  if (new_settings.empty()) {
-+    Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
-+                                                  &settings.params));
-+  } else {
-+    // Send the cookie so that UpdatePrintSettings can reuse PrinterQuery when
-+    // possible.
-+    int cookie =
-+        print_pages_params_ ? print_pages_params_->params.document_cookie : 0;
-+    bool canceled = false;
-+    Send(new PrintHostMsg_UpdatePrintSettings(
-+        routing_id(), cookie, new_settings, &settings, &canceled));
-+    if (canceled)
-+      return false;
-+  }
++  // new_settings will never be empty, always send the update IPC message
++  bool canceled = false;
++  Send(new PrintHostMsg_UpdatePrintSettings(
++      routing_id(), 0, new_settings, &settings, &canceled));
++  if (canceled)
++    return false;
++
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -1890,12 +1923,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -1890,12 +1916,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -575,3 +595,55 @@ index 71c0c15217b62cd7a6087c6d9ae50481f9041d5f..e2250a66517dbd909cd3b5407173ad91
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
+diff --git a/printing/print_settings_conversion.cc b/printing/print_settings_conversion.cc
+index 2563ae6a87b2354ff2f2b45c17f61d2f44910efa..1f34f905791f38a44ae8c892cc9cfb38d15b659d 100644
+--- a/printing/print_settings_conversion.cc
++++ b/printing/print_settings_conversion.cc
+@@ -190,11 +190,13 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
+ 
+   settings->set_dpi_xy(dpi_horizontal.value(), dpi_vertical.value());
+ #endif
++  std::string print_device_name = *device_name;
++  if (print_device_name != "")
++    settings->set_device_name(base::UTF8ToUTF16(print_device_name));
+ 
+   settings->set_collate(collate.value());
+   settings->set_copies(copies.value());
+   settings->SetOrientation(landscape.value());
+-  settings->set_device_name(base::UTF8ToUTF16(*device_name));
+   settings->set_duplex_mode(static_cast<DuplexMode>(duplex_mode.value()));
+   settings->set_color(static_cast<ColorModel>(color.value()));
+   settings->set_scale_factor(static_cast<double>(scale_factor.value()) / 100.0);
+diff --git a/printing/printing_context.cc b/printing/printing_context.cc
+index 78e3c3b2e1bea0f3626838eab14267847a556470..b1c16e6eb1d0d9c0a8b700d9faf408d602f962ea 100644
+--- a/printing/printing_context.cc
++++ b/printing/printing_context.cc
+@@ -77,8 +77,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+ 
+ PrintingContext::Result PrintingContext::UpdatePrintSettings(
+     base::Value job_settings) {
+-  ResetSettings();
+-
+   if (!PrintSettingsFromJobSettings(job_settings, &settings_)) {
+     NOTREACHED();
+     return OnError();
+diff --git a/printing/printing_context.h b/printing/printing_context.h
+index 9ccc1a6680bcedd452cade7f7531924ace7876cf..4e1c330c01a1d6d1ba702337f16d8f8a70cd76f5 100644
+--- a/printing/printing_context.h
++++ b/printing/printing_context.h
+@@ -129,12 +129,12 @@ class PRINTING_EXPORT PrintingContext {
+ 
+   int job_id() const { return job_id_; }
+ 
+- protected:
+-  explicit PrintingContext(Delegate* delegate);
+-
+   // Reinitializes the settings for object reuse.
+   void ResetSettings();
+ 
++ protected:
++  explicit PrintingContext(Delegate* delegate);
++
+   // Does bookkeeping when an error occurs.
+   PrintingContext::Result OnError();
+ 
