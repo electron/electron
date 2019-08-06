@@ -172,7 +172,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectSharedWorker();
-  void InspectSharedWorkerById(std::string workerId);
+  void InspectSharedWorkerById(const std::string& workerId);
   std::vector<scoped_refptr<content::DevToolsAgentHost>> GetAllSharedWorkers();
   void InspectServiceWorker();
   void SetIgnoreMenuShortcuts(bool ignore);
