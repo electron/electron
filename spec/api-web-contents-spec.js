@@ -1277,8 +1277,10 @@ describe('webContents module', () => {
   // FIXME: disable during chromium update due to crash in content::WorkerScriptFetchInitation::CreateScriptLoaderOnIO
   xdescribe('Shared Workers', () => {
     it('can get multiple shared workers', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'shared-worker', 'shared-worker.html'))
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const worker1 = new SharedWorker('../fixtures/api/shared-worker/shared-worker1.js')
+      const worker2 = new SharedWorker('../fixtures/api/shared-worker/shared-worker2.js')
+      worker1.port.start()
+      worker2.port.start()
       const contents = webContents.getAllWebContents()
       const vectorOfWorkers = contents[0].getAllSharedWorkers()
 
@@ -1292,6 +1294,8 @@ describe('webContents module', () => {
       expect(focusedContents[0].getURL()).to.contain('shared-worker')
       await new Promise(resolve => setTimeout(resolve, 200))
       w.webContents.closeDevTools()
+      worker1.port.terminate()
+      worker2.port.terminate()
     })
   })
 })

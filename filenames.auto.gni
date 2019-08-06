@@ -109,6 +109,7 @@ auto_filenames = {
     "docs/api/structures/remove-password.md",
     "docs/api/structures/scrubber-item.md",
     "docs/api/structures/segmented-control-segment.md",
+    "docs/api/structures/shared-worker-info.md",
     "docs/api/structures/shortcut-details.md",
     "docs/api/structures/size.md",
     "docs/api/structures/stream-protocol-response.md",
