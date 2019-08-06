@@ -149,7 +149,8 @@ bool Browser::IsEmojiPanelSupported() {
 void Browser::ShowAboutPanel() {
   std::string app_name, version, copyright, icon_path, website;
 
-  GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
+  GtkWidget* dialogWidget = gtk_about_dialog_new();
+  GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
 
   if (about_panel_options_.GetString("applicationName", &app_name))
     gtk_about_dialog_set_program_name(dialog, app_name.c_str());
@@ -177,7 +178,7 @@ void Browser::ShowAboutPanel() {
   }
 
   gtk_dialog_run(GTK_DIALOG(dialog));
-  g_clear_object(&dialog);
+  gtk_widget_destroy(dialogWidget);
 }
 
 void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
