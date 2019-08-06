@@ -22,6 +22,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "shell/browser/net/cert_verifier_client.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/native_mate_converters/string16_converter.h"
 #include "shell/common/native_mate_converters/value_converter.h"
@@ -264,6 +265,18 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     }
     dict.Set("uploadData", arr);
   }
+  return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
+    v8::Isolate* isolate,
+    electron::VerifyRequestParams val) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("hostname", val.hostname);
+  dict.Set("certificate", val.certificate);
+  dict.Set("verificationResult", val.default_result);
+  dict.Set("errorCode", val.error_code);
   return dict.GetHandle();
 }
 
