@@ -146,7 +146,8 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
   shell_->NotifyWindowWillMove(new_bounds, &prevent_default);
   if (prevent_default) {
-    // prevent sefault somehow
+    // doesn't work
+    [window setMovable:NO];
   }
 }
 
