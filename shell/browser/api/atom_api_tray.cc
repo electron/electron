@@ -18,34 +18,6 @@
 #include "shell/common/node_includes.h"
 #include "ui/gfx/image/image.h"
 
-namespace mate {
-
-template <>
-struct Converter<electron::TrayIcon::HighlightMode> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::TrayIcon::HighlightMode* out) {
-    using HighlightMode = electron::TrayIcon::HighlightMode;
-    std::string mode;
-    if (ConvertFromV8(isolate, val, &mode)) {
-      if (mode == "always") {
-        *out = HighlightMode::ALWAYS;
-        return true;
-      }
-      if (mode == "selection") {
-        *out = HighlightMode::SELECTION;
-        return true;
-      }
-      if (mode == "never") {
-        *out = HighlightMode::NEVER;
-        return true;
-      }
-    }
-    return false;
-  }
-};
-}  // namespace mate
-
 namespace electron {
 
 namespace api {
@@ -169,10 +141,6 @@ std::string Tray::GetTitle() {
 #endif
 }
 
-void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
-  tray_icon_->SetHighlightMode(mode);
-}
-
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 #if defined(OS_MACOSX)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
@@ -199,12 +167,16 @@ void Tray::DisplayBalloon(mate::Arguments* args,
 
 #if defined(OS_WIN)
   tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXICON)),
       title, content);
 #else
   tray_icon_->DisplayBalloon(icon.IsEmpty() ? gfx::Image() : icon->image(),
                              title, content);
 #endif
+}
+
+void Tray::RemoveBalloon() {
+  tray_icon_->RemoveBalloon();
 }
 
 void Tray::PopUpContextMenu(mate::Arguments* args) {
@@ -235,12 +207,12 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("getTitle", &Tray::GetTitle)
-      .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)
       .SetMethod("getIgnoreDoubleClickEvents",
                  &Tray::GetIgnoreDoubleClickEvents)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
+      .SetMethod("removeBalloon", &Tray::RemoveBalloon)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds);

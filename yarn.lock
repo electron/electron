@@ -25,10 +25,10 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
-"@electron/docs-parser@^0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.4.1.tgz#e6557a6a3899ca1168b9f2d70ad24d9ba924e4a9"
-  integrity sha512-mn4ofEvH8HNdzRMb++cUbiTkO88BAKwM0yjED3KrQ07yEl7CU1lK13qSMVSRhDzNkbg4kFTqBDjaJ57fdHlkxQ==
+"@electron/docs-parser@^0.4.1", "@electron/docs-parser@^0.4.2":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.4.2.tgz#1d5feb0376363435b2f6833b60271ee90c26f952"
+  integrity sha512-BdEW2So0Qg7lxIET9q84DceavC1v/EyYF9PXU8vRRiwFebGPyEaJS4uqxhStAxmZslQAT4JjQc9jTd12IbG6BQ==
   dependencies:
     "@types/markdown-it" "^0.0.7"
     chai "^4.2.0"
@@ -40,10 +40,10 @@
     ora "^3.4.0"
     pretty-ms "^5.0.0"
 
-"@electron/typescript-definitions@^8.5.0":
-  version "8.5.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.5.0.tgz#8be8d90e2245478368180795b3632db02e90ccdc"
-  integrity sha512-sq7tTIyQyGMxrSbmCsbpyfV5Yc68Pb74rp5cbpaS3Kopi5sAL2nIi4TdTakVE7Pp4cye75i8HqDUBhsMpt+TvA==
+"@electron/typescript-definitions@^8.6.1":
+  version "8.6.1"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.6.1.tgz#7d7b506c21d6667f9e53e5930e3b70a9c1d4ccf3"
+  integrity sha512-lv6tj76wnhWzTHuxryhTV329AWHPoOn+VUpCzsz3XVCKm+FO+ldttdgFv+1lA7YGOsi+ttiaX678g+iBGZDlTQ==
   dependencies:
     "@electron/docs-parser" "^0.4.1"
     "@types/node" "^11.13.7"
@@ -57,7 +57,6 @@
     mkdirp "^0.5.1"
     ora "^3.4.0"
     pretty-ms "^5.0.0"
-    rimraf "^2.5.4"
     typescript "^3.4.5"
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
@@ -150,6 +149,13 @@
     "@types/connect" "*"
     "@types/node" "*"
 
+"@types/chai-as-promised@*":
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.1.tgz#004c27a4ac640e9590e25d8b0980cb0a6609bfd8"
+  integrity sha512-dberBxQW/XWv6BMj0su1lV9/C9AUx5Hqu2pisuS6S4YK/Qt6vurcj/BmcbEsobIWWCQzhesNY8k73kIxx4X7Mg==
+  dependencies:
+    "@types/chai" "*"
+
 "@types/chai-as-promised@^7.1.0":
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.0.tgz#010b04cde78eacfb6e72bfddb3e58fe23c2e78b9"
@@ -168,6 +174,14 @@
   integrity sha512-4r8qa0quOvh7lGD0pre62CAb1oni1OO6ecJLGCezTmhQ8Fz50Arx9RUszryR8KlgK6avuSXvviL6yWyViQABOg==
   dependencies:
     "@types/node" "*"
+
+"@types/dirty-chai@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@types/dirty-chai/-/dirty-chai-2.0.0.tgz#f0a901f7283bef590087b0be931702da2c57aaae"
+  integrity sha512-ff9dIwiqNQK7yqRkI5E9z1OZbS6KllMyyxSYNvwrQ8G/OHA3xZ/TFc4/wvrQQgyJvsUBxUa6EG1olSPkQHpvfg==
+  dependencies:
+    "@types/chai" "*"
+    "@types/chai-as-promised" "*"
 
 "@types/eslint-visitor-keys@^1.0.0":
   version "1.0.0"
@@ -226,9 +240,9 @@
   integrity sha512-rp7La3m845mSESCgsJePNL/JQyhkOJA6G4vcwvVgkDAwHhGdq5GCumxmPjEk1MZf+8p5ZQAUE7tqgQRQTXN7uQ==
 
 "@types/node@^11.13.7":
-  version "11.13.17"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.17.tgz#2e7efbfe5253561087812571e5e6a1e4b1d6295b"
-  integrity sha512-7W3kSMa8diVH6s24a8Qrmvwu+vG3ahOC/flMHFdWSdnPYoQI0yPO84h5zOWYXAha2Npn3Pw3SSuQSwBUfaniyQ==
+  version "11.13.18"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.13.18.tgz#758ec2bf26339d3cc83da22676b64777d0c2befe"
+  integrity sha512-sMHdXLccscaxI+Hlzz58yLQue3lQyXP+6aQniDRi5oju3n0123kcjhicVGF20WF7cHiwJ2vxMbXc4skOclosoA==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.0"
@@ -3871,9 +3885,9 @@ levn@^0.3.0, levn@~0.3.0:
     type-check "~0.3.2"
 
 linkify-it@^2.0.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/linkify-it/-/linkify-it-2.1.0.tgz#c4caf38a6cd7ac2212ef3c7d2bde30a91561f9db"
-  integrity sha512-4REs8/062kV2DSHxNfq5183zrqXMl7WP0WzABH9IeJI+NLm429FgE1PDecltYfnOoFDFlZGh2T8PfZn0r+GTRg==
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/linkify-it/-/linkify-it-2.2.0.tgz#e3b54697e78bf915c70a38acd78fd09e0058b1cf"
+  integrity sha512-GnAl/knGn+i1U/wjBz3akz2stz+HrHLsxMwHQGofCDfPvlf+gDKN58UtfmUquTY4/MXeE2x7k19KQmeoZi94Iw==
   dependencies:
     uc.micro "^1.0.1"
 
@@ -4067,12 +4081,12 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
   integrity sha1-0CJTc662Uq3BvILklFM5qEJ1R3M=
 
-lodash@^4.0.0:
+lodash@^4.0.0, lodash@^4.17.11:
   version "4.17.15"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
   integrity sha512-8xOcRHvCjnocdS5cpwXQXVzmmh5e5+saE2QGoeQmbKmRS6J3VQppPOIt0MnmE+4xlZoumy0GPG0D0MVIQbNA1A==
 
-lodash@^4.17.11, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.3.0:
+lodash@^4.17.4, lodash@^4.17.5, lodash@^4.3.0:
   version "4.17.14"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.14.tgz#9ce487ae66c96254fe20b599f21b6816028078ba"
   integrity sha512-mmKYbW3GLuJeX+iGP+Y7Gp1AiGHGbXHCOh/jZmrawMmsE7MS4znI3RL2FsjbqOyMayHInjOeykW7PEajUk1/xw==

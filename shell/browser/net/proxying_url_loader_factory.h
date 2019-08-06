@@ -50,7 +50,6 @@ class ProxyingURLLoaderFactory
     void FollowRedirect(const std::vector<std::string>& removed_headers,
                         const net::HttpRequestHeaders& modified_headers,
                         const base::Optional<GURL>& new_url) override;
-    void ProceedWithResponse() override;
     void SetPriority(net::RequestPriority priority,
                      int32_t intra_priority_value) override;
     void PauseReadingBodyFromNet() override;

@@ -79,7 +79,6 @@
   "parallel/test-process-exec-argv",
   "parallel/test-process-external-stdio-close",
   "parallel/test-process-external-stdio-close-spawn",
-  "parallel/test-process-uptime",
   "parallel/test-process-versions",
   "parallel/test-readline-interface",
   "parallel/test-inspector-esm",

@@ -96,9 +96,6 @@ void Browser::Focus() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  if (base::win::GetVersion() < base::win::Version::WIN7)
-    return;
-
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
                                            IID_PPV_ARGS(&item));
@@ -111,13 +108,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 }
 
 void Browser::ClearRecentDocuments() {
-  CComPtr<IApplicationDestinations> destinations;
-  if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations, NULL,
-                                           CLSCTX_INPROC_SERVER)))
-    return;
-  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
-    return;
-  destinations->RemoveAllDestinations();
+  SHAddToRecentDocs(SHARD_APPIDINFO, nullptr);
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {

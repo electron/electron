@@ -9,6 +9,7 @@
 
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/api/event_emitter_caller.h"
@@ -76,14 +77,26 @@ void AtomRendererClient::DidCreateScriptContext(
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
-  // Do not load node if we're aren't a main frame or a devtools extension
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
-  bool is_main_frame =
-      render_frame->IsMainFrame() && !render_frame->GetWebFrame()->Opener();
+  bool reuse_renderer_processes_enabled =
+      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
+  // Consider the window not "opened" if it does not have an Opener, or if a
+  // user has manually opted in to leaking node in the renderer
+  bool is_not_opened =
+      !render_frame->GetWebFrame()->Opener() ||
+      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
+  // Consider this the main frame if it is both a Main Frame and it wasn't
+  // opened.  We allow an opened main frame to have node if renderer process
+  // reuse is enabled as that will correctly free node environments prevent a
+  // leak in child windows.
+  bool is_main_frame = render_frame->IsMainFrame() &&
+                       (is_not_opened || reuse_renderer_processes_enabled);
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
@@ -111,7 +124,6 @@ void AtomRendererClient::DidCreateScriptContext(
   DCHECK(!context.IsEmpty());
   node::Environment* env =
       node_bindings_->CreateEnvironment(context, nullptr, true);
-  auto* command_line = base::CommandLine::ForCurrentProcess();
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
@@ -225,6 +237,9 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame,
     int world_id) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  NOTREACHED();
+#else
   auto* isolate = context->GetIsolate();
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
@@ -244,6 +259,7 @@ void AtomRendererClient::SetupExtensionWorldOverrides(
   node::native_module::NativeModuleEnv::CompileAndCall(
       context, "electron/js2c/content_script_bundle", &isolated_bundle_params,
       &isolated_bundle_args, nullptr);
+#endif
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

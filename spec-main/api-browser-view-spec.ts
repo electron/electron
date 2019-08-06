@@ -1,9 +1,13 @@
-import { expect } from 'chai'
+import * as chai from 'chai'
+import dirtyChai = require('dirty-chai')
 import * as ChildProcess from 'child_process'
 import * as path from 'path'
 import { emittedOnce } from './events-helpers'
 import { BrowserView, BrowserWindow } from 'electron'
 import { closeWindow } from './window-helpers';
+
+const { expect } = chai
+chai.use(dirtyChai)
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
@@ -89,6 +93,15 @@ describe('BrowserView module', () => {
       expect(() => {
         view.setBounds({} as any)
       }).to.throw(/conversion failure/)
+    })
+  })
+
+  describe('BrowserView.getBounds()', () => {
+    it('returns the current bounds', () => {
+      view = new BrowserView()
+      const bounds = { x: 10, y: 20, width: 30, height: 40 }
+      view.setBounds(bounds)
+      expect(view.getBounds()).to.deep.equal(bounds)
     })
   })
 

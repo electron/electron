@@ -21,6 +21,7 @@ class NativeBrowserViewMac : public NativeBrowserView {
 
   void SetAutoResizeFlags(uint8_t flags) override;
   void SetBounds(const gfx::Rect& bounds) override;
+  gfx::Rect GetBounds() override;
   void SetBackgroundColor(SkColor color) override;
 
   void UpdateDraggableRegions(
