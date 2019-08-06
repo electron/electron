@@ -5,7 +5,7 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8cee3acb17a8cebade8b54b4c4a9b59d2f2e01bb..699e3080e5ff48fe9eae74c92151ba82dd3bb46f 100644
+index 7ccb067dc88aea0ef723fbed9de24e41351e78ea..8f400185a231c5531017c8dede9c8d40203ca24d 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -90,6 +90,11 @@
@@ -109,7 +109,7 @@ index 8cee3acb17a8cebade8b54b4c4a9b59d2f2e01bb..699e3080e5ff48fe9eae74c92151ba82
  void NetworkContext::CreateURLLoaderFactory(
      mojom::URLLoaderFactoryRequest request,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1721,12 +1801,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+@@ -1720,12 +1800,19 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
                    cert_net_fetcher_, /*system_trust_store_provider=*/nullptr)));
      }
  #endif
@@ -134,7 +134,7 @@ index 8cee3acb17a8cebade8b54b4c4a9b59d2f2e01bb..699e3080e5ff48fe9eae74c92151ba82
    std::unique_ptr<net::NetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(this);
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index d2a93d3b5b72d6048e98c22b0dbfeda4743f0a2c..59da87bc9b63c1786497d6dea1a7d0c29c079319 100644
+index f921eb6c3989eaf05cd62a88b48668f91556518c..f74ee923284ffbc4660f7853463591c2f9b4b4a0 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -80,6 +80,7 @@ class DomainReliabilityMonitor;
@@ -153,7 +153,7 @@ index d2a93d3b5b72d6048e98c22b0dbfeda4743f0a2c..59da87bc9b63c1786497d6dea1a7d0c2
    void CreateURLLoaderFactory(mojom::URLLoaderFactoryRequest request,
                                mojom::URLLoaderFactoryParamsPtr params) override;
    void ResetURLLoaderFactories() override;
-@@ -554,6 +556,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -553,6 +555,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  
@@ -163,7 +163,7 @@ index d2a93d3b5b72d6048e98c22b0dbfeda4743f0a2c..59da87bc9b63c1786497d6dea1a7d0c2
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherImpl> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 58b18e0c3c2beea5f22af3c0b2ad206798ad33a9..4dcb94d32a9928d70f061dbc12dc7b7e672025b8 100644
+index b9e1d66664d8db72f369f732ba13423f882e9f9a..6b54cd0d03f23f327eb46de83e7330947eae907e 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -161,6 +161,17 @@ interface TrustedURLLoaderHeaderClient {

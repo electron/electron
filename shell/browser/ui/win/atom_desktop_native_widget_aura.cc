@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/win/atom_desktop_native_widget_aura.h"
 
+#include <utility>
+
 #include "shell/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/wm/public/tooltip_client.h"

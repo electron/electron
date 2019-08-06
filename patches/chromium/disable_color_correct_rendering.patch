@@ -202,7 +202,7 @@ index bc58f3ea501540cbbba465cd8b751b99df45ab3a..e0ee85b9319938c285eb7f19f1b010b4
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 78ff6c5048d0b2f5bc75c0cb970a41b53932ee52..fe6bec45fe19d473ca8411a00fadf4c33d8a7f0a 100644
+index 157fbbc34a2217f58f3e5931e1d56d6db3b876cd..68bd4a84e6fe68a4741fcedc50fb47230b11ba37 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -192,6 +192,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -214,7 +214,7 @@ index 78ff6c5048d0b2f5bc75c0cb970a41b53932ee52..fe6bec45fe19d473ca8411a00fadf4c3
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 649240ba518ee8bd6b4384c9873a696c82ba69ae..b186c368a47481e2d98d2d16a59fdc3e7946fe0c 100644
+index 1bed8429ab243c3cc778965dee5a04c6c8ef6718..c4e92f6d3fe4b5435570ee77d049794054e3e3db 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -215,6 +215,7 @@
@@ -225,7 +225,7 @@ index 649240ba518ee8bd6b4384c9873a696c82ba69ae..b186c368a47481e2d98d2d16a59fdc3e
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2891,6 +2892,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2892,6 +2893,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -234,10 +234,10 @@ index 649240ba518ee8bd6b4384c9873a696c82ba69ae..b186c368a47481e2d98d2d16a59fdc3e
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 05801dcb935f818a9a371aa0944d4a6263ed1fc5..a14e475d26e3c5940b90e454dd7e6607856d2051 100644
+index a0c0bb0d9337c2c197d1760fd945521991497d04..b1ecd356605db5e578bf27178d80aaee17b3ec91 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2851,6 +2851,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2838,6 +2838,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

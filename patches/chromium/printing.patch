@@ -61,7 +61,7 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..d20d803f55ca67fb6993facc69c34317
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index c4e0992f6265b34659514ef5f15eb8d78645161c..1aca2f88da5d8e96a0f16a667a8a86a7873dfdf9 100644
+index 046cb140b10187e8c2850d990afc4c7a77283ae4..ada5a3d237cd64127412e4ec775a63e807d266e2 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -203,7 +203,7 @@ index c4e0992f6265b34659514ef5f15eb8d78645161c..1aca2f88da5d8e96a0f16a667a8a86a7
    if (!print_job_)
      return;
  
-@@ -606,8 +618,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -608,8 +620,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
      rfh->Send(msg.release());
    }
  
@@ -215,7 +215,7 @@ index c4e0992f6265b34659514ef5f15eb8d78645161c..1aca2f88da5d8e96a0f16a667a8a86a7
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -677,6 +690,9 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -679,6 +692,9 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;
