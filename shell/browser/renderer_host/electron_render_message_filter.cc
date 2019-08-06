@@ -13,6 +13,7 @@
 #include "base/bind_helpers.h"
 #include "base/logging.h"
 #include "base/stl_util.h"
+#include "chrome/browser/predictors/preconnect_manager.h"
 #include "components/network_hints/common/network_hints_common.h"
 #include "components/network_hints/common/network_hints_messages.h"
 #include "shell/browser/api/atom_api_session.h"

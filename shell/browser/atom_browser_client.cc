@@ -66,7 +66,6 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/network_context_service.h"
 #include "shell/browser/net/network_context_service_factory.h"
-#include "shell/browser/net/preconnect_manager_helper.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"

@@ -649,14 +649,17 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, net_log_);
 }
 
-static void StartPreconnectOnUI(scoped_refptr<AtomBrowserContext> browser_context,
-	GURL& url, int num_sockets_to_preconnect) {
+static void StartPreconnectOnUI(
+    scoped_refptr<AtomBrowserContext> browser_context,
+    const GURL& url,
+    int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
-      {url.GetOrigin(), num_sockets_to_preconnect}}; 
-	browser_context->GetPreconnectManager()->Start(url, requests);
-} 
+      {url.GetOrigin(), num_sockets_to_preconnect}};
+  browser_context->GetPreconnectManager()->Start(url, requests);
+}
 
-void Session::Preconnect(const mate::Dictionary& options, mate::Arguments* args) {
+void Session::Preconnect(const mate::Dictionary& options,
+                         mate::Arguments* args) {
   GURL url;
   if (!options.Get("url", &url) || !url.is_valid()) {
     args->ThrowError("Must pass non-empty valid url.");
@@ -669,17 +672,18 @@ void Session::Preconnect(const mate::Dictionary& options, mate::Arguments* args)
     bool isInsideRange = num_sockets_to_preconnect >= kMinSocketsToPreconnect &&
                          num_sockets_to_preconnect <= kMaxSocketsToPreconnect;
     if (!isInsideRange) {
-      args->ThrowError(base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]", 
-            kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
+      args->ThrowError(
+          base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]",
+                             kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
       return;
     }
   }
 
   if (num_sockets_to_preconnect > 0) {
-    base::PostTaskWithTraits(
-        FROM_HERE, {content::BrowserThread::UI},
-        base::BindOnce(&StartPreconnectOnUI,
-                       browser_context, url, num_sockets_to_preconnect));
+    base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                             base::BindOnce(&StartPreconnectOnUI,
+                                            base::RetainedRef(browser_context_),
+                                            url, num_sockets_to_preconnect));
   }
 }
 

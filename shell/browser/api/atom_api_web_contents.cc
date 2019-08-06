@@ -61,7 +61,6 @@
 #include "shell/browser/lib/bluetooth_chooser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/atom_network_delegate.h"
-#include "shell/browser/net/preconnect_manager_helper.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -477,11 +476,6 @@ void WebContents::InitWithSessionAndOptions(
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
-
-  PreconnectManagerHelper::CreateForWebContents(web_contents());
-
-  PreconnectManagerHelper::FromWebContents(web_contents())
-      ->SetSession(session.get());
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;

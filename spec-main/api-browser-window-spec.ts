@@ -1118,7 +1118,7 @@ describe('BrowserWindow module', () => {
     })
     it(`preconnect with number of sockets`, (done) => {
       w = new BrowserWindow({})
-      w.webContents.session.on('preconnect', (event, preconnectUrl, allowCredentials) => {
+      w.webContents.on('did-start-navigation', (event, preconnectUrl, isInPlace, isMainFrame, frameProcessId, frameRoutingId) => {
         w.webContents.session.preconnect({
           url: preconnectUrl,
           numSockets: 4

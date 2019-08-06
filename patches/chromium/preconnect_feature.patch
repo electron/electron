@@ -3,9 +3,12 @@ From: Alexey Kuts <kruntuid@gmail.com>
 Date: Fri, 26 Jul 2019 22:32:54 +0300
 Subject: 	preconnect manager new patch
 
+The PreconnectManager in Chrome only depends on Profile for testing purposes; 
+this patch removes that dependency so we can reuse it. 
+Ideally we would change this class in upstream to not depend on Profile.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index cdee4d11f2d2d52a9464b86ad3638c714cbae6cb..411cabedff98a9b01bb33a75c357fd4f6faee67c 100644
+index cdee4d11f2d2..7312fb4e4ea5 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -71,7 +71,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
@@ -17,21 +20,22 @@ index cdee4d11f2d2d52a9464b86ad3638c714cbae6cb..411cabedff98a9b01bb33a75c357fd4f
      : delegate_(std::move(delegate)),
        profile_(profile),
        inflight_preresolves_count_(0) {
-@@ -327,12 +327,6 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
+@@ -327,11 +327,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
    if (network_context_)
      return network_context_;
  
--  if (profile_->AsTestingProfile()) {
--    // We're testing and |network_context_| wasn't set. Return nullptr to avoid
--    // hitting the network.
--    return nullptr;
--  }
--
++#if 0
+   if (profile_->AsTestingProfile()) {
+     // We're testing and |network_context_| wasn't set. Return nullptr to avoid
+     // hitting the network.
+     return nullptr;
+   }
++#endif
+ 
    return content::BrowserContext::GetDefaultStoragePartition(profile_)
        ->GetNetworkContext();
- }
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 51a842d2e44fc455a0613bc4dd87950525ba1eb8..097316e0cfb6bbab4852572127a9b72fb3b31b76 100644
+index 51a842d2e44f..097316e0cfb6 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -22,6 +22,10 @@
