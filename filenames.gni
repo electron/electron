@@ -463,6 +463,8 @@ filenames = {
     "shell/common/api/atom_api_native_image.cc",
     "shell/common/api/atom_api_native_image.h",
     "shell/common/api/atom_api_native_image_mac.mm",
+    "shell/common/api/atom_api_native_theme.cc",
+    "shell/common/api/atom_api_native_theme.h",
     "shell/common/api/atom_api_shell.cc",
     "shell/common/api/atom_api_v8_util.cc",
     "shell/common/api/electron_bindings.cc",
