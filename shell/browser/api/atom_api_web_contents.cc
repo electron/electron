@@ -1539,7 +1539,7 @@ void WebContents::InspectElement(int x, int y) {
     OpenDevTools(nullptr);
   managed_web_contents()->InspectElement(x, y);
 }
-void WebContents::InspectSharedWorkerById(std::string workerId) {
+void WebContents::InspectSharedWorkerById(const std::string& workerId) {
   if (type_ == Type::REMOTE)
     return;
 
