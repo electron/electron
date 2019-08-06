@@ -7,6 +7,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace electron {
@@ -48,7 +49,9 @@ void NativeTheme::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("shouldUseDarkColors", &NativeTheme::ShouldUseDarkColors)
       .SetProperty("shouldUseHighContrastColors",
-                   &NativeTheme::ShouldUseHighContrastColors);
+                   &NativeTheme::ShouldUseHighContrastColors)
+      .SetProperty("shouldUseInvertedColorScheme",
+                   &color_utils::IsInvertedColorScheme);
 }
 
 }  // namespace api
