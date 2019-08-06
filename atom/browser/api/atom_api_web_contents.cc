@@ -1790,7 +1790,7 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
   }
 
   frame_subscriber_.reset(
-      new FrameSubscriber(isolate(), web_contents(), callback, only_dirty));
+      new FrameSubscriber(web_contents(), callback, only_dirty));
 }
 
 void WebContents::EndFrameSubscription() {

@@ -2562,13 +2562,6 @@ describe('BrowserWindow module', () => {
   })
 
   describe('beginFrameSubscription method', () => {
-    before(function () {
-      // FIXME These specs crash on Linux when run in a docker container
-      if (isCI && process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
     it('does not crash when callback returns nothing', (done) => {
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
       w.webContents.on('dom-ready', () => {
@@ -2598,13 +2591,14 @@ describe('BrowserWindow module', () => {
         })
       })
     })
+
     it('subscribes to frame updates (only dirty rectangle)', (done) => {
       let called = false
       let gotInitialFullSizeFrame = false
       const [contentWidth, contentHeight] = w.getContentSize()
       w.webContents.on('did-finish-load', () => {
-        w.webContents.beginFrameSubscription(true, (data, rect) => {
-          if (data.length === 0) {
+        w.webContents.beginFrameSubscription(true, (image, rect) => {
+          if (image.isEmpty()) {
             // Chromium sometimes sends a 0x0 frame at the beginning of the
             // page load.
             return
@@ -2625,13 +2619,14 @@ describe('BrowserWindow module', () => {
           // assert(rect.width < contentWidth || rect.height < contentHeight)
           called = true
 
-          expect(data.length).to.equal(rect.width * rect.height * 4)
+          expect(image.getBitmap().length).to.equal(rect.width * rect.height * 4)
           w.webContents.endFrameSubscription()
           done()
         })
       })
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
     })
+
     it('throws error when subscriber is not well defined', (done) => {
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
       try {
