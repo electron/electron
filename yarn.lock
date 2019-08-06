@@ -149,6 +149,13 @@
     "@types/connect" "*"
     "@types/node" "*"
 
+"@types/chai-as-promised@*":
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.1.tgz#004c27a4ac640e9590e25d8b0980cb0a6609bfd8"
+  integrity sha512-dberBxQW/XWv6BMj0su1lV9/C9AUx5Hqu2pisuS6S4YK/Qt6vurcj/BmcbEsobIWWCQzhesNY8k73kIxx4X7Mg==
+  dependencies:
+    "@types/chai" "*"
+
 "@types/chai-as-promised@^7.1.0":
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.0.tgz#010b04cde78eacfb6e72bfddb3e58fe23c2e78b9"
@@ -167,6 +174,14 @@
   integrity sha512-4r8qa0quOvh7lGD0pre62CAb1oni1OO6ecJLGCezTmhQ8Fz50Arx9RUszryR8KlgK6avuSXvviL6yWyViQABOg==
   dependencies:
     "@types/node" "*"
+
+"@types/dirty-chai@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@types/dirty-chai/-/dirty-chai-2.0.0.tgz#f0a901f7283bef590087b0be931702da2c57aaae"
+  integrity sha512-ff9dIwiqNQK7yqRkI5E9z1OZbS6KllMyyxSYNvwrQ8G/OHA3xZ/TFc4/wvrQQgyJvsUBxUa6EG1olSPkQHpvfg==
+  dependencies:
+    "@types/chai" "*"
+    "@types/chai-as-promised" "*"
 
 "@types/eslint-visitor-keys@^1.0.0":
   version "1.0.0"
