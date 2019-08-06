@@ -69,7 +69,7 @@ const deprecate: ElectronInternal.DeprecationUtil = {
   },
 
   // deprecate a getter/setter function pair in favor of a property
-  fnToProperty: (prototype: any, prop: string, getter: string, setter: string) => {
+  fnToProperty: (prototype: any, prop: string, getter: string, setter?: string) => {
     const withWarnOnce = function (obj: any, key: any, oldName: string, newName: string) {
       const warn = warnOnce(oldName, newName)
       const method = obj[key]
@@ -80,7 +80,9 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     }
 
     prototype[getter.substr(1)] = withWarnOnce(prototype, getter, `${getter.substr(1)} function`, `${prop} property`)
-    prototype[setter.substr(1)] = withWarnOnce(prototype, setter, `${setter.substr(1)} function`, `${prop} property`)
+    if (setter) {
+      prototype[setter.substr(1)] = withWarnOnce(prototype, setter, `${setter.substr(1)} function`, `${prop} property`)
+    }
   },
 
   // remove a property with no replacement

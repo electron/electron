@@ -11,9 +11,9 @@ The `nativeTheme` module emits the following events:
 ### Event: 'updated'
 
 Emitted when something in the underlying NativeTheme has changed. This normally
-means that either the value of `shouldUseDarkColors` or
-`shouldUseHighContrastColors` has changed.  You will have to check both to
-determine which one has changed.
+means that either the value of `shouldUseDarkColors`,
+`shouldUseHighContrastColors` or `shouldUseInvertedColorScheme` has changed.
+You will have to check them to determine which one has changed.
 
 ## Properties
 
@@ -24,7 +24,12 @@ The `nativeTheme` module has the following properties.
 A `Boolean` for if the OS / Chromium currently has a dark mode enabled or is
 being instructed to show a dark-style UI.
 
-### `nativeImage.shouldUseHighContrastColors` _Readonly_
+### `nativeTheme.shouldUseHighContrastColors` _Readonly_
 
 A `Boolean` for if the OS / Chromium currently has high-contrast mode enabled
 or is being instructed to show a high-constrast UI.
+
+## `nativeTheme.shouldUseInvertedColorScheme` _Readonly_
+
+A `Boolean` for if the OS / Chromium currently has an inverted color scheme
+or is being instructed to use an inverted color scheme.
