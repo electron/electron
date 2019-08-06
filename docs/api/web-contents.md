@@ -1471,6 +1471,10 @@ Inspects the shared worker based on it's ID.
 
 Returns `WorkerInfo[]` - Vector of WorkerInfo objects of sharedworkers.
 
+#### `contents.getAllSharedWorkers()`
+
+Generates a list of objects which contain the urls and ids of shared workers
+
 #### `contents.inspectServiceWorker()`
 
 Opens the developer tools for the service worker context.
