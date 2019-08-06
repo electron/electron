@@ -1610,6 +1610,8 @@ void WebContents::Print(mate::Arguments* args) {
 
   bool print_background = false;
   options.Get("printBackground", &print_background);
+  settings.SetBoolean(printing::kSettingShouldPrintBackgrounds,
+                      print_background);
 
   // Set custom margin settings
   mate::Dictionary margins = mate::Dictionary::CreateEmpty(args->isolate());
@@ -1671,9 +1673,6 @@ void WebContents::Print(mate::Arguments* args) {
   options.Get("copies", &copies);
   settings.SetInteger(printing::kSettingCopies, copies);
 
-  settings.SetBoolean(printing::kSettingShouldPrintBackgrounds,
-                      print_background);
-
   // For now we don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetBoolean(printing::kSettingPrintToPDF, false);
@@ -1729,11 +1728,10 @@ void WebContents::Print(mate::Arguments* args) {
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
                   : web_contents()->GetMainFrame();
-  print_view_manager->PrintNow(
-      rfh,
-      std::make_unique<PrintMsg_PrintPages>(rfh->GetRoutingID(), silent,
-                                            print_background, settings),
-      std::move(callback));
+  print_view_manager->PrintNow(rfh,
+                               std::make_unique<PrintMsg_PrintPages>(
+                                   rfh->GetRoutingID(), silent, settings),
+                               std::move(callback));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
