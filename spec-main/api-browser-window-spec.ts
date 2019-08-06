@@ -1,5 +1,6 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
+import dirtyChai = require('dirty-chai')
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -9,12 +10,12 @@ import { AddressInfo } from 'net'
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
+import { ifit, ifdescribe } from './spec-helpers'
+
 const { expect } = chai
 
-const ifit = (condition: boolean) => (condition ? it : it.skip)
-const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
-
 chai.use(chaiAsPromised)
+chai.use(dirtyChai)
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
