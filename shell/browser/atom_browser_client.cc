@@ -653,7 +653,7 @@ bool AtomBrowserClient::CanCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& features,
-    const std::vector<std::string>& additional_features,
+    const std::string& raw_features,
     const scoped_refptr<network::ResourceRequestBody>& body,
     bool user_gesture,
     bool opener_suppressed,
@@ -677,7 +677,7 @@ bool AtomBrowserClient::CanCreateWindow(
     return delegate_->CanCreateWindow(
         opener, opener_url, opener_top_level_frame_url, source_origin,
         container_type, target_url, referrer, frame_name, disposition, features,
-        additional_features, body, user_gesture, opener_suppressed,
+        raw_features, body, user_gesture, opener_suppressed,
         no_javascript_access);
   }
 
