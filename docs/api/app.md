@@ -614,6 +614,8 @@ Returns `String` - The current application directory.
 Returns `String` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
 
+Calling `app.getPath('logs')` without having previously called `app.setAppLogsPath()` will result in a directory being created and set to `/Library/Logs/YourAppName` on _macOS_, and inside the `userData` directory on _Linux_ and _Windows_.
+
 ### `app.getFileIcon(path[, options])`
 
 * `path` String

@@ -868,17 +868,20 @@ void App::SetAppLogsPath(mate::Arguments* args) {
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
+
   int key = GetPathConstant(name);
-  if (key >= 0)
+  if (key >= 0) {
     succeed = base::PathService::Get(key, &path);
-  if (!succeed) {
-    if (name == "logs") {
-      args->ThrowError("Failed to get '" + name +
-                       "' path: setAppLogsPath() must be called first.");
-    } else {
-      args->ThrowError("Failed to get '" + name + "' path");
+    // If users try to get the logs path before setting a logs path,
+    // set the path to a sensible default and then try to get it again
+    if (name == "logs" && !succeed) {
+      SetAppLogsPath(args);
+      succeed = base::PathService::Get(key, &path);
     }
   }
+
+  if (!succeed)
+    args->ThrowError("Failed to get '" + name + "' path");
 
   return path;
 }
