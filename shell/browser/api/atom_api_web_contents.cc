@@ -47,7 +47,6 @@
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/url_request/url_request_context.h"
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
 #include "shell/browser/api/atom_api_session.h"

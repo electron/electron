@@ -20,7 +20,6 @@
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
-#include "net/url_request/url_request.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
