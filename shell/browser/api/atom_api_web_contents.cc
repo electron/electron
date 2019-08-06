@@ -60,7 +60,6 @@
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/lib/bluetooth_chooser.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/net/atom_network_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
