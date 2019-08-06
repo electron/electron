@@ -86,7 +86,7 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
-  void Preconnect(const mate::Dictionary& options);
+  void Preconnect(const mate::Dictionary& options, mate::Arguments* args);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void LoadChromeExtension(const base::FilePath extension_path);

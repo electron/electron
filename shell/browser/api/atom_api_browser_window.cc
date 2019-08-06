@@ -44,10 +44,6 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
 
-  // Copy the preconnect sockets options to webContents
-  if (options.Get(options::kNumSocketsToPreconnect, &value))
-    web_preferences.Set(options::kNumSocketsToPreconnect, value);
-
   v8::Local<v8::Value> transparent;
   if (options.Get("transparent", &transparent))
     web_preferences.Set("transparent", transparent);

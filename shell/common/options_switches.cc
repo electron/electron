@@ -74,9 +74,6 @@ const char kTransparent[] = "transparent";
 // Window type hint.
 const char kType[] = "type";
 
-// Number of sockets to preconnect to origin of window base url
-const char kNumSocketsToPreconnect[] = "numSocketsToPreconnect";
-
 // Disable auto-hiding cursor.
 const char kDisableAutoHideCursor[] = "disableAutoHideCursor";
 

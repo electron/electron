@@ -13,18 +13,9 @@
 #include "base/bind_helpers.h"
 #include "base/logging.h"
 #include "base/stl_util.h"
-#include "base/task/post_task.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/chrome_notification_types.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "components/network_hints/common/network_hints_common.h"
 #include "components/network_hints/common/network_hints_messages.h"
-#include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/notification_service.h"
-#include "content/public/browser/render_process_host.h"
-#include "content/public/browser/storage_partition.h"
 #include "shell/browser/api/atom_api_session.h"
-#include "shell/browser/net/preconnect_manager_factory.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 
 using content::BrowserThread;

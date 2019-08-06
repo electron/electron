@@ -264,6 +264,14 @@ AtomBlobReader* AtomBrowserContext::GetBlobReader() {
   return blob_reader_.get();
 }
 
+predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager()
+{
+  if (!preconnect_manager_.get()) {
+    preconnect_manager_.reset(new predictors::PreconnectManager(nullptr, this));
+  }
+  return blob_reader_.get();
+}
+
 content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {
   return nullptr;
 }
