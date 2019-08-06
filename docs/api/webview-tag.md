@@ -593,7 +593,7 @@ examples.
 
 ### `<webview>.sendInputEvent(event)`
 
-* `event` Object
+* `event`  [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
 
 Returns `Promise<void>`
 
@@ -767,7 +767,7 @@ Returns:
   * `requestId` Integer
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
-  * `selectionArea` Object - Coordinates of first match region.
+  * `selectionArea` Rectangle - Coordinates of first match region.
   * `finalUpdate` Boolean
 
 Fired when a result is available for
@@ -791,7 +791,7 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk` and `other`.
-* `options` Object - The options which should be used for creating the new
+* `options` BrowserWindowConstructorOptions - The options which should be used for creating the new
   [`BrowserWindow`](browser-window.md).
 
 Fired when the guest page attempts to open a new browser window.
@@ -872,7 +872,7 @@ webview.addEventListener('close', () => {
 Returns:
 
 * `channel` String
-* `args` Array
+* `args` any[]
 
 Fired when the guest page has sent an asynchronous message to embedder page.
 

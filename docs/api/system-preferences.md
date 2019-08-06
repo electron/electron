@@ -56,7 +56,7 @@ Returns `Boolean` - Whether the Swipe between pages setting is on.
 ### `systemPreferences.postNotification(event, userInfo[, deliverImmediately])` _macOS_
 
 * `event` String
-* `userInfo` Object
+* `userInfo` Record<String, any>
 * `deliverImmediately` Boolean (optional) - `true` to post notifications immediately even when the subscribing app is inactive.
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
@@ -65,7 +65,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Object
+* `userInfo` Record<String, any>
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -73,7 +73,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postWorkspaceNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Object
+* `userInfo` Record<String, any>
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -83,7 +83,7 @@ that contains the user information dictionary sent along with the notification.
 * `event` String
 * `callback` Function
   * `event` String
-  * `userInfo` Object
+  * `userInfo` Record<String, unknown>
   * `object` String
 
 Returns `Number` - The ID of this subscription
@@ -110,7 +110,7 @@ example values of `event` are:
 * `event` String
 * `callback` Function
   * `event` String
-  * `userInfo` Object
+  * `userInfo` Record<String, unknown>
   * `object` String
 
 Returns `Number` - The ID of this subscription
@@ -123,7 +123,7 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 * `event` String
 * `callback` Function
   * `event` String
-  * `userInfo` Object
+  * `userInfo` Record<String, unknown>
   * `object` String
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
@@ -149,7 +149,7 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSWorkspace.
 
 ### `systemPreferences.registerDefaults(defaults)` _macOS_
 
-* `defaults` Object - a dictionary of (`key: value`) user defaults
+* `defaults` Record<String, String | Boolean | Number> - a dictionary of (`key: value`) user defaults
 
 Add the specified defaults to your application's `NSUserDefaults`.
 
