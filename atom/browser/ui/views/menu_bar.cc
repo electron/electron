@@ -275,8 +275,8 @@ void MenuBar::OnMenuButtonClicked(views::Button* source,
     return;
   }
 
-  GetFocusManager()->SetFocusedViewWithReason(
-      source, views::FocusManager::kReasonFocusTraversal);
+  // GetFocusManager()->SetFocusedViewWithReason(
+  //     source, views::FocusManager::kReasonFocusTraversal);
 
   // Deleted in MenuDelegate::OnMenuClosed
   MenuDelegate* menu_delegate = new MenuDelegate(this);
