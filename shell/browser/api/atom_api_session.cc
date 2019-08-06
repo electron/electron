@@ -53,7 +53,6 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/atom_cert_verifier.h"
-#include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/content_converter.h"
@@ -534,9 +533,11 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  auto auth_params = CreateHttpAuthDynamicParams();
-  auth_params->server_allowlist = domains;
-  content::GetNetworkService()->ConfigureHttpAuthPrefs(std::move(auth_params));
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+  auth_dynamic_params->server_allowlist = domains;
+  content::GetNetworkService()->ConfigureHttpAuthPrefs(
+      std::move(auth_dynamic_params));
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
