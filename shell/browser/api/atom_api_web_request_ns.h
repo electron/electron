@@ -5,9 +5,10 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_NS_H_
 #define SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_NS_H_
 
+#include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "shell/browser/api/trackable_object.h"
 
 namespace electron {
 
@@ -15,13 +16,17 @@ class AtomBrowserContext;
 
 namespace api {
 
-class WebRequestNS : public mate::TrackableObject<WebRequestNS> {
+class WebRequestNS : public gin::Wrappable<WebRequestNS> {
  public:
-  static mate::Handle<WebRequestNS> Create(v8::Isolate* isolate,
-                                           AtomBrowserContext* browser_context);
+  static gin::WrapperInfo kWrapperInfo;
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static gin::Handle<WebRequestNS> Create(v8::Isolate* isolate,
+                                          AtomBrowserContext* browser_context);
+
+  // gin::Wrappable:
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  private:
   WebRequestNS(v8::Isolate* isolate, AtomBrowserContext* browser_context);

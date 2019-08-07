@@ -4,33 +4,34 @@
 
 #include "shell/browser/api/atom_api_web_request_ns.h"
 
+#include "gin/object_template_builder.h"
 #include "shell/browser/atom_browser_context.h"
 
 namespace electron {
 
 namespace api {
 
+gin::WrapperInfo WebRequestNS::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 WebRequestNS::WebRequestNS(v8::Isolate* isolate,
-                           AtomBrowserContext* browser_context) {
-  Init(isolate);
-  AttachAsUserData(browser_context);
-}
+                           AtomBrowserContext* browser_context) {}
 
 WebRequestNS::~WebRequestNS() = default;
 
-// static
-mate::Handle<WebRequestNS> WebRequestNS::Create(
-    v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate,
-                            new WebRequestNS(isolate, browser_context));
+gin::ObjectTemplateBuilder WebRequestNS::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<WebRequestNS>::GetObjectTemplateBuilder(isolate);
+}
+
+const char* WebRequestNS::GetTypeName() {
+  return "WebRequest";
 }
 
 // static
-void WebRequestNS::BuildPrototype(v8::Isolate* isolate,
-                                  v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(mate::StringToV8(isolate, "WebRequest"));
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate());
+gin::Handle<WebRequestNS> WebRequestNS::Create(
+    v8::Isolate* isolate,
+    AtomBrowserContext* browser_context) {
+  return gin::CreateHandle(isolate, new WebRequestNS(isolate, browser_context));
 }
 
 }  // namespace api
