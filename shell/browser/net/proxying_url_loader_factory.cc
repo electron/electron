@@ -14,6 +14,12 @@
 
 namespace electron {
 
+namespace {
+
+int64_t g_request_id = 0;
+
+}  // namespace
+
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
@@ -21,6 +27,7 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
+    int64_t web_request_id,
     int32_t routing_id,
     int32_t network_service_request_id,
     uint32_t options,
@@ -31,6 +38,7 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     : factory_(factory),
       request_(request),
       original_initiator_(request.request_initiator),
+      request_id_(web_request_id),
       routing_id_(routing_id),
       network_service_request_id_(network_service_request_id),
       options_(options),
@@ -241,8 +249,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
   target_client_->OnComplete(status);
   // TODO(zcbenz): Call webRequest.onCompleted.
 
-  // TODO(zcbenz): Disassociate from factory.
-  delete this;
+  // Deletes |this|.
+  factory_->RemoveRequest(network_service_request_id_, request_id_);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
@@ -668,7 +676,25 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
                                         request_id, options, request,
                                         std::move(client), traffic_annotation);
 
-  // TODO(zcbenz): Create InProgressRequest.
+  // TODO(zcbenz): Remove the |CreateLoaderAndStart| call and create
+  // InProgressRequest when the webRequest API is used.
+  return;
+
+  // The request ID doesn't really matter. It just needs to be unique
+  // per-BrowserContext so extensions can make sense of it.  Note that
+  // |network_service_request_id_| by contrast is not necessarily unique, so we
+  // don't use it for identity here.
+  const uint64_t web_request_id = ++g_request_id;
+
+  if (request_id)
+    network_request_id_to_web_request_id_.emplace(request_id, web_request_id);
+
+  auto result = requests_.emplace(
+      web_request_id,
+      std::make_unique<InProgressRequest>(
+          this, web_request_id, routing_id, request_id, options, request,
+          traffic_annotation, std::move(loader), std::move(client)));
+  result.first->second->Restart();
 }
 
 void ProxyingURLLoaderFactory::Clone(
@@ -679,16 +705,44 @@ void ProxyingURLLoaderFactory::Clone(
 void ProxyingURLLoaderFactory::OnLoaderCreated(
     int32_t request_id,
     network::mojom::TrustedHeaderClientRequest request) {
-  // TODO(zcbenz): Call |OnLoaderCreated| for |InProgressRequest|.
+  auto it = network_request_id_to_web_request_id_.find(request_id);
+  if (it == network_request_id_to_web_request_id_.end())
+    return;
+
+  auto request_it = requests_.find(it->second);
+  DCHECK(request_it != requests_.end());
+  request_it->second->OnLoaderCreated(std::move(request));
 }
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {
-  delete this;
+  target_factory_.reset();
+  proxy_bindings_.CloseAllBindings();
+
+  MaybeDeleteThis();
 }
 
 void ProxyingURLLoaderFactory::OnProxyBindingError() {
   if (proxy_bindings_.empty())
-    delete this;
+    target_factory_.reset();
+
+  MaybeDeleteThis();
+}
+
+void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
+                                             uint64_t request_id) {
+  network_request_id_to_web_request_id_.erase(network_service_request_id);
+  requests_.erase(request_id);
+
+  MaybeDeleteThis();
+}
+
+void ProxyingURLLoaderFactory::MaybeDeleteThis() {
+  // Even if all URLLoaderFactory pipes connected to this object have been
+  // closed it has to stay alive until all active requests have completed.
+  if (target_factory_.is_bound() || !requests_.empty())
+    return;
+
+  delete this;
 }
 
 }  // namespace electron
