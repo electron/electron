@@ -234,6 +234,8 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
     options |= FOS_FORCESHOWHIDDEN;
   if (settings.properties & FILE_DIALOG_PROMPT_TO_CREATE)
     options |= FOS_CREATEPROMPT;
+  if (settings.properties & FILE_DIALOG_DONT_ADD_TO_RECENT)
+    options |= FOS_DONTADDTORECENT;
   file_open_dialog->SetOptions(options);
 
   ApplySettings(file_open_dialog, settings);

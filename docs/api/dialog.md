@@ -48,6 +48,7 @@ The `dialog` module has the following methods:
       their target path.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
+    * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
@@ -108,6 +109,7 @@ dialog.showOpenDialogSync(mainWindow, {
       their target path.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
+    * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
