@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 63f432b58371cfa0f8079fa78a51c8865a00c183..d20d803f55ca67fb6993facc69c3431767786053 100644
+index 72a0c8cd0f1be0f7713c01ce28323619f09fcc20..b78da10cb607f0f7ce0e97a620908b55f0901c0c 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,12 +21,12 @@
@@ -28,7 +28,7 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..d20d803f55ca67fb6993facc69c34317
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -206,9 +206,14 @@ void PrintJobWorker::SetSettingsFromPOD(
+@@ -203,9 +203,14 @@ void PrintJobWorker::SetSettingsFromPOD(
  void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
                                           SettingsCallback callback) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -46,7 +46,7 @@ index 63f432b58371cfa0f8079fa78a51c8865a00c183..d20d803f55ca67fb6993facc69c34317
  }
  
  #if defined(OS_CHROMEOS)
-@@ -224,6 +229,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -221,6 +226,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -266,7 +266,7 @@ index dd12f557535feea98991d6563e6c7e82b58d6498..5fa7cc4d82f55058f33ca05e687b062c
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 706617b7924cfbf25e4f3a04a40d9ee977e6fd69..92b46562ef36bbfe874d39d706ab589d98f37cda 100644
+index 355324f069bcccead875cc591c20e456d20a6f5b..fe889df2a0acf271b667813ef430a3bae1c84c31 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@

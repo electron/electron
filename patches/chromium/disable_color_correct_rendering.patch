@@ -234,7 +234,7 @@ index 1bed8429ab243c3cc778965dee5a04c6c8ef6718..c4e92f6d3fe4b5435570ee77d0497940
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index a0c0bb0d9337c2c197d1760fd945521991497d04..b1ecd356605db5e578bf27178d80aaee17b3ec91 100644
+index 5a5e484434e9bd7b2cbecdad512b209ce94d7baf..4ca1fdb590b741a3d8608dde022ac6a9a45c43ed 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2838,6 +2838,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
