@@ -18,7 +18,6 @@
 #include "base/system/sys_info.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
-#include "chrome/common/chrome_paths.h"
 #include "content/browser/gpu/compositor_util.h"        // nogncheck
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
@@ -391,44 +390,6 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
     return IconLoader::IconSize::LARGE;
   }
   return IconLoader::IconSize::NORMAL;
-}
-
-// Return the path constant from string.
-int GetPathConstant(const std::string& name) {
-  if (name == "appData")
-    return DIR_APP_DATA;
-  else if (name == "userData")
-    return DIR_USER_DATA;
-  else if (name == "cache")
-    return DIR_CACHE;
-  else if (name == "userCache")
-    return DIR_USER_CACHE;
-  else if (name == "logs")
-    return DIR_APP_LOGS;
-  else if (name == "home")
-    return base::DIR_HOME;
-  else if (name == "temp")
-    return base::DIR_TEMP;
-  else if (name == "userDesktop" || name == "desktop")
-    return base::DIR_USER_DESKTOP;
-  else if (name == "exe")
-    return base::FILE_EXE;
-  else if (name == "module")
-    return base::FILE_MODULE;
-  else if (name == "documents")
-    return chrome::DIR_USER_DOCUMENTS;
-  else if (name == "downloads")
-    return chrome::DIR_DEFAULT_DOWNLOADS;
-  else if (name == "music")
-    return chrome::DIR_USER_MUSIC;
-  else if (name == "pictures")
-    return chrome::DIR_USER_PICTURES;
-  else if (name == "videos")
-    return chrome::DIR_USER_VIDEOS;
-  else if (name == "pepperFlashSystemPlugin")
-    return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
-  else
-    return -1;
 }
 
 bool NotificationCallbackWrapper(
@@ -870,23 +831,17 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
-  bool succeed = false;
   base::FilePath path;
-
-  int key = GetPathConstant(name);
-  if (key >= 0) {
-    succeed = base::PathService::Get(key, &path);
-    // If users try to get the logs path before setting a logs path,
-    // set the path to a sensible default and then try to get it again
-    if (!succeed && name == "logs") {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      SetAppLogsPath(thrower, base::Optional<base::FilePath>());
-      succeed = base::PathService::Get(key, &path);
+  bool succeed = this->app_path_provider.GetPath(name, path);
+  if (!succeed) {
+    if (name == "logs") {
+      args->ThrowError("Failed to get '" + name +
+                       "' path: setAppLogsPath() must be called first.");
+    } else {
+      args->ThrowError("Failed to get '" + name + "' path");
     }
   }
 
-  if (!succeed)
-    thrower.ThrowError("Failed to get '" + name + "' path");
 
   return path;
 }
@@ -898,12 +853,7 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
     thrower.ThrowError("Path must be absolute");
     return;
   }
-
-  bool succeed = false;
-  int key = GetPathConstant(name);
-  if (key >= 0)
-    succeed =
-        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+  bool succeed = this->app_path_provider.SetPath(name, path);
   if (!succeed)
     thrower.ThrowError("Failed to set path");
 }

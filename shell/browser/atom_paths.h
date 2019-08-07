@@ -5,6 +5,8 @@
 #ifndef SHELL_BROWSER_ATOM_PATHS_H_
 #define SHELL_BROWSER_ATOM_PATHS_H_
 
+#include <string>
+
 #include "base/base_paths.h"
 
 #if defined(OS_WIN)
@@ -44,6 +46,22 @@ enum {
 };
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
+
+namespace base {
+class FilePath;
+}
+
+class AppPathProvider {
+ public:
+  bool GetPath(const std::string& name, base::FilePath& path);
+  bool SetPath(const std::string& name, const base::FilePath& path);
+
+ private:
+  boolean GetProviderFunc(int key, FilePath* path);
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AppPathProvider);
+};
 
 }  // namespace electron
 
