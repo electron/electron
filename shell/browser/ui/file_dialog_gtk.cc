@@ -103,15 +103,26 @@ class FileChooserDialog {
       parent_->SetEnabled(true);
   }
 
-  void SetupProperties(int properties) {
-    const auto hasProp = [properties](FileDialogProperty prop) {
+  void SetupOpenProperties(int properties) {
+    const auto hasProp = [properties](OpenFileDialogProperty prop) {
       return gboolean((properties & prop) != 0);
     };
     auto* file_chooser = GTK_FILE_CHOOSER(dialog());
     gtk_file_chooser_set_select_multiple(file_chooser,
-                                         hasProp(FILE_DIALOG_MULTI_SELECTIONS));
+                                         hasProp(OPEN_DIALOG_MULTI_SELECTIONS));
     gtk_file_chooser_set_show_hidden(file_chooser,
-                                     hasProp(FILE_DIALOG_SHOW_HIDDEN_FILES));
+                                     hasProp(OPEN_DIALOG_SHOW_HIDDEN_FILES));
+  }
+
+  void SetupSaveProperties(int properties) {
+    const auto hasProp = [properties](SaveFileDialogProperty prop) {
+      return gboolean((properties & prop) != 0);
+    };
+    auto* file_chooser = GTK_FILE_CHOOSER(dialog());
+    gtk_file_chooser_set_show_hidden(file_chooser,
+                                     hasProp(SAVE_DIALOG_SHOW_HIDDEN_FILES));
+    gtk_file_chooser_set_do_overwrite_confirmation(
+        file_chooser, hasProp(SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION));
   }
 
   void RunAsynchronous() {
@@ -267,10 +278,10 @@ void FileChooserDialog::OnUpdatePreview(GtkWidget* chooser) {
 bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
-  if (settings.properties & FILE_DIALOG_OPEN_DIRECTORY)
+  if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
   FileChooserDialog open_dialog(action, settings);
-  open_dialog.SetupProperties(settings.properties);
+  open_dialog.SetupOpenProperties(settings.properties);
 
   gtk_widget_show_all(open_dialog.dialog());
   int response = gtk_dialog_run(GTK_DIALOG(open_dialog.dialog()));
@@ -284,15 +295,17 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void ShowOpenDialog(const DialogSettings& settings,
                     electron::util::Promise promise) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
-  if (settings.properties & FILE_DIALOG_OPEN_DIRECTORY)
+  if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
   FileChooserDialog* open_dialog = new FileChooserDialog(action, settings);
-  open_dialog->SetupProperties(settings.properties);
+  open_dialog->SetupOpenProperties(settings.properties);
   open_dialog->RunOpenAsynchronous(std::move(promise));
 }
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   FileChooserDialog save_dialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
+  save_dialog.SetupSaveProperties(settings.properties);
+
   gtk_widget_show_all(save_dialog.dialog());
   int response = gtk_dialog_run(GTK_DIALOG(save_dialog.dialog()));
   if (response == GTK_RESPONSE_ACCEPT) {
