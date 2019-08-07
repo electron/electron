@@ -7,12 +7,12 @@ import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
-const { expect } = chai
 
-const ifit = (condition: boolean) => (condition ? it : it.skip)
-const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
+import { emittedOnce } from './events-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
+import { closeWindow } from './window-helpers'
+
+const { expect } = chai
 
 chai.use(chaiAsPromised)
 
@@ -1240,22 +1240,44 @@ describe('BrowserWindow module', () => {
     })
   })
 
+
   describe('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows)
-    it('make window with initial opacity', () => {
-      const w = new BrowserWindow({ show: false, opacity: 0.5 })
-      expect(w.getOpacity()).to.equal(0.5)
-    })
-    it('allows setting the opacity', () => {
-      const w = new BrowserWindow({ show: false })
-      expect(() => {
-        w.setOpacity(0.0)
-        expect(w.getOpacity()).to.equal(0.0)
-        w.setOpacity(0.5)
+
+    ifdescribe(process.platform !== 'linux')(('Windows and Mac'), () => {
+      it('make window with initial opacity', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
         expect(w.getOpacity()).to.equal(0.5)
-        w.setOpacity(1.0)
+      })
+      it('allows setting the opacity', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(() => {
+          w.setOpacity(0.0)
+          expect(w.getOpacity()).to.equal(0.0)
+          w.setOpacity(0.5)
+          expect(w.getOpacity()).to.equal(0.5)
+          w.setOpacity(1.0)
+          expect(w.getOpacity()).to.equal(1.0)
+        }).to.not.throw()
+      })
+
+      it('clamps opacity to [0.0...1.0]', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
+        w.setOpacity(100)
         expect(w.getOpacity()).to.equal(1.0)
-      }).to.not.throw()
+        w.setOpacity(-100)
+        expect(w.getOpacity()).to.equal(0.0)
+      })
+    })
+
+    ifdescribe(process.platform === 'linux')(('Linux'), () => {
+      it('sets 1 regardless of parameter', () => {
+        const w = new BrowserWindow({ show: false })
+        w.setOpacity(0)
+        expect(w.getOpacity()).to.equal(1.0)
+        w.setOpacity(0.5)
+        expect(w.getOpacity()).to.equal(1.0)
+      })
     })
   })
 
