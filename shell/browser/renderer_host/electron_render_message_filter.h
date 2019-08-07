@@ -33,7 +33,10 @@ class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
  private:
   ~ElectronRenderMessageFilter() override;
 
-  void OnPreconnect(const GURL& url, bool allow_credentials, int count);
+  void OnPreconnect(int render_frame_id,
+                    const GURL& url,
+                    bool allow_credentials,
+                    int count);
 
   content::BrowserContext* browser_context_;
 

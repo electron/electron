@@ -18,8 +18,6 @@
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/common/native_mate_converters/callback.h"
@@ -124,7 +122,7 @@ bool MatchesCookie(const base::Value& filter,
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(const base::Value& filter,
                    util::Promise promise,
-                   const net::CookieList& list,
+                   const net::CookieStatusList& list,
                    const net::CookieStatusList& excluded_list) {
   net::CookieList result;
   net::CookieList stripped_cookies = net::cookie_util::StripStatuses(list);

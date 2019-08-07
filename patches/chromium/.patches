@@ -42,7 +42,6 @@ allow_nested_error_trackers.patch
 blink_initialization_order.patch
 ssl_security_state_tab_helper.patch
 exclude-a-few-test-files-from-build.patch
-expose-net-observer-api.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
 gritsettings_resource_ids.patch
