@@ -47,7 +47,7 @@ index 961e1560aa914942c01372c354059d6d6b72c50f..5e364fa6637e8453b0be701637c7d5b9
  
  void PrintJobWorker::GetSettingsWithUI(
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 007b003dd58d44acd6e1351c237fca6463d90602..da7c14d03a740e5d2ca2099a15c6105b74c101b4 100644
+index 007b003dd58d44acd6e1351c237fca6463d90602..e2f7e5f0936292b84c021a70d4800065645aef6a 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -176,16 +176,19 @@ index 007b003dd58d44acd6e1351c237fca6463d90602..da7c14d03a740e5d2ca2099a15c6105b
    if (!print_job_)
      return;
  
-@@ -604,7 +612,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -603,8 +611,9 @@ void PrintViewManagerBase::ReleasePrintJob() {
+     rfh->Send(msg.release());
    }
  
-   registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
+-  registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
 -                    content::Source<PrintJob>(print_job_.get()));
-+                    content::NotificationService::AllSources());
++  if (!callback_.is_null())
++    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
++                      content::NotificationService::AllSources());
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -678,6 +686,10 @@ bool PrintViewManagerBase::PrintNowInternal(
+@@ -678,6 +687,10 @@ bool PrintViewManagerBase::PrintNowInternal(
    // Don't print / print preview interstitials or crashed tabs.
    if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
      return false;
