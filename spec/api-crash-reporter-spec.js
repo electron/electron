@@ -19,6 +19,10 @@ const ifdescribe = (condition) => {
   return condition ? describe : describe.skip
 }
 
+const ifit = (condition) => {
+  return condition ? it : it.skip
+}
+
 // TODO(alexeykuzmin): [Ch66] Fails on linux. Fix it and enable back.
 ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module', () => {
   let originalTempDirectory = null
@@ -68,19 +72,21 @@ ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module',
         })
       })
 
-      it('should send minidump when node processes crash', function (done) {
+      ifit(!browserWindowOpts.webPreferences.sandbox)('should send minidump when node processes crash', function (done) {
         this.timeout(specTimeout)
-
         stopServer = startServer({
           callback (port) {
             const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
-
-            childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
+            w.loadFile(path.join(fixtures, 'api', 'crash_child.html'), { query: { port, crashesDir, crashPath, version } })
           },
           processType: 'node',
-          done: done
+          done: done,
+          preAssert: fields => {
+            expect(String(fields.newExtra)).to.equal('newExtra')
+            expect(fields.removeExtra).to.be.undefined()
+          }
         })
       })
 
@@ -147,39 +153,6 @@ ifdescribe(!process.mas && process.platform !== 'linux')('crashReporter module',
           },
           processType: 'renderer',
           done: testDone.bind(null, true)
-        })
-      })
-
-      it('should send minidump with updated extra parameters when node processes crash', function (done) {
-        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
-        if (process.env.APPVEYOR === 'True') return done()
-        this.timeout(specTimeout)
-        stopServer = startServer({
-          callback (port) {
-            const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.getName()} Crashes`)
-            const version = app.getVersion()
-            const crashPath = path.join(fixtures, 'module', 'crash.js')
-            if (process.platform === 'win32') {
-              const crashServiceProcess = childProcess.spawn(process.execPath, [
-                `--reporter-url=http://127.0.0.1:${port}`,
-                '--application-name=Zombies',
-                `--crashes-directory=${crashesDir}`
-              ], {
-                env: {
-                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
-                },
-                detached: true
-              })
-              remote.process.crashServicePid = crashServiceProcess.pid
-            }
-            childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
-          },
-          processType: 'browser',
-          done: done,
-          preAssert: fields => {
-            expect(String(fields.newExtra)).to.equal('newExtra')
-            expect(fields.removeExtra).to.be.undefined()
-          }
         })
       })
 
