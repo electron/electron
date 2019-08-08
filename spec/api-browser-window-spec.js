@@ -3015,23 +3015,29 @@ describe('BrowserWindow module', () => {
     })
 
     describe('hasShadow state', () => {
-      // On Window there is no shadow by default and it can not be changed
-      // dynamically.
+      beforeEach(() => { w.destroy() })
+
+      it('returns a boolean on all platforms', () => {
+        w = new BrowserWindow({ show: false })
+        const hasShadow = w.hasShadow()
+        assert.strictEqual(typeof hasShadow, 'boolean')
+      })
+
       it('can be changed with hasShadow option', () => {
-        w.destroy()
         const hasShadow = process.platform !== 'darwin'
-        w = new BrowserWindow({ show: false, hasShadow: hasShadow })
+        w = new BrowserWindow({ show: false, hasShadow })
         assert.strictEqual(w.hasShadow(), hasShadow)
       })
 
       it('can be changed with setHasShadow method', () => {
-        if (process.platform !== 'darwin') return
+        w = new BrowserWindow({ show: false })
 
-        assert.strictEqual(w.hasShadow(), true)
         w.setHasShadow(false)
         assert.strictEqual(w.hasShadow(), false)
         w.setHasShadow(true)
         assert.strictEqual(w.hasShadow(), true)
+        w.setHasShadow(false)
+        assert.strictEqual(w.hasShadow(), false)
       })
     })
   })
