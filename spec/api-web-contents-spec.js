@@ -1276,26 +1276,40 @@ describe('webContents module', () => {
 
   // FIXME: disable during chromium update due to crash in content::WorkerScriptFetchInitation::CreateScriptLoaderOnIO
   xdescribe('Shared Workers', () => {
-    it('can get multiple shared workers', async () => {
-      const worker1 = new SharedWorker('../fixtures/api/shared-worker/shared-worker1.js')
-      const worker2 = new SharedWorker('../fixtures/api/shared-worker/shared-worker2.js')
+    let worker1
+    let worker2
+    let vectorOfWorkers
+
+    before(() => {
+      worker1 = new SharedWorker('../fixtures/api/shared-worker/shared-worker1.js')
+      worker2 = new SharedWorker('../fixtures/api/shared-worker/shared-worker2.js')
       worker1.port.start()
       worker2.port.start()
+    })
+
+    after(() => {
+      worker1.port.close()
+      worker2.port.close()
+    })
+
+    it('can get multiple shared workers', () => {
       const contents = webContents.getAllWebContents()
-      const vectorOfWorkers = contents[0].getAllSharedWorkers()
+      vectorOfWorkers = contents[0].getAllSharedWorkers()
 
       expect(vectorOfWorkers.length).to.equal(2)
       expect(vectorOfWorkers[0].url).to.contain('shared-worker')
       expect(vectorOfWorkers[1].url).to.contain('shared-worker')
+    })
 
+    it('can inspect a specific shared worker', (done) => {
+      const contents = webContents.getAllWebContents()
+      contents[0].once('devtools-opened', () => {
+        contents[0].closeDevTools()
+      })
+      contents[0].once('devtools-closed', () => {
+        done()
+      })
       contents[0].inspectSharedWorkerById(vectorOfWorkers[0].id)
-
-      const focusedContents = webContents.getAllWebContents()
-      expect(focusedContents[0].getURL()).to.contain('shared-worker')
-      await new Promise(resolve => setTimeout(resolve, 200))
-      w.webContents.closeDevTools()
-      worker1.port.terminate()
-      worker2.port.terminate()
     })
   })
 })
