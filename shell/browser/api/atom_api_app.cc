@@ -874,7 +874,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
     succeed = base::PathService::Get(key, &path);
     // If users try to get the logs path before setting a logs path,
     // set the path to a sensible default and then try to get it again
-    if (name == "logs" && !succeed) {
+    if (!succeed && name == "logs") {
       SetAppLogsPath(args);
       succeed = base::PathService::Get(key, &path);
     }
