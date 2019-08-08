@@ -10,6 +10,7 @@
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
 #include "components/remote_cocoa/app_shim/bridged_native_widget_impl.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/bridged_native_widget_host_impl.h"
 #include "ui/views/widget/native_widget_mac.h"
 
@@ -116,8 +117,10 @@
 
   {
     bool prevent_default = false;
-    gfx::Rect new_bounds(gfx::Point(sender.frame.origin), gfx::Size(newSize));
-    shell_->NotifyWindowWillResize(new_bounds, &prevent_default);
+    NSRect new_bounds = NSMakeRect(sender.frame.origin.x, sender.frame.origin.y,
+                                   newSize.width, newSize.height);
+    shell_->NotifyWindowWillResize(gfx::ScreenRectFromNSRect(new_bounds),
+                                   &prevent_default);
     if (prevent_default) {
       return sender.frame.size;
     }
