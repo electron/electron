@@ -133,10 +133,9 @@ AtomContentUtilityClient::MaybeCreateMainThreadService(
     return printing::CreatePdfCompositorService(std::move(request));
   }
 
-  // TODO(deermichel): what to do here?
-  // if (service_name == printing::mojom::kChromePrintingServiceName) {
-  //   return std::make_unique<printing::PrintingService>(std::move(request));
-  // }
+  if (service_name == printing::mojom::kChromePrintingServiceName) {
+    return std::make_unique<printing::PrintingService>(std::move(request));
+  }
 #endif
 
   return nullptr;
