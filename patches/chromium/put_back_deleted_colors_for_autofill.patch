@@ -94,7 +94,7 @@ index d12315d778468333b41308e664d78f0b1ad0391e..8ecad2a7560c124f2a5b412a6d7ed9e6
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 257206023976b889590bc225f6542881e8a5d463..1d6d46c6ad7dec343df7bf1c5c1288aabbc81af8 100644
+index 257206023976b889590bc225f6542881e8a5d463..3003643bfb78cec2f5e84fc9e1471e1ef54aae41 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -559,6 +559,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
@@ -103,15 +103,15 @@ index 257206023976b889590bc225f6542881e8a5d463..1d6d46c6ad7dec343df7bf1c5c1288aa
  
 +    // Results Tables
 +    case kColorId_ResultsTableNormalBackground:
-+      return system_colors_[COLOR_WINDOW];
++      return system_colors_[SystemThemeColor::kWindow];
 +    case kColorId_ResultsTableHoveredBackground:
-+      return color_utils::AlphaBlend(system_colors_[COLOR_HIGHLIGHT],
-+                                     system_colors_[COLOR_WINDOW], 0.25f);
++      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
++                                     system_colors_[SystemThemeColor::kWindow], 0.25f);
 +    case kColorId_ResultsTableNormalText:
-+      return system_colors_[COLOR_WINDOWTEXT];
++      return system_colors_[SystemThemeColor::kWindowText];
 +    case kColorId_ResultsTableDimmedText:
-+      return color_utils::AlphaBlend(system_colors_[COLOR_WINDOWTEXT],
-+                                     system_colors_[COLOR_WINDOW], 0.5f);
++      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
++                                     system_colors_[SystemThemeColor::kWindow], 0.5f);
      default:
        break;
    }
