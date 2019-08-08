@@ -304,6 +304,13 @@ source_set("manifests") {
   if (enable_basic_printing) {
     deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
   }
+
+  if (is_win || enable_print_preview) {
+    deps += [
+      "//chrome/services/printing:lib",
+      "//chrome/services/printing/public/mojom",
+    ]
+  }
 }
 
 npm_action("electron_version_args") {
