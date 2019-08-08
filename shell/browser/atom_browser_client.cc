@@ -429,6 +429,7 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
     content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
     const GURL& url,
+    bool has_navigation_started,
     bool has_response_started,
     content::SiteInstance** affinity_site_instance) const {
   if (g_suppress_renderer_process_restart) {
@@ -461,6 +462,13 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
   // with the availability of a speculative render frame host.
   if (has_response_started) {
     return SiteInstanceForNavigationType::FORCE_CURRENT;
+  }
+
+  if (!has_navigation_started) {
+    // If the navigation didn't start yet, ignore any candidate site instance.
+    // If such instance exists, it belongs to a previous navigation still
+    // taking place. Fixes https://github.com/electron/electron/issues/17576.
+    return SiteInstanceForNavigationType::FORCE_NEW;
   }
 
   return SiteInstanceForNavigationType::FORCE_CANDIDATE_OR_NEW;
