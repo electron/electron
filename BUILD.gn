@@ -304,10 +304,6 @@ source_set("manifests") {
   if (enable_basic_printing) {
     deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
   }
-
-  if (enable_print_preview) {
-    deps += [ "//chrome/services/printing/public/cpp:manifest" ]
-  }
 }
 
 npm_action("electron_version_args") {
