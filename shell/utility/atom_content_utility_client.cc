@@ -21,7 +21,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/services/printing/printing_service.h"
-#include "chrome/services/printing/public/mojom/constants.mojom.h"
+// #include "chrome/services/printing/public/mojom/constants.mojom.h"
 #include "components/services/pdf_compositor/public/cpp/pdf_compositor_service_factory.h"
 #include "components/services/pdf_compositor/public/mojom/pdf_compositor.mojom.h"
 
@@ -133,9 +133,10 @@ AtomContentUtilityClient::MaybeCreateMainThreadService(
     return printing::CreatePdfCompositorService(std::move(request));
   }
 
-  if (service_name == printing::mojom::kChromePrintingServiceName) {
-    return std::make_unique<printing::PrintingService>(std::move(request));
-  }
+  // TODO(deermichel): what to do here?
+  // if (service_name == printing::mojom::kChromePrintingServiceName) {
+  //   return std::make_unique<printing::PrintingService>(std::move(request));
+  // }
 #endif
 
   return nullptr;
