@@ -20,13 +20,13 @@
 #include "services/service_manager/sandbox/switches.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/services/printing/printing_service.h"
-// #include "chrome/services/printing/public/mojom/constants.mojom.h"
 #include "components/services/pdf_compositor/public/cpp/pdf_compositor_service_factory.h"
 #include "components/services/pdf_compositor/public/mojom/pdf_compositor.mojom.h"
 
 #if defined(OS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
+#include "chrome/services/printing/printing_service.h"
+#include "chrome/services/printing/public/mojom/constants.mojom.h"
 #include "chrome/utility/printing_handler.h"
 #endif  // defined(OS_WIN)
 
@@ -42,6 +42,13 @@ void RunServiceAsyncThenTerminateProcess(
       std::move(service),
       base::BindOnce([] { content::UtilityThread::Get()->ReleaseProcess(); }));
 }
+
+#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+auto RunPrintingService(
+    mojo::PendingReceiver<printing::mojom::PrintingService> receiver) {
+  return std::make_unique<printing::PrintingService>(std::move(receiver));
+}
+#endif
 
 auto RunProxyResolver(
     mojo::PendingReceiver<proxy_resolver::mojom::ProxyResolverFactory>
@@ -119,6 +126,15 @@ bool AtomContentUtilityClient::HandleServiceRequest(
   return false;
 }
 
+mojo::ServiceFactory* AtomContentUtilityClient::GetMainThreadServiceFactory() {
+  static base::NoDestructor<mojo::ServiceFactory> factory {
+#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+    RunPrintingService
+#endif
+  };
+  return factory.get();
+}
+
 mojo::ServiceFactory* AtomContentUtilityClient::GetIOThreadServiceFactory() {
   static base::NoDestructor<mojo::ServiceFactory> factory{RunProxyResolver};
   return factory.get();
@@ -131,10 +147,6 @@ AtomContentUtilityClient::MaybeCreateMainThreadService(
 #if BUILDFLAG(ENABLE_PRINTING)
   if (service_name == printing::mojom::kServiceName) {
     return printing::CreatePdfCompositorService(std::move(request));
-  }
-
-  if (service_name == printing::mojom::kChromePrintingServiceName) {
-    return std::make_unique<printing::PrintingService>(std::move(request));
   }
 #endif
 
