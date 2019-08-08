@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Tan <Tom.Tan@microsoft.com>
-Date: Tue, 23 Jul 2019 00:02:23 -0700
+Date: Fri, 26 Jul 2019 23:36:52 -0700
 Subject: Unwind V8 frames correctly on Windows ARM64
 
 On Windows ARM64, OS stack walking does not work because the V8 ARM64 backend
@@ -36,6 +36,11 @@ to maintain for Windows ARM64 which was released since 1709 windows build.
 
 Bug: chromium:893460
 Change-Id: Ic74cbdad8af5cf342185030a4c53796f12ea5429
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/1701133
+Reviewed-by: Michael Starzinger <mstarzinger@chromium.org>
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#63002}
 
 diff --git a/BUILD.gn b/BUILD.gn
 index 071a85c3f57ae92dcf90d47a13299e43f81753ec..d3cc60935541d080234ebc30b231904a48e68862 100644
@@ -64,7 +69,7 @@ index 071a85c3f57ae92dcf90d47a13299e43f81753ec..d3cc60935541d080234ebc30b231904a
        # TODO(mostynb@vewd.com): fix this code so it doesn't need
        # to be excluded, see the comments inside.
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 6117189ad11a189e03c4db1307d919b818751b18..41a7fefec2c1ec6af55a81f2298ab6a43b76b4bb 100644
+index 6117189ad11a189e03c4db1307d919b818751b18..5b8f980929b21305f6846e8e6a3342926251efbf 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -121,9 +121,9 @@
@@ -90,7 +95,7 @@ index 6117189ad11a189e03c4db1307d919b818751b18..41a7fefec2c1ec6af55a81f2298ab6a4
  #else
 -  // Not implemented on ARM64.
 -#endif
-+  // Not implemented.
++  // Not implemented, port needed.
 +#endif  // V8_OS_WIN64
  }
 -#endif
@@ -99,7 +104,7 @@ index 6117189ad11a189e03c4db1307d919b818751b18..41a7fefec2c1ec6af55a81f2298ab6a4
  void v8::V8::SetEntropySource(EntropySource entropy_source) {
    base::RandomNumberGenerator::SetEntropySource(entropy_source);
 diff --git a/src/builtins/arm64/builtins-arm64.cc b/src/builtins/arm64/builtins-arm64.cc
-index f81a1955eeb474c527f25f9e59edb0522e81824b..560e53a61c65086744b817a3fb5f32ee1f82dbd7 100644
+index f81a1955eeb474c527f25f9e59edb0522e81824b..0619fbfe55e0efad72ae5f2cb9623285025cacb2 100644
 --- a/src/builtins/arm64/builtins-arm64.cc
 +++ b/src/builtins/arm64/builtins-arm64.cc
 @@ -24,6 +24,10 @@
@@ -118,7 +123,7 @@ index f81a1955eeb474c527f25f9e59edb0522e81824b..560e53a61c65086744b817a3fb5f32ee
      __ EnableInstrumentation();
  
 +#if defined(V8_OS_WIN)
-+    // Windows ARM64 relies on frame pointer (fp/x29 which are aliases to each
++    // Windows ARM64 relies on a frame pointer (fp/x29 which are aliases to each
 +    // other) chain to do stack unwinding, but JSEntry breaks that by setting fp
 +    // to point to bad_frame_pointer below. To fix unwind information for this
 +    // case, JSEntry registers the offset (from current fp to the caller's fp
@@ -798,7 +803,7 @@ index 8fb01dba9a55c75de677286baa19bb9edae74231..6cc53da51f16a45c3a8ad14ca0b2150b
 -
 -#endif  // defined(V8_OS_WIN_X64)
 diff --git a/src/diagnostics/unwinding-info-win64.h b/src/diagnostics/unwinding-info-win64.h
-index f6611e7e2ec5a8afc1769886593f112eb4ad0f89..12092cc06a77aca9a63d01731750e1a24cf13980 100644
+index f6611e7e2ec5a8afc1769886593f112eb4ad0f89..8f8c9469ebf92c1f81af8364486cd45f4778b248 100644
 --- a/src/diagnostics/unwinding-info-win64.h
 +++ b/src/diagnostics/unwinding-info-win64.h
 @@ -9,7 +9,7 @@
@@ -819,7 +824,7 @@ index f6611e7e2ec5a8afc1769886593f112eb4ad0f89..12092cc06a77aca9a63d01731750e1a2
 -static const int kRbpPrefixCodes = 2;
 -static const int kRbpPrefixLength =
 -    kPushRbpInstructionLength + kMovRbpRspInstructionLength;
-+static constexpr int kOSPageSize = 4096;
++static const int kOSPageSize = 4096;
  
  /**
   * Returns true if V8 is configured to emit unwinding data for embedded in the
@@ -839,7 +844,7 @@ index f6611e7e2ec5a8afc1769886593f112eb4ad0f89..12092cc06a77aca9a63d01731750e1a2
 + * to cover the whole code range of an isolate or WASM module. The extra
 + * RUNTIME_FUNCTIONs are assumed following the first one in the reserved page.
 + */
-+static constexpr uint32_t kDefaultRuntimeFunctionCount = 1;
++static const uint32_t kDefaultRuntimeFunctionCount = 1;
 +
 +#if defined(V8_OS_WIN_X64)
 +
@@ -886,7 +891,7 @@ index f6611e7e2ec5a8afc1769886593f112eb4ad0f89..12092cc06a77aca9a63d01731750e1a2
 + * length, besides 2 LSB which are always 0.
 + * https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling#xdata-records
 + */
-+static constexpr int kMaxFunctionLength = ((1 << 18) - 1) << 2;
++static const int kMaxFunctionLength = ((1 << 18) - 1) << 2;
 +
 +/**
 + * Returns a vector of bytes that contains the Win ARM64 unwind data used for
