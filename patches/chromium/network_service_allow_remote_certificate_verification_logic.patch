@@ -5,7 +5,7 @@ Subject: network service: allow remote certificate verification logic
 
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index dffa1299b1cfce8609313435769189495fd8ccb5..ddea6f6e60b6f5ec4c0fdaddf825870f6b4db419 100644
+index d550c0eb5035f1ab2907579cd6355653a066c4ce..cc9d4b920eb70cb0410e3d1669661d8d03a68bb7 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -91,6 +91,11 @@

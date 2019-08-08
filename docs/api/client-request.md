@@ -16,7 +16,7 @@ following properties:
 method.
   * `url` String (optional) - The request URL. Must be provided in the absolute
 form with the protocol scheme specified as http or https.
-  * `session` Object (optional) - The [`Session`](session.md) instance with
+  * `session` Session (optional) - The [`Session`](session.md) instance with
 which the request is associated.
   * `partition` String (optional) - The name of the [`partition`](session.md)
   with which the request is associated. Defaults to the empty string. The
@@ -134,7 +134,7 @@ Returns:
 * `statusCode` Integer
 * `method` String
 * `redirectUrl` String
-* `responseHeaders` Object
+* `responseHeaders` Record<String, String[]>
 
 Emitted when there is redirection and the mode is `manual`. Calling
 [`request.followRedirect`](#requestfollowredirect) will continue with the redirection.
@@ -158,7 +158,7 @@ internally buffered inside Electron process memory.
 #### `request.setHeader(name, value)`
 
 * `name` String - An extra HTTP header name.
-* `value` Object - An extra HTTP header value.
+* `value` String - An extra HTTP header value.
 
 Adds an extra HTTP header. The header name will be issued as-is without
 lowercasing. It can be called only before first write. Calling this method after
@@ -169,7 +169,7 @@ the first write will throw an error. If the passed value is not a `String`, its
 
 * `name` String - Specify an extra header name.
 
-Returns `Object` - The value of a previously set extra header name.
+Returns `String` - The value of a previously set extra header name.
 
 #### `request.removeHeader(name)`
 

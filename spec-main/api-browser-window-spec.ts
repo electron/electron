@@ -1,5 +1,6 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
+import dirtyChai = require('dirty-chai')
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -7,14 +8,15 @@ import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+
+import { emittedOnce } from './events-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
+import { closeWindow } from './window-helpers'
+
 const { expect } = chai
 
-const ifit = (condition: boolean) => (condition ? it : it.skip)
-const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
-
 chai.use(chaiAsPromised)
+chai.use(dirtyChai)
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -360,7 +362,8 @@ describe('BrowserWindow module', () => {
       await expect(p).to.eventually.be.fulfilled
     })
 
-    describe('POST navigations', () => {
+    // FIXME(robo/nornagon): re-enable these once service workers work
+    describe.skip('POST navigations', () => {
       afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
 
       it('supports specifying POST data', async () => {
@@ -1240,22 +1243,44 @@ describe('BrowserWindow module', () => {
     })
   })
 
+
   describe('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows)
-    it('make window with initial opacity', () => {
-      const w = new BrowserWindow({ show: false, opacity: 0.5 })
-      expect(w.getOpacity()).to.equal(0.5)
-    })
-    it('allows setting the opacity', () => {
-      const w = new BrowserWindow({ show: false })
-      expect(() => {
-        w.setOpacity(0.0)
-        expect(w.getOpacity()).to.equal(0.0)
-        w.setOpacity(0.5)
+
+    ifdescribe(process.platform !== 'linux')(('Windows and Mac'), () => {
+      it('make window with initial opacity', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
         expect(w.getOpacity()).to.equal(0.5)
-        w.setOpacity(1.0)
+      })
+      it('allows setting the opacity', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(() => {
+          w.setOpacity(0.0)
+          expect(w.getOpacity()).to.equal(0.0)
+          w.setOpacity(0.5)
+          expect(w.getOpacity()).to.equal(0.5)
+          w.setOpacity(1.0)
+          expect(w.getOpacity()).to.equal(1.0)
+        }).to.not.throw()
+      })
+
+      it('clamps opacity to [0.0...1.0]', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
+        w.setOpacity(100)
         expect(w.getOpacity()).to.equal(1.0)
-      }).to.not.throw()
+        w.setOpacity(-100)
+        expect(w.getOpacity()).to.equal(0.0)
+      })
+    })
+
+    ifdescribe(process.platform === 'linux')(('Linux'), () => {
+      it('sets 1 regardless of parameter', () => {
+        const w = new BrowserWindow({ show: false })
+        w.setOpacity(0)
+        expect(w.getOpacity()).to.equal(1.0)
+        w.setOpacity(0.5)
+        expect(w.getOpacity()).to.equal(1.0)
+      })
     })
   })
 
@@ -1714,7 +1739,7 @@ describe('BrowserWindow module', () => {
           }
         })
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preload
+          options.webPreferences!.preload = preload
         })
         const htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
         const pageUrl = 'file://' + htmlPath
@@ -1742,7 +1767,7 @@ describe('BrowserWindow module', () => {
         })
 
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preload
+          options.webPreferences!.preload = preload
         })
         w.loadFile(
           path.join(fixtures, 'api', 'sandbox.html'),
@@ -1800,7 +1825,7 @@ describe('BrowserWindow module', () => {
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preloadPath
+          options.webPreferences!.preload = preloadPath
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
         const [, args] = await emittedOnce(ipcMain, 'answer')
@@ -1817,8 +1842,9 @@ describe('BrowserWindow module', () => {
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preloadPath
-          options.webPreferences.foo = 'bar'
+          options.webPreferences!.preload = preloadPath
+          const prefs = options.webPreferences as any
+          prefs.foo = 'bar'
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
         const [, , webPreferences] = await emittedOnce(ipcMain, 'answer')
@@ -1835,8 +1861,8 @@ describe('BrowserWindow module', () => {
         })
         let childWc: WebContents | null = null
         w.webContents.on('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preload
-          childWc = options.webContents
+          options.webPreferences!.preload = preload
+          childWc = (options as any).webContents
           expect(w.webContents).to.not.equal(childWc)
         })
         ipcMain.once('parent-ready', function (event) {
@@ -1954,7 +1980,7 @@ describe('BrowserWindow module', () => {
           }
         })
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preload
+          options.webPreferences!.preload = preload
         })
 
         w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'reload-remote-child' })
@@ -2119,7 +2145,7 @@ describe('BrowserWindow module', () => {
       it('should inherit the nativeWindowOpen setting in opened windows', async () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preloadPath
+          options.webPreferences!.preload = preloadPath
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
         const [, args] = await emittedOnce(ipcMain, 'answer')
@@ -2128,8 +2154,9 @@ describe('BrowserWindow module', () => {
       it('should open windows with the options configured via new-window event listeners', async () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences.preload = preloadPath
-          options.webPreferences.foo = 'bar'
+          options.webPreferences!.preload = preloadPath
+          const prefs = options.webPreferences! as any
+          prefs.foo = 'bar'
         })
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'))
         const [, , webPreferences] = await emittedOnce(ipcMain, 'answer')
@@ -2185,7 +2212,7 @@ describe('BrowserWindow module', () => {
           })
 
           w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-            options.webPreferences.preload = path.join(fixtures, 'api', 'window-open-preload.js')
+            options.webPreferences!.preload = path.join(fixtures, 'api', 'window-open-preload.js')
           })
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
           const [, args, typeofProcess] = await emittedOnce(ipcMain, 'answer')
@@ -2205,7 +2232,7 @@ describe('BrowserWindow module', () => {
           })
 
           w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-            options.webPreferences.preload = path.join(fixtures, 'api', 'window-open-preload.js')
+            options.webPreferences!.preload = path.join(fixtures, 'api', 'window-open-preload.js')
           })
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
           const [, , , windowOpenerIsNull] = await emittedOnce(ipcMain, 'answer')

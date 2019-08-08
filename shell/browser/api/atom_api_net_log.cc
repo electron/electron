@@ -14,7 +14,6 @@
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/native_mate_converters/callback.h"

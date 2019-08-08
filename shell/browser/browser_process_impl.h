@@ -20,7 +20,6 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
-#include "shell/browser/io_thread.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
 namespace printing {
@@ -41,7 +40,7 @@ class BrowserProcessImpl : public BrowserProcess {
 
   void PostEarlyInitialization();
   void PreCreateThreads();
-  void PostDestroyThreads();
+  void PostDestroyThreads() {}
   void PostMainMessageLoopRun();
 
   void EndSession() override {}
@@ -84,8 +83,6 @@ class BrowserProcessImpl : public BrowserProcess {
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
   component_updater::ComponentUpdateService* component_updater() override;
-  component_updater::SupervisedUserWhitelistInstaller*
-  supervised_user_whitelist_installer() override;
   MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;
@@ -108,14 +105,11 @@ class BrowserProcessImpl : public BrowserProcess {
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
 
-  IOThread* io_thread() const { return io_thread_.get(); }
-
  private:
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
   std::unique_ptr<PrefService> local_state_;
-  std::unique_ptr<IOThread> io_thread_;
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);

@@ -93,14 +93,6 @@ void BrowserProcessImpl::PreCreateThreads() {
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
-
-  // Manage global state of net and other IO thread related.
-  io_thread_ =
-      std::make_unique<IOThread>(SystemNetworkContextManager::GetInstance());
-}
-
-void BrowserProcessImpl::PostDestroyThreads() {
-  io_thread_.reset();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -246,11 +238,6 @@ BrowserProcessImpl::optimization_guide_service() {
 
 component_updater::ComponentUpdateService*
 BrowserProcessImpl::component_updater() {
-  return nullptr;
-}
-
-component_updater::SupervisedUserWhitelistInstaller*
-BrowserProcessImpl::supervised_user_whitelist_installer() {
   return nullptr;
 }
 

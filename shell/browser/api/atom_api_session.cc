@@ -36,26 +36,19 @@
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
-#include "net/http/http_transaction_factory.h"
-#include "net/url_request/static_http_user_agent_settings.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
 #include "shell/browser/api/atom_api_download_item.h"
 #include "shell/browser/api/atom_api_net_log.h"
-#include "shell/browser/api/atom_api_protocol.h"
 #include "shell/browser/api/atom_api_protocol_ns.h"
-#include "shell/browser/api/atom_api_web_request.h"
 #include "shell/browser/api/atom_api_web_request_ns.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_permission_manager.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/media/media_device_id_salt.h"
-#include "shell/browser/net/atom_cert_verifier.h"
-#include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/content_converter.h"
@@ -122,15 +115,6 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                      const std::string& accept_lang,
-                      const std::string& user_agent) {
-  getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(
-          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-          user_agent));
-}
-
 }  // namespace
 
 namespace mate {
@@ -153,19 +137,6 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
-template <>
-struct Converter<electron::VerifyRequestParams> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::VerifyRequestParams val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.Set("hostname", val.hostname);
-    dict.Set("certificate", val.certificate);
-    dict.Set("verificationResult", val.default_result);
-    dict.Set("errorCode", val.error_code);
-    return dict.GetHandle();
-  }
-};
-
 }  // namespace mate
 
 namespace electron {
@@ -178,14 +149,6 @@ const char kPersistPrefix[] = "persist:";
 
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
-
-void SetCertVerifyProcInIO(
-    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    const AtomCertVerifier::VerifyProc& proc) {
-  auto* request_context = context_getter->GetURLRequestContext();
-  static_cast<AtomCertVerifier*>(request_context->cert_verifier())
-      ->SetVerifyProc(proc);
-}
 
 void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::FilePath& path,
@@ -422,76 +385,25 @@ void Session::DisableNetworkEmulation() {
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
 
-class ElectronCertVerifierClient : public network::mojom::CertVerifierClient {
- public:
-  using CertVerifyProc =
-      base::RepeatingCallback<void(const VerifyRequestParams& request,
-                                   base::RepeatingCallback<void(int)>)>;
-  explicit ElectronCertVerifierClient(CertVerifyProc proc)
-      : cert_verify_proc_(proc) {}
-  ~ElectronCertVerifierClient() override = default;
-
-  // network::mojom::CertVerifierClient
-  void Verify(int default_error,
-              const net::CertVerifyResult& default_result,
-              const scoped_refptr<net::X509Certificate>& certificate,
-              const std::string& hostname,
-              int flags,
-              const base::Optional<std::string>& ocsp_response,
-              VerifyCallback callback) override {
-    VerifyRequestParams params;
-    params.hostname = hostname;
-    params.default_result = net::ErrorToString(default_error);
-    params.error_code = default_error;
-    params.certificate = certificate;
-    cert_verify_proc_.Run(
-        params,
-        base::AdaptCallbackForRepeating(base::BindOnce(
-            [](VerifyCallback callback, const net::CertVerifyResult& result,
-               int err) { std::move(callback).Run(err, result); },
-            std::move(callback), default_result)));
-  }
-
- private:
-  CertVerifyProc cert_verify_proc_;
-};
-
-void WrapVerifyProc(
-    base::RepeatingCallback<void(const VerifyRequestParams& request,
-                                 base::RepeatingCallback<void(int)>)> proc,
-    const VerifyRequestParams& request,
-    base::OnceCallback<void(int)> cb) {
-  proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
-}
-
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  ElectronCertVerifierClient::CertVerifyProc proc;
+  CertVerifierClient::CertVerifyProc proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
   }
 
-  if (base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    network::mojom::CertVerifierClientPtr cert_verifier_client;
-    if (proc) {
-      mojo::MakeStrongBinding(
-          std::make_unique<ElectronCertVerifierClient>(proc),
-          mojo::MakeRequest(&cert_verifier_client));
-    }
-    content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
-        ->GetNetworkContext()
-        ->SetCertVerifierClient(std::move(cert_verifier_client));
-
-    // This causes the cert verifier cache to be cleared.
-    content::GetNetworkService()->OnCertDBChanged();
-  } else {
-    base::PostTaskWithTraits(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&SetCertVerifyProcInIO,
-                       WrapRefCounted(browser_context_->GetRequestContext()),
-                       base::BindRepeating(&WrapVerifyProc, proc)));
+  network::mojom::CertVerifierClientPtr cert_verifier_client;
+  if (proc) {
+    mojo::MakeStrongBinding(std::make_unique<CertVerifierClient>(proc),
+                            mojo::MakeRequest(&cert_verifier_client));
   }
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+      ->GetNetworkContext()
+      ->SetCertVerifierClient(std::move(cert_verifier_client));
+
+  // This causes the cert verifier cache to be cleared.
+  content::GetNetworkService()->OnCertDBChanged();
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -562,23 +474,17 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  auto auth_params = CreateHttpAuthDynamicParams();
-  auth_params->server_whitelist = domains;
-  content::GetNetworkService()->ConfigureHttpAuthPrefs(std::move(auth_params));
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+  auth_dynamic_params->server_allowlist = domains;
+  content::GetNetworkService()->ConfigureHttpAuthPrefs(
+      std::move(auth_dynamic_params));
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
-  browser_context_->SetUserAgent(user_agent);
-
-  std::string accept_lang = g_browser_process->GetApplicationLocale();
-  args->GetNext(&accept_lang);
-
-  scoped_refptr<net::URLRequestContextGetter> getter(
-      browser_context_->GetRequestContext());
-  getter->GetNetworkTaskRunner()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&SetUserAgentInIO, getter, accept_lang, user_agent));
+  CHECK(false)
+      << "TODO: This was disabled when the network service was turned on";
 }
 
 std::string Session::GetUserAgent() {
@@ -661,10 +567,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
   if (protocol_.IsEmpty()) {
     v8::Local<v8::Value> handle;
-    if (base::FeatureList::IsEnabled(network::features::kNetworkService))
-      handle = ProtocolNS::Create(isolate, browser_context()).ToV8();
-    else
-      handle = Protocol::Create(isolate, browser_context()).ToV8();
+    handle = ProtocolNS::Create(isolate, browser_context()).ToV8();
     protocol_.Reset(isolate, handle);
   }
   return v8::Local<v8::Value>::New(isolate, protocol_);
@@ -673,10 +576,7 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
     v8::Local<v8::Value> handle;
-    if (base::FeatureList::IsEnabled(network::features::kNetworkService))
-      handle = WebRequestNS::Create(isolate, browser_context()).ToV8();
-    else
-      handle = WebRequest::Create(isolate, browser_context()).ToV8();
+    handle = WebRequestNS::Create(isolate, browser_context()).ToV8();
     web_request_.Reset(isolate, handle);
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
@@ -774,7 +674,7 @@ namespace {
 
 using electron::api::Cookies;
 using electron::api::NetLog;
-using electron::api::Protocol;
+using electron::api::ProtocolNS;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,
@@ -803,9 +703,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set(
       "NetLog",
       NetLog::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set(
-      "Protocol",
-      Protocol::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
+  dict.Set("Protocol", ProtocolNS::GetConstructor(isolate)
+                           ->GetFunction(context)
+                           .ToLocalChecked());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

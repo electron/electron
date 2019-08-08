@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 #define SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -35,6 +36,7 @@ class ProxyingURLLoaderFactory
    public:
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
+        int64_t web_request_id,
         int32_t routing_id,
         int32_t network_service_request_id,
         uint32_t options,
@@ -50,7 +52,6 @@ class ProxyingURLLoaderFactory
     void FollowRedirect(const std::vector<std::string>& removed_headers,
                         const net::HttpRequestHeaders& modified_headers,
                         const base::Optional<GURL>& new_url) override;
-    void ProceedWithResponse() override;
     void SetPriority(net::RequestPriority priority,
                      int32_t intra_priority_value) override;
     void PauseReadingBodyFromNet() override;
@@ -99,6 +100,7 @@ class ProxyingURLLoaderFactory
     ProxyingURLLoaderFactory* factory_;
     network::ResourceRequest request_;
     const base::Optional<url::Origin> original_initiator_;
+    const uint64_t request_id_;
     const int32_t routing_id_;
     const int32_t network_service_request_id_;
     const uint32_t options_;
@@ -174,6 +176,8 @@ class ProxyingURLLoaderFactory
  private:
   void OnTargetFactoryError();
   void OnProxyBindingError();
+  void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
+  void MaybeDeleteThis();
 
   // This is passed from api::ProtocolNS.
   //
@@ -188,6 +192,14 @@ class ProxyingURLLoaderFactory
   network::mojom::URLLoaderFactoryPtr target_factory_;
   mojo::Binding<network::mojom::TrustedURLLoaderHeaderClient>
       url_loader_header_client_binding_;
+
+  // Mapping from our own internally generated request ID to an
+  // InProgressRequest instance.
+  std::map<uint64_t, std::unique_ptr<InProgressRequest>> requests_;
+
+  // A mapping from the network stack's notion of request ID to our own
+  // internally generated request ID for the same request.
+  std::map<int32_t, uint64_t> network_request_id_to_web_request_id_;
 
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };

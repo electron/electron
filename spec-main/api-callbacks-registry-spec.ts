@@ -1,13 +1,8 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const { CallbacksRegistry } = require('../lib/renderer/callbacks-registry')
+import { expect } from 'chai'
+import { CallbacksRegistry } from '../lib/renderer/callbacks-registry'
 
 describe('CallbacksRegistry module', () => {
-  let registry = null
+  let registry: CallbacksRegistry
 
   beforeEach(() => {
     registry = new CallbacksRegistry()
@@ -17,13 +12,14 @@ describe('CallbacksRegistry module', () => {
     const cb = () => [1, 2, 3, 4, 5]
     const key = registry.add(cb)
 
-    expect(key).to.exist()
+    expect(key).to.exist('key')
   })
 
   it('returns a specified callback if it is in the registry', () => {
     const cb = () => [1, 2, 3, 4, 5]
     const key = registry.add(cb)
-    const callback = registry.get(key)
+    expect(key).to.exist('key')
+    const callback = registry.get(key!)
 
     expect(callback.toString()).equal(cb.toString())
   })
@@ -37,9 +33,10 @@ describe('CallbacksRegistry module', () => {
   it('removes a callback to the registry', () => {
     const cb = () => [1, 2, 3, 4, 5]
     const key = registry.add(cb)
+    expect(key).to.exist('key')
 
-    registry.remove(key)
-    const afterCB = registry.get(key)
+    registry.remove(key!)
+    const afterCB = registry.get(key!)
 
     expect(afterCB).to.be.a('function')
     expect(afterCB.toString()).to.not.equal(cb.toString())
