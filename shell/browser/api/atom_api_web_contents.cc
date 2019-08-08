@@ -1637,20 +1637,20 @@ void WebContents::Print(mate::Arguments* args) {
                         printing::DEFAULT_MARGINS);
   }
 
-  settings.SetBoolean(printing::kSettingHeaderFooterEnabled, false);
-
   // Set whether to print color or greyscale
   bool print_color = true;
   options.Get("color", &print_color);
   int color_setting = print_color ? printing::COLOR : printing::GRAY;
   settings.SetInteger(printing::kSettingColor, color_setting);
 
+  // Is the orientation landscape or portrait.
   bool landscape = false;
   options.Get("landscape", &landscape);
   settings.SetBoolean(printing::kSettingLandscape, landscape);
 
   // We set the default to empty string here and only update
   // if at the Chromium level if it's non-empty
+  // Printer device name as opened by the OS.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
   settings.SetString(printing::kSettingDeviceName, device_name);
@@ -1663,15 +1663,31 @@ void WebContents::Print(mate::Arguments* args) {
   options.Get("pagesPerSheet", &pages_per_sheet);
   settings.SetInteger(printing::kSettingPagesPerSheet, pages_per_sheet);
 
+  // True if the user wants to print with collate.
   bool collate = true;
   options.Get("collate", &collate);
   settings.SetBoolean(printing::kSettingCollate, collate);
 
+  // The number of individual copies to print
   int copies = 1;
   options.Get("copies", &copies);
   settings.SetInteger(printing::kSettingCopies, copies);
 
-  // For now we don't want to allow the user to enable these settings
+  // Strings to be printed as headers and footers if requested by the user.
+  mate::Dictionary header_footer;
+  if (options.Get("headerFooterInfo", &header_footer)) {
+    settings.SetBoolean(printing::kSettingHeaderFooterEnabled, true);
+
+    std::string header;
+    header_footer.Get("header", &header);
+    std::string footer;
+    header_footer.Get("footer", &footer);
+
+    settings.SetString(printing::kSettingHeaderFooterTitle, header);
+    settings.SetString(printing::kSettingHeaderFooterURL, footer);
+  }
+
+  // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetBoolean(printing::kSettingPrintToPDF, false);
   settings.SetBoolean(printing::kSettingCloudPrintDialog, false);
@@ -1700,7 +1716,7 @@ void WebContents::Print(mate::Arguments* args) {
       settings.SetList(printing::kSettingPageRange, std::move(page_range_list));
   }
 
-  // Set custom duplex mode
+  // Duplex type user wants to use.
   printing::DuplexMode duplex_mode;
   options.Get("duplexMode", &duplex_mode);
   settings.SetInteger(printing::kSettingDuplexMode, duplex_mode);
