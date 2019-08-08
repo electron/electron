@@ -1227,6 +1227,16 @@ Returns `String` - The title of the native window.
 **Note:** The title of the web page can be different from the title of the native
 window.
 
+#### `win.setAccessibleTitle(title)`
+
+* `title` String
+
+Changes the accessible title of native window to `title`.
+
+#### `win.getAccessibleTitle()`
+
+Returns `String` - The accessible title of native window (or an empty string if none).
+
 #### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
 * `offsetY` Float
