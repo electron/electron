@@ -12,6 +12,7 @@
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/atom_preview_item.h"
 #include "shell/browser/ui/cocoa/atom_touch_bar.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
@@ -120,8 +121,10 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
   {
     bool prevent_default = false;
-    gfx::Rect new_bounds(gfx::Point(sender.frame.origin), gfx::Size(newSize));
-    shell_->NotifyWindowWillResize(new_bounds, &prevent_default);
+    NSRect new_bounds = NSMakeRect(sender.frame.origin.x, sender.frame.origin.y,
+                                   newSize.width, newSize.height);
+    shell_->NotifyWindowWillResize(gfx::ScreenRectFromNSRect(new_bounds),
+                                   &prevent_default);
     if (prevent_default) {
       return sender.frame.size;
     }
