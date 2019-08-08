@@ -12,7 +12,7 @@ We should remove this patch after all Electron's code has been migrated to the
 NetworkService.
 
 diff --git a/services/network/public/cpp/features.cc b/services/network/public/cpp/features.cc
-index d51fd50a5dee0188362ffa0aa2762bd27964d529..0f590a2d6b359cfd289ac0df797058463564ab2c 100644
+index a1f0bd05fdb8bbdc3acc955cc31f2af748ed3837..07b8a853ac79d293cf5188d6b340c87492cc1b30 100644
 --- a/services/network/public/cpp/features.cc
 +++ b/services/network/public/cpp/features.cc
 @@ -18,7 +18,7 @@ const base::Feature kNetworkErrorLogging{"NetworkErrorLogging",
@@ -23,4 +23,4 @@ index d51fd50a5dee0188362ffa0aa2762bd27964d529..0f590a2d6b359cfd289ac0df79705846
 +                                    base::FEATURE_DISABLED_BY_DEFAULT};
  
  // Out of Blink CORS
- const base::Feature kOutOfBlinkCors{"OutOfBlinkCors",
+ const base::Feature kOutOfBlinkCors {

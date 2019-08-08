@@ -65,7 +65,7 @@ index 78a6b5739caed8c3925f303c52ed107be8e4ccfe..ddbf660e594c1a991d4e758fa11b1b2e
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_WIN)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de20088781588f9674a 100644
+index 527503f3c60f963574c42df7eabb0240699ac912..e8092572b1f56b90f9904a8d8a4ffb44cb929ade 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -80,6 +80,9 @@
@@ -90,7 +90,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    // Use the full quad_rect for debug quads to not move the edges based on
    // partial swaps.
-@@ -1368,7 +1372,8 @@ void GLRenderer::ChooseRPDQProgram(DrawRenderPassDrawQuadParams* params,
+@@ -1365,7 +1369,8 @@ void GLRenderer::ChooseRPDQProgram(DrawRenderPassDrawQuadParams* params,
            params->use_aa ? USE_AA : NO_AA, mask_mode, mask_for_background,
            params->use_color_matrix, tint_gl_composited_content_,
            ShouldApplyRoundedCorner(params->quad)),
@@ -100,7 +100,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  }
  
  void GLRenderer::UpdateRPDQUniforms(DrawRenderPassDrawQuadParams* params) {
-@@ -1839,8 +1844,8 @@ void GLRenderer::DrawSolidColorQuad(const SolidColorDrawQuad* quad,
+@@ -1836,8 +1841,8 @@ void GLRenderer::DrawSolidColorQuad(const SolidColorDrawQuad* quad,
    SetUseProgram(ProgramKey::SolidColor(use_aa ? USE_AA : NO_AA,
                                         tint_gl_composited_content_,
                                         ShouldApplyRoundedCorner(quad)),
@@ -111,7 +111,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
    SetShaderColor(color, opacity);
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -1995,8 +2000,8 @@ void GLRenderer::DrawContentQuadAA(const ContentDrawQuadBase* quad,
+@@ -1992,8 +1997,8 @@ void GLRenderer::DrawContentQuadAA(const ContentDrawQuadBase* quad,
                                                : NON_PREMULTIPLIED_ALPHA,
                         false, false, tint_gl_composited_content_,
                         ShouldApplyRoundedCorner(quad)),
@@ -122,7 +122,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    if (current_program_->tint_color_matrix_location() != -1) {
      auto matrix = cc::DebugColors::TintCompositedContentColorTransformMatrix();
-@@ -2092,8 +2097,8 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
+@@ -2089,8 +2094,8 @@ void GLRenderer::DrawContentQuadNoAA(const ContentDrawQuadBase* quad,
                         !quad->ShouldDrawWithBlending(), has_tex_clamp_rect,
                         tint_gl_composited_content_,
                         ShouldApplyRoundedCorner(quad)),
@@ -133,7 +133,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    if (current_program_->tint_color_matrix_location() != -1) {
      auto matrix = cc::DebugColors::TintCompositedContentColorTransformMatrix();
-@@ -2196,7 +2201,7 @@ void GLRenderer::DrawYUVVideoQuad(const YUVVideoDrawQuad* quad,
+@@ -2193,7 +2198,7 @@ void GLRenderer::DrawYUVVideoQuad(const YUVVideoDrawQuad* quad,
    DCHECK_NE(src_color_space, src_color_space.GetAsFullRangeRGB());
  
    gfx::ColorSpace dst_color_space =
@@ -142,7 +142,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
    // Force sRGB output on Windows for overlay candidate video quads to match
    // DirectComposition behavior in case these switch between overlays and
    // compositing. See https://crbug.com/811118 for details.
-@@ -2352,8 +2357,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
+@@ -2349,8 +2354,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
  
    SetUseProgram(ProgramKey::VideoStream(tex_coord_precision,
                                          ShouldApplyRoundedCorner(quad)),
@@ -153,7 +153,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
-@@ -2410,8 +2415,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
+@@ -2407,8 +2412,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
        draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
  
    // Bind the program to the GL state.
@@ -164,7 +164,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -3104,7 +3109,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
+@@ -3101,7 +3106,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
  void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space) {
@@ -175,7 +175,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    ProgramKey program_key = program_key_no_color;
    const gfx::ColorTransform* color_transform =
-@@ -3458,7 +3465,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3455,7 +3462,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -184,7 +184,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3662,8 +3669,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3659,8 +3666,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -196,7 +196,7 @@ index 4a8ed779e11a44892af72f6b2dd49ce8be2dc63c..41fdfc31f0fb26e100bb3de200887815
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -3823,3 +3831,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -3820,3 +3828,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
