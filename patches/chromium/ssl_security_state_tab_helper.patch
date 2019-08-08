@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 76036ce8f4e09e99141940bb72c0424bce556c43..26a076d34b3a89e769342a8f7eb192a2f54dfa8f 100644
+index 76036ce8f4e09e99141940bb72c0424bce556c43..7e63568010a6646df62aab2f418d659f9ec9eee3 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,16 +13,20 @@
@@ -39,7 +39,19 @@ index 76036ce8f4e09e99141940bb72c0424bce556c43..26a076d34b3a89e769342a8f7eb192a2
  #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
  #endif
  
-@@ -79,8 +83,9 @@ security_state::SafetyTipStatus GetSecurityStateSafetyTipType(
+@@ -64,6 +68,7 @@ void RecordSecurityLevel(
+   }
+ }
+ 
++#if 0
+ security_state::SafetyTipStatus GetSecurityStateSafetyTipType(
+     safety_tips::SafetyTipType type) {
+   switch (type) {
+@@ -76,11 +81,13 @@ security_state::SafetyTipStatus GetSecurityStateSafetyTipType(
+       return security_state::SafetyTipStatus::SAFETY_TIP_STATUS_NONE;
+   }
+ }
++#endif
  
  }  // namespace
  
@@ -50,7 +62,23 @@ index 76036ce8f4e09e99141940bb72c0424bce556c43..26a076d34b3a89e769342a8f7eb192a2
  
  SecurityStateTabHelper::SecurityStateTabHelper(
      content::WebContents* web_contents)
-@@ -176,6 +181,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -102,6 +109,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
+   // information is still being initialized, thus no need to check for that.
+   state->malicious_content_status = GetMaliciousContentStatus();
+ 
++#if 0
+   safety_tips::ReputationWebContentsObserver* reputation_web_contents_observer =
+       safety_tips::ReputationWebContentsObserver::FromWebContents(
+           web_contents());
+@@ -110,6 +118,7 @@ SecurityStateTabHelper::GetVisibleSecurityState() const {
+           ? GetSecurityStateSafetyTipType(
+                 reputation_web_contents_observer->last_shown_safety_tip_type())
+           : security_state::SafetyTipStatus::SAFETY_TIP_STATUS_NONE;
++#endif
+   return state;
+ }
+ 
+@@ -176,6 +185,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
        web_contents()->GetController().GetVisibleEntry();
    if (!entry)
      return security_state::MALICIOUS_CONTENT_STATUS_NONE;
@@ -58,7 +86,7 @@ index 76036ce8f4e09e99141940bb72c0424bce556c43..26a076d34b3a89e769342a8f7eb192a2
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -242,6 +248,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -242,6 +252,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }
