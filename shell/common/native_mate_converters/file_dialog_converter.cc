@@ -8,6 +8,7 @@
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/native_mate_converters/file_path_converter.h"
+#include "shell/common/native_mate_converters/native_window_converter.h"
 
 namespace mate {
 
