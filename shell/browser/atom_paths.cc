@@ -10,9 +10,15 @@
 #include "chrome/common/chrome_paths.h"
 #include "shell/browser/browser.h"
 
+#if defined(USE_X11)
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
+#endif
+
 namespace electron {
 
 namespace {
+
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
@@ -51,11 +57,48 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+#if defined(USE_X11)
+void GetLinuxAppDataPath(base::FilePath* path) {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  *path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
+                                     base::nix::kDotConfigDir);
+}
+#endif
+
+bool PathProvider(int key, base::FilePath* path) {
+  switch (key) {
+    case DIR_APP_DATA:
+#if defined(USE_X11)
+      GetLinuxAppDataPath(path);
+      return true;
+#else
+      return base::PathService::Get(base::DIR_APP_DATA, path);
+#endif
+    case DIR_USER_DATA:
+      base::PathService::Get(DIR_APP_DATA, path);
+      *path = path->Append(
+          base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
+      return true;
+    case DIR_USER_CACHE:
+      base::PathService::Get(DIR_CACHE, path);
+      *path = path->Append(
+          base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
+      return true;
+    case DIR_APP_LOGS:
+      base::PathService::Get(DIR_USER_DATA, path);
+      *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
+      return true;
+    default:
+      return false;
+  }
+}
+
 }  // namespace
 
-AppPathProvider::AppPathProvider() {
-  base::PathService::RegisterProvider(AppPathProvider::GetProviderFunc,
-                                      PATH_START, PATH_END);
+// This cannot be done as a static initializer sadly since Visual Studio will
+// eliminate this object file if there is no direct entry point into it.
+void AppPathProvider::Register() {
+  base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
 }
 
 bool AppPathProvider::GetPath(const std::string& name, base::FilePath& path) {
@@ -76,32 +119,13 @@ bool AppPathProvider::SetPath(const std::string& name,
   return succeed;
 }
 
-bool AppPathProvider::GetProviderFunc(int key, base::FilePath* path) {
-  switch (key) {
-    case DIR_CACHE:
-#if defined(OS_POSIX)
-      base::PathService::Get(base::DIR_CACHE, path);
-#else
-      base::PathService::Get(DIR_APP_DATA, path);
-#endif
-      return true;
-    case DIR_USER_DATA:
-      base::PathService::Get(DIR_APP_DATA, path);
-      *path = path->Append(
-          base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
-      return true;
-    case DIR_USER_CACHE:
-      base::PathService::Get(DIR_CACHE, path);
-      *path = path->Append(
-          base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
-      return true;
-    case DIR_APP_LOGS:
-      base::PathService::Get(DIR_USER_DATA, path);
-      *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
-      return true;
-    default:
-      return false;
-  }
+bool AppPathProvider::GetDefaultPath(const std::string& name,
+                                     base::FilePath& path) {
+  bool succeed = false;
+  int key = GetPathConstant(name);
+  if (key >= 0)
+    succeed = PathProvider(key, &path);
+  return succeed;
 }
 
 }  // namespace electron
