@@ -18,6 +18,8 @@ void TrayIcon::DisplayBalloon(const BalloonOptions& options) {}
 
 void TrayIcon::RemoveBalloon() {}
 
+void TrayIcon::Focus() {}
+
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
                                 AtomMenuModel* menu_model) {}
 

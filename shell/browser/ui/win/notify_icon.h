@@ -60,6 +60,7 @@ class NotifyIcon : public TrayIcon {
   void SetToolTip(const std::string& tool_tip) override;
   void DisplayBalloon(const BalloonOptions& options) override;
   void RemoveBalloon() override;
+  void Focus() override;
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
