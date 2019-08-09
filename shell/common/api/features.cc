@@ -43,6 +43,7 @@ bool IsPrintingEnabled() {
 
 bool IsExtensionsEnabled() {
   return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
+}
 
 bool IsPictureInPictureEnabled() {
   return BUILDFLAG(ENABLE_PICTURE_IN_PICTURE);

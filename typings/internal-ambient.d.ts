@@ -10,6 +10,7 @@ declare namespace NodeJS {
     isViewApiEnabled(): boolean;
     isTtsEnabled(): boolean;
     isPrintingEnabled(): boolean;
+    isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
   }

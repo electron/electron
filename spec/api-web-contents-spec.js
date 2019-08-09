@@ -1286,7 +1286,7 @@ describe('webContents module', () => {
       w.webContents.once('did-finish-load', async () => {
         const result = await w.webContents.executeJavaScript(
           `runTest(${features.isPictureInPictureEnabled()})`, true)
-        assert.strictEqual(result, true)
+        expect(result).to.be.true()
         done()
       })
       w.loadFile(path.join(fixtures, 'api', 'picture-in-picture.html'))

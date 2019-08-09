@@ -102,9 +102,10 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   bool HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
-  gfx::Size EnterPictureInPicture(content::WebContents* web_contents,
-                                  const viz::SurfaceId&,
-                                  const gfx::Size& natural_size) override;
+  content::PictureInPictureResult EnterPictureInPicture(
+      content::WebContents* web_contents,
+      const viz::SurfaceId&,
+      const gfx::Size& natural_size) override;
   void ExitPictureInPicture() override;
 
   // InspectableWebContentsDelegate:

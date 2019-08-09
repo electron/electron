@@ -640,7 +640,8 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   native_fullscreen_ = false;
 }
 
-gfx::Size CommonWebContentsDelegate::EnterPictureInPicture(
+content::PictureInPictureResult
+CommonWebContentsDelegate::EnterPictureInPicture(
     content::WebContents* web_contents,
     const viz::SurfaceId& surface_id,
     const gfx::Size& natural_size) {
@@ -648,7 +649,7 @@ gfx::Size CommonWebContentsDelegate::EnterPictureInPicture(
   return PictureInPictureWindowManager::GetInstance()->EnterPictureInPicture(
       web_contents, surface_id, natural_size);
 #else
-  return gfx::Size();
+  return content::PictureInPictureResult::kNotSupported;
 #endif
 }
 
