@@ -832,7 +832,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   base::FilePath path;
-  bool succeed = this->app_path_provider.GetPath(name, path);
+  bool succeed = AppPathProvider::GetPath(name, &path);
   if (!succeed) {
     if (name == "logs") {
       args->ThrowError("Failed to get '" + name +
@@ -853,7 +853,7 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
     thrower.ThrowError("Path must be absolute");
     return;
   }
-  bool succeed = this->app_path_provider.SetPath(name, path);
+  bool succeed = AppPathProvider::SetPath(name, path);
   if (!succeed)
     thrower.ThrowError("Failed to set path");
 }

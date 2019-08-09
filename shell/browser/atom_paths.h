@@ -55,10 +55,10 @@ class AppPathProvider {
  public:
   static void Register();
 
-  static bool GetPath(const std::string& name, base::FilePath& path);
+  static bool GetPath(const std::string& name, base::FilePath* path);
   static bool SetPath(const std::string& name, const base::FilePath& path);
 
-  static bool GetDefaultPath(const std::string& name, base::FilePath& path);
+  static bool GetDefaultPath(const std::string& name, base::FilePath* path);
 };
 
 }  // namespace electron

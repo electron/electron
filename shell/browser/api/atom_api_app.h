@@ -25,7 +25,6 @@
 #include "shell/browser/api/event_emitter.h"
 #include "shell/browser/api/process_metric.h"
 #include "shell/browser/atom_browser_client.h"
-#include "shell/browser/atom_paths.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -240,7 +239,6 @@ class App : public AtomBrowserClient::Delegate,
   base::CancelableTaskTracker cancelable_task_tracker_;
 
   base::FilePath app_path_;
-  AppPathProvider app_path_provider;
 
   using ProcessMetricMap =
       std::unordered_map<base::ProcessId,

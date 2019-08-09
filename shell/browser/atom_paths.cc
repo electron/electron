@@ -11,6 +11,7 @@
 #include "shell/browser/browser.h"
 
 #if defined(USE_X11)
+#include <memory>
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #endif
@@ -101,11 +102,11 @@ void AppPathProvider::Register() {
   base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
 }
 
-bool AppPathProvider::GetPath(const std::string& name, base::FilePath& path) {
+bool AppPathProvider::GetPath(const std::string& name, base::FilePath* path) {
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = base::PathService::Get(key, &path);
+    succeed = base::PathService::Get(key, path);
   return succeed;
 }
 
@@ -120,11 +121,11 @@ bool AppPathProvider::SetPath(const std::string& name,
 }
 
 bool AppPathProvider::GetDefaultPath(const std::string& name,
-                                     base::FilePath& path) {
+                                     base::FilePath* path) {
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathProvider(key, &path);
+    succeed = PathProvider(key, path);
   return succeed;
 }
 
