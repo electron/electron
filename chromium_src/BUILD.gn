@@ -180,6 +180,7 @@ static_library("chrome") {
         "//chrome/utility/printing_handler.cc",
         "//chrome/utility/printing_handler.h",
       ]
+      deps += [ "//chrome/services/printing/public/mojom" ]
     }
   }
 }
