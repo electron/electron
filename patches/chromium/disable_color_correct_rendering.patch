@@ -32,7 +32,7 @@ index d62c52b53268b4ffab702a0dac3652edc472ccb9..f1ed520f123802469d94c98c418b9f5c
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 116a777d691deb61d58037aabfdc7a35e58cc17b..5a452b0dcf31be2a9d165b6d3b36ae87dee88a42 100644
+index 389f2ed29bd85c35b38df92346a8d6c76ce22fd6..02cf492fa4068d10c4b8b2addee8102b35aac3e0 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -44,7 +44,7 @@ index 116a777d691deb61d58037aabfdc7a35e58cc17b..5a452b0dcf31be2a9d165b6d3b36ae87
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 642eaa528b061860b1dabf13fac63808284b5274..73a719b193e3e9bfec8113c005020822f81e0048 100644
+index f17aa1fa451f1b99d7f083e07edd49b11f7639e4..09f7c5d6a92d89c199b296771a8ff60c89a07083 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -13,6 +13,7 @@
@@ -214,7 +214,7 @@ index 157fbbc34a2217f58f3e5931e1d56d6db3b876cd..68bd4a84e6fe68a4741fcedc50fb4723
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 8ef3bc9f55dc25abf18d0f9857162f7470bf53e5..b8e4abcb502c7fd080791ae1a3fb8698b23dd8e8 100644
+index 44ebf7ec0549dadd9621339260c92cbc424b096c..235d382c88327b7a09679b745c28622d78ce12b6 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -216,6 +216,7 @@
@@ -225,7 +225,7 @@ index 8ef3bc9f55dc25abf18d0f9857162f7470bf53e5..b8e4abcb502c7fd080791ae1a3fb8698
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2893,6 +2894,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2894,6 +2895,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

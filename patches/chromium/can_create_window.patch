@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 9eae121ea26d5441e0fa19b7503204468a859a34..abe1ba5ff079b2168bd815683c59be4b30a9922f 100644
+index 269bffc6ebfcf926718aed78f0c1d65e0c21b8b4..98069a4d2e2ab2cf1d880392ece8578c5317a6ef 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3869,6 +3869,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3871,6 +3871,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,7 +66,7 @@ index 02a0dbcbc2df521079519ecd5464ecd251fdcaec..897c2c1435a8c1a495aa84c928c360d7
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index de997ab9566daf0b1a5d6ffd8a3937b1cc63c983..5af701d39968b9961732a3bada8c4dec745d8a95 100644
+index afcd435cbae3b0d89c62045f4a032c74d77eb5fe..645340af8febd6a5b8ef85e69f7ca71641006a70 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -75,6 +75,7 @@
@@ -77,7 +77,7 @@ index de997ab9566daf0b1a5d6ffd8a3937b1cc63c983..5af701d39968b9961732a3bada8c4dec
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/webrtc/peer_connection_dependency_factory.h"
  #include "content/renderer/media/webrtc/rtc_peer_connection_handler.h"
-@@ -1360,6 +1361,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1362,6 +1363,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
