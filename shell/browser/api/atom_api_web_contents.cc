@@ -1674,14 +1674,13 @@ void WebContents::Print(mate::Arguments* args) {
   settings.SetInteger(printing::kSettingCopies, copies);
 
   // Strings to be printed as headers and footers if requested by the user.
-  mate::Dictionary header_footer;
-  if (options.Get("headerFooterInfo", &header_footer)) {
-    settings.SetBoolean(printing::kSettingHeaderFooterEnabled, true);
+  std::string header;
+  options.Get("header", &header);
+  std::string footer;
+  options.Get("footer", &footer);
 
-    std::string header;
-    header_footer.Get("header", &header);
-    std::string footer;
-    header_footer.Get("footer", &footer);
+  if (!(header.empty() && footer.empty())) {
+    settings.SetBoolean(printing::kSettingHeaderFooterEnabled, true);
 
     settings.SetString(printing::kSettingHeaderFooterTitle, header);
     settings.SetString(printing::kSettingHeaderFooterURL, footer);
