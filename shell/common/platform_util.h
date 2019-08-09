@@ -10,6 +10,7 @@
 #include "base/callback_forward.h"
 #include "base/files/file_path.h"
 #include "build/build_config.h"
+#include "native_mate/arguments.h"
 
 #if defined(OS_WIN)
 #include "base/strings/string16.h"
@@ -41,7 +42,7 @@ void OpenExternal(const GURL& url,
                   OpenExternalCallback callback);
 
 // Move a file to trash.
-bool MoveItemToTrash(const base::FilePath& full_path);
+bool MoveItemToTrash(const base::FilePath& full_path, mate::Arguments* args);
 
 void Beep();
 
