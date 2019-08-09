@@ -1264,8 +1264,8 @@ Returns [`PrinterInfo[]`](structures/printer-info.md).
   * `dpi` Object (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
     * `vertical` Number (optional) - The vertical dpi.
-  * `header` String - String to be printed as page header.
-  * `footer` String - String to be printed as page footer.
+  * `header` String (optional) - String to be printed as page header.
+  * `footer` String (optional) - String to be printed as page footer.
 * `callback` Function (optional)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.
