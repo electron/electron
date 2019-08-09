@@ -304,13 +304,6 @@ source_set("manifests") {
   if (enable_basic_printing) {
     deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
   }
-
-  if (is_win || enable_print_preview) {
-    deps += [
-      "//chrome/services/printing:lib",
-      "//chrome/services/printing/public/mojom",
-    ]
-  }
 }
 
 npm_action("electron_version_args") {
@@ -535,6 +528,8 @@ source_set("electron_lib") {
   if (is_win) {
     libs += [ "dwmapi.lib" ]
     deps += [
+      "//chrome/services/printing",
+      "//chrome/services/printing/public/mojom",
       "//ui/native_theme:native_theme_browser",
       "//ui/views/controls/webview",
       "//ui/wm",
