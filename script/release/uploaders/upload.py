@@ -35,6 +35,7 @@ DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
 SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
 DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
+DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
 
 
 def main():
@@ -83,6 +84,10 @@ def main():
     pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
     upload_electron(release, pdb_zip, args)
+  elif PLATFORM == 'linux':
+    debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
+    upload_electron(release, debug_zip, args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
