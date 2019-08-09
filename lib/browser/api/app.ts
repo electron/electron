@@ -46,9 +46,6 @@ App.prototype.isPackaged = (() => {
 })()
 
 app._setDefaultAppPaths = (packagePath) => {
-  // Set the user path according to application's name.
-  app.setPath('userData', path.join(app.getPath('appData'), app.name!))
-  app.setPath('userCache', path.join(app.getPath('cache'), app.name!))
   app.setAppPath(packagePath)
 
   // Add support for --user-data-dir=
