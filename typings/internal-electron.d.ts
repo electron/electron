@@ -130,6 +130,14 @@ declare namespace ElectronInternal {
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
 
+  type ModuleLoader = () => any;
+
+  interface ModuleEntry {
+    name: string;
+    private?: boolean;
+    loader: ModuleLoader;
+  }
+
   interface WebFrameInternal extends Electron.WebFrame {
     getWebFrameId(window: Window): number;
     allowGuestViewElementDefinition(window: Window, context: any): void;

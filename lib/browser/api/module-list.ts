@@ -1,11 +1,9 @@
-'use strict'
-
 // TODO: Updating this file also required updating the module-keys file
 
 const features = process.electronBinding('features')
 
 // Browser side modules, please sort alphabetically.
-module.exports = [
+export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'app', loader: () => require('./app') },
   { name: 'autoUpdater', loader: () => require('./auto-updater') },
   { name: 'BrowserView', loader: () => require('./browser-view') },
@@ -36,7 +34,7 @@ module.exports = [
 ]
 
 if (features.isViewApiEnabled()) {
-  module.exports.push(
+  browserModuleList.push(
     { name: 'BoxLayout', loader: () => require('./views/box-layout') },
     { name: 'Button', loader: () => require('./views/button') },
     { name: 'LabelButton', loader: () => require('./views/label-button') },

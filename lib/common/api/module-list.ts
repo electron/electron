@@ -1,7 +1,5 @@
-'use strict'
-
 // Common modules, please sort alphabetically
-module.exports = [
+export const commonModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'clipboard', loader: () => require('./clipboard') },
   { name: 'nativeImage', loader: () => require('./native-image') },
   { name: 'nativeTheme', loader: () => require('./native-theme') },

@@ -42,7 +42,7 @@ module.exports = ({
     resolve: {
       alias: {
         '@electron/internal': path.resolve(electronRoot, 'lib'),
-        'electron': path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.js'),
+        'electron': path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.ts'),
         // Force timers to resolve to our dependency that doens't use window.postMessage
         'timers': path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
       },
