@@ -809,7 +809,6 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
-#if !defined(OS_MACOSX)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
@@ -817,17 +816,11 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       thrower.ThrowError("Path must be absolute");
       return;
     }
-    base::PathService::Override(DIR_APP_LOGS, custom_path.value());
   } else {
-    base::FilePath path;
-    if (base::PathService::Get(DIR_USER_DATA, &path)) {
-      path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-      base::PathService::Override(DIR_APP_LOGS, path);
-    }
+    AppPathProvider::GetDefaultPath(DIR_APP_LOGS, &custom_path);
   }
+  base::PathService::Override(DIR_APP_LOGS, custom_path);
 }
-#endif
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {

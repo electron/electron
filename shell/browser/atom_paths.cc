@@ -10,6 +10,10 @@
 #include "chrome/common/chrome_paths.h"
 #include "shell/browser/browser.h"
 
+#if defined(OS_MACOSX)
+#include "shell/browser/atom_paths_mac.h"
+#endif
+
 #if defined(USE_X11)
 #include <memory>
 #include "base/environment.h"
@@ -73,6 +77,7 @@ bool PathProvider(int key, base::FilePath* path) {
       GetLinuxAppDataPath(path);
       return true;
 #else
+      // Should be never reached as beyond PATH_END
       return base::PathService::Get(base::DIR_APP_DATA, path);
 #endif
     case DIR_USER_DATA:
@@ -86,8 +91,12 @@ bool PathProvider(int key, base::FilePath* path) {
           base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
       return true;
     case DIR_APP_LOGS:
+#if defined(OS_MACOSX)
+      GetMacAppLogsPath(path);
+#else
       base::PathService::Get(DIR_USER_DATA, path);
       *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
+#endif
       return true;
     default:
       return false;
@@ -122,11 +131,11 @@ bool AppPathProvider::SetPath(const std::string& name,
 
 bool AppPathProvider::GetDefaultPath(const std::string& name,
                                      base::FilePath* path) {
-  bool succeed = false;
-  int key = GetPathConstant(name);
-  if (key >= 0)
-    succeed = PathProvider(key, path);
-  return succeed;
+  return PathProvider(GetPathConstant(name), path);
+}
+
+bool AppPathProvider::GetDefaultPath(int key, base::FilePath* path) {
+  return PathProvider(key, path);
 }
 
 }  // namespace electron

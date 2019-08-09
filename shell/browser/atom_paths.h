@@ -59,6 +59,7 @@ class AppPathProvider {
   static bool SetPath(const std::string& name, const base::FilePath& path);
 
   static bool GetDefaultPath(const std::string& name, base::FilePath* path);
+  static bool GetDefaultPath(int key, base::FilePath* path);
 };
 
 }  // namespace electron
