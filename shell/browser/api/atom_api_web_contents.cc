@@ -605,7 +605,6 @@ void WebContents::WebContentsCreated(
     int opener_render_frame_id,
     const content::mojom::CreateNewWindowParams& params,
     content::WebContents* new_contents) {
-  LOG(INFO) << "WebContentsCreated" << '\n';
   ChildWebContentsTracker::CreateForWebContents(new_contents);
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
   tracker->url = params.target_url;
