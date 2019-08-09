@@ -8,9 +8,11 @@
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
+#include "shell/browser/browser.h"
 
 namespace electron {
 
+namespace {
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
@@ -49,6 +51,13 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+}  // namespace
+
+AppPathProvider::AppPathProvider() {
+  base::PathService::RegisterProvider(AppPathProvider::GetProviderFunc,
+                                      PATH_START, PATH_END);
+}
+
 bool AppPathProvider::GetPath(const std::string& name, base::FilePath& path) {
   bool succeed = false;
   int key = GetPathConstant(name);
@@ -67,8 +76,32 @@ bool AppPathProvider::SetPath(const std::string& name,
   return succeed;
 }
 
-boolean AppPathProvider::GetProviderFunc(int key, FilePath* path) {
-  return false;
+bool AppPathProvider::GetProviderFunc(int key, base::FilePath* path) {
+  switch (key) {
+    case DIR_CACHE:
+#if defined(OS_POSIX)
+      base::PathService::Get(base::DIR_CACHE, path);
+#else
+      base::PathService::Get(DIR_APP_DATA, path);
+#endif
+      return true;
+    case DIR_USER_DATA:
+      base::PathService::Get(DIR_APP_DATA, path);
+      *path = path->Append(
+          base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
+      return true;
+    case DIR_USER_CACHE:
+      base::PathService::Get(DIR_CACHE, path);
+      *path = path->Append(
+          base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
+      return true;
+    case DIR_APP_LOGS:
+      base::PathService::Get(DIR_USER_DATA, path);
+      *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
+      return true;
+    default:
+      return false;
+  }
 }
 
 }  // namespace electron
