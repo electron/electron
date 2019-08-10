@@ -115,10 +115,10 @@ void OpenExternal(const GURL& url,
                  });
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, mate::Arguments* args) {
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string) {
-    args->ThrowError("moveItemToTrash(): Invalid path.");
+    LOG(WARNING) << "Invalid file path " << full_path.value();
     return false;
   }
 
@@ -128,8 +128,7 @@ bool MoveItemToTrash(const base::FilePath& full_path, mate::Arguments* args) {
                                                  resultingItemURL:nil
                                                             error:&err];
 
-  bool delete_on_fail = false;
-  if (args->GetNext(&delete_on_fail) && delete_on_fail) {
+  if (delete_on_fail) {
     // Some volumes may not support a Trash folder or it may be disabled
     // so these methods will report failure by returning NO or nil and
     // an NSError with NSFeatureUnsupportedError.

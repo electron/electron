@@ -82,7 +82,7 @@ void OpenExternal(const GURL& url,
     std::move(callback).Run(XDGOpen(url.spec(), false) ? "" : "Failed to open");
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, mate::Arguments* args) {
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   // find the trash method

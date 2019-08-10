@@ -335,7 +335,7 @@ void OpenExternal(const GURL& url,
       std::move(callback));
 }
 
-bool MoveItemToTrash(const base::FilePath& path, mate::Arguments* args) {
+bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
     return false;

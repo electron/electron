@@ -71,6 +71,13 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, mate::Arguments* args) {
   return handle;
 }
 
+bool MoveItemToTrash(const base::FilePath& full_path, mate::Arguments* args) {
+  bool delete_on_fail = false;
+  args->GetNext(&delete_on_fail);
+
+  return platform_util::MoveItemToTrash(full_path, delete_on_fail);
+}
+
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        mate::Arguments* args) {
@@ -134,7 +141,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);
   dict.SetMethod("openExternal", &OpenExternal);
-  dict.SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash);
+  dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
   dict.SetMethod("beep", &platform_util::Beep);
 #if defined(OS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);
