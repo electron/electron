@@ -234,10 +234,10 @@ index 44ebf7ec0549dadd9621339260c92cbc424b096c..235d382c88327b7a09679b745c28622d
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 5a5e484434e9bd7b2cbecdad512b209ce94d7baf..4ca1fdb590b741a3d8608dde022ac6a9a45c43ed 100644
+index 91428916eaf20743f54d33df3b7930f52d24e709..879a48448ea9a0c62a1e2e070531be90e49e19ac 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2838,6 +2838,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2840,6 +2840,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

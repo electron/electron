@@ -66,7 +66,7 @@ index 02a0dbcbc2df521079519ecd5464ecd251fdcaec..897c2c1435a8c1a495aa84c928c360d7
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index afcd435cbae3b0d89c62045f4a032c74d77eb5fe..645340af8febd6a5b8ef85e69f7ca71641006a70 100644
+index 31790be7369a450dec9c2c9a53d0b1a80ee4c41e..e7f22166a777b05f28a78e51934bfc1eb5ea99c8 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -75,6 +75,7 @@
@@ -77,7 +77,7 @@ index afcd435cbae3b0d89c62045f4a032c74d77eb5fe..645340af8febd6a5b8ef85e69f7ca716
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/webrtc/peer_connection_dependency_factory.h"
  #include "content/renderer/media/webrtc/rtc_peer_connection_handler.h"
-@@ -1362,6 +1363,8 @@ WebView* RenderViewImpl::CreateView(
+@@ -1358,6 +1359,8 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
