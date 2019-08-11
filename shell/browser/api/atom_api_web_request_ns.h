@@ -44,32 +44,26 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   ~WebRequestNS() override;
 
   // WebRequestAPI:
-  int OnBeforeRequest(const network::ResourceRequest& request,
+  int OnBeforeRequest(extensions::WebRequestInfo* request,
                       net::CompletionOnceCallback callback,
                       GURL* new_url) override;
-  int OnBeforeSendHeaders(const network::ResourceRequest& request,
+  int OnBeforeSendHeaders(extensions::WebRequestInfo* request,
                           BeforeSendHeadersCallback callback,
                           net::HttpRequestHeaders* headers) override;
   int OnHeadersReceived(
-      const network::ResourceRequest& request,
+      extensions::WebRequestInfo* request,
       net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
       GURL* allowed_unsafe_redirect_url) override;
-  void OnSendHeaders(const network::ResourceRequest& request,
+  void OnSendHeaders(extensions::WebRequestInfo* request,
                      const net::HttpRequestHeaders& headers) override;
-  void OnBeforeRedirect(const network::ResourceRequest& request,
-                        const network::ResourceResponseHead& response,
+  void OnBeforeRedirect(extensions::WebRequestInfo* request,
                         const GURL& new_location) override;
-  void OnResponseStarted(
-      const network::ResourceRequest& request,
-      const network::ResourceResponseHead& response) override;
-  void OnErrorOccurred(const network::ResourceRequest& request,
-                       const network::ResourceResponseHead& response,
+  void OnResponseStarted(extensions::WebRequestInfo* request) override;
+  void OnErrorOccurred(extensions::WebRequestInfo* request,
                        int net_error) override;
-  void OnCompleted(const network::ResourceRequest& request,
-                   const network::ResourceResponseHead& response,
-                   int net_error) override;
+  void OnCompleted(extensions::WebRequestInfo* request, int net_error) override;
 
   enum SimpleEvent {
     kOnSendHeaders,
@@ -98,11 +92,11 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
 
   template <typename... Args>
   void HandleSimpleEvent(SimpleEvent event,
-                         const network::ResourceRequest& request,
+                         extensions::WebRequestInfo* request,
                          Args... args);
   template <typename Out, typename... Args>
   int HandleResponseEvent(ResponseEvent event,
-                          const network::ResourceRequest& request,
+                          extensions::WebRequestInfo* request,
                           net::CompletionOnceCallback callback,
                           Out out,
                           Args... args);

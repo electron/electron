@@ -48,13 +48,13 @@ struct UserData : public base::SupportsUserData::Data {
 };
 
 // Test whether the URL of |request| matches |patterns|.
-bool MatchesFilterCondition(const network::ResourceRequest& request,
+bool MatchesFilterCondition(extensions::WebRequestInfo* request,
                             const std::set<URLPattern>& patterns) {
   if (patterns.empty())
     return true;
 
   for (const auto& pattern : patterns) {
-    if (pattern.MatchesURL(request.url))
+    if (pattern.MatchesURL(request->url))
       return true;
   }
   return false;
@@ -109,14 +109,14 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
-int WebRequestNS::OnBeforeRequest(const network::ResourceRequest& request,
+int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* request,
                                   net::CompletionOnceCallback callback,
                                   GURL* new_url) {
   return HandleResponseEvent(kOnBeforeRequest, request, std::move(callback),
                              new_url);
 }
 
-int WebRequestNS::OnBeforeSendHeaders(const network::ResourceRequest& request,
+int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* request,
                                       BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
   // TODO(zcbenz): Figure out how to handle this generally.
@@ -124,7 +124,7 @@ int WebRequestNS::OnBeforeSendHeaders(const network::ResourceRequest& request,
 }
 
 int WebRequestNS::OnHeadersReceived(
-    const network::ResourceRequest& request,
+    extensions::WebRequestInfo* request,
     net::CompletionOnceCallback callback,
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
@@ -135,35 +135,28 @@ int WebRequestNS::OnHeadersReceived(
                              allowed_unsafe_redirect_url);
 }
 
-void WebRequestNS::OnSendHeaders(const network::ResourceRequest& request,
+void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* request,
                                  const net::HttpRequestHeaders& headers) {
   HandleSimpleEvent(kOnSendHeaders, request, headers);
 }
 
-void WebRequestNS::OnBeforeRedirect(
-    const network::ResourceRequest& request,
-    const network::ResourceResponseHead& response,
-    const GURL& new_location) {
-  HandleSimpleEvent(kOnBeforeRedirect, request, response, new_location);
+void WebRequestNS::OnBeforeRedirect(extensions::WebRequestInfo* request,
+                                    const GURL& new_location) {
+  HandleSimpleEvent(kOnBeforeRedirect, request, new_location);
 }
 
-void WebRequestNS::OnResponseStarted(
-    const network::ResourceRequest& request,
-    const network::ResourceResponseHead& response) {
-  HandleSimpleEvent(kOnResponseStarted, request, response);
+void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* request) {
+  HandleSimpleEvent(kOnResponseStarted, request);
 }
 
-void WebRequestNS::OnErrorOccurred(
-    const network::ResourceRequest& request,
-    const network::ResourceResponseHead& response,
-    int net_error) {
-  HandleSimpleEvent(kOnErrorOccurred, request, response, net_error);
+void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* request,
+                                   int net_error) {
+  HandleSimpleEvent(kOnErrorOccurred, request, net_error);
 }
 
-void WebRequestNS::OnCompleted(const network::ResourceRequest& request,
-                               const network::ResourceResponseHead& response,
+void WebRequestNS::OnCompleted(extensions::WebRequestInfo* request,
                                int net_error) {
-  HandleSimpleEvent(kOnCompleted, request, response, net_error);
+  HandleSimpleEvent(kOnCompleted, request, net_error);
 }
 
 template <WebRequestNS::SimpleEvent event>
@@ -202,7 +195,7 @@ void WebRequestNS::SetListener(Event event,
 
 template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
-                                     const network::ResourceRequest& request,
+                                     extensions::WebRequestInfo* request,
                                      Args... args) {
   const auto& info = simple_listeners_[event];
   if (!MatchesFilterCondition(request, info.url_patterns))
@@ -213,7 +206,7 @@ void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
 
 template <typename Out, typename... Args>
 int WebRequestNS::HandleResponseEvent(ResponseEvent event,
-                                      const network::ResourceRequest& request,
+                                      extensions::WebRequestInfo* request,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
