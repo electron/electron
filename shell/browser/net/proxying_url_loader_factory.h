@@ -24,6 +24,27 @@ namespace electron {
 class WebRequestAPI {
  public:
   virtual ~WebRequestAPI() {}
+
+  using BeforeSendHeadersCallback =
+      base::OnceCallback<void(const std::set<std::string>& removed_headers,
+                              const std::set<std::string>& set_headers,
+                              int error_code)>;
+
+  virtual int OnBeforeRequest(net::CompletionOnceCallback callback,
+                              GURL* new_url) = 0;
+  virtual int OnBeforeSendHeaders(BeforeSendHeadersCallback callback,
+                                  net::HttpRequestHeaders* headers) = 0;
+  virtual int OnHeadersReceived(
+      net::CompletionOnceCallback callback,
+      const net::HttpResponseHeaders* original_response_headers,
+      scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
+      GURL* allowed_unsafe_redirect_url) = 0;
+  virtual void OnSendHeaders(const net::HttpRequestHeaders& headers) = 0;
+  virtual void OnBeforeRedirect(const GURL& new_location) = 0;
+  virtual void OnResponseStarted(int net_error) = 0;
+  virtual void OnErrorOccurred(int net_error) = 0;
+  virtual void OnCompleted(int net_error) = 0;
+  virtual void OnResponseStarted() = 0;
 };
 
 // This class is responsible for following tasks when NetworkService is enabled:

@@ -81,6 +81,36 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
+int WebRequestNS::OnBeforeRequest(net::CompletionOnceCallback callback,
+                                  GURL* new_url) {
+  return net::OK;
+}
+
+int WebRequestNS::OnBeforeSendHeaders(BeforeSendHeadersCallback callback,
+                                      net::HttpRequestHeaders* headers) {
+  return net::OK;
+}
+
+int WebRequestNS::OnHeadersReceived(
+    net::CompletionOnceCallback callback,
+    const net::HttpResponseHeaders* original_response_headers,
+    scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
+    GURL* allowed_unsafe_redirect_url) {
+  return net::OK;
+}
+
+void WebRequestNS::OnSendHeaders(const net::HttpRequestHeaders& headers) {}
+
+void WebRequestNS::OnBeforeRedirect(const GURL& new_location) {}
+
+void WebRequestNS::OnResponseStarted(int net_error) {}
+
+void WebRequestNS::OnErrorOccurred(int net_error) {}
+
+void WebRequestNS::OnCompleted(int net_error) {}
+
+void WebRequestNS::OnResponseStarted() {}
+
 template <WebRequestNS::SimpleEvent event>
 void WebRequestNS::SetSimpleListener(gin::Arguments* args) {
   SetListener<SimpleListener, SimpleEvent>(event, args);

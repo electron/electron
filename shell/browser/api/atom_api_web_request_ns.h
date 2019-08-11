@@ -39,6 +39,23 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   WebRequestNS(v8::Isolate* isolate, content::BrowserContext* browser_context);
   ~WebRequestNS() override;
 
+  // WebRequestAPI:
+  int OnBeforeRequest(net::CompletionOnceCallback callback,
+                      GURL* new_url) override;
+  int OnBeforeSendHeaders(BeforeSendHeadersCallback callback,
+                          net::HttpRequestHeaders* headers) override;
+  int OnHeadersReceived(
+      net::CompletionOnceCallback callback,
+      const net::HttpResponseHeaders* original_response_headers,
+      scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
+      GURL* allowed_unsafe_redirect_url) override;
+  void OnSendHeaders(const net::HttpRequestHeaders& headers) override;
+  void OnBeforeRedirect(const GURL& new_location) override;
+  void OnResponseStarted() override;
+  void OnErrorOccurred(int net_error) override;
+  void OnCompleted(int net_error) override;
+  void OnResponseStarted(int net_error) override;
+
   enum SimpleEvent {
     kOnSendHeaders,
     kOnBeforeRedirect,
