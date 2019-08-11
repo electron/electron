@@ -36,16 +36,16 @@ On Windows, you can also load `ICO` icons from file paths. For best visual
 quality, it is recommended to include at least the following sizes in the:
 
 * Small icon
- * 16x16 (100% DPI scale)
- * 20x20 (125% DPI scale)
- * 24x24 (150% DPI scale)
- * 32x32 (200% DPI scale)
+  * 16x16 (100% DPI scale)
+  * 20x20 (125% DPI scale)
+  * 24x24 (150% DPI scale)
+  * 32x32 (200% DPI scale)
 * Large icon
- * 32x32 (100% DPI scale)
- * 40x40 (125% DPI scale)
- * 48x48 (150% DPI scale)
- * 64x64 (200% DPI scale)
-* 256x256
+  * 32x32 (100% DPI scale)
+  * 40x40 (125% DPI scale)
+  * 48x48 (150% DPI scale)
+  * 64x64 (200% DPI scale)
+  * 256x256
 
 Check the *Size requirements* section in [this article][icons].
 
@@ -180,7 +180,8 @@ Creates a new `NativeImage` instance from the NSImage that maps to the
 given image name. See [`System Icons`](https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/system-icons/)
 for a list of possible values.
 
-The `hslShift` is applied to the image with the following rules
+The `hslShift` is applied to the image with the following rules:
+
 * `hsl_shift[0]` (hue): The absolute hue value for the image - 0 and 1 map
      to 0 and 360 on the hue color wheel (red).
 * `hsl_shift[1]` (saturation): A saturation shift for the image, with the
