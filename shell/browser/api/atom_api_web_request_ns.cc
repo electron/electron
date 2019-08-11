@@ -37,10 +37,23 @@ namespace electron {
 
 namespace api {
 
+namespace {
+
+const char* kUserDataKey = "WebRequestNS";
+
+struct UserData : public base::SupportsUserData::Data {
+  explicit UserData(WebRequestNS* data) : data(data) {}
+  WebRequestNS* data;
+};
+
+}  // namespace
+
 gin::WrapperInfo WebRequestNS::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebRequestNS::WebRequestNS(v8::Isolate* isolate,
-                           AtomBrowserContext* browser_context) {}
+                           content::BrowserContext* browser_context) {
+  browser_context->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
+}
 
 WebRequestNS::~WebRequestNS() = default;
 
@@ -99,10 +112,24 @@ void WebRequestNS::SetListener(Event event, gin::Arguments* args) {
 }
 
 // static
-gin::Handle<WebRequestNS> WebRequestNS::Create(
+gin::Handle<WebRequestNS> WebRequestNS::FromOrCreate(
     v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new WebRequestNS(isolate, browser_context));
+    content::BrowserContext* browser_context) {
+  auto* web_request = From(browser_context);
+  if (!web_request)
+    web_request = new WebRequestNS(isolate, browser_context);
+  return gin::CreateHandle(isolate, web_request);
+}
+
+// static
+WebRequestNS* WebRequestNS::From(content::BrowserContext* browser_context) {
+  if (!browser_context)
+    return nullptr;
+  auto* user_data =
+      static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
+  if (!user_data)
+    return nullptr;
+  return user_data->data;
 }
 
 }  // namespace api

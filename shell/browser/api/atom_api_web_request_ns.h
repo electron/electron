@@ -11,19 +11,24 @@
 #include "gin/wrappable.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
+
+namespace content {
+class BrowserContext;
+}
 
 namespace electron {
 
-class AtomBrowserContext;
-
 namespace api {
 
-class WebRequestNS : public gin::Wrappable<WebRequestNS> {
+class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
  public:
   static gin::WrapperInfo kWrapperInfo;
 
-  static gin::Handle<WebRequestNS> Create(v8::Isolate* isolate,
-                                          AtomBrowserContext* browser_context);
+  static gin::Handle<WebRequestNS> FromOrCreate(
+      v8::Isolate* isolate,
+      content::BrowserContext* browser_context);
+  static WebRequestNS* From(content::BrowserContext* browser_context);
 
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -31,7 +36,7 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS> {
   const char* GetTypeName() override;
 
  private:
-  WebRequestNS(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  WebRequestNS(v8::Isolate* isolate, content::BrowserContext* browser_context);
   ~WebRequestNS() override;
 
   enum SimpleEvent {

@@ -20,6 +20,12 @@
 
 namespace electron {
 
+// Defines the interface for WebRequest API, implemented by api::WebRequestNS.
+class WebRequestAPI {
+ public:
+  virtual ~WebRequestAPI() {}
+};
+
 // This class is responsible for following tasks when NetworkService is enabled:
 // 1. handling intercepted protocols;
 // 2. implementing webRequest module;
@@ -150,6 +156,7 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
+      WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
       network::mojom::URLLoaderFactoryRequest loader_request,
       network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
@@ -173,11 +180,16 @@ class ProxyingURLLoaderFactory
       int32_t request_id,
       network::mojom::TrustedHeaderClientRequest request) override;
 
+  WebRequestAPI* web_request_api() { return web_request_api_; }
+
  private:
   void OnTargetFactoryError();
   void OnProxyBindingError();
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
   void MaybeDeleteThis();
+
+  // Passed from api::WebRequestNS.
+  WebRequestAPI* web_request_api_;
 
   // This is passed from api::ProtocolNS.
   //

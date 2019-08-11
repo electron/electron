@@ -575,7 +575,7 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    auto handle = WebRequestNS::Create(isolate, browser_context());
+    auto handle = WebRequestNS::FromOrCreate(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);

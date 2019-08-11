@@ -620,11 +620,13 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 }
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
+    WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
     network::mojom::URLLoaderFactoryRequest loader_request,
     network::mojom::URLLoaderFactoryPtrInfo target_factory_info,
     network::mojom::TrustedURLLoaderHeaderClientRequest header_client_request)
-    : intercepted_handlers_(intercepted_handlers),
+    : web_request_api_(web_request_api),
+      intercepted_handlers_(intercepted_handlers),
       url_loader_header_client_binding_(this) {
   target_factory_.Bind(std::move(target_factory_info));
   target_factory_.set_connection_error_handler(base::BindOnce(
