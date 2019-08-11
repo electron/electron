@@ -4,10 +4,10 @@
 
 #include "shell/browser/api/atom_api_web_request_ns.h"
 
-#include <set>
+#include <memory>
 #include <string>
+#include <utility>
 
-#include "extensions/common/url_pattern.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -49,6 +49,20 @@ struct UserData : public base::SupportsUserData::Data {
 }  // namespace
 
 gin::WrapperInfo WebRequestNS::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+WebRequestNS::SimpleListenerInfo::SimpleListenerInfo(
+    std::set<URLPattern> patterns_,
+    SimpleListener listener_)
+    : url_patterns(std::move(patterns_)), listener(listener_) {}
+WebRequestNS::SimpleListenerInfo::SimpleListenerInfo() = default;
+WebRequestNS::SimpleListenerInfo::~SimpleListenerInfo() = default;
+
+WebRequestNS::ResponseListenerInfo::ResponseListenerInfo(
+    std::set<URLPattern> patterns_,
+    ResponseListener listener_)
+    : url_patterns(std::move(patterns_)), listener(listener_) {}
+WebRequestNS::ResponseListenerInfo::ResponseListenerInfo() = default;
+WebRequestNS::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
 WebRequestNS::WebRequestNS(v8::Isolate* isolate,
                            content::BrowserContext* browser_context) {
@@ -113,16 +127,18 @@ void WebRequestNS::OnResponseStarted() {}
 
 template <WebRequestNS::SimpleEvent event>
 void WebRequestNS::SetSimpleListener(gin::Arguments* args) {
-  SetListener<SimpleListener, SimpleEvent>(event, args);
+  SetListener<SimpleListener>(event, &simple_listeners_, args);
 }
 
 template <WebRequestNS::ResponseEvent event>
 void WebRequestNS::SetResponseListener(gin::Arguments* args) {
-  SetListener<ResponseListener, ResponseEvent>(event, args);
+  SetListener<ResponseListener>(event, &response_listeners_, args);
 }
 
-template <typename Listener, typename Event>
-void WebRequestNS::SetListener(Event event, gin::Arguments* args) {
+template <typename Listener, typename Listeners, typename Event>
+void WebRequestNS::SetListener(Event event,
+                               Listeners* listeners,
+                               gin::Arguments* args) {
   // { urls }.
   std::set<URLPattern> patterns;
   gin::Dictionary dict(args->isolate());
@@ -137,8 +153,10 @@ void WebRequestNS::SetListener(Event event, gin::Arguments* args) {
     return;
   }
 
-  // TODO(zcbenz): Actually set the listeners.
-  args->ThrowTypeError("This API is not implemented yet");
+  if (listener.is_null())
+    listeners->erase(event);
+  else
+    (*listeners)[event] = {std::move(patterns), std::move(listener)};
 }
 
 // static

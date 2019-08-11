@@ -5,7 +5,11 @@
 #ifndef SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_NS_H_
 #define SHELL_BROWSER_API_ATOM_API_WEB_REQUEST_NS_H_
 
+#include <map>
+#include <set>
+
 #include "base/values.h"
+#include "extensions/common/url_pattern.h"
 #include "gin/arguments.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -78,8 +82,30 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   void SetSimpleListener(gin::Arguments* args);
   template <ResponseEvent event>
   void SetResponseListener(gin::Arguments* args);
-  template <typename Listener, typename Event>
-  void SetListener(Event event, gin::Arguments* args);
+  template <typename Listener, typename Listeners, typename Event>
+  void SetListener(Event event, Listeners* listeners, gin::Arguments* args);
+
+  struct SimpleListenerInfo {
+    std::set<URLPattern> url_patterns;
+    SimpleListener listener;
+
+    SimpleListenerInfo(std::set<URLPattern>, SimpleListener);
+    SimpleListenerInfo();
+    ~SimpleListenerInfo();
+  };
+
+  struct ResponseListenerInfo {
+    std::set<URLPattern> url_patterns;
+    ResponseListener listener;
+
+    ResponseListenerInfo(std::set<URLPattern>, ResponseListener);
+    ResponseListenerInfo();
+    ~ResponseListenerInfo();
+  };
+
+  std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
+  std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
+  std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
 };
 
 }  // namespace api
