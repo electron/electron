@@ -87,8 +87,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
                             weak_factory_.GetWeakPtr());
   }
   redirect_url_ = GURL();
-  int result = factory_->web_request_api()->OnBeforeRequest(continuation,
-                                                            &redirect_url_);
+  int result = factory_->web_request_api()->OnBeforeRequest(
+      request_, continuation, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     // The request was cancelled synchronously. Dispatch an error notification
     // and terminate the request.
@@ -242,7 +242,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
   }
 
   target_client_->OnComplete(status);
-  factory_->web_request_api()->OnCompleted(status.error_code);
+  factory_->web_request_api()->OnCompleted(request_, current_response_,
+                                           status.error_code);
 
   // Deletes |this|.
   factory_->RemoveRequest(network_service_request_id_, request_id_);
@@ -301,7 +302,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
       &InProgressRequest::ContinueToSendHeaders, weak_factory_.GetWeakPtr());
   // Note: In Electron onBeforeSendHeaders is called for all protocols.
   int result = factory_->web_request_api()->OnBeforeSendHeaders(
-      continuation, &request_.headers);
+      request_, continuation, &request_.headers);
 
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     // The request was cancelled synchronously. Dispatch an error notification
@@ -368,7 +369,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
   // Note: In Electron onSendHeaders is called for all protocols.
-  factory_->web_request_api()->OnSendHeaders(request_.headers);
+  factory_->web_request_api()->OnSendHeaders(request_, request_.headers);
 
   if (!current_request_uses_header_client_)
     ContinueToStartRequest(net::OK);
@@ -479,7 +480,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
 
   proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
-  factory_->web_request_api()->OnResponseStarted();
+  factory_->web_request_api()->OnResponseStarted(request_, current_response_);
   target_client_->OnReceiveResponse(current_response_);
 }
 
@@ -587,8 +588,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   net::CompletionRepeatingCallback copyable_callback =
       base::AdaptCallbackForRepeating(std::move(continuation));
   int result = factory_->web_request_api()->OnHeadersReceived(
-      copyable_callback, current_response_.headers.get(), &override_headers_,
-      &redirect_url_);
+      request_, copyable_callback, current_response_.headers.get(),
+      &override_headers_, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnRequestError(network::URLLoaderCompletionStatus(result));
     return;
@@ -613,7 +614,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
     const network::URLLoaderCompletionStatus& status) {
   if (!request_completed_) {
     target_client_->OnComplete(status);
-    factory_->web_request_api()->OnErrorOccurred(status.error_code);
+    factory_->web_request_api()->OnErrorOccurred(request_, current_response_,
+                                                 status.error_code);
   }
 
   // TODO(zcbenz): Disassociate from factory.

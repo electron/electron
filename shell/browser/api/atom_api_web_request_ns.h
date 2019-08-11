@@ -44,21 +44,32 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   ~WebRequestNS() override;
 
   // WebRequestAPI:
-  int OnBeforeRequest(net::CompletionOnceCallback callback,
+  int OnBeforeRequest(const network::ResourceRequest& request,
+                      net::CompletionOnceCallback callback,
                       GURL* new_url) override;
-  int OnBeforeSendHeaders(BeforeSendHeadersCallback callback,
+  int OnBeforeSendHeaders(const network::ResourceRequest& request,
+                          BeforeSendHeadersCallback callback,
                           net::HttpRequestHeaders* headers) override;
   int OnHeadersReceived(
+      const network::ResourceRequest& request,
       net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
       GURL* allowed_unsafe_redirect_url) override;
-  void OnSendHeaders(const net::HttpRequestHeaders& headers) override;
-  void OnBeforeRedirect(const GURL& new_location) override;
-  void OnResponseStarted() override;
-  void OnErrorOccurred(int net_error) override;
-  void OnCompleted(int net_error) override;
-  void OnResponseStarted(int net_error) override;
+  void OnSendHeaders(const network::ResourceRequest& request,
+                     const net::HttpRequestHeaders& headers) override;
+  void OnBeforeRedirect(const network::ResourceRequest& request,
+                        const network::ResourceResponseHead& response,
+                        const GURL& new_location) override;
+  void OnResponseStarted(
+      const network::ResourceRequest& request,
+      const network::ResourceResponseHead& response) override;
+  void OnErrorOccurred(const network::ResourceRequest& request,
+                       const network::ResourceResponseHead& response,
+                       int net_error) override;
+  void OnCompleted(const network::ResourceRequest& request,
+                   const network::ResourceResponseHead& response,
+                   int net_error) override;
 
   enum SimpleEvent {
     kOnSendHeaders,

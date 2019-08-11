@@ -95,17 +95,20 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
-int WebRequestNS::OnBeforeRequest(net::CompletionOnceCallback callback,
+int WebRequestNS::OnBeforeRequest(const network::ResourceRequest& request,
+                                  net::CompletionOnceCallback callback,
                                   GURL* new_url) {
   return net::OK;
 }
 
-int WebRequestNS::OnBeforeSendHeaders(BeforeSendHeadersCallback callback,
+int WebRequestNS::OnBeforeSendHeaders(const network::ResourceRequest& request,
+                                      BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
   return net::OK;
 }
 
 int WebRequestNS::OnHeadersReceived(
+    const network::ResourceRequest& request,
     net::CompletionOnceCallback callback,
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
@@ -113,17 +116,26 @@ int WebRequestNS::OnHeadersReceived(
   return net::OK;
 }
 
-void WebRequestNS::OnSendHeaders(const net::HttpRequestHeaders& headers) {}
+void WebRequestNS::OnSendHeaders(const network::ResourceRequest& request,
+                                 const net::HttpRequestHeaders& headers) {}
 
-void WebRequestNS::OnBeforeRedirect(const GURL& new_location) {}
+void WebRequestNS::OnBeforeRedirect(
+    const network::ResourceRequest& request,
+    const network::ResourceResponseHead& response,
+    const GURL& new_location) {}
 
-void WebRequestNS::OnResponseStarted(int net_error) {}
+void WebRequestNS::OnResponseStarted(
+    const network::ResourceRequest& request,
+    const network::ResourceResponseHead& response) {}
 
-void WebRequestNS::OnErrorOccurred(int net_error) {}
+void WebRequestNS::OnErrorOccurred(
+    const network::ResourceRequest& request,
+    const network::ResourceResponseHead& response,
+    int net_error) {}
 
-void WebRequestNS::OnCompleted(int net_error) {}
-
-void WebRequestNS::OnResponseStarted() {}
+void WebRequestNS::OnCompleted(const network::ResourceRequest& request,
+                               const network::ResourceResponseHead& response,
+                               int net_error) {}
 
 template <WebRequestNS::SimpleEvent event>
 void WebRequestNS::SetSimpleListener(gin::Arguments* args) {

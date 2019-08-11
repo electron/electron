@@ -30,21 +30,32 @@ class WebRequestAPI {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
-  virtual int OnBeforeRequest(net::CompletionOnceCallback callback,
+  virtual int OnBeforeRequest(const network::ResourceRequest& request,
+                              net::CompletionOnceCallback callback,
                               GURL* new_url) = 0;
-  virtual int OnBeforeSendHeaders(BeforeSendHeadersCallback callback,
+  virtual int OnBeforeSendHeaders(const network::ResourceRequest& request,
+                                  BeforeSendHeadersCallback callback,
                                   net::HttpRequestHeaders* headers) = 0;
   virtual int OnHeadersReceived(
+      const network::ResourceRequest& request,
       net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
       GURL* allowed_unsafe_redirect_url) = 0;
-  virtual void OnSendHeaders(const net::HttpRequestHeaders& headers) = 0;
-  virtual void OnBeforeRedirect(const GURL& new_location) = 0;
-  virtual void OnResponseStarted(int net_error) = 0;
-  virtual void OnErrorOccurred(int net_error) = 0;
-  virtual void OnCompleted(int net_error) = 0;
-  virtual void OnResponseStarted() = 0;
+  virtual void OnSendHeaders(const network::ResourceRequest& request,
+                             const net::HttpRequestHeaders& headers) = 0;
+  virtual void OnBeforeRedirect(const network::ResourceRequest& request,
+                                const network::ResourceResponseHead& response,
+                                const GURL& new_location) = 0;
+  virtual void OnResponseStarted(
+      const network::ResourceRequest& request,
+      const network::ResourceResponseHead& response) = 0;
+  virtual void OnErrorOccurred(const network::ResourceRequest& request,
+                               const network::ResourceResponseHead& response,
+                               int net_error) = 0;
+  virtual void OnCompleted(const network::ResourceRequest& request,
+                           const network::ResourceResponseHead& response,
+                           int net_error) = 0;
 };
 
 // This class is responsible for following tasks when NetworkService is enabled:
