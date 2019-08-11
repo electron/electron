@@ -96,6 +96,17 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   template <typename Listener, typename Listeners, typename Event>
   void SetListener(Event event, Listeners* listeners, gin::Arguments* args);
 
+  template <typename... Args>
+  void HandleSimpleEvent(SimpleEvent event,
+                         const network::ResourceRequest& request,
+                         Args... args);
+  template <typename Out, typename... Args>
+  int HandleResponseEvent(ResponseEvent event,
+                          const network::ResourceRequest& request,
+                          net::CompletionOnceCallback callback,
+                          Out out,
+                          Args... args);
+
   struct SimpleListenerInfo {
     std::set<URLPattern> url_patterns;
     SimpleListener listener;

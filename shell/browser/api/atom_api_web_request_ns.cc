@@ -41,10 +41,24 @@ namespace {
 
 const char* kUserDataKey = "WebRequestNS";
 
+// BrowserContext <=> WebRequestNS relationship.
 struct UserData : public base::SupportsUserData::Data {
   explicit UserData(WebRequestNS* data) : data(data) {}
   WebRequestNS* data;
 };
+
+// Test whether the URL of |request| matches |patterns|.
+bool MatchesFilterCondition(const network::ResourceRequest& request,
+                            const std::set<URLPattern>& patterns) {
+  if (patterns.empty())
+    return true;
+
+  for (const auto& pattern : patterns) {
+    if (pattern.MatchesURL(request.url))
+      return true;
+  }
+  return false;
+}
 
 }  // namespace
 
@@ -98,12 +112,14 @@ const char* WebRequestNS::GetTypeName() {
 int WebRequestNS::OnBeforeRequest(const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
                                   GURL* new_url) {
-  return net::OK;
+  return HandleResponseEvent(kOnBeforeRequest, request, std::move(callback),
+                             new_url);
 }
 
 int WebRequestNS::OnBeforeSendHeaders(const network::ResourceRequest& request,
                                       BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
+  // TODO(zcbenz): Figure out how to handle this generally.
   return net::OK;
 }
 
@@ -113,29 +129,42 @@ int WebRequestNS::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  return net::OK;
+  return HandleResponseEvent(kOnHeadersReceived, request, std::move(callback),
+                             original_response_headers,
+                             override_response_headers,
+                             allowed_unsafe_redirect_url);
 }
 
 void WebRequestNS::OnSendHeaders(const network::ResourceRequest& request,
-                                 const net::HttpRequestHeaders& headers) {}
+                                 const net::HttpRequestHeaders& headers) {
+  HandleSimpleEvent(kOnSendHeaders, request, headers);
+}
 
 void WebRequestNS::OnBeforeRedirect(
     const network::ResourceRequest& request,
     const network::ResourceResponseHead& response,
-    const GURL& new_location) {}
+    const GURL& new_location) {
+  HandleSimpleEvent(kOnBeforeRedirect, request, response, new_location);
+}
 
 void WebRequestNS::OnResponseStarted(
     const network::ResourceRequest& request,
-    const network::ResourceResponseHead& response) {}
+    const network::ResourceResponseHead& response) {
+  HandleSimpleEvent(kOnResponseStarted, request, response);
+}
 
 void WebRequestNS::OnErrorOccurred(
     const network::ResourceRequest& request,
     const network::ResourceResponseHead& response,
-    int net_error) {}
+    int net_error) {
+  HandleSimpleEvent(kOnErrorOccurred, request, response, net_error);
+}
 
 void WebRequestNS::OnCompleted(const network::ResourceRequest& request,
                                const network::ResourceResponseHead& response,
-                               int net_error) {}
+                               int net_error) {
+  HandleSimpleEvent(kOnCompleted, request, response, net_error);
+}
 
 template <WebRequestNS::SimpleEvent event>
 void WebRequestNS::SetSimpleListener(gin::Arguments* args) {
@@ -169,6 +198,31 @@ void WebRequestNS::SetListener(Event event,
     listeners->erase(event);
   else
     (*listeners)[event] = {std::move(patterns), std::move(listener)};
+}
+
+template <typename... Args>
+void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
+                                     const network::ResourceRequest& request,
+                                     Args... args) {
+  const auto& info = simple_listeners_[event];
+  if (!MatchesFilterCondition(request, info.url_patterns))
+    return;
+
+  // TODO(zcbenz): Invoke the listener.
+}
+
+template <typename Out, typename... Args>
+int WebRequestNS::HandleResponseEvent(ResponseEvent event,
+                                      const network::ResourceRequest& request,
+                                      net::CompletionOnceCallback callback,
+                                      Out out,
+                                      Args... args) {
+  const auto& info = response_listeners_[event];
+  if (!MatchesFilterCondition(request, info.url_patterns))
+    return net::OK;
+
+  // TODO(zcbenz): Invoke the listener.
+  return net::OK;
 }
 
 // static
