@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_autofill_driver_factory.h"
+#include "shell/browser/atom_autofill_driver_factory.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_autofill_driver.h"
 #include "base/bind.h"
 #include "base/callback.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/browser/atom_autofill_driver.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -26,36 +26,7 @@ std::unique_ptr<AutofillDriver> CreateDriver(
 
 }  // namespace
 
-const char
-    AutofillDriverFactory::kAtomAutofillDriverFactoryWebContentsUserDataKey[] =
-        "atom_web_contents_autofill_driver_factory";
-
 AutofillDriverFactory::~AutofillDriverFactory() {}
-
-// static
-void AutofillDriverFactory::CreateForWebContents(
-    content::WebContents* contents) {
-  if (FromWebContents(contents))
-    return;
-
-  auto new_factory = std::make_unique<AutofillDriverFactory>(contents);
-  const std::vector<content::RenderFrameHost*> frames =
-      contents->GetAllFrames();
-  for (content::RenderFrameHost* frame : frames) {
-    if (frame->IsRenderFrameLive())
-      new_factory->RenderFrameCreated(frame);
-  }
-
-  contents->SetUserData(kAtomAutofillDriverFactoryWebContentsUserDataKey,
-                        std::move(new_factory));
-}
-
-// static
-AutofillDriverFactory* AutofillDriverFactory::FromWebContents(
-    content::WebContents* contents) {
-  return static_cast<AutofillDriverFactory*>(
-      contents->GetUserData(kAtomAutofillDriverFactoryWebContentsUserDataKey));
-}
 
 // static
 void AutofillDriverFactory::BindAutofillDriver(
@@ -77,7 +48,14 @@ void AutofillDriverFactory::BindAutofillDriver(
 }
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {}
+    : content::WebContentsObserver(web_contents) {
+  const std::vector<content::RenderFrameHost*> frames =
+      web_contents->GetAllFrames();
+  for (content::RenderFrameHost* frame : frames) {
+    if (frame->IsRenderFrameLive())
+      RenderFrameCreated(frame);
+  }
+}
 
 void AutofillDriverFactory::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
@@ -130,4 +108,6 @@ void AutofillDriverFactory::CloseAllPopups() {
   }
 }
 
-}  // namespace atom
+WEB_CONTENTS_USER_DATA_KEY_IMPL(AutofillDriverFactory)
+
+}  // namespace electron

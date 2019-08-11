@@ -472,7 +472,7 @@ void WebContents::InitWithSessionAndOptions(
                                              base::Unretained(this)));
   bindings_.set_connection_error_handler(base::BindRepeating(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
-  atom::AutofillDriverFactory::CreateForWebContents(web_contents());
+  AutofillDriverFactory::CreateForWebContents(web_contents());
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
@@ -2200,17 +2200,6 @@ void WebContents::SetTemporaryZoomLevel(double level) {
 
 void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
-}
-
-void WebContents::ShowAutofillPopup(const gfx::RectF& bounds,
-                                    const std::vector<base::string16>& values,
-                                    const std::vector<base::string16>& labels) {
-  content::RenderFrameHost* frame_host = bindings_.dispatch_context();
-  ShowAutofillPopup(frame_host, bounds, values, labels);
-}
-
-void WebContents::HideAutofillPopup() {
-  CommonWebContentsDelegate::HideAutofillPopup();
 }
 
 std::vector<base::FilePath::StringType> WebContents::GetPreloadPaths() const {

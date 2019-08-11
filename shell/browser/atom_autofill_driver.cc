@@ -2,53 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_autofill_driver.h"
+#include "shell/browser/atom_autofill_driver.h"
 
 #include <utility>
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/native_window.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/native_window.h"
 
-namespace atom {
-
-namespace {
-
-const api::WebContents* WebContentsFromContentWebContents(
-    content::WebContents* web_contents) {
-  auto api_web_contents =
-      api::WebContents::From(v8::Isolate::GetCurrent(), web_contents);
-  if (!api_web_contents.IsEmpty()) {
-    return api_web_contents.get();
-  }
-
-  return nullptr;
-}
-
-const api::WebContents* WebContentsFromRenderFrameHost(
-    content::RenderFrameHost* render_frame_host) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-
-  if (web_contents) {
-    return WebContentsFromContentWebContents(web_contents);
-  }
-
-  return nullptr;
-}
-
-const api::WebContents* EmbedderFromWebContents(
-    const api::WebContents* web_contents) {
-  auto* embedder_web_contents = web_contents->HostWebContents();
-
-  if (embedder_web_contents) {
-    return WebContentsFromContentWebContents(embedder_web_contents);
-  }
-
-  return nullptr;
-}
-
-}  // namespace
+namespace electron {
 
 AutofillDriver::AutofillDriver(content::RenderFrameHost* render_frame_host)
     : render_frame_host_(render_frame_host), binding_(this) {
@@ -66,11 +28,15 @@ void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  auto* web_contents = WebContentsFromRenderFrameHost(render_frame_host_);
+  auto* web_contents =
+      api::WebContents::From(
+          v8::Isolate::GetCurrent(),
+          content::WebContents::FromRenderFrameHost(render_frame_host_))
+          .get();
   if (!web_contents || !web_contents->owner_window())
     return;
 
-  auto* embedder = EmbedderFromWebContents(web_contents);
+  auto* embedder = web_contents->embedder();
 
   bool osr =
       web_contents->IsOffScreen() || (embedder && embedder->IsOffScreen());
@@ -96,4 +62,4 @@ void AutofillDriver::HideAutofillPopup() {
     autofill_popup_->Hide();
 }
 
-}  // namespace atom
+}  // namespace electron

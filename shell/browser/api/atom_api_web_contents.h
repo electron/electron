@@ -28,7 +28,6 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/api/trackable_object.h"
 #include "shell/browser/common_web_contents_delegate.h"
-#include "shell/browser/ui/autofill_popup.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -323,6 +322,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
+
+  WebContents* embedder() { return embedder_; }
 
  protected:
   // Does not manage lifetime of |web_contents|.

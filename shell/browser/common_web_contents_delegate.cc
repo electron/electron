@@ -636,24 +636,4 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   native_fullscreen_ = false;
 }
 
-void CommonWebContentsDelegate::ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::RenderFrameHost* embedder_frame_host,
-    bool offscreen,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
-  if (!owner_window())
-    return;
-
-  autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
-                              owner_window()->content_view(), bounds);
-  autofill_popup_->SetItems(values, labels);
-}
-
-void CommonWebContentsDelegate::HideAutofillPopup() {
-  if (autofill_popup_)
-    autofill_popup_->Hide();
-}
-
 }  // namespace electron

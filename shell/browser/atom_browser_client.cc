@@ -39,7 +39,6 @@
 #include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
-#include "electron/atom/common/api/api.mojom.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "net/base/escape.h"
@@ -76,6 +75,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
@@ -1055,10 +1055,9 @@ bool AtomBrowserClient::BindAssociatedInterfaceRequestFromFrame(
     content::RenderFrameHost* render_frame_host,
     const std::string& interface_name,
     mojo::ScopedInterfaceEndpointHandle* handle) {
-  if (interface_name == atom::mojom::ElectronAutofillDriver::Name_) {
-    atom::AutofillDriverFactory::BindAutofillDriver(
-        atom::mojom::ElectronAutofillDriverAssociatedRequest(
-            std::move(*handle)),
+  if (interface_name == mojom::ElectronAutofillDriver::Name_) {
+    AutofillDriverFactory::BindAutofillDriver(
+        mojom::ElectronAutofillDriverAssociatedRequest(std::move(*handle)),
         render_frame_host);
     return true;
   }

@@ -18,10 +18,6 @@
 #include "shell/browser/ui/inspectable_web_contents_impl.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
-#if defined(TOOLKIT_VIEWS)
-#include "shell/browser/ui/autofill_popup.h"
-#endif
-
 namespace base {
 class SequencedTaskRunner;
 }

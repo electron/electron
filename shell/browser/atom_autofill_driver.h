@@ -8,13 +8,13 @@
 #include <memory>
 
 #if defined(TOOLKIT_VIEWS)
-#include "atom/browser/ui/autofill_popup.h"
+#include "shell/browser/ui/autofill_popup.h"
 #endif
 
-#include "atom/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_binding.h"
+#include "shell/common/api/api.mojom.h"
 
-namespace atom {
+namespace electron {
 
 class AutofillDriver : public mojom::ElectronAutofillDriver {
  public:
@@ -39,6 +39,6 @@ class AutofillDriver : public mojom::ElectronAutofillDriver {
   mojo::AssociatedBinding<mojom::ElectronAutofillDriver> binding_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ATOM_BROWSER_ATOM_AUTOFILL_DRIVER_H_

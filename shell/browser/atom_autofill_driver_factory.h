@@ -9,24 +9,20 @@
 #include <unordered_map>
 
 #include "base/callback_forward.h"
-#include "base/supports_user_data.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "electron/atom/common/api/api.mojom.h"
+#include "content/public/browser/web_contents_user_data.h"
+#include "shell/common/api/api.mojom.h"
 
-namespace atom {
+namespace electron {
 
 class AutofillDriver;
 
-class AutofillDriverFactory : public content::WebContentsObserver,
-                              public base::SupportsUserData::Data {
+class AutofillDriverFactory
+    : public content::WebContentsObserver,
+      public content::WebContentsUserData<AutofillDriverFactory> {
  public:
-  explicit AutofillDriverFactory(content::WebContents* web_contents);
-
   ~AutofillDriverFactory() override;
 
-  static void CreateForWebContents(content::WebContents* contents);
-
-  static AutofillDriverFactory* FromWebContents(content::WebContents* contents);
   static void BindAutofillDriver(
       mojom::ElectronAutofillDriverAssociatedRequest request,
       content::RenderFrameHost* render_frame_host);
@@ -45,13 +41,16 @@ class AutofillDriverFactory : public content::WebContentsObserver,
 
   void CloseAllPopups();
 
-  static const char kAtomAutofillDriverFactoryWebContentsUserDataKey[];
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
 
  private:
+  explicit AutofillDriverFactory(content::WebContents* web_contents);
+  friend class content::WebContentsUserData<AutofillDriverFactory>;
+
   std::unordered_map<content::RenderFrameHost*, std::unique_ptr<AutofillDriver>>
       driver_map_;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ATOM_BROWSER_ATOM_AUTOFILL_DRIVER_FACTORY_H_
