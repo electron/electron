@@ -662,7 +662,7 @@ void Session::Preconnect(const mate::Dictionary& options,
                          mate::Arguments* args) {
   GURL url;
   if (!options.Get("url", &url) || !url.is_valid()) {
-    args->ThrowError("Must pass non-empty valid url.");
+    args->ThrowError("Must pass non-empty valid url to session.preconnect.");
     return;
   }
   int num_sockets_to_preconnect = 1;
