@@ -98,26 +98,20 @@ ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
 
 ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
-    RendererClientBase* renderer_client,
-    mojom::ElectronRendererAssociatedRequest request)
+    RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
       binding_(this),
-      render_frame_(render_frame),
-      renderer_client_(renderer_client) {
-  binding_.Bind(std::move(request));
-  binding_.set_connection_error_handler(base::BindOnce(
-      &ElectronApiServiceImpl::OnDestruct, base::Unretained(this)));
-}
+      renderer_client_(renderer_client),
+      weak_factory_(this) {}
 
-// static
-void ElectronApiServiceImpl::CreateMojoService(
-    content::RenderFrame* render_frame,
-    RendererClientBase* renderer_client,
+void ElectronApiServiceImpl::BindTo(
     mojom::ElectronRendererAssociatedRequest request) {
-  DCHECK(render_frame);
+  if (binding_.is_bound())
+    binding_.Unbind();
 
-  // Owns itself. Will be deleted when the render frame is destroyed.
-  new ElectronApiServiceImpl(render_frame, renderer_client, std::move(request));
+  binding_.Bind(std::move(request));
+  binding_.set_connection_error_handler(
+      base::BindOnce(&ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
 }
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
@@ -126,6 +120,11 @@ void ElectronApiServiceImpl::DidCreateDocumentElement() {
 
 void ElectronApiServiceImpl::OnDestruct() {
   delete this;
+}
+
+void ElectronApiServiceImpl::OnConnectionError() {
+  if (binding_.is_bound())
+    binding_.Unbind();
 }
 
 void ElectronApiServiceImpl::Message(bool internal,
@@ -152,7 +151,7 @@ void ElectronApiServiceImpl::Message(bool internal,
   if (!document_created_)
     return;
 
-  blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;
 
