@@ -5,6 +5,7 @@
 #include "shell/browser/atom_paths_mac.h"
 
 #include "base/base_paths_mac.h"
+#include "base/files/file_path.h"
 #include "base/path_service.h"
 
 #import <Cocoa/Cocoa.h>
