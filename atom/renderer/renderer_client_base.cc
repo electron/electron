@@ -226,14 +226,8 @@ void RendererClientBase::RenderFrameCreated(
       render_frame, std::make_unique<atom::PrintRenderFrameHelperDelegate>());
 #endif
 
-  // TODO(nornagon): it might be possible for an IPC message sent to this
-  // service to trigger v8 context creation before the page has begun loading.
-  // However, it's unclear whether such a timing is possible to trigger, and we
-  // don't have any test to confirm it. Add a test that confirms that a
-  // main->renderer IPC can't cause the preload script to be executed twice. If
-  // it is possible to trigger the preload script before the document is ready
-  // through this interface, we should delay adding it to the registry until
-  // the document is ready.
+  // Note: ElectronApiServiceImpl has to be created now to capture the
+  // DidCreateDocumentElement event.
   auto* service = new ElectronApiServiceImpl(render_frame, this);
   render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
       base::BindRepeating(&ElectronApiServiceImpl::BindTo,

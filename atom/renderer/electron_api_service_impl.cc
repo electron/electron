@@ -106,6 +106,7 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
 
 void ElectronApiServiceImpl::BindTo(
     mojom::ElectronRendererAssociatedRequest request) {
+  // Note: BindTo might be called for multiple times.
   if (binding_.is_bound())
     binding_.Unbind();
 
