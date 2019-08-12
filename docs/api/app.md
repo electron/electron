@@ -390,7 +390,7 @@ Emitted when Electron has created a new `session`.
 ```javascript
 const { app } = require('electron')
 
-app.on('session-created', (event, session) => {
+app.on('session-created', (session) => {
   console.log(session)
 })
 ```
