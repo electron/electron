@@ -1,5 +1,6 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
+import dirtyChai = require('dirty-chai')
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -7,14 +8,15 @@ import * as qs from 'querystring'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+
+import { emittedOnce } from './events-helpers'
+import { ifit, ifdescribe } from './spec-helpers'
+import { closeWindow } from './window-helpers'
+
 const { expect } = chai
 
-const ifit = (condition: boolean) => (condition ? it : it.skip)
-const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip)
-
 chai.use(chaiAsPromised)
+chai.use(dirtyChai)
 
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
@@ -1281,22 +1283,44 @@ describe('BrowserWindow module', () => {
     })
   })
 
+
   describe('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows)
-    it('make window with initial opacity', () => {
-      const w = new BrowserWindow({ show: false, opacity: 0.5 })
-      expect(w.getOpacity()).to.equal(0.5)
-    })
-    it('allows setting the opacity', () => {
-      const w = new BrowserWindow({ show: false })
-      expect(() => {
-        w.setOpacity(0.0)
-        expect(w.getOpacity()).to.equal(0.0)
-        w.setOpacity(0.5)
+
+    ifdescribe(process.platform !== 'linux')(('Windows and Mac'), () => {
+      it('make window with initial opacity', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
         expect(w.getOpacity()).to.equal(0.5)
-        w.setOpacity(1.0)
+      })
+      it('allows setting the opacity', () => {
+        const w = new BrowserWindow({ show: false })
+        expect(() => {
+          w.setOpacity(0.0)
+          expect(w.getOpacity()).to.equal(0.0)
+          w.setOpacity(0.5)
+          expect(w.getOpacity()).to.equal(0.5)
+          w.setOpacity(1.0)
+          expect(w.getOpacity()).to.equal(1.0)
+        }).to.not.throw()
+      })
+
+      it('clamps opacity to [0.0...1.0]', () => {
+        const w = new BrowserWindow({ show: false, opacity: 0.5 })
+        w.setOpacity(100)
         expect(w.getOpacity()).to.equal(1.0)
-      }).to.not.throw()
+        w.setOpacity(-100)
+        expect(w.getOpacity()).to.equal(0.0)
+      })
+    })
+
+    ifdescribe(process.platform === 'linux')(('Linux'), () => {
+      it('sets 1 regardless of parameter', () => {
+        const w = new BrowserWindow({ show: false })
+        w.setOpacity(0)
+        expect(w.getOpacity()).to.equal(1.0)
+        w.setOpacity(0.5)
+        expect(w.getOpacity()).to.equal(1.0)
+      })
     })
   })
 
@@ -3354,21 +3378,27 @@ describe('BrowserWindow module', () => {
     })
 
     describe('hasShadow state', () => {
-      // On Windows there is no shadow by default and it can not be changed
-      // dynamically.
+      it('returns a boolean on all platforms', () => {
+        const w = new BrowserWindow({ show: false })
+        const hasShadow = w.hasShadow()
+        expect(hasShadow).to.be.a('boolean')
+      })
+
+      // On Windows there's no shadow by default & it can't be changed dynamically.
       it('can be changed with hasShadow option', () => {
         const hasShadow = process.platform !== 'darwin'
-        const w = new BrowserWindow({ show: false, hasShadow: hasShadow })
+        const w = new BrowserWindow({ show: false, hasShadow })
         expect(w.hasShadow()).to.equal(hasShadow)
       })
 
-      ifit(process.platform === 'darwin')('can be changed with setHasShadow method', () => {
+      it('can be changed with setHasShadow method', () => {
         const w = new BrowserWindow({ show: false })
-        expect(w.hasShadow()).to.be.true('hasShadow')
         w.setHasShadow(false)
         expect(w.hasShadow()).to.be.false('hasShadow')
         w.setHasShadow(true)
         expect(w.hasShadow()).to.be.true('hasShadow')
+        w.setHasShadow(false)
+        expect(w.hasShadow()).to.be.false('hasShadow')
       })
     })
   })

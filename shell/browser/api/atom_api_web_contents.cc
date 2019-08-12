@@ -47,7 +47,6 @@
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/url_request/url_request_context.h"
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
 #include "shell/browser/api/atom_api_session.h"
@@ -60,7 +59,6 @@
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/lib/bluetooth_chooser.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/net/atom_network_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -1591,13 +1589,16 @@ bool WebContents::IsCurrentlyAudible() {
 void WebContents::Print(mate::Arguments* args) {
   mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
+
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("Invalid print settings specified");
+    args->ThrowError("webContents.print(): Invalid print settings specified.");
     return;
   }
+
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError("Invalid optional callback provided");
+    args->ThrowError(
+        "webContents.print(): Invalid optional callback provided.");
     return;
   }
 
@@ -1605,8 +1606,13 @@ void WebContents::Print(mate::Arguments* args) {
   bool silent = false;
   options.Get("silent", &silent);
 
+  bool print_background = false;
+  options.Get("printBackground", &print_background);
+  settings.SetBoolean(printing::kSettingShouldPrintBackgrounds,
+                      print_background);
+
   // Set custom margin settings
-  mate::Dictionary margins;
+  mate::Dictionary margins = mate::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
     printing::MarginType margin_type = printing::DEFAULT_MARGINS;
     margins.Get("marginType", &margin_type);
@@ -1631,18 +1637,20 @@ void WebContents::Print(mate::Arguments* args) {
                         printing::DEFAULT_MARGINS);
   }
 
-  settings.SetBoolean(printing::kSettingHeaderFooterEnabled, false);
-
   // Set whether to print color or greyscale
   bool print_color = true;
   options.Get("color", &print_color);
   int color_setting = print_color ? printing::COLOR : printing::GRAY;
   settings.SetInteger(printing::kSettingColor, color_setting);
 
+  // Is the orientation landscape or portrait.
   bool landscape = false;
   options.Get("landscape", &landscape);
   settings.SetBoolean(printing::kSettingLandscape, landscape);
 
+  // We set the default to empty string here and only update
+  // if at the Chromium level if it's non-empty
+  // Printer device name as opened by the OS.
   base::string16 device_name;
   options.Get("deviceName", &device_name);
   settings.SetString(printing::kSettingDeviceName, device_name);
@@ -1655,20 +1663,30 @@ void WebContents::Print(mate::Arguments* args) {
   options.Get("pagesPerSheet", &pages_per_sheet);
   settings.SetInteger(printing::kSettingPagesPerSheet, pages_per_sheet);
 
+  // True if the user wants to print with collate.
   bool collate = true;
   options.Get("collate", &collate);
   settings.SetBoolean(printing::kSettingCollate, collate);
 
+  // The number of individual copies to print
   int copies = 1;
   options.Get("copies", &copies);
   settings.SetInteger(printing::kSettingCopies, copies);
 
-  bool print_background = false;
-  options.Get("printBackground", &print_background);
-  settings.SetBoolean(printing::kSettingShouldPrintBackgrounds,
-                      print_background);
+  // Strings to be printed as headers and footers if requested by the user.
+  std::string header;
+  options.Get("header", &header);
+  std::string footer;
+  options.Get("footer", &footer);
 
-  // For now we don't want to allow the user to enable these settings
+  if (!(header.empty() && footer.empty())) {
+    settings.SetBoolean(printing::kSettingHeaderFooterEnabled, true);
+
+    settings.SetString(printing::kSettingHeaderFooterTitle, header);
+    settings.SetString(printing::kSettingHeaderFooterURL, footer);
+  }
+
+  // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetBoolean(printing::kSettingPrintToPDF, false);
   settings.SetBoolean(printing::kSettingCloudPrintDialog, false);
@@ -1697,7 +1715,7 @@ void WebContents::Print(mate::Arguments* args) {
       settings.SetList(printing::kSettingPageRange, std::move(page_range_list));
   }
 
-  // Set custom duplex mode
+  // Duplex type user wants to use.
   printing::DuplexMode duplex_mode;
   options.Get("duplexMode", &duplex_mode);
   settings.SetInteger(printing::kSettingDuplexMode, duplex_mode);
@@ -1723,11 +1741,10 @@ void WebContents::Print(mate::Arguments* args) {
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
                   : web_contents()->GetMainFrame();
-  print_view_manager->PrintNow(
-      rfh,
-      std::make_unique<PrintMsg_PrintPages>(rfh->GetRoutingID(), silent,
-                                            print_background, settings),
-      std::move(callback));
+  print_view_manager->PrintNow(rfh,
+                               std::make_unique<PrintMsg_PrintPages>(
+                                   rfh->GetRoutingID(), silent, settings),
+                               std::move(callback));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {

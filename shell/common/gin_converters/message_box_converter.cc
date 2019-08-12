@@ -6,6 +6,7 @@
 
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/image_converter_gin_adapter.h"
+#include "shell/common/gin_converters/native_window_converter.h"
 
 namespace gin {
 

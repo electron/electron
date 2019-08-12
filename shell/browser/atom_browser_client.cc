@@ -61,12 +61,12 @@
 #include "shell/browser/atom_speech_recognition_manager_delegate.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/font_defaults.h"
-#include "shell/browser/io_thread.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/network_context_service.h"
 #include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
 #include "shell/browser/renderer_host/electron_render_message_filter.h"
@@ -438,6 +438,7 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
     content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
     const GURL& url,
+    bool has_navigation_started,
     bool has_response_started,
     content::SiteInstance** affinity_site_instance) const {
   if (g_suppress_renderer_process_restart) {
@@ -470,6 +471,13 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
   // with the availability of a speculative render frame host.
   if (has_response_started) {
     return SiteInstanceForNavigationType::FORCE_CURRENT;
+  }
+
+  if (!has_navigation_started) {
+    // If the navigation didn't start yet, ignore any candidate site instance.
+    // If such instance exists, it belongs to a previous navigation still
+    // taking place. Fixes https://github.com/electron/electron/issues/17576.
+    return SiteInstanceForNavigationType::FORCE_NEW;
   }
 
   return SiteInstanceForNavigationType::FORCE_CANDIDATE_OR_NEW;

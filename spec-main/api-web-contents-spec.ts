@@ -3,7 +3,7 @@ import { AddressInfo } from 'net'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
 import * as http from 'http'
-import { BrowserWindow, webContents } from 'electron'
+import { BrowserWindow, ipcMain, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 
@@ -76,6 +76,26 @@ describe('webContents module', () => {
       expect(() => {
         w.webContents.send(null as any)
       }).to.throw('Missing required channel argument')
+    })
+
+    it('does not block node async APIs when sent before document is ready', (done) => {
+      // Please reference https://github.com/electron/electron/issues/19368 if
+      // this test fails.
+      ipcMain.once('async-node-api-done', () => {
+        done()
+      })
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          sandbox: false,
+          contextIsolation: false
+        }
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'))
+      setTimeout(() => {
+        w.webContents.send("test")
+      }, 50)
     })
   })
 

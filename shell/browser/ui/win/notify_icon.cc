@@ -17,6 +17,28 @@
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/widget.h"
 
+namespace {
+
+UINT ConvertIconType(electron::TrayIcon::IconType type) {
+  using IconType = electron::TrayIcon::IconType;
+  switch (type) {
+    case IconType::None:
+      return NIIF_NONE;
+    case IconType::Info:
+      return NIIF_INFO;
+    case IconType::Warning:
+      return NIIF_WARNING;
+    case IconType::Error:
+      return NIIF_ERROR;
+    case IconType::Custom:
+      return NIIF_USER;
+    default:
+      NOTREACHED() << "Invalid icon type";
+  }
+}
+
+}  // namespace
+
 namespace electron {
 
 NotifyIcon::NotifyIcon(NotifyIconHost* host, UINT id, HWND window, UINT message)
@@ -120,18 +142,24 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
 }
 
-void NotifyIcon::DisplayBalloon(HICON icon,
-                                const base::string16& title,
-                                const base::string16& contents) {
+void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_INFO;
-  icon_data.dwInfoFlags = NIIF_INFO;
-  wcsncpy_s(icon_data.szInfoTitle, title.c_str(), _TRUNCATE);
-  wcsncpy_s(icon_data.szInfo, contents.c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfoTitle, options.title.c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfo, options.content.c_str(), _TRUNCATE);
   icon_data.uTimeout = 0;
-  icon_data.hBalloonIcon = icon;
-  icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
+  icon_data.hBalloonIcon = options.icon;
+  icon_data.dwInfoFlags = ConvertIconType(options.icon_type);
+
+  if (options.large_icon)
+    icon_data.dwInfoFlags |= NIIF_LARGE_ICON;
+
+  if (options.no_sound)
+    icon_data.dwInfoFlags |= NIIF_NOSOUND;
+
+  if (options.respect_quiet_time)
+    icon_data.dwInfoFlags |= NIIF_RESPECT_QUIET_TIME;
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
@@ -146,6 +174,15 @@ void NotifyIcon::RemoveBalloon() {
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to remove status tray balloon.";
+}
+
+void NotifyIcon::Focus() {
+  NOTIFYICONDATA icon_data;
+  InitIconData(&icon_data);
+
+  BOOL result = Shell_NotifyIcon(NIM_SETFOCUS, &icon_data);
+  if (!result)
+    LOG(WARNING) << "Unable to focus tray icon.";
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,

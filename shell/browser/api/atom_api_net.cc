@@ -62,8 +62,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set("net", Net::Create(isolate));
   dict.Set("Net",
            Net::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
-  dict.Set("isNetworkServiceEnabled",
-           base::FeatureList::IsEnabled(network::features::kNetworkService));
 }
 
 }  // namespace

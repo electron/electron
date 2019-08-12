@@ -1437,29 +1437,27 @@ screen readers
 Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
 convey some sort of application status or to passively notify the user.
 
-#### `win.setHasShadow(hasShadow)` _macOS_
+#### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` Boolean
 
-Sets whether the window should have a shadow. On Windows and Linux does
-nothing.
+Sets whether the window should have a shadow.
 
-#### `win.hasShadow()` _macOS_
+#### `win.hasShadow()`
 
 Returns `Boolean` - Whether the window has a shadow.
-
-On Windows and Linux always returns
-`true`.
 
 #### `win.setOpacity(opacity)` _Windows_ _macOS_
 
 * `opacity` Number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
-Sets the opacity of the window. On Linux does nothing.
+Sets the opacity of the window. On Linux, does nothing. Out of bound number
+values are clamped to the [0, 1] range.
 
-#### `win.getOpacity()` _Windows_ _macOS_
+#### `win.getOpacity()`
 
-Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque)
+Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque). On
+Linux, always returns 1.
 
 #### `win.setShape(rects)` _Windows_ _Linux_ _Experimental_
 

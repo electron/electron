@@ -37,10 +37,6 @@
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
-#include "net/http/http_transaction_factory.h"
-#include "net/url_request/static_http_user_agent_settings.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/atom_api_cookies.h"
@@ -53,8 +49,7 @@
 #include "shell/browser/atom_permission_manager.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/media/media_device_id_salt.h"
-#include "shell/browser/net/atom_cert_verifier.h"
-#include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/native_mate_converters/callback.h"
 #include "shell/common/native_mate_converters/content_converter.h"
@@ -140,19 +135,6 @@ struct Converter<ClearStorageDataOptions> {
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
     return true;
-  }
-};
-
-template <>
-struct Converter<electron::VerifyRequestParams> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::VerifyRequestParams val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.Set("hostname", val.hostname);
-    dict.Set("certificate", val.certificate);
-    dict.Set("verificationResult", val.default_result);
-    dict.Set("errorCode", val.error_code);
-    return dict.GetHandle();
   }
 };
 
@@ -404,51 +386,9 @@ void Session::DisableNetworkEmulation() {
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
 
-class ElectronCertVerifierClient : public network::mojom::CertVerifierClient {
- public:
-  using CertVerifyProc =
-      base::RepeatingCallback<void(const VerifyRequestParams& request,
-                                   base::RepeatingCallback<void(int)>)>;
-  explicit ElectronCertVerifierClient(CertVerifyProc proc)
-      : cert_verify_proc_(proc) {}
-  ~ElectronCertVerifierClient() override = default;
-
-  // network::mojom::CertVerifierClient
-  void Verify(int default_error,
-              const net::CertVerifyResult& default_result,
-              const scoped_refptr<net::X509Certificate>& certificate,
-              const std::string& hostname,
-              int flags,
-              const base::Optional<std::string>& ocsp_response,
-              VerifyCallback callback) override {
-    VerifyRequestParams params;
-    params.hostname = hostname;
-    params.default_result = net::ErrorToString(default_error);
-    params.error_code = default_error;
-    params.certificate = certificate;
-    cert_verify_proc_.Run(
-        params,
-        base::AdaptCallbackForRepeating(base::BindOnce(
-            [](VerifyCallback callback, const net::CertVerifyResult& result,
-               int err) { std::move(callback).Run(err, result); },
-            std::move(callback), default_result)));
-  }
-
- private:
-  CertVerifyProc cert_verify_proc_;
-};
-
-void WrapVerifyProc(
-    base::RepeatingCallback<void(const VerifyRequestParams& request,
-                                 base::RepeatingCallback<void(int)>)> proc,
-    const VerifyRequestParams& request,
-    base::OnceCallback<void(int)> cb) {
-  proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
-}
-
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  ElectronCertVerifierClient::CertVerifyProc proc;
+  CertVerifierClient::CertVerifyProc proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
@@ -456,7 +396,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 
   network::mojom::CertVerifierClientPtr cert_verifier_client;
   if (proc) {
-    mojo::MakeStrongBinding(std::make_unique<ElectronCertVerifierClient>(proc),
+    mojo::MakeStrongBinding(std::make_unique<CertVerifierClient>(proc),
                             mojo::MakeRequest(&cert_verifier_client));
   }
   content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
@@ -535,9 +475,11 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  auto auth_params = CreateHttpAuthDynamicParams();
-  auth_params->server_allowlist = domains;
-  content::GetNetworkService()->ConfigureHttpAuthPrefs(std::move(auth_params));
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+  auth_dynamic_params->server_allowlist = domains;
+  content::GetNetworkService()->ConfigureHttpAuthPrefs(
+      std::move(auth_dynamic_params));
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
@@ -634,9 +576,8 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    v8::Local<v8::Value> handle;
-    handle = WebRequestNS::Create(isolate, browser_context()).ToV8();
-    web_request_.Reset(isolate, handle);
+    auto handle = WebRequestNS::Create(isolate, browser_context());
+    web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
 }
