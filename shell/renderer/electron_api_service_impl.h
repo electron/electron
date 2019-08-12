@@ -40,7 +40,11 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                          mojom::ElectronRendererAssociatedRequest request);
 
   // RenderFrameObserver implementation.
+  void DidCreateDocumentElement() override;
   void OnDestruct() override;
+
+  // Whether the DOM document element has been created.
+  bool document_created_ = false;
 
   mojo::AssociatedBinding<mojom::ElectronRenderer> binding_;
 
