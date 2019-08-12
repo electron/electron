@@ -11,6 +11,7 @@
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -79,11 +80,14 @@ WebRequestNS::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequestNS::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
 WebRequestNS::WebRequestNS(v8::Isolate* isolate,
-                           content::BrowserContext* browser_context) {
-  browser_context->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
+                           content::BrowserContext* browser_context)
+    : browser_context_(browser_context) {
+  browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
 }
 
-WebRequestNS::~WebRequestNS() = default;
+WebRequestNS::~WebRequestNS() {
+  browser_context_->RemoveUserData(kUserDataKey);
+}
 
 gin::ObjectTemplateBuilder WebRequestNS::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -223,8 +227,14 @@ gin::Handle<WebRequestNS> WebRequestNS::FromOrCreate(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   auto* web_request = From(browser_context);
-  if (!web_request)
+  if (!web_request) {
+    // Create.
     web_request = new WebRequestNS(isolate, browser_context);
+    // Make sure the |Session| object has the |webRequest| property managed.
+    Session::CreateFrom(isolate,
+                        static_cast<AtomBrowserContext*>(browser_context))
+        ->WebRequest(isolate);
+  }
   return gin::CreateHandle(isolate, web_request);
 }
 

@@ -122,6 +122,9 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
+
+  // Weak-ref, it manages us.
+  content::BrowserContext* browser_context_;
 };
 
 }  // namespace api
