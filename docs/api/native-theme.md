@@ -1,6 +1,6 @@
 # nativeTheme
 
-> Read and respond to changes in Chromium's native color theme
+> Read and respond to changes in Chromium's native color theme.
 
 Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
@@ -17,19 +17,19 @@ You will have to check them to determine which one has changed.
 
 ## Properties
 
-The `nativeTheme` module has the following properties.
+The `nativeTheme` module has the following properties:
 
 ### `nativeTheme.shouldUseDarkColors` _Readonly_
 
 A `Boolean` for if the OS / Chromium currently has a dark mode enabled or is
 being instructed to show a dark-style UI.
 
-### `nativeTheme.shouldUseHighContrastColors` _Readonly_
+### `nativeTheme.shouldUseHighContrastColors` _macOS_ _Windows_ _Readonly_
 
 A `Boolean` for if the OS / Chromium currently has high-contrast mode enabled
 or is being instructed to show a high-constrast UI.
 
-## `nativeTheme.shouldUseInvertedColorScheme` _Readonly_
+### `nativeTheme.shouldUseInvertedColorScheme` _macOS_ _Windows_ _Readonly_
 
 A `Boolean` for if the OS / Chromium currently has an inverted color scheme
 or is being instructed to use an inverted color scheme.

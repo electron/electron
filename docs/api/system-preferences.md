@@ -34,7 +34,7 @@ Returns:
 * `event` Event
 * `invertedColorScheme` Boolean - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is being used, `false` otherwise.
 
-**Deprecated:** Should use the new `updated` event on the `nativeTheme` module.
+**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
 
 ### Event: 'high-contrast-color-scheme-changed' _Windows_ _Deprecated_
 
@@ -43,7 +43,7 @@ Returns:
 * `event` Event
 * `highContrastColorScheme` Boolean - `true` if a high contrast theme is being used, `false` otherwise.
 
-**Deprecated:** Should use the new `updated` event on the `nativeTheme` module.
+**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
 
 ## Methods
 
@@ -53,7 +53,7 @@ Returns `Boolean` - Whether the system is in Dark Mode.
 
 **Note:** On macOS 10.15 Catalina in order for this API to return the correct value when in the "automatic" dark mode setting you must either have `NSRequiresAquaSystemAppearance=false` in your `Info.plist` or be on Electron `>=7.0.0`.  See the [dark mode guide](../tutorial/mojave-dark-mode-guide.md) for more information.
 
-**Deprecated:** Should use the new `nativeTheme.shouldUseDarkColors` API
+**Deprecated:** Should use the new [`nativeTheme.shouldUseDarkColors`](native-theme.md#nativethemeshouldusedarkcolors-readonly) API.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
@@ -352,13 +352,13 @@ Returns one of several standard system colors that automatically adapt to vibran
 
 Returns `Boolean` - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is active, `false` otherwise.
 
-**Deprecated:** Should use the new `nativeTheme.shouldUseInvertedColorScheme` API
+**Deprecated:** Should use the new [`nativeTheme.shouldUseInvertedColorScheme`](native-theme.md#nativethemeshoulduseinvertedcolorscheme-macos-windows-readonly) API.
 
 ### `systemPreferences.isHighContrastColorScheme()` _macOS_ _Windows_ _Deprecated_
 
 Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
 
-**Depreacted:** Should use the new `nativeTheme.shouldUseHighContrastColors` API
+**Depreacted:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
 
 ### `systemPreferences.getEffectiveAppearance()` _macOS_
 
@@ -474,7 +474,7 @@ This property is only available on macOS 10.14 Mojave or newer.
 
 A `String` property that can be `dark`, `light` or `unknown`.
 
-Gets the macOS appearance setting that is currently applied to your application,
+Returns the macOS appearance setting that is currently applied to your application,
 maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
 
 Please note that until Electron is built targeting the 10.14 SDK, your application's
