@@ -4,8 +4,8 @@
 
 #include "shell/browser/atom_paths_mac.h"
 
+#include "base/base_paths_mac.h"
 #include "base/path_service.h"
-#include "shell/common/native_mate_converters/file_path_converter.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -19,7 +19,7 @@ void GetMacAppLogsPath(base::FilePath* path) {
   NSString* library_path =
       [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
 
-        *path = base::FilePath([library_path UTF8String]));
+  *path = base::FilePath([library_path UTF8String]);
 }
 
 }  // namespace electron
