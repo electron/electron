@@ -234,9 +234,10 @@ void RendererClientBase::RenderFrameCreated(
   // it is possible to trigger the preload script before the document is ready
   // through this interface, we should delay adding it to the registry until
   // the document is ready.
+  auto* service = new ElectronApiServiceImpl(render_frame, this);
   render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(&ElectronApiServiceImpl::CreateMojoService,
-                          render_frame, this));
+      base::BindRepeating(&ElectronApiServiceImpl::BindTo,
+                          service->GetWeakPtr()));
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
