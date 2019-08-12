@@ -1,7 +1,7 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as path from 'path'
-import { BrowserWindow, webContents } from 'electron'
+import { BrowserWindow, ipcMain, webContents } from 'electron'
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
@@ -22,6 +22,8 @@ describe('webContents module', () => {
       webPreferences: {
         backgroundThrottling: false,
         nodeIntegration: true,
+        sandbox: false,
+        contextIsolation: false,
         webviewTag: true
       }
     })
@@ -50,6 +52,20 @@ describe('webContents module', () => {
       expect(all[0].getType()).to.equal('window')
       expect(all[all.length - 2].getType()).to.equal('webview')
       expect(all[all.length - 1].getType()).to.equal('remote')
+    })
+  })
+
+  describe('webContents.send(channel, args...)', () => {
+    it('does not block node async APIs when sent before document is ready', (done) => {
+      // Please reference https://github.com/electron/electron/issues/19368 if
+      // this test fails.
+      ipcMain.once('async-node-api-done', () => {
+        done()
+      })
+      w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'))
+      setTimeout(() => {
+        w.webContents.send("test")
+      }, 50)
     })
   })
 })
