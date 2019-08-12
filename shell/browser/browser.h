@@ -186,10 +186,8 @@ class Browser : public WindowListObserver {
 
 #endif  // defined(OS_MACOSX)
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
   void ShowAboutPanel();
   void SetAboutPanelOptions(const base::DictionaryValue& options);
-#endif
 
 #if defined(OS_MACOSX) || defined(OS_WIN)
   void ShowEmojiPanel();
@@ -305,7 +303,7 @@ class Browser : public WindowListObserver {
 
   std::unique_ptr<util::Promise> ready_promise_;
 
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;
 #elif defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;
