@@ -5,7 +5,7 @@ Subject: fix: export DebugOptions
 
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 2eed3f822229a9c913b9db40b8b7efccc475c220..7d71b52d627ef6750282ff4ec16fa469f81d4b2a 100644
+index e2a39626b69fd3380febc258fb25efc0cea2a08e..f4dc3d7df5a33ce92ca52e901283db5aa9f143b4 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -204,11 +204,6 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {

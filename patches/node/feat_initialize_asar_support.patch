@@ -5,7 +5,7 @@ Subject: feat: initialize asar support
 
 
 diff --git a/lib/internal/bootstrap/loaders.js b/lib/internal/bootstrap/loaders.js
-index 7a98e4c96c87d4738829aadf1969ee90eda3876a..bf63de07613b4d19d95607f404139e587319f11d 100644
+index 2889df4812bb031f1a0debe1eb0b75bd6c846407..0b3b92b33490fe754788a94dedce7533de528acf 100644
 --- a/lib/internal/bootstrap/loaders.js
 +++ b/lib/internal/bootstrap/loaders.js
 @@ -189,6 +189,8 @@ function nativeModuleRequire(id) {
