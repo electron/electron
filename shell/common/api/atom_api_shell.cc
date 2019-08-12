@@ -71,7 +71,10 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, mate::Arguments* args) {
   return handle;
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, mate::Arguments* args) {
+bool MoveItemToTrash(mate::Arguments* args) {
+  base::FilePath full_path;
+  args->GetNext(&full_path);
+
   bool delete_on_fail = false;
   args->GetNext(&delete_on_fail);
 
