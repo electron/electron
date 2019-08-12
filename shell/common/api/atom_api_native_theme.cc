@@ -36,6 +36,26 @@ bool NativeTheme::ShouldUseHighContrastColors() {
   return theme_->UsesHighContrastColors();
 }
 
+#if defined(OS_MACOSX)
+const CFStringRef WhiteOnBlack = CFSTR("whiteOnBlack");
+const CFStringRef UniversalAccessDomain = CFSTR("com.apple.universalaccess");
+#endif
+
+// TODO(MarshallOfSound): Implement for Linux
+bool NativeTheme::ShouldUseInvertedColorScheme() {
+#if defined(OS_MACOSX)
+  CFPreferencesAppSynchronize(UniversalAccessDomain);
+  Boolean keyExistsAndHasValidFormat = false;
+  Boolean is_inverted = CFPreferencesGetAppBooleanValue(
+      WhiteOnBlack, UniversalAccessDomain, &keyExistsAndHasValidFormat);
+  if (!keyExistsAndHasValidFormat)
+    return false;
+  return is_inverted;
+#else
+  return color_utils::IsInvertedColorScheme();
+#endif
+}
+
 // static
 v8::Local<v8::Value> NativeTheme::Create(v8::Isolate* isolate) {
   ui::NativeTheme* theme = ui::NativeTheme::GetInstanceForNativeUi();
@@ -51,7 +71,7 @@ void NativeTheme::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
       .SetProperty("shouldUseInvertedColorScheme",
-                   &color_utils::IsInvertedColorScheme);
+                   &NativeTheme::ShouldUseInvertedColorScheme);
 }
 
 }  // namespace api

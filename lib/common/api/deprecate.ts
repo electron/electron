@@ -51,7 +51,15 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     const warn = warnOnce(`${fn.name} function`, `${newName} function`)
     return function (this: any) {
       warn()
-      fn.apply(this, arguments)
+      return fn.apply(this, arguments)
+    }
+  },
+
+  moveAPI: (fn: Function, oldUsage: string, newUsage: string) => {
+    const warn = warnOnce(oldUsage, newUsage)
+    return function (this: any) {
+      warn()
+      return fn.apply(this, arguments)
     }
   },
 

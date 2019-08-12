@@ -231,7 +231,7 @@ auto_filenames = {
     "lib/browser/api/protocol.ts",
     "lib/browser/api/screen.ts",
     "lib/browser/api/session.js",
-    "lib/browser/api/system-preferences.js",
+    "lib/browser/api/system-preferences.ts",
     "lib/browser/api/top-level-window.js",
     "lib/browser/api/touch-bar.js",
     "lib/browser/api/tray.js",
