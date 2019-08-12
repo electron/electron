@@ -14,3 +14,5 @@ namespace electron {
 void GetMacAppLogsPath(base::FilePath* path);
 
 }  // namespace electron
+
+#endif  // SHELL_BROWSER_ATOM_PATHS_MAC
