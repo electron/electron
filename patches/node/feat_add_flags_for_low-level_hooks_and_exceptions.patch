@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index 936b9a1854cf93bfaa09fe7b09e0fdd1265f75dc..6fae9a3a068e6a9de4a28b1abacc54d51abe2b21 100644
+index 257bf78519f32d690ea9cd5b9e21d3d863801c33..89e940cdc478df8a3be7738106a1c739542a7430 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -383,6 +383,12 @@ Environment::Environment(IsolateData* isolate_data,
@@ -41,7 +41,7 @@ index 936b9a1854cf93bfaa09fe7b09e0fdd1265f75dc..6fae9a3a068e6a9de4a28b1abacc54d5
  
  Environment::~Environment() {
 diff --git a/src/node.cc b/src/node.cc
-index 2ffa736f58d389a46f3a3518b6d12cd7b6bc780f..1ced93b572f383f0b941ab6cd7f47678dc0491e3 100644
+index 572490730da5854ad1a79670564ad9705c86747b..9b43d7676e5e106318b58bfe443651cc49780068 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -27,6 +27,7 @@
@@ -76,7 +76,7 @@ index 2ffa736f58d389a46f3a3518b6d12cd7b6bc780f..1ced93b572f383f0b941ab6cd7f47678
    if (BootstrapInternalLoaders().IsEmpty()) {
      return MaybeLocal<Value>();
    }
-@@ -738,7 +749,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -741,7 +752,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -87,7 +87,7 @@ index 2ffa736f58d389a46f3a3518b6d12cd7b6bc780f..1ced93b572f383f0b941ab6cd7f47678
  
  #ifdef NODE_REPORT
    // Cache the original command line to be
-@@ -840,6 +853,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -843,6 +856,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
  #endif
  
@@ -97,7 +97,7 @@ index 2ffa736f58d389a46f3a3518b6d12cd7b6bc780f..1ced93b572f383f0b941ab6cd7f47678
    const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, false);
    if (exit_code != 0) return exit_code;
  
-@@ -862,6 +878,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -865,6 +881,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    per_process::metadata.versions.InitializeIntlVersions();
  #endif
  

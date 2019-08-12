@@ -6,7 +6,7 @@ Subject: src: Disable NODE_USE_V8_PLATFORM in node_options
 Electron does not set NODE_USE_V8_PLATFORM. If inspector is enabled when NODE_USE_V8_PLATFORM is false, then there's an error. We want to ignore that, use our own v8 platform but still use the node inspector
 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index fa62f2ba876150be8963fd569ac59028fd0170a1..86f51e208e527ce5132fb2dd15e5feebe42ae6b2 100644
+index b9d6108c5db800465e6c7156ad1c28002c33261b..01dddb979042c098326a8b1ff37397642733f49b 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -33,7 +33,7 @@ DebugOptions& DebugOptions::operator=(const DebugOptions&) = default;

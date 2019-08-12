@@ -6,7 +6,7 @@ Subject: fix: build and expose inspector agent
 Node inspector initialization happens in a different start-up function in node.cc, which we don't call in Electron. This allows for us to use the inspector agent in electron/atom/browser/node_debugger.cc
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index e392be8595f4ebb3e6ad933c2b4842776e9666c3..9cf948c05ddc9c8e5341fc8aad6c6f79fbc574ed 100644
+index 2965483dea6244e7123c08c104f399fc023a84e0..b6624300e96daf6041a296fdc1ceeaf579e215cd 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -217,7 +217,7 @@ const int CONTEXT_GROUP_ID = 1;
@@ -18,7 +18,7 @@ index e392be8595f4ebb3e6ad933c2b4842776e9666c3..9cf948c05ddc9c8e5341fc8aad6c6f79
    return result.str();
  }
  
-@@ -461,7 +461,7 @@ class NodeInspectorClient : public V8InspectorClient {
+@@ -465,7 +465,7 @@ class NodeInspectorClient : public V8InspectorClient {
      client_ = V8Inspector::create(env->isolate(), this);
      // TODO(bnoordhuis) Make name configurable from src/node.cc.
      std::string name =

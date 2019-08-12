@@ -5,10 +5,10 @@ Subject: chore: add ability to prevent / warn non context-aware native modules
  being loaded
 
 diff --git a/src/env.h b/src/env.h
-index 8eed574f52410ddb772f4e075b9cf9a8259a7a4c..72e16a7f324eb01a596682c793f143300dc4c8d8 100644
+index 2dd6bdb75f02e2ccb07129996d16df99c0c4ccf2..ecb845803776f5ff6e7eec712ec7a5ebea2e8d0a 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -885,6 +885,15 @@ class Environment : public MemoryRetainer {
+@@ -884,6 +884,15 @@ class Environment : public MemoryRetainer {
                uint64_t thread_id = kNoThreadId);
    ~Environment();
  
@@ -24,7 +24,7 @@ index 8eed574f52410ddb772f4e075b9cf9a8259a7a4c..72e16a7f324eb01a596682c793f14330
    void InitializeLibuv(bool start_profiler_idle_notifier);
    inline const std::vector<std::string>& exec_argv();
    inline const std::vector<std::string>& argv();
-@@ -1232,6 +1241,9 @@ class Environment : public MemoryRetainer {
+@@ -1234,6 +1243,9 @@ class Environment : public MemoryRetainer {
    inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                           const char* errmsg);
  
