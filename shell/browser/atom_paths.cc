@@ -78,7 +78,8 @@ bool PathProvider(int key, base::FilePath* path) {
       return true;
 #else
       // Should be never reached as beyond PATH_END
-      return base::PathService::Get(base::DIR_APP_DATA, path);
+      // return base::PathService::Get(base::DIR_APP_DATA, path);
+      return false;
 #endif
     case DIR_USER_DATA:
       base::PathService::Get(DIR_APP_DATA, path);

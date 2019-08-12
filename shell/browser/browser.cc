@@ -153,9 +153,21 @@ void Browser::WillFinishLaunching() {
 void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  // 'userData' (DIR_USER_DATA) and 'userCache' (DIR_USER_CACHE)
+  // can be customized changing the 'appData' or the application name.
+  // At this stage, it is no more allowed, paths must be frozen.
+  // So if it is not yet done, we 'override' the values.
+  // It does not prevent to explicitely changing userData/userCache.
+  // May be, would be fine to prevent such actions.
   base::FilePath user_data;
-  if (base::PathService::Get(DIR_USER_DATA, &user_data))
-    base::CreateDirectoryAndGetError(user_data, nullptr);
+  base::PathService::Get(DIR_USER_DATA, &user_data);
+  base::PathService::Override(DIR_USER_DATA, user_data);
+  base::CreateDirectoryAndGetError(user_data, nullptr);
+
+  base::FilePath user_cache;
+  base::PathService::Get(DIR_USER_CACHE, &user_cache);
+  base::PathService::Override(DIR_USER_CACHE, user_cache);
 
   is_ready_ = true;
   if (ready_promise_) {
