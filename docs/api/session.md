@@ -96,7 +96,7 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 Returns:
 
 * `event` Event
-* `preconnectUrl` string
+* `preconnectUrl` String
 * `allow_credentials` Boolean
 
 Emitted when a render process requests preconnection to a URL.
