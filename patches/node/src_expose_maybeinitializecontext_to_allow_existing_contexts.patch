@@ -9,10 +9,10 @@ can still use them in a node Environment now that primordials are
 initialized and required so early.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index bfd279aa7e7cd4d50b6cffe75d6f8e41c0213acb..5011774be2c5fee910079790feae747fa1785b87 100644
+index 35e8666ef771c56a1bcd441c99d4483a0d3e90bf..443f49320b2e6720f932fcfcefdbe6e539594964 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -363,6 +363,13 @@ Local<Context> NewContext(Isolate* isolate,
+@@ -357,6 +357,13 @@ Local<Context> NewContext(Isolate* isolate,
                            Local<ObjectTemplate> object_template) {
    auto context = Context::New(isolate, nullptr, object_template);
    if (context.IsEmpty()) return context;
@@ -27,7 +27,7 @@ index bfd279aa7e7cd4d50b6cffe75d6f8e41c0213acb..5011774be2c5fee910079790feae747f
  
    context->SetEmbedderData(ContextEmbedderIndex::kAllowWasmCodeGeneration,
 diff --git a/src/node.h b/src/node.h
-index dca89e212c89df19d0b97d748e3649392fec000c..de007ed97a52c17cff8b8917d25f2383d5bbae6a 100644
+index a2b47d1cf984ec36994b477b371cdf262191ab9c..c51fb1a6a6e497a091e2ba0b147e3d7b6a4d685c 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -303,6 +303,14 @@ NODE_EXTERN v8::Local<v8::Context> NewContext(

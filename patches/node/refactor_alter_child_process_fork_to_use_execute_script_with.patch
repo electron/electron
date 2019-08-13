@@ -7,7 +7,7 @@ Subject: refactor: alter child_process.fork to use execute script with
 When forking a child script, we setup a special environment to make the Electron binary run like the upstream node. On Mac, we use the helper app as node binary.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 0d3785f0d5b9b8a2959e9487500d010796709d7f..2a2e68aaf23116203d756431cafd81c106ed9044 100644
+index 43257e53dfe0319d6c110e94529cbc991c2bcfb3..ec429a082b081f0289507c15aa9ecc5305345ca2 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -102,6 +102,16 @@ function fork(modulePath /* , args, options */) {
