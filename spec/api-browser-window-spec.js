@@ -1214,10 +1214,12 @@ describe('BrowserWindow module', () => {
   })
 
   describe('BrowserWindow.setOpacity(opacity)', () => {
-    describe('Windows and Mac', function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
+    describe('Windows and Mac', () => {
+      before(function () {
+        if (process.platform !== 'linux') {
+          this.skip()
+        }
+      })
 
       it('make window with initial opacity', () => {
         const w = new BrowserWindow({ show: false, opacity: 0.5 })
@@ -1245,10 +1247,12 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('Linux', function () {
-      if (process.platform !== 'linux') {
-        this.skip()
-      }
+    describe('Linux', () => {
+      before(function () {
+        if (process.platform !== 'linux') {
+          this.skip()
+        }
+      })
 
       it('sets 1 regardless of parameter', () => {
         const w = new BrowserWindow({ show: false })
