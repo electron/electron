@@ -55,7 +55,8 @@ class FileChooserDialog {
       confirm_text = l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE).c_str();
     } else if (action == GTK_FILE_CHOOSER_ACTION_OPEN) {
       confirm_text =
-          l10n_util::GetStringUTF8(IDS_OPEN_FILE_DIALOG_TITLE).c_str();
+          l10n_util::GetStringUTF8(IDS_SEND_TAB_TO_SELF_INFOBAR_MESSAGE_URL)
+              .c_str();
     }
 
     dialog_ = gtk_file_chooser_dialog_new(
