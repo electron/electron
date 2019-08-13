@@ -24,3 +24,8 @@ is_cfi = false
 # TODO: Remove this and update CI to contain 10.14 SDK once
 # crbug.com/986701 is fixed.
 mac_sdk_min = "10.13"
+
+# This will build electron with vaapi support in order to enable hardware
+# acceleration - however, it will need to be enabled intentionally by using
+# the --ignore-gpu-blacklist flag and installing necessary dependencies.
+use_vaapi = true
