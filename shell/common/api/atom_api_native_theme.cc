@@ -45,8 +45,8 @@ const CFStringRef UniversalAccessDomain = CFSTR("com.apple.universalaccess");
 bool NativeTheme::ShouldUseInvertedColorScheme() {
 #if defined(OS_MACOSX)
   CFPreferencesAppSynchronize(UniversalAccessDomain);
-  Boolean keyExistsAndHasValidFormat = false;
-  Boolean is_inverted = CFPreferencesGetAppBooleanValue(
+  bool keyExistsAndHasValidFormat = false;
+  bool is_inverted = CFPreferencesGetAppBooleanValue(
       WhiteOnBlack, UniversalAccessDomain, &keyExistsAndHasValidFormat);
   if (!keyExistsAndHasValidFormat)
     return false;
