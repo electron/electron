@@ -12,17 +12,15 @@
 
 namespace electron {
 
-AutofillDriver::AutofillDriver(content::RenderFrameHost* render_frame_host)
+AutofillDriver::AutofillDriver(
+    content::RenderFrameHost* render_frame_host,
+    mojom::ElectronAutofillDriverAssociatedRequest request)
     : render_frame_host_(render_frame_host), binding_(this) {
   autofill_popup_.reset(new AutofillPopup());
+  binding_.Bind(std::move(request));
 }
 
 AutofillDriver::~AutofillDriver() {}
-
-void AutofillDriver::BindRequest(
-    mojom::ElectronAutofillDriverAssociatedRequest request) {
-  binding_.Bind(std::move(request));
-}
 
 void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,

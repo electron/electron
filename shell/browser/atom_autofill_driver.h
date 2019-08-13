@@ -19,11 +19,10 @@ namespace electron {
 
 class AutofillDriver : public mojom::ElectronAutofillDriver {
  public:
-  explicit AutofillDriver(content::RenderFrameHost* render_frame_host);
+  AutofillDriver(content::RenderFrameHost* render_frame_host,
+                 mojom::ElectronAutofillDriverAssociatedRequest request);
 
   ~AutofillDriver() override;
-
-  void BindRequest(mojom::ElectronAutofillDriverAssociatedRequest request);
 
   void ShowAutofillPopup(const gfx::RectF& bounds,
                          const std::vector<base::string16>& values,

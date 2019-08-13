@@ -20,8 +20,10 @@ namespace electron {
 namespace {
 
 std::unique_ptr<AutofillDriver> CreateDriver(
-    content::RenderFrameHost* render_frame_host) {
-  return std::make_unique<AutofillDriver>(render_frame_host);
+    content::RenderFrameHost* render_frame_host,
+    mojom::ElectronAutofillDriverAssociatedRequest request) {
+  return std::make_unique<AutofillDriver>(render_frame_host,
+                                          std::move(request));
 }
 
 }  // namespace
@@ -43,8 +45,10 @@ void AutofillDriverFactory::BindAutofillDriver(
     return;
 
   AutofillDriver* driver = factory->DriverForFrame(render_frame_host);
-  if (driver)
-    driver->BindRequest(std::move(request));
+  if (!driver)
+    factory->AddDriverForFrame(
+        render_frame_host,
+        base::BindOnce(CreateDriver, render_frame_host, std::move(request)));
 }
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
@@ -55,12 +59,6 @@ AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
     if (frame->IsRenderFrameLive())
       RenderFrameCreated(frame);
   }
-}
-
-void AutofillDriverFactory::RenderFrameCreated(
-    content::RenderFrameHost* render_frame_host) {
-  AddDriverForFrame(render_frame_host,
-                    base::Bind(CreateDriver, render_frame_host));
 }
 
 void AutofillDriverFactory::RenderFrameDeleted(
@@ -88,12 +86,12 @@ AutofillDriver* AutofillDriverFactory::DriverForFrame(
 
 void AutofillDriverFactory::AddDriverForFrame(
     content::RenderFrameHost* render_frame_host,
-    base::Callback<std::unique_ptr<AutofillDriver>()> factory_method) {
+    CreationCallback factory_method) {
   auto insertion_result =
       driver_map_.insert(std::make_pair(render_frame_host, nullptr));
   // This can be called twice for the key representing the main frame.
   if (insertion_result.second) {
-    insertion_result.first->second = factory_method.Run();
+    insertion_result.first->second = std::move(factory_method).Run();
   }
 }
 

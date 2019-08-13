@@ -21,6 +21,9 @@ class AutofillDriverFactory
     : public content::WebContentsObserver,
       public content::WebContentsUserData<AutofillDriverFactory> {
  public:
+  typedef base::OnceCallback<std::unique_ptr<AutofillDriver>()>
+      CreationCallback;
+
   ~AutofillDriverFactory() override;
 
   static void BindAutofillDriver(
@@ -28,15 +31,13 @@ class AutofillDriverFactory
       content::RenderFrameHost* render_frame_host);
 
   // content::WebContentsObserver:
-  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
 
   AutofillDriver* DriverForFrame(content::RenderFrameHost* render_frame_host);
-  void AddDriverForFrame(
-      content::RenderFrameHost* render_frame_host,
-      base::Callback<std::unique_ptr<AutofillDriver>()> factory_method);
+  void AddDriverForFrame(content::RenderFrameHost* render_frame_host,
+                         CreationCallback factory_method);
   void DeleteDriverForFrame(content::RenderFrameHost* render_frame_host);
 
   void CloseAllPopups();
