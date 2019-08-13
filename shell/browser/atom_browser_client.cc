@@ -980,7 +980,10 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
-  DCHECK(web_contents);
+  // For service workers there might be no WebContents.
+  if (!web_contents)
+    return false;
+
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
       isolate, web_contents->GetBrowserContext());
