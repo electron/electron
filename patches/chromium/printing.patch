@@ -393,7 +393,7 @@ index 1802034a6e15a6ad8b0d9591cfb79ba5873dc982..331ac71d925c056d3b7577123251514c
  // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
  IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index ef580254bd8feba84ac02924b77b9b4feaf14d96..8b10469dd2e91edec2ddf9411b5281b76a8398a1 100644
+index ef580254bd8feba84ac02924b77b9b4feaf14d96..3cdaf40b6e5aeee7193a49a31f824c914d07648e 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -37,6 +37,7 @@
@@ -498,7 +498,7 @@ index ef580254bd8feba84ac02924b77b9b4feaf14d96..8b10469dd2e91edec2ddf9411b5281b7
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -1867,10 +1881,17 @@ std::vector<int> PrintRenderFrameHelper::GetPrintedPages(
+@@ -1867,10 +1881,23 @@ std::vector<int> PrintRenderFrameHelper::GetPrintedPages(
    return printed_pages;
  }
  
@@ -509,17 +509,23 @@ index ef580254bd8feba84ac02924b77b9b4feaf14d96..8b10469dd2e91edec2ddf9411b5281b7
    PrintMsg_PrintPages_Params settings;
 -  Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
 -                                                &settings.params));
-+  // new_settings will never be empty, always send the update IPC message
-+  bool canceled = false;
-+  Send(new PrintHostMsg_UpdatePrintSettings(
-+      routing_id(), 0, new_settings, &settings, &canceled));
-+  if (canceled)
-+    return false;
++  if (new_settings.empty()) {
++    // Send the default IPC message if caller is window.print()
++    Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
++                                                  &settings.params));
++  } else {
++    // Send the update IPC message if caller is webContents.print()
++    bool canceled = false;
++    Send(new PrintHostMsg_UpdatePrintSettings(
++        routing_id(), 0, new_settings, &settings, &canceled));
++    if (canceled)
++      return false;
++  }
 +
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -1890,12 +1911,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -1890,12 +1917,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -581,7 +587,7 @@ index 71c0c15217b62cd7a6087c6d9ae50481f9041d5f..18d853d7f808aaf816de86e8c5b82317
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/print_settings_conversion.cc b/printing/print_settings_conversion.cc
-index 2563ae6a87b2354ff2f2b45c17f61d2f44910efa..1f34f905791f38a44ae8c892cc9cfb38d15b659d 100644
+index 2563ae6a87b2354ff2f2b45c17f61d2f44910efa..a7c61e5286659c51579c6b50cf5cc52c10433062 100644
 --- a/printing/print_settings_conversion.cc
 +++ b/printing/print_settings_conversion.cc
 @@ -190,11 +190,12 @@ bool PrintSettingsFromJobSettings(const base::Value& job_settings,
