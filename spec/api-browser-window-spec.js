@@ -1174,7 +1174,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.setOpacity(opacity)', () => {
     describe('Windows and Mac', () => {
       before(function () {
-        if (process.platform !== 'linux') {
+        if (process.platform === 'linux') {
           this.skip()
         }
       })
