@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -19,10 +20,10 @@ class RendererClientBase;
 class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                                public content::RenderFrameObserver {
  public:
-  static void CreateMojoService(
-      content::RenderFrame* render_frame,
-      RendererClientBase* renderer_client,
-      mojom::ElectronRendererAssociatedRequest request);
+  ElectronApiServiceImpl(content::RenderFrame* render_frame,
+                         RendererClientBase* renderer_client);
+
+  void BindTo(mojom::ElectronRendererAssociatedRequest request);
 
   void Message(bool internal,
                bool send_to_all,
@@ -33,19 +34,26 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
 
+  base::WeakPtr<ElectronApiServiceImpl> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   ~ElectronApiServiceImpl() override;
-  ElectronApiServiceImpl(content::RenderFrame* render_frame,
-                         RendererClientBase* renderer_client,
-                         mojom::ElectronRendererAssociatedRequest request);
 
   // RenderFrameObserver implementation.
+  void DidCreateDocumentElement() override;
   void OnDestruct() override;
+
+  void OnConnectionError();
+
+  // Whether the DOM document element has been created.
+  bool document_created_ = false;
 
   mojo::AssociatedBinding<mojom::ElectronRenderer> binding_;
 
-  content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
+  base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
