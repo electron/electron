@@ -301,17 +301,17 @@ void WebDialogHelper::RunFileChooser(
     settings.default_path = params.default_file_name;
     file_select_helper->ShowSaveDialog(settings);
   } else {
-    int flags = file_dialog::FILE_DIALOG_CREATE_DIRECTORY;
+    int flags = file_dialog::OPEN_DIALOG_CREATE_DIRECTORY;
     switch (params.mode) {
       case FileChooserParams::Mode::kOpenMultiple:
-        flags |= file_dialog::FILE_DIALOG_MULTI_SELECTIONS;
+        flags |= file_dialog::OPEN_DIALOG_MULTI_SELECTIONS;
         FALLTHROUGH;
       case FileChooserParams::Mode::kOpen:
-        flags |= file_dialog::FILE_DIALOG_OPEN_FILE;
-        flags |= file_dialog::FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
+        flags |= file_dialog::OPEN_DIALOG_OPEN_FILE;
+        flags |= file_dialog::OPEN_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
         break;
       case FileChooserParams::Mode::kUploadFolder:
-        flags |= file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+        flags |= file_dialog::OPEN_DIALOG_OPEN_DIRECTORY;
         break;
       default:
         NOTREACHED();

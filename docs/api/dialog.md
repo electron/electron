@@ -171,6 +171,13 @@ dialog.showOpenDialog(mainWindow, {
     displayed in front of the filename text field.
   * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
+  * `properties` String[] (optional)
+    * `showHiddenFiles` - Show hidden files in dialog.
+    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
+    * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
+      as a directory instead of a file.
+    * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
+    * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `String | undefined`, the path of the file chosen by the user; if the dialog is cancelled it returns `undefined`.
@@ -193,8 +200,14 @@ The `filters` specifies an array of file types that can be displayed, see
   * `message` String (optional) _macOS_ - Message to display above text fields.
   * `nameFieldLabel` String (optional) _macOS_ - Custom label for the text
     displayed in front of the filename text field.
-  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
-    defaults to `true`.
+  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
+  * `properties` String[] (optional)
+    * `showHiddenFiles` - Show hidden files in dialog.
+    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
+    * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
+      as a directory instead of a file.
+    * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
+    * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
