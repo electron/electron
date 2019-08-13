@@ -3,6 +3,12 @@ import { systemPreferences } from 'electron'
 import { ifdescribe } from './spec-helpers'
 
 describe('systemPreferences module', () => {
+  ifdescribe(process.platform === 'win32')('systemPreferences.isAeroGlassEnabled()', () => {
+    it('returns a boolean', () => {
+      expect(systemPreferences.isAeroGlassEnabled()).to.be.a('boolean')
+    })
+  })
+
   ifdescribe(process.platform === 'win32')('systemPreferences.getAccentColor', () => {
     it('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor()
@@ -147,6 +153,18 @@ describe('systemPreferences module', () => {
 
     it('does not throw for missing keys', () => {
       systemPreferences.removeUserDefault('some-missing-key')
+    })
+  })
+
+  describe('systemPreferences.isDarkMode()', () => {
+    it('returns a boolean', () => {
+      expect(systemPreferences.isDarkMode()).to.be.a('boolean')
+    })
+  })
+
+  ifdescribe(process.platform === 'win32')('systemPreferences.isShellDarkMode()', () => {
+    it('returns a boolean', () => {
+      expect(systemPreferences.isShellDarkMode()).to.be.a('boolean')
     })
   })
 
