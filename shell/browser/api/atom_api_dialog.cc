@@ -14,7 +14,7 @@
 #include "shell/common/gin_converters/file_dialog_converter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
-#include "shell/common/gin_converters/net_converter_gin_adapter.h"
+#include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
 

@@ -13,6 +13,19 @@
 namespace gin {
 
 template <>
+struct Converter<base::DictionaryValue> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     base::DictionaryValue* out) {
+    return mate::ConvertFromV8(isolate, val, out);
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::DictionaryValue& val) {
+    return mate::ConvertToV8(isolate, val);
+  }
+};
+
+template <>
 struct Converter<base::Value> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
