@@ -28,6 +28,15 @@ bool SystemPreferences::IsAeroGlassEnabled() {
   return ui::win::IsAeroGlassEnabled();
 }
 
+bool SystemPreferences::IsShellDarkMode() {
+  base::string16 keyPath =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  DWORD value = 0;  // defaults to dark theme if registry entry does not exist
+  key.ReadValueDW(L"SystemUseLightTheme", &value);
+  return (value != 1);
+}
+
 std::string hexColorDWORDToRGBA(DWORD color) {
   DWORD rgba = color << 8 | color >> 24;
   std::ostringstream stream;

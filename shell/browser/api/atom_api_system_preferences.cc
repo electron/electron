@@ -75,6 +75,7 @@ void SystemPreferences::BuildPrototype(
 
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
+      .SetMethod("isShellDarkMode", &SystemPreferences::IsShellDarkMode)
 #elif defined(OS_MACOSX)
       .SetMethod("postNotification", &SystemPreferences::PostNotification)
       .SetMethod("subscribeNotification",

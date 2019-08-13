@@ -55,6 +55,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #endif
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
+  bool IsShellDarkMode();
 
   void InitializeWindow();
 
