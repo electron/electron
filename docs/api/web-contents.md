@@ -1269,11 +1269,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md).
   * `failureReason` String - Called back if the print fails; can be `cancelled` or `failed`.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
-the system's default printer if `deviceName` is empty and the default settings
-for printing.
-
-Calling `window.print()` in web page is equivalent to calling
-`webContents.print({ silent: false, printBackground: false, deviceName: '' })`.
+the system's default printer if `deviceName` is empty and the default settings for printing.
 
 Use `page-break-before: always;` CSS style to force to print to a new page.
 
