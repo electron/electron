@@ -1184,14 +1184,14 @@ describe('BrowserWindow module', () => {
 
       it('allows setting the opacity', () => {
         const w = new BrowserWindow({ show: false })
-        expect(() => {
+        assert.doesNotThrow(() => {
           w.setOpacity(0.0)
           assert.strictEqual(w.getOpacity(), 0.0)
           w.setOpacity(0.5)
           assert.strictEqual(w.getOpacity(), 0.5)
           w.setOpacity(1.0)
           assert.strictEqual(w.getOpacity(), 1.0)
-        }).to.not.throw()
+        })
       })
 
       it('clamps opacity to [0.0...1.0]', () => {
