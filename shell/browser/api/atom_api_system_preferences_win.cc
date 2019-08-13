@@ -7,6 +7,7 @@
 
 #include "shell/browser/api/atom_api_system_preferences.h"
 
+#include "base/win/registry.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "ui/base/win/shell.h"
