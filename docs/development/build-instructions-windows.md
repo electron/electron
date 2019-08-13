@@ -114,7 +114,7 @@ This can happen during build, when Debugging Tools for Windows has been installe
 
 Make sure you have installed `pywin32` with `pip install pywin32`.
 
-### build scripts occasionally hang until keypress
+### Build Scripts Hang Until Keypress
 
 This bug is a "feature" of Windows' command prompt. It happens when clicking inside the prompt window with
 `QuickEdit` enabled and is intended to allow selecting and copying output text easily.
