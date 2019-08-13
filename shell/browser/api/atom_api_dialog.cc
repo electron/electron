@@ -11,7 +11,7 @@
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/common/api/gin_utils.h"
-#include "shell/common/gin_converters/file_dialog_converter_gin_adapter.h"
+#include "shell/common/gin_converters/file_dialog_converter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_converters/net_converter_gin_adapter.h"
