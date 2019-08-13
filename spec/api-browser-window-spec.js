@@ -1221,27 +1221,27 @@ describe('BrowserWindow module', () => {
 
       it('make window with initial opacity', () => {
         const w = new BrowserWindow({ show: false, opacity: 0.5 })
-        expect(w.getOpacity()).to.equal(0.5)
+        assert.strictEqual(w.getOpacity(), 0.5)
       })
 
       it('allows setting the opacity', () => {
         const w = new BrowserWindow({ show: false })
         expect(() => {
           w.setOpacity(0.0)
-          expect(w.getOpacity()).to.equal(0.0)
+          assert.strictEqual(w.getOpacity(), 0.0)
           w.setOpacity(0.5)
-          expect(w.getOpacity()).to.equal(0.5)
+          assert.strictEqual(w.getOpacity(), 0.5)
           w.setOpacity(1.0)
-          expect(w.getOpacity()).to.equal(1.0)
+          assert.strictEqual(w.getOpacity(), 1.0)
         }).to.not.throw()
       })
 
       it('clamps opacity to [0.0...1.0]', () => {
         const w = new BrowserWindow({ show: false, opacity: 0.5 })
         w.setOpacity(100)
-        expect(w.getOpacity()).to.equal(1.0)
+        assert.strictEqual(w.getOpacity(), 1.0)
         w.setOpacity(-100)
-        expect(w.getOpacity()).to.equal(0.0)
+        assert.strictEqual(w.getOpacity(), 0.0)
       })
     })
 
@@ -1253,9 +1253,9 @@ describe('BrowserWindow module', () => {
       it('sets 1 regardless of parameter', () => {
         const w = new BrowserWindow({ show: false })
         w.setOpacity(0)
-        expect(w.getOpacity()).to.equal(1.0)
+        assert.strictEqual(w.getOpacity(), 1.0)
         w.setOpacity(0.5)
-        expect(w.getOpacity()).to.equal(1.0)
+        assert.strictEqual(w.getOpacity(), 1.0)
       })
     })
   })
