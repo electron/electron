@@ -29,10 +29,23 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
  public:
   static gin::WrapperInfo kWrapperInfo;
 
+  // Return the WebRequest object attached to |browser_context|, create if there
+  // is no one.
+  // Note that the lifetime of WebRequest object is managed by Session, instead
+  // of the caller.
   static gin::Handle<WebRequestNS> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
-  static WebRequestNS* From(content::BrowserContext* browser_context);
+
+  // Return a new WebRequest object, this should only be called by Session.
+  static gin::Handle<WebRequestNS> Create(
+      v8::Isolate* isolate,
+      content::BrowserContext* browser_context);
+
+  // Find the WebRequest object attached to |browser_context|.
+  static gin::Handle<WebRequestNS> From(
+      v8::Isolate* isolate,
+      content::BrowserContext* browser_context);
 
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(

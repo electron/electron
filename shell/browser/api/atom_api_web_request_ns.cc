@@ -226,27 +226,39 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
 gin::Handle<WebRequestNS> WebRequestNS::FromOrCreate(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  auto* web_request = From(browser_context);
-  if (!web_request) {
-    // Create.
-    web_request = new WebRequestNS(isolate, browser_context);
-    // Make sure the |Session| object has the |webRequest| property managed.
-    Session::CreateFrom(isolate,
-                        static_cast<AtomBrowserContext*>(browser_context))
-        ->WebRequest(isolate);
+  gin::Handle<WebRequestNS> handle = From(isolate, browser_context);
+  if (handle.IsEmpty()) {
+    // Make sure the |Session| object has the |webRequest| property created.
+    v8::Local<v8::Value> web_request =
+        Session::CreateFrom(isolate,
+                            static_cast<AtomBrowserContext*>(browser_context))
+            ->WebRequest(isolate);
+    gin::ConvertFromV8(isolate, web_request, &handle);
   }
-  return gin::CreateHandle(isolate, web_request);
+  DCHECK(!handle.IsEmpty());
+  return handle;
 }
 
 // static
-WebRequestNS* WebRequestNS::From(content::BrowserContext* browser_context) {
+gin::Handle<WebRequestNS> WebRequestNS::Create(
+    v8::Isolate* isolate,
+    content::BrowserContext* browser_context) {
+  DCHECK(From(isolate, browser_context).IsEmpty())
+      << "WebRequestNS already created";
+  return gin::CreateHandle(isolate, new WebRequestNS(isolate, browser_context));
+}
+
+// static
+gin::Handle<WebRequestNS> WebRequestNS::From(
+    v8::Isolate* isolate,
+    content::BrowserContext* browser_context) {
   if (!browser_context)
-    return nullptr;
+    return gin::Handle<WebRequestNS>();
   auto* user_data =
       static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
   if (!user_data)
-    return nullptr;
-  return user_data->data;
+    return gin::Handle<WebRequestNS>();
+  return gin::CreateHandle(isolate, user_data->data);
 }
 
 }  // namespace api
