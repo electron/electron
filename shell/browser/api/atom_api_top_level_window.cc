@@ -1116,8 +1116,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPosition", &TopLevelWindow::GetPosition)
       .SetMethod("setTitle", &TopLevelWindow::SetTitle)
       .SetMethod("getTitle", &TopLevelWindow::GetTitle)
-      .SetMethod("setAccessibleTitle", &TopLevelWindow::SetAccessibleTitle)
-      .SetMethod("getAccessibleTitle", &TopLevelWindow::GetAccessibleTitle)
+      .SetProperty("accessibleTitle", &TopLevelWindow::GetAccessibleTitle,
+                   &TopLevelWindow::SetAccessibleTitle)
       .SetMethod("flashFrame", &TopLevelWindow::FlashFrame)
       .SetMethod("setSkipTaskbar", &TopLevelWindow::SetSkipTaskbar)
       .SetMethod("setSimpleFullScreen", &TopLevelWindow::SetSimpleFullScreen)

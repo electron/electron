@@ -134,7 +134,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetTitle() = 0;
 
   // Ability to augment the window title for the screen readers.
-  base::string16 GetAccessibleWindowTitle() const override;
   void SetAccessibleTitle(const std::string& title);
   std::string GetAccessibleTitle();
 
@@ -304,6 +303,7 @@ class NativeWindow : public base::SupportsUserData,
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
+  base::string16 GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
 

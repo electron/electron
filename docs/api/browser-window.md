@@ -379,6 +379,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
       prevent the window from resizing when entering HTML Fullscreen. Default
       is `false`.
+    * `accessibleTitle` String (optional) - a part of Window title visible for
+      the screen readers only.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -821,6 +823,10 @@ const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 ```
 
+#### `win.accessibleTitle`
+
+A `String` property that defines a part of window title which is visible for the screen readers only.
+
 ### Instance Methods
 
 Objects created with `new BrowserWindow` have the following instance methods:
@@ -1226,16 +1232,6 @@ Returns `String` - The title of the native window.
 
 **Note:** The title of the web page can be different from the title of the native
 window.
-
-#### `win.setAccessibleTitle(title)`
-
-* `title` String
-
-Changes the accessible title of native window to `title`.
-
-#### `win.getAccessibleTitle()`
-
-Returns `String` - The accessible title of native window (or an empty string if none).
 
 #### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
