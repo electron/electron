@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "base/stl_util.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -213,7 +214,7 @@ int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
                                   net::CompletionOnceCallback callback,
                                   GURL* new_url) {
   return HandleResponseEvent(kOnBeforeRequest, info, std::move(callback),
-                             request, new_url);
+                             new_url, request);
 }
 
 int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
@@ -224,7 +225,7 @@ int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
       kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
-      request, headers, *headers);
+      headers, request);
 }
 
 int WebRequestNS::OnHeadersReceived(
@@ -234,10 +235,11 @@ int WebRequestNS::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  return HandleResponseEvent(kOnHeadersReceived, info, std::move(callback),
-                             request, original_response_headers,
-                             override_response_headers,
-                             allowed_unsafe_redirect_url);
+  return HandleResponseEvent(
+      kOnHeadersReceived, info, std::move(callback),
+      std::make_pair(override_response_headers,
+                     original_response_headers->GetStatusLine()),
+      request);
 }
 
 void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* info,
@@ -260,12 +262,16 @@ void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* info,
 void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* info,
                                    const network::ResourceRequest& request,
                                    int net_error) {
+  callbacks_.erase(info->id);
+
   HandleSimpleEvent(kOnErrorOccurred, info, request, net_error);
 }
 
 void WebRequestNS::OnCompleted(extensions::WebRequestInfo* info,
                                const network::ResourceRequest& request,
                                int net_error) {
+  callbacks_.erase(info->id);
+
   HandleSimpleEvent(kOnCompleted, info, request, net_error);
 }
 
@@ -328,8 +334,29 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
 
-  // TODO(zcbenz): Invoke the listener.
-  return net::OK;
+  callbacks_[request_info->id] = std::move(callback);
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, args...);
+
+  ResponseCallback response =
+      base::BindOnce(&WebRequestNS::OnListenerResult<Out>,
+                     base::Unretained(this), request_info->id, out);
+  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  return net::ERR_IO_PENDING;
+}
+
+template <typename T>
+void WebRequestNS::OnListenerResult(uint64_t id,
+                                    T out,
+                                    v8::Local<v8::Value> response) {
+  if (!base::Contains(callbacks_, id))
+    return;
+
+  std::move(callbacks_[id]).Run(net::ERR_BLOCKED_BY_CLIENT);
+  callbacks_.erase(id);
 }
 
 // static

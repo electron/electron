@@ -101,9 +101,9 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   };
 
   using SimpleListener = base::RepeatingCallback<void(v8::Local<v8::Value>)>;
-  using ResponseCallback = base::OnceCallback<void(const base::Value&)>;
+  using ResponseCallback = base::OnceCallback<void(v8::Local<v8::Value>)>;
   using ResponseListener =
-      base::RepeatingCallback<void(const base::Value&, ResponseCallback)>;
+      base::RepeatingCallback<void(v8::Local<v8::Value>, ResponseCallback)>;
 
   template <SimpleEvent event>
   void SetSimpleListener(gin::Arguments* args);
@@ -122,6 +122,9 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
                           net::CompletionOnceCallback callback,
                           Out out,
                           Args... args);
+
+  template <typename T>
+  void OnListenerResult(uint64_t id, T out, v8::Local<v8::Value> response);
 
   struct SimpleListenerInfo {
     std::set<URLPattern> url_patterns;
