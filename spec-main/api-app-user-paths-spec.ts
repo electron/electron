@@ -17,7 +17,7 @@ describe('app user paths module', () => {
 
   describe('app paths customization', () => {
     it('by default', async () => {
-      const output = await runTestApp('app-user-paths', '-default')
+      const output = await runTestApp('app-user-paths')
       const expected = path.join(app.getPath('appData'), defaultAppName)
       expect(output.userCache).to.equal(expected)
       expect(output.userData).to.equal(expected)
@@ -25,7 +25,7 @@ describe('app user paths module', () => {
 
     it('customize app name', async () => {
       const appName = 'myAppName'
-      const output = await runTestApp('app-user-paths', `-custom-${appName}`)
+      const output = await runTestApp('app-user-paths', `-custom-appname=${appName}`)
       const expected = path.join(app.getPath('appData'), appName)
       expect(output.userCache).to.equal(expected)
       expect(output.userData).to.equal(expected)
