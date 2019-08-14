@@ -2,6 +2,7 @@ import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as cp from 'child_process'
 import * as path from 'path'
+import * as os from 'os'
 import { app } from 'electron'
 import { emittedOnce } from './events-helpers';
 
@@ -10,15 +11,33 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 
 const fixturesPath = path.join(__dirname, 'fixtures', 'api')
+const defaultAppName = 'app-user-paths'
 
 describe('app user paths module', () => {
 
-  describe('app cache customization', () => {
+  describe('app paths customization', () => {
     it('by default', async () => {
       const output = await runTestApp('app-user-paths', '-default')
-      const expected = path.join(app.getPath('appData'), 'app-user-paths')
-      expect(output.userCache).to.not.equal(expected)
-      expect(output.userData).to.not.equal(expected)
+      const expected = path.join(app.getPath('appData'), defaultAppName)
+      expect(output.userCache).to.equal(expected)
+      expect(output.userData).to.equal(expected)
+    })
+
+    it('customize app name', async () => {
+      const appName = 'myAppName'
+      const output = await runTestApp('app-user-paths', `-custom-${appName}`)
+      const expected = path.join(app.getPath('appData'), appName)
+      expect(output.userCache).to.equal(expected)
+      expect(output.userData).to.equal(expected)
+    })
+
+    it('customize appData', async () => {
+      const appdata = path.join(os.tmpdir(), 'myappdata')
+      const output = await runTestApp('app-user-paths', `-custom-appdata=${appdata}`)
+      const expected = path.join(app.getPath('appData'), defaultAppName)
+      expect(output.appData).to.equal(appdata)
+      expect(output.userCache).to.equal(expected)
+      expect(output.userData).to.equal(expected)
     })
   })
 
