@@ -12,8 +12,10 @@
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
@@ -30,6 +32,40 @@ struct Converter<URLPattern> {
       return false;
     *out = URLPattern(URLPattern::SCHEME_ALL);
     return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
+  }
+};
+
+template <>
+struct Converter<content::ResourceType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::ResourceType type) {
+    const char* result;
+    switch (type) {
+      case content::ResourceType::kMainFrame:
+        result = "mainFrame";
+        break;
+      case content::ResourceType::kSubFrame:
+        result = "subFrame";
+        break;
+      case content::ResourceType::kStylesheet:
+        result = "stylesheet";
+        break;
+      case content::ResourceType::kScript:
+        result = "script";
+        break;
+      case content::ResourceType::kImage:
+        result = "image";
+        break;
+      case content::ResourceType::kObject:
+        result = "object";
+        break;
+      case content::ResourceType::kXhr:
+        result = "xhr";
+        break;
+      default:
+        result = "other";
+    }
+    return StringToV8(isolate, result);
   }
 };
 
@@ -60,6 +96,64 @@ bool MatchesFilterCondition(extensions::WebRequestInfo* info,
       return true;
   }
   return false;
+}
+
+// Overloaded by multiple types to fill the |details| object.
+void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
+  details->Set("id", info->id);
+  details->Set("url", info->url);
+  details->Set("method", info->method);
+  details->Set("timestamp", base::Time::Now().ToDoubleT() * 1000);
+  if (!info->response_ip.empty())
+    details->Set("ip", info->response_ip);
+  if (info->type.has_value())
+    details->Set("resourceType", info->type.value());
+  else
+    details->Set("resourceType", base::StringPiece("other"));
+  if (info->response_headers) {
+    details->Set("fromCache", info->response_from_cache);
+    details->Set("responseHeaders", info->response_headers.get());
+    details->Set("statusLine", info->response_headers->GetStatusLine());
+    details->Set("statusCode", info->response_headers->response_code());
+  }
+
+  auto* web_contents = content::WebContents::FromRenderFrameHost(
+      content::RenderFrameHost::FromID(info->render_process_id,
+                                       info->frame_id));
+  int32_t id = api::WebContents::GetIDFromWrappedClass(web_contents);
+  // id must be greater than zero.
+  if (id > 0)
+    details->Set("webContentsId", id);
+}
+
+void ToDictionary(gin::Dictionary* details,
+                  const network::ResourceRequest& request) {
+  details->Set("referrer", request.referrer);
+}
+
+void ToDictionary(gin::Dictionary* details,
+                  const net::HttpRequestHeaders& headers) {
+  details->Set("requestHeaders", headers);
+}
+
+void ToDictionary(gin::Dictionary* details, const GURL& location) {
+  details->Set("redirectURL", location);
+}
+
+void ToDictionary(gin::Dictionary* details, int net_error) {
+  details->Set("error", net::ErrorToString(net_error));
+}
+
+// Helper function to fill |details| with arbitrary |args|.
+template <typename Arg>
+void FillDetails(gin::Dictionary* details, Arg arg) {
+  ToDictionary(details, arg);
+}
+
+template <typename Arg, typename... Args>
+void FillDetails(gin::Dictionary* details, Arg arg, Args... args) {
+  ToDictionary(details, arg);
+  FillDetails(details, args...);
 }
 
 }  // namespace
@@ -118,8 +212,8 @@ int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
                                   GURL* new_url) {
-  return HandleResponseEvent(kOnBeforeRequest, info, request,
-                             std::move(callback), new_url);
+  return HandleResponseEvent(kOnBeforeRequest, info, std::move(callback),
+                             request, new_url);
 }
 
 int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
@@ -127,10 +221,10 @@ int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
                                       BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
   return HandleResponseEvent(
-      kOnBeforeSendHeaders, info, request,
+      kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
-      headers, *headers);
+      request, headers, *headers);
 }
 
 int WebRequestNS::OnHeadersReceived(
@@ -140,8 +234,8 @@ int WebRequestNS::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  return HandleResponseEvent(kOnHeadersReceived, info, request,
-                             std::move(callback), original_response_headers,
+  return HandleResponseEvent(kOnHeadersReceived, info, std::move(callback),
+                             request, original_response_headers,
                              override_response_headers,
                              allowed_unsafe_redirect_url);
 }
@@ -211,32 +305,30 @@ void WebRequestNS::SetListener(Event event,
 
 template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
-                                     extensions::WebRequestInfo* info,
-                                     const network::ResourceRequest& request,
+                                     extensions::WebRequestInfo* request_info,
                                      Args... args) {
-  const auto& listener = simple_listeners_[event];
-  if (!MatchesFilterCondition(info, listener.url_patterns))
+  const auto& info = simple_listeners_[event];
+  if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
 
-  // TODO(zcbenz): Invoke the listener.
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope handle_scope(isolate);
+  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, args...);
+  info.listener.Run(gin::ConvertToV8(isolate, details));
 }
 
 template <typename Out, typename... Args>
 int WebRequestNS::HandleResponseEvent(ResponseEvent event,
-                                      extensions::WebRequestInfo* info,
-                                      const network::ResourceRequest& request,
+                                      extensions::WebRequestInfo* request_info,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
-  const auto& listener = response_listeners_[event];
-  if (!MatchesFilterCondition(info, listener.url_patterns))
+  const auto& info = response_listeners_[event];
+  if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
 
   // TODO(zcbenz): Invoke the listener.
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::HandleScope handle_scope(isolate);
   return net::OK;
 }
 

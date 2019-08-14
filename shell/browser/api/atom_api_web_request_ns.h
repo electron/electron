@@ -115,12 +115,10 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   template <typename... Args>
   void HandleSimpleEvent(SimpleEvent event,
                          extensions::WebRequestInfo* info,
-                         const network::ResourceRequest& request,
                          Args... args);
   template <typename Out, typename... Args>
   int HandleResponseEvent(ResponseEvent event,
                           extensions::WebRequestInfo* info,
-                          const network::ResourceRequest& request,
                           net::CompletionOnceCallback callback,
                           Out out,
                           Args... args);

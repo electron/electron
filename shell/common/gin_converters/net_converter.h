@@ -61,6 +61,12 @@ struct Converter<net::HttpResponseHeaders*> {
 };
 
 template <>
+struct Converter<net::HttpRequestHeaders> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::HttpRequestHeaders& headers);
+};
+
+template <>
 struct Converter<network::ResourceRequest> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const network::ResourceRequest& val);

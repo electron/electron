@@ -226,6 +226,16 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
 }
 
 // static
+v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
+    v8::Isolate* isolate,
+    const net::HttpRequestHeaders& val) {
+  gin::Dictionary headers(isolate, v8::Object::New(isolate));
+  for (net::HttpRequestHeaders::Iterator it(val); it.GetNext();)
+    headers.Set(it.name(), it.value());
+  return ConvertToV8(isolate, headers);
+}
+
+// static
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
@@ -233,10 +243,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
   dict.Set("method", val.method);
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
-  gin::Dictionary headers(isolate, v8::Object::New(isolate));
-  for (net::HttpRequestHeaders::Iterator it(val.headers); it.GetNext();)
-    headers.Set(it.name(), it.value());
-  dict.Set("headers", headers);
+  dict.Set("headers", val.headers);
   if (val.request_body) {
     const auto& elements = *val.request_body->elements();
     v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
