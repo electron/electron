@@ -14,6 +14,7 @@
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
+#include "ui/aura/window.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
@@ -77,7 +78,8 @@ class FileChooserDialog {
     if (parent_) {
       parent_->SetEnabled(false);
       if (GTK_IS_WIDGET(dialog_))
-        libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+        libgtkui::SetGtkTransientForAura(GTK_WIDGET(dialog_),
+                                         parent_->GetNativeWindow());
       else
         SetGtkTransientForAura(parent_->GetNativeWindow());
       if (GTK_IS_WINDOW(dialog_)) {
@@ -232,11 +234,6 @@ class FileChooserDialog {
   std::unique_ptr<electron::util::Promise> save_promise_;
   std::unique_ptr<electron::util::Promise> open_promise_;
 
-  // Callback for when we update the preview for the selection.
-  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
-
-  DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
-
   // Sets |dialog| as transient for |parent|, which will keep it on top and
   // center it above |parent|. Do nothing if |parent| is nullptr.
   void SetGtkTransientForAura(aura::Window* parent) {
@@ -246,9 +243,15 @@ class FileChooserDialog {
     void (*dl_gtk_native_dialog_set_transient_for)(void*, GtkWindow*) = NULL;
     g_module_symbol(
         gtk_module_, "gtk_native_dialog_set_transient_for",
-        reinterpret_cast<void**>(&dl_gtk_native_dialog_set_transient_for);
-    dl_gtk_native_dialog_set_transient_for(dialog_, reinterpret_cast<GtkWindow*>(parent));
+        reinterpret_cast<void**>(&dl_gtk_native_dialog_set_transient_for));
+    dl_gtk_native_dialog_set_transient_for(
+        dialog_, reinterpret_cast<GtkWindow*>(parent));
   }
+
+  // Callback for when we update the preview for the selection.
+  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
+
+  DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkFileChooser* widget,
@@ -336,7 +339,7 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 
 }  // namespace
 
-void ShowFileDialog(FileChooserDialog& dialog) {
+void ShowFileDialog(const FileChooserDialog& dialog) {
   if (GTK_IS_WIDGET(dialog.dialog())) {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
   } else {
@@ -347,7 +350,7 @@ void ShowFileDialog(FileChooserDialog& dialog) {
   }
 }
 
-int RunFileDialog(FileChooserDialog& dialog) {
+int RunFileDialog(const FileChooserDialog& dialog) {
   int response = 0;
   if (GTK_IS_WIDGET(dialog.dialog())) {
     response = gtk_dialog_run(GTK_DIALOG(dialog.dialog()));
@@ -371,7 +374,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 
   ShowFileDialog(open_dialog);
 
-  const int response = RunFileDialog(save_dialog);
+  const int response = RunFileDialog(open_dialog);
   if (response == GTK_RESPONSE_ACCEPT) {
     *paths = open_dialog.GetFileNames();
     return true;
