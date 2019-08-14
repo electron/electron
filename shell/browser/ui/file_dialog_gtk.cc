@@ -4,8 +4,6 @@
 
 #include "shell/browser/ui/file_dialog.h"
 
-#include <glib/gi18n.h>  // _() macro
-
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -31,11 +29,13 @@ namespace {
 // internationalized strings, but the "_" in these strings is significant: it's
 // the keyboard shortcut to select these actions.  TODO(thomasanderson): Provide
 // internationalized strings when GTK provides support for it.
+const char kOkLabel[] = "_Ok";
 const char kCancelLabel[] = "_Cancel";
 const char kOpenLabel[] = "_Open";
 const char kSaveLabel[] = "_Save";
 #else
 G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+const char* const kOkLabel = GTK_STOCK_OK;
 const char* const kCancelLabel = GTK_STOCK_CANCEL;
 const char* const kOpenLabel = GTK_STOCK_OPEN;
 const char* const kSaveLabel = GTK_STOCK_SAVE;
@@ -66,18 +66,18 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = _("_OK");
+    const char* confirm_text = kOkLabel;
 
     if (!settings.button_label.empty())
       confirm_text = settings.button_label.c_str();
     else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = _(kOpenLabel);
+      confirm_text = kOpenLabel;
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = _(kSaveLabel);
+      confirm_text = kSaveLabel;
 
     dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(), NULL, action, _(kCancelLabel),
-        GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL);
+        settings.title.c_str(), NULL, action, kCancelLabel, GTK_RESPONSE_CANCEL,
+        confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
       libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
