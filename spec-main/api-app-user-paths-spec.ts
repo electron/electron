@@ -31,8 +31,13 @@ describe('app user paths module', () => {
       const appdata = path.join(os.tmpdir(), 'myappdata')
       const output = await runTestApp('app-user-paths', `-custom-appdata=${appdata}`)
       expect(output.appData).to.equal(appdata)
-      expect(output.userCache).to.equal(path.join(output.appData, defaultAppName))
-      expect(output.userData).to.equal(path.join(output.appCache, defaultAppName))
+      expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
+      // On Windows, 'cache' in the same as appData
+      if (process.platform === 'win32') {
+        expect(output.userCache).to.contain(appdata);
+        expect(output.appCache).to.contain(appdata);
+      }
+      expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
     })
   })
 
