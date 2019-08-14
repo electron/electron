@@ -123,8 +123,11 @@ int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* request,
 int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* request,
                                       BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
-  // TODO(zcbenz): Figure out how to handle this generally.
-  return net::OK;
+  return HandleResponseEvent(
+      kOnBeforeSendHeaders, request,
+      base::BindOnce(std::move(callback), std::set<std::string>(),
+                     std::set<std::string>()),
+      headers, *headers);
 }
 
 int WebRequestNS::OnHeadersReceived(
