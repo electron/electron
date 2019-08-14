@@ -26,6 +26,7 @@
 #if defined(OS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
 #include "chrome/services/printing/printing_service.h"
+#include "chrome/services/printing/public/mojom/printing_service.mojom.h"
 #include "chrome/utility/printing_handler.h"
 #endif  // defined(OS_WIN)
 
