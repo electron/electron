@@ -1465,11 +1465,11 @@ Opens the developer tools for the shared worker context.
 
 * `workerId` String
 
-Inspects the shared worker based on it's id.
+Inspects the shared worker based on its ID.
 
 #### `contents.getAllSharedWorkers()`
 
-Returns `WorkerInfo[]` - Vector of WorkerInfo objects of sharedworkers.
+Returns `WorkerInfo[]` - An array of WorkerInfo objects of sharedworkers.
 
 #### `contents.inspectServiceWorker()`
 
