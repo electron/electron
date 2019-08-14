@@ -1221,13 +1221,13 @@ describe('BrowserWindow module', () => {
         }
       })
 
-      it('make window with initial opacity', () => {
-        const w = new BrowserWindow({ show: false, opacity: 0.5 })
+      it('makes a window with initial opacity', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, opacity: 0.5 })
         assert.strictEqual(w.getOpacity(), 0.5)
       })
 
       it('allows setting the opacity', () => {
-        const w = new BrowserWindow({ show: false })
         assert.doesNotThrow(() => {
           w.setOpacity(0.0)
           assert.strictEqual(w.getOpacity(), 0.0)
@@ -1239,7 +1239,6 @@ describe('BrowserWindow module', () => {
       })
 
       it('clamps opacity to [0.0...1.0]', () => {
-        const w = new BrowserWindow({ show: false, opacity: 0.5 })
         w.setOpacity(100)
         assert.strictEqual(w.getOpacity(), 1.0)
         w.setOpacity(-100)
@@ -1255,7 +1254,8 @@ describe('BrowserWindow module', () => {
       })
 
       it('sets 1 regardless of parameter', () => {
-        const w = new BrowserWindow({ show: false })
+        w.destroy()
+        w = new BrowserWindow({ show: false, opacity: 0.5 })
         w.setOpacity(0)
         assert.strictEqual(w.getOpacity(), 1.0)
         w.setOpacity(0.5)
