@@ -157,6 +157,36 @@ void FillDetails(gin::Dictionary* details, Arg arg, Args... args) {
   FillDetails(details, args...);
 }
 
+// Fill the native types with the result from the response object.
+void ReadFromResponse(v8::Isolate* isolate,
+                      gin::Dictionary* response,
+                      GURL* new_location) {
+  response->Get("redirectURL", new_location);
+}
+
+void ReadFromResponse(v8::Isolate* isolate,
+                      gin::Dictionary* response,
+                      net::HttpRequestHeaders* headers) {
+  headers->Clear();
+  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, *response), headers);
+}
+
+void ReadFromResponse(v8::Isolate* isolate,
+                      gin::Dictionary* response,
+                      const std::pair<scoped_refptr<net::HttpResponseHeaders>*,
+                                      const std::string>& headers) {
+  std::string status_line;
+  if (!response->Get("statusLine", &status_line))
+    status_line = headers.second;
+  v8::Local<v8::Value> value;
+  if (response->Get("responseHeaders", &value)) {
+    *headers.first = new net::HttpResponseHeaders("");
+    (*headers.first)->ReplaceStatusLine(status_line);
+    gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
+                                                      (*headers.first).get());
+  }
+}
+
 }  // namespace
 
 gin::WrapperInfo WebRequestNS::kWrapperInfo = {gin::kEmbedderNativeGin};
@@ -355,8 +385,20 @@ void WebRequestNS::OnListenerResult(uint64_t id,
   if (!base::Contains(callbacks_, id))
     return;
 
-  std::move(callbacks_[id]).Run(net::ERR_BLOCKED_BY_CLIENT);
-  callbacks_.erase(id);
+  int result = net::OK;
+  if (response->IsObject()) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    gin::Dictionary dict(isolate, response.As<v8::Object>());
+
+    bool cancel = false;
+    dict.Get("cancel", &cancel);
+    if (cancel)
+      result = net::ERR_BLOCKED_BY_CLIENT;
+    else
+      ReadFromResponse(isolate, &dict, out);
+  }
+
+  std::move(callbacks_[id]).Run(result);
 }
 
 // static

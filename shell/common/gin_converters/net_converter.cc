@@ -236,6 +236,22 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 }
 
 // static
+bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                net::HttpRequestHeaders* out) {
+  base::DictionaryValue dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
+    if (it.value().is_string()) {
+      std::string value = it.value().GetString();
+      out->SetHeader(it.key(), value);
+    }
+  }
+  return true;
+}
+
+// static
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
