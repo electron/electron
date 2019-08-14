@@ -614,7 +614,7 @@ Returns `String` - The current application directory.
 Returns `String` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
 
-If `app.getPath('logs')` is called without called `app.setAppLogsPath()` being called first, a default log directory will be used equivalent to calling `app.setAppLogsPath()` without a `path` parameter.
+If `app.getPath('logs')` is called without called `app.setAppLogsPath()` being called first, a default log directory will be created equivalent to calling `app.setAppLogsPath()` without a `path` parameter.
 
 ### `app.getFileIcon(path[, options])`
 
