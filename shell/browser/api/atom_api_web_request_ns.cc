@@ -14,6 +14,7 @@
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
+#include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
 
@@ -49,13 +50,13 @@ struct UserData : public base::SupportsUserData::Data {
 };
 
 // Test whether the URL of |request| matches |patterns|.
-bool MatchesFilterCondition(extensions::WebRequestInfo* request,
+bool MatchesFilterCondition(extensions::WebRequestInfo* info,
                             const std::set<URLPattern>& patterns) {
   if (patterns.empty())
     return true;
 
   for (const auto& pattern : patterns) {
-    if (pattern.MatchesURL(request->url))
+    if (pattern.MatchesURL(info->url))
       return true;
   }
   return false;
@@ -113,57 +114,65 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
-int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* request,
+int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
+                                  const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
                                   GURL* new_url) {
-  return HandleResponseEvent(kOnBeforeRequest, request, std::move(callback),
-                             new_url);
+  return HandleResponseEvent(kOnBeforeRequest, info, request,
+                             std::move(callback), new_url);
 }
 
-int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* request,
+int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
+                                      const network::ResourceRequest& request,
                                       BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
   return HandleResponseEvent(
-      kOnBeforeSendHeaders, request,
+      kOnBeforeSendHeaders, info, request,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
       headers, *headers);
 }
 
 int WebRequestNS::OnHeadersReceived(
-    extensions::WebRequestInfo* request,
+    extensions::WebRequestInfo* info,
+    const network::ResourceRequest& request,
     net::CompletionOnceCallback callback,
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  return HandleResponseEvent(kOnHeadersReceived, request, std::move(callback),
-                             original_response_headers,
+  return HandleResponseEvent(kOnHeadersReceived, info, request,
+                             std::move(callback), original_response_headers,
                              override_response_headers,
                              allowed_unsafe_redirect_url);
 }
 
-void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* request,
+void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* info,
+                                 const network::ResourceRequest& request,
                                  const net::HttpRequestHeaders& headers) {
-  HandleSimpleEvent(kOnSendHeaders, request, headers);
+  HandleSimpleEvent(kOnSendHeaders, info, request, headers);
 }
 
-void WebRequestNS::OnBeforeRedirect(extensions::WebRequestInfo* request,
+void WebRequestNS::OnBeforeRedirect(extensions::WebRequestInfo* info,
+                                    const network::ResourceRequest& request,
                                     const GURL& new_location) {
-  HandleSimpleEvent(kOnBeforeRedirect, request, new_location);
+  HandleSimpleEvent(kOnBeforeRedirect, info, request, new_location);
 }
 
-void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* request) {
-  HandleSimpleEvent(kOnResponseStarted, request);
+void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* info,
+                                     const network::ResourceRequest& request) {
+  HandleSimpleEvent(kOnResponseStarted, info, request);
 }
 
-void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* request,
+void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* info,
+                                   const network::ResourceRequest& request,
                                    int net_error) {
-  HandleSimpleEvent(kOnErrorOccurred, request, net_error);
+  HandleSimpleEvent(kOnErrorOccurred, info, request, net_error);
 }
 
-void WebRequestNS::OnCompleted(extensions::WebRequestInfo* request,
+void WebRequestNS::OnCompleted(extensions::WebRequestInfo* info,
+                               const network::ResourceRequest& request,
                                int net_error) {
-  HandleSimpleEvent(kOnCompleted, request, net_error);
+  HandleSimpleEvent(kOnCompleted, info, request, net_error);
 }
 
 template <WebRequestNS::SimpleEvent event>
@@ -202,26 +211,32 @@ void WebRequestNS::SetListener(Event event,
 
 template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
-                                     extensions::WebRequestInfo* request,
+                                     extensions::WebRequestInfo* info,
+                                     const network::ResourceRequest& request,
                                      Args... args) {
-  const auto& info = simple_listeners_[event];
-  if (!MatchesFilterCondition(request, info.url_patterns))
+  const auto& listener = simple_listeners_[event];
+  if (!MatchesFilterCondition(info, listener.url_patterns))
     return;
 
   // TODO(zcbenz): Invoke the listener.
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
 }
 
 template <typename Out, typename... Args>
 int WebRequestNS::HandleResponseEvent(ResponseEvent event,
-                                      extensions::WebRequestInfo* request,
+                                      extensions::WebRequestInfo* info,
+                                      const network::ResourceRequest& request,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
-  const auto& info = response_listeners_[event];
-  if (!MatchesFilterCondition(request, info.url_patterns))
+  const auto& listener = response_listeners_[event];
+  if (!MatchesFilterCondition(info, listener.url_patterns))
     return net::OK;
 
   // TODO(zcbenz): Invoke the listener.
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
   return net::OK;
 }
 

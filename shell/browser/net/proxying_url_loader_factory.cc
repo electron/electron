@@ -105,7 +105,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
   }
   redirect_url_ = GURL();
   int result = factory_->web_request_api()->OnBeforeRequest(
-      &info_.value(), continuation, &redirect_url_);
+      &info_.value(), request_, continuation, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     // The request was cancelled synchronously. Dispatch an error notification
     // and terminate the request.
@@ -259,7 +259,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
   }
 
   target_client_->OnComplete(status);
-  factory_->web_request_api()->OnCompleted(&info_.value(), status.error_code);
+  factory_->web_request_api()->OnCompleted(&info_.value(), request_,
+                                           status.error_code);
 
   // Deletes |this|.
   factory_->RemoveRequest(network_service_request_id_, request_id_);
@@ -318,7 +319,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
       &InProgressRequest::ContinueToSendHeaders, weak_factory_.GetWeakPtr());
   // Note: In Electron onBeforeSendHeaders is called for all protocols.
   int result = factory_->web_request_api()->OnBeforeSendHeaders(
-      &info_.value(), continuation, &request_.headers);
+      &info_.value(), request_, continuation, &request_.headers);
 
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     // The request was cancelled synchronously. Dispatch an error notification
@@ -385,7 +386,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
   // Note: In Electron onSendHeaders is called for all protocols.
-  factory_->web_request_api()->OnSendHeaders(&info_.value(), request_.headers);
+  factory_->web_request_api()->OnSendHeaders(&info_.value(), request_,
+                                             request_.headers);
 
   if (!current_request_uses_header_client_)
     ContinueToStartRequest(net::OK);
@@ -498,7 +500,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
 
   proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
-  factory_->web_request_api()->OnResponseStarted(&info_.value());
+  factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
   target_client_->OnReceiveResponse(current_response_);
 }
 
@@ -515,7 +517,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
   if (proxied_client_binding_.is_bound())
     proxied_client_binding_.ResumeIncomingMethodCallProcessing();
 
-  factory_->web_request_api()->OnBeforeRedirect(&info_.value(),
+  factory_->web_request_api()->OnBeforeRedirect(&info_.value(), request_,
                                                 redirect_info.new_url);
   target_client_->OnReceiveRedirect(redirect_info, current_response_);
   request_.url = redirect_info.new_url;
@@ -610,8 +612,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::
       base::AdaptCallbackForRepeating(std::move(continuation));
   DCHECK(info_.has_value());
   int result = factory_->web_request_api()->OnHeadersReceived(
-      &info_.value(), copyable_callback, current_response_.headers.get(),
-      &override_headers_, &redirect_url_);
+      &info_.value(), request_, copyable_callback,
+      current_response_.headers.get(), &override_headers_, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnRequestError(network::URLLoaderCompletionStatus(result));
     return;
@@ -636,7 +638,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
     const network::URLLoaderCompletionStatus& status) {
   if (!request_completed_) {
     target_client_->OnComplete(status);
-    factory_->web_request_api()->OnErrorOccurred(&info_.value(),
+    factory_->web_request_api()->OnErrorOccurred(&info_.value(), request_,
                                                  status.error_code);
   }
 
