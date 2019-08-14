@@ -1,9 +1,13 @@
 const { app } = require('electron')
 
+
 function exitApp() {
   const payload = {
+    'custom-appname': app.commandLine.getSwitchValue('custom-appname'),
+    'custom-appdata': app.commandLine.getSwitchValue('custom-appdata'),
     appName: app.name,
     appData: app.getPath('appData'),
+    appCache: app.getPath('cache'),
     userCache: app.getPath('userCache'),
     userData: app.getPath('userData')
   }
