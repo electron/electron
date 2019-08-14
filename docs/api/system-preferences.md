@@ -27,27 +27,33 @@ Returns:
 
 * `event` Event
 
-### Event: 'inverted-color-scheme-changed' _Windows_
+### Event: 'inverted-color-scheme-changed' _Windows_ _Deprecated_
 
 Returns:
 
 * `event` Event
 * `invertedColorScheme` Boolean - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is being used, `false` otherwise.
 
-### Event: 'high-contrast-color-scheme-changed' _Windows_
+**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
+
+### Event: 'high-contrast-color-scheme-changed' _Windows_ _Deprecated_
 
 Returns:
 
 * `event` Event
 * `highContrastColorScheme` Boolean - `true` if a high contrast theme is being used, `false` otherwise.
 
+**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
+
 ## Methods
 
-### `systemPreferences.isDarkMode()` _macOS_ _Windows_
+### `systemPreferences.isDarkMode()` _macOS_ _Windows_ _Deprecated_
 
 Returns `Boolean` - Whether the system is in Dark Mode.
 
 **Note:** On macOS 10.15 Catalina in order for this API to return the correct value when in the "automatic" dark mode setting you must either have `NSRequiresAquaSystemAppearance=false` in your `Info.plist` or be on Electron `>=7.0.0`.  See the [dark mode guide](../tutorial/mojave-dark-mode-guide.md) for more information.
+
+**Deprecated:** Should use the new [`nativeTheme.shouldUseDarkColors`](native-theme.md#nativethemeshouldusedarkcolors-readonly) API.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
@@ -342,13 +348,17 @@ Returns `String` - The standard system color formatted as `#RRGGBBAA`.
 
 Returns one of several standard system colors that automatically adapt to vibrancy and changes in accessibility settings like 'Increase contrast' and 'Reduce transparency'. See [Apple Documentation](https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#system-colors) for  more details.
 
-### `systemPreferences.isInvertedColorScheme()` _Windows_
+### `systemPreferences.isInvertedColorScheme()` _Windows_ _Deprecated_
 
 Returns `Boolean` - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is active, `false` otherwise.
 
-### `systemPreferences.isHighContrastColorScheme()` _macOS_ _Windows_
+**Deprecated:** Should use the new [`nativeTheme.shouldUseInvertedColorScheme`](native-theme.md#nativethemeshoulduseinvertedcolorscheme-macos-windows-readonly) API.
+
+### `systemPreferences.isHighContrastColorScheme()` _macOS_ _Windows_ _Deprecated_
 
 Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
+
+**Depreacted:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
 
 ### `systemPreferences.getEffectiveAppearance()` _macOS_
 
@@ -365,7 +375,9 @@ using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode
 packager option to `true`.  See the [Electron Packager API](https://github.com/electron/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 for more details.
 
-### `systemPreferences.getAppLevelAppearance()` _macOS_
+**[Deprecated](modernization/property-updates.md)**
+
+### `systemPreferences.getAppLevelAppearance()` _macOS_ _Deprecated_
 
 Returns `String` | `null` - Can be `dark`, `light` or `unknown`.
 
@@ -375,7 +387,7 @@ You can use the `setAppLevelAppearance` API to set this value.
 
 **[Deprecated](modernization/property-updates.md)**
 
-### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_
+### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_ _Deprecated_
 
 * `appearance` String | null - Can be `dark` or `light`
 
@@ -450,10 +462,25 @@ Returns an object with system animation settings.
 
 ### `systemPreferences.appLevelAppearance` _macOS_
 
-A `String` property that determines the macOS appearance setting for
+A `String` property that can be `dark`, `light` or `unknown`. It determines the macOS appearance setting for
 your application. This maps to values in: [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc). Setting this will override the
 system default as well as the value of `getEffectiveAppearance`.
 
 Possible values that can be set are `dark` and `light`, and possible return values are `dark`, `light`, and `unknown`.
 
 This property is only available on macOS 10.14 Mojave or newer.
+
+### `systemPreferences.effectiveAppearance` _macOS_ _Readonly_
+
+A `String` property that can be `dark`, `light` or `unknown`.
+
+Returns the macOS appearance setting that is currently applied to your application,
+maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
+
+Please note that until Electron is built targeting the 10.14 SDK, your application's
+`effectiveAppearance` will default to 'light' and won't inherit the OS preference. In
+the interim in order for your application to inherit the OS preference you must set the
+`NSRequiresAquaSystemAppearance` key in your apps `Info.plist` to `false`.  If you are
+using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode`
+packager option to `true`.  See the [Electron Packager API](https://github.com/electron/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
+for more details.
