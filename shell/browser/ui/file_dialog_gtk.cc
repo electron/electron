@@ -4,8 +4,6 @@
 
 #include "shell/browser/ui/file_dialog.h"
 
-#include <glib/gi18n.h>  // _() macro
-
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -13,6 +11,8 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
+#include "ui/base/l10n/l10n_util.h"
+#include "ui/strings/grit/ui_strings.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
@@ -47,17 +47,21 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = _("_OK");
+    const char* confirm_text = l10n_util::GetStringUTF8(IDS_APP_OK).c_str();
 
-    if (!settings.button_label.empty())
+    if (!settings.button_label.empty()) {
       confirm_text = settings.button_label.c_str();
-    else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = _("_Save");
-    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = _("_Open");
+    } else if (action == GTK_FILE_CHOOSER_ACTION_SAVE) {
+      confirm_text = l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE).c_str();
+    } else if (action == GTK_FILE_CHOOSER_ACTION_OPEN) {
+      confirm_text =
+          l10n_util::GetStringUTF8(IDS_SEND_TAB_TO_SELF_INFOBAR_MESSAGE_URL)
+              .c_str();
+    }
 
     dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(), NULL, action, _("_Cancel"), GTK_RESPONSE_CANCEL,
+        settings.title.c_str(), NULL, action,
+        l10n_util::GetStringUTF8(IDS_APP_CANCEL).c_str(), GTK_RESPONSE_CANCEL,
         confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
