@@ -199,7 +199,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   params.wm_class_class = name;
 #endif
 
-  widget()->Init(params);
+  widget()->Init(std::move(params));
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);

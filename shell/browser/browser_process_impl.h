@@ -92,7 +92,6 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::TabManager* GetTabManager() override;
   shell_integration::DefaultWebClientState CachedDefaultWebClientState()
       override;
-  prefs::InProcessPrefServiceFactory* pref_service_factory() const override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(

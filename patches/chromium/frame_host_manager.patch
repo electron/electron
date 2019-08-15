@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..2702cab24f86d850829709bbc664695432bb9c0e 100644
+index b95ab6369324c29763d4320dcc4b16820a0e5e95..a0179277fe51d336cbcb19d76e28d2111926184a 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2180,6 +2180,21 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2228,6 +2228,21 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      const NavigationRequest& request) {
@@ -67,7 +67,7 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..2702cab24f86d850829709bbc6646954
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2217,6 +2232,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2265,6 +2280,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -127,7 +127,7 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..2702cab24f86d850829709bbc6646954
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -2228,23 +2296,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2276,23 +2344,28 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -159,7 +159,7 @@ index 37593f39cecfe34fcbb7f0e9911175facdd87ea8..2702cab24f86d850829709bbc6646954
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index a805b110c378d0584a361f3a499be57c7826a63a..00c1f807033a76390c12335e5a647a6f951372c2 100644
+index 47067d774c0490e3f0daf1f0d7ee60e4f51fc110..54aab183e80538173045c68d539c197af8b8d063 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -367,6 +367,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
@@ -186,12 +186,12 @@ index 1edb9fd6b0c383f291735dd1a952fcb7b17cc87f..23967f040eb346be265faa2a92562e1f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 746f5893f95b940ac68610d9655aa46a3b85430a..d4b6e0d48697990c2bcf3cb992661e8253683911 100644
+index 4d4710e8c5382ac9391bb693dc1fd42258efd181..45cf6657ea2055c45ff14669a0e09efc84efd133 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -51,6 +51,21 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
-                                                          handle);
- }
+@@ -44,6 +44,21 @@
+ 
+ namespace content {
  
 +bool ContentBrowserClient::CanUseCustomSiteInstance() {
 +  return false;
@@ -212,10 +212,10 @@ index 746f5893f95b940ac68610d9655aa46a3b85430a..d4b6e0d48697990c2bcf3cb992661e82
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3946cdec768f9f26a6710967f664b411012ef260..328580ad4a205878ee81b8da2c44c79fd42559c5 100644
+index 897c2c1435a8c1a495aa84c928c360d74218bfa7..8b2b21f2ca7306751e123ed31198a2c5c38a4b5c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -208,8 +208,45 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -204,8 +204,45 @@ struct WebPreferences;
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:
