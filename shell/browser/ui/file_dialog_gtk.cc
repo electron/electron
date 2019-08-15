@@ -11,8 +11,6 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
-#include "ui/base/l10n/l10n_util.h"
-#include "ui/strings/grit/ui_strings.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
@@ -22,6 +20,27 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
+
+// Copied from L40-L55 in
+// https://cs.chromium.org/chromium/src/chrome/browser/ui/libgtkui/select_file_dialog_impl_gtk.cc
+#if GTK_CHECK_VERSION(3, 90, 0)
+// GTK stock items have been deprecated.  The docs say to switch to using the
+// strings "_Open", etc.  However this breaks i18n.  We could supply our own
+// internationalized strings, but the "_" in these strings is significant: it's
+// the keyboard shortcut to select these actions.  TODO(thomasanderson): Provide
+// internationalized strings when GTK provides support for it.
+const char kOkLabel[] = "_Ok";
+const char kCancelLabel[] = "_Cancel";
+const char kOpenLabel[] = "_Open";
+const char kSaveLabel[] = "_Save";
+#else
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+const char* const kOkLabel = GTK_STOCK_OK;
+const char* const kCancelLabel = GTK_STOCK_CANCEL;
+const char* const kOpenLabel = GTK_STOCK_OPEN;
+const char* const kSaveLabel = GTK_STOCK_SAVE;
+G_GNUC_END_IGNORE_DEPRECATIONS
+#endif
 
 static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
@@ -47,21 +66,17 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = l10n_util::GetStringUTF8(IDS_APP_OK).c_str();
+    const char* confirm_text = kOkLabel;
 
-    if (!settings.button_label.empty()) {
+    if (!settings.button_label.empty())
       confirm_text = settings.button_label.c_str();
-    } else if (action == GTK_FILE_CHOOSER_ACTION_SAVE) {
-      confirm_text = l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE).c_str();
-    } else if (action == GTK_FILE_CHOOSER_ACTION_OPEN) {
-      confirm_text =
-          l10n_util::GetStringUTF8(IDS_SEND_TAB_TO_SELF_INFOBAR_MESSAGE_URL)
-              .c_str();
-    }
+    else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+      confirm_text = kOpenLabel;
+    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
+      confirm_text = kSaveLabel;
 
     dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(), NULL, action,
-        l10n_util::GetStringUTF8(IDS_APP_CANCEL).c_str(), GTK_RESPONSE_CANCEL,
+        settings.title.c_str(), NULL, action, kCancelLabel, GTK_RESPONSE_CANCEL,
         confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
