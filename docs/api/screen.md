@@ -14,7 +14,7 @@ property, so writing `let { screen } = require('electron')` will not work.
 
 An example of creating a window that fills the whole screen:
 
-```javascript fiddle='screen/fit-screen'
+```javascript fiddle='docs/fiddles/screen/fit-screen'
 const { app, BrowserWindow, screen } = require('electron')
 
 let win
