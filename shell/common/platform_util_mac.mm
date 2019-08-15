@@ -115,16 +115,35 @@ void OpenExternal(const GURL& url,
                  });
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path) {
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
-  BOOL status = [[NSFileManager defaultManager]
-        trashItemAtURL:[NSURL fileURLWithPath:path_string]
-      resultingItemURL:nil
-                 error:nil];
-  if (!path_string || !status)
+  if (!path_string) {
+    LOG(WARNING) << "Invalid file path " << full_path.value();
+    return false;
+  }
+
+  NSURL* url = [NSURL fileURLWithPath:path_string];
+  NSError* err = nil;
+  BOOL did_trash = [[NSFileManager defaultManager] trashItemAtURL:url
+                                                 resultingItemURL:nil
+                                                            error:&err];
+
+  if (delete_on_fail) {
+    // Some volumes may not support a Trash folder or it may be disabled
+    // so these methods will report failure by returning NO or nil and
+    // an NSError with NSFeatureUnsupportedError.
+    // Handle this by deleting the item as a fallback.
+    if (!did_trash && [err code] == NSFeatureUnsupportedError) {
+      did_trash = [[NSFileManager defaultManager] removeItemAtURL:url
+                                                            error:nil];
+    }
+  }
+
+  if (!did_trash)
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
                  << " to trash";
-  return status;
+
+  return did_trash;
 }
 
 void Beep() {

@@ -8,10 +8,10 @@ This allows us to run operations on a created but not yet bootstrapped
 environment such as setting up an InspectorAgent
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5011774be2c5fee910079790feae747fa1785b87..d5cb74025959ad32a6d2e6a914bf99a2b3d7946f 100644
+index 443f49320b2e6720f932fcfcefdbe6e539594964..4d79af9ec2a7b476c5f86f3882f4fb63afafc53e 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -269,7 +269,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+@@ -263,7 +263,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
                                 int argc,
                                 const char* const* argv,
                                 int exec_argc,
@@ -21,7 +21,7 @@ index 5011774be2c5fee910079790feae747fa1785b87..d5cb74025959ad32a6d2e6a914bf99a2
    Isolate* isolate = context->GetIsolate();
    HandleScope handle_scope(isolate);
    Context::Scope context_scope(context);
-@@ -287,9 +288,16 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+@@ -281,9 +282,16 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
                                        Environment::kOwnsProcessState |
                                        Environment::kOwnsInspector));
    env->InitializeLibuv(per_process::v8_is_profiling);
@@ -39,7 +39,7 @@ index 5011774be2c5fee910079790feae747fa1785b87..d5cb74025959ad32a6d2e6a914bf99a2
  
    std::vector<Local<String>> parameters = {
        env->require_string(),
-@@ -302,9 +310,10 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+@@ -296,9 +304,10 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
    if (ExecuteBootstrapper(
            env, "internal/bootstrap/environment", &parameters, &arguments)
            .IsEmpty()) {
@@ -53,7 +53,7 @@ index 5011774be2c5fee910079790feae747fa1785b87..d5cb74025959ad32a6d2e6a914bf99a2
  
  void FreeEnvironment(Environment* env) {
 diff --git a/src/node.h b/src/node.h
-index de007ed97a52c17cff8b8917d25f2383d5bbae6a..cdf96c283dbfb4c763d0b0e21497fc289e28741a 100644
+index c51fb1a6a6e497a091e2ba0b147e3d7b6a4d685c..211f00cca65eeba317a03af36411a19a6befae18 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -330,7 +330,9 @@ NODE_EXTERN Environment* CreateEnvironment(IsolateData* isolate_data,
