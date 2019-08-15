@@ -137,7 +137,7 @@ will be passed via `callback(filename)`.
     inspected only when using `callback`.
   * `checkboxChecked` Boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
-  * `icon` [NativeImage](native-image.md) (optional)
+  * `icon` ([NativeImage](native-image.md) | String) (optional)
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the
