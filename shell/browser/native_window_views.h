@@ -68,6 +68,7 @@ class NativeWindowViews : public NativeWindow,
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
+  bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
   bool IsResizable() override;
   void SetMovable(bool movable) override;
@@ -124,6 +125,7 @@ class NativeWindowViews : public NativeWindow,
 
   bool IsVisibleOnAllWorkspaces() override;
 
+  content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   NativeWindowHandle GetNativeWindowHandle() const override;
 
