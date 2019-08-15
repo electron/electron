@@ -276,9 +276,8 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   // Marking the DelegatedFrameHost as removed from the window hierarchy is
   // necessary to remove all connections to its old ui::Compositor.
   if (is_showing_)
-    // TODO(deermichel): correct or kOther?
     delegated_frame_host_->WasHidden(
-        content::DelegatedFrameHost::HiddenCause::kOccluded);
+        content::DelegatedFrameHost::HiddenCause::kOther);
   delegated_frame_host_->DetachFromCompositor();
 
   delegated_frame_host_.reset(NULL);
