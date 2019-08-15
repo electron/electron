@@ -339,8 +339,7 @@ bool AtomBrowserClient::IsRendererSubFrame(int process_id) const {
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
-    content::RenderProcessHost* host,
-    service_manager::mojom::ServiceRequest* service_request) {
+    content::RenderProcessHost* host) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
@@ -411,7 +410,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
 #endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
                                       ? blink::PreferredColorScheme::kDark
                                       : blink::PreferredColorScheme::kLight;
 
@@ -627,13 +626,12 @@ void AtomBrowserClient::AllowCertificateError(
     const GURL& request_url,
     bool is_main_frame_request,
     bool strict_enforcement,
-    bool expired_previous_decision,
     const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
-    delegate_->AllowCertificateError(
-        web_contents, cert_error, ssl_info, request_url, is_main_frame_request,
-        strict_enforcement, expired_previous_decision, callback);
+    delegate_->AllowCertificateError(web_contents, cert_error, ssl_info,
+                                     request_url, is_main_frame_request,
+                                     strict_enforcement, callback);
   }
 }
 

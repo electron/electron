@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like chromium.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
-index 0929cd7a73fe9665dec64026f593c99783f6fc38..fd2ee1e103a2ae07c8cd1ecb75062399de1745a7 100644
+index 4edc178d601f764721b8c13b639f6ed073417c43..15c1375b193d71a2ab195d09b22b0969b738395b 100644
 --- a/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 +++ b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 @@ -280,6 +280,27 @@ SkColor SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -78,10 +78,10 @@ index 8bd17ec4a9340881694c1aded2c19769d0867edb..bc02c137279dbb672984a59f0a3b546c
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 66d67f8bf62ce05717bf6aa74f39be29ec232395..e9d6b91edd8ed46215bcad36bf621dd048f03d5a 100644
+index d12315d778468333b41308e664d78f0b1ad0391e..8ecad2a7560c124f2a5b412a6d7ed9e60616aa34 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -384,6 +384,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -387,6 +387,11 @@ class NATIVE_THEME_EXPORT NativeTheme {
      kColorId_TableHeaderText,
      kColorId_TableHeaderBackground,
      kColorId_TableHeaderSeparator,
@@ -94,24 +94,24 @@ index 66d67f8bf62ce05717bf6aa74f39be29ec232395..e9d6b91edd8ed46215bcad36bf621dd0
      kColorId_ThrobberSpinningColor,
      kColorId_ThrobberWaitingColor,
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 7f662b0baf976bc6b37722f55986fb5c0e8260e8..61a1411931903827b0ef303e6c5a63c8ddb08fc7 100644
+index 257206023976b889590bc225f6542881e8a5d463..3003643bfb78cec2f5e84fc9e1471e1ef54aae41 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -558,6 +558,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
+@@ -559,6 +559,17 @@ SkColor NativeThemeWin::GetSystemColor(ColorId color_id,
      case kColorId_TableGroupingIndicatorColor:
-       return system_colors_[COLOR_GRAYTEXT];
+       return system_colors_[SystemThemeColor::kGrayText];
  
 +    // Results Tables
 +    case kColorId_ResultsTableNormalBackground:
-+      return system_colors_[COLOR_WINDOW];
++      return system_colors_[SystemThemeColor::kWindow];
 +    case kColorId_ResultsTableHoveredBackground:
-+      return color_utils::AlphaBlend(system_colors_[COLOR_HIGHLIGHT],
-+                                     system_colors_[COLOR_WINDOW], 0.25f);
++      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
++                                     system_colors_[SystemThemeColor::kWindow], 0.25f);
 +    case kColorId_ResultsTableNormalText:
-+      return system_colors_[COLOR_WINDOWTEXT];
++      return system_colors_[SystemThemeColor::kWindowText];
 +    case kColorId_ResultsTableDimmedText:
-+      return color_utils::AlphaBlend(system_colors_[COLOR_WINDOWTEXT],
-+                                     system_colors_[COLOR_WINDOW], 0.5f);
++      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
++                                     system_colors_[SystemThemeColor::kWindow], 0.5f);
      default:
        break;
    }

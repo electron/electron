@@ -30,7 +30,7 @@ index e96b0cef21bec8925d4adf1e8692dc00f5ec6f5f..7ec07534aa3628873c9fe784fa0235f3
  }
  
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
-index a7df91b0f6568215313899b577600feaa8c7ba31..8bccd503bb1648ef1ba07b7ff0fded6caaff8a65 100644
+index cf0841622b99ad6637314284bcdbd83060a404cc..779b51992c180a76ed8a2c492297416aa557d214 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
 +++ b/chrome/browser/speech/tts_message_filter.cc
 @@ -10,8 +10,11 @@
