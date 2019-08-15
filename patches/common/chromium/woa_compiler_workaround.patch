@@ -13,7 +13,7 @@ removed when Electron's Chromium updates to a compiler unaffected by
 this issue.
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index 082dc5ec7ac304109a267456df4660c2cfa672f9..a4b14a8dddb02a9bd3ac7a0967ae6c4c7031d83b 100755
+index 082dc5ec7ac304109a267456df4660c2cfa672f9..92dbadd5dd12fccc44ccf46c00d1d23c8336a4dc 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -40,6 +40,11 @@ CLANG_REVISION = '67510fac36d27b2e22c7cd955fc167136b737b93'
@@ -21,9 +21,9 @@ index 082dc5ec7ac304109a267456df4660c2cfa672f9..a4b14a8dddb02a9bd3ac7a0967ae6c4c
  CLANG_SUB_REVISION = 4
  
 +if os.getenv("ELECTRON_BUILDING_WOA"):
-+    CLANG_REVISION = '56bee1a90a71876cb5067b108bf5715fa1c4e843'
-+    CLANG_SVN_REVISION = '361657'
-+    CLANG_SUB_REVISION = 1
++    CLANG_REVISION = 'f7e52fbdb5a7af8ea0808e98458b497125a5eca1'
++    CLANG_SVN_REVISION = '365097'
++    CLANG_SUB_REVISION = 2
 +
  PACKAGE_VERSION = '%s-%s-%s' % (CLANG_SVN_REVISION, CLANG_REVISION[:8],
                                  CLANG_SUB_REVISION)
