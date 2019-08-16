@@ -48,6 +48,7 @@
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/network/public/cpp/features.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "third_party/blink/public/common/features.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/material_design/material_design_controller.h"
 #include "ui/base/ui_base_switches.h"
@@ -209,6 +210,10 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
+  // Disable LayoutNG as it still isn't fully enabled in Chrome and currently
+  // is still causing crashes during every day use such as text selection.
+  disable_features +=
+      std::string(",") + blink::features::kLayoutNG.name;
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
