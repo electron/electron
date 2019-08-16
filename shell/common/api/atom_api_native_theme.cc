@@ -29,7 +29,7 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
-  return theme_->SystemDarkModeEnabled();
+  return theme_->ShouldUseDarkColors();
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
