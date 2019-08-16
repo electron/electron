@@ -52,6 +52,8 @@ The `dialog` module has the following methods:
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
 
+Returns `String[] | undefined`, the file paths chosen by the user; if the dialog is cancelled it returns `undefined`.
+
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
 The `filters` specifies an array of file types that can be displayed or
