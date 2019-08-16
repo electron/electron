@@ -27,7 +27,7 @@ see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
 
 ## Chromium Security Issues and Upgrades
 
-Electron is now up to date with the latest chromium release. For more information, 
+Electron is now up to date with the latest chromium release. For more information,
 see the [Electron blog](https://electronjs.org/blog/12-week-cadence).
 
 We are interested in hearing more about specific use cases from the people that 
