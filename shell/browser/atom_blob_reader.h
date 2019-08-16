@@ -39,7 +39,8 @@ class AtomBlobReader {
   explicit AtomBlobReader(content::ChromeBlobStorageContext* blob_context);
   ~AtomBlobReader();
 
-  void StartReading(const std::string& uuid, electron::util::Promise promise);
+  void StartReading(const std::string& uuid,
+                    electron::util::Promise<v8::Local<v8::Value>> promise);
 
  private:
   // A self-destroyed helper class to read the blob data.

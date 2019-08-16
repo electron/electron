@@ -451,7 +451,7 @@ bool SystemPreferences::CanPromptTouchID() {
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     v8::Isolate* isolate,
     const std::string& reason) {
-  util::Promise promise(isolate);
+  util::Promise<void*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (@available(macOS 10.12.2, *)) {
@@ -468,7 +468,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
     scoped_refptr<base::SequencedTaskRunner> runner =
         base::SequencedTaskRunnerHandle::Get();
 
-    __block util::Promise p = std::move(promise);
+    __block util::Promise<void*> p = std::move(promise);
     [context
         evaluateAccessControl:access_control
                     operation:LAAccessControlOperationUseKeySign
@@ -479,14 +479,14 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                                 [error.localizedDescription UTF8String]);
                             runner->PostTask(
                                 FROM_HERE,
-                                base::BindOnce(util::Promise::RejectPromise,
-                                               std::move(p),
-                                               std::move(err_msg)));
+                                base::BindOnce(
+                                    util::Promise<void*>::RejectPromise,
+                                    std::move(p), std::move(err_msg)));
                           } else {
                             runner->PostTask(
                                 FROM_HERE,
                                 base::BindOnce(
-                                    util::Promise::ResolveEmptyPromise,
+                                    util::Promise<void*>::ResolveEmptyPromise,
                                     std::move(p)));
                           }
                         }];
@@ -607,12 +607,12 @@ std::string SystemPreferences::GetMediaAccessStatus(
 v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
     v8::Isolate* isolate,
     const std::string& media_type) {
-  util::Promise promise(isolate);
+  util::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
     if (@available(macOS 10.14, *)) {
-      __block util::Promise p = std::move(promise);
+      __block util::Promise<bool> p = std::move(promise);
       [AVCaptureDevice requestAccessForMediaType:type
                                completionHandler:^(BOOL granted) {
                                  dispatch_async(dispatch_get_main_queue(), ^{

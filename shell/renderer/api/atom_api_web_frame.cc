@@ -113,7 +113,8 @@ class RenderFrameStatus : public content::RenderFrameObserver {
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
-  explicit ScriptExecutionCallback(electron::util::Promise promise)
+  explicit ScriptExecutionCallback(
+      electron::util::Promise<v8::Local<v8::Value>> promise)
       : promise_(std::move(promise)) {}
   ~ScriptExecutionCallback() override {}
 
@@ -137,7 +138,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   }
 
  private:
-  electron::util::Promise promise_;
+  electron::util::Promise<v8::Local<v8::Value>> promise_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
@@ -376,7 +377,7 @@ v8::Local<v8::Promise> ExecuteJavaScript(mate::Arguments* args,
                                          v8::Local<v8::Value> window,
                                          const base::string16& code) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise promise(isolate);
+  util::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   bool has_user_gesture = false;
@@ -395,7 +396,7 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
     int world_id,
     const std::vector<mate::Dictionary>& scripts) {
   v8::Isolate* isolate = args->isolate();
-  util::Promise promise(isolate);
+  util::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   std::vector<blink::WebScriptSource> sources;

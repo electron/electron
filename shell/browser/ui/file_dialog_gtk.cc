@@ -157,13 +157,15 @@ class FileChooserDialog {
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 
-  void RunSaveAsynchronous(electron::util::Promise promise) {
-    save_promise_.reset(new electron::util::Promise(std::move(promise)));
+  void RunSaveAsynchronous(electron::util::Promise<mate::Dictionary> promise) {
+    save_promise_.reset(
+        new electron::util::Promise<mate::Dictionary>(std::move(promise)));
     RunAsynchronous();
   }
 
-  void RunOpenAsynchronous(electron::util::Promise promise) {
-    open_promise_.reset(new electron::util::Promise(std::move(promise)));
+  void RunOpenAsynchronous(electron::util::Promise<mate::Dictionary> promise) {
+    open_promise_.reset(
+        new electron::util::Promise<mate::Dictionary>(std::move(promise)));
     RunAsynchronous();
   }
 
@@ -204,8 +206,8 @@ class FileChooserDialog {
   GtkWidget* preview_;
 
   Filters filters_;
-  std::unique_ptr<electron::util::Promise> save_promise_;
-  std::unique_ptr<electron::util::Promise> open_promise_;
+  std::unique_ptr<electron::util::Promise<mate::Dictionary>> save_promise_;
+  std::unique_ptr<electron::util::Promise<mate::Dictionary>> open_promise_;
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkWidget*);
@@ -312,7 +314,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<mate::Dictionary> promise) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (settings.properties & OPEN_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
@@ -335,7 +337,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<mate::Dictionary> promise) {
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));

@@ -301,7 +301,8 @@ namespace api {
 namespace {
 
 // Called when CapturePage is done.
-void OnCapturePageDone(util::Promise promise, const SkBitmap& bitmap) {
+void OnCapturePageDone(util::Promise<gfx::Image> promise,
+                       const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
@@ -1429,7 +1430,7 @@ std::string WebContents::GetUserAgent() {
 v8::Local<v8::Promise> WebContents::SavePage(
     const base::FilePath& full_file_path,
     const content::SavePageType& save_type) {
-  util::Promise promise(isolate());
+  util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* handler = new SavePageHandler(web_contents(), std::move(promise));
@@ -1761,7 +1762,7 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
 
 v8::Local<v8::Promise> WebContents::PrintToPDF(
     const base::DictionaryValue& settings) {
-  util::Promise promise(isolate());
+  util::Promise<v8::Local<v8::Value>> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(settings, std::move(promise));
@@ -2064,7 +2065,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
 v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
-  util::Promise promise(isolate());
+  util::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
@@ -2342,7 +2343,7 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     const base::FilePath& file_path) {
-  util::Promise promise(isolate());
+  util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -2369,8 +2370,8 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(file.TakePlatformFile()),
       base::BindOnce(
-          [](mojom::ElectronRendererAssociatedPtr* ep, util::Promise promise,
-             bool success) {
+          [](mojom::ElectronRendererAssociatedPtr* ep,
+             util::Promise<void*> promise, bool success) {
             if (success) {
               promise.Resolve();
             } else {
