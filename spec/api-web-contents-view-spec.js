@@ -38,8 +38,9 @@ describe('WebContentsView', () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontentsview.js')
       const electronPath = remote.getGlobal('process').execPath
       const appProcess = ChildProcess.spawn(electronPath, [appPath])
-      const [code] = await emittedOnce(appProcess, 'close')
+      const [code, message] = await emittedOnce(appProcess, 'close')
       expect(code).to.equal(0)
+      expect(message).to.be.null()
     })
   })
 })
