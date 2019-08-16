@@ -38,8 +38,9 @@ describe('WebContentsView', () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontentsview.js')
       const electronPath = remote.getGlobal('process').execPath
       const appProcess = ChildProcess.spawn(electronPath, [appPath])
-      const [code] = await emittedOnce(appProcess, 'close')
-      expect(code).to.equal(0)
+      const returnVals = await emittedOnce(appProcess, 'close')
+      console.log('Does not crash on exit', returnVals)
+      expect(returnVals.code).to.equal(0)
     })
   })
 })
