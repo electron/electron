@@ -8,12 +8,16 @@
 #include <string>
 #include <utility>
 
+#include "base/stl_util.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/common/gin_converters/callback_converter_gin_adapter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
 
@@ -29,6 +33,40 @@ struct Converter<URLPattern> {
       return false;
     *out = URLPattern(URLPattern::SCHEME_ALL);
     return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
+  }
+};
+
+template <>
+struct Converter<content::ResourceType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::ResourceType type) {
+    const char* result;
+    switch (type) {
+      case content::ResourceType::kMainFrame:
+        result = "mainFrame";
+        break;
+      case content::ResourceType::kSubFrame:
+        result = "subFrame";
+        break;
+      case content::ResourceType::kStylesheet:
+        result = "stylesheet";
+        break;
+      case content::ResourceType::kScript:
+        result = "script";
+        break;
+      case content::ResourceType::kImage:
+        result = "image";
+        break;
+      case content::ResourceType::kObject:
+        result = "object";
+        break;
+      case content::ResourceType::kXhr:
+        result = "xhr";
+        break;
+      default:
+        result = "other";
+    }
+    return StringToV8(isolate, result);
   }
 };
 
@@ -49,16 +87,104 @@ struct UserData : public base::SupportsUserData::Data {
 };
 
 // Test whether the URL of |request| matches |patterns|.
-bool MatchesFilterCondition(extensions::WebRequestInfo* request,
+bool MatchesFilterCondition(extensions::WebRequestInfo* info,
                             const std::set<URLPattern>& patterns) {
   if (patterns.empty())
     return true;
 
   for (const auto& pattern : patterns) {
-    if (pattern.MatchesURL(request->url))
+    if (pattern.MatchesURL(info->url))
       return true;
   }
   return false;
+}
+
+// Overloaded by multiple types to fill the |details| object.
+void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
+  details->Set("id", info->id);
+  details->Set("url", info->url);
+  details->Set("method", info->method);
+  details->Set("timestamp", base::Time::Now().ToDoubleT() * 1000);
+  if (!info->response_ip.empty())
+    details->Set("ip", info->response_ip);
+  if (info->type.has_value())
+    details->Set("resourceType", info->type.value());
+  else
+    details->Set("resourceType", base::StringPiece("other"));
+  if (info->response_headers) {
+    details->Set("fromCache", info->response_from_cache);
+    details->Set("responseHeaders", info->response_headers.get());
+    details->Set("statusLine", info->response_headers->GetStatusLine());
+    details->Set("statusCode", info->response_headers->response_code());
+  }
+
+  auto* web_contents = content::WebContents::FromRenderFrameHost(
+      content::RenderFrameHost::FromID(info->render_process_id,
+                                       info->frame_id));
+  int32_t id = api::WebContents::GetIDFromWrappedClass(web_contents);
+  // id must be greater than zero.
+  if (id > 0)
+    details->Set("webContentsId", id);
+}
+
+void ToDictionary(gin::Dictionary* details,
+                  const network::ResourceRequest& request) {
+  details->Set("referrer", request.referrer);
+}
+
+void ToDictionary(gin::Dictionary* details,
+                  const net::HttpRequestHeaders& headers) {
+  details->Set("requestHeaders", headers);
+}
+
+void ToDictionary(gin::Dictionary* details, const GURL& location) {
+  details->Set("redirectURL", location);
+}
+
+void ToDictionary(gin::Dictionary* details, int net_error) {
+  details->Set("error", net::ErrorToString(net_error));
+}
+
+// Helper function to fill |details| with arbitrary |args|.
+template <typename Arg>
+void FillDetails(gin::Dictionary* details, Arg arg) {
+  ToDictionary(details, arg);
+}
+
+template <typename Arg, typename... Args>
+void FillDetails(gin::Dictionary* details, Arg arg, Args... args) {
+  ToDictionary(details, arg);
+  FillDetails(details, args...);
+}
+
+// Fill the native types with the result from the response object.
+void ReadFromResponse(v8::Isolate* isolate,
+                      gin::Dictionary* response,
+                      GURL* new_location) {
+  response->Get("redirectURL", new_location);
+}
+
+void ReadFromResponse(v8::Isolate* isolate,
+                      gin::Dictionary* response,
+                      net::HttpRequestHeaders* headers) {
+  headers->Clear();
+  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, *response), headers);
+}
+
+void ReadFromResponse(v8::Isolate* isolate,
+                      gin::Dictionary* response,
+                      const std::pair<scoped_refptr<net::HttpResponseHeaders>*,
+                                      const std::string>& headers) {
+  std::string status_line;
+  if (!response->Get("statusLine", &status_line))
+    status_line = headers.second;
+  v8::Local<v8::Value> value;
+  if (response->Get("responseHeaders", &value)) {
+    *headers.first = new net::HttpResponseHeaders("");
+    (*headers.first)->ReplaceStatusLine(status_line);
+    gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
+                                                      (*headers.first).get());
+  }
 }
 
 }  // namespace
@@ -113,54 +239,70 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
-int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* request,
+int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
+                                  const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
                                   GURL* new_url) {
-  return HandleResponseEvent(kOnBeforeRequest, request, std::move(callback),
-                             new_url);
+  return HandleResponseEvent(kOnBeforeRequest, info, std::move(callback),
+                             new_url, request);
 }
 
-int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* request,
+int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
+                                      const network::ResourceRequest& request,
                                       BeforeSendHeadersCallback callback,
                                       net::HttpRequestHeaders* headers) {
-  // TODO(zcbenz): Figure out how to handle this generally.
-  return net::OK;
+  return HandleResponseEvent(
+      kOnBeforeSendHeaders, info,
+      base::BindOnce(std::move(callback), std::set<std::string>(),
+                     std::set<std::string>()),
+      headers, request);
 }
 
 int WebRequestNS::OnHeadersReceived(
-    extensions::WebRequestInfo* request,
+    extensions::WebRequestInfo* info,
+    const network::ResourceRequest& request,
     net::CompletionOnceCallback callback,
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  return HandleResponseEvent(kOnHeadersReceived, request, std::move(callback),
-                             original_response_headers,
-                             override_response_headers,
-                             allowed_unsafe_redirect_url);
+  return HandleResponseEvent(
+      kOnHeadersReceived, info, std::move(callback),
+      std::make_pair(override_response_headers,
+                     original_response_headers->GetStatusLine()),
+      request);
 }
 
-void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* request,
+void WebRequestNS::OnSendHeaders(extensions::WebRequestInfo* info,
+                                 const network::ResourceRequest& request,
                                  const net::HttpRequestHeaders& headers) {
-  HandleSimpleEvent(kOnSendHeaders, request, headers);
+  HandleSimpleEvent(kOnSendHeaders, info, request, headers);
 }
 
-void WebRequestNS::OnBeforeRedirect(extensions::WebRequestInfo* request,
+void WebRequestNS::OnBeforeRedirect(extensions::WebRequestInfo* info,
+                                    const network::ResourceRequest& request,
                                     const GURL& new_location) {
-  HandleSimpleEvent(kOnBeforeRedirect, request, new_location);
+  HandleSimpleEvent(kOnBeforeRedirect, info, request, new_location);
 }
 
-void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* request) {
-  HandleSimpleEvent(kOnResponseStarted, request);
+void WebRequestNS::OnResponseStarted(extensions::WebRequestInfo* info,
+                                     const network::ResourceRequest& request) {
+  HandleSimpleEvent(kOnResponseStarted, info, request);
 }
 
-void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* request,
+void WebRequestNS::OnErrorOccurred(extensions::WebRequestInfo* info,
+                                   const network::ResourceRequest& request,
                                    int net_error) {
-  HandleSimpleEvent(kOnErrorOccurred, request, net_error);
+  callbacks_.erase(info->id);
+
+  HandleSimpleEvent(kOnErrorOccurred, info, request, net_error);
 }
 
-void WebRequestNS::OnCompleted(extensions::WebRequestInfo* request,
+void WebRequestNS::OnCompleted(extensions::WebRequestInfo* info,
+                               const network::ResourceRequest& request,
                                int net_error) {
-  HandleSimpleEvent(kOnCompleted, request, net_error);
+  callbacks_.erase(info->id);
+
+  HandleSimpleEvent(kOnCompleted, info, request, net_error);
 }
 
 template <WebRequestNS::SimpleEvent event>
@@ -199,27 +341,64 @@ void WebRequestNS::SetListener(Event event,
 
 template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
-                                     extensions::WebRequestInfo* request,
+                                     extensions::WebRequestInfo* request_info,
                                      Args... args) {
   const auto& info = simple_listeners_[event];
-  if (!MatchesFilterCondition(request, info.url_patterns))
+  if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
 
-  // TODO(zcbenz): Invoke the listener.
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, args...);
+  info.listener.Run(gin::ConvertToV8(isolate, details));
 }
 
 template <typename Out, typename... Args>
 int WebRequestNS::HandleResponseEvent(ResponseEvent event,
-                                      extensions::WebRequestInfo* request,
+                                      extensions::WebRequestInfo* request_info,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
   const auto& info = response_listeners_[event];
-  if (!MatchesFilterCondition(request, info.url_patterns))
+  if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
 
-  // TODO(zcbenz): Invoke the listener.
-  return net::OK;
+  callbacks_[request_info->id] = std::move(callback);
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info, args...);
+
+  ResponseCallback response =
+      base::BindOnce(&WebRequestNS::OnListenerResult<Out>,
+                     base::Unretained(this), request_info->id, out);
+  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  return net::ERR_IO_PENDING;
+}
+
+template <typename T>
+void WebRequestNS::OnListenerResult(uint64_t id,
+                                    T out,
+                                    v8::Local<v8::Value> response) {
+  if (!base::Contains(callbacks_, id))
+    return;
+
+  int result = net::OK;
+  if (response->IsObject()) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    gin::Dictionary dict(isolate, response.As<v8::Object>());
+
+    bool cancel = false;
+    dict.Get("cancel", &cancel);
+    if (cancel)
+      result = net::ERR_BLOCKED_BY_CLIENT;
+    else
+      ReadFromResponse(isolate, &dict, out);
+  }
+
+  std::move(callbacks_[id]).Run(result);
 }
 
 // static
