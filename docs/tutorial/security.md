@@ -27,17 +27,11 @@ see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
 
 ## Chromium Security Issues and Upgrades
 
-While Electron strives to support new versions of Chromium as soon as possible,
-developers should be aware that upgrading is a serious undertaking - involving
-hand-editing dozens or even hundreds of files. Given the resources and
-contributions available today, Electron will often not be on the very latest
-version of Chromium, lagging behind by several weeks or a few months.
+Electron is now up to date with the latest chromium release. For more information, 
+see the [Electron blog](https://electronjs.org/blog/12-week-cadence).
 
-We feel that our current system of updating the Chromium component strikes an
-appropriate balance between the resources we have available and the needs of
-the majority of applications built on top of the framework. We definitely are
-interested in hearing more about specific use cases from the people that build
-things on top of Electron. Pull requests and contributions supporting this
+We are interested in hearing more about specific use cases from the people that 
+build things on top of Electron. Pull requests and contributions supporting this
 effort are always very welcome.
 
 ## Security Is Everyone's Responsibility
