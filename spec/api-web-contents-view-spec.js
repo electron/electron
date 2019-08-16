@@ -39,7 +39,6 @@ describe('WebContentsView', () => {
       const electronPath = remote.getGlobal('process').execPath
       const appProcess = ChildProcess.spawn(electronPath, [appPath])
       const [code, message] = await emittedOnce(appProcess, 'close')
-      console.log('Does not crash on exit', code, message)
       expect(code).to.equal(0)
       expect(message).to.be.null()
     })
