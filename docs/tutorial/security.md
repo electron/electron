@@ -30,10 +30,6 @@ see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
 Electron keeps up to date with the latest stable Chromium release. For more information,
 see the [Electron blog](https://electronjs.org/blog/12-week-cadence).
 
-We are interested in hearing more about specific use cases from the people that 
-build things on top of Electron. Pull requests and contributions supporting this
-effort are always very welcome.
-
 ## Security Is Everyone's Responsibility
 
 It is important to remember that the security of your Electron application is
