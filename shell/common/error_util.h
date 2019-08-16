@@ -6,25 +6,19 @@
 #define SHELL_COMMON_ERROR_UTIL_H_
 
 #include <string>
-#include <utility>
 
 #include "native_mate/converter.h"
-#include "third_party/blink/renderer/platform/bindings/v8_throw_exception.h"
 
 namespace electron {
 
 namespace util {
 
-// A wrapper around V8ThrowException.
-
-class Error {
+class ErrorThrower {
  public:
-  Error(v8::Isolate* isolate);
-  Error();
+  explicit ErrorThrower(v8::Isolate* isolate);
+  ErrorThrower();
 
-  ~Error();
-
-  v8::Isolate* isolate() const { return isolate_; }
+  ~ErrorThrower();
 
   void ThrowError(const std::string& err_msg);
   void ThrowTypeError(const std::string& err_msg);
@@ -33,6 +27,8 @@ class Error {
   void ThrowSyntaxError(const std::string& err_msg);
 
  private:
+  v8::Isolate* isolate() const { return isolate_; }
+
   v8::Isolate* isolate_;
 };
 

@@ -405,7 +405,7 @@ std::string SystemPreferences::GetAccentColor() {
   return base::SysNSStringToUTF8([sysColor RGBAValue]);
 }
 
-std::string SystemPreferences::GetSystemColor(util::Error error,
+std::string SystemPreferences::GetSystemColor(util::ErrorThrower thrower,
                                               const std::string& color) {
   NSColor* sysColor = nil;
   if (color == "blue") {
@@ -427,7 +427,7 @@ std::string SystemPreferences::GetSystemColor(util::Error error,
   } else if (color == "yellow") {
     sysColor = [NSColor systemYellowColor];
   } else {
-    error.ThrowError("Unknown system color: " + color);
+    thrower.ThrowError("Unknown system color: " + color);
     return "";
   }
 

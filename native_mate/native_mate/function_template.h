@@ -134,8 +134,8 @@ inline bool GetNextArgument(Arguments* args,
 inline bool GetNextArgument(Arguments* args,
                             int create_flags,
                             bool is_first,
-                            electron::util::Error* result) {
-  *result = electron::util::Error(args->isolate());
+                            electron::util::ErrorThrower* result) {
+  *result = electron::util::ErrorThrower(args->isolate());
   return true;
 }
 

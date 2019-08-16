@@ -96,7 +96,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
 
-  std::string GetSystemColor(util::Error error, const std::string& color);
+  std::string GetSystemColor(util::ErrorThrower thrower,
+                             const std::string& color);
 
   bool CanPromptTouchID();
   v8::Local<v8::Promise> PromptTouchID(v8::Isolate* isolate,
