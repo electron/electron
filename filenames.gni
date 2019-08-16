@@ -511,6 +511,8 @@ filenames = {
     "shell/common/crash_reporter/win/crash_service_main.cc",
     "shell/common/crash_reporter/win/crash_service_main.h",
     "shell/common/gin_converters/callback_converter_gin_adapter.h",
+    "shell/common/gin_converters/gurl_converter_gin_adapter.h",
+    "shell/common/gin_converters/net_converter_gin_adapter.h",
     "shell/common/gin_converters/std_converter.h",
     "shell/common/gin_converters/value_converter_gin_adapter.h",
     "shell/common/gin_util.h",
