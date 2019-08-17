@@ -135,17 +135,19 @@ describe('app path module', () => {
     })
   })
 
-  describe('setAppLogsPath()', () => {
+  describe('setAppLogsPath', () => {
     const appLogsPath = path.join(os.tmpdir(), 'mylogs')
-    it('by default', async () => {
-      const output = await runTestApp('app-custom-path')
-      expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
-      expect(output.appLogs).to.equal(path.join(output.userData, 'logs'))
-    })
-    it(`setAppLogsPath(${appLogsPath})`, async () => {
-      const output = await runTestApp('app-custom-path', `custom-applogs=${appLogsPath}`)
-      expect(output.appLogs).to.equal(appLogsPath)
-    })
+    if (process.platform === 'win32') {
+      it('by default', async () => {
+        const output = await runTestApp('app-custom-path')
+        expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
+        expect(output.appLogs).to.equal(path.join(output.userData, 'logs'))
+      })
+      it(`setAppLogsPath(${appLogsPath})`, async () => {
+        const output = await runTestApp('app-custom-path', `custom-applogs=${appLogsPath}`)
+        expect(output.appLogs).to.equal(appLogsPath)
+      })
+    }
     it(`setAppLogsPath()`, async () => {
       const defaultAppLogs = app.getPath('logs');
       app.setAppLogsPath(appLogsPath);

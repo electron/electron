@@ -25,6 +25,9 @@ function exitApp() {
   }
   process.stdout.write(JSON.stringify(payload))
 
+  // const browserWindow = new 
+
+
 // dialog.showMessageBoxSync({
 //   type: 'info',
 //   message: JSON.stringify(payload, null, 4)
