@@ -23,12 +23,12 @@ describe('app path module', () => {
       expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
     })
 
-    it(`app.name=${appName}`, async () => {
+    it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
       expect(output.userData).to.equal(path.join(output.appData, appName))
     })
 
-    it(`setPath('appData', ${appData})`, async () => {
+    it(`setPath('appData', '${appData}')`, async () => {
       // Cleanup
       try {
         fs.unlinkSync(appData);
@@ -53,12 +53,12 @@ describe('app path module', () => {
       expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
     })
 
-    it(`app.name=${appName}`, async () => {
+    it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
       expect(output.userCache).to.equal(path.join(output.appCache, appName))
     })
 
-    it(`setPath('appData', ${appData})`, async () => {
+    it(`setPath('appData', '${appData}')`, async () => {
       // Cleanup
       try {
         fs.unlinkSync(appData);
@@ -137,17 +137,31 @@ describe('app path module', () => {
 
   describe('setAppLogsPath', () => {
     const appLogsPath = path.join(os.tmpdir(), 'mylogs')
+    it('by default', async () => {
+      const output = await runTestApp('app-custom-path')
+      switch (process.platform) {
+        case 'darwin':
+          expect(output.appLogs).to.equal(path.join(os.homedir(), 'Logs', defaultAppName))
+          break;
+        case 'win32':
+        default:
+          expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
+          expect(output.appLogs).to.equal(path.join(output.userData, 'logs'))
+          break;
+      }
+    })
+      // Linux
+      // app path module setAppLogsPath() setAppLogsPath(/tmp/mylogs) - setAppLogsPath(/tmp/mylogs)
+      // /home/builduser/project/src/electron/spec-main/api-app-path-spec.ts
+      // AssertionError: expected '/home/builduser/.config/app-custom-path/logs' to equal '/tmp/mylogs'
+
     if (process.platform === 'win32') {
-      it('by default', async () => {
-        const output = await runTestApp('app-custom-path')
-        expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
-        expect(output.appLogs).to.equal(path.join(output.userData, 'logs'))
-      })
-      it(`setAppLogsPath(${appLogsPath})`, async () => {
+      it(`setAppLogsPath('${appLogsPath}')`, async () => {
         const output = await runTestApp('app-custom-path', `custom-applogs=${appLogsPath}`)
         expect(output.appLogs).to.equal(appLogsPath)
       })
     }
+
     it(`setAppLogsPath()`, async () => {
       const defaultAppLogs = app.getPath('logs');
       app.setAppLogsPath(appLogsPath);
