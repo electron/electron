@@ -12,70 +12,68 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 
 const fixturesPath = path.join(__dirname, 'fixtures', 'api')
-const defaultAppName = 'app-paths'
+const defaultAppName = 'app-custom-path'
+const appName = 'myAppName'
+const appData = path.join(os.tmpdir(), 'myappdata')
 
-describe('app paths module', () => {
-  describe(`'userData' is computed from 'appData' and app name`, () => {
+describe('app path module', () => {
+  describe(`'userData' is implicit, computed from 'appData' and app name`, () => {
     it('by default', async () => {
-      const output = await runTestApp('app-paths')
+      const output = await runTestApp('app-custom-path')
       expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
     })
 
-    it('customizes app name', async () => {
-      const appName = 'myAppName'
-      const output = await runTestApp('app-paths', `-custom-appname=${appName}`)
+    it(`app.name=${appName}`, async () => {
+      const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
       expect(output.userData).to.equal(path.join(output.appData, appName))
     })
 
-    it('customizes appData', async () => {
-      const appdata = path.join(os.tmpdir(), 'myappdata')
+    it(`setPath('appData', ${appData})`, async () => {
       // Cleanup
       try {
-        fs.unlinkSync(appdata);
+        fs.unlinkSync(appData);
       }
       catch (_) {}
-      const output = await runTestApp('app-paths', `-custom-appdata=${appdata}`)
-      expect(output.appData).to.equal(appdata)
+      const output = await runTestApp('app-custom-path', `-custom-appdata=${appData}`)
+      expect(output.appData).to.equal(appData)
       expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
-      // On App ready event, the appdata path is created
-      expect(fs.existsSync(appdata))
+      // On App ready event, the appData path is created
+      expect(fs.existsSync(appData))
       // Cleanup
       try {
-        fs.unlinkSync(appdata);
+        fs.unlinkSync(appData);
       }
       catch (_) {}
     })
   })
 
-  describe(`'userCache' is computed from 'cache', 'appData' and app name`, () => {
+  describe(`'userCache' is implicit, computed from 'cache', 'appData' and app name`, () => {
     it('by default', async () => {
-      const output = await runTestApp('app-paths')
+      const output = await runTestApp('app-custom-path')
       expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
     })
 
-    it('customizes app name', async () => {
-      const appName = 'myAppName'
-      const output = await runTestApp('app-paths', `-custom-appname=${appName}`)
+    it(`app.name=${appName}`, async () => {
+      const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
       expect(output.userCache).to.equal(path.join(output.appCache, appName))
     })
 
-    it('customizes appData', async () => {
-      const appdata = path.join(os.tmpdir(), 'myappdata')
+    it(`setPath('appData', ${appData})`, async () => {
       // Cleanup
       try {
-        fs.unlinkSync(appdata);
+        fs.unlinkSync(appData);
       }
       catch (_) {}
-      const output = await runTestApp('app-paths', `-custom-appdata=${appdata}`)
+      const output = await runTestApp('app-custom-path', `-custom-appdata=${appData}`)
       expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
       // On Windows, 'cache' is equivalent to 'appData'
       if (process.platform === 'win32') {
-        expect(output.userCache).to.contain(appdata)
-        expect(output.appCache).to.equal(appdata)
+        expect(output.userCache).to.contain(appData)
+        expect(output.appCache).to.equal(appData)
       }
       // Cleanup
       try {
-        fs.unlinkSync(appdata);
+        fs.unlinkSync(appData);
       }
       catch (_) {}
     })
@@ -118,22 +116,41 @@ describe('app paths module', () => {
   describe('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'))
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'app-path'))
     })
 
     it('works for directories with index.js', async () => {
       const { appPath } = await runTestApp('app-path/lib')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'app-path/lib'))
     })
 
     it('works for files without extension', async () => {
       const { appPath } = await runTestApp('app-path/lib/index')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'app-path/lib'))
     })
 
     it('works for files', async () => {
       const { appPath } = await runTestApp('app-path/lib/index.js')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'app-path/lib'))
+    })
+  })
+
+  describe('setAppLogsPath()', () => {
+    const appLogsPath = path.join(os.tmpdir(), 'mylogs')
+    it('by default', async () => {
+      const output = await runTestApp('app-custom-path')
+      expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
+    })
+    it(`setAppLogsPath(${appLogsPath})`, async () => {
+      const output = await runTestApp('app-custom-path', `custom-applogs=${appLogsPath}`)
+      expect(output.appLogs).to.equal(appLogsPath)
+    })
+    it(`setAppLogsPath()`, async () => {
+      const defaultAppLogs = app.getPath('logs');
+      app.setAppLogsPath(appLogsPath);
+      expect(app.getPath('logs')).to.equal(appLogsPath)
+      app.setAppLogsPath();
+      expect(app.getPath('logs')).to.equal(defaultAppLogs)
     })
   })
 
