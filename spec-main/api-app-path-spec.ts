@@ -141,7 +141,8 @@ describe('app path module', () => {
       const output = await runTestApp('app-custom-path')
       switch (process.platform) {
         case 'darwin':
-          expect(output.appLogs).to.equal(path.join(os.homedir(), 'Logs', defaultAppName))
+          // expect(output.appLogs).to.equal(path.join(os.homedir(), 'Logs', defaultAppName))
+          expect(output.appLogs).to.equal(path.join(os.homedir(), 'Logs', 'Electron'))
           break;
         case 'win32':
         default:
