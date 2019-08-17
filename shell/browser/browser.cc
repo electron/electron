@@ -158,16 +158,16 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // can be customized changing the 'appData' or the application name.
   // At this stage, it is no more allowed, paths must be frozen.
   // So if it is not yet done, we 'override' the values.
-  // It does not prevent to explicitely changing userData/userCache.
+  // It does not prevent to explicitely changing userData/userCache later.
   // May be, would be fine to prevent such actions.
   base::FilePath user_data;
-  base::PathService::Get(DIR_USER_DATA, &user_data);
-  base::PathService::Override(DIR_USER_DATA, user_data);
+  AppPathProvider::Get(DIR_USER_DATA, &user_data);
+  AppPathProvider::Override(DIR_USER_DATA, user_data);
   base::CreateDirectoryAndGetError(user_data, nullptr);
 
   base::FilePath user_cache;
-  base::PathService::Get(DIR_USER_CACHE, &user_cache);
-  base::PathService::Override(DIR_USER_CACHE, user_cache);
+  AppPathProvider::Get(DIR_USER_CACHE, &user_cache);
+  AppPathProvider::Override(DIR_USER_CACHE, user_cache);
 
   is_ready_ = true;
   if (ready_promise_) {

@@ -817,15 +817,15 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
   } else {
-    AppPathProvider::GetDefaultPath(DIR_APP_LOGS, &custom_path);
+    AppPathProvider::GetDefault(DIR_APP_LOGS, &custom_path);
   }
-  base::PathService::Override(DIR_APP_LOGS, custom_path);
+  AppPathProvider::Override(DIR_APP_LOGS, custom_path);
 }
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   base::FilePath path;
-  bool succeed = AppPathProvider::GetPath(name, &path);
+  bool succeed = AppPathProvider::Get(name, &path);
   if (!succeed) {
     if (name == "logs") {
       args->ThrowError("Failed to get '" + name +
@@ -846,7 +846,7 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
     thrower.ThrowError("Path must be absolute");
     return;
   }
-  bool succeed = AppPathProvider::SetPath(name, path);
+  bool succeed = AppPathProvider::Override(name, path);
   if (!succeed)
     thrower.ThrowError("Failed to set path");
 }
@@ -917,7 +917,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  AppPathProvider::Get(DIR_USER_DATA, &user_dir);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 

@@ -70,24 +70,66 @@ void GetLinuxAppDataPath(base::FilePath* path) {
 }
 #endif
 
-bool PathProvider(int key, base::FilePath* path) {
+}  // namespace
+
+// We can not use PathService with a provider !
+// PathService caches the returned value of the first request
+// If the returned depends on another values that changes later
+// PathService returns the cached value not the updated value
+
+// This cannot be done as a static initializer sadly since Visual Studio will
+// eliminate this object file if there is no direct entry point into it.
+void AppPathProvider::Register() {
+  // base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
+}
+
+bool AppPathProvider::Get(const std::string& name, base::FilePath* path) {
+  return AppPathProvider::Get(GetPathConstant(name), path);
+}
+
+bool AppPathProvider::Get(int key, base::FilePath* path) {
+  bool succeed = false;
+  if (key >= 0)
+    succeed = base::PathService::Get(key, path);
+  if (!succeed)
+    succeed = AppPathProvider::GetDefault(key, path);
+  return succeed;
+}
+
+bool AppPathProvider::Override(const std::string& name,
+                               const base::FilePath& path) {
+  return AppPathProvider::Override(GetPathConstant(name), path);
+}
+
+bool AppPathProvider::Override(int key, const base::FilePath& path) {
+  bool succeed = false;
+  if (key >= 0)
+    succeed =
+        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+  return succeed;
+}
+
+bool AppPathProvider::GetDefault(const std::string& name,
+                                 base::FilePath* path) {
+  return AppPathProvider::GetDefault(GetPathConstant(name), path);
+}
+
+bool AppPathProvider::GetDefault(int key, base::FilePath* path) {
   switch (key) {
     case DIR_APP_DATA:
 #if defined(USE_X11)
       GetLinuxAppDataPath(path);
       return true;
 #else
-      // Should be never reached as beyond PATH_END
-      // return base::PathService::Get(base::DIR_APP_DATA, path);
       return false;
 #endif
     case DIR_USER_DATA:
-      base::PathService::Get(DIR_APP_DATA, path);
+      AppPathProvider::Get(DIR_APP_DATA, path);
       *path = path->Append(
           base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
       return true;
     case DIR_USER_CACHE:
-      base::PathService::Get(DIR_CACHE, path);
+      AppPathProvider::Get(DIR_CACHE, path);
       *path = path->Append(
           base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
       return true;
@@ -95,48 +137,13 @@ bool PathProvider(int key, base::FilePath* path) {
 #if defined(OS_MACOSX)
       GetMacAppLogsPath(path);
 #else
-      base::PathService::Get(DIR_USER_DATA, path);
+      AppPathProvider::Get(DIR_USER_DATA, path);
       *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
 #endif
       return true;
     default:
       return false;
   }
-}
-
-}  // namespace
-
-// This cannot be done as a static initializer sadly since Visual Studio will
-// eliminate this object file if there is no direct entry point into it.
-void AppPathProvider::Register() {
-  base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
-}
-
-bool AppPathProvider::GetPath(const std::string& name, base::FilePath* path) {
-  bool succeed = false;
-  int key = GetPathConstant(name);
-  if (key >= 0)
-    succeed = base::PathService::Get(key, path);
-  return succeed;
-}
-
-bool AppPathProvider::SetPath(const std::string& name,
-                              const base::FilePath& path) {
-  bool succeed = false;
-  int key = GetPathConstant(name);
-  if (key >= 0)
-    succeed =
-        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
-  return succeed;
-}
-
-bool AppPathProvider::GetDefaultPath(const std::string& name,
-                                     base::FilePath* path) {
-  return PathProvider(GetPathConstant(name), path);
-}
-
-bool AppPathProvider::GetDefaultPath(int key, base::FilePath* path) {
-  return PathProvider(key, path);
 }
 
 }  // namespace electron

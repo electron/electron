@@ -931,7 +931,7 @@ void AtomBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 AtomBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  AppPathProvider::Get(DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
 
   return {user_data_dir};

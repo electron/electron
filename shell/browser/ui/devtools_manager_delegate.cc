@@ -87,7 +87,7 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  AppPathProvider::Get(DIR_USER_DATA, &user_dir);
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
       CreateSocketFactory(), user_dir, base::FilePath());
 }

@@ -1,10 +1,19 @@
 const { app } = require('electron')
+const { dialog } = require('electron')
 
+const defaultPayload = {
+  'custom-appname': app.commandLine.getSwitchValue('custom-appname'),
+  'custom-appdata': app.commandLine.getSwitchValue('custom-appdata'),
+  defaultAppName: app.name,
+  defaultAppData: app.getPath('appData'),
+  defaultAppCache: app.getPath('cache'),
+  defaultUserCache: app.getPath('userCache'),
+  defaultUserData: app.getPath('userData')
+}
 
 function exitApp() {
   const payload = {
-    'custom-appname': app.commandLine.getSwitchValue('custom-appname'),
-    'custom-appdata': app.commandLine.getSwitchValue('custom-appdata'),
+    ...defaultPayload,
     appName: app.name,
     appData: app.getPath('appData'),
     appCache: app.getPath('cache'),
@@ -12,6 +21,12 @@ function exitApp() {
     userData: app.getPath('userData')
   }
   process.stdout.write(JSON.stringify(payload))
+
+// dialog.showMessageBoxSync({
+//   type: 'info',
+//   message: JSON.stringify(payload, null, 4)
+// })
+
   process.stdout.end()
 
   setImmediate(() => {
@@ -19,14 +34,14 @@ function exitApp() {
   })
 }
 
-if (app.commandLine.hasSwitch('custom-appname')) {
-  const appName = app.commandLine.getSwitchValue('custom-appname')
-  app.name = appName
+// dialog.showErrorBox('debug', JSON.stringify(defaultPayload, null, 4))
+
+if (defaultPayload['custom-appname']) {
+  app.name = defaultPayload['custom-appname']
 }
 
-if (app.commandLine.hasSwitch('custom-appdata')) {
-  const appData = app.commandLine.getSwitchValue('custom-appdata')
-  app.setPath('appData', appData)
+if (defaultPayload['custom-appdata']) {
+  app.setPath('appData', defaultPayload['custom-appdata'])
 }
 
 app.on('ready', () => {
