@@ -140,6 +140,7 @@ describe('app path module', () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       expect(output.appLogs).to.equal(path.join(output.appData, defaultAppName, 'logs'))
+      expect(output.appLogs).to.equal(path.join(output.userData, 'logs'))
     })
     it(`setAppLogsPath(${appLogsPath})`, async () => {
       const output = await runTestApp('app-custom-path', `custom-applogs=${appLogsPath}`)
