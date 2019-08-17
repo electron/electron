@@ -74,7 +74,7 @@ void GetLinuxAppDataPath(base::FilePath* path) {
 
 // We can not use PathService with a provider !
 // PathService caches the returned value of the first request
-// If the returned depends on another values that changes later
+// If the path depends on another values that changes later
 // PathService returns the cached value not the updated value
 
 // This cannot be done as a static initializer sadly since Visual Studio will

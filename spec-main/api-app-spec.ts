@@ -657,25 +657,6 @@ describe('app module', () => {
     })
   })
 
-  describe('getAppPath', () => {
-    it('works for directories with package.json', async () => {
-      const { appPath } = await runTestApp('app-path')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'))
-    })
-
-    it('works for directories with index.js', async () => {
-      const { appPath } = await runTestApp('app-path/lib')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
-    })
-
-    it('works for files without extension', async () => {
-      const { appPath } = await runTestApp('app-path/lib/index')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
-    })
-
-    it('works for files', async () => {
-      const { appPath } = await runTestApp('app-path/lib/index.js')
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'))
     })
   })
 
@@ -700,43 +681,6 @@ describe('app module', () => {
 
       const osLogPath = (logsPaths as any)[process.platform]
       expect(fs.existsSync(osLogPath)).to.be.true
-    })
-  })
-
-  describe('getPath(name)', () => {
-    it('returns paths that exist', () => {
-      const paths = [
-        fs.existsSync(app.getPath('exe')),
-        fs.existsSync(app.getPath('home')),
-        fs.existsSync(app.getPath('temp'))
-      ]
-      expect(paths).to.deep.equal([true, true, true])
-    })
-
-    it('throws an error when the name is invalid', () => {
-      expect(() => {
-        app.getPath('does-not-exist' as any)
-      }).to.throw(/Failed to get 'does-not-exist' path/)
-    })
-
-    it('returns the overridden path', () => {
-      app.setPath('music', __dirname)
-      expect(app.getPath('music')).to.equal(__dirname)
-    })
-  })
-
-  describe('setPath(name, path)', () => {
-    it('does not create a new directory by default', () => {
-      const badPath = path.join(__dirname, 'music')
-
-      expect(fs.existsSync(badPath)).to.be.false
-      app.setPath('music', badPath)
-      expect(fs.existsSync(badPath)).to.be.false
-
-      expect(() => { app.getPath(badPath as any) }).to.throw()
-    })
-  })
-
   describe('select-client-certificate event', () => {
     let w: BrowserWindow
 
