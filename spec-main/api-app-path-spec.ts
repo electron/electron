@@ -15,6 +15,7 @@ const fixturesPath = path.join(__dirname, 'fixtures', 'api')
 const defaultAppName = 'app-custom-path'
 const appName = 'myAppName'
 const appData = path.join(os.tmpdir(), 'myappdata')
+const userData = path.join(os.tmpdir(), 'myuserdata')
 
 describe('app path module', () => {
   describe(`'userData' is implicit, computed from 'appData' and app name`, () => {
@@ -42,6 +43,42 @@ describe('app path module', () => {
       // Cleanup
       try {
         fs.unlinkSync(appData);
+      }
+      catch (_) {}
+    })
+  })
+
+  describe(`customize 'userData'`, () => {
+    it(`setPath('userData', '${userData}')`, async () => {
+      // Cleanup
+      try {
+        fs.unlinkSync(userData);
+      }
+      catch (_) {}
+      const output = await runTestApp('app-custom-path', `-custom-userdata=${userData}`)
+      expect(output.userData).to.equal(userData)
+      // On App ready event, the appData path is created
+      expect(fs.existsSync(userData))
+      // Cleanup
+      try {
+        fs.unlinkSync(userData);
+      }
+      catch (_) {}
+    })
+
+    it(`--user-data-dir='${userData}')`, async () => {
+      // Cleanup
+      try {
+        fs.unlinkSync(userData);
+      }
+      catch (_) {}
+      const output = await runTestApp('app-custom-path', `--user-data-dir=${userData}`)
+      expect(output.userData).to.equal(userData)
+      // On App ready event, the appData path is created
+      expect(fs.existsSync(userData))
+      // Cleanup
+      try {
+        fs.unlinkSync(userData);
       }
       catch (_) {}
     })
@@ -158,7 +195,7 @@ describe('app path module', () => {
 
     if (process.platform === 'win32') {
       it(`setAppLogsPath('${appLogsPath}')`, async () => {
-        const output = await runTestApp('app-custom-path', `custom-applogs=${appLogsPath}`)
+        const output = await runTestApp('app-custom-path', `-custom-applogs=${appLogsPath}`)
         expect(output.appLogs).to.equal(appLogsPath)
       })
     }

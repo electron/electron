@@ -5,6 +5,8 @@ const defaultPayload = {
   'custom-appname': app.commandLine.getSwitchValue('custom-appname'),
   'custom-appdata': app.commandLine.getSwitchValue('custom-appdata'),
   'custom-applogs': app.commandLine.getSwitchValue('custom-applogs'),
+  'custom-userdata': app.commandLine.getSwitchValue('custom-userdata'),
+  'custom-usercache': app.commandLine.getSwitchValue('custom-usercache'),
   defaultAppName: app.name,
   defaultAppData: app.getPath('appData'),
   defaultAppCache: app.getPath('cache'),
@@ -28,10 +30,10 @@ function exitApp() {
   // const browserWindow = new 
 
 
-// dialog.showMessageBoxSync({
-//   type: 'info',
-//   message: JSON.stringify(payload, null, 4)
-// })
+  // dialog.showMessageBoxSync({
+  //   type: 'info',
+  //   message: JSON.stringify(payload, null, 4)
+  // })
 
   process.stdout.end()
 
@@ -52,6 +54,14 @@ if (defaultPayload['custom-appdata']) {
 
 if (defaultPayload['custom-applogs']) {
   app.setAppLogsPath(defaultPayload['custom-applogs'])
+}
+
+if (defaultPayload['custom-userdata']) {
+  app.setPath('userData', defaultPayload['custom-userdata'])
+}
+
+if (defaultPayload['custom-usercache']) {
+  app.setPath('userCache', defaultPayload['custom-usercache'])
 }
 
 app.on('ready', () => {
