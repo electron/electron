@@ -177,13 +177,6 @@ class BrowserWindowProxy {
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean
 ) => {
-  if (guestInstanceId == null) {
-    // Override default window.close.
-    window.close = function () {
-      ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
-    }
-  }
-
   if (!usesNativeWindowOpen) {
     // Make the browser window or guest view emit "new-window" event.
     (window as any).open = function (url?: string, frameName?: string, features?: string) {
@@ -200,6 +193,11 @@ export const windowSetup = (
 
     if (openerId != null) {
       window.opener = getOrCreateProxy(openerId)
+
+      // Override default window.close.
+      window.close = function () {
+        ipcRendererInternal.send('ELECTRON_BROWSER_WINDOW_CLOSE')
+      }
     }
   }
 
