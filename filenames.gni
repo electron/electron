@@ -490,6 +490,8 @@ filenames = {
     "shell/common/keyboard_util.h",
     "shell/common/deprecate_util.cc",
     "shell/common/deprecate_util.h",
+    "shell/common/error_util.cc",
+    "shell/common/error_util.h",
     "shell/common/mouse_util.cc",
     "shell/common/mouse_util.h",
     "shell/common/mac/main_application_bundle.h",
