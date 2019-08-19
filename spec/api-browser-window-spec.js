@@ -1172,23 +1172,51 @@ describe('BrowserWindow module', () => {
   })
 
   describe('BrowserWindow.setOpacity(opacity)', () => {
-    it('make window with initial opacity', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        opacity: 0.5
+    describe('Windows and Mac', () => {
+      before(function () {
+        if (process.platform === 'linux') {
+          this.skip()
+        }
       })
-      assert.strictEqual(w.getOpacity(), 0.5)
-    })
-    it('allows setting the opacity', () => {
-      assert.doesNotThrow(() => {
-        w.setOpacity(0.0)
-        assert.strictEqual(w.getOpacity(), 0.0)
-        w.setOpacity(0.5)
+
+      it('makes a window with initial opacity', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, opacity: 0.5 })
         assert.strictEqual(w.getOpacity(), 0.5)
-        w.setOpacity(1.0)
+      })
+
+      it('allows setting the opacity', () => {
+        assert.doesNotThrow(() => {
+          w.setOpacity(0.0)
+          assert.strictEqual(w.getOpacity(), 0.0)
+          w.setOpacity(0.5)
+          assert.strictEqual(w.getOpacity(), 0.5)
+          w.setOpacity(1.0)
+          assert.strictEqual(w.getOpacity(), 1.0)
+        })
+      })
+
+      it('clamps opacity to [0.0...1.0]', () => {
+        w.setOpacity(100)
+        assert.strictEqual(w.getOpacity(), 1.0)
+        w.setOpacity(-100)
+        assert.strictEqual(w.getOpacity(), 0.0)
+      })
+    })
+
+    describe('Linux', () => {
+      before(function () {
+        if (process.platform !== 'linux') {
+          this.skip()
+        }
+      })
+
+      it('sets 1 regardless of parameter', () => {
+        w.destroy()
+        w = new BrowserWindow({ show: false, opacity: 0.5 })
+        w.setOpacity(0)
+        assert.strictEqual(w.getOpacity(), 1.0)
+        w.setOpacity(0.5)
         assert.strictEqual(w.getOpacity(), 1.0)
       })
     })

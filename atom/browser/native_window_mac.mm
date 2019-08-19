@@ -22,6 +22,7 @@
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
+#include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
@@ -1037,7 +1038,8 @@ bool NativeWindowMac::HasShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  [window_ setAlphaValue:opacity];
+  const double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
+  [window_ setAlphaValue:boundedOpacity];
 }
 
 double NativeWindowMac::GetOpacity() {
