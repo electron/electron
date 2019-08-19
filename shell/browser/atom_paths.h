@@ -51,7 +51,7 @@ enum {
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 
-class AppPathProvider {
+class AppPathService {
  public:
   static void Register();
 

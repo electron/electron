@@ -79,42 +79,42 @@ void GetLinuxAppDataPath(base::FilePath* path) {
 
 // This cannot be done as a static initializer sadly since Visual Studio will
 // eliminate this object file if there is no direct entry point into it.
-void AppPathProvider::Register() {
+void AppPathService::Register() {
   // base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
 }
 
-bool AppPathProvider::Get(const std::string& name, base::FilePath* path) {
-  return AppPathProvider::Get(GetPathConstant(name), path);
+bool AppPathService::Get(const std::string& name, base::FilePath* path) {
+  return AppPathService::Get(GetPathConstant(name), path);
 }
 
-bool AppPathProvider::Get(int key, base::FilePath* path) {
+bool AppPathService::Get(int key, base::FilePath* path) {
   bool succeed = false;
   if (key >= 0)
     succeed = base::PathService::Get(key, path);
   if (!succeed)
-    succeed = AppPathProvider::GetDefault(key, path);
+    succeed = AppPathService::GetDefault(key, path);
   return succeed;
 }
 
-bool AppPathProvider::Override(const std::string& name,
-                               const base::FilePath& path) {
-  return AppPathProvider::Override(GetPathConstant(name), path);
+bool AppPathService::Override(const std::string& name,
+                              const base::FilePath& path) {
+  return AppPathService::Override(GetPathConstant(name), path);
 }
 
-bool AppPathProvider::Override(int key, const base::FilePath& path) {
+bool AppPathService::Override(int key, const base::FilePath& path) {
   bool succeed = false;
   if (key >= 0)
+    // Path must be  absolute and never created by default
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   return succeed;
 }
 
-bool AppPathProvider::GetDefault(const std::string& name,
-                                 base::FilePath* path) {
-  return AppPathProvider::GetDefault(GetPathConstant(name), path);
+bool AppPathService::GetDefault(const std::string& name, base::FilePath* path) {
+  return AppPathService::GetDefault(GetPathConstant(name), path);
 }
 
-bool AppPathProvider::GetDefault(int key, base::FilePath* path) {
+bool AppPathService::GetDefault(int key, base::FilePath* path) {
   switch (key) {
     case DIR_APP_DATA:
 #if defined(USE_X11)
@@ -124,12 +124,12 @@ bool AppPathProvider::GetDefault(int key, base::FilePath* path) {
       return false;
 #endif
     case DIR_USER_DATA:
-      AppPathProvider::Get(DIR_APP_DATA, path);
+      AppPathService::Get(DIR_APP_DATA, path);
       *path = path->Append(
           base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
       return true;
     case DIR_USER_CACHE:
-      AppPathProvider::Get(DIR_CACHE, path);
+      AppPathService::Get(DIR_CACHE, path);
       *path = path->Append(
           base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
       return true;
@@ -137,7 +137,7 @@ bool AppPathProvider::GetDefault(int key, base::FilePath* path) {
 #if defined(OS_MACOSX)
       GetMacAppLogsPath(path);
 #else
-      AppPathProvider::Get(DIR_USER_DATA, path);
+      AppPathService::Get(DIR_USER_DATA, path);
       *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
 #endif
       return true;

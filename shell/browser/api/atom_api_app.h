@@ -48,7 +48,7 @@ namespace electron {
 enum class JumpListResult : int;
 #endif
 
-class AppPathProvider;
+class AppPathService;
 
 namespace api {
 

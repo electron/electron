@@ -255,7 +255,7 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 }
 
 int AtomBrowserMainParts::PreEarlyInitialization() {
-  AppPathProvider::Register();
+  AppPathService::Register();
 
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(USE_X11)
