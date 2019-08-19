@@ -94,9 +94,9 @@ index 983a8303b11527cdab449d03485653b8c27102de..1362161da462be4eb70f9e698eb274c1
  void DesktopMediaListBase::ScheduleNextRefresh() {
 +  if (!observer_->ShouldScheduleNextRefresh(this))
 +    return;
-   base::PostDelayedTaskWithTraits(FROM_HERE, {BrowserThread::UI},
-                                   base::BindOnce(&DesktopMediaListBase::Refresh,
-                                                  weak_factory_.GetWeakPtr()),
+   base::PostDelayedTask(FROM_HERE, {BrowserThread::UI},
+                         base::BindOnce(&DesktopMediaListBase::Refresh,
+                                        weak_factory_.GetWeakPtr()),
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
 index 29ef83096f7a7c69c67e9ad1bee2c45723e58f3f..ec228a826b298eb590f15c843e3346460ae13321 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
