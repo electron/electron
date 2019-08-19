@@ -414,7 +414,11 @@ void WebRequestNS::OnListenerResult(uint64_t id,
       ReadFromResponse(isolate, &dict, out);
   }
 
-  std::move(callbacks_[id]).Run(result);
+  // The ProxyingURLLoaderFactory expects the callback to be executed
+  // asynchronously, because it used to work on IO thread before NetworkService.
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
+  callbacks_.erase(id);
 }
 
 // static
