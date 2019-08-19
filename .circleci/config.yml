@@ -1222,6 +1222,15 @@ jobs:
       <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
+  osx-debug:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large
+      <<: *env-debug-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests    
+
   osx-debug-gn-check:
     <<: *machine-mac
     environment:
@@ -1268,6 +1277,16 @@ jobs:
       <<: *env-mac-large
       <<: *env-mas
       <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests
+
+  mas-debug:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large
+      <<: *env-mas
+      <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
@@ -1645,9 +1664,14 @@ workflows:
           requires:
             - mac-checkout
 
+      - osx-debug:
+          requires:
+            - mac-checkout
+
       - osx-debug-gn-check:
           requires:
             - mac-checkout
+
       - osx-testing-gn-check:
           requires:
             - mac-checkout
@@ -1660,9 +1684,14 @@ workflows:
           requires:
             - mac-checkout
 
+      - mas-debug:
+          requires:
+            - mac-checkout
+
       - mas-debug-gn-check:
           requires:
             - mac-checkout
+
       - mas-testing-gn-check:
           requires:
             - mac-checkout
