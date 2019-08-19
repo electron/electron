@@ -48,7 +48,8 @@ bool ElectronRenderMessageFilter::OnMessageReceived(
   return handled;
 }
 
-void ElectronRenderMessageFilter::OnPreconnect(const GURL& url,
+void ElectronRenderMessageFilter::OnPreconnect(int render_frame_id,
+                                               const GURL& url,
                                                bool allow_credentials,
                                                int count) {
   if (count < 1) {
