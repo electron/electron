@@ -6,15 +6,19 @@
 #include <utility>
 
 #include "base/hash/hash.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
-#include "shell/common/api/atom_api_key_weak_map.h"
-#include "shell/common/api/remote_callback_freer.h"
-#include "shell/common/api/remote_object_freer.h"
 #include "shell/common/native_mate_converters/content_converter.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+#include "shell/common/api/atom_api_key_weak_map.h"
+#include "shell/common/api/remote/remote_callback_freer.h"
+#include "shell/common/api/remote/remote_object_freer.h"
+#endif
 
 namespace std {
 
@@ -117,6 +121,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
   dict.SetMethod("setRemoteCallbackFreer",
                  &electron::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &electron::RemoteObjectFreer::BindTo);
@@ -126,6 +131,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod(
       "createDoubleIDWeakMap",
       &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
+#endif
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);

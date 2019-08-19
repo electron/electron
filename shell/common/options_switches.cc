@@ -110,9 +110,6 @@ const char kPreloadURL[] = "preloadURL";
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
-// Enable the remote module
-const char kEnableRemoteModule[] = "enableRemoteModule";
-
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
@@ -176,6 +173,10 @@ const char kWebGL[] = "webgl";
 // navigation.
 const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
 
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+const char kEnableRemoteModule[] = "enableRemoteModule";
+#endif
+
 }  // namespace options
 
 namespace switches {
@@ -224,7 +225,6 @@ const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";
 const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
-const char kEnableRemoteModule[] = "enable-remote-module";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[] = "opener-id";
@@ -264,6 +264,10 @@ const char kAuthNegotiateDelegateWhitelist[] =
 
 // If set, include the port in generated Kerberos SPNs.
 const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+const char kEnableRemoteModule[] = "enable-remote-module";
+#endif
 
 }  // namespace switches
 
