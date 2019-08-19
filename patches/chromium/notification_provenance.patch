@@ -1,9 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Fri, 5 Oct 2018 14:22:06 -0700
-Subject: pass RenderProcessHost through to PlatformNotificationService
+Subject: notification_provenance.patch
 
-this is so Electron can identify which renderer a notification came from
+Pass RenderProcessHost through to PlatformNotificationService
+so Electron can identify which renderer a notification came from.
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
 index a717d9f3539dc0fe86b743c6e29e4311b8b5cec3..1351217319c57be414e6c66f8a01f71fe46d2c04 100644
@@ -118,7 +119,7 @@ index 95bed38ac589bd55550704d16fa817610aead6f9..664b7dca4e9c2a09680855e9bc3864c8
 +            ->CreateService(host, origin, std::move(request));
        }));
    parameterized_binder_registry_.AddInterface(
-       base::BindRepeating(&BackgroundFetchServiceImpl::CreateForWorker));
+       base::BindRepeating(&QuotaDispatcherHost::CreateForWorker));
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
 index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68eb711a89 100644
 --- a/content/public/browser/platform_notification_service.h
