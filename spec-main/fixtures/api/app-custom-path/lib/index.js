@@ -1,4 +1,4 @@
-const { app } = require('electron')
+const { app, BrowserWindow } = require('electron')
 const { dialog } = require('electron')
 
 const defaultPayload = {
@@ -26,16 +26,6 @@ function exitApp() {
     appLogs: app.getPath('logs')
   }
   process.stdout.write(JSON.stringify(payload))
-
-  // const browserWindow = new 
-
-  // dialog.showMessageBoxSync({
-  //   type: 'info',
-  //   message: JSON.stringify(payload, null, 4)
-  // })
-
-  process.stdout.end()
-
   setImmediate(() => {
     app.quit()
   })
@@ -64,7 +54,18 @@ if (defaultPayload['custom-usercache']) {
 }
 
 app.on('ready', () => {
+  if (app.commandLine.getSwitchValue('create-cache')) {
+    const w = new BrowserWindow({
+      show: false
+    })
+    w.webContents.on('did-finish-load', () => {
+      exitApp();
+    });
+    w.loadURL('about:blank')
+  }
+  else {
     exitApp();
+  }
 })
 
 

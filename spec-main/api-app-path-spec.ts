@@ -16,103 +16,128 @@ const defaultAppName = 'app-custom-path'
 const appName = 'myAppName'
 const appData = path.join(os.tmpdir(), 'myappdata')
 const userData = path.join(os.tmpdir(), 'myuserdata')
+const userCache = path.join(os.tmpdir(), 'myusercache')
+
+interface Payload {
+  appName?: string,
+  appData?: string,
+  appCache?: string,
+  userCache?: string,
+  userData?: string,
+  appLogs?: string
+}
+
+function TestCache(cachedir: string): boolean {
+  return fs.existsSync(cachedir) 
+          && fs.existsSync(path.join(cachedir, 'Cookies'))
+          && fs.existsSync(path.join(cachedir, 'Cookies-journal'))
+          && fs.existsSync(path.join(cachedir, 'Cache'))
+}
+
+function RemoveDir(dir?: string) {
+  if (dir && dir.length && fs.existsSync(dir)) {
+    try {
+      fs.unlinkSync(dir);
+    }
+    catch (_) {}
+  }
+}
+
+function CleanUp(output: Payload) {
+  RemoveDir(output.appData);
+  RemoveDir(output.appCache);
+  RemoveDir(output.userCache);
+  RemoveDir(output.userData);
+  RemoveDir(output.appLogs);
+}
 
 describe('app path module', () => {
   describe(`computes 'userData' from 'appData' and app name`, () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
-      expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
+      const expected_userdata = path.join(output.appData, defaultAppName)
+      expect(output.userData).to.equal(expected_userdata)
+      CleanUp(output)
     })
 
     it(`app.name='${appName}'`, async () => {
       const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
-      expect(output.userData).to.equal(path.join(output.appData, appName))
+      const expected_userdata = path.join(output.appData, appName)
+      expect(output.userData).to.equal(expected_userdata)
+      CleanUp(output)
     })
 
     it(`setPath('appData', '${appData}')`, async () => {
-      // Cleanup
-      try {
-        fs.unlinkSync(appData);
-      }
-      catch (_) {}
+      RemoveDir(appData)
       const output = await runTestApp('app-custom-path', `-custom-appdata=${appData}`)
+      const expected_userdata = path.join(appData, defaultAppName)
       expect(output.appData).to.equal(appData)
-      expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
+      expect(output.userData).to.equal(expected_userdata)
       // On App ready event, the appData path is created
       expect(fs.existsSync(appData))
-      // Cleanup
-      try {
-        fs.unlinkSync(appData);
-      }
-      catch (_) {}
+      CleanUp(output)
     })
   })
 
   describe(`customizes 'userData'`, () => {
     it(`setPath('userData', '${userData}')`, async () => {
-      // Cleanup
-      try {
-        fs.unlinkSync(userData);
-      }
-      catch (_) {}
+      RemoveDir(userData)
       const output = await runTestApp('app-custom-path', `-custom-userdata=${userData}`)
       expect(output.userData).to.equal(userData)
       // On App ready event, the appData path is created
       expect(fs.existsSync(userData))
-      // Cleanup
-      try {
-        fs.unlinkSync(userData);
-      }
-      catch (_) {}
+      CleanUp(output)
     })
 
     it(`--user-data-dir='${userData}')`, async () => {
-      // Cleanup
-      try {
-        fs.unlinkSync(userData);
-      }
-      catch (_) {}
+      RemoveDir(userData)
       const output = await runTestApp('app-custom-path', `--user-data-dir=${userData}`)
       expect(output.userData).to.equal(userData)
       // On App ready event, the appData path is created
       expect(fs.existsSync(userData))
-      // Cleanup
-      try {
-        fs.unlinkSync(userData);
-      }
-      catch (_) {}
+      CleanUp(output)
     })
   })
 
   describe(`computes 'userCache' from 'cache', 'appData' and app name`, () => {
     it('by default', async () => {
-      const output = await runTestApp('app-custom-path')
-      expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
+      const output = await runTestApp('app-custom-path', '-create-cache')
+      const expected_usercache = path.join(output.appCache, defaultAppName)
+      expect(output.userCache).to.equal(expected_usercache)
+      expect(TestCache(expected_usercache))
+      CleanUp(output)
     })
 
     it(`app.name='${appName}'`, async () => {
-      const output = await runTestApp('app-custom-path', `-custom-appname=${appName}`)
-      expect(output.userCache).to.equal(path.join(output.appCache, appName))
+      const output = await runTestApp('app-custom-path', '-create-cache', `-custom-appname=${appName}`)
+      const expected_usercache = path.join(output.appCache, appName)
+      expect(output.userCache).to.equal(expected_usercache)
+      expect(TestCache(expected_usercache))
     })
 
     it(`setPath('appData', '${appData}')`, async () => {
-      // Cleanup
-      try {
-        fs.unlinkSync(appData);
-      }
-      catch (_) {}
+      RemoveDir(appData);
       const output = await runTestApp('app-custom-path', `-custom-appdata=${appData}`)
-      expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
+      const expected_usercache = path.join(output.appCache, defaultAppName);
+      expect(output.userCache).to.equal(expected_usercache)
       // On Windows, 'cache' is equivalent to 'appData'
       if (process.platform === 'win32') {
         expect(output.userCache).to.contain(appData)
         expect(output.appCache).to.equal(appData)
       }
-      // Cleanup
-      try {
-        fs.unlinkSync(appData);
-      }
-      catch (_) {}
+      expect(TestCache(expected_usercache))
+      CleanUp(output)
+    })
+  })
+
+  describe(`customizes 'userCache'`, () => {
+    it(`setPath('userCache', '${userCache}')`, async () => {
+      RemoveDir(userCache)
+      const output = await runTestApp('app-custom-path', '-create-cache', `-custom-usercache=${userCache}`)
+      expect(output.userCache).to.equal(userCache)
+      expect(output.userData).to.not.equal(userCache)
+      expect(TestCache(userCache))
+      CleanUp(output)
     })
   })
 
