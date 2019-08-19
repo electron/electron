@@ -7,7 +7,7 @@
 
 #define ATOM_MAJOR_VERSION 6
 #define ATOM_MINOR_VERSION 0
-#define ATOM_PATCH_VERSION 2
+#define ATOM_PATCH_VERSION 3
 // clang-format off
 // #define ATOM_PRE_RELEASE_VERSION
 // clang-format on
