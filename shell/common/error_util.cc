@@ -21,38 +21,23 @@ ErrorThrower::ErrorThrower() : isolate_(v8::Isolate::GetCurrent()) {}
 ErrorThrower::~ErrorThrower() = default;
 
 void ErrorThrower::ThrowError(const std::string& err_msg) {
-  v8::Local<v8::Value> exception =
-      v8::Exception::Error(mate::StringToV8(isolate_, err_msg));
-  if (!isolate_->IsExecutionTerminating())
-    isolate_->ThrowException(exception);
+  Throw(v8::Exception::Error, err_msg);
 }
 
 void ErrorThrower::ThrowTypeError(const std::string& err_msg) {
-  v8::Local<v8::Value> exception =
-      v8::Exception::TypeError(mate::StringToV8(isolate_, err_msg));
-  if (!isolate_->IsExecutionTerminating())
-    isolate_->ThrowException(exception);
+  Throw(v8::Exception::TypeError, err_msg);
 }
 
 void ErrorThrower::ThrowRangeError(const std::string& err_msg) {
-  v8::Local<v8::Value> exception =
-      v8::Exception::RangeError(mate::StringToV8(isolate_, err_msg));
-  if (!isolate_->IsExecutionTerminating())
-    isolate_->ThrowException(exception);
+  Throw(v8::Exception::RangeError, err_msg);
 }
 
 void ErrorThrower::ThrowReferenceError(const std::string& err_msg) {
-  v8::Local<v8::Value> exception =
-      v8::Exception::ReferenceError(mate::StringToV8(isolate_, err_msg));
-  if (!isolate_->IsExecutionTerminating())
-    isolate_->ThrowException(exception);
+  Throw(v8::Exception::ReferenceError, err_msg);
 }
 
 void ErrorThrower::ThrowSyntaxError(const std::string& err_msg) {
-  v8::Local<v8::Value> exception =
-      v8::Exception::SyntaxError(mate::StringToV8(isolate_, err_msg));
-  if (!isolate_->IsExecutionTerminating())
-    isolate_->ThrowException(exception);
+  Throw(v8::Exception::SyntaxError, err_msg);
 }
 
 }  // namespace util

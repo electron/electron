@@ -29,6 +29,14 @@ class ErrorThrower {
  private:
   v8::Isolate* isolate() const { return isolate_; }
 
+  using ErrorGenerator =
+      v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg);
+  void Throw(ErrorGenerator gen, const std::string& err_msg) {
+    v8::Local<v8::Value> exception = gen(mate::StringToV8(isolate_, err_msg));
+    if (!isolate_->IsExecutionTerminating())
+      isolate_->ThrowException(exception);
+  }
+
   v8::Isolate* isolate_;
 };
 
