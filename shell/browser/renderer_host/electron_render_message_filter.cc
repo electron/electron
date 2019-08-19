@@ -72,7 +72,7 @@ namespace predictors {
 PreconnectRequest::PreconnectRequest(
     const GURL& origin,
     int num_sockets,
-    net::NetworkIsolationKey network_isolation_key)
+    const net::NetworkIsolationKey& network_isolation_key)
     : origin(origin), num_sockets(num_sockets) {
   DCHECK_GE(num_sockets, 0);
 }
