@@ -50,6 +50,7 @@
 #include "shell/browser/api/atom_api_browser_window.h"
 #include "shell/browser/api/atom_api_debugger.h"
 #include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
@@ -471,6 +472,7 @@ void WebContents::InitWithSessionAndOptions(
                                              base::Unretained(this)));
   bindings_.set_connection_error_handler(base::BindRepeating(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
+  AutofillDriverFactory::CreateForWebContents(web_contents());
 
   web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
                                        false);
@@ -626,7 +628,13 @@ void WebContents::SetContentsBounds(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-  HideAutofillPopup();
+
+  auto* autofill_driver_factory =
+      AutofillDriverFactory::FromWebContents(web_contents());
+  if (autofill_driver_factory) {
+    autofill_driver_factory->CloseAllPopups();
+  }
+
   if (managed_web_contents())
     managed_web_contents()->GetView()->SetDelegate(nullptr);
   for (ExtendedWebContentsObserver& observer : observers_)
@@ -1151,26 +1159,6 @@ void WebContents::DevToolsClosed() {
   devtools_web_contents_.Reset();
 
   Emit("devtools-closed");
-}
-
-void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
-                                    const gfx::RectF& bounds,
-                                    const std::vector<base::string16>& values,
-                                    const std::vector<base::string16>& labels) {
-  bool offscreen = IsOffScreen() || (embedder_ && embedder_->IsOffScreen());
-  gfx::RectF popup_bounds(bounds);
-  content::RenderFrameHost* embedder_frame_host = nullptr;
-  if (embedder_) {
-    auto* embedder_view = embedder_->web_contents()->GetMainFrame()->GetView();
-    auto* view = web_contents()->GetMainFrame()->GetView();
-    auto offset = view->GetViewBounds().origin() -
-                  embedder_view->GetViewBounds().origin();
-    popup_bounds.Offset(offset.x(), offset.y());
-    embedder_frame_host = embedder_->web_contents()->GetMainFrame();
-  }
-
-  CommonWebContentsDelegate::ShowAutofillPopup(
-      frame_host, embedder_frame_host, offscreen, popup_bounds, values, labels);
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
@@ -2214,17 +2202,6 @@ void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 
-void WebContents::ShowAutofillPopup(const gfx::RectF& bounds,
-                                    const std::vector<base::string16>& values,
-                                    const std::vector<base::string16>& labels) {
-  content::RenderFrameHost* frame_host = bindings_.dispatch_context();
-  ShowAutofillPopup(frame_host, bounds, values, labels);
-}
-
-void WebContents::HideAutofillPopup() {
-  CommonWebContentsDelegate::HideAutofillPopup();
-}
-
 std::vector<base::FilePath::StringType> WebContents::GetPreloadPaths() const {
   auto result = SessionPreferences::GetValidPreloads(GetBrowserContext());
 
@@ -2279,7 +2256,7 @@ v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, session_);
 }
 
-content::WebContents* WebContents::HostWebContents() {
+content::WebContents* WebContents::HostWebContents() const {
   if (!embedder_)
     return nullptr;
   return embedder_->web_contents();
