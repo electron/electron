@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Fri, 7 Jun 2019 13:59:37 -0700
-Subject: fix: printing
+Subject: printing.patch
 
 Add changeset that was previously applied to sources in chromium_src. The
 majority of changes originally come from these PRs:
@@ -57,7 +57,7 @@ index 72a0c8cd0f1be0f7713c01ce28323619f09fcc20..b78da10cb607f0f7ce0e97a620908b55
 +                    JobEventDetails::USER_INIT_CANCELED, 0,
 +                    base::RetainedRef(document_)));
 +  }
-   std::move(callback).Run(printing_context_->settings(), result);
+   std::move(callback).Run(printing_context_->TakeAndResetSettings(), result);
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
@@ -614,7 +614,7 @@ index 78e3c3b2e1bea0f3626838eab14267847a556470..b1c16e6eb1d0d9c0a8b700d9faf408d6
      base::Value job_settings) {
 -  ResetSettings();
 -
-   if (!PrintSettingsFromJobSettings(job_settings, &settings_)) {
+   if (!PrintSettingsFromJobSettings(job_settings, settings_.get())) {
      NOTREACHED();
      return OnError();
 diff --git a/printing/printing_context.h b/printing/printing_context.h
