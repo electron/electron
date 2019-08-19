@@ -1,10 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Tue, 16 Jul 2019 14:38:52 -0700
-Subject: build: Temporarily disable /Zc:twoPhase when libcxx is not used on
- windows.
+Subject: build_win_disable_zc_twophase.patch
 
-This is to workaround the bug in crbug.com/969698#c10
+Temporarily disable /Zc:twoPhase when libcxx is not used on
+Windows. This is to workaround the bug in crbug.com/969698#c10
 until fixes have landed in upstream.
 
 diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn

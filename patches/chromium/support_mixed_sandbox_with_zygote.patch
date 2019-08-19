@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 28 Nov 2018 13:20:27 -0800
-Subject: support mixed-sandbox with zygote
+Subject: support_mixed_sandbox_with_zygote.patch
 
 On Linux, Chromium launches all new renderer processes via a "zygote"
 process which has the sandbox pre-initialized (see

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Heilig Benedek <benecene@gmail.com>
 Date: Wed, 20 Mar 2019 20:30:44 +0100
-Subject: feat: offscreen rendering with viz compositor
+Subject: feat_offscreen_rendering_with_viz_compositor.patch
 
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc

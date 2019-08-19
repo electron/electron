@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Tue, 28 May 2019 18:12:17 -0700
-Subject: fix: breakpad symbol generation on linux arm
+Subject: fix_breakpad_symbol_generation_on_linux_arm.patch
 
 Fixes broken Linux ARM breakpad symbol generation by patching
 out an `ldd`-related call that was throwing.

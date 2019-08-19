@@ -1,12 +1,13 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Heilig Benedek <benecene@gmail.com>
 Date: Wed, 30 Jan 2019 17:04:33 +0100
-Subject: don't call into chrome internals for autofill popup size calculations
+Subject: autofill_size_calculation.patch
 
-The default GetWindowBounds calls into chrome internal functions to
-find out the size of the window - this can be overridden but even
-then some methods call into the original. Let's just return an empty
-gfx::Rect and do the actual job in the subclass.
+We don't want to call into chrome internals for autofill popup size 
+calculations. The default GetWindowBounds calls into chrome internal 
+functions to find out the size of the window - this can be overridden
+but even then some methods call into the original. Let's just return
+an empty gfx::Rect and do the actual job in the subclass.
 
 diff --git a/chrome/browser/ui/autofill/popup_view_common.cc b/chrome/browser/ui/autofill/popup_view_common.cc
 index 25e2cfce4999bdf6a94d61aae4558470d18f89ed..c9880bcd639eb59ae52c38dbdabbd86ebac3b530 100644

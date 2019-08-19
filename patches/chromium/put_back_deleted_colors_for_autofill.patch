@@ -1,11 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@github.com>
 Date: Thu, 20 Jun 2019 16:49:25 -0400
-Subject: put back deleted colors for autofill
+Subject: put_back_deleted_colors_for_autofill.patch
 
 https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors as they are no longer
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
-our autofill implementation to work like chromium.
+our autofill implementation to work like Chromium's.
 
 diff --git a/chrome/browser/ui/libgtkui/native_theme_gtk.cc b/chrome/browser/ui/libgtkui/native_theme_gtk.cc
 index 4edc178d601f764721b8c13b639f6ed073417c43..15c1375b193d71a2ab195d09b22b0969b738395b 100644

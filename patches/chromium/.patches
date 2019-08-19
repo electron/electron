@@ -72,6 +72,5 @@ put_back_deleted_colors_for_autofill.patch
 build_win_disable_zc_twophase.patch
 disable_color_correct_rendering.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
-fix_vc_incompatible_inline_calls.patch
 picture-in-picture.patch
 disable_compositor_recycling.patch
