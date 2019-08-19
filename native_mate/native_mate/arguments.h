@@ -6,6 +6,7 @@
 #define NATIVE_MATE_ARGUMENTS_H_
 
 #include "base/macros.h"
+#include "base/optional.h"
 #include "native_mate/converter.h"
 
 namespace mate {
@@ -33,7 +34,18 @@ class Arguments {
     return ConvertFromV8(isolate_, info_->Data(), out);
   }
 
-  template<typename T>
+  template <typename T>
+  bool GetNext(base::Optional<T>* out) {
+    if (next_ >= info_->Length())
+      return true;
+    v8::Local<v8::Value> val = (*info_)[next_];
+    bool success = ConvertFromV8(isolate_, val, out);
+    if (success)
+      next_++;
+    return success;
+  }
+
+  template <typename T>
   bool GetNext(T* out) {
     if (next_ >= info_->Length()) {
       insufficient_arguments_ = true;

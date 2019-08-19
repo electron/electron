@@ -176,7 +176,8 @@ class App : public AtomBrowserClient::Delegate,
   void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
   void ChildProcessDisconnected(base::ProcessId pid);
 
-  void SetAppLogsPath(mate::Arguments* args);
+  void SetAppLogsPath(base::Optional<base::FilePath> custom_path,
+                      mate::Arguments* args);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
