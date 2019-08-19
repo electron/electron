@@ -89,6 +89,10 @@ bool ShouldUseGlobalMenuBar() {
 }
 
 void MoveWindowToForeground(::Window xwindow) {
+  MoveWindowAbove(xwindow, 0);
+}
+
+void MoveWindowAbove(::Window xwindow, ::Window other_xwindow) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   XEvent xclient;
   memset(&xclient, 0, sizeof(xclient));
@@ -99,7 +103,7 @@ void MoveWindowToForeground(::Window xwindow) {
   xclient.xclient.message_type = GetAtom("_NET_RESTACK_WINDOW");
   xclient.xclient.format = 32;
   xclient.xclient.data.l[0] = 2;
-  xclient.xclient.data.l[1] = 0;
+  xclient.xclient.data.l[1] = other_xwindow;
   xclient.xclient.data.l[2] = Above;
   xclient.xclient.data.l[3] = 0;
   xclient.xclient.data.l[4] = 0;
@@ -107,6 +111,11 @@ void MoveWindowToForeground(::Window xwindow) {
   XSendEvent(xdisplay, DefaultRootWindow(xdisplay), x11::False,
              SubstructureRedirectMask | SubstructureNotifyMask, &xclient);
   XFlush(xdisplay);
+}
+
+bool IsWindowValid(::Window xwindow) {
+  XWindowAttributes attrs;
+  return XGetWindowAttributes(gfx::GetXDisplay(), xwindow, &attrs);
 }
 
 }  // namespace electron

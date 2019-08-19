@@ -54,7 +54,7 @@ index e44b0d054d61914b43f4a3c36fa2578f452e1797..8b46714d15db976968ad084e7941ab50
      WTF::ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
-index 0031242152ce5190b0dfc77b53af2d984e5fad82..a6370ec793ce6c38eb7dab189583ea11cca51c1f 100644
+index ac76d127b96b80c8260a7e2cda0b669cd98787ad..dcab64586700a8740262aede8dba2755f652d8e8 100644
 --- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
 @@ -130,6 +130,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
@@ -70,7 +70,7 @@ index 0031242152ce5190b0dfc77b53af2d984e5fad82..a6370ec793ce6c38eb7dab189583ea11
    Partitions::ArrayBufferPartition()->Free(data);
  }
 diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
-index 601046eca671613693d3fc083cf48a0d530c8fd3..a94b7ea29bbd6d5e6cc6fb3a850be7e1ef00c5ad 100644
+index 929468d9d4885953576b777785609e9b54d5ebd0..ee35b4782b9797278209280c2a031e5f3d5ce6c6 100644
 --- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
 +++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
 @@ -135,6 +135,7 @@ class WTF_EXPORT ArrayBufferContents {

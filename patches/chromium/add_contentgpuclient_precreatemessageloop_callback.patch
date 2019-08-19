@@ -32,10 +32,10 @@ index 46d92835eadd6429ea0c6a53c5a39ff04f1c2634..1b99a1e601f4226280cdf1382af555b4
      client->PostIOThreadCreated(gpu_process.io_task_runner());
  
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index 20e31e1bd96395cb4350aa6ae84cc16c4ca2116b..d89af81ef9426c197a62027b514011afd10ea3ce 100644
+index 830d5e89af7bd3ddb409ac7bf9d8eb3109830d41..7d544536ec846c294deb6626f51d5de7846fc5c2 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
-@@ -35,6 +35,10 @@ class CONTENT_EXPORT ContentGpuClient {
+@@ -39,6 +39,10 @@ class CONTENT_EXPORT ContentGpuClient {
   public:
    virtual ~ContentGpuClient() {}
  

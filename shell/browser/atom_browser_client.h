@@ -70,9 +70,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   bool CanUseCustomSiteInstance() override;
 
  protected:
-  void RenderProcessWillLaunch(
-      content::RenderProcessHost* host,
-      service_manager::mojom::ServiceRequest* service_request) override;
+  void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsControllerDelegate* GetTtsControllerDelegate() override;
@@ -107,7 +105,6 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const GURL& request_url,
       bool is_main_frame_request,
       bool strict_enforcement,
-      bool expired_previous_decision,
       const base::Callback<void(content::CertificateRequestResultType)>&
           callback) override;
   base::OnceClosure SelectClientCertificate(

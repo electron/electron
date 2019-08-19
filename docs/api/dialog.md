@@ -48,9 +48,12 @@ The `dialog` module has the following methods:
       their target path.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
+    * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
+
+Returns `String[] | undefined`, the file paths chosen by the user; if the dialog is cancelled it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -108,6 +111,7 @@ dialog.showOpenDialogSync(mainWindow, {
       their target path.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
+    * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
@@ -169,6 +173,13 @@ dialog.showOpenDialog(mainWindow, {
     displayed in front of the filename text field.
   * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
+  * `properties` String[] (optional)
+    * `showHiddenFiles` - Show hidden files in dialog.
+    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
+    * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
+      as a directory instead of a file.
+    * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
+    * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `String | undefined`, the path of the file chosen by the user; if the dialog is cancelled it returns `undefined`.
@@ -191,8 +202,14 @@ The `filters` specifies an array of file types that can be displayed, see
   * `message` String (optional) _macOS_ - Message to display above text fields.
   * `nameFieldLabel` String (optional) _macOS_ - Custom label for the text
     displayed in front of the filename text field.
-  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
-    defaults to `true`.
+  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
+  * `properties` String[] (optional)
+    * `showHiddenFiles` - Show hidden files in dialog.
+    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
+    * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
+      as a directory instead of a file.
+    * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
+    * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
@@ -227,7 +244,7 @@ expanding and collapsing the dialog.
     include a checkbox with the given label.
   * `checkboxChecked` Boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
-  * `icon` [NativeImage](native-image.md) (optional)
+  * `icon` ([NativeImage](native-image.md) | String) (optional)
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the

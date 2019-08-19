@@ -127,6 +127,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
+  void MoveAbove(const std::string& sourceId, mate::Arguments* args);
   void MoveTop();
   bool IsMovable();
   void SetMinimizable(bool minimizable);
@@ -173,6 +174,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   virtual void RemoveBrowserView(v8::Local<v8::Value> value);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
+  std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,

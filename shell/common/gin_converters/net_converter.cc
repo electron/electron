@@ -1,8 +1,8 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2019 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/native_mate_converters/net_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
 
 #include <memory>
 #include <string>
@@ -12,7 +12,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
-#include "native_mate/dictionary.h"
+#include "gin/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
 #include "net/base/upload_element_reader.h"
@@ -21,13 +21,13 @@
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/resource_request.h"
-#include "shell/browser/net/cert_verifier_client.h"
-#include "shell/common/native_mate_converters/gurl_converter.h"
-#include "shell/common/native_mate_converters/string16_converter.h"
-#include "shell/common/native_mate_converters/value_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
+#include "shell/common/gin_converters/string16_converter.h"
+#include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "shell/common/node_includes.h"
 
-namespace mate {
+namespace gin {
 
 namespace {
 
@@ -54,20 +54,20 @@ bool CertFromData(const std::string& data,
 v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
     v8::Isolate* isolate,
     const net::AuthChallengeInfo& val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("isProxy", val.is_proxy);
   dict.Set("scheme", val.scheme);
   dict.Set("host", val.challenger.host());
   dict.Set("port", static_cast<uint32_t>(val.challenger.port()));
   dict.Set("realm", val.realm);
-  return mate::ConvertToV8(isolate, dict);
+  return gin::ConvertToV8(isolate, dict);
 }
 
 // static
 v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     v8::Isolate* isolate,
     const scoped_refptr<net::X509Certificate>& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  gin::Dictionary dict(isolate, v8::Object::New(isolate));
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(val->cert_buffer(), &encoded_data);
 
@@ -99,14 +99,14 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     dict.Set("issuerCert", issuer_cert);
   }
 
-  return dict.GetHandle();
+  return ConvertToV8(isolate, dict);
 }
 
 bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     scoped_refptr<net::X509Certificate>* out) {
-  mate::Dictionary dict;
+  gin::Dictionary dict(nullptr);
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
 
@@ -137,7 +137,7 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
 v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
     v8::Isolate* isolate,
     const net::CertPrincipal& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  gin::Dictionary dict(isolate, v8::Object::New(isolate));
 
   dict.Set("commonName", val.common_name);
   dict.Set("organizations", val.organization_names);
@@ -146,7 +146,7 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
   dict.Set("state", val.state_or_province_name);
   dict.Set("country", val.country_name);
 
-  return dict.GetHandle();
+  return ConvertToV8(isolate, dict);
 }
 
 // static
@@ -191,7 +191,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
       return false;
     }
     std::string value;
-    mate::ConvertFromV8(isolate, localStrVal, &value);
+    gin::ConvertFromV8(isolate, localStrVal, &value);
     out->AddHeader(key + ": " + value);
     return true;
   };
@@ -205,7 +205,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
       return false;
     }
     std::string key;
-    mate::ConvertFromV8(isolate, keyVal, &key);
+    gin::ConvertFromV8(isolate, keyVal, &key);
 
     auto localVal = headers->Get(context, keyVal).ToLocalChecked();
     if (localVal->IsArray()) {
@@ -226,23 +226,46 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
 }
 
 // static
+v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
+    v8::Isolate* isolate,
+    const net::HttpRequestHeaders& val) {
+  gin::Dictionary headers(isolate, v8::Object::New(isolate));
+  for (net::HttpRequestHeaders::Iterator it(val); it.GetNext();)
+    headers.Set(it.name(), it.value());
+  return ConvertToV8(isolate, headers);
+}
+
+// static
+bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                net::HttpRequestHeaders* out) {
+  base::DictionaryValue dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
+    if (it.value().is_string()) {
+      std::string value = it.value().GetString();
+      out->SetHeader(it.key(), value);
+    }
+  }
+  return true;
+}
+
+// static
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  gin::Dictionary dict(isolate, v8::Object::New(isolate));
   dict.Set("method", val.method);
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
-  mate::Dictionary headers(isolate, v8::Object::New(isolate));
-  for (net::HttpRequestHeaders::Iterator it(val.headers); it.GetNext();)
-    headers.Set(it.name(), it.value());
-  dict.Set("headers", headers);
+  dict.Set("headers", val.headers);
   if (val.request_body) {
     const auto& elements = *val.request_body->elements();
     v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
     for (size_t i = 0; i < elements.size(); ++i) {
       const auto& element = elements[i];
-      mate::Dictionary upload_data(isolate, v8::Object::New(isolate));
+      gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
       switch (element.type()) {
         case network::mojom::DataElementType::kFile:
           upload_data.Set("file", element.path().value());
@@ -259,27 +282,27 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
           NOTREACHED() << "Found unsupported data element";
       }
       arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
-               upload_data.GetHandle())
+               ConvertToV8(isolate, upload_data))
           .Check();
     }
     dict.Set("uploadData", arr);
   }
-  return dict.GetHandle();
+  return ConvertToV8(isolate, dict);
 }
 
 // static
 v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
     v8::Isolate* isolate,
     electron::VerifyRequestParams val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
   dict.Set("verificationResult", val.default_result);
   dict.Set("errorCode", val.error_code);
-  return dict.GetHandle();
+  return ConvertToV8(isolate, dict);
 }
 
-}  // namespace mate
+}  // namespace gin
 
 namespace electron {
 

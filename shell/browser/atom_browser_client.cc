@@ -53,6 +53,7 @@
 #include "shell/browser/api/atom_api_protocol_ns.h"
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
+#include "shell/browser/api/atom_api_web_request_ns.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_navigation_throttle.h"
@@ -338,8 +339,7 @@ bool AtomBrowserClient::IsRendererSubFrame(int process_id) const {
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
-    content::RenderProcessHost* host,
-    service_manager::mojom::ServiceRequest* service_request) {
+    content::RenderProcessHost* host) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
@@ -411,7 +411,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->navigate_on_drag_drop = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
                                       ? blink::PreferredColorScheme::kDark
                                       : blink::PreferredColorScheme::kLight;
 
@@ -627,13 +627,12 @@ void AtomBrowserClient::AllowCertificateError(
     const GURL& request_url,
     bool is_main_frame_request,
     bool strict_enforcement,
-    bool expired_previous_decision,
     const base::RepeatingCallback<void(content::CertificateRequestResultType)>&
         callback) {
   if (delegate_) {
-    delegate_->AllowCertificateError(
-        web_contents, cert_error, ssl_info, request_url, is_main_frame_request,
-        strict_enforcement, expired_previous_decision, callback);
+    delegate_->AllowCertificateError(web_contents, cert_error, ssl_info,
+                                     request_url, is_main_frame_request,
+                                     strict_enforcement, callback);
   }
 }
 
@@ -988,13 +987,17 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
-  if (!web_contents) {
+  // For service workers there might be no WebContents.
+  if (!web_contents)
     return false;
-  }
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   api::ProtocolNS* protocol = api::ProtocolNS::FromWrappedClass(
-      v8::Isolate::GetCurrent(), web_contents->GetBrowserContext());
-  if (!protocol)
-    return false;
+      isolate, web_contents->GetBrowserContext());
+  DCHECK(protocol);
+  auto web_request = api::WebRequestNS::FromOrCreate(
+      isolate, web_contents->GetBrowserContext());
+  DCHECK(web_request.get());
 
   auto proxied_receiver = std::move(*factory_receiver);
   network::mojom::URLLoaderFactoryPtrInfo target_factory_info;
@@ -1005,8 +1008,9 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     header_client_request = mojo::MakeRequest(header_client);
 
   new ProxyingURLLoaderFactory(
-      protocol->intercept_handlers(), std::move(proxied_receiver),
-      std::move(target_factory_info), std::move(header_client_request));
+      web_request.get(), protocol->intercept_handlers(), render_process_id,
+      std::move(proxied_receiver), std::move(target_factory_info),
+      std::move(header_client_request));
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;

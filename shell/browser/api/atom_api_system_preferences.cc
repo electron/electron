@@ -31,7 +31,7 @@ SystemPreferences::~SystemPreferences() {
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->SystemDarkModeEnabled();
+  return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
 }
 #endif
 
@@ -99,7 +99,7 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("removeUserDefault", &SystemPreferences::RemoveUserDefault)
       .SetMethod("isSwipeTrackingFromScrollEventsEnabled",
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
-      .SetMethod("getEffectiveAppearance",
+      .SetMethod("_getEffectiveAppearance",
                  &SystemPreferences::GetEffectiveAppearance)
       .SetMethod("_getAppLevelAppearance",
                  &SystemPreferences::GetAppLevelAppearance)
@@ -108,6 +108,8 @@ void SystemPreferences::BuildPrototype(
       .SetProperty("appLevelAppearance",
                    &SystemPreferences::GetAppLevelAppearance,
                    &SystemPreferences::SetAppLevelAppearance)
+      .SetProperty("effectiveAppearance",
+                   &SystemPreferences::GetEffectiveAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
