@@ -27,7 +27,7 @@ interface Payload {
   appLogs?: string
 }
 
-function TestCache(cachedir: string): boolean {
+function ExistsCacheSync(cachedir: string): boolean {
   return fs.existsSync(cachedir) 
           && fs.existsSync(path.join(cachedir, 'Cookies'))
           && fs.existsSync(path.join(cachedir, 'Cookies-journal'))
@@ -35,6 +35,7 @@ function TestCache(cachedir: string): boolean {
 }
 
 function RemoveDir(dir?: string) {
+  console.log(`RemoveDir ${dir}`)
   if (dir && dir.length && fs.existsSync(dir)) {
     try {
       fs.unlinkSync(dir);
@@ -44,10 +45,8 @@ function RemoveDir(dir?: string) {
 }
 
 function CleanUp(output: Payload) {
-  RemoveDir(output.appData);
-  RemoveDir(output.appCache);
-  RemoveDir(output.userCache);
   RemoveDir(output.userData);
+  RemoveDir(output.userCache);
   RemoveDir(output.appLogs);
 }
 
@@ -76,6 +75,7 @@ describe('app path module', () => {
       // On App ready event, the appData path is created
       expect(fs.existsSync(appData))
       CleanUp(output)
+      RemoveDir(appData)
     })
   })
 
@@ -104,7 +104,7 @@ describe('app path module', () => {
       const output = await runTestApp('app-custom-path', '-create-cache')
       const expected_usercache = path.join(output.appCache, defaultAppName)
       expect(output.userCache).to.equal(expected_usercache)
-      expect(TestCache(expected_usercache))
+      expect(ExistsCacheSync(expected_usercache))
       CleanUp(output)
     })
 
@@ -112,7 +112,7 @@ describe('app path module', () => {
       const output = await runTestApp('app-custom-path', '-create-cache', `-custom-appname=${appName}`)
       const expected_usercache = path.join(output.appCache, appName)
       expect(output.userCache).to.equal(expected_usercache)
-      expect(TestCache(expected_usercache))
+      expect(ExistsCacheSync(expected_usercache))
     })
 
     it(`setPath('appData', '${appData}')`, async () => {
@@ -125,8 +125,9 @@ describe('app path module', () => {
         expect(output.userCache).to.contain(appData)
         expect(output.appCache).to.equal(appData)
       }
-      expect(TestCache(expected_usercache))
+      expect(ExistsCacheSync(expected_usercache))
       CleanUp(output)
+      RemoveDir(appData)
     })
   })
 
@@ -136,7 +137,7 @@ describe('app path module', () => {
       const output = await runTestApp('app-custom-path', '-create-cache', `-custom-usercache=${userCache}`)
       expect(output.userCache).to.equal(userCache)
       expect(output.userData).to.not.equal(userCache)
-      expect(TestCache(userCache))
+      expect(ExistsCacheSync(userCache))
       CleanUp(output)
     })
   })
