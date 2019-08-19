@@ -13,30 +13,19 @@ steps:
     $localArtifactPath = "$pwd\dist.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/dist.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-  displayName: 'Download dist.zip for test'
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
+  displayName: 'Download and extract dist.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
-
-- task: ExtractFiles@1
-  inputs:
-    archiveFilePatterns: 'dist.zip'
-    destinationFolder: src\out\Default
-  displayName: 'Unzip dist files for test'
 
 - powershell: |
     $localArtifactPath = "$pwd\ffmpeg.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/ffmpeg.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-  displayName: 'Download ffmpeg.zip for test'
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
+  displayName: 'Download and extract ffmpeg.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
-
-- task: ExtractFiles@1
-  inputs:
-    archiveFilePatterns: 'ffmpeg.zip'
-    destinationFolder: src\out\ffmpeg
-    cleanDestinationFolder: false
-  displayName: 'Unzip ffmpeg files for test'
 
 - powershell: |
     $localArtifactPath = "$pwd\src\out\Default\mksnapshot.zip"
