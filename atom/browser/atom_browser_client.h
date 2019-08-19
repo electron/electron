@@ -78,6 +78,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       content::RenderFrameHost* speculative_rfh,
       content::BrowserContext* browser_context,
       const GURL& url,
+      bool has_navigation_started,
       bool has_request_started,
       content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
