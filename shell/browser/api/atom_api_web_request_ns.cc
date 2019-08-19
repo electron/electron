@@ -316,16 +316,29 @@ template <typename Listener, typename Listeners, typename Event>
 void WebRequestNS::SetListener(Event event,
                                Listeners* listeners,
                                gin::Arguments* args) {
+  v8::Local<v8::Value> arg;
+
   // { urls }.
   std::set<URLPattern> patterns;
   gin::Dictionary dict(args->isolate());
-  args->GetNext(&dict) && dict.Get("urls", &patterns);
+  if (args->GetNext(&arg) && !arg->IsFunction()) {
+    // Note that gin treats Function as Dictionary when doing convertions, so we
+    // have to explicitly check if the argument is Function before try to
+    // convert it to Dictionary.
+    if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
+      dict.Get("urls", &patterns);
+      args->GetNext(&arg);
+    }
+  }
+
+  if (arg.IsEmpty()) {
+    args->ThrowError();
+    return;
+  }
 
   // Function or null.
-  v8::Local<v8::Value> value;
   Listener listener;
-  if (!args->GetNext(&listener) &&
-      !(args->GetNext(&value) && value->IsNull())) {
+  if (!gin::ConvertFromV8(args->isolate(), arg, &listener) && !arg->IsNull()) {
     args->ThrowTypeError("Must pass null or a Function");
     return;
   }
