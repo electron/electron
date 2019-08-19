@@ -80,5 +80,5 @@ index dce68b1bd1ef58a5dfddb2bbdb56930ed943ad1d..4249d7b26f9037b60a40e073f56037f9
 +              with print_lock:
 +                print "Got symbol_info for %s." % (potential_symbol_file)
            if symbol_info == binary_info:
-             CreateSymbolDir(options, output_dir)
+             CreateSymbolDir(options, output_dir, binary_info.hash)
              shutil.copyfile(potential_symbol_file, output_path)
