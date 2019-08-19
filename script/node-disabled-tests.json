@@ -8,6 +8,7 @@
   "parallel/test-inspector-workers-flat-list",
   "parallel/test-sync-io-option",
   "parallel/test-heapdump-async-hooks-init-promise",
+  "parallel/test-http2-reset-flood",
   "parallel/test-bootstrap-modules",
   "parallel/test-buffer-backing-arraybuffer",
   "parallel/test-buffer-constructor-node-modules-paths",
