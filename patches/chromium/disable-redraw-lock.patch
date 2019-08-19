@@ -54,7 +54,7 @@ index 3bccc5ccdcfecd4a407fab48d70b8fccd0072f60..d726e974e83eee02489fc0669ef31f00
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -194,6 +194,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
    using TouchIDs = std::set<DWORD>;
-   enum class DwmFrameState { OFF, ON };
+   enum class DwmFrameState { kOff, kOn };
  
 +  bool HasNativeFrame();
 +
