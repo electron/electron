@@ -63,6 +63,7 @@ steps:
 - script: |
     cd src
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
+    set npm_config_arch=arm64
     cd electron\spec
     npm install --verbose --no-optional --ignore-scripts
   displayName: Install test modules
