@@ -18,7 +18,7 @@ const appData = path.join(os.tmpdir(), 'myappdata')
 const userData = path.join(os.tmpdir(), 'myuserdata')
 
 describe('app path module', () => {
-  describe(`'userData' is implicit, computed from 'appData' and app name`, () => {
+  describe(`computes 'userData' from 'appData' and app name`, () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       expect(output.userData).to.equal(path.join(output.appData, defaultAppName))
@@ -48,7 +48,7 @@ describe('app path module', () => {
     })
   })
 
-  describe(`customize 'userData'`, () => {
+  describe(`customizes 'userData'`, () => {
     it(`setPath('userData', '${userData}')`, async () => {
       // Cleanup
       try {
@@ -84,7 +84,7 @@ describe('app path module', () => {
     })
   })
 
-  describe(`'userCache' is implicit, computed from 'cache', 'appData' and app name`, () => {
+  describe(`computes 'userCache' from 'cache', 'appData' and app name`, () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path')
       expect(output.userCache).to.equal(path.join(output.appCache, defaultAppName))
@@ -178,8 +178,7 @@ describe('app path module', () => {
       const output = await runTestApp('app-custom-path')
       switch (process.platform) {
         case 'darwin':
-          // expect(output.appLogs).to.equal(path.join(os.homedir(), 'Logs', defaultAppName))
-          expect(output.appLogs).to.equal(path.join(os.homedir(), 'Logs', 'Electron'))
+          expect(output.appLogs).to.equal(path.join(os.homedir(), 'Library', 'Logs', 'Electron'))
           break;
         case 'win32':
         default:
