@@ -353,6 +353,9 @@ template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
                                      extensions::WebRequestInfo* request_info,
                                      Args... args) {
+  if (!base::Contains(simple_listeners_, event))
+    return;
+
   const auto& info = simple_listeners_[event];
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
@@ -370,6 +373,9 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
+  if (!base::Contains(response_listeners_, event))
+    return net::OK;
+
   const auto& info = response_listeners_[event];
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
