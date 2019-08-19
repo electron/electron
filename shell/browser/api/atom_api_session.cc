@@ -597,7 +597,7 @@ static void StartPreconnectOnUI(
     const GURL& url,
     int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
-      {url.GetOrigin(), num_sockets_to_preconnect}};
+      {url.GetOrigin(), num_sockets_to_preconnect, net::NetworkIsolationKey()}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
