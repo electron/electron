@@ -11,6 +11,7 @@
 
 # Upgrades WG
 /patches/                               @electron/wg-upgrades
+DEPS                                    @electron/wg-upgrades
 
 # Releases WG
 /npm/                                   @electron/wg-releases
