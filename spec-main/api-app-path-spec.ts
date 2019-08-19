@@ -35,7 +35,7 @@ function ExistsCacheSync(cachedir: string): boolean {
 }
 
 function RemoveDir(dir?: string) {
-  console.log(`RemoveDir ${dir}`)
+  // console.log(`RemoveDir ${dir}`)
   if (dir && dir.length && fs.existsSync(dir)) {
     try {
       fs.unlinkSync(dir);
