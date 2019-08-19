@@ -236,6 +236,10 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
+bool WebRequestNS::HasListener() const {
+  return !(simple_listeners_.empty() && response_listeners_.empty());
+}
+
 int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
