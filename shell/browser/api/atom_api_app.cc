@@ -875,6 +875,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
     // If users try to get the logs path before setting a logs path,
     // set the path to a sensible default and then try to get it again
     if (!succeed && name == "logs") {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
       SetAppLogsPath(base::Optional<base::FilePath>(), args);
       succeed = base::PathService::Get(key, &path);
     }
