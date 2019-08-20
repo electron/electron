@@ -13,11 +13,11 @@ namespace electron {
 
 namespace api {
 
-void App::SetAppLogsPath(base::Optional<base::FilePath> custom_path,
-                         mate::Arguments* args) {
+void App::SetAppLogsPath(util::ErrorThrower thrower,
+                         base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
-      args->ThrowError("Path must be absolute");
+      thrower.ThrowError("Path must be absolute");
       return;
     }
     base::PathService::Override(DIR_APP_LOGS, custom_path.value());
