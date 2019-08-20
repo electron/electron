@@ -769,11 +769,6 @@ AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   return base::nullopt;
 }
 
-std::vector<service_manager::Manifest>
-AtomBrowserClient::GetExtraServiceManifests() {
-  return GetElectronBuiltinServiceManifests();
-}
-
 std::unique_ptr<content::BrowserMainParts>
 AtomBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {

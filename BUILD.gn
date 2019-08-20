@@ -302,7 +302,7 @@ source_set("manifests") {
   ]
 
   if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor/public/cpp:manifest" ]
+    deps += [ "//components/services/pdf_compositor/public/cpp" ]
   }
 }
 
