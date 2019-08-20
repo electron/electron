@@ -13,7 +13,7 @@ steps:
     $localArtifactPath = "$pwd\dist.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/dist.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
+    Expand-Archive -LiteralPath $localArtifactPath -DestinationPath src\out\Default -Force
   displayName: 'Download and extract dist.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -22,7 +22,7 @@ steps:
     $localArtifactPath = "$pwd\ffmpeg.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/ffmpeg.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
+    Expand-Archive -LiteralPath $localArtifactPath -DestinationPath src\out\ffmpeg -Force
   displayName: 'Download and extract ffmpeg.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -31,8 +31,8 @@ steps:
     $localArtifactPath = "$pwd\src\out\Default\mksnapshot.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/mksnapshot.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    cd src\out\Default 
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y mksnapshot.zip
+    cd src\out\Default
+    Expand-Archive -LiteralPath $localArtifactPath -Force
   displayName: 'Download and unzip mksnapshot.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -42,7 +42,7 @@ steps:
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/node_headers.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
     cd src
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
+    Expand-Archive -LiteralPath $localArtifactPath -Force
   displayName: 'Download node headers for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -64,17 +64,12 @@ steps:
     cd src
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
-    cd electron\spec
-    npm install --verbose --no-optional --ignore-scripts
-  displayName: Install test modules
-
-- script: |
-    cd src
-    echo "Running test suite"
-    .\out\Default\electron.exe --version
-    .\out\Default\electron.exe electron\spec --ci --enable-logging
-    echo "Done running test suite"
+    cd electron
+    node script/yarn test -- --ci --enable-logging --verbose
   displayName: 'Run Electron tests'
+  env:
+    ELECTRON_OUT_DIR: Default
+    IGNORE_YARN_INSTALL_ERROR: 1
 
 - script: |
     cd src
