@@ -327,7 +327,7 @@ void WebRequestNS::SetListener(Event event,
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
     // Note that gin treats Function as Dictionary when doing convertions, so we
-    // have to explicitly check if the argument is Function before try to
+    // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
       dict.Get("urls", &patterns);
@@ -335,14 +335,10 @@ void WebRequestNS::SetListener(Event event,
     }
   }
 
-  if (arg.IsEmpty()) {
-    args->ThrowError();
-    return;
-  }
-
   // Function or null.
   Listener listener;
-  if (!gin::ConvertFromV8(args->isolate(), arg, &listener) && !arg->IsNull()) {
+  if (arg.IsEmpty() ||
+      !(gin::ConvertFromV8(args->isolate(), arg, &listener) || arg->IsNull())) {
     args->ThrowTypeError("Must pass null or a Function");
     return;
   }
