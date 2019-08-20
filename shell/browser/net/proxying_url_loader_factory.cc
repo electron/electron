@@ -697,14 +697,13 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     return;
   }
 
-  // Pass-through to the original factory.
-  target_factory_->CreateLoaderAndStart(std::move(loader), routing_id,
-                                        request_id, options, request,
-                                        std::move(client), traffic_annotation);
-
-  // TODO(zcbenz): Remove the |CreateLoaderAndStart| call and create
-  // InProgressRequest when the webRequest API is used.
-  return;
+  if (!web_request_api()->HasListener()) {
+    // Pass-through to the original factory.
+    target_factory_->CreateLoaderAndStart(
+        std::move(loader), routing_id, request_id, options, request,
+        std::move(client), traffic_annotation);
+    return;
+  }
 
   // The request ID doesn't really matter. It just needs to be unique
   // per-BrowserContext so extensions can make sense of it.  Note that

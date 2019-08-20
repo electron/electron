@@ -532,7 +532,7 @@ describe('protocol module', () => {
       expect({ ...qs.parse(r.data) }).to.deep.equal(postData)
     })
 
-    it.skip('can use custom session', async () => {
+    it('can use custom session', async () => {
       const customSession = session.fromPartition('custom-ses', { cache: false })
       customSession.webRequest.onBeforeRequest((details, callback) => {
         expect(details.url).to.equal('http://fake-host/')
