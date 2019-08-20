@@ -470,6 +470,10 @@ source_set("electron_lib") {
     ]
   }
 
+  if (enable_basic_printing) {
+    deps += [ "//components/services/pdf_compositor:pdf_compositor" ]
+  }
+
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
