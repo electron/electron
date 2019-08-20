@@ -300,10 +300,6 @@ source_set("manifests") {
     "//printing/buildflags",
     "//services/service_manager/public/cpp",
   ]
-
-  if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor/public/cpp" ]
-  }
 }
 
 npm_action("electron_version_args") {
@@ -468,10 +464,6 @@ source_set("electron_lib") {
       "shell/browser/fake_location_provider.cc",
       "shell/browser/fake_location_provider.h",
     ]
-  }
-
-  if (enable_basic_printing) {
-    deps += [ "//components/services/pdf_compositor:pdf_compositor" ]
   }
 
   if (is_mac) {

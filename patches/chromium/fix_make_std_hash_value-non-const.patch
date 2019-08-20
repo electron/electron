@@ -3,6 +3,11 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Tue, 20 Aug 2019 09:30:20 -0700
 Subject: fix: make std::hash value-non-const
 
+MSVC fails when these hash values are const as seen with the following
+on Windows: `error: call to implicitly-deleted default constructor of
+'std::hash<const input_prediction::PredictorType>'`.
+
+Upstream CL: https://chromium-review.googlesource.com/c/chromium/src/+/1762335
 
 diff --git a/ui/events/blink/prediction/filter_factory.h b/ui/events/blink/prediction/filter_factory.h
 index 42447b9e366338fd9d8802ceb1bfa0fd7483af59..8892cef23e61d7e4a0227f10607b3a733ffc2141 100644

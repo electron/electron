@@ -15,7 +15,6 @@ const service_manager::Manifest& GetElectronContentBrowserOverlayManifest() {
           .WithDisplayName("Electron (browser process)")
           .RequireCapability("device", "device:geolocation_control")
           .RequireCapability("chrome_printing", "converter")
-          .RequireCapability("pdf_compositor", "compositor")
           .ExposeInterfaceFilterCapability_Deprecated(
               "navigation:frame", "renderer",
               service_manager::Manifest::InterfaceList<

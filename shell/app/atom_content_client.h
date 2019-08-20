@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "content/public/common/content_client.h"
 
 namespace electron {
@@ -24,6 +25,7 @@ class AtomContentClient : public content::ContentClient {
   base::StringPiece GetDataResource(int resource_id, ui::ScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
   base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
+  base::FilePath GetFontLookupTableCacheDir();
   void AddAdditionalSchemes(Schemes* schemes) override;
   void AddPepperPlugins(
       std::vector<content::PepperPluginInfo>* plugins) override;
