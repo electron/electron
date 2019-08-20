@@ -555,8 +555,10 @@ std::vector<int> TopLevelWindow::GetPosition() {
 }
 void TopLevelWindow::MoveAbove(const std::string& sourceId,
                                mate::Arguments* args) {
-  if (!window_->MoveAbove(sourceId))
-    args->ThrowError("Invalid media source id");
+  #if  BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
+    if (!window_->MoveAbove(sourceId))
+      args->ThrowError("Invalid media source id");
+  #endif
 }
 
 void TopLevelWindow::MoveTop() {
