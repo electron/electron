@@ -6,7 +6,7 @@
 #define SHELL_COMMON_GIN_CONVERTERS_FILE_PATH_CONVERTER_H_
 
 #include "base/files/file_path.h"
-#include "shell/common/gin_converters/string16_converter.h"
+#include "gin/converter.h"
 
 namespace gin {
 
