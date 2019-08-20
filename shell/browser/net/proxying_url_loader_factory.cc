@@ -608,6 +608,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   override_headers_ = nullptr;
   redirect_url_ = GURL();
 
+  info_->AddResponseInfoFromResourceResponse(current_response_);
+
   net::CompletionRepeatingCallback copyable_callback =
       base::AdaptCallbackForRepeating(std::move(continuation));
   DCHECK(info_.has_value());
