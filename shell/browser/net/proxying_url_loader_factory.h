@@ -31,6 +31,7 @@ class WebRequestAPI {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
+  virtual bool HasListener() const = 0;
   virtual int OnBeforeRequest(extensions::WebRequestInfo* info,
                               const network::ResourceRequest& request,
                               net::CompletionOnceCallback callback,

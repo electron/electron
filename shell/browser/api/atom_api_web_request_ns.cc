@@ -239,6 +239,10 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
+bool WebRequestNS::HasListener() const {
+  return !(simple_listeners_.empty() && response_listeners_.empty());
+}
+
 int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
@@ -319,16 +323,25 @@ template <typename Listener, typename Listeners, typename Event>
 void WebRequestNS::SetListener(Event event,
                                Listeners* listeners,
                                gin::Arguments* args) {
+  v8::Local<v8::Value> arg;
+
   // { urls }.
   std::set<URLPattern> patterns;
   gin::Dictionary dict(args->isolate());
-  args->GetNext(&dict) && dict.Get("urls", &patterns);
+  if (args->GetNext(&arg) && !arg->IsFunction()) {
+    // Note that gin treats Function as Dictionary when doing convertions, so we
+    // have to explicitly check if the argument is Function before trying to
+    // convert it to Dictionary.
+    if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
+      dict.Get("urls", &patterns);
+      args->GetNext(&arg);
+    }
+  }
 
   // Function or null.
-  v8::Local<v8::Value> value;
   Listener listener;
-  if (!args->GetNext(&listener) &&
-      !(args->GetNext(&value) && value->IsNull())) {
+  if (arg.IsEmpty() ||
+      !(gin::ConvertFromV8(args->isolate(), arg, &listener) || arg->IsNull())) {
     args->ThrowTypeError("Must pass null or a Function");
     return;
   }
@@ -343,6 +356,9 @@ template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
                                      extensions::WebRequestInfo* request_info,
                                      Args... args) {
+  if (!base::Contains(simple_listeners_, event))
+    return;
+
   const auto& info = simple_listeners_[event];
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
@@ -360,6 +376,9 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
+  if (!base::Contains(response_listeners_, event))
+    return net::OK;
+
   const auto& info = response_listeners_[event];
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
@@ -398,7 +417,11 @@ void WebRequestNS::OnListenerResult(uint64_t id,
       ReadFromResponse(isolate, &dict, out);
   }
 
-  std::move(callbacks_[id]).Run(result);
+  // The ProxyingURLLoaderFactory expects the callback to be executed
+  // asynchronously, because it used to work on IO thread before NetworkService.
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
+  callbacks_.erase(id);
 }
 
 // static
