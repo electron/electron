@@ -12,6 +12,7 @@
 #include "mojo/public/cpp/bindings/binding_set.h"
 #include "native_mate/dictionary.h"
 #include "net/url_request/url_request_job_factory.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 
 namespace electron {
