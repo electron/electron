@@ -354,15 +354,32 @@ void WebRequestNS::SetListener(Event event,
   v8::Local<v8::Value> arg;
 
   // { urls }.
-  std::set<URLPattern> patterns;
+  std::set<std::string> filter_patterns;
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
     // Note that gin treats Function as Dictionary when doing convertions, so we
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
-      dict.Get("urls", &patterns);
+      if (!dict.Get("urls", &filter_patterns)) {
+        args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
+        return;
+      }
       args->GetNext(&arg);
+    }
+  }
+
+  std::set<URLPattern> patterns;
+  for (const std::string& filter_pattern : filter_patterns) {
+    URLPattern pattern(URLPattern::SCHEME_ALL);
+    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
+    if (result == URLPattern::ParseResult::kSuccess) {
+      patterns.insert(pattern);
+    } else {
+      const char* error_type = URLPattern::GetParseResultString(result);
+      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
+                           error_type);
+      return;
     }
   }
 
