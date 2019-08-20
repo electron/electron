@@ -8,7 +8,7 @@ Windows. This is to workaround the bug in crbug.com/969698#c10
 until fixes have landed in upstream.
 
 diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
-index 8406c060c4e61282433ad40a52744fd7ea80366b..0bb1b871be97fe8275e17669ed0bcd77d9645f9b 100644
+index edb193a5f3ac04b1ea017d3744a5ac1383fc055b..459368d9885f26f80c6bbef452a3be0706cb7c13 100644
 --- a/build/config/win/BUILD.gn
 +++ b/build/config/win/BUILD.gn
 @@ -2,6 +2,7 @@
@@ -19,7 +19,7 @@ index 8406c060c4e61282433ad40a52744fd7ea80366b..0bb1b871be97fe8275e17669ed0bcd77
  import("//build/config/chrome_build.gni")
  import("//build/config/clang/clang.gni")
  import("//build/config/compiler/compiler.gni")
-@@ -67,9 +68,13 @@ config("compiler") {
+@@ -61,9 +62,13 @@ config("compiler") {
      "/FS",  # Preserve previous PDB behavior.
      "/bigobj",  # Some of our files are bigger than the regular limits.
      "/utf-8",  # Assume UTF-8 by default to avoid code page dependencies.

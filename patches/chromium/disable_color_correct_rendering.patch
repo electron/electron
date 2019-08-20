@@ -3,7 +3,7 @@ From: Birunthan Mohanathas <birunthan@mohanathas.com>
 Date: Fri, 30 Nov 2018 12:44:12 +0200
 Subject: disable_color_correct_rendering.patch
 
-This adds a --disable-color-correct-rendering switch. In Electron 2.0, 
+This adds a --disable-color-correct-rendering switch. In Electron 2.0,
 `--disable-features=ColorCorrectRendering` could be
 used to make the app use the display color space (e.g. P3 on Macs)
 instead of color correcting to sRGB. Because color correct rendering is
@@ -66,7 +66,7 @@ index f17aa1fa451f1b99d7f083e07edd49b11f7639e4..09f7c5d6a92d89c199b296771a8ff60c
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index bc58f3ea501540cbbba465cd8b751b99df45ab3a..e0ee85b9319938c285eb7f19f1b010b408019081 100644
+index 58717216158d62dd2826007fa3ddb4f39a5eb4d1..b8c0fcbd2aadd7c75c90baf39c1166404c4209b0 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -81,6 +81,9 @@
@@ -176,7 +176,7 @@ index bc58f3ea501540cbbba465cd8b751b99df45ab3a..e0ee85b9319938c285eb7f19f1b010b4
  
    gfx::ColorSpace adjusted_color_space = src_color_space;
    float sdr_white_level = current_frame()->sdr_white_level;
-@@ -3553,7 +3560,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3550,7 +3557,7 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
  
    *overlay_texture = FindOrCreateOverlayTexture(
        params.quad->render_pass_id, iosurface_width, iosurface_height,
@@ -185,7 +185,7 @@ index bc58f3ea501540cbbba465cd8b751b99df45ab3a..e0ee85b9319938c285eb7f19f1b010b4
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3771,8 +3778,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3768,8 +3775,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -196,7 +196,7 @@ index bc58f3ea501540cbbba465cd8b751b99df45ab3a..e0ee85b9319938c285eb7f19f1b010b4
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -3932,3 +3939,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -3929,3 +3936,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
@@ -215,10 +215,10 @@ index 157fbbc34a2217f58f3e5931e1d56d6db3b876cd..68bd4a84e6fe68a4741fcedc50fb4723
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 44ebf7ec0549dadd9621339260c92cbc424b096c..235d382c88327b7a09679b745c28622d78ce12b6 100644
+index 6302948343ee810a9d35a70be0c91a1ffbfb7647..6607c71fa295cda32c5ac00aafe642a103703a0e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -216,6 +216,7 @@
+@@ -215,6 +215,7 @@
  #include "ui/base/ui_base_switches.h"
  #include "ui/base/ui_base_switches_util.h"
  #include "ui/display/display_switches.h"
@@ -226,7 +226,7 @@ index 44ebf7ec0549dadd9621339260c92cbc424b096c..235d382c88327b7a09679b745c28622d
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/url_constants.h"
-@@ -2894,6 +2895,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -2917,6 +2918,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -235,10 +235,10 @@ index 44ebf7ec0549dadd9621339260c92cbc424b096c..235d382c88327b7a09679b745c28622d
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 91428916eaf20743f54d33df3b7930f52d24e709..879a48448ea9a0c62a1e2e070531be90e49e19ac 100644
+index 2f53bc7d22c175a41e71fcbf46b8ce2636e529e3..0eb3d2922453014e90a8f91e2f72aee3145f8cc6 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2840,6 +2840,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2836,6 +2836,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

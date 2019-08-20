@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 20 Aug 2019 09:30:20 -0700
+Subject: fix: make std::hash value-non-const
+
+
+diff --git a/ui/events/blink/prediction/filter_factory.h b/ui/events/blink/prediction/filter_factory.h
+index 42447b9e366338fd9d8802ceb1bfa0fd7483af59..8892cef23e61d7e4a0227f10607b3a733ffc2141 100644
+--- a/ui/events/blink/prediction/filter_factory.h
++++ b/ui/events/blink/prediction/filter_factory.h
+@@ -40,8 +40,8 @@ struct FilterParamMapKey {
+ // in a hashmap
+ struct FilterParamMapKeyHash {
+   std::size_t operator()(const FilterParamMapKey& k) const {
+-    return std::hash<const input_prediction::FilterType>{}(k.filter_type) ^
+-           std::hash<const input_prediction::PredictorType>{}(k.predictor_type);
++    return std::hash<input_prediction::FilterType>{}(k.filter_type) ^
++           std::hash<input_prediction::PredictorType>{}(k.predictor_type);
+   }
+ };
+ 

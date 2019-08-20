@@ -7,7 +7,7 @@ Fixes broken Linux ARM breakpad symbol generation by patching
 out an `ldd`-related call that was throwing.
 
 diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
-index 4249d7b26f9037b60a40e073f56037f9ff036138..0ad9ff9b9bc7dd535655b37013270ad504aa6a34 100755
+index edb3fa5c125fae7858a1f36495410baf47d58484..05a1385e13d282a63975143cbc6e157984bbd992 100755
 --- a/components/crash/content/tools/generate_breakpad_symbols.py
 +++ b/components/crash/content/tools/generate_breakpad_symbols.py
 @@ -67,7 +67,8 @@ def GetSharedLibraryDependenciesLinux(binary, options):

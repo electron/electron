@@ -36,7 +36,7 @@ index 8e02a8a95eb07516162eacdf5b361231d3a02975..3497b85428a52c6019cfb5d30229071f
    virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 983a8303b11527cdab449d03485653b8c27102de..1362161da462be4eb70f9e698eb274c1890ac0ab 100644
+index 7346429314858b4ce7e5caaea7c3328ca22b1b02..fd98c0eb68f04f9f3bdbe8c77cfeb523d685ba87 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -21,6 +21,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
@@ -133,7 +133,7 @@ index 47401abc984e6fe26c7f4c5399aa565c687060b0..ca6a527ffac877c27aac94337ec5a7b5
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index dca0ffdfb9fda6ecf45b428cb253e10f8799a6c3..8d09e13073c580ca89e76976a8acc65f4b421868 100644
+index b2005c70acbc1c05c59bb2059b190ab78fb63a68..1a7188e2df76672d66da3206d4448df35a065754 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -8,14 +8,15 @@

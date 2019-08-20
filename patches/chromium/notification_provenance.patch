@@ -108,10 +108,10 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 95bed38ac589bd55550704d16fa817610aead6f9..664b7dca4e9c2a09680855e9bc3864c8bd8ac4d5 100644
+index 63e8a6a260c0a63d4eee365330352b3112878384..2d20c32e631bc7edf51f02d7d10e8fbbf1516f90 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
-@@ -201,7 +201,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
+@@ -200,7 +200,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
           RenderProcessHost* host, const url::Origin& origin) {
          static_cast<StoragePartitionImpl*>(host->GetStoragePartition())
              ->GetPlatformNotificationContext()

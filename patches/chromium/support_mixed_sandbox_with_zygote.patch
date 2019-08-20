@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index c91eb3b8daec0684b09ab5026b54a315a0032fc6..44ebf7ec0549dadd9621339260c92cbc424b096c 100644
+index 20d0b4a801bdbe0300f878f369fc9017fc8aea3f..6302948343ee810a9d35a70be0c91a1ffbfb7647 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -372,6 +372,10 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -378,6 +378,10 @@ class RendererSandboxedProcessLauncherDelegate
      : public SandboxedProcessLauncherDelegate {
   public:
    RendererSandboxedProcessLauncherDelegate() {}
@@ -36,7 +36,7 @@ index c91eb3b8daec0684b09ab5026b54a315a0032fc6..44ebf7ec0549dadd9621339260c92cbc
  
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
-@@ -391,6 +395,9 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -397,6 +401,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -46,7 +46,7 @@ index c91eb3b8daec0684b09ab5026b54a315a0032fc6..44ebf7ec0549dadd9621339260c92cbc
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -404,6 +411,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -410,6 +417,11 @@ class RendererSandboxedProcessLauncherDelegate
    service_manager::SandboxType GetSandboxType() override {
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
@@ -58,7 +58,7 @@ index c91eb3b8daec0684b09ab5026b54a315a0032fc6..44ebf7ec0549dadd9621339260c92cbc
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1732,11 +1744,18 @@ bool RenderProcessHostImpl::Init() {
+@@ -1746,11 +1758,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  
