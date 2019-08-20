@@ -77,6 +77,7 @@
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --api=electron-api.json && node spec/ts-smoke/runner.js",
     "gn-typescript-definitions": "npm run create-typescript-definitions && shx cp electron.d.ts",
     "pre-flight": "pre-flight",
+    "gn-check": "node ./script/gn-check.js",
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
@@ -114,6 +115,7 @@
     ],
     "*.{gn,gni}": [
       "python script/run-gn-format.py",
+      "npm run gn-check",
       "git add"
     ],
     "*.py": [
