@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/stl_util.h"
+#include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -99,6 +100,33 @@ bool MatchesFilterCondition(extensions::WebRequestInfo* info,
   return false;
 }
 
+// Convert HttpResponseHeaders to V8.
+//
+// Note that while we already have converters for HttpResponseHeaders, we can
+// not use it because it lowercases the header keys, while the webRequest has
+// to pass the original keys.
+v8::Local<v8::Value> HttpResponseHeadersToV8(
+    net::HttpResponseHeaders* headers) {
+  base::DictionaryValue response_headers;
+  if (headers) {
+    size_t iter = 0;
+    std::string key;
+    std::string value;
+    while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+      if (response_headers.FindKey(key)) {
+        base::ListValue* values = nullptr;
+        if (response_headers.GetList(key, &values))
+          values->AppendString(value);
+      } else {
+        auto values = std::make_unique<base::ListValue>();
+        values->AppendString(value);
+        response_headers.Set(key, std::move(values));
+      }
+    }
+  }
+  return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
+}
+
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
@@ -110,9 +138,10 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
     details->Set("ip", info->response_ip);
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
-    details->Set("responseHeaders", info->response_headers.get());
     details->Set("statusLine", info->response_headers->GetStatusLine());
     details->Set("statusCode", info->response_headers->response_code());
+    details->Set("responseHeaders",
+                 HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
   auto* web_contents = content::WebContents::FromRenderFrameHost(
