@@ -207,7 +207,7 @@ void ReadFromResponse(v8::Isolate* isolate,
   if (!response->Get("statusLine", &status_line))
     status_line = headers.second;
   v8::Local<v8::Value> value;
-  if (response->Get("responseHeaders", &value)) {
+  if (response->Get("responseHeaders", &value) && value->IsObject()) {
     *headers.first = new net::HttpResponseHeaders("");
     (*headers.first)->ReplaceStatusLine(status_line);
     gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
