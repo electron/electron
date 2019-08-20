@@ -707,9 +707,11 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
     - *step-gn-gen-default
+    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build

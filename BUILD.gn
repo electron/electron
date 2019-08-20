@@ -582,9 +582,7 @@ source_set("electron_lib") {
   }
 
   if (enable_desktop_capturer) {
-    if (is_component_build && is_win) {
-      # On windows the implementation relies on unexported
-      # DxgiDuplicatorController class.
+    if (is_component_build && !is_linux) {
       deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     }
     sources += [
