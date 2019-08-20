@@ -113,15 +113,10 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
     std::string key;
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-      if (response_headers.FindKey(key)) {
-        base::ListValue* values = nullptr;
-        if (response_headers.GetList(key, &values))
-          values->AppendString(value);
-      } else {
-        auto values = std::make_unique<base::ListValue>();
-        values->AppendString(value);
-        response_headers.Set(key, std::move(values));
-      }
+      base::Value* values = response_headers.FindListKey(key);
+      if (!values)
+        values = response_headers.SetKey(key, base::ListValue());
+      values->GetList().emplace_back(value);
     }
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
