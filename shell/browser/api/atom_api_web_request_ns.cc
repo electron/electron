@@ -167,7 +167,7 @@ void ReadFromResponse(v8::Isolate* isolate,
                       gin::Dictionary* response,
                       net::HttpRequestHeaders* headers) {
   headers->Clear();
-  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, *response), headers);
+  response->Get("requestHeaders", headers);
 }
 
 void ReadFromResponse(v8::Isolate* isolate,
@@ -258,7 +258,7 @@ int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
       kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
-      headers, request);
+      headers, request, *headers);
 }
 
 int WebRequestNS::OnHeadersReceived(
