@@ -71,8 +71,9 @@ class MenuBar : public views::AccessiblePaneView,
 
   // views::AccessiblePaneView:
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
-  bool SetPaneFocus(views::View* initial_focus) override;
-  void RemovePaneFocus() override;
+
+  bool SetPaneFocus(views::View* initial_focus);
+  void RemovePaneFocus();
 
  protected:
   // views::View:
