@@ -252,6 +252,37 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 }
 
 // static
+v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
+    v8::Isolate* isolate,
+    const network::ResourceRequestBody& val) {
+  const auto& elements = *val.elements();
+  v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
+  for (size_t i = 0; i < elements.size(); ++i) {
+    const auto& element = elements[i];
+    gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
+    switch (element.type()) {
+      case network::mojom::DataElementType::kFile:
+        upload_data.Set("file", element.path().value());
+        break;
+      case network::mojom::DataElementType::kBytes:
+        upload_data.Set("bytes", node::Buffer::Copy(isolate, element.bytes(),
+                                                    element.length())
+                                     .ToLocalChecked());
+        break;
+      case network::mojom::DataElementType::kBlob:
+        upload_data.Set("blobUUID", element.blob_uuid());
+        break;
+      default:
+        NOTREACHED() << "Found unsupported data element";
+    }
+    arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
+             ConvertToV8(isolate, upload_data))
+        .Check();
+  }
+  return arr;
+}
+
+// static
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
@@ -260,33 +291,8 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
   dict.Set("headers", val.headers);
-  if (val.request_body) {
-    const auto& elements = *val.request_body->elements();
-    v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
-    for (size_t i = 0; i < elements.size(); ++i) {
-      const auto& element = elements[i];
-      gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
-      switch (element.type()) {
-        case network::mojom::DataElementType::kFile:
-          upload_data.Set("file", element.path().value());
-          break;
-        case network::mojom::DataElementType::kBytes:
-          upload_data.Set("bytes", node::Buffer::Copy(isolate, element.bytes(),
-                                                      element.length())
-                                       .ToLocalChecked());
-          break;
-        case network::mojom::DataElementType::kBlob:
-          upload_data.Set("blobUUID", element.blob_uuid());
-          break;
-        default:
-          NOTREACHED() << "Found unsupported data element";
-      }
-      arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
-               ConvertToV8(isolate, upload_data))
-          .Check();
-    }
-    dict.Set("uploadData", arr);
-  }
+  if (val.request_body)
+    dict.Set("uploadData", ConvertToV8(isolate, *val.request_body));
   return ConvertToV8(isolate, dict);
 }
 

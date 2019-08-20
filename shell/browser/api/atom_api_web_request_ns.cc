@@ -127,6 +127,8 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
 void ToDictionary(gin::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
+  if (request.request_body)
+    details->Set("uploadData", *request.request_body);
 }
 
 void ToDictionary(gin::Dictionary* details,
