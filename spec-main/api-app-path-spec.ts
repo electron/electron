@@ -249,5 +249,11 @@ async function runTestApp (name: string, ...args: any[]) {
 
   // console.log(`ouput=${output}`)
 
-  return JSON.parse(output)
+  try {
+    return JSON.parse(output)
+  }
+  catch (err) {
+    console.log(`Error ${err}) with ${output}`);
+    throw err
+  }
 }
