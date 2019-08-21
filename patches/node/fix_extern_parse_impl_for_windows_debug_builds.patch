@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jaime Bernardo <jaime@janeasystems.com>
+Date: Wed, 21 Aug 2019 11:24:46 +0100
+Subject: fix: extern Parse impl for Windows debug builds
+
+Externs node::options_parser::Parse implementation for
+node::DebugOptions to fix the Windows Debug build.
+
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 01dddb9790..f91a23c1d7 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -237,7 +237,7 @@ const EnvironmentOptionsParser _eop_instance{_dop_instance};
+ 
+ // This Parse is not dead code. It is used by embedders (e.g., Electron).
+ template <>
+-void Parse(
++void NODE_EXTERN Parse(
+   StringVector* const args, StringVector* const exec_args,
+   StringVector* const v8_args,
+   DebugOptions* const options,
