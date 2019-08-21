@@ -588,6 +588,18 @@ describe('session module', () => {
       fs.unlinkSync(downloadFilePath)
     }
 
+    it('can download using session.downloadURL', (done) => {
+      const port = address.port
+      session.defaultSession.once('will-download', function (e, item) {
+        item.savePath = downloadFilePath
+        item.on('done', function (e, state) {
+          assertDownload(state, item)
+          done()
+        })
+      })
+      session.defaultSession.downloadURL(`${url}:${port}`)
+    })
+
     it('can download using WebContents.downloadURL', (done) => {
       const port = address.port
       w.webContents.session.once('will-download', function (e, item) {
