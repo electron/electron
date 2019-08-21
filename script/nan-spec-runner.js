@@ -14,7 +14,7 @@ if (!process.mainModule) {
 }
 
 async function main () {
-  const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
+  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir()}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017',
