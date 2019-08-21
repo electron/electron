@@ -4,7 +4,7 @@
 // https://electronjs.org/docs/api/screen
 
 const electron = require('electron')
-const { app, BrowserWindow } = require('electron')
+const { app, screen, BrowserWindow } = require('electron')
 
 let win
 
