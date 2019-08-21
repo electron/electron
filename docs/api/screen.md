@@ -27,7 +27,7 @@ app.on('ready', () => {
 
 Another example of creating a window in the external display:
 
-```javascript fiddle='docs/fiddles/screen/fit-screen-external
+```javascript fiddle='docs/fiddles/screen/fit-screen-external'
 const { app, BrowserWindow, screen } = require('electron')
 
 let win
