@@ -312,6 +312,7 @@
   "message/events_unhandled_error_common_trace",
   "message/events_unhandled_error_nexttick",
   "message/events_unhandled_error_sameline",
+  "message/events_unhandled_error_subclass", 
   "message/if-error-has-good-stack",
   "message/internal_assert",
   "message/internal_assert_fail",
