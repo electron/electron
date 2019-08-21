@@ -227,7 +227,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       dict.Set("canceled", true);
       dict.Set("filePath", base::FilePath());
     }
-    save_promise_->Resolve(dict.GetHandle());
+    save_promise_->Resolve(dict);
   } else if (open_promise_) {
     mate::Dictionary dict =
         mate::Dictionary::CreateEmpty(open_promise_->isolate());
@@ -238,7 +238,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
       dict.Set("canceled", true);
       dict.Set("filePaths", std::vector<base::FilePath>());
     }
-    open_promise_->Resolve(dict.GetHandle());
+    open_promise_->Resolve(dict);
   }
   delete this;
 }
