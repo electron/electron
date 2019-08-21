@@ -91,13 +91,13 @@ env-linux-medium: &env-linux-medium
   NUMBER_OF_NINJA_PROCESSES: 3
 
 env-linux-2xlarge: &env-linux-2xlarge
-  NUMBER_OF_NINJA_PROCESSES: 18
+  NUMBER_OF_NINJA_PROCESSES: 34
 
 env-machine-mac: &env-machine-mac
   NUMBER_OF_NINJA_PROCESSES: 6
 
 env-mac-large: &env-mac-large
-  NUMBER_OF_NINJA_PROCESSES: 10
+  NUMBER_OF_NINJA_PROCESSES: 18
 
 env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
