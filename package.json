@@ -114,8 +114,8 @@
       "remark -qf"
     ],
     "*.{gn,gni}": [
-      "python script/run-gn-format.py",
       "npm run gn-check",
+      "python script/run-gn-format.py",
       "git add"
     ],
     "*.py": [

@@ -1,21 +1,16 @@
 const sh = require('shelljs')
-const path = require('path')
-const fs = require('fs')
 
-const SRC_DIR = path.resolve(__dirname, '..', '..')
-let GN_CHECK_DIR
+const { getOutDir } = require('./lib/utils')
 
-if (process.env.ELECTRON_OUT_DIR) {
-  GN_CHECK_DIR = `../out/${process.env.ELECTRON_OUT_DIR}`
-} else {
-  for (const buildType of ['Debug', 'Testing', 'Release']) {
-    const outPath = path.resolve(SRC_DIR, 'out', buildType)
-    if (fs.existsSync(outPath)) {
-      GN_CHECK_DIR = `../out/${buildType}`
-      break
-    }
-  }
+const OUT_DIR = getOutDir()
+if (!OUT_DIR) {
+  throw new Error(`No viable out dir: one of Debug, Testing, or Release must exist.`)
 }
 
-const gnCheckString = `gn check ${GN_CHECK_DIR} //electron:electron_lib`
+const gnCheckString = `
+gn check ../out/${OUT_DIR} //electron:electron_lib &&
+gn check ../out/${OUT_DIR} //electron:electron_app &&
+gn check ../out/${OUT_DIR} //electron:manifests &&
+gn check ../out/${OUT_DIR} //electron/shell/common/api:mojo
+`
 sh.exit(sh.exec(gnCheckString).code)
