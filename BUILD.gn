@@ -585,7 +585,7 @@ source_set("electron_lib") {
     if (is_component_build && !is_linux) {
       # On windows the implementation relies on unexported
       # DxgiDuplicatorController class.  On macOS the implementation
-      # relies on unexported webrtc::GetWindowOwnerPid method.  
+      # relies on unexported webrtc::GetWindowOwnerPid method.
       deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     }
     sources += [
