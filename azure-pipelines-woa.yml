@@ -13,7 +13,7 @@ steps:
     $localArtifactPath = "$pwd\dist.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/dist.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    Expand-Archive -LiteralPath $localArtifactPath -DestinationPath src\out\Default -Force
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
   displayName: 'Download and extract dist.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -22,7 +22,7 @@ steps:
     $localArtifactPath = "$pwd\ffmpeg.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/ffmpeg.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    Expand-Archive -LiteralPath $localArtifactPath -DestinationPath src\out\ffmpeg -Force
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
   displayName: 'Download and extract ffmpeg.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -32,7 +32,7 @@ steps:
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/mksnapshot.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
     cd src\out\Default
-    Expand-Archive -LiteralPath $localArtifactPath -Force
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y mksnapshot.zip
   displayName: 'Download and unzip mksnapshot.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
@@ -42,7 +42,7 @@ steps:
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/node_headers.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
     cd src
-    Expand-Archive -LiteralPath $localArtifactPath -Force
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
   displayName: 'Download node headers for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
