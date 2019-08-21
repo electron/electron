@@ -23,13 +23,16 @@ function getElectronExec () {
   }
 }
 
-function getOutDir () {
+function getOutDir (shouldLog) {
   if (process.env.ELECTRON_OUT_DIR) {
     return process.env.ELECTRON_OUT_DIR
   } else {
     for (const buildType of ['Debug', 'Testing', 'Release']) {
       const outPath = path.resolve(SRC_DIR, 'out', buildType)
-      if (fs.existsSync(outPath)) return buildType
+      if (fs.existsSync(outPath)) {
+        if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)
+        return buildType
+      }
     }
   }
 }
