@@ -139,6 +139,7 @@
   "parallel/test-tls-set-ciphers",
   "parallel/test-tls-socket-failed-handshake-emits-error",
   "parallel/test-tls-ticket",
+  "parallel/test-tls-write-error",
   "parallel/test-trace-events-api-worker-disabled",
   "parallel/test-tls-ticket-cluster",
   "parallel/test-trace-events-dynamic-enable",
