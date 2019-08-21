@@ -138,6 +138,6 @@ deploy_script:
           & python script\release\uploaders\upload.py
         }
       } elseif (Test-Path Env:\TEST_WOA) {
-        node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
+        # node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
         echo "Eventually run tests on WOA hardware at this step"
       }
