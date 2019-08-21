@@ -1074,6 +1074,13 @@ std::string AtomBrowserClient::GetApplicationLocale() {
   return *g_application_locale;
 }
 
+base::FilePath AtomBrowserClient::GetFontLookupTableCacheDir() {
+  base::FilePath user_data_dir;
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  DCHECK(!user_data_dir.empty());
+  return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
+}
+
 bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;

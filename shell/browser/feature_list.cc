@@ -27,13 +27,8 @@ void InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
-
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
-#endif
-#if defined(OS_WIN)
-  disable_features +=
-      std::string(",") + features::kLegacyWindowsDWriteFontFallback.name;
 #endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
 }

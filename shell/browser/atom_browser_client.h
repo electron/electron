@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
@@ -60,6 +61,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
+  base::FilePath GetFontLookupTableCacheDir() override;
 
   // content::ContentBrowserClient:
   bool ShouldEnableStrictSiteIsolation() override;
