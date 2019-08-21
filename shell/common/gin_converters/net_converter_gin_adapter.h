@@ -5,6 +5,8 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_GIN_ADAPTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_GIN_ADAPTER_H_
 
+#include <string>
+
 #include "gin/converter.h"
 #include "shell/common/native_mate_converters/net_converter.h"
 
@@ -27,13 +29,18 @@ struct Converter<network::ResourceRequest> {
 };
 
 template <>
+struct Converter<network::ResourceRequestBody> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const network::ResourceRequestBody& val) {
+    return mate::ConvertToV8(isolate, val);
+  }
+};
+
+template <>
 struct Converter<net::HttpRequestHeaders> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::HttpRequestHeaders& val) {
-    gin::Dictionary headers(isolate, v8::Object::New(isolate));
-    for (net::HttpRequestHeaders::Iterator it(val); it.GetNext();)
-      headers.Set(it.name(), it.value());
-    return ConvertToV8(isolate, headers);
+    return mate::ConvertToV8(isolate, val);
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
