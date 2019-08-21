@@ -25,7 +25,6 @@ class AtomContentClient : public content::ContentClient {
   base::StringPiece GetDataResource(int resource_id, ui::ScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
   base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
-  base::FilePath GetFontLookupTableCacheDir();
   void AddAdditionalSchemes(Schemes* schemes) override;
   void AddPepperPlugins(
       std::vector<content::PepperPluginInfo>* plugins) override;

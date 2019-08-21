@@ -201,13 +201,6 @@ base::RefCountedMemory* AtomContentClient::GetDataResourceBytes(
       resource_id);
 }
 
-base::FilePath AtomContentClient::GetFontLookupTableCacheDir() {
-  base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
-  DCHECK(!user_data_dir.empty());
-  return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
-}
-
 void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   std::vector<std::string> splited;
   ConvertStringWithSeparatorToVector(&splited, ",",
