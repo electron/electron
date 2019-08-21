@@ -9,7 +9,7 @@
 
 #include "base/callback_list.h"
 #include "base/macros.h"
-#include "mojo/public/cpp/bindings/binding.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/mojom/cookie_manager.mojom.h"
 
 namespace electron {
@@ -38,7 +38,8 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
 
   AtomBrowserContext* browser_context_;
   base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
-  mojo::Binding<network::mojom::CookieChangeListener> binding_;
+
+  mojo::Receiver<network::mojom::CookieChangeListener> receiver_;
 
   DISALLOW_COPY_AND_ASSIGN(CookieChangeNotifier);
 };
