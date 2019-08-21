@@ -827,14 +827,8 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
   base::FilePath path;
   bool succeed = AppPathService::Get(name, &path);
   if (!succeed) {
-    if (name == "logs") {
-      args->ThrowError("Failed to get '" + name +
-                       "' path: setAppLogsPath() must be called first.");
-    } else {
-      args->ThrowError("Failed to get '" + name + "' path");
-    }
+    args->ThrowError("Failed to get '" + name + "' path");
   }
-
 
   return path;
 }
