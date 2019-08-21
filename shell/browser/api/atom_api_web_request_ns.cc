@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/stl_util.h"
+#include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -99,6 +100,28 @@ bool MatchesFilterCondition(extensions::WebRequestInfo* info,
   return false;
 }
 
+// Convert HttpResponseHeaders to V8.
+//
+// Note that while we already have converters for HttpResponseHeaders, we can
+// not use it because it lowercases the header keys, while the webRequest has
+// to pass the original keys.
+v8::Local<v8::Value> HttpResponseHeadersToV8(
+    net::HttpResponseHeaders* headers) {
+  base::DictionaryValue response_headers;
+  if (headers) {
+    size_t iter = 0;
+    std::string key;
+    std::string value;
+    while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+      base::Value* values = response_headers.FindListKey(key);
+      if (!values)
+        values = response_headers.SetKey(key, base::ListValue());
+      values->GetList().emplace_back(value);
+    }
+  }
+  return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
+}
+
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
@@ -110,9 +133,10 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
     details->Set("ip", info->response_ip);
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
-    details->Set("responseHeaders", info->response_headers.get());
     details->Set("statusLine", info->response_headers->GetStatusLine());
     details->Set("statusCode", info->response_headers->response_code());
+    details->Set("responseHeaders",
+                 HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
   auto* web_contents = content::WebContents::FromRenderFrameHost(
@@ -127,6 +151,8 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
 void ToDictionary(gin::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
+  if (request.request_body)
+    details->Set("uploadData", *request.request_body);
 }
 
 void ToDictionary(gin::Dictionary* details,
@@ -165,7 +191,7 @@ void ReadFromResponse(v8::Isolate* isolate,
                       gin::Dictionary* response,
                       net::HttpRequestHeaders* headers) {
   headers->Clear();
-  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, *response), headers);
+  response->Get("requestHeaders", headers);
 }
 
 void ReadFromResponse(v8::Isolate* isolate,
@@ -176,7 +202,7 @@ void ReadFromResponse(v8::Isolate* isolate,
   if (!response->Get("statusLine", &status_line))
     status_line = headers.second;
   v8::Local<v8::Value> value;
-  if (response->Get("responseHeaders", &value)) {
+  if (response->Get("responseHeaders", &value) && value->IsObject()) {
     *headers.first = new net::HttpResponseHeaders("");
     (*headers.first)->ReplaceStatusLine(status_line);
     gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
@@ -256,7 +282,7 @@ int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
       kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
-      headers, request);
+      headers, request, *headers);
 }
 
 int WebRequestNS::OnHeadersReceived(
@@ -323,15 +349,32 @@ void WebRequestNS::SetListener(Event event,
   v8::Local<v8::Value> arg;
 
   // { urls }.
-  std::set<URLPattern> patterns;
+  std::set<std::string> filter_patterns;
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
     // Note that gin treats Function as Dictionary when doing convertions, so we
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
-      dict.Get("urls", &patterns);
+      if (!dict.Get("urls", &filter_patterns)) {
+        args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
+        return;
+      }
       args->GetNext(&arg);
+    }
+  }
+
+  std::set<URLPattern> patterns;
+  for (const std::string& filter_pattern : filter_patterns) {
+    URLPattern pattern(URLPattern::SCHEME_ALL);
+    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
+    if (result == URLPattern::ParseResult::kSuccess) {
+      patterns.insert(pattern);
+    } else {
+      const char* error_type = URLPattern::GetParseResultString(result);
+      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
+                           error_type);
+      return;
     }
   }
 
