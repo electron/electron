@@ -9,7 +9,7 @@ const { app, screen, BrowserWindow } = require('electron')
 let win
 
 app.on('ready', () => {
-  let displays = electron.screen.getAllDisplays()
+  let displays = screen.getAllDisplays()
   let externalDisplay = displays.find((display) => {
     return display.bounds.x !== 0 || display.bounds.y !== 0
   })
