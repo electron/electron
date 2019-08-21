@@ -249,6 +249,8 @@
   "es-module/test-esm-json-cache",
   "es-module/test-esm-snapshot",
   "es-module/test-esm-no-extension",
+  "es-module/test-esm-scope-node-modules",
+  "es-module/test-esm-cjs-load-error-note",
   "report/test-report-config",
   "report/test-report-getreport",
   "report/test-report-signal",
