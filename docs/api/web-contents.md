@@ -1469,7 +1469,7 @@ Inspects the shared worker based on its ID.
 
 #### `contents.getAllSharedWorkers()`
 
-Returns `WorkerInfo[]` - An array of WorkerInfo objects of sharedworkers.
+Returns `WorkerInfo[]` - Information about all Shared Workers. An empty array if there's no Shared Workers.
 
 #### `contents.inspectServiceWorker()`
 

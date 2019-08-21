@@ -616,6 +616,7 @@ describe('webContents module', () => {
       worker2 = new SharedWorker('../fixtures/api/shared-worker/shared-worker2.js')
       worker1.port.start()
       worker2.port.start()
+      vectorOfWorkers = []
     })
 
     after(() => {
@@ -624,8 +625,8 @@ describe('webContents module', () => {
     })
 
     it('can get multiple shared workers', () => {
-      const contents = webContents.getAllWebContents()
-      vectorOfWorkers = contents[0].getAllSharedWorkers()
+      const contents = remote.getCurrentWebContents()
+      vectorOfWorkers = contents.getAllSharedWorkers()
 
       expect(vectorOfWorkers.length).to.equal(2)
       expect(vectorOfWorkers[0].url).to.contain('shared-worker')
