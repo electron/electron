@@ -89,7 +89,7 @@ build_script:
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/chromedriver.zip
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
-  - ps: Compress-Archive -Path out\Default\gen\node_headers -DestinationPath node_headers.zip
+  - 7z a node_headers.zip out\Default\gen\node_headers
   - appveyor PushArtifact node_headers.zip
   - appveyor PushArtifact out/Default/mksnapshot.zip
   - appveyor PushArtifact out/Default/electron.lib
