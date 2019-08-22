@@ -1673,10 +1673,11 @@ index 0189dd762919162c8a897d291bdda3cfd600eab6..7b3e90af88b873c32f8ed51712f7dfdf
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
      split = split[1:]
-+  
-   filename = '/'.join(split)
++
+   if len(split):
+     filename = '/'.join(split)
 -  return os.path.splitext(filename)[0]
-+  
++
 +  # Electron-specific: when driving the node build from Electron, we generate
 +  # config.gypi in a separate directory and pass the absolute path to js2c.
 +  # This overrides the absolute path so that the variable names in the

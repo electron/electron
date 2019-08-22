@@ -35,9 +35,9 @@ index ffc7fb6fd5857b807198d4d26b7b899e63cde4a1..2a7ffbff213f23536b94664c3ecffa18
  const { safeGetenv } = internalBinding('credentials');
  const {
    makeRequireFunction,
-@@ -93,14 +90,12 @@ const relativeResolveCache = Object.create(null);
- let requireDepth = 0;
- let statCache = null;
+@@ -117,14 +117,12 @@ const relativeResolveCache = Object.create(null);
+ }
+ 
  function stat(filename) {
 -  // FIXME(codebytere): determine why this needs to be done and remove
 -  const internalModuleStat = process.binding('fs').internalModuleStat;
