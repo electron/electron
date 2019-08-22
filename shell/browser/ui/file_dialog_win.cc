@@ -282,7 +282,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   if (!CreateDialogThread(&run_state)) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
-    promise.Resolve(dict));
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunOpenDialogInNewThread, run_state,
@@ -332,7 +332,7 @@ void ShowSaveDialog(const DialogSettings& settings,
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
-    promise.Resolve(dict));
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunSaveDialogInNewThread, run_state,
