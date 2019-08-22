@@ -21,7 +21,6 @@
 @class AtomPreviewItem;
 @class AtomTouchBar;
 @class CustomWindowButtonView;
-@class FullSizeContentView;
 
 namespace electron {
 
@@ -185,10 +184,12 @@ class NativeWindowMac : public NativeWindow {
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;
 
-  // The view that will fill the whole frameless window.
-  base::scoped_nsobject<FullSizeContentView> container_view_;
+  // The NSView that used as contentView of window.
+  //
+  // For frameless window it would fill the whole window.
+  base::scoped_nsobject<NSView> container_view_;
 
-  // The view that fills the client area.
+  // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
 
   bool is_kiosk_ = false;
