@@ -24,7 +24,6 @@ for (const flag of unknownFlags) {
 const utils = require('./lib/utils')
 const { YARN_VERSION } = require('./yarn')
 
-const BASE = path.resolve(__dirname, '../..')
 const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 
@@ -111,7 +110,7 @@ async function runElectronTests () {
 }
 
 async function runRemoteBasedElectronTests () {
-  let exe = path.resolve(BASE, utils.getElectronExec())
+  let exe = utils.getElectronExecPath()
   const runnerArgs = ['electron/spec', ...unknownArgs.slice(2)]
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
@@ -129,7 +128,7 @@ async function runRemoteBasedElectronTests () {
 }
 
 async function runMainProcessElectronTests () {
-  const exe = path.resolve(BASE, utils.getElectronExec())
+  const exe = utils.getElectronExecPath()
 
   const { status } = childProcess.spawnSync(exe, ['electron/spec-main', ...unknownArgs.slice(2)], {
     cwd: path.resolve(__dirname, '../..'),
@@ -142,7 +141,7 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules () {
-  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
+  const nodeDir = path.join(utils.getOutPath(true), 'gen', 'headers')
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017'

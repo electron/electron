@@ -6,39 +6,41 @@ const ELECTRON_DIR = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..')
 
 require('colors')
-const pass = '\u2713'.green
 const fail = '\u2717'.red
 
-function getElectronExec () {
-  const OUT_DIR = getOutDir()
-  switch (process.platform) {
-    case 'darwin':
-      return `out/${OUT_DIR}/Electron.app/Contents/MacOS/Electron`
-    case 'win32':
-      return `out/${OUT_DIR}/electron.exe`
-    case 'linux':
-      return `out/${OUT_DIR}/electron`
-    default:
-      throw new Error('Unknown platform')
-  }
-}
+// Returns the build path for a given build type (ex: '/path/to/electron-gn/src/out/Testing').
+// If the ELECTRON_OUT_DIR env var is set (ex: 'Testing'), it's used as the build type.
+// Otherwise, look in `out/` for well-known build types and return the first hit.
+function getOutPath (shouldLog = false) {
+  const buildOutPath = buildType => path.join(SRC_DIR, 'out', buildType)
 
-function getOutDir (shouldLog) {
   if (process.env.ELECTRON_OUT_DIR) {
-    return process.env.ELECTRON_OUT_DIR
-  } else {
-    for (const buildType of ['Debug', 'Testing', 'Release']) {
-      const outPath = path.resolve(SRC_DIR, 'out', buildType)
-      if (fs.existsSync(outPath)) {
-        if (shouldLog) console.log(`OUT_DIR is: ${buildType}`)
-        return buildType
-      }
-    }
+    const outPath = buildOutPath(process.env.ELECTRON_OUT_DIR)
+    if (shouldLog) console.log(`Using ${outPath}`)
+    return outPath
   }
+
+  const buildTypes = ['Debug', 'Testing', 'Release']
+  const outPath = buildTypes.map(buildOutPath).find(fs.existsSync)
+  if (!outPath) throw new Error(`No build directory found. (Is ELECTRON_OUT_DIR set?)`)
+  if (shouldLog) console.log(`Using ${outPath}`)
+  return outPath
 }
 
-function getAbsoluteElectronExec () {
-  return path.resolve(SRC_DIR, getElectronExec())
+// Returns the Electron executable's path (ex: '/path/to/electron-gn/src/out/Testing/electron.exe').
+// The build type (ex: 'Testing') is determined using the same process as getOutPath().
+function getElectronExecPath (shouldLog = false) {
+  const execName = (() => {
+    switch (process.platform) {
+      case 'linux': return 'electron'
+      case 'win32': return 'electron.exe'
+      case 'darwin': return path.join('Electron.app', 'Contents', 'MacOS', 'Electron')
+      default: throw new Error(`Unrecognized platform '${process.platform}'`)
+    }
+  })()
+  const execPath = path.join(getOutPath(), execName)
+  if (shouldLog) console.log(`Using ${execPath}`)
+  return execPath
 }
 
 async function handleGitCall (args, gitDir) {
@@ -75,9 +77,8 @@ async function getCurrentBranch (gitDir) {
 
 module.exports = {
   getCurrentBranch,
-  getElectronExec,
-  getOutDir,
-  getAbsoluteElectronExec,
+  getOutPath,
+  getElectronExecPath,
   ELECTRON_DIR,
   SRC_DIR
 }

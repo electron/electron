@@ -14,7 +14,7 @@ if (!process.mainModule) {
 }
 
 async function main () {
-  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir(true)}/gen/node_headers`)
+  const nodeDir = path.join(utils.getOutPath(true), 'gen', 'node_headers')
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2017',
@@ -45,7 +45,7 @@ async function main () {
     .filter(test => !DISABLED_TESTS.includes(test))
     .map(test => `test/js/${test}`)
 
-  const testChild = cp.spawn(utils.getAbsoluteElectronExec(), ['node_modules/.bin/tap', ...testsToRun], {
+  const testChild = cp.spawn(utils.getElectronExecPath(), ['node_modules/.bin/tap', ...testsToRun], {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true'

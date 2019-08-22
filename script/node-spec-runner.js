@@ -18,7 +18,7 @@ if (!process.mainModule) {
 async function main () {
   const DISABLED_TESTS = require('./node-disabled-tests.json')
 
-  const testChild = cp.spawn('python', ['tools/test.py', '--verbose', '-p', 'tap', '--logfile', TAP_FILE_NAME, '--mode=debug', 'default', `--skip-tests=${DISABLED_TESTS.join(',')}`, '--shell', utils.getAbsoluteElectronExec(), '-J'], {
+  const testChild = cp.spawn('python', ['tools/test.py', '--verbose', '-p', 'tap', '--logfile', TAP_FILE_NAME, '--mode=debug', 'default', `--skip-tests=${DISABLED_TESTS.join(',')}`, '--shell', utils.getElectronExecPath(), '-J'], {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true'
