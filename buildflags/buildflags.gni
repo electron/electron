@@ -18,6 +18,8 @@ declare_args() {
 
   enable_color_chooser = true
 
+  enable_picture_in_picture = true
+
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you
   # need to test with chromium's location provider.

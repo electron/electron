@@ -402,6 +402,9 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  prefs->picture_in_picture_enabled = false;
+#endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
@@ -683,6 +686,14 @@ bool AtomBrowserClient::CanCreateWindow(
 
   return false;
 }
+
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+std::unique_ptr<content::OverlayWindow>
+AtomBrowserClient::CreateWindowForPictureInPicture(
+    content::PictureInPictureWindowController* controller) {
+  return content::OverlayWindow::Create(controller);
+}
+#endif
 
 void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
