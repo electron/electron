@@ -14,6 +14,7 @@
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 
 namespace content {
@@ -127,6 +128,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
                        bool user_gesture,
                        bool opener_suppressed,
                        bool* no_javascript_access) override;
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  std::unique_ptr<content::OverlayWindow> CreateWindowForPictureInPicture(
+      content::PictureInPictureWindowController* controller) override;
+#endif
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
@@ -183,6 +188,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_WIN)
   bool PreSpawnRenderer(sandbox::TargetPolicy* policy) override;
 #endif
+  bool BindAssociatedInterfaceRequestFromFrame(
+      content::RenderFrameHost* render_frame_host,
+      const std::string& interface_name,
+      mojo::ScopedInterfaceEndpointHandle* handle) override;
 
   bool HandleExternalProtocol(
       const GURL& url,

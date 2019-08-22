@@ -39,6 +39,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   using EventCallback = base::RepeatingCallback<void()>;
 
   void Start(network::ResourceResponseHead head);
+  void NotifyReadable();
   void NotifyComplete(int result);
   void ReadMore();
   void DidWrite(MojoResult result);
@@ -68,10 +69,18 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   // Whether we are in the middle of write.
   bool is_writing_ = false;
 
+  // Whether we are in the middle of a stream.read().
+  bool is_reading_ = false;
+
   // When NotifyComplete is called while writing, we will save the result and
   // quit with it after the write is done.
   bool ended_ = false;
   int result_ = net::OK;
+
+  // When the stream emits the readable event, we only want to start reading
+  // data if the stream was not readable before, so we store the state in a
+  // flag.
+  bool readable_ = false;
 
   // Store the V8 callbacks to unsubscribe them later.
   std::map<std::string, v8::Global<v8::Value>> handlers_;

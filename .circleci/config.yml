@@ -91,13 +91,13 @@ env-linux-medium: &env-linux-medium
   NUMBER_OF_NINJA_PROCESSES: 3
 
 env-linux-2xlarge: &env-linux-2xlarge
-  NUMBER_OF_NINJA_PROCESSES: 18
+  NUMBER_OF_NINJA_PROCESSES: 34
 
 env-machine-mac: &env-machine-mac
   NUMBER_OF_NINJA_PROCESSES: 6
 
 env-mac-large: &env-mac-large
-  NUMBER_OF_NINJA_PROCESSES: 10
+  NUMBER_OF_NINJA_PROCESSES: 18
 
 env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
@@ -185,6 +185,13 @@ step-restore-brew-cache: &step-restore-brew-cache
       - /usr/local/Homebrew
     keys:
       - v1-brew-cache-{{ arch }}
+
+step-save-brew-cache: &step-save-brew-cache
+  save_cache:
+    paths:
+      - /usr/local/Homebrew
+    key: v1-brew-cache-{{ arch }}
+    name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
   run:
@@ -535,6 +542,93 @@ step-ninja-summary: &step-ninja-summary
     command: |
       python depot_tools/post_build_ninja_summary.py -C src/out/Default
 
+# Checkout Steps
+step-generate-deps-hash: &step-generate-deps-hash
+  run:
+    name: Generate DEPS Hash
+    command: node src/electron/script/generate-deps-hash.js
+
+step-touch-sync-done: &step-touch-sync-done
+  run:
+    name: Touch Sync Done
+    command: touch src/electron/.circle-sync-done
+
+# Restore exact src cache based on the hash of DEPS and patches/*
+# If no cache is matched EXACTLY then the .circle-sync-done file is empty
+# If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
+step-maybe-restore-src-cache: &step-maybe-restore-src-cache
+  restore_cache:
+    paths:
+      - ./src
+    keys:
+      - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    name: Restoring src cache
+
+# Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
+# If the src cache was restored above then this will match an empty cache
+# If the src cache was not restored above then this will match a close git cache
+step-maybe-restore-git-cache: &step-maybe-restore-git-cache
+  restore_cache:
+    paths:
+      - ~/.gclient-cache
+    keys:
+      - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
+    name: Conditionally restoring git cache
+
+step-set-git-cache-path: &step-set-git-cache-path
+  run:
+    name: Set GIT_CACHE_PATH to make gclient to use the cache
+    command: |
+      # CircleCI does not support interpolation when setting environment variables.
+      # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
+      echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+
+# Persist the git cache based on the hash of DEPS and .circle-sync-done
+# If the src cache was restored above then this will persist an empty cache
+step-save-git-cache: &step-save-git-cache
+  save_cache:
+    paths:
+      - ~/.gclient-cache
+    key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+    name: Persisting git cache
+
+step-run-electron-only-hooks: &step-run-electron-only-hooks
+  run:
+    name: Run Electron Only Hooks
+    command: gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+
+step-generate-deps-hash-cleanly: &step-generate-deps-hash-cleanly
+  run:
+    name: Generate DEPS Hash
+    command: (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+
+# Mark the sync as done for future cache saving
+step-mark-sync-done: &step-mark-sync-done
+  run:
+    name: Mark Sync Done
+    command: echo DONE > src/electron/.circle-sync-done
+
+# Minimize the size of the cache
+step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-checkout
+  run:
+    name: Remove some unused data to avoid storing it in the workspace/cache
+    command: |
+      rm -rf src/android_webview
+      rm -rf src/ios
+      rm -rf src/third_party/blink/web_tests
+      rm -rf src/third_party/blink/perf_tests
+      rm -rf src/third_party/hunspell_dictionaries
+      rm -rf src/third_party/WebKit/LayoutTests
+
+# Save the src cache based on the deps hash
+step-save-src-cache: &step-save-src-cache
+  save_cache:
+    paths:
+      - ./src
+    key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
+    name: Persisting src cache
+
 # Lists of steps.
 steps-lint: &steps-lint
   steps:
@@ -580,7 +674,7 @@ steps-lint: &steps-lint
           node script/yarn install --frozen-lockfile
           node script/yarn lint
 
-steps-checkout: &steps-checkout
+steps-checkout-fast: &steps-checkout-fast
   steps:
     - *step-checkout-electron
     - *step-depot-tools-get
@@ -589,87 +683,56 @@ steps-checkout: &steps-checkout
     - *step-get-more-space-on-mac
     - *step-install-gnutar-on-mac
 
-    - run:
-        name: Generate DEPS Hash
-        command: node src/electron/script/generate-deps-hash.js
-    - run:
-        name: Touch Sync Done
-        command: touch src/electron/.circle-sync-done
-    # Restore exact src cache based on the hash of DEPS and patches/*
-    # If no cache is matched EXACTLY then the .circle-sync-done file is empty
-    # If a cache is matched EXACTLY then the .circle-sync-done file contains "done"
-    - restore_cache:
-        paths:
-          - ./src
-        keys:
-          - v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
-        name: Restoring src cache
-    # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
-    # If the src cache was restored above then this will match an empty cache
-    # If the src cache was not restored above then this will match a close git cache
-    - restore_cache:
-        paths:
-          - ~/.gclient-cache
-        keys:
-          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-          - v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}
-        name: Conditionally restoring git cache
-    - run:
-        name: Set GIT_CACHE_PATH to make gclient to use the cache
-        command: |
-          # CircleCI does not support interpolation when setting environment variables.
-          # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
-          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
     - *step-gclient-sync
-    # Persist the git cache based on the hash of DEPS and .circle-sync-done
-    # If the src cache was restored above then this will persist an empty cache
-    - save_cache:
-        paths:
-          - ~/.gclient-cache
-        key: v2-gclient-cache-{{ arch }}-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-        name: Persisting git cache
     # These next few steps reset Electron to the correct commit regardless of which cache was restored
     - run:
         name: Wipe Electron
         command: rm -rf src/electron
     - *step-checkout-electron
-    - run:
-        name: Run Electron Only Hooks
-        command: gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
-    - run:
-        name: Generate DEPS Hash
-        command: (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
-    # Mark the sync as done for future cache saving
-    - run:
-        name: Mark Sync Done
-        command: echo DONE > src/electron/.circle-sync-done
-    # Minimize the size of the cache
-    - run:
-        name: Remove some unused data to avoid storing it in the workspace/cache
-        command: |
-          rm -rf src/android_webview
-          rm -rf src/ios
-          rm -rf src/third_party/blink/web_tests
-          rm -rf src/third_party/blink/perf_tests
-          rm -rf src/third_party/hunspell_dictionaries
-          rm -rf src/third_party/WebKit/LayoutTests
-    # Save the src cache based on the deps hash
-    - save_cache:
-        paths:
-          - ./src
-        key: v5-src-cache-{{ arch }}-{{ checksum "src/electron/.depshash" }}
-        name: Persisting src cache
-    - save_cache:
-        paths:
-          - /usr/local/Homebrew
-        key: v1-brew-cache-{{ arch }}
-        name: Persisting brew cache
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
     - persist_to_workspace:
         root: .
         paths:
           - depot_tools
           - src
+
+steps-checkout-and-save-cache: &steps-checkout-and-save-cache
+  steps:
+    - *step-checkout-electron
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
+    - *step-install-gnutar-on-mac
+
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - *step-maybe-restore-src-cache
+    - *step-maybe-restore-git-cache
+    - *step-set-git-cache-path
+    # This sync call only runs if .circle-sync-done is an EMPTY file
+    - *step-gclient-sync
+    - *step-save-git-cache
+    # These next few steps reset Electron to the correct commit regardless of which cache was restored
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
+    - *step-run-electron-only-hooks
+    - *step-generate-deps-hash-cleanly
+    - *step-mark-sync-done
+    - *step-minimize-workspace-size-from-checkout
+    - *step-save-src-cache
+    - *step-save-brew-cache
 
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
@@ -707,9 +770,11 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-restore-brew-cache
+    - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
     - *step-gn-gen-default
+    - *step-delete-git-directories
 
     # Electron app
     - *step-electron-build
@@ -947,33 +1012,47 @@ jobs:
     <<: *steps-lint
 
   # Layer 1: Checkout.
-  linux-checkout:
+  linux-checkout-fast:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
+
+  linux-checkout-and-save-cache:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-checkout-and-save-cache
 
   linux-checkout-for-native-tests:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
 
   linux-checkout-for-native-tests-with-no-patches:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
 
-  mac-checkout:
+  mac-checkout-fast:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-checkout
+    <<: *steps-checkout-fast
+
+  mac-checkout-and-save-cache:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    <<: *steps-checkout-and-save-cache
 
   # Layer 2: Builds.
   linux-x64-debug:
@@ -1222,6 +1301,15 @@ jobs:
       <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
 
+  osx-debug:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large
+      <<: *env-debug-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests    
+
   osx-debug-gn-check:
     <<: *machine-mac
     environment:
@@ -1268,6 +1356,16 @@ jobs:
       <<: *env-mac-large
       <<: *env-mas
       <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests
+
+  mas-debug:
+    <<: *machine-mac-large
+    environment:
+      <<: *env-mac-large
+      <<: *env-mas
+      <<: *env-debug-build
       <<: *env-enable-sccache
       <<: *env-ninja-status
     <<: *steps-electron-build-for-tests
@@ -1575,23 +1673,24 @@ workflows:
 
   build-linux:
     jobs:
-      - linux-checkout
+      - linux-checkout-fast
+      - linux-checkout-and-save-cache
 
       - linux-x64-debug:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-debug-gn-check:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-testing:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-testing-no-run-as-node:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-testing-gn-check:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
@@ -1604,10 +1703,10 @@ workflows:
 
       - linux-ia32-debug:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-ia32-testing:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-ia32-testing-tests:
           requires:
             - linux-ia32-testing
@@ -1620,37 +1719,44 @@ workflows:
 
       - linux-arm-debug:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm-testing:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
 
       - linux-arm64-debug:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-debug-gn-check:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-testing:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
       - linux-arm64-testing-gn-check:
           requires:
-            - linux-checkout
+            - linux-checkout-fast
 
   build-mac:
     jobs:
-      - mac-checkout
+      - mac-checkout-fast
+      - mac-checkout-and-save-cache
+
       - osx-testing:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
+
+      - osx-debug:
+          requires:
+            - mac-checkout-fast
 
       - osx-debug-gn-check:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
+
       - osx-testing-gn-check:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
 
       - osx-testing-tests:
           requires:
@@ -1658,14 +1764,19 @@ workflows:
 
       - mas-testing:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
+
+      - mas-debug:
+          requires:
+            - mac-checkout-fast
 
       - mas-debug-gn-check:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
+
       - mas-testing-gn-check:
           requires:
-            - mac-checkout
+            - mac-checkout-fast
 
       - mas-testing-tests:
           requires:
