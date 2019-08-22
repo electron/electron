@@ -57,7 +57,7 @@ index 13f9d7af3ae796ecec3a9189aa59f4b20171fd7a..9c35b294340cce070a9f428dac6aa587
 +                    JobEventDetails::USER_INIT_CANCELED, 0,
 +                    base::RetainedRef(document_)));
 +  }
-   std::move(callback).Run(printing_context_->ExtractSettings(), result);
+   std::move(callback).Run(printing_context_->TakeAndResetSettings(), result);
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
@@ -617,4 +617,23 @@ index cd5c27c87df175676504a06b4e1904f6b836dc90..c4f6acf66bc69f1e7db633aa5b3b03a9
    if (!PrintSettingsFromJobSettings(job_settings, settings_.get())) {
      NOTREACHED();
      return OnError();
+diff --git a/printing/printing_context.h b/printing/printing_context.h
+index 6a5a7c90ef5b..a033c58076ff 100644
+--- a/printing/printing_context.h
++++ b/printing/printing_context.h
+@@ -131,12 +131,12 @@ class PRINTING_EXPORT PrintingContext {
+ 
+   int job_id() const { return job_id_; }
+ 
+- protected:
+-  explicit PrintingContext(Delegate* delegate);
+-
+   // Reinitializes the settings for object reuse.
+   void ResetSettings();
+ 
++ protected:
++  explicit PrintingContext(Delegate* delegate);
++
+   // Does bookkeeping when an error occurs.
+   PrintingContext::Result OnError();
  
