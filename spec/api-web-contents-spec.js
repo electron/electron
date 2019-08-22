@@ -609,14 +609,14 @@ describe('webContents module', () => {
   xdescribe('Shared Workers', () => {
     let worker1
     let worker2
-    let vectorOfWorkers
+    let workers
 
     before(() => {
       worker1 = new SharedWorker('../fixtures/api/shared-worker/shared-worker1.js')
       worker2 = new SharedWorker('../fixtures/api/shared-worker/shared-worker2.js')
       worker1.port.start()
       worker2.port.start()
-      vectorOfWorkers = []
+      workers = []
     })
 
     after(() => {
@@ -626,22 +626,24 @@ describe('webContents module', () => {
 
     it('can get multiple shared workers', () => {
       const contents = remote.getCurrentWebContents()
-      vectorOfWorkers = contents.getAllSharedWorkers()
+      workers = contents.getAllSharedWorkers()
 
-      expect(vectorOfWorkers.length).to.equal(2)
-      expect(vectorOfWorkers[0].url).to.contain('shared-worker')
-      expect(vectorOfWorkers[1].url).to.contain('shared-worker')
+      expect(workers.length).to.equal(2)
+      expect(workers[0].url).to.contain('shared-worker')
+      expect(workers[1].url).to.contain('shared-worker')
     })
 
     it('can inspect a specific shared worker', (done) => {
       const contents = webContents.getAllWebContents()
-      contents[0].once('devtools-opened', () => {
-        contents[0].closeDevTools()
+      workers = contents.getAllSharedWorkers()
+
+      contents.once('devtools-opened', () => {
+        contents.closeDevTools()
       })
-      contents[0].once('devtools-closed', () => {
+      contents.once('devtools-closed', () => {
         done()
       })
-      contents[0].inspectSharedWorkerById(vectorOfWorkers[0].id)
+      contents.inspectSharedWorkerById(workers[0].id)
     })
   })
 })
