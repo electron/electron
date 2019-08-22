@@ -669,7 +669,7 @@ preferred over `name` by Electron.
 
 **[Deprecated](modernization/property-updates.md)**
 
-### `app.setName(name)`
+### `app.setName(name)` _Linux_ _Windows_
 
 * `name` String
 
