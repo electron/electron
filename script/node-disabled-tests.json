@@ -138,6 +138,7 @@
   "parallel/test-tls-set-ciphers-error",
   "parallel/test-tls-set-ciphers",
   "parallel/test-tls-socket-failed-handshake-emits-error",
+  "parallel/test-tls-socket-allow-half-open-option",
   "parallel/test-tls-ticket",
   "parallel/test-tls-write-error",
   "parallel/test-trace-events-api-worker-disabled",
