@@ -153,10 +153,12 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                                                 paths[0].DirName());
         }
       }
+      // We should only call this if we have not cancelled the dialog
+      if (ready_to_call_listener)
+        OnFilesSelected(std::move(file_info), lister_base_dir_);
+    } else {
+      OnSelectionCancelled();
     }
-
-    if (ready_to_call_listener)
-      OnFilesSelected(std::move(file_info), lister_base_dir_);
   }
 
   void OnSaveDialogDone(mate::Dictionary result) {
@@ -171,14 +173,25 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
             blink::mojom::NativeFileInfo::New(
                 path, path.BaseName().AsUTF16Unsafe())));
       }
+      // We should only call this if we have not cancelled the dialog
+      OnFilesSelected(std::move(file_info), base::FilePath());
+    } else {
+      OnSelectionCancelled();
     }
-    OnFilesSelected(std::move(file_info), base::FilePath());
   }
 
   void OnFilesSelected(std::vector<FileChooserFileInfoPtr> file_info,
                        base::FilePath base_dir) {
     if (listener_) {
       listener_->FileSelected(std::move(file_info), base_dir, mode_);
+      listener_.reset();
+    }
+    render_frame_host_ = nullptr;
+  }
+
+  void OnSelectionCancelled() {
+    if (listener_) {
+      listener_->FileSelectionCanceled();
       listener_.reset();
     }
     render_frame_host_ = nullptr;
