@@ -1,9 +1,9 @@
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils'
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal'
 
 const getStorage = (storageType: string, extensionId: number, callback: Function) => {
   if (typeof callback !== 'function') throw new TypeError('No callback provided')
 
-  ipcRendererUtils.invoke<string>('CHROME_STORAGE_READ', storageType, extensionId)
+  ipcRendererInternal.invoke<string>('CHROME_STORAGE_READ', storageType, extensionId)
     .then(data => {
       if (data !== null) {
         callback(JSON.parse(data))
@@ -17,7 +17,7 @@ const getStorage = (storageType: string, extensionId: number, callback: Function
 
 const setStorage = (storageType: string, extensionId: number, storage: Record<string, any>, callback: Function) => {
   const json = JSON.stringify(storage)
-  ipcRendererUtils.invoke('CHROME_STORAGE_WRITE', storageType, extensionId, json)
+  ipcRendererInternal.invoke('CHROME_STORAGE_WRITE', storageType, extensionId, json)
     .then(() => {
       if (callback) callback()
     })

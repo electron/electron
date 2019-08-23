@@ -73,13 +73,14 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
   }
 
   v8::Local<v8::Promise> Invoke(mate::Arguments* args,
+                                bool internal,
                                 const std::string& channel,
                                 const base::Value& arguments) {
     electron::util::Promise<base::Value> p(args->isolate());
     auto handle = p.GetHandle();
 
     electron_browser_ptr_->get()->Invoke(
-        channel, arguments.Clone(),
+        internal, channel, arguments.Clone(),
         base::BindOnce([](electron::util::Promise<base::Value> p,
                           base::Value result) { p.Resolve(result); },
                        std::move(p)));
