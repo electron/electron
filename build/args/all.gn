@@ -20,5 +20,3 @@ enable_basic_printing = true
 angle_enable_vulkan_validation_layers = false
 
 is_cfi = false
-
-mac_sdk_min = "10.14"
