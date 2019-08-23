@@ -6,6 +6,8 @@
 #define SHELL_COMMON_PROMISE_UTIL_H_
 
 #include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "base/task/post_task.h"
@@ -24,19 +26,26 @@ namespace util {
 //
 // This is a move-only type that should always be `std::move`d when passed to
 // callbacks, and it should be destroyed on the same thread of creation.
+template <typename RT>
 class Promise {
  public:
   // Create a new promise.
-  explicit Promise(v8::Isolate* isolate);
+  explicit Promise(v8::Isolate* isolate)
+      : Promise(isolate,
+                v8::Promise::Resolver::New(isolate->GetCurrentContext())
+                    .ToLocalChecked()) {}
 
   // Wrap an existing v8 promise.
-  Promise(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
+  Promise(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle)
+      : isolate_(isolate),
+        context_(isolate, isolate->GetCurrentContext()),
+        resolver_(isolate, handle) {}
 
-  ~Promise();
+  ~Promise() = default;
 
   // Support moving.
-  Promise(Promise&&);
-  Promise& operator=(Promise&&);
+  Promise(Promise&&) = default;
+  Promise& operator=(Promise&&) = default;
 
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> GetContext() {
@@ -45,35 +54,34 @@ class Promise {
 
   // helpers for promise resolution and rejection
 
-  template <typename T>
-  static void ResolvePromise(Promise promise, T result) {
+  static void ResolvePromise(Promise<RT> promise, RT result) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
           base::BindOnce(
-              [](Promise promise, T result) { promise.Resolve(result); },
+              [](Promise<RT> promise, RT result) { promise.Resolve(result); },
               std::move(promise), std::move(result)));
     } else {
       promise.Resolve(result);
     }
   }
 
-  static void ResolveEmptyPromise(Promise promise) {
+  static void ResolveEmptyPromise(Promise<RT> promise) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTaskWithTraits(
           FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce([](Promise promise) { promise.Resolve(); },
+          base::BindOnce([](Promise<RT> promise) { promise.Resolve(); },
                          std::move(promise)));
     } else {
       promise.Resolve();
     }
   }
 
-  static void RejectPromise(Promise promise, std::string errmsg) {
+  static void RejectPromise(Promise<RT> promise, std::string errmsg) {
     if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
                                base::BindOnce(
-                                   [](Promise promise, std::string errmsg) {
+                                   [](Promise<RT> promise, std::string errmsg) {
                                      promise.RejectWithErrorMessage(errmsg);
                                    },
                                    std::move(promise), std::move(errmsg)));
@@ -83,23 +91,24 @@ class Promise {
   }
 
   // Returns an already-resolved promise.
-  template <typename T>
   static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate,
-                                                T result) {
-    Promise resolved(isolate);
+                                                RT result) {
+    Promise<RT> resolved(isolate);
     resolved.Resolve(result);
     return resolved.GetHandle();
   }
 
   static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate) {
-    Promise resolved(isolate);
+    Promise<void*> resolved(isolate);
     resolved.Resolve();
     return resolved.GetHandle();
   }
 
-  v8::Local<v8::Promise> GetHandle() const;
+  v8::Local<v8::Promise> GetHandle() const { return GetInner()->GetPromise(); }
 
   v8::Maybe<bool> Resolve() {
+    static_assert(std::is_same<void*, RT>(),
+                  "Can only resolve void* promises with no value");
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
@@ -119,25 +128,16 @@ class Promise {
     return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
   }
 
-  // Please note that using Then is effectively the same as calling .then
-  // in javascript.  This means (a) it is not type safe and (b) please note
-  // it is NOT type safe.
-  // If the base::Callback you provide here is of type void(boolean) and you
-  // resolve the promise with a string, Electron will compile successfully and
-  // then that promise will be rejected as soon as you try to use it as the
-  // mate converters doing work behind the scenes will throw an error for you.
-  // This can be really hard to trace so until either
-  //   * This helper becomes typesafe (by templating the class instead of each
-  //   method)
-  //   * or the world goes mad
-  // Please try your hardest not to use this method
-  // The world thanks you
   template <typename... ResolveType>
   v8::MaybeLocal<v8::Promise> Then(
       base::OnceCallback<void(ResolveType...)> cb) {
     static_assert(sizeof...(ResolveType) <= 1,
                   "A promise's 'Then' callback should only receive at most one "
                   "parameter");
+    static_assert(
+        std::is_same<RT, std::tuple_element_t<0, std::tuple<ResolveType...>>>(),
+        "A promises's 'Then' callback must handle the same type as the "
+        "promises resolve type");
     v8::HandleScope handle_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
@@ -150,8 +150,9 @@ class Promise {
 
   // Promise resolution is a microtask
   // We use the MicrotasksRunner to trigger the running of pending microtasks
-  template <typename T>
-  v8::Maybe<bool> Resolve(const T& value) {
+  v8::Maybe<bool> Resolve(const RT& value) {
+    static_assert(!std::is_same<void*, RT>(),
+                  "void* promises can not be resolved with a value");
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
@@ -162,23 +163,36 @@ class Promise {
                                mate::ConvertToV8(isolate(), value));
   }
 
-  template <typename T>
-  v8::Maybe<bool> Reject(const T& value) {
+  v8::Maybe<bool> ResolveWithGin(const RT& value) {
+    static_assert(!std::is_same<void*, RT>(),
+                  "void* promises can not be resolved with a value");
     v8::HandleScope handle_scope(isolate());
     v8::MicrotasksScope script_scope(isolate(),
                                      v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
-    return GetInner()->Reject(GetContext(),
-                              mate::ConvertToV8(isolate(), value));
+    return GetInner()->Resolve(GetContext(),
+                               gin::ConvertToV8(isolate(), value));
   }
 
-  v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
+  v8::Maybe<bool> RejectWithErrorMessage(const std::string& string) {
+    v8::HandleScope handle_scope(isolate());
+    v8::MicrotasksScope script_scope(isolate(),
+                                     v8::MicrotasksScope::kRunMicrotasks);
+    v8::Context::Scope context_scope(
+        v8::Local<v8::Context>::New(isolate(), GetContext()));
+
+    v8::Local<v8::String> error_message =
+        v8::String::NewFromUtf8(isolate(), string.c_str(),
+                                v8::NewStringType::kNormal,
+                                static_cast<int>(string.size()))
+            .ToLocalChecked();
+    v8::Local<v8::Value> error = v8::Exception::Error(error_message);
+    return GetInner()->Reject(GetContext(), (error));
+  }
 
  private:
-  friend class CopyablePromise;
-
   v8::Local<v8::Promise::Resolver> GetInner() const {
     return resolver_.Get(isolate());
   }
@@ -190,70 +204,16 @@ class Promise {
   DISALLOW_COPY_AND_ASSIGN(Promise);
 };
 
-// A wrapper of Promise that can be copied.
-//
-// This class should only be used when we have to pass Promise to a Chromium API
-// that does not take OnceCallback.
-class CopyablePromise {
- public:
-  explicit CopyablePromise(const Promise& promise);
-  CopyablePromise(const CopyablePromise&);
-  ~CopyablePromise();
-
-  template <typename T>
-  static void ResolveCopyablePromise(const CopyablePromise& promise, T result) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(Promise::ResolvePromise<T>, promise.GetPromise(),
-                         std::move(result)));
-    } else {
-      promise.GetPromise().Resolve(result);
-    }
-  }
-
-  static void ResolveEmptyCopyablePromise(const CopyablePromise& promise) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(Promise::ResolveEmptyPromise, promise.GetPromise()));
-    } else {
-      promise.GetPromise().Resolve();
-    }
-  }
-
-  static void RejectCopyablePromise(const CopyablePromise& promise,
-                                    std::string errmsg) {
-    if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTaskWithTraits(
-          FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(Promise::RejectPromise, promise.GetPromise(),
-                         std::move(errmsg)));
-    } else {
-      promise.GetPromise().RejectWithErrorMessage(errmsg);
-    }
-  }
-
-  Promise GetPromise() const;
-
- private:
-  using CopyablePersistent =
-      v8::CopyablePersistentTraits<v8::Promise::Resolver>::CopyablePersistent;
-
-  v8::Isolate* isolate_;
-  CopyablePersistent handle_;
-};
-
 }  // namespace util
 
 }  // namespace electron
 
 namespace mate {
 
-template <>
-struct Converter<electron::util::Promise> {
+template <typename T>
+struct Converter<electron::util::Promise<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const electron::util::Promise& val);
+                                   const electron::util::Promise<T>& val);
   // TODO(MarshallOfSound): Implement FromV8 to allow promise chaining
   //                        in native land
   // static bool FromV8(v8::Isolate* isolate,

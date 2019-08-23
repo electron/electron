@@ -165,9 +165,9 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     observer.OnFinishLaunching(launch_info);
 }
 
-const util::Promise& Browser::WhenReady(v8::Isolate* isolate) {
+const util::Promise<void*>& Browser::WhenReady(v8::Isolate* isolate) {
   if (!ready_promise_) {
-    ready_promise_.reset(new util::Promise(isolate));
+    ready_promise_.reset(new util::Promise<void*>(isolate));
     if (is_ready()) {
       ready_promise_->Resolve();
     }

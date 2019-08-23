@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/stl_util.h"
+#include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -99,6 +100,28 @@ bool MatchesFilterCondition(extensions::WebRequestInfo* info,
   return false;
 }
 
+// Convert HttpResponseHeaders to V8.
+//
+// Note that while we already have converters for HttpResponseHeaders, we can
+// not use it because it lowercases the header keys, while the webRequest has
+// to pass the original keys.
+v8::Local<v8::Value> HttpResponseHeadersToV8(
+    net::HttpResponseHeaders* headers) {
+  base::DictionaryValue response_headers;
+  if (headers) {
+    size_t iter = 0;
+    std::string key;
+    std::string value;
+    while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+      base::Value* values = response_headers.FindListKey(key);
+      if (!values)
+        values = response_headers.SetKey(key, base::ListValue());
+      values->GetList().emplace_back(value);
+    }
+  }
+  return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
+}
+
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
@@ -110,9 +133,10 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
     details->Set("ip", info->response_ip);
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
-    details->Set("responseHeaders", info->response_headers.get());
     details->Set("statusLine", info->response_headers->GetStatusLine());
     details->Set("statusCode", info->response_headers->response_code());
+    details->Set("responseHeaders",
+                 HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
   auto* web_contents = content::WebContents::FromRenderFrameHost(
@@ -127,6 +151,8 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
 void ToDictionary(gin::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
+  if (request.request_body)
+    details->Set("uploadData", *request.request_body);
 }
 
 void ToDictionary(gin::Dictionary* details,
@@ -165,7 +191,7 @@ void ReadFromResponse(v8::Isolate* isolate,
                       gin::Dictionary* response,
                       net::HttpRequestHeaders* headers) {
   headers->Clear();
-  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, *response), headers);
+  response->Get("requestHeaders", headers);
 }
 
 void ReadFromResponse(v8::Isolate* isolate,
@@ -176,7 +202,7 @@ void ReadFromResponse(v8::Isolate* isolate,
   if (!response->Get("statusLine", &status_line))
     status_line = headers.second;
   v8::Local<v8::Value> value;
-  if (response->Get("responseHeaders", &value)) {
+  if (response->Get("responseHeaders", &value) && value->IsObject()) {
     *headers.first = new net::HttpResponseHeaders("");
     (*headers.first)->ReplaceStatusLine(status_line);
     gin::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
@@ -236,6 +262,10 @@ const char* WebRequestNS::GetTypeName() {
   return "WebRequest";
 }
 
+bool WebRequestNS::HasListener() const {
+  return !(simple_listeners_.empty() && response_listeners_.empty());
+}
+
 int WebRequestNS::OnBeforeRequest(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   net::CompletionOnceCallback callback,
@@ -252,7 +282,7 @@ int WebRequestNS::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
       kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
-      headers, request);
+      headers, request, *headers);
 }
 
 int WebRequestNS::OnHeadersReceived(
@@ -316,16 +346,42 @@ template <typename Listener, typename Listeners, typename Event>
 void WebRequestNS::SetListener(Event event,
                                Listeners* listeners,
                                gin::Arguments* args) {
+  v8::Local<v8::Value> arg;
+
   // { urls }.
-  std::set<URLPattern> patterns;
+  std::set<std::string> filter_patterns;
   gin::Dictionary dict(args->isolate());
-  args->GetNext(&dict) && dict.Get("urls", &patterns);
+  if (args->GetNext(&arg) && !arg->IsFunction()) {
+    // Note that gin treats Function as Dictionary when doing convertions, so we
+    // have to explicitly check if the argument is Function before trying to
+    // convert it to Dictionary.
+    if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
+      if (!dict.Get("urls", &filter_patterns)) {
+        args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
+        return;
+      }
+      args->GetNext(&arg);
+    }
+  }
+
+  std::set<URLPattern> patterns;
+  for (const std::string& filter_pattern : filter_patterns) {
+    URLPattern pattern(URLPattern::SCHEME_ALL);
+    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
+    if (result == URLPattern::ParseResult::kSuccess) {
+      patterns.insert(pattern);
+    } else {
+      const char* error_type = URLPattern::GetParseResultString(result);
+      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
+                           error_type);
+      return;
+    }
+  }
 
   // Function or null.
-  v8::Local<v8::Value> value;
   Listener listener;
-  if (!args->GetNext(&listener) &&
-      !(args->GetNext(&value) && value->IsNull())) {
+  if (arg.IsEmpty() ||
+      !(gin::ConvertFromV8(args->isolate(), arg, &listener) || arg->IsNull())) {
     args->ThrowTypeError("Must pass null or a Function");
     return;
   }
@@ -340,6 +396,9 @@ template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
                                      extensions::WebRequestInfo* request_info,
                                      Args... args) {
+  if (!base::Contains(simple_listeners_, event))
+    return;
+
   const auto& info = simple_listeners_[event];
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
@@ -357,6 +416,9 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
+  if (!base::Contains(response_listeners_, event))
+    return net::OK;
+
   const auto& info = response_listeners_[event];
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
@@ -395,7 +457,11 @@ void WebRequestNS::OnListenerResult(uint64_t id,
       ReadFromResponse(isolate, &dict, out);
   }
 
-  std::move(callbacks_[id]).Run(result);
+  // The ProxyingURLLoaderFactory expects the callback to be executed
+  // asynchronously, because it used to work on IO thread before NetworkService.
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
+  callbacks_.erase(id);
 }
 
 // static

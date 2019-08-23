@@ -27,7 +27,9 @@ void FreeNodeBufferData(char* data, void* hint) {
   delete[] data;
 }
 
-void RunPromiseInUI(util::Promise promise, char* blob_data, int size) {
+void RunPromiseInUI(util::Promise<v8::Local<v8::Value>> promise,
+                    char* blob_data,
+                    int size) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   v8::Isolate* isolate = promise.isolate();
 
@@ -52,13 +54,13 @@ AtomBlobReader::AtomBlobReader(content::ChromeBlobStorageContext* blob_context)
 AtomBlobReader::~AtomBlobReader() {}
 
 void AtomBlobReader::StartReading(const std::string& uuid,
-                                  util::Promise promise) {
+                                  util::Promise<v8::Local<v8::Value>> promise) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   auto blob_data_handle = blob_context_->context()->GetBlobDataFromUUID(uuid);
   if (!blob_data_handle) {
-    util::Promise::RejectPromise(std::move(promise),
-                                 "Could not get blob data handle");
+    util::Promise<v8::Local<v8::Value>>::RejectPromise(
+        std::move(promise), "Could not get blob data handle");
     return;
   }
 

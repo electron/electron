@@ -11,6 +11,7 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "chrome/browser/browser_process.h"
@@ -531,7 +532,7 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 }
 #endif
 
-void OnIconDataAvailable(util::Promise promise, gfx::Image icon) {
+void OnIconDataAvailable(util::Promise<gfx::Image> promise, gfx::Image icon) {
   if (!icon.IsEmpty()) {
     promise.Resolve(icon);
   } else {
@@ -845,14 +846,14 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 #if !defined(OS_MACOSX)
-void App::SetAppLogsPath(mate::Arguments* args) {
-  base::FilePath custom_path;
-  if (args->GetNext(&custom_path)) {
-    if (!custom_path.IsAbsolute()) {
+void App::SetAppLogsPath(base::Optional<base::FilePath> custom_path,
+                         mate::Arguments* args) {
+  if (custom_path.has_value()) {
+    if (!custom_path->IsAbsolute()) {
       args->ThrowError("Path must be absolute");
       return;
     }
-    base::PathService::Override(DIR_APP_LOGS, custom_path);
+    base::PathService::Override(DIR_APP_LOGS, custom_path.value());
   } else {
     base::FilePath path;
     if (base::PathService::Get(DIR_USER_DATA, &path)) {
@@ -867,17 +868,21 @@ void App::SetAppLogsPath(mate::Arguments* args) {
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
+
   int key = GetPathConstant(name);
-  if (key >= 0)
+  if (key >= 0) {
     succeed = base::PathService::Get(key, &path);
-  if (!succeed) {
-    if (name == "logs") {
-      args->ThrowError("Failed to get '" + name +
-                       "' path: setAppLogsPath() must be called first.");
-    } else {
-      args->ThrowError("Failed to get '" + name + "' path");
+    // If users try to get the logs path before setting a logs path,
+    // set the path to a sensible default and then try to get it again
+    if (!succeed && name == "logs") {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      SetAppLogsPath(base::Optional<base::FilePath>(), args);
+      succeed = base::PathService::Get(key, &path);
     }
   }
+
+  if (!succeed)
+    args->ThrowError("Failed to get '" + name + "' path");
 
   return path;
 }
@@ -1162,7 +1167,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         mate::Arguments* args) {
-  util::Promise promise(isolate());
+  util::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
@@ -1267,7 +1272,7 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  util::Promise promise(isolate);
+  util::Promise<base::DictionaryValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(

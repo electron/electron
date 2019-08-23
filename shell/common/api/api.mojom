@@ -21,6 +21,11 @@ interface ElectronAutofillAgent {
   AcceptDataListSuggestion(mojo_base.mojom.String16 value);
 };
 
+interface ElectronAutofillDriver {
+  ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);
+  HideAutofillPopup();
+};
+
 struct DraggableRegion {
   bool draggable;
   gfx.mojom.Rect bounds;
@@ -71,8 +76,4 @@ interface ElectronBrowser {
 
   [Sync]
   DoGetZoomLevel() => (double result);
-
-  // TODO: move these into a separate interface
-  ShowAutofillPopup(gfx.mojom.RectF bounds, array<mojo_base.mojom.String16> values, array<mojo_base.mojom.String16> labels);
-  HideAutofillPopup();
 };

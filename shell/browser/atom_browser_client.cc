@@ -54,6 +54,7 @@
 #include "shell/browser/api/atom_api_session.h"
 #include "shell/browser/api/atom_api_web_contents.h"
 #include "shell/browser/api/atom_api_web_request_ns.h"
+#include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_navigation_throttle.h"
@@ -76,6 +77,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
@@ -409,6 +411,9 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  prefs->picture_in_picture_enabled = false;
+#endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
@@ -690,6 +695,14 @@ bool AtomBrowserClient::CanCreateWindow(
 
   return false;
 }
+
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+std::unique_ptr<content::OverlayWindow>
+AtomBrowserClient::CreateWindowForPictureInPicture(
+    content::PictureInPictureWindowController* controller) {
+  return content::OverlayWindow::Create(controller);
+}
+#endif
 
 void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
@@ -1055,6 +1068,20 @@ bool AtomBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy) {
   return true;
 }
 #endif  // defined(OS_WIN)
+
+bool AtomBrowserClient::BindAssociatedInterfaceRequestFromFrame(
+    content::RenderFrameHost* render_frame_host,
+    const std::string& interface_name,
+    mojo::ScopedInterfaceEndpointHandle* handle) {
+  if (interface_name == mojom::ElectronAutofillDriver::Name_) {
+    AutofillDriverFactory::BindAutofillDriver(
+        mojom::ElectronAutofillDriverAssociatedRequest(std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+
+  return false;
+}
 
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))

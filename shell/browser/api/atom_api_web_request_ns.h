@@ -57,6 +57,7 @@ class WebRequestNS : public gin::Wrappable<WebRequestNS>, public WebRequestAPI {
   ~WebRequestNS() override;
 
   // WebRequestAPI:
+  bool HasListener() const override;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
                       const network::ResourceRequest& request,
                       net::CompletionOnceCallback callback,

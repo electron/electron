@@ -81,18 +81,19 @@ bool CreateDialogThread(RunState* run_state) {
   return true;
 }
 
-void OnDialogOpened(electron::util::Promise promise,
+void OnDialogOpened(electron::util::Promise<mate::Dictionary> promise,
                     bool canceled,
                     std::vector<base::FilePath> paths) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
   dict.Set("filePaths", paths);
-  promise.Resolve(dict.GetHandle());
+  promise.Resolve(dict);
 }
 
-void RunOpenDialogInNewThread(const RunState& run_state,
-                              const DialogSettings& settings,
-                              electron::util::Promise promise) {
+void RunOpenDialogInNewThread(
+    const RunState& run_state,
+    const DialogSettings& settings,
+    electron::util::Promise<mate::Dictionary> promise) {
   std::vector<base::FilePath> paths;
   bool result = ShowOpenDialogSync(settings, &paths);
   run_state.ui_task_runner->PostTask(
@@ -101,18 +102,19 @@ void RunOpenDialogInNewThread(const RunState& run_state,
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
-void OnSaveDialogDone(electron::util::Promise promise,
+void OnSaveDialogDone(electron::util::Promise<mate::Dictionary> promise,
                       bool canceled,
                       const base::FilePath path) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("canceled", canceled);
   dict.Set("filePath", path);
-  promise.Resolve(dict.GetHandle());
+  promise.Resolve(dict);
 }
 
-void RunSaveDialogInNewThread(const RunState& run_state,
-                              const DialogSettings& settings,
-                              electron::util::Promise promise) {
+void RunSaveDialogInNewThread(
+    const RunState& run_state,
+    const DialogSettings& settings,
+    electron::util::Promise<mate::Dictionary> promise) {
   base::FilePath path;
   bool result = ShowSaveDialogSync(settings, &path);
   run_state.ui_task_runner->PostTask(
@@ -274,13 +276,13 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<mate::Dictionary> promise) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
-    promise.Resolve(dict.GetHandle());
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunOpenDialogInNewThread, run_state,
@@ -324,13 +326,13 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise promise) {
+                    electron::util::Promise<mate::Dictionary> promise) {
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
-    promise.Resolve(dict.GetHandle());
+    promise.Resolve(dict);
   } else {
     run_state.dialog_thread->task_runner()->PostTask(
         FROM_HERE, base::BindOnce(&RunSaveDialogInNewThread, run_state,

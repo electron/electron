@@ -142,7 +142,7 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
 
 void PrintPreviewMessageHandler::PrintToPDF(
     const base::DictionaryValue& options,
-    electron::util::Promise promise) {
+    electron::util::Promise<v8::Local<v8::Value>> promise) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
   promise_map_.emplace(request_id, std::move(promise));
@@ -154,11 +154,12 @@ void PrintPreviewMessageHandler::PrintToPDF(
   rfh->Send(new PrintMsg_PrintPreview(rfh->GetRoutingID(), options));
 }
 
-util::Promise PrintPreviewMessageHandler::GetPromise(int request_id) {
+util::Promise<v8::Local<v8::Value>> PrintPreviewMessageHandler::GetPromise(
+    int request_id) {
   auto it = promise_map_.find(request_id);
   DCHECK(it != promise_map_.end());
 
-  util::Promise promise = std::move(it->second);
+  util::Promise<v8::Local<v8::Value>> promise = std::move(it->second);
   promise_map_.erase(it);
 
   return promise;
@@ -169,7 +170,7 @@ void PrintPreviewMessageHandler::ResolvePromise(
     scoped_refptr<base::RefCountedMemory> data_bytes) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  util::Promise promise = GetPromise(request_id);
+  util::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
 
   v8::Isolate* isolate = promise.isolate();
   mate::Locker locker(isolate);
@@ -189,7 +190,7 @@ void PrintPreviewMessageHandler::ResolvePromise(
 void PrintPreviewMessageHandler::RejectPromise(int request_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  util::Promise promise = GetPromise(request_id);
+  util::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
   promise.RejectWithErrorMessage("Failed to generate PDF");
 }
 

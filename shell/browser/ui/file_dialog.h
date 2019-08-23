@@ -66,12 +66,12 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths);
 
 void ShowOpenDialog(const DialogSettings& settings,
-                    electron::util::Promise promise);
+                    electron::util::Promise<mate::Dictionary> promise);
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
 
 void ShowSaveDialog(const DialogSettings& settings,
-                    electron::util::Promise promise);
+                    electron::util::Promise<mate::Dictionary> promise);
 
 }  // namespace file_dialog
 
