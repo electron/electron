@@ -232,18 +232,17 @@ v8::Local<v8::Promise> ProtocolNS::IsProtocolHandled(const std::string& scheme,
       "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
       "instead.",
       "ProtocolDeprecateIsProtocolHandled");
-  util::Promise promise(isolate());
-  promise.Resolve(IsProtocolRegistered(scheme) ||
-                  IsProtocolIntercepted(scheme) ||
-                  // The |isProtocolHandled| should return true for builtin
-                  // schemes, however with NetworkService it is impossible to
-                  // know which schemes are registered until a real network
-                  // request is sent.
-                  // So we have to test against a hard-coded builtin schemes
-                  // list make it work with old code. We should deprecate this
-                  // API with the new |isProtocolRegistered| API.
-                  base::Contains(kBuiltinSchemes, scheme));
-  return promise.GetHandle();
+  return util::Promise<bool>::ResolvedPromise(
+      isolate(), IsProtocolRegistered(scheme) ||
+                     IsProtocolIntercepted(scheme) ||
+                     // The |isProtocolHandled| should return true for builtin
+                     // schemes, however with NetworkService it is impossible to
+                     // know which schemes are registered until a real network
+                     // request is sent.
+                     // So we have to test against a hard-coded builtin schemes
+                     // list make it work with old code. We should deprecate
+                     // this API with the new |isProtocolRegistered| API.
+                     base::Contains(kBuiltinSchemes, scheme));
 }
 
 void ProtocolNS::HandleOptionalCallback(mate::Arguments* args,

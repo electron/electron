@@ -122,7 +122,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::util::Promise dialog_promise(isolate);
+    electron::util::Promise<mate::Dictionary> dialog_promise(isolate);
     auto dialog_callback =
         base::BindOnce(&AtomDownloadManagerDelegate::OnDownloadSaveDialogDone,
                        base::Unretained(this), download_id, callback);

@@ -121,7 +121,7 @@ bool MatchesCookie(const base::Value& filter,
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
 void FilterCookies(const base::Value& filter,
-                   util::Promise promise,
+                   util::Promise<net::CookieList> promise,
                    const net::CookieList& list,
                    const net::CookieStatusList& excluded_list) {
   net::CookieList result;
@@ -130,7 +130,7 @@ void FilterCookies(const base::Value& filter,
       result.push_back(cookie);
   }
 
-  promise.Resolve(gin::ConvertToV8(promise.isolate(), result));
+  promise.ResolveWithGin(result);
 }
 
 std::string InclusionStatusToString(
@@ -170,7 +170,7 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 Cookies::~Cookies() {}
 
 v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
-  util::Promise promise(isolate());
+  util::Promise<net::CookieList> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   std::string url_string;
@@ -206,7 +206,7 @@ v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
 
 v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
                                        const std::string& name) {
-  util::Promise promise(isolate());
+  util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto cookie_deletion_filter = network::mojom::CookieDeletionFilter::New();
@@ -220,8 +220,8 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   manager->DeleteCookies(
       std::move(cookie_deletion_filter),
       base::BindOnce(
-          [](util::Promise promise, uint32_t num_deleted) {
-            util::Promise::ResolveEmptyPromise(std::move(promise));
+          [](util::Promise<void*> promise, uint32_t num_deleted) {
+            util::Promise<void*>::ResolveEmptyPromise(std::move(promise));
           },
           std::move(promise)));
 
@@ -229,7 +229,7 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
 }
 
 v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
-  util::Promise promise(isolate());
+  util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   const std::string* url_string = details.FindStringKey("url");
@@ -288,7 +288,7 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
   manager->SetCanonicalCookie(
       *canonical_cookie, url.scheme(), options,
       base::BindOnce(
-          [](util::Promise promise,
+          [](util::Promise<void*> promise,
              net::CanonicalCookie::CookieInclusionStatus status) {
             auto errmsg = InclusionStatusToString(status);
             if (errmsg.empty()) {
@@ -303,15 +303,15 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
 }
 
 v8::Local<v8::Promise> Cookies::FlushStore() {
-  util::Promise promise(isolate());
+  util::Promise<void*> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
       browser_context_.get());
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
-  manager->FlushCookieStore(
-      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
+  manager->FlushCookieStore(base::BindOnce(
+      util::Promise<void*>::ResolveEmptyPromise, std::move(promise)));
 
   return handle;
 }
