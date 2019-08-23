@@ -128,7 +128,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     // listener is called from the directory enumerator.
     bool ready_to_call_listener = false;
 
-    if (!canceled) {
+    if (canceled) {
+      OnSelectionCancelled();
+    } else {
       std::vector<base::FilePath> paths;
       if (result.Get("filePaths", &paths)) {
         // If we are uploading a folder we need to enumerate its contents
@@ -153,10 +155,10 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                                                 paths[0].DirName());
         }
       }
+      // We should only call this if we have not cancelled the dialog
+      if (ready_to_call_listener)
+        OnFilesSelected(std::move(file_info), lister_base_dir_);
     }
-
-    if (ready_to_call_listener)
-      OnFilesSelected(std::move(file_info), lister_base_dir_);
   }
 
   void OnSaveDialogDone(mate::Dictionary result) {
@@ -164,21 +166,32 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     bool canceled = true;
     result.Get("canceled", &canceled);
 
-    if (!canceled) {
+    if (canceled) {
+      OnSelectionCancelled();
+    } else {
       base::FilePath path;
       if (result.Get("filePath", &path)) {
         file_info.push_back(FileChooserFileInfo::NewNativeFile(
             blink::mojom::NativeFileInfo::New(
                 path, path.BaseName().AsUTF16Unsafe())));
       }
+      // We should only call this if we have not cancelled the dialog
+      OnFilesSelected(std::move(file_info), base::FilePath());
     }
-    OnFilesSelected(std::move(file_info), base::FilePath());
   }
 
   void OnFilesSelected(std::vector<FileChooserFileInfoPtr> file_info,
                        base::FilePath base_dir) {
     if (listener_) {
       listener_->FileSelected(std::move(file_info), base_dir, mode_);
+      listener_.reset();
+    }
+    render_frame_host_ = nullptr;
+  }
+
+  void OnSelectionCancelled() {
+    if (listener_) {
+      listener_->FileSelectionCanceled();
       listener_.reset();
     }
     render_frame_host_ = nullptr;
