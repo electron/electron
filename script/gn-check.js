@@ -1,4 +1,5 @@
 const sh = require('shelljs')
+const cp = require('child_process')
 
 const { getOutDir } = require('./lib/utils')
 
@@ -7,10 +8,17 @@ if (!OUT_DIR) {
   throw new Error(`No viable out dir: one of Debug, Testing, or Release must exist.`)
 }
 
-const gnCheckString = `
-gn check ../out/${OUT_DIR} //electron:electron_lib &&
-gn check ../out/${OUT_DIR} //electron:electron_app &&
-gn check ../out/${OUT_DIR} //electron:manifests &&
-gn check ../out/${OUT_DIR} //electron/shell/common/api:mojo
-`
-sh.exit(sh.exec(gnCheckString).code)
+const gnCheckDirs = [
+  '//electron:electron_lib',
+  '//electron:electron_app',
+  '//electron:manifests',
+  '//electron/shell/common/api:mojo'
+]
+
+for (const dir of gnCheckDirs) {
+  const args = ['check', `../out/${OUT_DIR}`, dir]
+  const result = cp.spawnSync('gn', args, { stdio: 'inherit' })
+  if (result.status !== 0) sh.exit(result.status)
+}
+
+sh.exit(0)
