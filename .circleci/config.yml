@@ -92,12 +92,18 @@ env-linux-medium: &env-linux-medium
 
 env-linux-2xlarge: &env-linux-2xlarge
   NUMBER_OF_NINJA_PROCESSES: 34
+  
+env-linux-2xlarge-release: &env-linux-2xlarge-release
+  NUMBER_OF_NINJA_PROCESSES: 16
 
 env-machine-mac: &env-machine-mac
   NUMBER_OF_NINJA_PROCESSES: 6
 
 env-mac-large: &env-mac-large
   NUMBER_OF_NINJA_PROCESSES: 18
+
+env-mac-large-release: &env-mac-large-release
+  NUMBER_OF_NINJA_PROCESSES: 8
 
 env-disable-crash-reporter-tests: &env-disable-crash-reporter-tests
   DISABLE_CRASH_REPORTER_TESTS: true
@@ -921,7 +927,7 @@ jobs:
   linux-x64-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
     <<: *steps-electron-build-for-publish
@@ -967,7 +973,7 @@ jobs:
   linux-ia32-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
@@ -1015,7 +1021,7 @@ jobs:
   linux-arm-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
@@ -1079,7 +1085,7 @@ jobs:
   linux-arm64-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-linux-2xlarge
+      <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
@@ -1127,7 +1133,7 @@ jobs:
   osx-publish:
     <<: *machine-mac-large
     environment:
-      <<: *env-mac-large
+      <<: *env-mac-large-release
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
@@ -1178,7 +1184,7 @@ jobs:
   mas-publish:
     <<: *machine-mac-large
     environment:
-      <<: *env-mac-large
+      <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
