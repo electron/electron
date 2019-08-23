@@ -2463,7 +2463,7 @@ describe('BrowserWindow module', () => {
       }
     })
 
-    it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
+    it.skip('visibilityState remains visible if backgroundThrottling is disabled', async () => {
       const w = new BrowserWindow({
         show: false,
         width: 100,
