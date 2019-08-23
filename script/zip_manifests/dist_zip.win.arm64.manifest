@@ -63,6 +63,7 @@ locales/zh-TW.pak
 natives_blob.bin
 resources.pak
 resources/default_app.asar
+resources/electron.asar
 snapshot_blob.bin
 swiftshader/libEGL.dll
 swiftshader/libGLESv2.dll
