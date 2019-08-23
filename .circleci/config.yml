@@ -22,12 +22,12 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "9.4.1"
+    xcode: "10.3.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "9.4.1"
+    xcode: "10.3.0"
 
 # Build configurations options.
 env-debug-build: &env-debug-build
