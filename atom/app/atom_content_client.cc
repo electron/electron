@@ -5,6 +5,7 @@
 #include "atom/app/atom_content_client.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/options_switches.h"
@@ -162,7 +163,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
 }
 
 void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
-                                   std::vector<std::string>& append_me) {
+                                   std::vector<std::string>* append_me) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   auto switch_value = command_line->GetSwitchValueASCII(cmd_switch);
   if (!switch_value.empty()) {
@@ -170,9 +171,9 @@ void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
     auto tokens =
         base::SplitString(switch_value, delimiter, base::TRIM_WHITESPACE,
                           base::SPLIT_WANT_NONEMPTY);
-    append_me.reserve(append_me.size() + tokens.size());
+    append_me->reserve(append_me->size() + tokens.size());
     std::move(std::begin(tokens), std::end(tokens),
-              std::back_inserter(append_me));
+              std::back_inserter(*append_me));
   }
 }
 
@@ -206,15 +207,15 @@ base::RefCountedMemory* AtomContentClient::GetDataResourceBytes(
 
 void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
   AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
-                                schemes->service_worker_schemes);
+                                &schemes->service_worker_schemes);
   AppendDelimitedSwitchToVector(switches::kStandardSchemes,
-                                schemes->standard_schemes);
+                                &schemes->standard_schemes);
   AppendDelimitedSwitchToVector(switches::kSecureSchemes,
-                                schemes->secure_schemes);
+                                &schemes->secure_schemes);
   AppendDelimitedSwitchToVector(switches::kBypassCSPSchemes,
-                                schemes->csp_bypassing_schemes);
+                                &schemes->csp_bypassing_schemes);
   AppendDelimitedSwitchToVector(switches::kCORSSchemes,
-                                schemes->cors_enabled_schemes);
+                                &schemes->cors_enabled_schemes);
 
   schemes->service_worker_schemes.push_back(url::kFileScheme);
   schemes->standard_schemes.push_back("chrome-extension");
