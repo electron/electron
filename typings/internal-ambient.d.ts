@@ -53,6 +53,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
+    isRemoteModuleEnabled: boolean;
   }
 }
 
