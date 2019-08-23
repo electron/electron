@@ -846,11 +846,11 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 #if !defined(OS_MACOSX)
-void App::SetAppLogsPath(base::Optional<base::FilePath> custom_path,
-                         mate::Arguments* args) {
+void App::SetAppLogsPath(util::ErrorThrower thrower,
+                         base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
-      args->ThrowError("Path must be absolute");
+      thrower.ThrowError("Path must be absolute");
       return;
     }
     base::PathService::Override(DIR_APP_LOGS, custom_path.value());
@@ -865,7 +865,8 @@ void App::SetAppLogsPath(base::Optional<base::FilePath> custom_path,
 }
 #endif
 
-base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
+base::FilePath App::GetPath(util::ErrorThrower thrower,
+                            const std::string& name) {
   bool succeed = false;
   base::FilePath path;
 
@@ -876,22 +877,22 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
     // set the path to a sensible default and then try to get it again
     if (!succeed && name == "logs") {
       base::ThreadRestrictions::ScopedAllowIO allow_io;
-      SetAppLogsPath(base::Optional<base::FilePath>(), args);
+      SetAppLogsPath(thrower, base::Optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
   }
 
   if (!succeed)
-    args->ThrowError("Failed to get '" + name + "' path");
+    thrower.ThrowError("Failed to get '" + name + "' path");
 
   return path;
 }
 
-void App::SetPath(mate::Arguments* args,
+void App::SetPath(util::ErrorThrower thrower,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("Path must be absolute");
+    thrower.ThrowError("Path must be absolute");
     return;
   }
 
@@ -901,7 +902,7 @@ void App::SetPath(mate::Arguments* args,
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
-    args->ThrowError("Failed to set path");
+    thrower.ThrowError("Failed to set path");
 }
 
 void App::SetDesktopName(const std::string& desktop_name) {
@@ -1030,9 +1031,9 @@ bool App::Relaunch(mate::Arguments* js_args) {
   return relauncher::RelaunchApp(argv);
 }
 
-void App::DisableHardwareAcceleration(mate::Arguments* args) {
+void App::DisableHardwareAcceleration(util::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.disableHardwareAcceleration() can only be called "
         "before app is ready");
     return;
@@ -1040,9 +1041,9 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
-void App::DisableDomainBlockingFor3DAPIs(mate::Arguments* args) {
+void App::DisableDomainBlockingFor3DAPIs(util::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.disableDomainBlockingFor3DAPIs() can only be called "
         "before app is ready");
     return;
@@ -1056,9 +1057,10 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
-void App::SetAccessibilitySupportEnabled(bool enabled, mate::Arguments* args) {
+void App::SetAccessibilitySupportEnabled(util::ErrorThrower thrower,
+                                         bool enabled) {
   if (!Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.setAccessibilitySupportEnabled() can only be called "
         "after app is ready");
     return;
@@ -1312,9 +1314,9 @@ static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
   }
 }
 
-void App::EnableSandbox(mate::Arguments* args) {
+void App::EnableSandbox(util::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError(
+    thrower.ThrowError(
         "app.enableSandbox() can only be called "
         "before app is ready");
     return;
