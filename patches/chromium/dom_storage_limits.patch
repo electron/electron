@@ -31,23 +31,6 @@ With that in mind, an acceptable alternative to disabling the limit at compile-t
 for a given `BrowserWindow` via a `webPreferences` option,
 similar to [`nodeIntegration`](https://electronjs.org/docs/tutorial/security#2-disable-nodejs-integration-for-remote-content).
 
-diff --git a/content/common/dom_storage/dom_storage_map.cc b/content/common/dom_storage/dom_storage_map.cc
-index fd088fb170bead6452ded14016f21f0c29659e03..b90b6cf9132d16bc3b2076c3fa313916e2b5ea7d 100644
---- a/content/common/dom_storage/dom_storage_map.cc
-+++ b/content/common/dom_storage/dom_storage_map.cc
-@@ -185,10 +185,12 @@ bool DOMStorageMap::SetItemInternal(MapType* map_type,
-   size_t new_item_size = size_in_storage(key, value);
-   size_t new_storage_used = storage_used_ - old_item_size + new_item_size;
- 
-+#if 0
-   // Only check quota if the size is increasing, this allows
-   // shrinking changes to pre-existing files that are over budget.
-   if (new_item_size > old_item_size && new_storage_used > quota_)
-     return false;
-+#endif
- 
-   (*map_type)[key] = value;
-   ResetKeyIterator();
 diff --git a/content/common/dom_storage/dom_storage_types.h b/content/common/dom_storage/dom_storage_types.h
 index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06dca03ada 100644
 --- a/content/common/dom_storage/dom_storage_types.h
