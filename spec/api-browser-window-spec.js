@@ -2515,7 +2515,7 @@ describe('BrowserWindow module', () => {
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
-    it('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
+    it.skip('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
       w = new BrowserWindow({
         show: false,
         width: 100,
