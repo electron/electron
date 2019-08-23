@@ -669,11 +669,13 @@ preferred over `name` by Electron.
 
 **[Deprecated](modernization/property-updates.md)**
 
-### `app.setName(name)` _Linux_ _Windows_
+### `app.setName(name)`
 
 * `name` String
 
 Overrides the current application's name.
+
+**Note:** This overrides the name used internally by Electron, it does not affect the name that the OS uses.
 
 **[Deprecated](modernization/property-updates.md)**
 
