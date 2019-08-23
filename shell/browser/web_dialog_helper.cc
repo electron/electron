@@ -128,7 +128,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     // listener is called from the directory enumerator.
     bool ready_to_call_listener = false;
 
-    if (!canceled) {
+    if (canceled) {
+      OnSelectionCancelled();
+    } else {
       std::vector<base::FilePath> paths;
       if (result.Get("filePaths", &paths)) {
         // If we are uploading a folder we need to enumerate its contents
@@ -156,8 +158,6 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
       // We should only call this if we have not cancelled the dialog
       if (ready_to_call_listener)
         OnFilesSelected(std::move(file_info), lister_base_dir_);
-    } else {
-      OnSelectionCancelled();
     }
   }
 
@@ -166,7 +166,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     bool canceled = true;
     result.Get("canceled", &canceled);
 
-    if (!canceled) {
+    if (canceled) {
+      OnSelectionCancelled();
+    } else {
       base::FilePath path;
       if (result.Get("filePath", &path)) {
         file_info.push_back(FileChooserFileInfo::NewNativeFile(
@@ -175,8 +177,6 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
       }
       // We should only call this if we have not cancelled the dialog
       OnFilesSelected(std::move(file_info), base::FilePath());
-    } else {
-      OnSelectionCancelled();
     }
   }
 
