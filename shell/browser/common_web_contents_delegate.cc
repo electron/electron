@@ -55,6 +55,10 @@
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+#include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -635,6 +639,25 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
 
   html_fullscreen_ = enter_fullscreen;
   native_fullscreen_ = false;
+}
+
+content::PictureInPictureResult
+CommonWebContentsDelegate::EnterPictureInPicture(
+    content::WebContents* web_contents,
+    const viz::SurfaceId& surface_id,
+    const gfx::Size& natural_size) {
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  return PictureInPictureWindowManager::GetInstance()->EnterPictureInPicture(
+      web_contents, surface_id, natural_size);
+#else
+  return content::PictureInPictureResult::kNotSupported;
+#endif
+}
+
+void CommonWebContentsDelegate::ExitPictureInPicture() {
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
+  PictureInPictureWindowManager::GetInstance()->ExitPictureInPicture();
+#endif
 }
 
 void CommonWebContentsDelegate::ShowAutofillPopup(
