@@ -335,26 +335,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       return false;
     }
-    case WM_GETMINMAXINFO: {
-      WINDOWPLACEMENT wp;
-      wp.length = sizeof(WINDOWPLACEMENT);
-
-      // We do this to work around a Windows bug, where the minimized Window
-      // would report that the closest display to it is not the one that it was
-      // previously on (but the leftmost one instead). We restore the position
-      // of the window during the restore operation, this way chromium can
-      // use the proper display to calculate the scale factor to use.
-      if (!last_normal_placement_bounds_.IsEmpty() &&
-          GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
-        last_normal_placement_bounds_.set_size(gfx::Size(0, 0));
-        wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
-        SetWindowPlacement(GetAcceleratedWidget(), &wp);
-
-        last_normal_placement_bounds_ = gfx::Rect();
-      }
-
-      return false;
-    }
     case WM_NCCALCSIZE: {
       if (!has_frame() && w_param == TRUE) {
         NCCALCSIZE_PARAMS* params =
@@ -478,14 +458,6 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
     }
     case SIZE_MINIMIZED:
       last_window_state_ = ui::SHOW_STATE_MINIMIZED;
-
-      WINDOWPLACEMENT wp;
-      wp.length = sizeof(WINDOWPLACEMENT);
-
-      if (GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
-        last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
-      }
-
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
