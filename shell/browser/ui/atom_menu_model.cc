@@ -25,11 +25,9 @@ void AtomMenuModel::SetToolTip(int index, const base::string16& toolTip) {
 }
 
 base::string16 AtomMenuModel::GetToolTipAt(int index) {
-  int command_id = GetCommandIdAt(index);
-  if (base::Contains(toolTips_, command_id))
-    return toolTips_[command_id];
-  else
-    return base::string16();
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = toolTips_.find(command_id);
+  return iter == std::end(toolTips_) ? base::string16() : iter->second;
 }
 
 void AtomMenuModel::SetRole(int index, const base::string16& role) {
@@ -38,11 +36,9 @@ void AtomMenuModel::SetRole(int index, const base::string16& role) {
 }
 
 base::string16 AtomMenuModel::GetRoleAt(int index) {
-  int command_id = GetCommandIdAt(index);
-  if (base::Contains(roles_, command_id))
-    return roles_[command_id];
-  else
-    return base::string16();
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = roles_.find(command_id);
+  return iter == std::end(roles_) ? base::string16() : iter->second;
 }
 
 bool AtomMenuModel::GetAcceleratorAtWithParams(

@@ -396,10 +396,11 @@ template <typename... Args>
 void WebRequestNS::HandleSimpleEvent(SimpleEvent event,
                                      extensions::WebRequestInfo* request_info,
                                      Args... args) {
-  if (!base::Contains(simple_listeners_, event))
+  const auto iter = simple_listeners_.find(event);
+  if (iter == std::end(simple_listeners_))
     return;
 
-  const auto& info = simple_listeners_[event];
+  const auto& info = iter->second;
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
 
@@ -416,10 +417,11 @@ int WebRequestNS::HandleResponseEvent(ResponseEvent event,
                                       net::CompletionOnceCallback callback,
                                       Out out,
                                       Args... args) {
-  if (!base::Contains(response_listeners_, event))
+  const auto iter = response_listeners_.find(event);
+  if (iter == std::end(response_listeners_))
     return net::OK;
 
-  const auto& info = response_listeners_[event];
+  const auto& info = iter->second;
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return net::OK;
 

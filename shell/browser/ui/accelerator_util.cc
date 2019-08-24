@@ -89,8 +89,9 @@ void GenerateAcceleratorTable(AcceleratorTable* table,
 
 bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
                                     const ui::Accelerator& accelerator) {
-  if (base::Contains(*table, accelerator)) {
-    const accelerator_util::MenuItem& item = (*table)[accelerator];
+  const auto iter = table->find(accelerator);
+  if (iter != std::end(*table)) {
+    const accelerator_util::MenuItem& item = iter->second;
     if (item.model->IsEnabledAt(item.position)) {
       const auto event_flags =
           accelerator.MaskOutKeyEventFlags(accelerator.modifiers());
