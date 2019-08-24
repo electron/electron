@@ -615,9 +615,8 @@ void Session::Preconnect(const mate::Dictionary& options,
   if (options.Get("numSockets", &num_sockets_to_preconnect)) {
     const int kMinSocketsToPreconnect = 1;
     const int kMaxSocketsToPreconnect = 6;
-    bool isInsideRange = num_sockets_to_preconnect >= kMinSocketsToPreconnect &&
-                         num_sockets_to_preconnect <= kMaxSocketsToPreconnect;
-    if (!isInsideRange) {
+    if (num_sockets_to_preconnect < kMinSocketsToPreconnect ||
+        num_sockets_to_preconnect > kMaxSocketsToPreconnect) {
       args->ThrowError(
           base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]",
                              kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
@@ -625,12 +624,11 @@ void Session::Preconnect(const mate::Dictionary& options,
     }
   }
 
-  if (num_sockets_to_preconnect > 0) {
-    base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
-                             base::BindOnce(&StartPreconnectOnUI,
-                                            base::RetainedRef(browser_context_),
-                                            url, num_sockets_to_preconnect));
-  }
+  DCHECK_GT(num_sockets_to_preconnect, 0);
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
+                     url, num_sockets_to_preconnect));
 }
 
 // static

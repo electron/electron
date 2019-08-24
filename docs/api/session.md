@@ -96,10 +96,14 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 Returns:
 
 * `event` Event
-* `preconnectUrl` String
-* `allow_credentials` Boolean
+* `preconnectUrl` String - The URL being requested for preconnection by the
+  renderer.
+* `allowCredentials` Boolean - True if the renderer is requesting that the
+  connection include credentials (see the
+  [spec](https://w3c.github.io/resource-hints/#preconnect) for more details.)
 
-Emitted when a render process requests preconnection to a URL.
+Emitted when a render process requests preconnection to a URL, generally due to
+a [resource hint](https://w3c.github.io/resource-hints/).
 
 ### Instance Methods
 

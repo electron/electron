@@ -1138,21 +1138,25 @@ describe('BrowserWindow module', () => {
 
   describe('preconnect feature', () => {
     let w = null as unknown as BrowserWindow
+
     let server = null as unknown as http.Server
     let url = null as unknown as string
     let connections = 0
-    beforeEach((done) => {
+
+    beforeEach(async () => {
       connections = 0
       server = http.createServer((req, res) => {
+        if (req.url === '/link') {
+          res.setHeader('Content-type', 'text/html')
+          res.end(`<head><link rel="preconnect" href="//example.com" /></head><body>foo</body>`)
+          return
+        }
         res.end()
       })
-      server.on('connection', (connection) => {
-        connections++
-      })
-      server.listen(0, '127.0.0.1', () => {
-        url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-        done()
-      })
+      server.on('connection', (connection) => { connections++ })
+
+      await new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve()))
+      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
     })
     afterEach(async () => {
       server.close()
@@ -1160,8 +1164,9 @@ describe('BrowserWindow module', () => {
       w = null as unknown as BrowserWindow
       server = null as unknown as http.Server
     })
-    it(`preconnect with number of sockets`, (done) => {
-      w = new BrowserWindow({})
+
+    it('calling preconnect() connects to the server', (done) => {
+      w = new BrowserWindow({show: false})
       w.webContents.on('did-start-navigation', (event, preconnectUrl, isInPlace, isMainFrame, frameProcessId, frameRoutingId) => {
         w.webContents.session.preconnect({
           url: preconnectUrl,
@@ -1173,6 +1178,21 @@ describe('BrowserWindow module', () => {
         done()
       })
       w.loadURL(url)
+    })
+
+    it('does not preconnect unless requested', async () => {
+      w = new BrowserWindow({show: false})
+      await w.loadURL(url)
+      expect(connections).to.equal(1)
+    })
+
+    it('parses <link rel=preconnect>', async () => {
+      w = new BrowserWindow({show: true})
+      const p = emittedOnce(w.webContents.session, 'preconnect')
+      w.loadURL(url + '/link')
+      const [, preconnectUrl, allowCredentials] = await p
+      expect(preconnectUrl).to.equal('http://example.com/')
+      expect(allowCredentials).to.be.true('allowCredentials')
     })
   })
 

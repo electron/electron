@@ -8,16 +8,13 @@
 #include <string>
 #include <vector>
 
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_message_filter.h"
 
 class GURL;
 
-namespace electron {
-namespace api {
-class Session;
+namespace content {
+class BrowserContext;
 }
-}  // namespace electron
 
 namespace predictors {
 class PreconnectManager;
@@ -27,7 +24,8 @@ class PreconnectManager;
 // process on the IPC thread.
 class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
  public:
-  explicit ElectronRenderMessageFilter(electron::api::Session* session);
+  explicit ElectronRenderMessageFilter(
+      content::BrowserContext* browser_context);
 
   // content::BrowserMessageFilter methods:
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -40,7 +38,7 @@ class ElectronRenderMessageFilter : public content::BrowserMessageFilter {
                     bool allow_credentials,
                     int count);
 
-  electron::api::Session* session_;
+  content::BrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronRenderMessageFilter);
 };
