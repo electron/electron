@@ -150,11 +150,13 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
       return true;
     case ui::VKEY_HOME:
       GetFocusManager()->SetFocusedViewWithReason(
-          GetFirstFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+          GetFirstFocusableChild(),
+          views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     case ui::VKEY_END:
       GetFocusManager()->SetFocusedViewWithReason(
-          GetLastFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+          GetLastFocusableChild(),
+          views::FocusManager::FocusChangeReason::kFocusTraversal);
       return true;
     default: {
       auto children = GetChildrenInZOrder();

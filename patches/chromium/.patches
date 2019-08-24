@@ -77,4 +77,3 @@ add_contentgpuclient_precreatemessageloop_callback.patch
 fix_disabling_compositor_recycling.patch
 picture-in-picture.patch
 allow_new_privileges_in_unsandboxed_child_processes.patch
-fix_vc_incompatible_inline_calls.patch

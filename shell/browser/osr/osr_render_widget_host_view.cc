@@ -486,10 +486,6 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
   NOTREACHED();
 }
 
-void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
-  NOTREACHED();
-}
-
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
   GetDelegatedFrameHost()->ResetFallbackToFirstNavigationSurface();
 }

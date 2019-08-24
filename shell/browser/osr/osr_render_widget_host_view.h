@@ -122,7 +122,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       viz::CompositorFrame frame,
       base::Optional<viz::HitTestRegionList> hit_test_region_list) override;
 
-  void ClearCompositorFrame(void) override;
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
                    const gfx::Rect& rect) override;

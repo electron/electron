@@ -127,7 +127,8 @@ void FilterCookies(const base::Value& filter,
                    const net::CookieList& list,
                    const net::CookieStatusList& excluded_list) {
   net::CookieList result;
-  for (const auto& cookie : list) {
+  net::CookieList stripped_cookies = net::cookie_util::StripStatuses(list);
+  for (const auto& cookie : stripped_cookies) {
     if (MatchesCookie(filter, cookie))
       result.push_back(cookie);
   }
@@ -186,22 +187,13 @@ v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
       browser_context_.get());
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
-  if (url.is_empty()) {
-    // GetAllCookies has a different callback signature than GetCookieList, but
-    // can be treated as the same, just returning no excluded cookies.
-    // |AddCookieStatusList| takes a |GetCookieListCallback| and returns a
-    // callback that calls the input callback with an empty excluded list.
-    manager->GetAllCookies(
-        net::cookie_util::AddCookieStatusList(std::move(callback)));
-  } else {
-    net::CookieOptions options;
-    options.set_include_httponly();
-    options.set_same_site_cookie_context(
-        net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
-    options.set_do_not_update_access_time();
+  net::CookieOptions options;
+  options.set_include_httponly();
+  options.set_same_site_cookie_context(
+      net::CookieOptions::SameSiteCookieContext::SAME_SITE_STRICT);
+  options.set_do_not_update_access_time();
 
-    manager->GetCookieList(url, options, std::move(callback));
-  }
+  manager->GetCookieList(url, options, std::move(callback));
 
   return handle;
 }

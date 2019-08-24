@@ -1,11 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Tue, 23 Apr 2019 09:51:43 -0700
-Subject: build: add electron tracing category
+Subject: build_add_electron_tracing_category.patch
 
 All TRACE events in Chromium use a static assert to ensure that the
 categories in use are known / declared.  This patch is required for us
-to introduce a new Electron category.
+to introduce a new Electron category for Electron-specific tracing.
 
 diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
 index b50d4123e44ddee34af0b07bfe5d067c4ccc5809..3e2c639a067fb76848783f35ec112a380da2353e 100644
