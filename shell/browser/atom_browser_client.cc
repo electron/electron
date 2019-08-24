@@ -57,6 +57,7 @@
 #include "shell/browser/atom_autofill_driver_factory.h"
 #include "shell/browser/atom_browser_context.h"
 #include "shell/browser/atom_browser_main_parts.h"
+#include "shell/browser/atom_message_filter.h"
 #include "shell/browser/atom_navigation_throttle.h"
 #include "shell/browser/atom_paths.h"
 #include "shell/browser/atom_quota_permission_context.h"
@@ -356,9 +357,13 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
 #endif
 
+  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
+
+  if (web_contents)
+    host->AddFilter(new AtomMessageFilter(web_contents));
+
   ProcessPreferences prefs;
-  auto* web_preferences =
-      WebContentsPreferences::From(GetWebContentsFromProcessID(process_id));
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
   if (web_preferences) {
     prefs.sandbox = web_preferences->IsEnabled(options::kSandbox);
     prefs.native_window_open =

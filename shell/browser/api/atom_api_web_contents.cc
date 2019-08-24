@@ -1163,7 +1163,9 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
-bool WebContents::OnMessageReceived(const IPC::Message& message) {
+bool WebContents::OnMessageReceived(
+    const IPC::Message& message,
+    content::RenderFrameHost* render_frame_host) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
     IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
