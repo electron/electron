@@ -27,6 +27,12 @@ const uint32_t kRenderFilteredMessageClasses[] = {
     NetworkHintsMsgStart,
 };
 
+void EmitPreconnect(electron::api::Session* session,
+                    const GURL& url,
+                    bool allow_credentials) {
+  session->Emit("preconnect", url, allow_credentials);
+}
+
 }  // namespace
 
 ElectronRenderMessageFilter::ElectronRenderMessageFilter(
@@ -63,9 +69,9 @@ void ElectronRenderMessageFilter::OnPreconnect(int render_frame_id,
     return;
   }
 
-  if (session_) {
-    session_->Emit("preconnect", url, allow_credentials);
-  }
+  base::PostTask(
+      FROM_HERE, {BrowserThread::UI},
+      base::BindOnce(&EmitPreconnect, session_, url, allow_credentials));
 }
 
 namespace predictors {
