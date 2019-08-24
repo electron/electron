@@ -176,12 +176,10 @@ void ProtocolNS::RegisterURLLoaderFactories(
 ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
-  ProtocolError error = ProtocolError::OK;
-  if (!base::Contains(handlers_, scheme))
-    handlers_[scheme] = std::make_pair(type, handler);
-  else
-    error = ProtocolError::REGISTERED;
-  return error;
+  const auto val =
+      base::TryEmplace(handlers_, scheme, std::make_pair(type, handler));
+  const bool already_exists = !val.second;
+  return already_exists ? ProtocolError::REGISTERED : ProtocolError::OK;
 }
 
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
@@ -199,12 +197,10 @@ bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
 ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
                                             const std::string& scheme,
                                             const ProtocolHandler& handler) {
-  ProtocolError error = ProtocolError::OK;
-  if (!base::Contains(intercept_handlers_, scheme))
-    intercept_handlers_[scheme] = std::make_pair(type, handler);
-  else
-    error = ProtocolError::INTERCEPTED;
-  return error;
+  const auto val = base::TryEmplace(intercept_handlers_, scheme,
+                                    std::make_pair(type, handler));
+  const bool already_exists = !val.second;
+  return already_exists ? ProtocolError::INTERCEPTED : ProtocolError::OK;
 }
 
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
