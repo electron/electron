@@ -368,11 +368,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
                                                     true /* default value */);
   }
 
-  auto session = api::Session::CreateFrom(
-      v8::Isolate::GetCurrent(),
-      static_cast<AtomBrowserContext*>(host->GetBrowserContext()));
-
-  host->AddFilter(new ElectronRenderMessageFilter(session.get()));
+  host->AddFilter(new ElectronRenderMessageFilter(host->GetBrowserContext()));
 
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later

@@ -16,7 +16,9 @@
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "components/network_hints/common/network_hints_common.h"
 #include "components/network_hints/common/network_hints_messages.h"
+#include "content/public/browser/browser_context.h"
 #include "shell/browser/api/atom_api_session.h"
+#include "shell/browser/atom_browser_context.h"
 #include "shell/common/native_mate_converters/gurl_converter.h"
 
 using content::BrowserThread;
@@ -27,19 +29,24 @@ const uint32_t kRenderFilteredMessageClasses[] = {
     NetworkHintsMsgStart,
 };
 
-void EmitPreconnect(electron::api::Session* session,
+void EmitPreconnect(content::BrowserContext* browser_context,
                     const GURL& url,
                     bool allow_credentials) {
-  session->Emit("preconnect", url, allow_credentials);
+  auto* session = electron::api::Session::FromWrappedClass(
+      v8::Isolate::GetCurrent(),
+      static_cast<electron::AtomBrowserContext*>(browser_context));
+  if (session) {
+    session->Emit("preconnect", url, allow_credentials);
+  }
 }
 
 }  // namespace
 
 ElectronRenderMessageFilter::ElectronRenderMessageFilter(
-    electron::api::Session* session)
+    content::BrowserContext* browser_context)
     : BrowserMessageFilter(kRenderFilteredMessageClasses,
                            base::size(kRenderFilteredMessageClasses)),
-      session_(session) {}
+      browser_context_(browser_context) {}
 
 ElectronRenderMessageFilter::~ElectronRenderMessageFilter() {}
 
@@ -69,9 +76,9 @@ void ElectronRenderMessageFilter::OnPreconnect(int render_frame_id,
     return;
   }
 
-  base::PostTask(
-      FROM_HERE, {BrowserThread::UI},
-      base::BindOnce(&EmitPreconnect, session_, url, allow_credentials));
+  base::PostTask(FROM_HERE, {BrowserThread::UI},
+                 base::BindOnce(&EmitPreconnect, browser_context_, url,
+                                allow_credentials));
 }
 
 namespace predictors {
