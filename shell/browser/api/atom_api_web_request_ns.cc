@@ -443,7 +443,8 @@ template <typename T>
 void WebRequestNS::OnListenerResult(uint64_t id,
                                     T out,
                                     v8::Local<v8::Value> response) {
-  if (!base::Contains(callbacks_, id))
+  const auto iter = callbacks_.find(id);
+  if (iter == std::end(callbacks_))
     return;
 
   int result = net::OK;
@@ -463,7 +464,7 @@ void WebRequestNS::OnListenerResult(uint64_t id,
   // asynchronously, because it used to work on IO thread before NetworkService.
   base::SequencedTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
-  callbacks_.erase(id);
+  callbacks_.erase(iter);
 }
 
 // static
