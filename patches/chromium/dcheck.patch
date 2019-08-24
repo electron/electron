@@ -46,7 +46,7 @@ index 4bc8bd4c68015dd684702a6afbce74b36160e5a1..55dc200a73ef09b17c0e52d622f86956
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 82bdc4eccf06b7c636dd48cfffebe2606c2cff38..c4385984ebc23bc0a89e7e6ae7d42715a707177d 100644
+index 87a82009c929ff73d3d9fe5b51907b9b4147f78f..32d2316d7553b672a28e84f9433c85d1be213623 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
 @@ -729,9 +729,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,

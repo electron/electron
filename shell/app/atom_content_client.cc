@@ -9,6 +9,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_util.h"
+#include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -16,6 +17,7 @@
 #include "content/public/common/pepper_plugin_info.h"
 #include "electron/buildflags/buildflags.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
+#include "shell/browser/atom_paths.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"

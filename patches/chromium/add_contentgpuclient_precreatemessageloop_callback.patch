@@ -1,12 +1,13 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Milan Burda <milan.burda@gmail.com>
 Date: Thu, 11 Apr 2019 14:49:20 +0200
-Subject: Add ContentGpuClient::PreCreateMessageLoop() callback
+Subject: add_contentgpuclient_precreatemessageloop_callback.patch
 
+This adds a ContentGpuClient::PreCreateMessageLoop() callback.
 Invoke in GpuMain after SetErrorMode, before starting the message loop.
 Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 
-This should be upstreamed
+This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
 index 46d92835eadd6429ea0c6a53c5a39ff04f1c2634..1b99a1e601f4226280cdf1382af555b4d61b92fa 100644

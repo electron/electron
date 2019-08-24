@@ -1,8 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 4 Mar 2019 14:43:36 -0800
-Subject: fix: disable usage of abort_report_np in MAS builds
+Subject: fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 
+Disable usage of abort_report_np in MAS builds.
 
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
 index 4eebcea13d17093a685cc79b8a8f61fb3894c71b..d704dced154f1d5db097e566a9c681438f94475d 100644

@@ -26,16 +26,10 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
 
   void UtilityThreadStarted() override;
   bool OnMessageReceived(const IPC::Message& message) override;
-  bool HandleServiceRequest(
-      const std::string& service_name,
-      service_manager::mojom::ServiceRequest request) override;
   mojo::ServiceFactory* GetMainThreadServiceFactory() override;
   mojo::ServiceFactory* GetIOThreadServiceFactory() override;
 
  private:
-  std::unique_ptr<service_manager::Service> MaybeCreateMainThreadService(
-      const std::string& service_name,
-      service_manager::mojom::ServiceRequest request);
 #if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
   std::unique_ptr<printing::PrintingHandler> printing_handler_;
 #endif

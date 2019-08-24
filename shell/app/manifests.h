@@ -10,7 +10,5 @@
 #include "services/service_manager/public/cpp/manifest.h"
 
 const service_manager::Manifest& GetElectronContentBrowserOverlayManifest();
-const std::vector<service_manager::Manifest>&
-GetElectronBuiltinServiceManifests();
 
 #endif  // SHELL_APP_MANIFESTS_H_

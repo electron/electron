@@ -769,11 +769,6 @@ AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
   return base::nullopt;
 }
 
-std::vector<service_manager::Manifest>
-AtomBrowserClient::GetExtraServiceManifests() {
-  return GetElectronBuiltinServiceManifests();
-}
-
 std::unique_ptr<content::BrowserMainParts>
 AtomBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
@@ -983,8 +978,7 @@ bool AtomBrowserClient::WillCreateURLLoaderFactory(
     content::BrowserContext* browser_context,
     content::RenderFrameHost* frame_host,
     int render_process_id,
-    bool is_navigation,
-    bool is_download,
+    URLLoaderFactoryType type,
     const url::Origin& request_initiator,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     network::mojom::TrustedURLLoaderHeaderClientPtrInfo* header_client,
@@ -1078,6 +1072,13 @@ std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();
   return *g_application_locale;
+}
+
+base::FilePath AtomBrowserClient::GetFontLookupTableCacheDir() {
+  base::FilePath user_data_dir;
+  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  DCHECK(!user_data_dir.empty());
+  return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
 }
 
 bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {

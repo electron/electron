@@ -12,6 +12,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
+#include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
@@ -23,7 +24,6 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_converters/string16_converter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
 #include "shell/common/node_includes.h"
 

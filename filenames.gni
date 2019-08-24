@@ -484,7 +484,6 @@ filenames = {
     "shell/common/gin_converters/net_converter.cc",
     "shell/common/gin_converters/net_converter.h",
     "shell/common/gin_converters/std_converter.h",
-    "shell/common/gin_converters/string16_converter.h",
     "shell/common/gin_converters/value_converter_gin_adapter.h",
     "shell/common/gin_util.h",
     "shell/common/heap_snapshot.cc",

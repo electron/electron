@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include "base/message_loop/message_loop.h"
+#include "base/message_loop/message_loop_current.h"
 #include "base/no_destructor.h"
 #include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
@@ -1674,6 +1674,8 @@ void WebContents::Print(mate::Arguments* args) {
 
     settings.SetString(printing::kSettingHeaderFooterTitle, header);
     settings.SetString(printing::kSettingHeaderFooterURL, footer);
+  } else {
+    settings.SetBoolean(printing::kSettingHeaderFooterEnabled, false);
   }
 
   // We don't want to allow the user to enable these settings

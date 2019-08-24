@@ -5,7 +5,7 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9cc3c1e1d9ef317a41b404ba96d23e669a855d85..112dfea30665ffa28c3b5f35bdad5d8a925b5656 100644
+index 30c4165bdb6af4cbab48954570c55cbe60cb598d..337c2bade32055f813009e0dbd33621499a921bf 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2136,6 +2136,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -92,7 +92,7 @@ index ecaf30bcb7b916a92a69641dd7b96a3633d407c0..0af625928ca6227a21cd4263a14a42b7
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForChildWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 0bdb9e8b3339ee39d2904bec2a03d30b212e7dbf..958e8a80edcf9465166bc64d11d3517bc8a23ad1 100644
+index 4ff447d0615d0e14995581ca07bba5118750c29a..818e357453e9b14a62b1b461bb41f85fc74e033d 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -76,9 +76,12 @@ class BrowserPluginGuestDelegate;
