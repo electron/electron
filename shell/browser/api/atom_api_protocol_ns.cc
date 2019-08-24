@@ -176,8 +176,7 @@ void ProtocolNS::RegisterURLLoaderFactories(
 ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
-  const auto val =
-      base::TryEmplace(handlers_, scheme, std::make_pair(type, handler));
+  const auto val = base::TryEmplace(handlers_, scheme, type, handler);
   const bool already_exists = !val.second;
   return already_exists ? ProtocolError::REGISTERED : ProtocolError::OK;
 }
@@ -197,8 +196,7 @@ bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
 ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
                                             const std::string& scheme,
                                             const ProtocolHandler& handler) {
-  const auto val = base::TryEmplace(intercept_handlers_, scheme,
-                                    std::make_pair(type, handler));
+  const auto val = base::TryEmplace(intercept_handlers_, scheme, type, handler);
   const bool already_exists = !val.second;
   return already_exists ? ProtocolError::INTERCEPTED : ProtocolError::OK;
 }
