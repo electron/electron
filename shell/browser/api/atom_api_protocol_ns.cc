@@ -186,11 +186,9 @@ ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
 
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
                                     mate::Arguments* args) {
-  ProtocolError error = ProtocolError::OK;
-  if (base::Contains(handlers_, scheme))
-    handlers_.erase(scheme);
-  else
-    error = ProtocolError::NOT_REGISTERED;
+  const auto n_removed = handlers_.erase(scheme);
+  const auto error =
+      n_removed > 0 ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
   HandleOptionalCallback(args, error);
 }
 
@@ -211,11 +209,9 @@ ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
 
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
                                      mate::Arguments* args) {
-  ProtocolError error = ProtocolError::OK;
-  if (base::Contains(intercept_handlers_, scheme))
-    intercept_handlers_.erase(scheme);
-  else
-    error = ProtocolError::NOT_INTERCEPTED;
+  const auto n_removed = intercept_handlers_.erase(scheme);
+  const auto error =
+      n_removed > 0 ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
   HandleOptionalCallback(args, error);
 }
 

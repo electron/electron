@@ -28,10 +28,9 @@ void WebViewManager::AddGuest(int guest_instance_id,
 }
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
-  if (!base::Contains(web_contents_embedder_map_, guest_instance_id))
+  const auto n_removed = web_contents_embedder_map_.erase(guest_instance_id);
+  if (n_removed == 0)
     return;
-
-  web_contents_embedder_map_.erase(guest_instance_id);
 
   // Remove the record of element in embedder too.
   for (const auto& element : element_instance_id_to_guest_map_)
