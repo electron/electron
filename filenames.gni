@@ -324,6 +324,8 @@ filenames = {
     "shell/browser/ui/file_dialog_gtk.cc",
     "shell/browser/ui/file_dialog_mac.mm",
     "shell/browser/ui/file_dialog_win.cc",
+    "shell/browser/ui/gtk_util.cc",
+    "shell/browser/ui/gtk_util.h",
     "shell/browser/ui/inspectable_web_contents.cc",
     "shell/browser/ui/inspectable_web_contents.h",
     "shell/browser/ui/inspectable_web_contents_delegate.h",

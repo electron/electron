@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/ui/message_box.h"
 
 #include "base/callback.h"
@@ -30,27 +31,6 @@ MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
 MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
-
-// Copied from L40-L55 in
-// https://cs.chromium.org/chromium/src/chrome/browser/ui/libgtkui/select_file_dialog_impl_gtk.cc
-#if GTK_CHECK_VERSION(3, 90, 0)
-// GTK stock items have been deprecated.  The docs say to switch to using the
-// strings "_Open", etc.  However this breaks i18n.  We could supply our own
-// internationalized strings, but the "_" in these strings is significant: it's
-// the keyboard shortcut to select these actions. TODO: Provide
-// internationalized strings when GTK provides support for it.
-const char kCancelLabel[] = "_Cancel";
-const char kNoLabel[] = "_No";
-const char kOkLabel[] = "_OK";
-const char kYesLabel[] = "_Yes";
-#else
-G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-const char* kCancelLabel = GTK_STOCK_CANCEL;
-const char* kNoLabel = GTK_STOCK_NO;
-const char* kOkLabel = GTK_STOCK_OK;
-const char* kYesLabel = GTK_STOCK_YES;
-G_GNUC_END_IGNORE_DEPRECATIONS
-#endif
 
 class GtkMessageBox : public NativeWindowObserver {
  public:
@@ -142,13 +122,13 @@ class GtkMessageBox : public NativeWindowObserver {
   const char* TranslateToStock(int id, const std::string& text) {
     const std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
-      return kCancelLabel;
+      return gtk_util::kCancelLabel;
     if (lower == "no")
-      return kNoLabel;
+      return gtk_util::kNoLabel;
     if (lower == "ok")
-      return kOkLabel;
+      return gtk_util::kOkLabel;
     if (lower == "yes")
-      return kYesLabel;
+      return gtk_util::kYesLabel;
     return text.c_str();
   }
 
