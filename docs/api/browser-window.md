@@ -379,8 +379,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `disableHtmlFullscreenWindowResize` Boolean (optional) - Whether to
       prevent the window from resizing when entering HTML Fullscreen. Default
       is `false`.
-    * `accessibleTitle` String (optional) - a part of Window title visible for
-      the screen readers only.
+    * `accessibleTitle` String (optional) - An alternative title string provided only
+      to accessibility tools such as screen readers. This string is not directly
+      visible to users.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

@@ -359,7 +359,7 @@ class NativeWindow : public base::SupportsUserData,
   base::ObserverList<NativeWindowObserver> observers_;
 
   // Accessible title.
-  std::string accessible_title_;
+  base::string16 accessible_title_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

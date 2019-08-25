@@ -587,15 +587,15 @@ base::string16 NativeWindow::GetAccessibleWindowTitle() const {
     return views::WidgetDelegate::GetAccessibleWindowTitle();
   }
 
-  return base::UTF8ToUTF16(accessible_title_);
+  return accessible_title_;
 }
 
 void NativeWindow::SetAccessibleTitle(const std::string& title) {
-  accessible_title_ = title;
+  accessible_title_ = base::UTF8ToUTF16(title);
 }
 
 std::string NativeWindow::GetAccessibleTitle() {
-  return accessible_title_;
+  return base::UTF16ToUTF8(accessible_title_);
 }
 
 // static
