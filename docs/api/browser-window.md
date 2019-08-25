@@ -826,7 +826,9 @@ Menu.setApplicationMenu(menu)
 
 #### `win.accessibleTitle`
 
-A `String` property that defines a part of window title which is visible for the screen readers only.
+A `String` property that defines an alternative title provided only to
+accessibility tools such as screen readers. This string is not directly
+visible to users.
 
 ### Instance Methods
 
