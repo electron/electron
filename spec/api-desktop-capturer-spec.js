@@ -142,6 +142,7 @@ describe('desktopCapturer', () => {
     const { BrowserWindow } = remote
     const mainWindow = remote.getCurrentWindow()
     const wList = [mainWindow]
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
     try {
       // Add MAX_WIN-1 more window so we have MAX_WIN in total.
       for (let i = 0; i < MAX_WIN - 1; i++) {
@@ -156,7 +157,11 @@ describe('desktopCapturer', () => {
         w.focus()
         await wFocused
       })
-      // At this point our windows should be showing from bottom to top.
+
+      // After this point our windows should be showing from bottom to top.
+      // We need to sleep in order to give the windows time to take focus before
+      // the sources are fetched
+      await sleep(2000)
 
       // DesktopCapturer.getSources() returns sources sorted from foreground to
       // background, i.e. top to bottom.
