@@ -407,4 +407,39 @@ describe('webContents module', () => {
       expect(w.webContents.isCurrentlyAudible()).to.be.false()
     })
   })
+
+  describe('getWebPreferences() API', () => {
+    afterEach(closeAllWindows)
+    it('should not crash when called for devTools webContents', (done) => {
+      const w = new BrowserWindow({show: false})
+      w.webContents.openDevTools()
+      w.webContents.once('devtools-opened', () => {
+        expect(w.webContents.devToolsWebContents.getWebPreferences()).to.be.null()
+        done()
+      })
+    })
+  })
+
+  describe('openDevTools() API', () => {
+    afterEach(closeAllWindows)
+    it('can show window with activation', async () => {
+      const w = new BrowserWindow({show: false})
+      const focused = emittedOnce(w, 'focus')
+      w.show()
+      await focused
+      expect(w.isFocused()).to.be.true()
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.openDevTools({ mode: 'detach', activate: true })
+      await devtoolsOpened
+      expect(w.isFocused()).to.be.false()
+    })
+
+    it('can show window without activation', async () => {
+      const w = new BrowserWindow({show: false})
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.openDevTools({ mode: 'detach', activate: false })
+      await devtoolsOpened
+      expect(w.webContents.isDevToolsOpened()).to.be.true()
+    })
+  })
 })

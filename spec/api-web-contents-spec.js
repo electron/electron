@@ -40,36 +40,6 @@ describe('webContents module', () => {
 
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
-  describe('getWebPreferences() API', () => {
-    it('should not crash when called for devTools webContents', (done) => {
-      w.webContents.openDevTools()
-      w.webContents.once('devtools-opened', () => {
-        expect(w.devToolsWebContents.getWebPreferences()).to.be.null()
-        done()
-      })
-    })
-  })
-
-  describe('openDevTools() API', () => {
-    it('can show window with activation', async () => {
-      const focused = emittedOnce(w, 'focus')
-      w.show()
-      await focused
-      expect(w.isFocused()).to.be.true()
-      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
-      w.webContents.openDevTools({ mode: 'detach', activate: true })
-      await devtoolsOpened
-      expect(w.isFocused()).to.be.false()
-    })
-
-    it('can show window without activation', async () => {
-      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
-      w.webContents.openDevTools({ mode: 'detach', activate: false })
-      await devtoolsOpened
-      expect(w.isDevToolsOpened()).to.be.true()
-    })
-  })
-
   describe('before-input-event event', () => {
     it('can prevent document keyboard events', async () => {
       await w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))

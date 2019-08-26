@@ -15,5 +15,6 @@ declare namespace Electron {
 
   interface WebContents {
     getOwnerBrowserWindow(): BrowserWindow;
+    getWebPreferences(): any;
   }
 }
