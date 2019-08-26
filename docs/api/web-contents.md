@@ -1593,8 +1593,8 @@ End subscribing for frame presentation events.
 
 * `item` Object
   * `file` String[] | String - The path(s) to the file(s) being dragged.
-  * `icon` [NativeImage](native-image.md) - The image must be non-empty on
-    macOS.
+  * `icon` [NativeImage](native-image.md) | String - The image must be
+    non-empty on macOS.
 
 Sets the `item` as dragging item for current drag-drop operation, `file` is the
 absolute path of the file to be dragged, and `icon` is the image showing under

@@ -98,44 +98,6 @@ describe('webContents module', () => {
     })
   })
 
-  it('supports inspecting an element in the devtools', (done) => {
-    w.loadURL('about:blank')
-    w.webContents.once('devtools-opened', () => { done() })
-    w.webContents.inspectElement(10, 10)
-  })
-
-  describe('startDrag({file, icon})', () => {
-    it('throws errors for a missing file or a missing/empty icon', () => {
-      expect(() => {
-        w.webContents.startDrag({ icon: path.join(fixtures, 'assets', 'logo.png') })
-      }).to.throw(`Must specify either 'file' or 'files' option`)
-
-      expect(() => {
-        w.webContents.startDrag({ file: __filename })
-      }).to.throw(`Must specify 'icon' option`)
-
-      if (process.platform === 'darwin') {
-        expect(() => {
-          w.webContents.startDrag({ file: __filename, icon: __filename })
-        }).to.throw(`Must specify non-empty 'icon' option`)
-      }
-    })
-  })
-
-  describe('focus()', () => {
-    describe('when the web contents is hidden', () => {
-      it('does not blur the focused window', (done) => {
-        ipcMain.once('answer', (event, parentFocused, childFocused) => {
-          expect(parentFocused).to.be.true()
-          expect(childFocused).to.be.false()
-          done()
-        })
-        w.show()
-        w.loadFile(path.join(fixtures, 'pages', 'focus-web-contents.html'))
-      })
-    })
-  })
-
   describe('getOSProcessId()', () => {
     it('returns a valid procress id', async () => {
       expect(w.webContents.getOSProcessId()).to.equal(0)

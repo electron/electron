@@ -661,4 +661,34 @@ describe('webContents module', () => {
       expect(result).to.equal('repeat')
     })
   })
+
+  describe('inspectElement()', () => {
+    afterEach(closeAllWindows)
+    it('supports inspecting an element in the devtools', (done) => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      w.webContents.once('devtools-opened', () => { done() })
+      w.webContents.inspectElement(10, 10)
+    })
+  })
+
+  describe('startDrag({file, icon})', () => {
+    it('throws errors for a missing file or a missing/empty icon', () => {
+      const w = new BrowserWindow({ show: false })
+      expect(() => {
+        w.webContents.startDrag({ icon: path.join(fixturesPath, 'assets', 'logo.png') } as any)
+      }).to.throw(`Must specify either 'file' or 'files' option`)
+
+      expect(() => {
+        w.webContents.startDrag({ file: __filename } as any)
+      }).to.throw(`Must specify 'icon' option`)
+
+      if (process.platform === 'darwin') {
+        expect(() => {
+          w.webContents.startDrag({ file: __filename, icon: __filename })
+        }).to.throw(`Must specify non-empty 'icon' option`)
+      }
+    })
+  })
+
 })
