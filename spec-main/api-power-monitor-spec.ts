@@ -6,37 +6,31 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
-const dbus = require('dbus-native')
-const Promise = require('bluebird')
-
-const { expect } = chai
-chai.use(dirtyChai)
-
-const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
+import { expect } from 'chai'
+import * as dbus from 'dbus-native'
+import { ifdescribe } from './spec-helpers'
+import { promisify } from 'util'
+import { powerMonitor } from 'electron'
 
 describe('powerMonitor', () => {
-  let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
+  let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any
 
-  if (!skip) {
+  ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
     before(async () => {
       const systemBus = dbus.systemBus()
       const loginService = systemBus.getService('org.freedesktop.login1')
-      const getInterface = Promise.promisify(loginService.getInterface, { context: loginService })
+      const getInterface = promisify(loginService.getInterface.bind(loginService))
       logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
-      getCalls = Promise.promisify(logindMock.GetCalls, { context: logindMock })
-      emitSignal = Promise.promisify(logindMock.EmitSignal, { context: logindMock })
-      reset = Promise.promisify(logindMock.Reset, { context: logindMock })
+      getCalls = promisify(logindMock.GetCalls.bind(logindMock))
+      emitSignal = promisify(logindMock.EmitSignal.bind(logindMock))
+      reset = promisify(logindMock.Reset.bind(logindMock))
     })
 
     after(async () => {
       await reset()
     })
-  }
 
-  (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
-    function onceMethodCalled (done) {
+    function onceMethodCalled (done: () => void) {
       function cb () {
         logindMock.removeListener('MethodCalled', cb)
       }
@@ -123,11 +117,6 @@ describe('powerMonitor', () => {
   })
 
   describe('when powerMonitor module is loaded', () => {
-    let powerMonitor
-    before(() => {
-      powerMonitor = require('electron').remote.powerMonitor
-    })
-
     describe('powerMonitor.getSystemIdleState', () => {
       it('gets current system idle state', () => {
         // this function is not mocked out, so we can test the result's
@@ -148,7 +137,7 @@ describe('powerMonitor', () => {
         }).to.throw(/conversion failure/)
 
         expect(() => {
-          powerMonitor.getSystemIdleState('a')
+          powerMonitor.getSystemIdleState('a' as any)
         }).to.throw(/conversion failure/)
       })
     })

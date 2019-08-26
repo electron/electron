@@ -17,3 +17,5 @@ declare namespace Electron {
     getOwnerBrowserWindow(): BrowserWindow;
   }
 }
+
+declare module 'dbus-native';
