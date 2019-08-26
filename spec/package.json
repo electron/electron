@@ -8,7 +8,6 @@
   },
   "devDependencies": {
     "basic-auth": "^2.0.1",
-    "bluebird": "^3.5.3",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coffeescript": "^2.4.1",
