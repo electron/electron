@@ -11,7 +11,7 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(
     v8::Local<v8::ObjectTemplate> templ)
     : isolate_(isolate), template_(templ) {}
 
-ObjectTemplateBuilder::~ObjectTemplateBuilder() {}
+ObjectTemplateBuilder::~ObjectTemplateBuilder() = default;
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetImpl(base::StringPiece name,
                                                       v8::Local<v8::Data> val) {

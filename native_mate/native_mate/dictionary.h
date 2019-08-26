@@ -125,7 +125,7 @@ class Dictionary {
   v8::Isolate* isolate() const { return isolate_; }
 
  protected:
-  v8::Isolate* isolate_;
+  v8::Isolate* isolate_ = nullptr;
 
  private:
   v8::Local<v8::Object> object_;

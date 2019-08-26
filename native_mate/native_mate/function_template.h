@@ -83,10 +83,10 @@ class CallbackHolder : public CallbackHolderBase {
                  int flags)
       : CallbackHolderBase(isolate), callback(callback), flags(flags) {}
   base::Callback<Sig> callback;
-  int flags;
+  int flags = 0;
 
  private:
-  virtual ~CallbackHolder() {}
+  virtual ~CallbackHolder() = default;
 
   DISALLOW_COPY_AND_ASSIGN(CallbackHolder);
 };
@@ -162,9 +162,9 @@ struct ArgumentHolder {
   using ArgLocalType = typename CallbackParamTraits<ArgType>::LocalType;
 
   ArgLocalType value;
-  bool ok;
+  bool ok = false;
 
-  ArgumentHolder(Arguments* args, int create_flags) : ok(false) {
+  ArgumentHolder(Arguments* args, int create_flags) {
     if (index == 0 && (create_flags & HolderIsFirstArgument) &&
         Destroyable::IsDestroyed(args)) {
       args->ThrowError("Object has been destroyed");
