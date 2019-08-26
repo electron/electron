@@ -4,7 +4,6 @@
 
 #include "shell/browser/atom_message_filter.h"
 
-#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/common/widget_messages.h"
 
 namespace electron {

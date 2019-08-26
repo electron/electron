@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_ATOM_MESSAGE_FILTER_H_
 #define SHELL_BROWSER_ATOM_MESSAGE_FILTER_H_
 
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_message_filter.h"
 #include "content/public/browser/web_contents.h"
 
