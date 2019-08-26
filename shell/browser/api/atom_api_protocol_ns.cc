@@ -176,16 +176,15 @@ void ProtocolNS::RegisterURLLoaderFactories(
 ProtocolError ProtocolNS::RegisterProtocol(ProtocolType type,
                                            const std::string& scheme,
                                            const ProtocolHandler& handler) {
-  const auto val = base::TryEmplace(handlers_, scheme, type, handler);
-  const bool already_exists = !val.second;
-  return already_exists ? ProtocolError::REGISTERED : ProtocolError::OK;
+  const bool added = base::TryEmplace(handlers_, scheme, type, handler).second;
+  return added ? ProtocolError::OK : ProtocolError::REGISTERED;
 }
 
 void ProtocolNS::UnregisterProtocol(const std::string& scheme,
                                     mate::Arguments* args) {
-  const auto n_removed = handlers_.erase(scheme);
+  const bool removed = handlers_.erase(scheme) != 0;
   const auto error =
-      n_removed > 0 ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
+      removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED;
   HandleOptionalCallback(args, error);
 }
 
@@ -196,16 +195,16 @@ bool ProtocolNS::IsProtocolRegistered(const std::string& scheme) {
 ProtocolError ProtocolNS::InterceptProtocol(ProtocolType type,
                                             const std::string& scheme,
                                             const ProtocolHandler& handler) {
-  const auto val = base::TryEmplace(intercept_handlers_, scheme, type, handler);
-  const bool already_exists = !val.second;
-  return already_exists ? ProtocolError::INTERCEPTED : ProtocolError::OK;
+  const bool added =
+      base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
+  return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
 }
 
 void ProtocolNS::UninterceptProtocol(const std::string& scheme,
                                      mate::Arguments* args) {
-  const auto n_removed = intercept_handlers_.erase(scheme);
+  const bool removed = intercept_handlers_.erase(scheme) != 0;
   const auto error =
-      n_removed > 0 ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
+      removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED;
   HandleOptionalCallback(args, error);
 }
 
