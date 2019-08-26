@@ -75,3 +75,4 @@ disable_color_correct_rendering.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
 picture-in-picture.patch
 disable_compositor_recycling.patch
+allow_new_privileges_in_unsandboxed_child_processes.patch
