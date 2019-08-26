@@ -675,7 +675,7 @@ preferred over `name` by Electron.
 
 Overrides the current application's name.
 
-**Note:** This overrides the name used internally by Electron, it does not affect the name that the OS uses.
+**Note:** This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
 
 **[Deprecated](modernization/property-updates.md)**
 
