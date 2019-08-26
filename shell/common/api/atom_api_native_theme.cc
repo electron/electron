@@ -28,6 +28,22 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
   Emit("updated");
 }
 
+void NativeTheme::SetShouldUseDarkColorsOverride(
+    ui::NativeTheme::OverrideShouldUseDarkColors override) {
+  theme_->set_override_should_use_dark_colors(override);
+#if defined(OS_MACOSX)
+  // Update the macOS appearance setting for this new override value
+  UpdateMacOSAppearanceForOverrideValue(override);
+#endif
+  // TODO(MarshallOfSound): Update all existing browsers windows to use GTK dark
+  // theme
+}
+
+ui::NativeTheme::OverrideShouldUseDarkColors
+NativeTheme::GetShouldUseDarkColorsOverride() const {
+  return theme_->override_should_use_dark_colors();
+}
+
 bool NativeTheme::ShouldUseDarkColors() {
   return theme_->ShouldUseDarkColors();
 }
@@ -68,6 +84,9 @@ void NativeTheme::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "NativeTheme"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("shouldUseDarkColors", &NativeTheme::ShouldUseDarkColors)
+      .SetProperty("shouldUseDarkColorsOverride",
+                   &NativeTheme::GetShouldUseDarkColorsOverride,
+                   &NativeTheme::SetShouldUseDarkColorsOverride)
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
       .SetProperty("shouldUseInvertedColorScheme",
@@ -93,5 +112,47 @@ void Initialize(v8::Local<v8::Object> exports,
 }
 
 }  // namespace
+
+namespace mate {
+
+v8::Local<v8::Value>
+Converter<ui::NativeTheme::OverrideShouldUseDarkColors>::ToV8(
+    v8::Isolate* isolate,
+    const ui::NativeTheme::OverrideShouldUseDarkColors& val) {
+  switch (val) {
+    case ui::NativeTheme::OverrideShouldUseDarkColors::kForceDarkColorsEnabled:
+      return mate::ConvertToV8(isolate, true);
+    case ui::NativeTheme::OverrideShouldUseDarkColors::kForceDarkColorsDisabled:
+      return mate::ConvertToV8(isolate, false);
+    case ui::NativeTheme::OverrideShouldUseDarkColors::kNoOverride:
+    default:
+      return mate::ConvertToV8(isolate, nullptr);
+  }
+}
+
+bool Converter<ui::NativeTheme::OverrideShouldUseDarkColors>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    ui::NativeTheme::OverrideShouldUseDarkColors* out) {
+  if (val->IsNull() || val->IsUndefined()) {
+    *out = ui::NativeTheme::OverrideShouldUseDarkColors::kNoOverride;
+    return true;
+  }
+
+  bool force_dark;
+  if (mate::ConvertFromV8(isolate, val, &force_dark)) {
+    if (force_dark) {
+      *out =
+          ui::NativeTheme::OverrideShouldUseDarkColors::kForceDarkColorsEnabled;
+    } else {
+      *out = ui::NativeTheme::OverrideShouldUseDarkColors::
+          kForceDarkColorsDisabled;
+    }
+    return true;
+  }
+  return false;
+}
+
+}  // namespace mate
 
 NODE_LINKED_MODULE_CONTEXT_AWARE(atom_common_native_theme, Initialize)

@@ -7,6 +7,7 @@
 
 #include "native_mate/handle.h"
 #include "shell/browser/api/event_emitter.h"
+#include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
 namespace electron {
@@ -25,6 +26,14 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
   NativeTheme(v8::Isolate* isolate, ui::NativeTheme* theme);
   ~NativeTheme() override;
 
+  void SetShouldUseDarkColorsOverride(
+      ui::NativeTheme::OverrideShouldUseDarkColors override);
+#if defined(OS_MACOSX)
+  void UpdateMacOSAppearanceForOverrideValue(
+      ui::NativeTheme::OverrideShouldUseDarkColors override);
+#endif
+  ui::NativeTheme::OverrideShouldUseDarkColors GetShouldUseDarkColorsOverride()
+      const;
   bool ShouldUseDarkColors();
   bool ShouldUseHighContrastColors();
   bool ShouldUseInvertedColorScheme();
@@ -41,5 +50,19 @@ class NativeTheme : public mate::EventEmitter<NativeTheme>,
 }  // namespace api
 
 }  // namespace electron
+
+namespace mate {
+
+template <>
+struct Converter<ui::NativeTheme::OverrideShouldUseDarkColors> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const ui::NativeTheme::OverrideShouldUseDarkColors& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     ui::NativeTheme::OverrideShouldUseDarkColors* out);
+};
+
+}  // namespace mate
 
 #endif  // SHELL_COMMON_API_ATOM_API_NATIVE_THEME_H_

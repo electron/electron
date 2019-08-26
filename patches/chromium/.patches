@@ -77,3 +77,4 @@ picture-in-picture.patch
 disable_compositor_recycling.patch
 allow_new_privileges_in_unsandboxed_child_processes.patch
 expose_setuseragent_on_networkcontext.patch
+feat_add_set_override_should_use_dark_colors_to_allow_apps_to.patch
