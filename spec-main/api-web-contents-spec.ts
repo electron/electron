@@ -442,4 +442,95 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true()
     })
   })
+
+  describe('before-input-event event', () => {
+    afterEach(closeAllWindows)
+    it('can prevent document keyboard events', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+      await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'))
+      const keyDown = new Promise(resolve => {
+        ipcMain.once('keydown', (event, key) => resolve(key))
+      })
+      w.webContents.once('before-input-event', (event, input) => {
+        if ('a' === input.key) event.preventDefault()
+      })
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' })
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' })
+      expect(await keyDown).to.equal('b')
+    })
+
+    it('has the correct properties', async () => {
+      const w = new BrowserWindow({show: false})
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
+      const testBeforeInput = async (opts: any) => {
+        const modifiers = []
+        if (opts.shift) modifiers.push('shift')
+        if (opts.control) modifiers.push('control')
+        if (opts.alt) modifiers.push('alt')
+        if (opts.meta) modifiers.push('meta')
+        if (opts.isAutoRepeat) modifiers.push('isAutoRepeat')
+
+        const p = emittedOnce(w.webContents, 'before-input-event')
+        w.webContents.sendInputEvent({
+          type: opts.type,
+          keyCode: opts.keyCode,
+          modifiers: modifiers as any
+        })
+        const [, input] = await p
+
+        expect(input.type).to.equal(opts.type)
+        expect(input.key).to.equal(opts.key)
+        expect(input.code).to.equal(opts.code)
+        expect(input.isAutoRepeat).to.equal(opts.isAutoRepeat)
+        expect(input.shift).to.equal(opts.shift)
+        expect(input.control).to.equal(opts.control)
+        expect(input.alt).to.equal(opts.alt)
+        expect(input.meta).to.equal(opts.meta)
+      }
+      await testBeforeInput({
+        type: 'keyDown',
+        key: 'A',
+        code: 'KeyA',
+        keyCode: 'a',
+        shift: true,
+        control: true,
+        alt: true,
+        meta: true,
+        isAutoRepeat: true
+      })
+      await testBeforeInput({
+        type: 'keyUp',
+        key: '.',
+        code: 'Period',
+        keyCode: '.',
+        shift: false,
+        control: true,
+        alt: true,
+        meta: false,
+        isAutoRepeat: false
+      })
+      await testBeforeInput({
+        type: 'keyUp',
+        key: '!',
+        code: 'Digit1',
+        keyCode: '1',
+        shift: true,
+        control: false,
+        alt: false,
+        meta: true,
+        isAutoRepeat: false
+      })
+      await testBeforeInput({
+        type: 'keyUp',
+        key: 'Tab',
+        code: 'Tab',
+        keyCode: 'Tab',
+        shift: false,
+        control: true,
+        alt: false,
+        meta: false,
+        isAutoRepeat: true
+      })
+    })
+  })
 })
