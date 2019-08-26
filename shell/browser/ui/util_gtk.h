@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_GTK_UTIL_H_
-#define SHELL_BROWSER_UI_GTK_UTIL_H_
+#ifndef SHELL_BROWSER_UI_UTIL_GTK_H_
+#define SHELL_BROWSER_UI_UTIL_GTK_H_
 
 namespace gtk_util {
 
@@ -18,4 +18,4 @@ extern const char* const kYesLabel;
 
 }  // namespace gtk_util
 
-#endif  // SHELL_BROWSER_UI_GTK_UTIL_H_
+#endif  // SHELL_BROWSER_UI_UTIL_GTK_H_
