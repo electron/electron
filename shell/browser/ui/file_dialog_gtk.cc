@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/browser/ui/gtk_util.h"
+#include "shell/browser/ui/util_gtk.h"
 
 #include "base/callback.h"
 #include "base/files/file_util.h"
