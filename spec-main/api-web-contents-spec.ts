@@ -642,4 +642,23 @@ describe('webContents module', () => {
     })
   })
 
+  describe('insertCSS', () => {
+    afterEach(closeAllWindows)
+    it('supports inserting CSS', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      await w.webContents.insertCSS('body { background-repeat: round; }')
+      const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+      expect(result).to.equal('round')
+    })
+
+    it('supports removing inserted CSS', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      const key = await w.webContents.insertCSS('body { background-repeat: round; }')
+      await w.webContents.removeInsertedCSS(key)
+      const result = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")')
+      expect(result).to.equal('repeat')
+    })
+  })
 })
