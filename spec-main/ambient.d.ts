@@ -16,4 +16,11 @@ declare namespace Electron {
   interface WebContents {
     getOwnerBrowserWindow(): BrowserWindow;
   }
+
+  // Experimental views API
+  class TopLevelWindow {
+    constructor(args: {show: boolean})
+    setContentView(view: View): void
+  }
+  class View {}
 }
