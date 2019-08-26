@@ -202,8 +202,10 @@ URLRequestNS::URLRequestNS(mate::Arguments* args) : weak_factory_(this) {
   params->header_client = std::move(header_client);
   params->process_id = network::mojom::kBrowserProcessId;
   params->is_trusted = true;
-  params->is_corb_enabled = true;
-  params->disable_web_security = true;
+  params->is_corb_enabled = false;
+  // The tests of net module would fail if this setting is true, it seems that
+  // the non-NetworkService implementation always has web security enabled.
+  params->disable_web_security = false;
 
   storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
       std::move(factory_request), std::move(params));
