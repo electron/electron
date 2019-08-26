@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/atom_api_session.h"
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -690,6 +691,42 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, net_log_);
 }
 
+static void StartPreconnectOnUI(
+    scoped_refptr<AtomBrowserContext> browser_context,
+    const GURL& url,
+    int num_sockets_to_preconnect) {
+  std::vector<predictors::PreconnectRequest> requests = {
+      {url.GetOrigin(), num_sockets_to_preconnect, net::NetworkIsolationKey()}};
+  browser_context->GetPreconnectManager()->Start(url, requests);
+}
+
+void Session::Preconnect(const mate::Dictionary& options,
+                         mate::Arguments* args) {
+  GURL url;
+  if (!options.Get("url", &url) || !url.is_valid()) {
+    args->ThrowError("Must pass non-empty valid url to session.preconnect.");
+    return;
+  }
+  int num_sockets_to_preconnect = 1;
+  if (options.Get("numSockets", &num_sockets_to_preconnect)) {
+    const int kMinSocketsToPreconnect = 1;
+    const int kMaxSocketsToPreconnect = 6;
+    if (num_sockets_to_preconnect < kMinSocketsToPreconnect ||
+        num_sockets_to_preconnect > kMaxSocketsToPreconnect) {
+      args->ThrowError(
+          base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]",
+                             kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
+      return;
+    }
+  }
+
+  DCHECK_GT(num_sockets_to_preconnect, 0);
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
+      base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
+                     url, num_sockets_to_preconnect));
+}
+
 // static
 mate::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
                                           AtomBrowserContext* browser_context) {
@@ -760,6 +797,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadChromeExtension", &Session::LoadChromeExtension)
 #endif
+      .SetMethod("preconnect", &Session::Preconnect)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
