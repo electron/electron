@@ -239,6 +239,15 @@ int GetAppbarAutohideEdges(HWND hwnd) {
   return edges;
 }
 
+void TriggerNCCalcSize(HWND hwnd) {
+  RECT rcClient;
+  ::GetWindowRect(hwnd, &rcClient);
+
+  ::SetWindowPos(hwnd, NULL, rcClient.left, rcClient.top,
+                 rcClient.right - rcClient.left, rcClient.bottom - rcClient.top,
+                 SWP_FRAMECHANGED);
+}
+
 }  // namespace
 
 std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
@@ -369,8 +378,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
         DefWindowProcW(GetAcceleratedWidget(), WM_NCCALCSIZE, w_param, l_param);
 
-        params->rgrc[0] = PROPOSED;
-        params->rgrc[1] = BEFORE;
+        if (last_window_state_ == ui::SHOW_STATE_MAXIMIZED) {
+          params->rgrc[0].top = 0;
+        } else {
+          params->rgrc[0] = PROPOSED;
+          params->rgrc[1] = BEFORE;
+        }
 
         return true;
       } else {
@@ -453,24 +466,13 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   // window state and notify the user accordingly.
   switch (w_param) {
     case SIZE_MAXIMIZED: {
-      // Frameless maximized windows are size compensated by Windows for a
-      // border that's not actually there, so we must conter-compensate.
-      // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
-      if (!has_frame()) {
-        float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(
-            GetAcceleratedWidget());
-
-        int border =
-            GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-        if (!thick_frame_) {
-          border -= GetSystemMetrics(SM_CXBORDER);
-        }
-        root_view_->SetInsets(gfx::Insets(border).Scale(1.0f / scale_factor));
-      }
-
       last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
       if (consecutive_moves_) {
         last_normal_bounds_ = last_normal_bounds_before_move_;
+      }
+
+      if (!has_frame()) {
+        TriggerNCCalcSize(GetAcceleratedWidget());
       }
 
       NotifyWindowMaximize();
@@ -497,8 +499,12 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
         switch (last_window_state_) {
           case ui::SHOW_STATE_MAXIMIZED:
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-            root_view_->SetInsets(gfx::Insets(0));
             NotifyWindowUnmaximize();
+
+            if (!has_frame()) {
+              TriggerNCCalcSize(GetAcceleratedWidget());
+            }
+
             break;
           case ui::SHOW_STATE_MINIMIZED:
             if (IsFullscreen()) {
