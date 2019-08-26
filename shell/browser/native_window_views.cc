@@ -305,7 +305,6 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
-  last_normal_bounds_ = GetBounds();
 #endif
 
 #if defined(OS_LINUX)
