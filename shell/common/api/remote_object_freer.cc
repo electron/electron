@@ -65,16 +65,27 @@ void RemoteObjectFreer::RunDestructor() {
   if (!render_frame)
     return;
 
+  // Reset our local ref count in case we are in a GC race condition
+  // and will get more references in an inbound IPC message
+  int ref_count = 0;
+  const auto objects_it = ref_mapper_.find(context_id_);
+  if (objects_it != std::end(ref_mapper_)) {
+    auto& objects = objects_it->second;
+    const auto ref_it = objects.find(object_id_);
+    if (ref_it != std::end(objects)) {
+      ref_count = ref_it->second;
+      objects.erase(ref_it);
+    }
+    if (objects.empty())
+      ref_mapper_.erase(objects_it);
+  }
+
   auto* channel = "ELECTRON_BROWSER_DEREFERENCE";
+
   base::ListValue args;
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
-  args.AppendInteger(ref_mapper_[context_id_][object_id_]);
-  // Reset our local ref count in case we are in a GC race condition and will
-  // get more references in an inbound IPC message
-  ref_mapper_[context_id_].erase(object_id_);
-  if (ref_mapper_[context_id_].empty())
-    ref_mapper_.erase(context_id_);
+  args.AppendInteger(ref_count);
 
   mojom::ElectronBrowserAssociatedPtr electron_ptr;
   render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
