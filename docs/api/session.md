@@ -91,7 +91,7 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 })
 ```
 
-#### Event: 'preconnect'
+#### Event: 'preconnect' _Experimental_
 
 Returns:
 
@@ -252,7 +252,7 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({ offline: true })
 ```
 
-#### `ses.preconnect(options)`
+#### `ses.preconnect(options)` _Experimental_
 
 * `options` Object
   * `url` String - URL for preconnect. Only the origin is relevant for opening the socket.
