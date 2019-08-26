@@ -357,4 +357,54 @@ describe('webContents module', () => {
       expect(webContents.getFocusedWebContents()).to.be.null()
     })
   })
+
+  describe('setDevToolsWebContents() API', () => {
+    afterEach(closeAllWindows)
+    it('sets arbitrary webContents as devtools', async () => {
+      const w = new BrowserWindow({ show: false })
+      const devtools = new BrowserWindow({ show: false })
+      const promise = emittedOnce(devtools.webContents, 'dom-ready')
+      w.webContents.setDevToolsWebContents(devtools.webContents)
+      w.webContents.openDevTools()
+      await promise
+      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true()
+      const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name')
+      expect(result).to.equal('InspectorFrontendHostImpl')
+      devtools.destroy()
+    })
+  })
+
+  describe('isFocused() API', () => {
+    it('returns false when the window is hidden', async () => {
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+      expect(w.isVisible()).to.be.false()
+      expect(w.webContents.isFocused()).to.be.false()
+    })
+  })
+
+  describe('isCurrentlyAudible() API', () => {
+    afterEach(closeAllWindows)
+    it('returns whether audio is playing', async () => {
+      const w = new BrowserWindow({ show: false })
+      await w.loadURL('about:blank')
+      await w.webContents.executeJavaScript(`
+        window.context = new AudioContext
+        // Start in suspended state, because of the
+        // new web audio api policy.
+        context.suspend()
+        window.oscillator = context.createOscillator()
+        oscillator.connect(context.destination)
+        oscillator.start()
+      `)
+      let p = emittedOnce(w.webContents, '-audio-state-changed')
+      w.webContents.executeJavaScript('context.resume()')
+      await p
+      expect(w.webContents.isCurrentlyAudible()).to.be.true()
+      p = emittedOnce(w.webContents, '-audio-state-changed')
+      w.webContents.executeJavaScript('oscillator.stop()')
+      await p
+      expect(w.webContents.isCurrentlyAudible()).to.be.false()
+    })
+  })
 })

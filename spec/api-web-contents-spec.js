@@ -40,51 +40,6 @@ describe('webContents module', () => {
 
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
-  describe('setDevToolsWebContents() API', () => {
-    it('sets arbitrary webContents as devtools', async () => {
-      const devtools = new BrowserWindow({ show: false })
-      const promise = emittedOnce(devtools.webContents, 'dom-ready')
-      w.webContents.setDevToolsWebContents(devtools.webContents)
-      w.webContents.openDevTools()
-      await promise
-      expect(devtools.getURL().startsWith('devtools://devtools')).to.be.true()
-      const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name')
-      expect(result).to.equal('InspectorFrontendHostImpl')
-      devtools.destroy()
-    })
-  })
-
-  describe('isFocused() API', () => {
-    it('returns false when the window is hidden', () => {
-      BrowserWindow.getAllWindows().forEach((window) => {
-        expect(!window.isVisible() && window.webContents.isFocused()).to.be.false()
-      })
-    })
-  })
-
-  describe('isCurrentlyAudible() API', () => {
-    it('returns whether audio is playing', async () => {
-      const webContents = remote.getCurrentWebContents()
-      const context = new window.AudioContext()
-      // Start in suspended state, because of the
-      // new web audio api policy.
-      context.suspend()
-      const oscillator = context.createOscillator()
-      oscillator.connect(context.destination)
-      oscillator.start()
-      let p = emittedOnce(webContents, '-audio-state-changed')
-      await context.resume()
-      await p
-      expect(webContents.isCurrentlyAudible()).to.be.true()
-      p = emittedOnce(webContents, '-audio-state-changed')
-      oscillator.stop()
-      await p
-      expect(webContents.isCurrentlyAudible()).to.be.false()
-      oscillator.disconnect()
-      context.close()
-    })
-  })
-
   describe('getWebPreferences() API', () => {
     it('should not crash when called for devTools webContents', (done) => {
       w.webContents.openDevTools()
