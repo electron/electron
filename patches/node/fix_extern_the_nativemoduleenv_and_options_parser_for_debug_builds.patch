@@ -39,3 +39,16 @@ index c79b08ad09c183ad24faf864fb8ba4692b527c70..a116b2fdaad590c8999142d18b9b81da
    StringVector* const args, StringVector* const exec_args,
    StringVector* const v8_args, OptionsType* const options,
    OptionEnvvarSettings required_env_settings, StringVector* const errors);
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 4689a3e405be5fbbe3bb960940b48276669d8bc6..099daaa37da8e8374f28a05b3cf39f8898129802 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -219,7 +219,7 @@ const DebugOptionsParser _dop_instance{};
+ const EnvironmentOptionsParser _eop_instance{_dop_instance};
+
+ template <>
+-void Parse(
++void NODE_EXTERN Parse(
+   StringVector* const args, StringVector* const exec_args,
+   StringVector* const v8_args,
+   DebugOptions* const options,
