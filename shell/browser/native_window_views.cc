@@ -8,7 +8,6 @@
 #include <wrl/client.h>
 #endif
 
-#include <array>
 #include <memory>
 #include <tuple>
 #include <utility>
@@ -793,11 +792,9 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
   if (z_order != ui::ZOrderLevel::kNormal) {
     // On macOS the window is placed behind the Dock for the following levels.
     // Re-use the same names on Windows to make it easier for the user.
-    static constexpr std::array<base::StringPiece, 5> levels = {
+    static const std::vector<std::string> levels = {
         "floating", "torn-off-menu", "modal-panel", "main-menu", "status"};
-    const bool found = std::find(std::begin(levels), std::end(levels), level) !=
-                       std::end(levels);
-    behind_task_bar_ = found;
+    behind_task_bar_ = base::Contains(levels, level);
   }
 #endif
   MoveBehindTaskBarIfNeeded();
