@@ -5,6 +5,7 @@
 #include "atom/app/atom_content_client.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/browser.h"
@@ -166,14 +167,19 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
-void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
-                                        const char* separator,
-                                        const char* cmd_switch) {
+void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
+                                   std::vector<std::string>* append_me) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  auto string_with_separator = command_line->GetSwitchValueASCII(cmd_switch);
-  if (!string_with_separator.empty())
-    *vec = base::SplitString(string_with_separator, separator,
-                             base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  auto switch_value = command_line->GetSwitchValueASCII(cmd_switch);
+  if (!switch_value.empty()) {
+    constexpr base::StringPiece delimiter(",", 1);
+    auto tokens =
+        base::SplitString(switch_value, delimiter, base::TRIM_WHITESPACE,
+                          base::SPLIT_WANT_NONEMPTY);
+    append_me->reserve(append_me->size() + tokens.size());
+    std::move(std::begin(tokens), std::end(tokens),
+              std::back_inserter(*append_me));
+  }
 }
 
 std::string RemoveWhitespace(const std::string& str) {
@@ -244,18 +250,13 @@ base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
 }
 
 void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
+  AppendDelimitedSwitchToVector(switches::kRegisterServiceWorkerSchemes,
+                                &schemes->service_worker_schemes);
+  AppendDelimitedSwitchToVector(switches::kSecureSchemes,
+                                &schemes->secure_schemes);
+
   schemes->standard_schemes.push_back("chrome-extension");
-
-  std::vector<std::string> splited;
-  ConvertStringWithSeparatorToVector(&splited, ",",
-                                     switches::kRegisterServiceWorkerSchemes);
-  for (const std::string& scheme : splited)
-    schemes->service_worker_schemes.push_back(scheme);
   schemes->service_worker_schemes.push_back(url::kFileScheme);
-
-  ConvertStringWithSeparatorToVector(&splited, ",", switches::kSecureSchemes);
-  for (const std::string& scheme : splited)
-    schemes->secure_schemes.push_back(scheme);
 }
 
 void AtomContentClient::AddPepperPlugins(
