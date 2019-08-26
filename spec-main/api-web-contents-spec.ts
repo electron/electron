@@ -223,7 +223,6 @@ describe('webContents module', () => {
   })
 
   describe('loadURL() promise API', () => {
-    afterEach(closeAllWindows)
     let w: BrowserWindow
     beforeEach(async () => {
       w = new BrowserWindow({show: false})
@@ -325,6 +324,37 @@ describe('webContents module', () => {
       await expect(main).to.eventually.be.rejected()
         .and.have.property('errno', -355) // ERR_INCOMPLETE_CHUNKED_ENCODING
       s.close()
+    })
+  })
+
+  describe('getFocusedWebContents() API', () => {
+    afterEach(closeAllWindows)
+    it('returns the focused web contents', async () => {
+      const w = new BrowserWindow({show: true})
+      await w.loadURL('about:blank')
+      expect(webContents.getFocusedWebContents().id).to.equal(w.id)
+
+      const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.openDevTools()
+      await devToolsOpened
+      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents.id)
+      const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed')
+      w.webContents.closeDevTools()
+      await devToolsClosed
+      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id)
+    })
+
+    it('does not crash when called on a detached dev tools window', async () => {
+      const w = new BrowserWindow({show: true})
+      const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.openDevTools({ mode: 'detach' })
+      w.webContents.inspectElement(100, 100)
+      await devToolsOpened
+      expect(webContents.getFocusedWebContents()).not.to.be.null()
+      const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed')
+      w.webContents.closeDevTools()
+      await devToolsClosed
+      expect(webContents.getFocusedWebContents()).to.be.null()
     })
   })
 })

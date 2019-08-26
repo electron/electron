@@ -40,48 +40,6 @@ describe('webContents module', () => {
 
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
-  describe('getFocusedWebContents() API', () => {
-    it('returns the focused web contents', (done) => {
-      if (isCi) return done()
-
-      const specWebContents = remote.getCurrentWebContents()
-      expect(specWebContents.id).to.equal(webContents.getFocusedWebContents().id)
-
-      specWebContents.once('devtools-opened', () => {
-        expect(specWebContents.devToolsWebContents.id).to.equal(webContents.getFocusedWebContents().id)
-        specWebContents.closeDevTools()
-      })
-
-      specWebContents.once('devtools-closed', () => {
-        expect(specWebContents.id).to.equal(webContents.getFocusedWebContents().id)
-        done()
-      })
-
-      specWebContents.openDevTools()
-    })
-
-    it('does not crash when called on a detached dev tools window', (done) => {
-      const specWebContents = w.webContents
-
-      specWebContents.once('devtools-opened', () => {
-        expect(() => {
-          webContents.getFocusedWebContents()
-        }).to.not.throw()
-        specWebContents.closeDevTools()
-      })
-
-      specWebContents.once('devtools-closed', () => {
-        expect(() => {
-          webContents.getFocusedWebContents()
-        }).to.not.throw()
-        done()
-      })
-
-      specWebContents.openDevTools({ mode: 'detach' })
-      w.inspectElement(100, 100)
-    })
-  })
-
   describe('setDevToolsWebContents() API', () => {
     it('sets arbitrary webContents as devtools', async () => {
       const devtools = new BrowserWindow({ show: false })
