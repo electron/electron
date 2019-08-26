@@ -828,9 +828,8 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   base::FilePath path;
   bool succeed = AppPathService::Get(name, &path);
-  if (!succeed) {
-    args->ThrowError("Failed to get '" + name + "' path");
-  }
+  if (!succeed)
+    thrower.ThrowError("Failed to get '" + name + "' path");
 
   return path;
 }
