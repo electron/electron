@@ -67,6 +67,7 @@ worker_context_will_destroy.patch
 fix_breakpad_symbol_generation_on_linux_arm.patch
 frame_host_manager.patch
 crashpad_pid_check.patch
+preconnect_feature.patch
 network_service_allow_remote_certificate_verification_logic.patch
 put_back_deleted_colors_for_autofill.patch
 build_win_disable_zc_twophase.patch

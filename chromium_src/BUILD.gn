@@ -37,6 +37,12 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/predictors/preconnect_manager.cc",
+    "//chrome/browser/predictors/preconnect_manager.h",
+    "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
+    "//chrome/browser/predictors/proxy_lookup_client_impl.h",
+    "//chrome/browser/predictors/resolve_host_client_impl.cc",
+    "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/printing/printing_service.cc",
     "//chrome/browser/printing/printing_service.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
@@ -57,6 +63,7 @@ static_library("chrome") {
     "//content/public/browser",
   ]
   deps = [
+    "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/feature_engagement:buildflags",
   ]
 

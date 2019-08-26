@@ -349,6 +349,8 @@ source_set("electron_lib") {
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
     "//components/net_log",
+    "//components/network_hints/common",
+    "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/spellcheck/renderer",
