@@ -221,4 +221,110 @@ describe('webContents module', () => {
       })
     })
   })
+
+  describe('loadURL() promise API', () => {
+    afterEach(closeAllWindows)
+    let w: BrowserWindow
+    beforeEach(async () => {
+      w = new BrowserWindow({show: false})
+    })
+    afterEach(closeAllWindows)
+
+    it('resolves when done loading', async () => {
+      await expect(w.loadURL('about:blank')).to.eventually.be.fulfilled()
+    })
+
+    it('resolves when done loading a file URL', async () => {
+      await expect(w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))).to.eventually.be.fulfilled()
+    })
+
+    it('rejects when failing to load a file URL', async () => {
+      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected()
+        .and.have.property('code', 'ERR_FILE_NOT_FOUND')
+    })
+
+    it('rejects when loading fails due to DNS not resolved', async () => {
+      await expect(w.loadURL('https://err.name.not.resolved')).to.eventually.be.rejected()
+        .and.have.property('code', 'ERR_NAME_NOT_RESOLVED')
+    })
+
+    it('rejects when navigation is cancelled due to a bad scheme', async () => {
+      await expect(w.loadURL('bad-scheme://foo')).to.eventually.be.rejected()
+        .and.have.property('code', 'ERR_FAILED')
+    })
+
+    it('sets appropriate error information on rejection', async () => {
+      let err
+      try {
+        await w.loadURL('file:non-existent')
+      } catch (e) {
+        err = e
+      }
+      expect(err).not.to.be.null()
+      expect(err.code).to.eql('ERR_FILE_NOT_FOUND')
+      expect(err.errno).to.eql(-6)
+      expect(err.url).to.eql(process.platform === 'win32' ? 'file://non-existent/' : 'file:///non-existent')
+    })
+
+    it('rejects if the load is aborted', async () => {
+      const s = http.createServer((req, res) => { /* never complete the request */ })
+      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve))
+      const { port } = s.address() as AddressInfo
+      const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/)
+      // load a different file before the first load completes, causing the
+      // first load to be aborted.
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))
+      await p
+      s.close()
+    })
+
+    it("doesn't reject when a subframe fails to load", async () => {
+      let resp = null as unknown as http.ServerResponse
+      const s = http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html' })
+        res.write('<iframe src="http://err.name.not.resolved"></iframe>')
+        resp = res
+        // don't end the response yet
+      })
+      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve))
+      const { port } = s.address() as AddressInfo
+      const p = new Promise(resolve => {
+        w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {
+          if (!isMainFrame) {
+            resolve()
+          }
+        })
+      })
+      const main = w.loadURL(`http://127.0.0.1:${port}`)
+      await p
+      resp.end()
+      await main
+      s.close()
+    })
+
+    it("doesn't resolve when a subframe loads", async () => {
+      let resp = null as unknown as http.ServerResponse
+      const s = http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html' })
+        res.write('<iframe src="data:text/html,hi"></iframe>')
+        resp = res
+        // don't end the response yet
+      })
+      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve))
+      const { port } = s.address() as AddressInfo
+      const p = new Promise(resolve => {
+        w.webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {
+          if (!isMainFrame) {
+            resolve()
+          }
+        })
+      })
+      const main = w.loadURL(`http://127.0.0.1:${port}`)
+      await p
+      resp.destroy() // cause the main request to fail
+      await expect(main).to.eventually.be.rejected()
+        .and.have.property('errno', -355) // ERR_INCOMPLETE_CHUNKED_ENCODING
+      s.close()
+    })
+  })
 })
