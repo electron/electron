@@ -10,7 +10,12 @@
 namespace electron {
 
 AtomMessageFilter::AtomMessageFilter(content::WebContents* web_contents)
-    : BrowserMessageFilter(WidgetMsgStart), web_contents_(web_contents) {}
+    : BrowserMessageFilter(WidgetMsgStart),
+      web_contents_(web_contents),
+      valid_(true) {
+  CHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  AddRef();
+}
 
 AtomMessageFilter::~AtomMessageFilter() {}
 
@@ -20,11 +25,31 @@ bool AtomMessageFilter::OnMessageReceived(const IPC::Message& message) {
                                 ForwardMessage(message))
   IPC_END_MESSAGE_MAP()
 
+  // We don't want to mark anything as handled here
   return false;
 }
 
-void ForwardMessageOnUIThread(const IPC::Message& message,
-                              content::WebContentsImpl* web_contents_impl) {
+void AtomMessageFilter::OnChannelClosing() {
+  base::AutoLock lock(mutex_);
+  valid_ = false;
+  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                           base::BindOnce(&AtomMessageFilter::Release, this));
+}
+
+void AtomMessageFilter::OnDestruct() const {
+  {
+    base::AutoLock lock(mutex_);
+    valid_ = false;
+  }
+  content::BrowserThread::DeleteOnUIThread::Destruct(this);
+}
+
+void AtomMessageFilter::ForwardMessageOnUIThread(
+    const IPC::Message& message,
+    content::WebContentsImpl* web_contents_impl) {
+  if (!Valid())
+    return;
+
   web_contents_impl->OnMessageReceived(web_contents_impl->GetMainFrame(),
                                        message);
 }
@@ -34,7 +59,13 @@ void AtomMessageFilter::ForwardMessage(const IPC::Message& message) {
       static_cast<content::WebContentsImpl*>(web_contents_);
   base::PostTaskWithTraits(
       FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&ForwardMessageOnUIThread, message, web_contents_impl));
+      base::BindOnce(&AtomMessageFilter::ForwardMessageOnUIThread, this,
+                     message, web_contents_impl));
+}
+
+bool AtomMessageFilter::Valid() {
+  base::AutoLock lock(mutex_);
+  return valid_;
 }
 
 }  // namespace electron
