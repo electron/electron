@@ -691,4 +691,30 @@ describe('webContents module', () => {
     })
   })
 
+  describe('focus()', () => {
+    describe('when the web contents is hidden', () => {
+      afterEach(closeAllWindows)
+      it('does not blur the focused window', (done) => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
+        ipcMain.once('answer', (event, parentFocused, childFocused) => {
+          expect(parentFocused).to.be.true()
+          expect(childFocused).to.be.false()
+          done()
+        })
+        w.show()
+        w.loadFile(path.join(fixturesPath, 'pages', 'focus-web-contents.html'))
+      })
+    })
+  })
+
+  describe('getOSProcessId()', () => {
+    afterEach(closeAllWindows)
+    it('returns a valid procress id', async () => {
+      const w = new BrowserWindow({ show: false })
+      expect(w.webContents.getOSProcessId()).to.equal(0)
+
+      await w.loadURL('about:blank')
+      expect(w.webContents.getOSProcessId()).to.be.above(0)
+    })
+  })
 })

@@ -98,15 +98,6 @@ describe('webContents module', () => {
     })
   })
 
-  describe('getOSProcessId()', () => {
-    it('returns a valid procress id', async () => {
-      expect(w.webContents.getOSProcessId()).to.equal(0)
-
-      await w.loadURL('about:blank')
-      expect(w.webContents.getOSProcessId()).to.be.above(0)
-    })
-  })
-
   describe('zoom api', () => {
     const zoomScheme = remote.getGlobal('zoomScheme')
     const hostZoomMap = {
